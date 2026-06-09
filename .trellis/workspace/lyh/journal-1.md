@@ -241,3 +241,37 @@ Archived the completed parent planning task after all six child scopes were done
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Global scan startup cache
+
+**Date**: 2026-06-09
+**Task**: Global scan startup cache
+**Branch**: `main`
+
+### Summary
+
+Made the TUI auto-scan on startup so global and project cleanup targets populate the session snapshot without pressing s. Added a startup-scan regression test, kept the scan path on the normal worker boundary, and documented the event-boundary convention.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d63fd68` | (see git log) |
+| `0b27afd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
