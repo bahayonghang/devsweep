@@ -4,6 +4,7 @@ use devsweep::{
     cli::{CleanCommand, Cli, Command, ScanCommand},
     config,
     model::CleanupPlan,
+    scanner::ProjectScanner,
 };
 
 fn main() -> Result<()> {
@@ -18,7 +19,12 @@ fn main() -> Result<()> {
 }
 
 fn run_scan(command: ScanCommand) -> Result<()> {
-    let plan = CleanupPlan::empty();
+    let include_projects = command.projects || !command.global;
+    let plan = if include_projects {
+        ProjectScanner::new().scan_roots(&command.roots)?
+    } else {
+        CleanupPlan::empty()
+    };
 
     if command.json {
         serde_json::to_writer_pretty(std::io::stdout(), &plan)?;
@@ -27,12 +33,12 @@ fn run_scan(command: ScanCommand) -> Result<()> {
     }
 
     println!(
-        "Scanner placeholder: {} root(s), scope {}, {} cleanup target(s).",
+        "Scanner found {} cleanup target(s) from {} root(s), scope {}.",
+        plan.targets.len(),
         command.roots.len(),
-        command.scope_label(),
-        plan.targets.len()
+        command.scope_label()
     );
-    println!("Run with --json to emit the current cleanup plan schema.");
+    println!("Run with --json to emit the cleanup plan.");
 
     Ok(())
 }
