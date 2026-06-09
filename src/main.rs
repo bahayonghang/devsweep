@@ -5,6 +5,7 @@ use devsweep::{
     config,
     executor::{ExecutionRequest, Executor},
     model::CleanupPlan,
+    providers::GlobalProviderScanner,
     scanner::ProjectScanner,
 };
 
@@ -21,11 +22,17 @@ fn main() -> Result<()> {
 
 fn run_scan(command: ScanCommand) -> Result<()> {
     let include_projects = command.projects || !command.global;
-    let plan = if include_projects {
-        ProjectScanner::new().scan_roots(&command.roots)?
-    } else {
-        CleanupPlan::empty()
-    };
+    let include_global = command.global || !command.projects;
+    let mut plan = CleanupPlan::empty();
+
+    if include_projects {
+        plan.targets
+            .extend(ProjectScanner::new().scan_roots(&command.roots)?.targets);
+    }
+    if include_global {
+        plan.targets
+            .extend(GlobalProviderScanner::new().scan().targets);
+    }
 
     if command.json {
         serde_json::to_writer_pretty(std::io::stdout(), &plan)?;

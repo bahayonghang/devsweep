@@ -28,12 +28,12 @@ Add MVP global cache providers that discover cache locations and expose official
 
 ## Acceptance Criteria
 
-- [ ] Provider tests or command mocks cover available and missing-tool cases.
-- [ ] npm, pip, pnpm, and Yarn actions use official command plans only.
-- [ ] Cargo home provider does not mark `bin`, credentials, or the whole cargo home as cleanable.
-- [ ] Global provider targets include evidence and risk level.
-- [ ] No provider directly deletes cache internals.
-- [ ] Docker is not part of this child's implementation or acceptance criteria.
+- [x] Provider tests or command mocks cover available and missing-tool cases.
+- [x] npm, pip, pnpm, and Yarn actions use official command plans only.
+- [x] Cargo home provider does not mark `bin`, credentials, or the whole cargo home as cleanable.
+- [x] Global provider targets include evidence and risk level.
+- [x] No provider directly deletes cache internals.
+- [x] Docker is not part of this child's implementation or acceptance criteria.
 
 ## Out Of Scope
 
@@ -42,4 +42,3 @@ Add MVP global cache providers that discover cache locations and expose official
 - Advanced Cargo home component cleanup.
 - Project artifact scanning.
 - TUI provider screens beyond data needed by later UI work.
-
