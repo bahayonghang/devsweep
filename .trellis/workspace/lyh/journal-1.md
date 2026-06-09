@@ -107,3 +107,37 @@ Implemented cleanup execution for selected plan targets with dry-run behavior, c
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Global cache providers
+
+**Date**: 2026-06-09
+**Task**: Global cache providers
+**Branch**: `main`
+
+### Summary
+
+Implemented global cache provider scanning for npm, pip, pnpm, Yarn, and Cargo home; added provider tests and backend spec contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4734248` | (see git log) |
+| `2cc336b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
