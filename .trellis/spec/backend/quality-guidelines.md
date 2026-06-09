@@ -259,6 +259,68 @@ CleanAction::Command {
 }
 ```
 
+### Scenario: CI and release archive
+
+#### 1. Scope / Trigger
+- Trigger: repository-level validation or release packaging changes add or
+  change CI workflow commands, `justfile` recipes, or generated release
+  artifacts.
+
+#### 2. Signatures
+- Local validation:
+  - `just ci`
+- Local release archive:
+  - `just release-archive`
+- CI validation:
+  - `cargo fmt --all -- --check`
+  - `cargo check --all-targets`
+  - `cargo test --all-targets`
+  - `cargo clippy --all-targets -- -D warnings`
+
+#### 3. Contracts
+- `just ci` remains the canonical local quality gate.
+- CI must run the same four validation classes as `just ci`: format, check,
+  tests, and clippy.
+- `just release-archive` builds the release binary and writes a Windows archive
+  to `dist/devsweep-x86_64-pc-windows-msvc.zip`.
+- `dist/` is a generated artifact directory and must stay ignored by git.
+- Release packaging must not imply package-manager distribution such as Scoop,
+  Winget, Homebrew, or cargo publish.
+
+#### 4. Validation & Error Matrix
+- Format/check/test/clippy failure -> CI fails and local `just ci` fails.
+- Release build failure -> `just release-archive` fails before creating or
+  replacing the archive.
+- Missing `target/release/devsweep.exe` after build -> archive command fails.
+- Generated `dist/` output -> ignored by git status.
+
+#### 5. Good/Base/Bad Cases
+- Good: CI includes Windows and a non-Windows runner for the Rust validation
+  matrix.
+- Good: release recipe uses the already built single binary.
+- Base: local `cargo build --release` succeeds without packaging.
+- Bad: committing generated `dist/*.zip` archives.
+- Bad: documenting Docker cleanup, permanent delete, or package-manager
+  distribution as released MVP behavior.
+
+#### 6. Tests Required
+- Run `just ci` after workflow or validation command changes.
+- Run `just release-archive` after release recipe changes on Windows.
+- Check `git status --short --ignored` to confirm `dist/` is ignored.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```text
+Commit dist/devsweep-x86_64-pc-windows-msvc.zip as a release artifact.
+```
+
+Correct:
+```text
+Generate dist/devsweep-x86_64-pc-windows-msvc.zip locally and keep dist/
+ignored by git.
+```
+
 ### Scenario: Project scanner and JSON cleanup plan
 
 #### 1. Scope / Trigger
