@@ -6,7 +6,8 @@
 
 ## Overview
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+This directory contains backend guidelines for the Rust CLI, cleanup-plan
+domain model, scanner, and future execution/audit code.
 
 ---
 
@@ -14,24 +15,30 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
+| [Directory Structure](./directory-structure.md) | Module organization and file layout | Rust crate conventions |
+| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | No database; JSON plan contract |
+| [Error Handling](./error-handling.md) | Error types, handling strategies | anyhow CLI/scanner conventions |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Foundation and scanner conventions |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | tracing to stderr |
 
 ---
 
-## How to Fill These Guidelines
+## Pre-Development Checklist
 
-For each guideline file:
+Before backend changes:
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+1. Read [Quality Guidelines](./quality-guidelines.md) for safety-first cleanup
+   constraints.
+2. Read [Directory Structure](./directory-structure.md) before adding or
+   splitting Rust modules.
+3. Read [Error Handling](./error-handling.md) before changing CLI, scanner, or
+   filesystem error paths.
+4. Read [Logging Guidelines](./logging-guidelines.md) before adding diagnostics
+   to commands that may also emit JSON.
+5. Read [Database Guidelines](./database-guidelines.md) before adding any
+   persistent state or file-format contract.
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
+Always run `just ci` before reporting backend work complete.
 
 ---
 
