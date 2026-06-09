@@ -57,6 +57,8 @@ fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Re
 fn run_event_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> {
     let mut app = App::new();
     let (worker_tx, worker_rx) = mpsc::channel();
+    let startup_effects = app.startup_effects();
+    dispatch_effects(startup_effects, &worker_tx)?;
 
     while !app.should_quit {
         drain_worker_events(&mut app, &worker_rx, &worker_tx)?;
@@ -187,6 +189,12 @@ struct App {
 impl App {
     fn new() -> Self {
         Self::with_plan(CleanupPlan::empty())
+    }
+
+    fn startup_effects(&mut self) -> Vec<Effect> {
+        let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
+        self.log("Startup scan requested");
+        vec![Effect::StartScan { job_id }]
     }
 
     fn with_plan(plan: CleanupPlan) -> Self {
@@ -1451,6 +1459,24 @@ mod tests {
 
         app.update(key(KeyCode::Char('q')));
         assert!(app.should_quit);
+    }
+
+    #[test]
+    fn startup_effects_request_an_initial_scan() {
+        let mut app = App::new();
+
+        let effects = app.startup_effects();
+
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests one scan");
+        };
+        assert_eq!(*job_id, 1);
+        assert_eq!(app.jobs.len(), 1);
+        assert_eq!(app.jobs[0].label, "Scan current directory and globals");
+        assert_eq!(
+            app.logs.last().map(|entry| entry.message.as_str()),
+            Some("Startup scan requested")
+        );
     }
 
     #[test]
