@@ -1,0 +1,33 @@
+{
+  "id": "design-split-analysis",
+  "name": "design-split-analysis",
+  "title": "Design.md split analysis",
+  "description": "",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-06-09",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "06-09-foundation-cli-domain-model",
+    "06-09-project-scanner-json-plan",
+    "06-09-execution-engine-audit",
+    "06-09-global-cache-providers",
+    "06-09-ratatui-app-experience",
+    "06-09-safety-hardening-release"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
