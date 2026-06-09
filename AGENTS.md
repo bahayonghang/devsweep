@@ -1,3 +1,42 @@
+# Repository Guidance
+
+This root `AGENTS.md` governs the entire repository. Deeper `AGENTS.md` files
+may add or override guidance for their subtrees. Read `./code_map.md` before
+broad grep or repo-wide search so navigation starts from the maintained map.
+
+## Commands
+
+- `just ci` is the canonical local gate; it runs format, check, tests, and
+  clippy.
+- `just dev` runs the TUI with `cargo run -- tui`.
+- `just build` runs `cargo build`.
+- `just release-archive` builds a Windows release binary and writes
+  `dist/devsweep-x86_64-pc-windows-msvc.zip`.
+
+## Safety Contracts
+
+- Cleanup is dry-run by default. Execute only from an explicit saved plan.
+- Permanent delete remains disabled in this build, including when
+  `--allow-permanent-delete` is present.
+- Scanner and model code must only create cleanup plans; do not delete files,
+  move paths to trash, or execute external cleanup commands from those layers.
+- Command-backed cleanup must keep program and argv separate. Do not compose
+  shell command strings for cleanup actions.
+- Cargo home is inspect-only. Do not create cleanup actions for Cargo
+  credentials, installed binaries, registry internals, or git cache internals.
+- Docker cleanup is not part of the current MVP behavior.
+- `target/` and `dist/` are generated outputs and must not be committed.
+
+## Trellis And Codex
+
+- For backend changes, read `.trellis/spec/backend/index.md` before editing.
+- For TUI changes, read `.trellis/spec/frontend/index.md` before editing.
+- Project Codex hooks and agents are optional local scaffolding. Do not assume
+  `.codex/hooks.json` hooks are active unless the user-level Codex config
+  enables hooks and the hook has been approved.
+- Preserve the managed Trellis block below exactly; add project guidance outside
+  the marker block.
+
 <!-- TRELLIS:START -->
 # Trellis Instructions
 
