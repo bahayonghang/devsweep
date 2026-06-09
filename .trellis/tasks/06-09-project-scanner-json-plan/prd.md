@@ -35,11 +35,11 @@ Implement marker-first project scanning and JSON cleanup plan output for the MVP
 
 ## Acceptance Criteria
 
-- [ ] Fixture tests find expected Rust, Node, and Python targets.
-- [ ] Fixture tests do not match markerless `target`, `build`, or `dist` directories.
-- [ ] Scanner output includes risk, evidence, selected-by-default, path/command action, and estimated size.
-- [ ] Parent/child dedupe prevents duplicate counting and duplicate cleanup actions.
-- [ ] Scanner code only creates `CleanTarget` values and never mutates the file system.
+- [x] Fixture tests find expected Rust, Node, and Python targets.
+- [x] Fixture tests do not match markerless `target`, `build`, or `dist` directories.
+- [x] Scanner output includes risk, evidence, selected-by-default, path/command action, and estimated size.
+- [x] Parent/child dedupe prevents duplicate counting and duplicate cleanup actions.
+- [x] Scanner code only creates `CleanTarget` values and never mutates the file system.
 
 ## Out Of Scope
 
@@ -48,4 +48,3 @@ Implement marker-first project scanning and JSON cleanup plan output for the MVP
 - Global cache provider discovery.
 - TUI rendering.
 - Docker support.
-

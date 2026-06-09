@@ -100,6 +100,82 @@ CleanAction::Command {
 }
 ```
 
+### Scenario: Project scanner and JSON cleanup plan
+
+#### 1. Scope / Trigger
+- Trigger: scanner code discovers project cleanup candidates and changes the
+  `devsweep scan --json` output contract from an empty placeholder plan to real
+  `CleanTarget` values.
+
+#### 2. Signatures
+- Library entrypoint:
+  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+- CLI entrypoint:
+  - `devsweep scan [ROOT]... [--json] [--projects]`
+
+#### 3. Contracts
+- Scanner code may only create `CleanTarget` values; it must not delete, move to
+  trash, or execute cleanup commands.
+- Project matching is marker-first:
+  - Rust `target` requires `Cargo.toml` evidence.
+  - Node cleanup targets require `package.json` or lockfile evidence.
+  - Python cleanup targets require project markers or local virtualenv evidence.
+- `.gitignore` filtering must not hide cleanup candidates. The current scanner
+  uses `std::fs` traversal and therefore does not apply ignore files.
+- Symlinks, Windows junctions, and reparse points are not followed by default.
+- JSON plan targets must include `risk`, `evidence`, `selected_by_default`,
+  `action`, and `estimated_bytes`.
+- Parent/child cleanup paths must be deduplicated so one plan never double-counts
+  or emits duplicate cleanup actions for nested targets.
+
+#### 4. Validation & Error Matrix
+- Missing scan root -> return an error to the CLI.
+- Markerless `target`, `build`, `dist`, or `node_modules` -> no target emitted.
+- Inaccessible nested entry -> skip that entry, continue scanning the rest of
+  the root.
+- Nested cleanup target under an already selected cleanup path -> keep the
+  parent target and drop the nested target.
+
+#### 5. Good/Base/Bad Cases
+- Good: fixture with `Cargo.toml` plus `target/` emits a Rust target with
+  command-shaped `cargo clean` action data but does not run Cargo.
+- Good: fixture with `package.json` plus `node_modules/` emits a medium-risk,
+  not-selected-by-default dependency-directory target.
+- Good: fixture with `pyproject.toml` plus `__pycache__/` emits a low-risk test
+  cache target.
+- Base: `devsweep scan . --json` emits valid plan JSON.
+- Bad: matching a markerless directory because its name is `target`, `build`,
+  or `dist`.
+- Bad: scanner code importing `std::process::Command`, `trash`, or file removal
+  APIs.
+
+#### 6. Tests Required
+- Fixture tests for Rust, Node, and Python discovery.
+- Fixture tests proving markerless cleanup names are ignored.
+- Tests that serialized plan targets contain risk, evidence, selection, action,
+  and size fields.
+- Dedupe tests for nested cleanup paths.
+- Non-mutating test that scanned fixture files still exist after scan.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```rust
+// Name-only matching is unsafe.
+if path.file_name() == Some("target".as_ref()) {
+    targets.push(clean_target_for(path));
+}
+```
+
+Correct:
+```rust
+// Marker-first: only a Rust project root can own target/.
+let manifest = project_root.join("Cargo.toml");
+if manifest.is_file() && project_root.join("target").is_dir() {
+    targets.push(clean_target_with_marker(manifest));
+}
+```
+
 ---
 
 ## Testing Requirements
