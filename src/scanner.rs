@@ -534,6 +534,56 @@ mod tests {
     }
 
     #[test]
+    fn scanner_does_not_follow_symlinked_project_directories() {
+        let fixture = Fixture::new();
+        fixture.file("outside/package.json", "{}");
+        fixture.file("outside/node_modules/pkg/index.js", "module");
+        fs::create_dir_all(fixture.path().join("scan")).expect("scan directory");
+        let outside = fixture.path().join("outside");
+        let link = fixture.path().join("scan/link-app");
+
+        if create_dir_symlink(&outside, &link).is_err() {
+            return;
+        }
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().join("scan")])
+            .expect("fixture scans");
+
+        assert!(
+            plan.targets.is_empty(),
+            "scanner must not follow symlinked cleanup projects"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn scanner_skips_windows_reparse_point_directories() {
+        let fixture = Fixture::new();
+        fixture.file("outside/package.json", "{}");
+        fixture.file("outside/node_modules/pkg/index.js", "module");
+        fs::create_dir_all(fixture.path().join("scan")).expect("scan directory");
+        let outside = fixture.path().join("outside");
+        let link = fixture.path().join("scan/reparse-app");
+
+        if create_dir_symlink(&outside, &link).is_err() {
+            return;
+        }
+
+        let metadata = fs::symlink_metadata(&link).expect("link metadata");
+        assert!(has_windows_reparse_point(&metadata));
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().join("scan")])
+            .expect("fixture scans");
+
+        assert!(
+            plan.targets.is_empty(),
+            "scanner must not follow Windows reparse point directories"
+        );
+    }
+
+    #[test]
     fn scanner_output_has_plan_contract_fields_and_keeps_files() {
         let fixture = Fixture::new();
         fixture.file("node-app/package.json", "{}");
@@ -661,5 +711,15 @@ mod tests {
             }
             fs::write(path, content).expect("fixture file");
         }
+    }
+
+    #[cfg(unix)]
+    fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(target, link)
+    }
+
+    #[cfg(windows)]
+    fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
+        std::os::windows::fs::symlink_dir(target, link)
     }
 }

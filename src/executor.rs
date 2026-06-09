@@ -594,6 +594,64 @@ mod tests {
     }
 
     #[test]
+    fn trash_failure_reports_target_and_continues_remaining_targets() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let locked_path = fixture.path().join("node_modules");
+        let later_path = fixture.path().join(".pytest_cache");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: locked_path.clone(),
+                    },
+                    Some(locked_path.clone()),
+                ),
+                target(
+                    "python.pytest_cache",
+                    CleanAction::MoveToTrash {
+                        path: later_path.clone(),
+                    },
+                    Some(later_path.clone()),
+                ),
+            ],
+        };
+        let failed_id = plan.targets[0].id.clone();
+        let trash_runner =
+            RecordingTrashRunner::failing_on(&locked_path, "Access denied: file is locked");
+        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+
+        let report = executor
+            .run_plan(
+                &plan,
+                ExecutionRequest {
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path.clone()),
+                },
+            )
+            .expect("job returns a partial-failure report");
+
+        assert_eq!(report.attempted, 2);
+        assert_eq!(report.succeeded, 1);
+        assert_eq!(report.failed, 1);
+        assert_eq!(report.failures[0].target_id, failed_id);
+        assert!(
+            report.failures[0].message.contains("locked"),
+            "locked-file style error should be preserved"
+        );
+        assert_eq!(trash_runner.paths(), vec![locked_path, later_path]);
+
+        let records = read_jsonl(&audit_path);
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0]["status"], "failed");
+        assert_eq!(records[0]["partial"], true);
+        assert_eq!(records[1]["status"], "success");
+    }
+
+    #[test]
     fn permanent_delete_is_disabled_even_when_flag_is_present() {
         let fixture = TempDir::new().expect("temp dir");
         let audit_path = fixture.path().join("audit.jsonl");
@@ -666,9 +724,20 @@ mod tests {
     #[derive(Clone, Default)]
     struct RecordingTrashRunner {
         paths: Rc<RefCell<Vec<PathBuf>>>,
+        failure: Rc<RefCell<Option<(PathBuf, String)>>>,
     }
 
     impl RecordingTrashRunner {
+        fn failing_on(path: &Path, message: &str) -> Self {
+            Self {
+                paths: Rc::new(RefCell::new(Vec::new())),
+                failure: Rc::new(RefCell::new(Some((
+                    path.to_path_buf(),
+                    message.to_string(),
+                )))),
+            }
+        }
+
         fn paths(&self) -> Vec<PathBuf> {
             self.paths.borrow().clone()
         }
@@ -677,6 +746,11 @@ mod tests {
     impl TrashRunner for RecordingTrashRunner {
         fn move_to_trash(&self, path: &Path) -> Result<()> {
             self.paths.borrow_mut().push(path.to_path_buf());
+            if let Some((failure_path, message)) = self.failure.borrow().as_ref()
+                && failure_path == path
+            {
+                return Err(anyhow!(message.clone()));
+            }
             Ok(())
         }
     }

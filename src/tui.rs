@@ -1385,6 +1385,40 @@ mod tests {
     }
 
     #[test]
+    fn smoke_renders_dashboard_details_confirm_and_jobs_logs_states() {
+        let mut app = App::with_plan(representative_plan());
+
+        let dashboard = render_text(&app);
+        assert!(dashboard.contains("Dashboard"));
+        assert!(dashboard.contains("Selected"));
+
+        app.overlay = Overlay::Details;
+        let details = render_text(&app);
+        assert!(details.contains("Target details"));
+        assert!(details.contains("Evidence"));
+
+        app.overlay = Overlay::None;
+        app.selected_ids.clear();
+        app.selected_ids.insert(app.targets[1].id.clone());
+        app.update(key(KeyCode::Char('c')));
+        let confirm = render_text(&app);
+        assert!(confirm.contains("Confirm cleanup"));
+        assert!(confirm.contains("Irreversible command-backed cleanup"));
+
+        app.overlay = Overlay::None;
+        app.active_tab = ActiveTab::JobsLogs;
+        let job_id = app.start_job(JobKind::Scan, "Scan fixture");
+        app.update(UiEvent::Worker(WorkerEvent::JobProgress {
+            job_id,
+            message: "Scanning fixture".to_string(),
+        }));
+        let jobs_logs = render_text(&app);
+        assert!(jobs_logs.contains("Jobs"));
+        assert!(jobs_logs.contains("Logs"));
+        assert!(jobs_logs.contains("Scanning fixture"));
+    }
+
+    #[test]
     fn update_handles_scan_selection_details_filter_help_and_quit() {
         let mut app = App::with_plan(representative_plan());
 
@@ -1545,6 +1579,15 @@ mod tests {
 
     fn key(code: KeyCode) -> UiEvent {
         UiEvent::Key(KeyEvent::new(code, KeyModifiers::NONE))
+    }
+
+    fn render_text(app: &App) -> String {
+        let backend = TestBackend::new(120, 32);
+        let mut terminal = Terminal::new(backend).expect("test terminal");
+        terminal
+            .draw(|frame| render_app(frame, app))
+            .expect("app renders");
+        format!("{}", terminal.backend())
     }
 
     fn representative_plan() -> CleanupPlan {

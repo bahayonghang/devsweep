@@ -17,6 +17,13 @@ clippy:
 build:
     cargo build
 
+release-archive:
+    cargo build --release
+    New-Item -ItemType Directory -Force -Path dist | Out-Null
+    if (Test-Path 'dist\devsweep-x86_64-pc-windows-msvc.zip') { Remove-Item 'dist\devsweep-x86_64-pc-windows-msvc.zip' }
+    Compress-Archive -LiteralPath 'target\release\devsweep.exe' -DestinationPath 'dist\devsweep-x86_64-pc-windows-msvc.zip'
+    Write-Output 'release archive: dist\devsweep-x86_64-pc-windows-msvc.zip'
+
 dev:
     cargo run -- tui
 
