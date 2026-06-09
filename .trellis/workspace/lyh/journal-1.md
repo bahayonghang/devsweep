@@ -73,3 +73,37 @@ Implemented marker-first project scanning for Rust, Node, and Python cleanup tar
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Execution engine and audit log
+
+**Date**: 2026-06-09
+**Task**: Execution engine and audit log
+**Branch**: `main`
+
+### Summary
+
+Implemented cleanup execution for selected plan targets with dry-run behavior, command/trash runner boundaries, audit JSONL records, permanent-delete guardrails, tests, and backend spec updates.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ae7af10` | (see git log) |
+| `d5696fe` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
