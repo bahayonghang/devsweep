@@ -6,12 +6,8 @@
 
 ## Overview
 
-There is no interactive TUI state yet. The only current stateful behavior is the
-serializable cleanup plan in `src/model.rs` and the placeholder draw call in
-`src/tui.rs`.
-
-When interactive TUI work begins, use a single explicit app state instead of
-global mutable state or widget-owned side effects.
+Interactive TUI state lives in `src/tui.rs::App`. Use this single explicit app
+state instead of global mutable state or widget-owned side effects.
 
 ---
 
@@ -20,9 +16,9 @@ global mutable state or widget-owned side effects.
 - Domain state: `CleanupPlan`, `CleanTarget`, risk, evidence, and actions from
   `src/model.rs`.
 - View state: selected row, active tab, filter text, modal state, and help
-  visibility. These should live in a future `AppState`.
+  visibility. These live in `App`.
 - Worker state: scan/execution jobs, progress, cancellation, and logs. These
-  should enter the app through explicit worker events.
+  enter the app through explicit `WorkerEvent` values.
 
 ---
 
@@ -40,6 +36,10 @@ state and `CleanTarget.estimated_bytes`. Do not store a second independent total
 unless performance proves it necessary, and then keep tests that verify it stays
 in sync.
 
+Selection state should store `TargetId` values, not row numbers. The row index is
+only a cursor into the current filtered view and must be clamped or validated
+before use.
+
 ---
 
 ## Server State
@@ -54,3 +54,5 @@ be treated as stale after a new scan or cleanup job.
 - Do not let individual widgets own cleanup selection independently.
 - Do not mutate `CleanupPlan` in render code.
 - Do not keep a cached selected total without a clear invalidation path.
+- Do not let filter changes leave the selected row pointing past the visible
+  target list.

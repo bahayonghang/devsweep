@@ -7,8 +7,10 @@
 ## Overview
 
 The frontend for `devsweep` is a Rust terminal UI built with `ratatui`, not a
-web frontend. Current TUI code lives in `src/tui.rs` as a small placeholder.
-Keep it there until the TUI grows enough to justify a `src/tui/` directory.
+web frontend. Current TUI code lives in `src/tui.rs` and contains the terminal
+entrypoint, app state, update/effect boundary, render helpers, and TUI tests.
+Keep the single file while it remains reviewable; split to `src/tui/` only when
+moving cohesive render/state sections removes real complexity.
 
 ---
 
@@ -18,7 +20,7 @@ Current layout:
 
 ```text
 src/
-└── tui.rs  # ratatui entrypoint and render function
+└── tui.rs  # ratatui entrypoint, app state, update/effects, render helpers
 ```
 
 Expected split point for future work:
@@ -44,20 +46,24 @@ placeholder for its own sake.
 ## Module Organization
 
 - `run()` owns terminal backend setup and the draw loop.
+- `App` owns active tab, target selection, filters, overlays, jobs, logs, and
+  the quit flag.
+- `App::update` consumes key/worker events and returns side-effect requests.
 - `render_*` functions own pure drawing from already-computed state.
 - Scanner, cleanup execution, and size calculation do not belong in TUI render
   modules.
 - Shared cleanup data comes from `src/model.rs`; TUI code should not define a
   second target schema.
 
-Current example from `src/tui.rs`:
+Current shape from `src/tui.rs`:
 
 ```rust
 pub fn run() -> Result<()> {
-    let backend = CrosstermBackend::new(std::io::stdout());
-    let mut terminal = Terminal::new(backend)?;
-    terminal.draw(render_placeholder)?;
-    Ok(())
+    // Terminal setup and event loop orchestration only.
+}
+
+fn render_app(frame: &mut Frame<'_>, app: &App) {
+    // Pure view from App state.
 }
 ```
 
@@ -68,12 +74,12 @@ pub fn run() -> Result<()> {
 - Render functions use `render_<view>` names.
 - TUI modules use `snake_case`.
 - View state types should be named after the UI concept they own, for example
-  `DashboardState`, `SelectionState`, or `ConfirmState` when those are added.
+  `App`, `ConfirmState`, and `JobRecord`.
 
 ---
 
 ## Examples
 
-- `src/tui.rs::render_placeholder` shows the current pure render function.
-- `src/tui.rs::tests::placeholder_renders_with_test_backend` shows the current
-  test pattern for rendering without a real terminal.
+- `src/tui.rs::render_app` shows the current pure root render function.
+- `src/tui.rs::tests::representative_state_renders_with_targets_details_and_jobs`
+  shows the current `TestBackend` render pattern.

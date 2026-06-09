@@ -16,8 +16,8 @@ evidence.
 
 - Shared cleanup types live in `src/model.rs`.
 - CLI argument types live in `src/cli.rs`.
-- Future TUI-only state types should live under `src/tui.rs` or `src/tui/` once
-  the TUI is split.
+- TUI-only state types currently live in `src/tui.rs`. Move them under
+  `src/tui/` only if the TUI is split.
 
 Example shared type:
 
@@ -47,6 +47,8 @@ into `CleanupPlan` before rendering.
   `CleanAction`.
 - Use `PathBuf` for paths, not `String`.
 - Use `TargetId` instead of raw strings when storing selected targets.
+- Use explicit `UiEvent`, `WorkerEvent`, and `Effect` enums for TUI event and
+  worker boundaries.
 
 ---
 

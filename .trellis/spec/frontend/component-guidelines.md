@@ -18,18 +18,15 @@ perform expensive size calculations.
 Current component shape:
 
 ```rust
-pub fn render_placeholder(frame: &mut Frame<'_>) {
-    let widget =
-        Paragraph::new("Foundation build\n\nScanning and cleanup actions are not implemented yet.")
-            .block(Block::bordered().title("devsweep"))
-            .alignment(Alignment::Center);
-
-    frame.render_widget(widget, frame.area());
+fn render_app(frame: &mut Frame<'_>, app: &App) {
+    render_header(frame, header_area, app);
+    render_body(frame, body_area, app);
+    render_overlay(frame, app);
 }
 ```
 
-Future components should take `&AppState` or a smaller view-state reference
-instead of owning application data.
+Components should take `&App` or a smaller view-state reference instead of
+owning application data.
 
 ---
 
@@ -40,6 +37,8 @@ Rust TUI code does not use web-style props. Use function parameters:
 - `&mut Frame<'_>` for rendering target.
 - `Rect` for constrained child areas once layouts are split.
 - `&ViewState` or slices of domain data for read-only display input.
+- `&App` is acceptable for root or broad layout render helpers; prefer narrower
+  references once helpers become reusable.
 - Return `()` from pure render functions.
 
 Avoid passing raw JSON or untyped maps into components. Decode into model/state
@@ -73,3 +72,5 @@ types before rendering.
 - Do not block the draw loop with directory size calculation.
 - Do not duplicate cleanup target formatting logic across multiple panels once
   a shared formatter becomes necessary.
+- Do not call `App::update`, scanner/provider APIs, or `Executor` from
+  `render_*` helpers.

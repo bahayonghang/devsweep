@@ -31,15 +31,16 @@ from scanner/executor side effects.
   guesses.
 - Keep cleanup confirmation explicit once execution support is added.
 
-Current test example:
+Current render test example:
 
 ```rust
-let backend = TestBackend::new(80, 8);
+let app = App::with_plan(representative_plan());
+let backend = TestBackend::new(120, 32);
 let mut terminal = Terminal::new(backend).expect("test terminal");
 
 terminal
-    .draw(render_placeholder)
-    .expect("placeholder renders");
+    .draw(|frame| render_app(frame, &app))
+    .expect("representative app renders");
 ```
 
 ---
@@ -50,6 +51,8 @@ terminal
 - State update logic should have unit tests independent of terminal rendering.
 - Worker/event code should test cancellation and failure events before cleanup
   execution is connected.
+- Confirmation behavior must have tests for both trash-backed and irreversible
+  command-backed selections.
 
 ---
 
