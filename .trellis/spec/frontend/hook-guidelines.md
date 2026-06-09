@@ -54,3 +54,6 @@ worker path so the UI can stay responsive.
   TUI has a central app state.
 - Do not call scanner/provider/executor APIs directly from key handlers; return
   an effect and let the event loop run it.
+- Do not trigger the initial scan from render code or from `App::new()`. Queue
+  it through the event/update boundary so the startup job is visible and the
+  resulting targets still flow through the normal worker path.
