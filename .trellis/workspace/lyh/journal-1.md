@@ -175,3 +175,38 @@ Implemented the interactive ratatui app experience with TEA-style state/update/r
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: Safety hardening and release
+
+**Date**: 2026-06-09
+**Task**: Safety hardening and release
+**Branch**: `main`
+
+### Summary
+
+Completed safety hardening release work: scanner symlink/reparse tests, executor partial-failure coverage, TUI smoke coverage, CI workflow, Windows release archive recipe, README safety documentation, and backend spec update.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `05e1630` | (see git log) |
+| `42ed90a` | (see git log) |
+| `61d5131` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

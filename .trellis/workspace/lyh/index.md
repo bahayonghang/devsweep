@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 5
+- **Total Sessions**: 6
 - **Last Active**: 2026-06-09
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~177 | Active |
+| `journal-1.md` | ~212 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 6 | 2026-06-09 | Safety hardening and release | `05e1630`, `42ed90a`, `61d5131` | `main` |
 | 5 | 2026-06-09 | Ratatui app experience | `066eb59`, `0822ecc` | `main` |
 | 4 | 2026-06-09 | Global cache providers | `4734248`, `2cc336b` | `main` |
 | 3 | 2026-06-09 | Execution engine and audit log | `ae7af10`, `d5696fe` | `main` |
