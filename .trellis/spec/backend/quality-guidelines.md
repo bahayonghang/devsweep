@@ -15,11 +15,11 @@ explicitly adds cleanup support.
 ## Forbidden Patterns
 
 - Do not add file deletion, trash movement, or external cleanup command
-  execution from scanner, plan, or foundation CLI code.
-- Do not shell-compose commands. Future command-backed cleanup must keep
-  program and argv separate.
-- Do not make `clean --execute` perform side effects until the execution-engine
-  task owns that behavior and its audit tests.
+  execution from scanner or plan code.
+- Do not shell-compose commands. Command-backed cleanup must keep program and
+  argv separate.
+- Do not run permanent delete in the current implementation, even when
+  `--allow-permanent-delete` is present.
 
 ---
 
@@ -54,16 +54,16 @@ explicitly adds cleanup support.
     "targets": []
   }
   ```
-- `devsweep clean` defaults to dry-run placeholder behavior.
-- `devsweep clean --execute` must fail in the foundation build and must not run
-  cleanup commands.
+- `devsweep clean` defaults to dry-run behavior.
+- `devsweep clean --execute` is owned by `src/executor.rs` after the execution
+  engine task.
 
 #### 4. Validation & Error Matrix
 - `scan --json` succeeds -> valid JSON plan with `version` and `targets`.
-- `clean --plan PATH` without `--execute` succeeds -> reports dry-run
-  placeholder and performs no action.
-- `clean --execute` in foundation -> returns an error explaining execution is
-  not implemented.
+- `clean --plan PATH` without `--execute` succeeds -> reports dry-run and
+  performs no action.
+- `clean --execute` without `--plan PATH` -> returns an error before execution
+  starts.
 - Missing future scanner/provider implementations -> return placeholder output,
   not side effects.
 
@@ -71,8 +71,8 @@ explicitly adds cleanup support.
 - Good: `just ci` passes before a task is reported complete.
 - Base: `cargo check --all-targets` passes when run directly.
 - Bad: `scan` discovers or deletes directories before the scanner task exists.
-- Bad: `clean --execute` invokes `std::process::Command` before the execution
-  engine and audit log are implemented.
+- Bad: `clean --execute` invokes `std::process::Command` outside
+  `src/executor.rs`.
 
 #### 6. Tests Required
 - CLI definition test for subcommand shape.
@@ -97,6 +97,85 @@ CleanAction::Command {
     args: vec!["clean".to_string()],
     cwd: None,
     irreversible: true,
+}
+```
+
+### Scenario: Execution engine and audit log
+
+#### 1. Scope / Trigger
+- Trigger: `devsweep clean` consumes an existing cleanup plan and either
+  dry-runs selected actions or executes command/trash-backed actions with an
+  audit JSONL record for each attempted target.
+
+#### 2. Signatures
+- CLI entrypoint:
+  - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH] [--allow-permanent-delete]`
+- Library entrypoint:
+  - `Executor::default().run_plan(&CleanupPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
+
+#### 3. Contracts
+- `clean` without `--execute` is always dry-run and must not call command or
+  trash runners.
+- `clean --execute` requires `--plan PATH`; execution must never discover new
+  targets.
+- The current CLI executes only targets where `selected_by_default` is true.
+- Command actions use `CommandRequest { program, args, cwd }`; do not combine
+  user-controlled values into a shell string.
+- `MoveToTrash` actions pass only the path stored in the plan to the trash
+  runner.
+- `DeletePermanently` is disabled in this build, including when
+  `--allow-permanent-delete` is set.
+- Execution appends JSONL audit records to `--audit-log PATH` or
+  `devsweep-audit.jsonl`.
+
+#### 4. Validation & Error Matrix
+- Dry-run with or without plan -> returns selected target count, no side
+  effects, no audit file.
+- `--execute` without `--plan` -> error before executor runs.
+- Audit file cannot be opened -> error before any target action runs.
+- Individual target failure -> record failed audit entry, continue remaining
+  targets, return a report with failures.
+- Inspect-only target -> skipped audit entry, no side effect.
+- Permanent delete target -> failed audit entry, no side effect.
+
+#### 5. Good/Base/Bad Cases
+- Good: command-backed Rust target records `["cargo", "clean",
+  "--manifest-path", "<Cargo.toml>"]`.
+- Good: trash-backed target moves exactly the path from
+  `CleanAction::MoveToTrash`.
+- Base: `devsweep clean` reports a dry-run with zero selected targets when no
+  plan is provided.
+- Bad: executor reruns scanner logic to infer paths.
+- Bad: executor uses `cmd /C`, `sh -c`, or string-form shell commands.
+- Bad: a failed target aborts the job before later selected targets are audited.
+
+#### 6. Tests Required
+- Dry-run test proving command and trash runners are not called.
+- Command-runner test asserting program and argv are separate.
+- Trash-runner test asserting the exact plan path is used.
+- Audit JSONL test covering both success and failure records in one job.
+- Permanent-delete test proving the file remains present even with the flag.
+- Scanner regression proving Rust target plans keep `--manifest-path`.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```rust
+std::process::Command::new("cmd")
+    .args(["/C", &format!("cargo clean --manifest-path {}", manifest.display())])
+    .status()?;
+```
+
+Correct:
+```rust
+CommandRequest {
+    program: "cargo".to_string(),
+    args: vec![
+        "clean".to_string(),
+        "--manifest-path".to_string(),
+        manifest.display().to_string(),
+    ],
+    cwd: None,
 }
 ```
 

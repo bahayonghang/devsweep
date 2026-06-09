@@ -7,8 +7,9 @@
 ## Overview
 
 `devsweep` currently has no database, ORM, migrations, or durable application
-state. The only persisted data contract in the codebase is the serializable
-cleanup plan emitted as JSON from `src/model.rs`.
+state. Persisted file contracts are the serializable cleanup plan emitted as
+JSON from `src/model.rs` and execution audit records emitted as JSONL from
+`src/executor.rs`.
 
 Treat this file as a guardrail: do not introduce a database abstraction for
 scanner, CLI, or TUI work unless a task explicitly adds persistence.
@@ -29,6 +30,23 @@ pub struct CleanupPlan {
 
 JSON output is a command/API boundary, not a database. It must remain
 round-trip tested when fields are added or renamed.
+
+The audit JSONL contract is owned by `src/executor.rs`. Each line is one
+append-only action record and must include at least:
+
+- `timestamp_epoch_ms`
+- `target_id`
+- `action`
+- `command` when the action is command-backed
+- `estimated_bytes`
+- `status`
+- `duration_ms`
+- `error` for skipped or failed actions
+- `partial`
+
+Audit writes are part of execution, so the audit file must be opened before any
+target action runs. If the audit file cannot be opened, execution must fail
+before command or trash side effects.
 
 ---
 
@@ -57,7 +75,8 @@ or a database, they must also add:
 
 - Do not add a database crate as a convenience cache for scanning. Scanner
   output should be recomputable from filesystem evidence.
-- Do not store user paths or cleanup history before the audit-log task defines
-  retention and privacy behavior.
+- Do not add long-term cleanup history, retention, or privacy behavior outside
+  the audit-log owner. The current audit file is explicit command output, not a
+  hidden application database.
 - Do not use untyped `serde_json::Value` as an internal database substitute.
   Decode into domain structs at the boundary.

@@ -12,8 +12,8 @@ the module has multiple cohesive submodules and the split removes real
 complexity.
 
 The backend boundary owns CLI parsing, cleanup-plan domain types, project
-scanning, configuration/logging setup, and future execution/audit code. The TUI
-rendering boundary lives in `src/tui.rs` and the frontend spec.
+scanning, configuration/logging setup, execution/audit code, and future provider
+code. The TUI rendering boundary lives in `src/tui.rs` and the frontend spec.
 
 ---
 
@@ -25,6 +25,7 @@ src/
 ├── lib.rs      # Public module exports for tests and future consumers
 ├── cli.rs      # clap command definitions only
 ├── config.rs   # process-wide initialization such as tracing
+├── executor.rs # dry-run, command/trash execution, and audit JSONL
 ├── model.rs    # serializable cleanup plan and domain contract
 ├── scanner.rs  # marker-first project discovery, non-mutating
 └── tui.rs      # ratatui placeholder/rendering boundary
@@ -46,6 +47,10 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
 - Put project discovery in `src/scanner.rs`. Scanner code creates
   `CleanTarget` values only; it must not delete files, move to trash, or run
   cleanup commands.
+- Put execution behavior in `src/executor.rs`. It consumes `CleanupPlan`
+  targets, runs only `selected_by_default` actions for the current CLI, keeps
+  command program/argv separate, delegates trash moves through a small runner
+  boundary, and owns audit JSONL writes.
 - Put binary orchestration in `src/main.rs`. It wires `clap` input to module
   entrypoints and handles user-facing command output.
 - Export a module from `src/lib.rs` only when integration tests, the binary, or
@@ -82,5 +87,6 @@ let plan = if include_projects {
   second backend consumer.
 - Do not duplicate cleanup-plan fields in CLI or TUI code. Import the model
   types instead.
-- Do not put execution behavior into scanner modules. Execution belongs to the
-  future execution-engine task.
+- Do not put execution behavior into scanner modules. Scanner produces action
+  data; executor is the only module that may run commands or move targets to
+  trash.

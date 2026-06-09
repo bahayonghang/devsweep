@@ -23,12 +23,12 @@ Implement the non-mutating dry-run path, safe execution boundaries, and audit lo
 
 ## Acceptance Criteria
 
-- [ ] Dry-run tests prove fixture files/directories are not mutated.
-- [ ] Command actions are built with program plus argv, not shell-composed strings.
-- [ ] `cargo clean` plan includes `--manifest-path` or equivalent safe project targeting.
-- [ ] Trash-backed actions are isolated to target paths from the cleanup plan.
-- [ ] Audit JSONL records both success and failure cases.
-- [ ] Permanent delete cannot run by default.
+- [x] Dry-run tests prove fixture files/directories are not mutated.
+- [x] Command actions are built with program plus argv, not shell-composed strings.
+- [x] `cargo clean` plan includes `--manifest-path` or equivalent safe project targeting.
+- [x] Trash-backed actions are isolated to target paths from the cleanup plan.
+- [x] Audit JSONL records both success and failure cases.
+- [x] Permanent delete cannot run by default.
 
 ## Out Of Scope
 
@@ -36,4 +36,3 @@ Implement the non-mutating dry-run path, safe execution boundaries, and audit lo
 - Full TUI confirmation UI.
 - Docker support.
 - Advanced Cargo home cleanup.
-
