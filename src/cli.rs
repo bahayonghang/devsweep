@@ -57,6 +57,9 @@ pub struct CleanCommand {
     /// Execute the plan. Omit this flag for dry-run behavior.
     #[arg(long)]
     pub execute: bool,
+    /// Append execution audit records to this JSONL file. Defaults to devsweep-audit.jsonl when executing.
+    #[arg(long, value_name = "PATH")]
+    pub audit_log: Option<PathBuf>,
     /// Future guard for permanent delete. Not used in the foundation build.
     #[arg(long)]
     pub allow_permanent_delete: bool,

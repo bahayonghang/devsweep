@@ -1,8 +1,9 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
 use devsweep::{
     cli::{CleanCommand, Cli, Command, ScanCommand},
     config,
+    executor::{ExecutionRequest, Executor},
     model::CleanupPlan,
     scanner::ProjectScanner,
 };
@@ -44,18 +45,46 @@ fn run_scan(command: ScanCommand) -> Result<()> {
 }
 
 fn run_clean(command: CleanCommand) -> Result<()> {
-    if command.execute {
-        anyhow::bail!("cleanup execution is not implemented in the foundation build");
+    if command.execute && command.plan.is_none() {
+        anyhow::bail!("cleanup execution requires --plan PATH");
     }
 
-    let plan = command
-        .plan
-        .as_deref()
-        .map_or("no plan file provided".to_string(), |path| {
-            format!("plan file: {}", path.display())
-        });
+    let plan = match command.plan.as_deref() {
+        Some(path) => {
+            let file = std::fs::File::open(path)
+                .with_context(|| format!("failed to open cleanup plan {}", path.display()))?;
+            serde_json::from_reader(file)
+                .with_context(|| format!("failed to parse cleanup plan {}", path.display()))?
+        }
+        None => CleanupPlan::empty(),
+    };
+    let report = Executor::default().run_plan(
+        &plan,
+        ExecutionRequest {
+            execute: command.execute,
+            allow_permanent_delete: command.allow_permanent_delete,
+            audit_log: command.audit_log,
+        },
+    )?;
 
-    println!("Clean dry-run placeholder: {plan}. No cleanup actions were executed.");
+    if report.dry_run {
+        println!(
+            "Clean dry-run: {} selected target(s). No cleanup actions were executed.",
+            report.selected
+        );
+        return Ok(());
+    }
+
+    println!(
+        "Clean execution finished: {} succeeded, {} failed, {} skipped.",
+        report.succeeded, report.failed, report.skipped
+    );
+    if let Some(path) = &report.audit_log {
+        println!("Audit log: {}", path.display());
+    }
+    if report.has_failures() {
+        anyhow::bail!("cleanup finished with {} failure(s)", report.failed);
+    }
     Ok(())
 }
 

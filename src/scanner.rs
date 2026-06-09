@@ -566,6 +566,39 @@ mod tests {
     }
 
     #[test]
+    fn rust_target_uses_cargo_clean_with_manifest_path() {
+        let fixture = Fixture::new();
+        fixture.file("rust-app/Cargo.toml", "[package]\nname = \"rust-app\"\n");
+        fixture.file("rust-app/target/debug/app.bin", "binary");
+        let manifest = fixture.path().join("rust-app/Cargo.toml");
+        let manifest = manifest.canonicalize().expect("manifest canonicalizes");
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().to_path_buf()])
+            .expect("fixture scans");
+        let target = plan
+            .targets
+            .iter()
+            .find(|target| target.id.as_str().starts_with("rust.target"))
+            .expect("rust target discovered");
+
+        match &target.action {
+            CleanAction::Command {
+                program,
+                args,
+                cwd: None,
+                irreversible: true,
+            } => {
+                assert_eq!(program, "cargo");
+                assert_eq!(args[0], "clean");
+                assert_eq!(args[1], "--manifest-path");
+                assert_eq!(PathBuf::from(&args[2]), manifest);
+            }
+            action => panic!("unexpected rust target action: {action:?}"),
+        }
+    }
+
+    #[test]
     fn dedupe_targets_removes_nested_cleanup_paths() {
         let root = PathBuf::from("C:/workspace/app");
         let parent = build_path_target(PathTargetInput {
