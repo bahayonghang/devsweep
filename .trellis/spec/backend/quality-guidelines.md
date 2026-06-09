@@ -179,6 +179,86 @@ CommandRequest {
 }
 ```
 
+### Scenario: Global cache providers
+
+#### 1. Scope / Trigger
+- Trigger: `devsweep scan --global` discovers global package-manager cache
+  providers and emits command-backed or inspect-only cleanup plan targets.
+
+#### 2. Signatures
+- CLI entrypoint:
+  - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
+- Library entrypoint:
+  - `GlobalProviderScanner::new().scan() -> CleanupPlan`
+- Provider discovery boundary:
+  - executable lookup by program name
+  - command output probes for official inspect commands only
+
+#### 3. Contracts
+- `scan --global` may run read-only or provider-owned inspect commands such as
+  `npm config get cache`, `pip cache dir`, `pnpm store path`, `yarn --version`,
+  and Yarn cache-folder commands.
+- `scan --global` must never execute cleanup commands. It only serializes
+  future `CleanAction::Command` plans.
+- npm, pip, pnpm, and Yarn global cache cleanup targets use
+  `CleanAction::Command` with program and argv stored separately.
+- Missing npm, pip, pnpm, or Yarn executables are non-fatal unavailable
+  providers.
+- Cargo home is inspect-only by default and uses
+  `CleanAction::NoopInspectOnly`. Do not mark cargo `bin`,
+  `credentials.toml`, `.crates.toml`, or the whole cargo home as a cleanable
+  delete/trash target.
+- Docker builder cache is not part of the MVP global provider set.
+
+#### 4. Validation & Error Matrix
+- Tool missing -> no target for that provider, scan still succeeds.
+- Cache path command fails -> command-backed target may still be emitted with
+  no `path`, as long as official command evidence is present.
+- Yarn version unknown -> skip Yarn provider rather than guessing classic vs
+  modern cleanup behavior.
+- Cargo home missing or not a directory -> no Cargo home target.
+
+#### 5. Good/Base/Bad Cases
+- Good: npm target plans `["cache", "verify"]` or
+  `["cache", "clean", "--force"]` without running either command.
+- Good: pip target plans `["-m", "pip", "cache", "purge"]` and uses
+  `pip cache dir` only for discovery evidence.
+- Good: pnpm target plans `["store", "prune"]`.
+- Good: Yarn provider branches on `yarn --version` before choosing classic or
+  modern cache clean arguments.
+- Good: Cargo home target is high risk, not selected by default, and
+  inspect-only.
+- Bad: deleting `_cacache`, pip `http-v2`, pnpm store internals, Yarn cache
+  folders, or Cargo home directories directly.
+- Bad: adding Docker builder cache to this MVP provider set.
+
+#### 6. Tests Required
+- Missing-tool provider test proving scan succeeds with no targets.
+- Available-tool provider test asserting official program/argv pairs.
+- Yarn version-branch test for classic and modern command arguments.
+- Cargo home test proving the action is inspect-only and no cargo `bin` or
+  credential path is emitted as cleanable.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```rust
+// Provider discovery must not directly delete opaque cache internals.
+CleanAction::MoveToTrash {
+    path: npm_cache.join("_cacache"),
+}
+```
+
+Correct:
+```rust
+CleanAction::Command {
+    program: npm_program,
+    args: vec!["cache".to_string(), "clean".to_string(), "--force".to_string()],
+    cwd: None,
+    irreversible: true,
+}
+```
+
 ### Scenario: Project scanner and JSON cleanup plan
 
 #### 1. Scope / Trigger
