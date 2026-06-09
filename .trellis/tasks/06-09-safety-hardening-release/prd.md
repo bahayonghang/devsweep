@@ -30,16 +30,15 @@ Harden the MVP for Windows-first safety, cross-platform correctness, documentati
 
 ## Acceptance Criteria
 
-- [ ] Safety tests cover non-following of symlinks/reparse points or document platform limitations.
-- [ ] Locked-file/partial-failure behavior is tested or manually verified on Windows.
-- [ ] TUI snapshot/smoke checks cover dashboard, details, confirm modal, and jobs/logs.
-- [ ] CI runs the agreed validation commands.
-- [ ] Release archive can be produced locally.
-- [ ] README documents MVP scope and explicitly states Docker is deferred.
+- [x] Safety tests cover non-following of symlinks/reparse points or document platform limitations.
+- [x] Locked-file/partial-failure behavior is tested or manually verified on Windows.
+- [x] TUI snapshot/smoke checks cover dashboard, details, confirm modal, and jobs/logs.
+- [x] CI runs the agreed validation commands.
+- [x] Release archive can be produced locally.
+- [x] README documents MVP scope and explicitly states Docker is deferred.
 
 ## Out Of Scope
 
 - Implementing core scanner/executor/provider/TUI features not completed by earlier children.
 - Docker cleanup implementation unless the user explicitly approves a new follow-up task.
 - Package-manager distribution such as Scoop, Winget, or Homebrew.
-
