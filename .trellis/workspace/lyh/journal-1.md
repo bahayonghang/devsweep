@@ -449,3 +449,39 @@ Added typed cleanup progress outcomes, per-target TUI result list, structured in
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: 修复 TUI 隐藏默认清理选择
+
+**Date**: 2026-06-11
+**Task**: 修复 TUI 隐藏默认清理选择
+**Branch**: `main`
+
+### Summary
+
+修复 TUI 默认选择隐藏项目 target 导致 just dev 清理自身的问题，补充执行防线、确认展示和规格约束。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cfe127e` | (see git log) |
+| `cbf6aa6` | (see git log) |
+| `5ef529f` | (see git log) |
+| `e439a8f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
