@@ -1,7 +1,7 @@
 use std::{
     collections::HashSet,
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::mpsc::{self, Receiver, Sender},
     thread,
     time::Duration,
@@ -427,9 +427,10 @@ impl App {
 
                 if !accepted {
                     if let Overlay::Confirm(confirm) = &mut self.overlay {
-                        confirm.feedback = Some(
-                            "Type the exact phrase shown above before pressing Enter.".to_string(),
-                        );
+                        confirm.feedback = Some(format!(
+                            "Type {} before pressing Enter.",
+                            confirm.required_phrase
+                        ));
                     }
                     self.log("Confirmation phrase did not match");
                     return Vec::new();
@@ -520,7 +521,7 @@ impl App {
                     finished: true,
                 });
                 if let Some(path) = report.audit_log {
-                    self.log(format!("Audit log: {}", path.display()));
+                    self.log(format!("Audit log: {}", display_path(&path)));
                 }
             }
             WorkerEvent::JobFailed { job_id, message } => {
@@ -674,15 +675,12 @@ impl App {
             )
         });
 
-        let required_phrase = if has_irreversible_commands {
-            format!("CLEAN {}", format_bytes(estimated_bytes))
-        } else {
-            "clean".to_string()
-        };
+        let required_phrase = "confirm".to_string();
         let message = if has_irreversible_commands {
-            "This will run irreversible command-backed cleanup actions.".to_string()
+            "Type confirm to run these irreversible command-backed cleanups. They cannot be reversed by devsweep."
+                .to_string()
         } else {
-            "Move selected reversible targets to Trash.".to_string()
+            "Type confirm to move selected targets to Trash.".to_string()
         };
 
         ConfirmState {
@@ -755,7 +753,7 @@ impl App {
             || target
                 .path
                 .as_ref()
-                .map(|path| path.display().to_string().to_ascii_lowercase())
+                .map(|path| display_path(path).to_ascii_lowercase())
                 .is_some_and(|path| path.contains(&needle))
             || action_summary(&target.action)
                 .to_ascii_lowercase()
@@ -945,6 +943,21 @@ struct CleanupProgress {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FooterTone {
+    Accent,
+    Warning,
+    Danger,
+    Neutral,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct FooterAction {
+    key: &'static str,
+    label: &'static str,
+    tone: FooterTone,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum JobKind {
     Scan,
     Clean,
@@ -1029,6 +1042,12 @@ fn muted_style() -> Style {
 fn accent_style() -> Style {
     Style::default()
         .fg(Color::Rgb(112, 208, 178))
+        .add_modifier(Modifier::BOLD)
+}
+
+fn warning_style() -> Style {
+    Style::default()
+        .fg(Color::Rgb(245, 215, 132))
         .add_modifier(Modifier::BOLD)
 }
 
@@ -1312,44 +1331,154 @@ fn render_jobs_logs(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let mode = if app.filter_active {
-        "FILTER"
-    } else if matches!(app.overlay, Overlay::Confirm(_)) {
-        "CONFIRM"
-    } else {
-        "NORMAL"
-    };
-    let mode_style = if app.filter_active {
-        Style::default()
-            .fg(Color::Rgb(22, 25, 35))
-            .bg(Color::Rgb(245, 215, 132))
-            .add_modifier(Modifier::BOLD)
-    } else if matches!(app.overlay, Overlay::Confirm(_)) {
-        Style::default()
-            .fg(Color::Rgb(22, 25, 35))
-            .bg(Color::Rgb(239, 112, 138))
-            .add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-            .fg(Color::Rgb(22, 25, 35))
-            .bg(Color::Rgb(112, 208, 178))
-            .add_modifier(Modifier::BOLD)
-    };
-    let text = Line::from(vec![
-        Span::styled(format!(" {mode} "), mode_style),
-        Span::styled(
-            "  s scan  Space select  a all  d dry-run  c clean  / filter  r risk  x cancel  ? help  q quit",
-            Style::default()
-                .fg(Color::Rgb(190, 198, 230))
-                .bg(Color::Rgb(22, 25, 35)),
-        ),
-    ]);
+    let (mode, mode_tone, actions) = footer_actions(app);
+    let mut spans = vec![
+        Span::styled(format!(" {mode} "), footer_mode_style(mode_tone)),
+        Span::styled(" ", footer_bar_style()),
+    ];
+    for action in actions {
+        spans.push(Span::styled(
+            format!("[{}]", action.key),
+            footer_key_style(action.tone),
+        ));
+        spans.push(Span::styled(
+            format!(" {}  ", action.label),
+            footer_label_style(action.tone),
+        ));
+    }
+    let text = Line::from(spans);
     frame.render_widget(
         Paragraph::new(text)
             .style(Style::default().bg(Color::Rgb(22, 25, 35)))
             .alignment(Alignment::Left),
         area,
     );
+}
+
+fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
+    if app.filter_active {
+        return (
+            "FILTER",
+            FooterTone::Warning,
+            vec![
+                footer_action("Enter", "Apply", FooterTone::Warning),
+                footer_action("Esc", "Close", FooterTone::Neutral),
+                footer_action("Backspace", "Delete", FooterTone::Neutral),
+                footer_action("Ctrl-C", "Quit", FooterTone::Danger),
+            ],
+        );
+    }
+
+    match &app.overlay {
+        Overlay::Confirm(_) => {
+            return (
+                "CONFIRM",
+                FooterTone::Danger,
+                vec![
+                    footer_action("Enter", "Run", FooterTone::Danger),
+                    footer_action("Esc", "Cancel", FooterTone::Neutral),
+                    footer_action("Backspace", "Edit", FooterTone::Neutral),
+                    footer_action("Ctrl-C", "Quit", FooterTone::Danger),
+                ],
+            );
+        }
+        Overlay::Help | Overlay::Details | Overlay::DryRun => {
+            return (
+                "MODAL",
+                FooterTone::Accent,
+                vec![
+                    footer_action("Enter", "Close", FooterTone::Accent),
+                    footer_action("Esc", "Close", FooterTone::Neutral),
+                    footer_action("Ctrl-C", "Quit", FooterTone::Danger),
+                ],
+            );
+        }
+        Overlay::None => {}
+    }
+
+    if let Some(progress) = &app.cleanup_progress {
+        if progress.finished {
+            return (
+                "DONE",
+                FooterTone::Accent,
+                vec![
+                    footer_action("Enter", "Close", FooterTone::Accent),
+                    footer_action("Esc", "Close", FooterTone::Neutral),
+                    footer_action("l", "Logs", FooterTone::Neutral),
+                ],
+            );
+        }
+
+        return (
+            "CLEANING",
+            FooterTone::Warning,
+            vec![
+                footer_action("x", "Cancel", FooterTone::Danger),
+                footer_action("l", "Logs", FooterTone::Neutral),
+                footer_action("Ctrl-C", "Quit", FooterTone::Danger),
+            ],
+        );
+    }
+
+    let mut actions = vec![
+        footer_action("s", "Scan", FooterTone::Accent),
+        footer_action("Space", "Select", FooterTone::Neutral),
+        footer_action("a", "All", FooterTone::Neutral),
+        footer_action("d", "Dry-run", FooterTone::Neutral),
+        footer_action("c", "Clean", FooterTone::Danger),
+        footer_action("/", "Filter", FooterTone::Neutral),
+        footer_action("r", "Risk", FooterTone::Neutral),
+        footer_action("?", "Help", FooterTone::Neutral),
+        footer_action("q", "Quit", FooterTone::Danger),
+    ];
+    if app.jobs.iter().any(|job| job.status.is_active()) {
+        actions.insert(8, footer_action("x", "Cancel", FooterTone::Danger));
+    }
+
+    ("NORMAL", FooterTone::Accent, actions)
+}
+
+fn footer_action(key: &'static str, label: &'static str, tone: FooterTone) -> FooterAction {
+    FooterAction { key, label, tone }
+}
+
+fn footer_bar_style() -> Style {
+    Style::default()
+        .fg(Color::Rgb(190, 198, 230))
+        .bg(Color::Rgb(22, 25, 35))
+}
+
+fn footer_tone_color(tone: FooterTone) -> Color {
+    match tone {
+        FooterTone::Accent => Color::Rgb(112, 208, 178),
+        FooterTone::Warning => Color::Rgb(245, 215, 132),
+        FooterTone::Danger => Color::Rgb(239, 112, 138),
+        FooterTone::Neutral => Color::Rgb(92, 101, 135),
+    }
+}
+
+fn footer_mode_style(tone: FooterTone) -> Style {
+    Style::default()
+        .fg(Color::Rgb(22, 25, 35))
+        .bg(footer_tone_color(tone))
+        .add_modifier(Modifier::BOLD)
+}
+
+fn footer_key_style(tone: FooterTone) -> Style {
+    Style::default()
+        .fg(Color::Rgb(22, 25, 35))
+        .bg(footer_tone_color(tone))
+        .add_modifier(Modifier::BOLD)
+}
+
+fn footer_label_style(tone: FooterTone) -> Style {
+    let fg = match tone {
+        FooterTone::Danger => Color::Rgb(239, 112, 138),
+        FooterTone::Warning => Color::Rgb(245, 215, 132),
+        FooterTone::Accent => Color::Rgb(190, 236, 220),
+        FooterTone::Neutral => Color::Rgb(190, 198, 230),
+    };
+    Style::default().fg(fg).bg(Color::Rgb(22, 25, 35))
 }
 
 fn render_overlay(frame: &mut Frame<'_>, app: &App) {
@@ -1387,18 +1516,20 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
 
 fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
     let strength = if confirm.has_irreversible_commands {
-        "Irreversible command-backed cleanup"
+        Line::styled("Irreversible command-backed cleanup", error_style())
     } else {
-        "Trash-backed cleanup"
+        Line::styled("Trash-backed cleanup", accent_style())
     };
     let mut lines = vec![
-        Line::from(strength),
+        strength,
         Line::from(confirm.message.clone()),
-        Line::from(format!(
-            "Targets: {}  Estimated: {}",
-            confirm.target_count,
-            format_bytes(confirm.estimated_bytes)
-        )),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Targets: ", muted_style()),
+            Span::styled(confirm.target_count.to_string(), panel_style()),
+            Span::styled("  Estimated: ", muted_style()),
+            Span::styled(format_bytes(confirm.estimated_bytes), warning_style()),
+        ]),
     ];
 
     if !confirm.command_previews.is_empty() {
@@ -1423,13 +1554,29 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
     }
 
     lines.push(Line::from(""));
-    lines.push(Line::from(format!("Type: {}", confirm.required_phrase)));
-    lines.push(Line::from(format!("Input: {}", confirm.input)));
+    lines.push(Line::from(vec![
+        Span::styled("Required: ", muted_style()),
+        Span::styled(confirm.required_phrase.clone(), accent_style()),
+    ]));
+    let input = if confirm.input.is_empty() {
+        "<type confirm>".to_string()
+    } else {
+        confirm.input.clone()
+    };
+    let input_style = if confirm.input.is_empty() {
+        muted_style()
+    } else {
+        panel_style()
+    };
+    lines.push(Line::from(vec![
+        Span::styled("Input: ", muted_style()),
+        Span::styled(input, input_style),
+    ]));
     if let Some(feedback) = &confirm.feedback {
         lines.push(Line::styled(feedback.clone(), error_style()));
     }
     lines.push(Line::styled(
-        "Type the exact phrase, then Enter.  Esc cancel",
+        "Enter runs after confirm matches.  Esc cancels.",
         muted_style(),
     ));
 
@@ -1514,7 +1661,7 @@ fn dry_run_lines(app: &App) -> Vec<Line<'static>> {
 
 fn target_details_lines(target: &CleanTarget) -> Vec<Line<'static>> {
     let mut lines = vec![
-        detail_line("ID", target.id.as_str().to_string()),
+        detail_line("ID", display_path_text(target.id.as_str())),
         detail_line("Scope", scope_label(&target.scope)),
         detail_line("Path", path_label(target.path.as_ref())),
         Line::from(vec![
@@ -1564,11 +1711,11 @@ fn target_title(target: &CleanTarget) -> String {
         .path
         .as_ref()
         .map(|path| compact_path(path))
-        .unwrap_or_else(|| target.id.as_str().to_string())
+        .unwrap_or_else(|| display_path_text(target.id.as_str()))
 }
 
 fn compact_path(path: &std::path::Path) -> String {
-    let text = path.display().to_string();
+    let text = display_path(path);
     let char_count = text.chars().count();
     if char_count <= 48 {
         return text;
@@ -1588,12 +1735,12 @@ fn compact_path(path: &std::path::Path) -> String {
 fn scope_label(scope: &Scope) -> String {
     match scope {
         Scope::Global => "Global".to_string(),
-        Scope::Project { root } => format!("Project ({})", root.display()),
+        Scope::Project { root } => format!("Project ({})", display_path(root)),
     }
 }
 
 fn path_label(path: Option<&PathBuf>) -> String {
-    path.map(|path| path.display().to_string())
+    path.map(|path| display_path(path))
         .unwrap_or_else(|| "none".to_string())
 }
 
@@ -1617,9 +1764,9 @@ fn action_summary(action: &CleanAction) -> String {
             let suffix = if *irreversible { " irreversible" } else { "" };
             format!("command{}: {}", suffix, command_preview(program, args, cwd))
         }
-        CleanAction::MoveToTrash { path } => format!("trash: {}", path.display()),
+        CleanAction::MoveToTrash { path } => format!("trash: {}", display_path(path)),
         CleanAction::DeletePermanently { path, .. } => {
-            format!("permanent delete disabled: {}", path.display())
+            format!("permanent delete disabled: {}", display_path(path))
         }
         CleanAction::NoopInspectOnly => "inspect only".to_string(),
     }
@@ -1627,11 +1774,13 @@ fn action_summary(action: &CleanAction) -> String {
 
 fn evidence_summary(evidence: &Evidence) -> String {
     match evidence {
-        Evidence::MarkerFile { path } => format!("marker {}", path.display()),
+        Evidence::MarkerFile { path } => format!("marker {}", display_path(path)),
         Evidence::KnownCacheDir { source, path } => {
-            format!("{source} -> {}", path.display())
+            format!("{source} -> {}", display_path(path))
         }
-        Evidence::OfficialCommand { command } => format!("official command {command}"),
+        Evidence::OfficialCommand { command } => {
+            format!("official command {}", display_path_text(command))
+        }
         Evidence::RuleMatched { rule_id } => format!("rule {rule_id}"),
         Evidence::UserConfigured => "user configured".to_string(),
     }
@@ -1659,20 +1808,28 @@ fn command_previews<'a>(targets: impl IntoIterator<Item = &'a CleanTarget>) -> V
 
 fn command_preview(program: &str, args: &[String], cwd: &Option<PathBuf>) -> String {
     let mut parts = Vec::with_capacity(args.len() + 1);
-    parts.push(program.to_string());
-    parts.extend(args.iter().cloned());
+    parts.push(display_path_text(program));
+    parts.extend(args.iter().map(|arg| display_path_text(arg)));
     let argv = parts.join(" ");
     if let Some(cwd) = cwd {
-        format!("argv: {argv}  cwd: {}", cwd.display())
+        format!("argv: {argv}  cwd: {}", display_path(cwd))
     } else {
         format!("argv: {argv}")
     }
 }
 
+fn display_path(path: &Path) -> String {
+    display_path_text(&path.display().to_string())
+}
+
+fn display_path_text(text: &str) -> String {
+    text.replace("\\\\?\\UNC\\", "\\\\").replace("\\\\?\\", "")
+}
+
 fn compact_target_id(target_id: &TargetId) -> String {
-    let text = target_id.as_str();
+    let text = display_path_text(target_id.as_str());
     if text.chars().count() <= 48 {
-        text.to_string()
+        text
     } else {
         let tail = text
             .chars()
@@ -1719,7 +1876,7 @@ fn format_bytes(bytes: u64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{Terminal, backend::TestBackend};
@@ -1767,7 +1924,8 @@ mod tests {
         assert!(confirm.contains("Irreversible command-backed cleanup"));
         assert!(confirm.contains("Cleanup commands"));
         assert!(confirm.contains("argv: npm cache clean --force"));
-        assert!(confirm.contains("Type the exact phrase, then Enter"));
+        assert!(confirm.contains("Required: confirm"));
+        assert!(confirm.contains("Enter runs after confirm matches"));
 
         app.overlay = Overlay::None;
         app.active_tab = ActiveTab::JobsLogs;
@@ -1845,7 +2003,7 @@ mod tests {
         let Overlay::Confirm(confirm) = &app.overlay else {
             panic!("trash selection opens confirm");
         };
-        assert_eq!(confirm.required_phrase, "clean");
+        assert_eq!(confirm.required_phrase, "confirm");
         assert!(confirm.message.contains("Trash"));
         assert!(!confirm.has_irreversible_commands);
 
@@ -1857,7 +2015,7 @@ mod tests {
         let Overlay::Confirm(confirm) = &app.overlay else {
             panic!("command selection opens confirm");
         };
-        assert!(confirm.required_phrase.starts_with("CLEAN "));
+        assert_eq!(confirm.required_phrase, "confirm");
         assert!(confirm.message.contains("irreversible"));
         assert!(confirm.has_irreversible_commands);
         assert_eq!(confirm.command_previews.len(), 1);
@@ -1874,7 +2032,7 @@ mod tests {
         app.selected_ids.insert(app.targets[0].id.clone());
 
         app.update(key(KeyCode::Char('c')));
-        for ch in "clean".chars() {
+        for ch in "confirm".chars() {
             app.update(key(KeyCode::Char(ch)));
         }
         let effects = app.update(key(KeyCode::Enter));
@@ -1914,10 +2072,10 @@ mod tests {
         };
         assert_eq!(
             confirm.feedback.as_deref(),
-            Some("Type the exact phrase shown above before pressing Enter.")
+            Some("Type confirm before pressing Enter.")
         );
         let rendered = render_text(&app);
-        assert!(rendered.contains("Type the exact phrase shown above before pressing Enter."));
+        assert!(rendered.contains("Type confirm before pressing Enter."));
         assert!(rendered.contains("Input:"));
     }
 
@@ -2017,6 +2175,37 @@ mod tests {
     }
 
     #[test]
+    fn footer_renders_contextual_key_actions() {
+        let mut app = App::with_plan(representative_plan());
+
+        let normal = render_text(&app);
+        assert!(normal.contains("NORMAL"));
+        assert!(normal.contains("[s] Scan"));
+        assert!(normal.contains("[c] Clean"));
+
+        app.update(key(KeyCode::Char('c')));
+        let confirm = render_text(&app);
+        assert!(confirm.contains("CONFIRM"));
+        assert!(confirm.contains("[Enter] Run"));
+        assert!(confirm.contains("[Esc] Cancel"));
+        assert!(!confirm.contains("[s] Scan"));
+        assert!(!confirm.contains("[/] Filter"));
+
+        app.overlay = Overlay::None;
+        app.cleanup_progress = Some(CleanupProgress {
+            job_id: 1,
+            completed: 1,
+            total: 1,
+            message: "finished: 1 succeeded, 0 failed, 0 skipped".to_string(),
+            finished: true,
+        });
+        let done = render_text(&app);
+        assert!(done.contains("DONE"));
+        assert!(done.contains("[Enter] Close"));
+        assert!(done.contains("[Esc] Close"));
+    }
+
+    #[test]
     fn worker_events_update_jobs_and_targets() {
         let mut app = App::new();
         let effects = app.update(key(KeyCode::Char('s')));
@@ -2089,6 +2278,62 @@ mod tests {
             .expect("dry-run preview renders");
 
         assert_eq!(app, before);
+    }
+
+    #[test]
+    fn display_path_removes_windows_verbatim_prefixes() {
+        assert_eq!(
+            display_path(Path::new("\\\\?\\D:\\code\\devsweep\\target")),
+            "D:\\code\\devsweep\\target"
+        );
+        assert_eq!(
+            display_path(Path::new("\\\\?\\UNC\\server\\share\\cache")),
+            "\\\\server\\share\\cache"
+        );
+        assert_eq!(
+            display_path(Path::new("D:\\code\\devsweep\\target")),
+            "D:\\code\\devsweep\\target"
+        );
+    }
+
+    #[test]
+    fn rendered_paths_hide_windows_verbatim_prefixes() {
+        let target_path = PathBuf::from("\\\\?\\D:\\code\\devsweep\\target");
+        let marker_path = PathBuf::from("\\\\?\\D:\\code\\devsweep\\Cargo.toml");
+        let plan = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "rust.target",
+                Scope::Project {
+                    root: PathBuf::from("\\\\?\\D:\\code\\devsweep"),
+                },
+                Ecosystem::Rust,
+                TargetKind::BuildArtifacts,
+                Some(target_path.clone()),
+                1024,
+                RiskLevel::Low,
+                true,
+                false,
+                CleanAction::Command {
+                    program: "cargo".to_string(),
+                    args: vec![
+                        "clean".to_string(),
+                        "--manifest-path".to_string(),
+                        marker_path.display().to_string(),
+                    ],
+                    cwd: Some(PathBuf::from("\\\\?\\D:\\code\\devsweep")),
+                    irreversible: true,
+                },
+            )],
+        };
+        let mut app = App::with_plan(plan);
+        app.overlay = Overlay::Details;
+
+        let rendered = render_text(&app);
+
+        assert!(!rendered.contains("\\\\?\\"));
+        assert!(rendered.contains("D:\\code\\devsweep\\target"));
+        assert!(rendered.contains("cwd: D:\\code\\devsweep"));
     }
 
     #[test]
