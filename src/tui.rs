@@ -19,7 +19,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Clear, Paragraph, Tabs, Wrap},
+    widgets::{Block, BorderType, Clear, Padding, Paragraph, Tabs, Wrap},
 };
 
 use crate::{
@@ -579,7 +579,7 @@ impl App {
 
     fn confirm_state(&self) -> ConfirmState {
         let selected = self.selected_targets();
-        let estimated_bytes = selected.iter().map(|target| target.estimated_bytes).sum();
+        let estimated_bytes = sum_unique_target_bytes(selected.iter().copied());
         let has_irreversible_commands = selected.iter().any(|target| {
             matches!(
                 target.action,
@@ -677,21 +677,14 @@ impl App {
     }
 
     fn selected_bytes(&self) -> u64 {
-        self.selected_targets()
-            .iter()
-            .map(|target| target.estimated_bytes)
-            .sum()
+        sum_unique_target_bytes(self.selected_targets())
     }
 
     fn scope_bytes(&self, scope_kind: ScopeKind) -> u64 {
-        self.targets
-            .iter()
-            .filter(|target| match scope_kind {
-                ScopeKind::Global => matches!(target.scope, Scope::Global),
-                ScopeKind::Project => matches!(target.scope, Scope::Project { .. }),
-            })
-            .map(|target| target.estimated_bytes)
-            .sum()
+        sum_unique_target_bytes(self.targets.iter().filter(|target| match scope_kind {
+            ScopeKind::Global => matches!(target.scope, Scope::Global),
+            ScopeKind::Project => matches!(target.scope, Scope::Project { .. }),
+        }))
     }
 
     fn log(&mut self, message: impl Into<String>) {
@@ -703,6 +696,24 @@ impl App {
             self.logs.drain(0..overflow);
         }
     }
+}
+
+fn sum_unique_target_bytes<'a>(targets: impl IntoIterator<Item = &'a CleanTarget>) -> u64 {
+    let mut seen_paths = HashSet::new();
+    let mut seen_ids = HashSet::new();
+    let mut bytes = 0;
+
+    for target in targets {
+        let is_new_footprint = match &target.path {
+            Some(path) => seen_paths.insert(path.clone()),
+            None => seen_ids.insert(target.id.clone()),
+        };
+        if is_new_footprint {
+            bytes += target.estimated_bytes;
+        }
+    }
+
+    bytes
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -868,10 +879,10 @@ fn render_app(frame: &mut Frame<'_>, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Length(3),
             Constraint::Min(8),
-            Constraint::Length(2),
+            Constraint::Length(1),
         ])
         .split(area);
 
@@ -880,6 +891,53 @@ fn render_app(frame: &mut Frame<'_>, app: &App) {
     render_body(frame, chunks[2], app);
     render_footer(frame, chunks[3], app);
     render_overlay(frame, app);
+}
+
+fn panel_block(title: &'static str) -> Block<'static> {
+    Block::bordered()
+        .title(title)
+        .title_style(
+            Style::default()
+                .fg(Color::Rgb(190, 198, 230))
+                .add_modifier(Modifier::BOLD),
+        )
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Rgb(92, 101, 135)))
+        .style(Style::default().bg(Color::Rgb(28, 31, 44)))
+        .padding(Padding::horizontal(1))
+}
+
+fn focused_panel_block(title: &'static str) -> Block<'static> {
+    panel_block(title).border_style(Style::default().fg(Color::Rgb(112, 208, 178)))
+}
+
+fn panel_style() -> Style {
+    Style::default()
+        .fg(Color::Rgb(206, 212, 236))
+        .bg(Color::Rgb(28, 31, 44))
+}
+
+fn muted_style() -> Style {
+    Style::default().fg(Color::Rgb(134, 143, 177))
+}
+
+fn accent_style() -> Style {
+    Style::default()
+        .fg(Color::Rgb(112, 208, 178))
+        .add_modifier(Modifier::BOLD)
+}
+
+fn risk_style(risk: &RiskLevel) -> Style {
+    match risk {
+        RiskLevel::Low => Style::default().fg(Color::Rgb(130, 198, 167)),
+        RiskLevel::Medium => Style::default().fg(Color::Rgb(221, 185, 112)),
+        RiskLevel::High => Style::default()
+            .fg(Color::Rgb(231, 137, 111))
+            .add_modifier(Modifier::BOLD),
+        RiskLevel::Dangerous => Style::default()
+            .fg(Color::Rgb(239, 112, 138))
+            .add_modifier(Modifier::BOLD),
+    }
 }
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -892,22 +950,44 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let risk = app.risk_filter.as_ref().map(risk_label).unwrap_or("all");
     let text = vec![
         Line::from(vec![
-            Span::styled("devsweep", Style::default().add_modifier(Modifier::BOLD)),
-            Span::raw(format!(
-                "  Global: {}  Projects: {}  Selected: {} ({})",
-                format_bytes(app.scope_bytes(ScopeKind::Global)),
-                format_bytes(app.scope_bytes(ScopeKind::Project)),
-                app.selected_ids.len(),
-                format_bytes(app.selected_bytes())
-            )),
+            Span::styled("devsweep", accent_style()),
+            Span::styled("  cleanup plan cockpit", muted_style()),
+            Span::styled("  |  ", muted_style()),
+            Span::styled("Selected ", muted_style()),
+            Span::styled(
+                format!(
+                    "{} ({})",
+                    app.selected_ids.len(),
+                    format_bytes(app.selected_bytes())
+                ),
+                Style::default()
+                    .fg(Color::Rgb(245, 215, 132))
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
-        Line::from(format!(
-            "Filter: {filter}  Risk: {risk}  Active jobs: {active_jobs}"
-        )),
+        Line::from(vec![
+            Span::styled("Global ", muted_style()),
+            Span::styled(
+                format_bytes(app.scope_bytes(ScopeKind::Global)),
+                panel_style(),
+            ),
+            Span::styled("  Projects ", muted_style()),
+            Span::styled(
+                format_bytes(app.scope_bytes(ScopeKind::Project)),
+                panel_style(),
+            ),
+            Span::styled("  Filter ", muted_style()),
+            Span::styled(filter, panel_style()),
+            Span::styled("  Risk ", muted_style()),
+            Span::styled(risk, panel_style()),
+            Span::styled("  Jobs ", muted_style()),
+            Span::styled(active_jobs.to_string(), panel_style()),
+        ]),
     ];
     frame.render_widget(
         Paragraph::new(Text::from(text))
-            .block(Block::bordered().title("Summary"))
+            .block(focused_panel_block("Summary"))
+            .style(panel_style())
             .alignment(Alignment::Left),
         area,
     );
@@ -924,10 +1004,11 @@ fn render_tabs(frame: &mut Frame<'_>, area: Rect, app: &App) {
         .unwrap_or_default();
     let tabs = Tabs::new(titles)
         .select(selected)
-        .block(Block::bordered().title("Views"))
+        .block(panel_block("Views"))
+        .style(muted_style().bg(Color::Rgb(28, 31, 44)))
         .highlight_style(
             Style::default()
-                .fg(Color::Cyan)
+                .fg(Color::Rgb(112, 208, 178))
                 .add_modifier(Modifier::BOLD),
         );
     frame.render_widget(tabs, area);
@@ -955,68 +1036,79 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &App) {
 
 fn render_categories(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = vec![
-        Line::from(format!(
-            "Global     {}",
-            count_scope(app, ScopeKind::Global)
-        )),
-        Line::from(format!(
-            "Projects   {}",
-            count_scope(app, ScopeKind::Project)
-        )),
+        Line::styled("Scope", muted_style()),
+        metric_line("Global", count_scope(app, ScopeKind::Global)),
+        metric_line("Projects", count_scope(app, ScopeKind::Project)),
         Line::from(""),
-        Line::from(format!(
-            "Rust       {}",
-            count_ecosystem(app, Ecosystem::Rust)
-        )),
-        Line::from(format!(
-            "Node       {}",
-            count_ecosystem(app, Ecosystem::Node)
-        )),
-        Line::from(format!(
-            "Python     {}",
-            count_ecosystem(app, Ecosystem::Python)
-        )),
-        Line::from(format!(
-            "Generic    {}",
-            count_ecosystem(app, Ecosystem::Generic)
-        )),
+        Line::styled("Ecosystem", muted_style()),
+        metric_line("Rust", count_ecosystem(app, Ecosystem::Rust)),
+        metric_line("Node", count_ecosystem(app, Ecosystem::Node)),
+        metric_line("Python", count_ecosystem(app, Ecosystem::Python)),
+        metric_line("Generic", count_ecosystem(app, Ecosystem::Generic)),
     ];
     frame.render_widget(
-        Paragraph::new(Text::from(lines)).block(Block::bordered().title("Categories")),
+        Paragraph::new(Text::from(lines))
+            .block(panel_block("Categories"))
+            .style(panel_style()),
         area,
     );
+}
+
+fn metric_line(label: &'static str, count: usize) -> Line<'static> {
+    Line::from(vec![
+        Span::styled(format!("{label:<10}"), panel_style()),
+        Span::styled(count.to_string(), accent_style()),
+    ])
 }
 
 fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let visible = app.visible_target_indices();
     let selected_row = app.selected_index.min(visible.len().saturating_sub(1));
     let lines = if visible.is_empty() {
-        vec![Line::from("No targets in this view.")]
+        vec![Line::styled("No targets in this view.", muted_style())]
     } else {
         visible
             .iter()
             .enumerate()
             .map(|(row, index)| {
                 let target = &app.targets[*index];
-                let cursor = if row == selected_row { ">" } else { " " };
+                let selected = row == selected_row;
+                let cursor_style = if selected {
+                    accent_style()
+                } else {
+                    muted_style()
+                };
+                let cursor = if selected { ">" } else { " " };
                 let mark = if app.selected_ids.contains(&target.id) {
                     "[x]"
                 } else {
                     "[ ]"
                 };
-                Line::from(format!(
-                    "{cursor} {mark} {:<9} {:>9} {}",
-                    risk_label(&target.risk),
-                    format_bytes(target.estimated_bytes),
-                    target_title(target)
-                ))
+                let mut line = Line::from(vec![
+                    Span::styled(format!("{cursor} "), cursor_style),
+                    Span::styled(format!("{mark} "), accent_style()),
+                    Span::styled(
+                        format!("{:<9} ", risk_label(&target.risk)),
+                        risk_style(&target.risk),
+                    ),
+                    Span::styled(
+                        format!("{:>9} ", format_bytes(target.estimated_bytes)),
+                        Style::default().fg(Color::Rgb(245, 215, 132)),
+                    ),
+                    Span::styled(target_title(target), panel_style()),
+                ]);
+                if selected {
+                    line = line.style(Style::default().bg(Color::Rgb(42, 47, 62)));
+                }
+                line
             })
             .collect()
     };
 
     frame.render_widget(
         Paragraph::new(Text::from(lines))
-            .block(Block::bordered().title("Targets"))
+            .block(focused_panel_block("Targets"))
+            .style(panel_style())
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -1030,7 +1122,8 @@ fn render_details_panel(frame: &mut Frame<'_>, area: Rect, app: &App) {
 
     frame.render_widget(
         Paragraph::new(Text::from(lines))
-            .block(Block::bordered().title("Details"))
+            .block(panel_block("Details"))
+            .style(panel_style())
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -1051,7 +1144,8 @@ fn render_rules(frame: &mut Frame<'_>, area: Rect) {
     ];
     frame.render_widget(
         Paragraph::new(Text::from(lines))
-            .block(Block::bordered().title("Rules"))
+            .block(panel_block("Rules"))
+            .style(panel_style())
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -1091,13 +1185,15 @@ fn render_jobs_logs(frame: &mut Frame<'_>, area: Rect, app: &App) {
 
     frame.render_widget(
         Paragraph::new(Text::from(job_lines))
-            .block(Block::bordered().title("Jobs"))
+            .block(panel_block("Jobs"))
+            .style(panel_style())
             .wrap(Wrap { trim: false }),
         chunks[0],
     );
     frame.render_widget(
         Paragraph::new(Text::from(log_lines))
-            .block(Block::bordered().title("Logs"))
+            .block(panel_block("Logs"))
+            .style(panel_style())
             .wrap(Wrap { trim: false }),
         chunks[1],
     );
@@ -1111,13 +1207,35 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     } else {
         "NORMAL"
     };
-    let text = format!(
-        "{mode}  s scan | Space select | a all | d dry-run | c clean | / filter | r risk | x cancel | ? help | q quit"
-    );
+    let mode_style = if app.filter_active {
+        Style::default()
+            .fg(Color::Rgb(22, 25, 35))
+            .bg(Color::Rgb(245, 215, 132))
+            .add_modifier(Modifier::BOLD)
+    } else if matches!(app.overlay, Overlay::Confirm(_)) {
+        Style::default()
+            .fg(Color::Rgb(22, 25, 35))
+            .bg(Color::Rgb(239, 112, 138))
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+            .fg(Color::Rgb(22, 25, 35))
+            .bg(Color::Rgb(112, 208, 178))
+            .add_modifier(Modifier::BOLD)
+    };
+    let text = Line::from(vec![
+        Span::styled(format!(" {mode} "), mode_style),
+        Span::styled(
+            "  s scan  Space select  a all  d dry-run  c clean  / filter  r risk  x cancel  ? help  q quit",
+            Style::default()
+                .fg(Color::Rgb(190, 198, 230))
+                .bg(Color::Rgb(22, 25, 35)),
+        ),
+    ]);
     frame.render_widget(
         Paragraph::new(text)
-            .block(Block::bordered())
-            .alignment(Alignment::Center),
+            .style(Style::default().bg(Color::Rgb(22, 25, 35)))
+            .alignment(Alignment::Left),
         area,
     );
 }
@@ -1179,7 +1297,8 @@ fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'sta
     frame.render_widget(Clear, area);
     frame.render_widget(
         Paragraph::new(Text::from(lines))
-            .block(Block::bordered().title(title))
+            .block(focused_panel_block(title))
+            .style(panel_style())
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -1232,23 +1351,32 @@ fn dry_run_lines(app: &App) -> Vec<Line<'static>> {
 
 fn target_details_lines(target: &CleanTarget) -> Vec<Line<'static>> {
     let mut lines = vec![
-        Line::from(format!("ID: {}", target.id.as_str())),
-        Line::from(format!("Scope: {}", scope_label(&target.scope))),
-        Line::from(format!("Path: {}", path_label(target.path.as_ref()))),
-        Line::from(format!("Risk: {}", risk_label(&target.risk))),
-        Line::from(format!("Size: {}", format_bytes(target.estimated_bytes))),
-        Line::from(format!("Reversible: {}", target.reversible)),
-        Line::from(format!("Action: {}", action_summary(&target.action))),
-        Line::from("Evidence:"),
+        detail_line("ID", target.id.as_str().to_string()),
+        detail_line("Scope", scope_label(&target.scope)),
+        detail_line("Path", path_label(target.path.as_ref())),
+        Line::from(vec![
+            Span::styled("Risk: ", muted_style()),
+            Span::styled(risk_label(&target.risk), risk_style(&target.risk)),
+        ]),
+        detail_line("Size", format_bytes(target.estimated_bytes)),
+        detail_line("Reversible", target.reversible.to_string()),
+        detail_line("Action", action_summary(&target.action)),
+        Line::styled("Evidence:", muted_style()),
     ];
-    lines.extend(
-        target
-            .evidence
-            .iter()
-            .take(8)
-            .map(|evidence| Line::from(format!("  {}", evidence_summary(evidence)))),
-    );
+    lines.extend(target.evidence.iter().take(8).map(|evidence| {
+        Line::from(vec![
+            Span::styled("  - ", muted_style()),
+            Span::styled(evidence_summary(evidence), panel_style()),
+        ])
+    }));
     lines
+}
+
+fn detail_line(label: &'static str, value: String) -> Line<'static> {
+    Line::from(vec![
+        Span::styled(format!("{label}: "), muted_style()),
+        Span::styled(value, panel_style()),
+    ])
 }
 
 fn count_scope(app: &App, scope_kind: ScopeKind) -> usize {
@@ -1601,6 +1729,59 @@ mod tests {
             .expect("dry-run preview renders");
 
         assert_eq!(app, before);
+    }
+
+    #[test]
+    fn byte_summaries_count_duplicate_paths_once() {
+        let cache_path = PathBuf::from("C:/Users/me/AppData/Local/npm-cache");
+        let plan = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "npm.cache.verify",
+                    Scope::Global,
+                    Ecosystem::Node,
+                    TargetKind::PackageCache,
+                    Some(cache_path.clone()),
+                    2048,
+                    RiskLevel::Low,
+                    true,
+                    false,
+                    CleanAction::Command {
+                        program: "npm".to_string(),
+                        args: vec!["cache".to_string(), "verify".to_string()],
+                        cwd: None,
+                        irreversible: true,
+                    },
+                ),
+                target(
+                    "npm.cache.clean",
+                    Scope::Global,
+                    Ecosystem::Node,
+                    TargetKind::PackageCache,
+                    Some(cache_path),
+                    2048,
+                    RiskLevel::Medium,
+                    true,
+                    false,
+                    CleanAction::Command {
+                        program: "npm".to_string(),
+                        args: vec![
+                            "cache".to_string(),
+                            "clean".to_string(),
+                            "--force".to_string(),
+                        ],
+                        cwd: None,
+                        irreversible: true,
+                    },
+                ),
+            ],
+        };
+        let app = App::with_plan(plan);
+
+        assert_eq!(app.scope_bytes(ScopeKind::Global), 2048);
+        assert_eq!(app.selected_bytes(), 2048);
+        assert_eq!(app.confirm_state().estimated_bytes, 2048);
     }
 
     fn key(code: KeyCode) -> UiEvent {
