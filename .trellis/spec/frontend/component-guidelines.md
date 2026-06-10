@@ -53,6 +53,11 @@ types before rendering.
   `Paragraph`, `Block::bordered()`, and `Alignment::Center`.
 - Keep styling local to view code until repeated style decisions justify a small
   helper.
+- Keep display-only path cleanup in render helpers. Windows verbatim prefixes
+  such as `\\?\D:\...` and `\\?\UNC\server\share\...` may surface from typed
+  model paths or path-like target IDs, so normalize those strings only when
+  drawing them. Do not write normalized strings back into `CleanupPlan`,
+  `CleanTarget`, executor requests, or audit data.
 
 ---
 
@@ -72,5 +77,9 @@ types before rendering.
 - Do not block the draw loop with directory size calculation.
 - Do not duplicate cleanup target formatting logic across multiple panels once
   a shared formatter becomes necessary.
+- Do not call `Path::display()` directly in multiple TUI panels when the value
+  may come from canonical Windows paths; route it through one display helper so
+  target lists, details, command previews, footer/status text, and modal copy
+  stay consistent.
 - Do not call `App::update`, scanner/provider APIs, or `Executor` from
   `render_*` helpers.
