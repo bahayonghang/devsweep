@@ -345,3 +345,38 @@ Implemented explicit cleanup command previews, inline confirmation key hints, an
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 修复 TUI 清理确认反馈
+
+**Date**: 2026-06-10
+**Task**: 修复 TUI 清理确认反馈
+**Branch**: `main`
+
+### Summary
+
+修复确认弹窗空输入无反馈和快速完成进度不可见问题，补充 frontend 规范并归档 Trellis task。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `df3f725` | (see git log) |
+| `1ed76f8` | (see git log) |
+| `09e2cdc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
