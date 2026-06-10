@@ -19,6 +19,10 @@ Interactive code follows a simple state/update/render split:
 - input events are converted into actions
 - update code mutates app state and returns worker/effect commands
 - render code reads state only
+- modal validation failures must update visible modal state, not only logs
+- worker progress that is meant to be visible must survive fast final events;
+  keep a final state or require explicit dismissal instead of clearing it before
+  the next render
 
 The terminal event loop is responsible for interpreting effects such as start
 scan, start clean, cancel job, and quit.
