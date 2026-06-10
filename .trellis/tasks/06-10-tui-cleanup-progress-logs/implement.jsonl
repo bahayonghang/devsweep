@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "render purity, TestBackend coverage, and TUI side-effect boundaries"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "modal/render helper conventions and UI-only path display formatting"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "App-owned worker, cleanup progress, jobs, logs, and selected-target state"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "event/update/effect split for worker-driven TUI behavior"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "executor safety contracts, audit behavior, and command argv separation"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "tracing versus user-visible logs and stdout/stderr constraints"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "audit JSONL ownership and no database/persistent-state guardrails"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "typed event/log boundary and avoiding UI parsing of raw payload strings"}

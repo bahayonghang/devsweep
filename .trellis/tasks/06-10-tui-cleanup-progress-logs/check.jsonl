@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "verify render purity, TestBackend coverage, and no TUI side effects"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "verify progress list updates by TargetId and logs stay App-owned"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "verify cleanup safety, audit behavior, command argv separation, and just ci"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "verify diagnostics stay off stdout and log responsibilities stay separated"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "verify audit JSONL compatibility and no hidden persistent app log store"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "verify typed progress/log payloads are consumed without string parsing"}
