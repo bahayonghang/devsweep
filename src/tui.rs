@@ -143,17 +143,36 @@ fn scan_current_workspace() -> Result<CleanupPlan> {
 }
 
 fn run_clean_worker(job_id: JobId, plan: CleanupPlan, worker_tx: Sender<WorkerEvent>) {
+    let total = plan
+        .targets
+        .iter()
+        .filter(|target| target.selected_by_default)
+        .count();
     let _ = worker_tx.send(WorkerEvent::CleanProgress {
         job_id,
         message: "Executing selected cleanup plan".to_string(),
+        completed: 0,
+        total,
     });
 
-    let result = Executor::default().run_plan(
+    let result = Executor::default().run_plan_with_progress(
         &plan,
         ExecutionRequest {
             execute: true,
             allow_permanent_delete: false,
             audit_log: None,
+        },
+        |progress| {
+            let _ = worker_tx.send(WorkerEvent::CleanProgress {
+                job_id,
+                message: format!(
+                    "{}: {}",
+                    compact_target_id(&progress.target_id),
+                    progress.message
+                ),
+                completed: progress.completed,
+                total: progress.total,
+            });
         },
     );
 
@@ -182,6 +201,7 @@ struct App {
     overlay: Overlay,
     jobs: Vec<JobRecord>,
     logs: Vec<LogEntry>,
+    cleanup_progress: Option<CleanupProgress>,
     should_quit: bool,
     next_job_id: JobId,
 }
@@ -216,6 +236,7 @@ impl App {
             overlay: Overlay::None,
             jobs: Vec::new(),
             logs: Vec::new(),
+            cleanup_progress: None,
             should_quit: false,
             next_job_id: 1,
         };
@@ -414,10 +435,28 @@ impl App {
                 self.ensure_job(job_id, JobKind::Scan, "Scan current directory and globals");
                 self.mark_job(job_id, JobStatus::Running, "Started");
             }
-            WorkerEvent::JobProgress { job_id, message }
-            | WorkerEvent::CleanProgress { job_id, message } => {
+            WorkerEvent::JobProgress { job_id, message } => {
                 self.mark_job(job_id, JobStatus::Running, message.clone());
                 self.log(message);
+            }
+            WorkerEvent::CleanProgress {
+                job_id,
+                message,
+                completed,
+                total,
+            } => {
+                self.mark_job(
+                    job_id,
+                    JobStatus::Running,
+                    format_cleanup_progress(completed, total, &message),
+                );
+                self.cleanup_progress = Some(CleanupProgress {
+                    job_id,
+                    completed,
+                    total,
+                    message: message.clone(),
+                });
+                self.log(format_cleanup_progress(completed, total, &message));
             }
             WorkerEvent::ScanFinished { job_id, plan } => {
                 let count = plan.targets.len();
@@ -450,16 +489,23 @@ impl App {
                         report.succeeded, report.failed, report.skipped
                     ),
                 );
+                self.cleanup_progress = None;
                 if let Some(path) = report.audit_log {
                     self.log(format!("Audit log: {}", path.display()));
                 }
             }
             WorkerEvent::JobFailed { job_id, message } => {
                 self.mark_job(job_id, JobStatus::Failed, message.clone());
+                if self.cleanup_progress_matches(job_id) {
+                    self.cleanup_progress = None;
+                }
                 self.log(message);
             }
             WorkerEvent::JobCanceled { job_id } => {
                 self.mark_job(job_id, JobStatus::Canceled, "Canceled");
+                if self.cleanup_progress_matches(job_id) {
+                    self.cleanup_progress = None;
+                }
                 self.log(format!("Job {job_id} canceled"));
             }
         }
@@ -577,6 +623,12 @@ impl App {
         }
     }
 
+    fn cleanup_progress_matches(&self, job_id: JobId) -> bool {
+        self.cleanup_progress
+            .as_ref()
+            .is_some_and(|progress| progress.job_id == job_id)
+    }
+
     fn confirm_state(&self) -> ConfirmState {
         let selected = self.selected_targets();
         let estimated_bytes = sum_unique_target_bytes(selected.iter().copied());
@@ -608,6 +660,7 @@ impl App {
             required_phrase,
             input: String::new(),
             message,
+            command_previews: command_previews(selected.iter().copied()),
         }
     }
 
@@ -752,6 +805,8 @@ enum WorkerEvent {
     CleanProgress {
         job_id: JobId,
         message: String,
+        completed: usize,
+        total: usize,
     },
     CleanFinished {
         job_id: JobId,
@@ -836,6 +891,21 @@ struct ConfirmState {
     has_irreversible_commands: bool,
     required_phrase: String,
     input: String,
+    message: String,
+    command_previews: Vec<CommandPreview>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CommandPreview {
+    target: String,
+    command: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CleanupProgress {
+    job_id: JobId,
+    completed: usize,
+    total: usize,
     message: String,
 }
 
@@ -1242,7 +1312,11 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
 
 fn render_overlay(frame: &mut Frame<'_>, app: &App) {
     match &app.overlay {
-        Overlay::None => {}
+        Overlay::None => {
+            if let Some(progress) = &app.cleanup_progress {
+                render_cleanup_progress(frame, progress);
+            }
+        }
         Overlay::Help => render_modal(
             frame,
             "Keyboard help",
@@ -1275,19 +1349,56 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
     } else {
         "Trash-backed cleanup"
     };
+    let mut lines = vec![
+        Line::from(strength),
+        Line::from(confirm.message.clone()),
+        Line::from(format!(
+            "Targets: {}  Estimated: {}",
+            confirm.target_count,
+            format_bytes(confirm.estimated_bytes)
+        )),
+    ];
+
+    if !confirm.command_previews.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::styled("Cleanup commands:", muted_style()));
+        lines.extend(confirm.command_previews.iter().take(8).map(|preview| {
+            Line::from(vec![
+                Span::styled("  - ", muted_style()),
+                Span::styled(format!("{} -> ", preview.target), panel_style()),
+                Span::styled(preview.command.clone(), accent_style()),
+            ])
+        }));
+        if confirm.command_previews.len() > 8 {
+            lines.push(Line::styled(
+                format!(
+                    "  ... {} more command(s)",
+                    confirm.command_previews.len() - 8
+                ),
+                muted_style(),
+            ));
+        }
+    }
+
+    lines.push(Line::from(""));
+    lines.push(Line::from(format!("Type: {}", confirm.required_phrase)));
+    lines.push(Line::from(format!("Input: {}", confirm.input)));
+    lines.push(Line::styled("Enter confirm  Esc cancel", muted_style()));
+
+    render_modal(frame, "Confirm cleanup", lines);
+}
+
+fn render_cleanup_progress(frame: &mut Frame<'_>, progress: &CleanupProgress) {
     render_modal(
         frame,
-        "Confirm cleanup",
+        "Cleanup progress",
         vec![
-            Line::from(strength),
-            Line::from(confirm.message.clone()),
             Line::from(format!(
-                "Targets: {}  Estimated: {}",
-                confirm.target_count,
-                format_bytes(confirm.estimated_bytes)
+                "Progress: {}",
+                format_cleanup_progress(progress.completed, progress.total, &progress.message)
             )),
-            Line::from(format!("Type: {}", confirm.required_phrase)),
-            Line::from(format!("Input: {}", confirm.input)),
+            Line::from(cleanup_progress_bar(progress.completed, progress.total, 32)),
+            Line::from(format!("Current: {}", progress.message)),
         ],
     );
 }
@@ -1449,13 +1560,10 @@ fn action_summary(action: &CleanAction) -> String {
             program,
             args,
             irreversible,
-            cwd: _,
+            cwd,
         } => {
-            let mut command = Vec::with_capacity(args.len() + 1);
-            command.push(program.clone());
-            command.extend(args.clone());
             let suffix = if *irreversible { " irreversible" } else { "" };
-            format!("command{}: {}", suffix, command.join(" "))
+            format!("command{}: {}", suffix, command_preview(program, args, cwd))
         }
         CleanAction::MoveToTrash { path } => format!("trash: {}", path.display()),
         CleanAction::DeletePermanently { path, .. } => {
@@ -1475,6 +1583,71 @@ fn evidence_summary(evidence: &Evidence) -> String {
         Evidence::RuleMatched { rule_id } => format!("rule {rule_id}"),
         Evidence::UserConfigured => "user configured".to_string(),
     }
+}
+
+fn command_previews<'a>(targets: impl IntoIterator<Item = &'a CleanTarget>) -> Vec<CommandPreview> {
+    targets
+        .into_iter()
+        .filter_map(|target| match &target.action {
+            CleanAction::Command {
+                program,
+                args,
+                cwd,
+                irreversible: _,
+            } => Some(CommandPreview {
+                target: target_title(target),
+                command: command_preview(program, args, cwd),
+            }),
+            CleanAction::MoveToTrash { .. }
+            | CleanAction::DeletePermanently { .. }
+            | CleanAction::NoopInspectOnly => None,
+        })
+        .collect()
+}
+
+fn command_preview(program: &str, args: &[String], cwd: &Option<PathBuf>) -> String {
+    let mut parts = Vec::with_capacity(args.len() + 1);
+    parts.push(program.to_string());
+    parts.extend(args.iter().cloned());
+    let argv = parts.join(" ");
+    if let Some(cwd) = cwd {
+        format!("argv: {argv}  cwd: {}", cwd.display())
+    } else {
+        format!("argv: {argv}")
+    }
+}
+
+fn compact_target_id(target_id: &TargetId) -> String {
+    let text = target_id.as_str();
+    if text.chars().count() <= 48 {
+        text.to_string()
+    } else {
+        let tail = text
+            .chars()
+            .rev()
+            .take(45)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect::<String>();
+        format!("...{tail}")
+    }
+}
+
+fn format_cleanup_progress(completed: usize, total: usize, message: &str) -> String {
+    format!("{completed} / {total} {message}")
+}
+
+fn cleanup_progress_bar(completed: usize, total: usize, width: usize) -> String {
+    let filled = width
+        .saturating_mul(completed.min(total))
+        .checked_div(total)
+        .unwrap_or_default();
+    format!(
+        "[{}{}]",
+        "#".repeat(filled),
+        "-".repeat(width.saturating_sub(filled))
+    )
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -1540,6 +1713,9 @@ mod tests {
         let confirm = render_text(&app);
         assert!(confirm.contains("Confirm cleanup"));
         assert!(confirm.contains("Irreversible command-backed cleanup"));
+        assert!(confirm.contains("Cleanup commands"));
+        assert!(confirm.contains("argv: npm cache clean --force"));
+        assert!(confirm.contains("Enter confirm  Esc cancel"));
 
         app.overlay = Overlay::None;
         app.active_tab = ActiveTab::JobsLogs;
@@ -1632,6 +1808,11 @@ mod tests {
         assert!(confirm.required_phrase.starts_with("CLEAN "));
         assert!(confirm.message.contains("irreversible"));
         assert!(confirm.has_irreversible_commands);
+        assert_eq!(confirm.command_previews.len(), 1);
+        assert_eq!(
+            confirm.command_previews[0].command,
+            "argv: npm cache clean --force"
+        );
     }
 
     #[test]
@@ -1654,6 +1835,29 @@ mod tests {
         assert_eq!(plan.targets[0].id, app.targets[0].id);
         assert!(plan.targets[0].selected_by_default);
         assert!(matches!(app.overlay, Overlay::None));
+    }
+
+    #[test]
+    fn cleanup_progress_updates_job_and_renders_modal() {
+        let mut app = App::with_plan(representative_plan());
+        let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            message: "npm cache clean".to_string(),
+            completed: 1,
+            total: 3,
+        }));
+
+        assert_eq!(app.jobs[0].progress, "1 / 3 npm cache clean");
+        let rendered = render_text(&app);
+        assert!(rendered.contains("Cleanup progress"));
+        assert!(rendered.contains("1 / 3 npm cache clean"));
+        assert!(rendered.contains("[##########----------------------]"));
+
+        app.active_tab = ActiveTab::JobsLogs;
+        let jobs_logs = render_text(&app);
+        assert!(jobs_logs.contains("1 / 3 npm cache clean"));
     }
 
     #[test]

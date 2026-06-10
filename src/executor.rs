@@ -43,6 +43,14 @@ pub struct ActionFailure {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExecutionProgress {
+    pub completed: usize,
+    pub total: usize,
+    pub target_id: TargetId,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandRequest {
     pub program: String,
     pub args: Vec<String>,
@@ -137,6 +145,18 @@ where
         plan: &CleanupPlan,
         request: ExecutionRequest,
     ) -> Result<ExecutionReport> {
+        self.run_plan_with_progress(plan, request, |_| {})
+    }
+
+    pub fn run_plan_with_progress<F>(
+        &self,
+        plan: &CleanupPlan,
+        request: ExecutionRequest,
+        mut on_progress: F,
+    ) -> Result<ExecutionReport>
+    where
+        F: FnMut(ExecutionProgress),
+    {
         let selected_targets: Vec<&CleanTarget> = plan
             .targets
             .iter()
@@ -171,19 +191,23 @@ where
             audit_log: Some(audit_path.clone()),
         };
 
+        let total = selected_targets.len();
         for target in selected_targets {
             let started = Instant::now();
             let outcome = self.execute_target(target, request.allow_permanent_delete);
             let duration_ms = started.elapsed().as_millis();
+            let progress_message;
 
             match outcome {
                 Ok(ActionStatus::Success { command }) => {
                     report.attempted += 1;
                     report.succeeded += 1;
                     audit.write(&AuditRecord::success(target, command, duration_ms))?;
+                    progress_message = "completed".to_string();
                 }
                 Ok(ActionStatus::Skipped { message }) => {
                     report.skipped += 1;
+                    progress_message = format!("skipped: {message}");
                     audit.write(&AuditRecord::skipped(target, message, duration_ms))?;
                 }
                 Err(error) => {
@@ -195,8 +219,16 @@ where
                         message: message.clone(),
                     });
                     audit.write(&AuditRecord::failed(target, message, duration_ms))?;
+                    progress_message = "failed".to_string();
                 }
             }
+
+            on_progress(ExecutionProgress {
+                completed: report.succeeded + report.failed + report.skipped,
+                total,
+                target_id: target.id.clone(),
+                message: progress_message,
+            });
         }
 
         audit.flush()?;
@@ -686,6 +718,59 @@ mod tests {
 
         assert_eq!(report.failed, 1);
         assert!(doomed.exists(), "permanent delete must remain disabled");
+    }
+
+    #[test]
+    fn observed_execution_reports_per_target_progress() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let first_path = fixture.path().join("node_modules");
+        let second_path = fixture.path().join(".pytest_cache");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: first_path.clone(),
+                    },
+                    Some(first_path),
+                ),
+                target(
+                    "python.pytest_cache",
+                    CleanAction::MoveToTrash {
+                        path: second_path.clone(),
+                    },
+                    Some(second_path),
+                ),
+            ],
+        };
+        let executor = Executor::new(
+            RecordingCommandRunner::default(),
+            RecordingTrashRunner::default(),
+        );
+        let mut progress = Vec::new();
+
+        let report = executor
+            .run_plan_with_progress(
+                &plan,
+                ExecutionRequest {
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path),
+                },
+                |event| progress.push(event),
+            )
+            .expect("execute succeeds");
+
+        assert_eq!(report.succeeded, 2);
+        assert_eq!(progress.len(), 2);
+        assert_eq!(progress[0].completed, 1);
+        assert_eq!(progress[0].total, 2);
+        assert_eq!(progress[0].target_id, plan.targets[0].id);
+        assert_eq!(progress[1].completed, 2);
+        assert_eq!(progress[1].total, 2);
+        assert_eq!(progress[1].target_id, plan.targets[1].id);
     }
 
     #[derive(Clone, Default)]
