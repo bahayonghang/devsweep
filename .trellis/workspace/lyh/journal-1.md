@@ -275,3 +275,39 @@ Made the TUI auto-scan on startup so global and project cleanup targets populate
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: Fix duplicate cleanup targets
+
+**Date**: 2026-06-10
+**Task**: Fix duplicate cleanup targets
+**Branch**: `main`
+
+### Summary
+
+Fixed duplicate npm global cache targets, improved TUI cleanup-plan display and unique byte summaries, recorded task/spec guidance, and ignored ref/.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fe40adb` | (see git log) |
+| `2397c48` | (see git log) |
+| `95b8818` | (see git log) |
+| `88d9033` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
