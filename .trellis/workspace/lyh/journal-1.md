@@ -380,3 +380,38 @@ Implemented explicit cleanup command previews, inline confirmation key hints, an
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: TUI cleanup confirmation UX
+
+**Date**: 2026-06-10
+**Task**: TUI cleanup confirmation UX
+**Branch**: `main`
+
+### Summary
+
+Lowered TUI cleanup confirmation friction to fixed confirm, normalized Windows verbatim path display, added contextual footer action pills, improved confirmation modal hierarchy, updated frontend display-path guidance, and validated with just ci.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c4ff62d` | (see git log) |
+| `770adf9` | (see git log) |
+| `ae601d5` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
