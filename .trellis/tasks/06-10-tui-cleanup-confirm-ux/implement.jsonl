@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "render purity, TestBackend coverage, and confirmation behavior requirements"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "ratatui render helper boundaries and styling conventions"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "App-owned overlay, footer, and cleanup-progress state boundaries"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "event/update/render split and visible modal feedback requirements"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "typed model use and display-only path formatting guardrails"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "command-backed cleanup safety, argv separation, and non-mutating scanner/model constraints"}

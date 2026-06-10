@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "final render/update tests and just ci gate expectations"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "regression check for command execution and permanent-delete safety contracts"}
