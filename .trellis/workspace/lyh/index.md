@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
+- **Total Sessions**: 10
 - **Last Active**: 2026-06-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~313 | Active |
+| `journal-1.md` | ~347 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-06-10 | Improve TUI cleanup confirmation and progress | `c40b091`, `9f919c8` | `main` |
 | 9 | 2026-06-10 | Fix duplicate cleanup targets | `fe40adb`, `2397c48`, `95b8818`, `88d9033` | `main` |
 | 8 | 2026-06-09 | Global scan startup cache | `d63fd68`, `0b27afd` | `main` |
 | 7 | 2026-06-09 | Archive completed design split analysis | - | `main` |

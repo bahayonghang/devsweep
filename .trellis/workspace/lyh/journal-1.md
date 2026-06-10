@@ -311,3 +311,37 @@ Fixed duplicate npm global cache targets, improved TUI cleanup-plan display and 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Improve TUI cleanup confirmation and progress
+
+**Date**: 2026-06-10
+**Task**: Improve TUI cleanup confirmation and progress
+**Branch**: `main`
+
+### Summary
+
+Implemented explicit cleanup command previews, inline confirmation key hints, and per-target cleanup progress in both the modal and Jobs/Logs. Validated with focused cargo tests and just ci.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c40b091` | (see git log) |
+| `9f919c8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
