@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "render purity, TestBackend expectations, and confirmation behavior coverage"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "event/update boundary and worker progress visibility conventions"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "App-owned modal and worker state boundaries"}

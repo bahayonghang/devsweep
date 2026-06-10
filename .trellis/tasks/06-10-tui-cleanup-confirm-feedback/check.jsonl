@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "TUI render purity and regression-test checklist"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "modal validation feedback and worker progress state checks"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "single App state ownership and cleanup progress state checks"}
