@@ -42,11 +42,19 @@ pub struct ActionFailure {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionTargetStatus {
+    Succeeded,
+    Failed,
+    Skipped,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionProgress {
     pub completed: usize,
     pub total: usize,
     pub target_id: TargetId,
+    pub status: ExecutionTargetStatus,
     pub message: String,
 }
 
@@ -196,19 +204,21 @@ where
             let started = Instant::now();
             let outcome = self.execute_target(target, request.allow_permanent_delete);
             let duration_ms = started.elapsed().as_millis();
-            let progress_message;
 
-            match outcome {
+            let (progress_status, progress_message) = match outcome {
                 Ok(ActionStatus::Success { command }) => {
                     report.attempted += 1;
                     report.succeeded += 1;
                     audit.write(&AuditRecord::success(target, command, duration_ms))?;
-                    progress_message = "completed".to_string();
+                    (ExecutionTargetStatus::Succeeded, "completed".to_string())
                 }
                 Ok(ActionStatus::Skipped { message }) => {
                     report.skipped += 1;
-                    progress_message = format!("skipped: {message}");
-                    audit.write(&AuditRecord::skipped(target, message, duration_ms))?;
+                    audit.write(&AuditRecord::skipped(target, message.clone(), duration_ms))?;
+                    (
+                        ExecutionTargetStatus::Skipped,
+                        format!("skipped: {message}"),
+                    )
                 }
                 Err(error) => {
                     report.attempted += 1;
@@ -218,15 +228,16 @@ where
                         target_id: target.id.clone(),
                         message: message.clone(),
                     });
-                    audit.write(&AuditRecord::failed(target, message, duration_ms))?;
-                    progress_message = "failed".to_string();
+                    audit.write(&AuditRecord::failed(target, message.clone(), duration_ms))?;
+                    (ExecutionTargetStatus::Failed, message)
                 }
-            }
+            };
 
             on_progress(ExecutionProgress {
                 completed: report.succeeded + report.failed + report.skipped,
                 total,
                 target_id: target.id.clone(),
+                status: progress_status,
                 message: progress_message,
             });
         }
@@ -768,9 +779,69 @@ mod tests {
         assert_eq!(progress[0].completed, 1);
         assert_eq!(progress[0].total, 2);
         assert_eq!(progress[0].target_id, plan.targets[0].id);
+        assert_eq!(progress[0].status, ExecutionTargetStatus::Succeeded);
         assert_eq!(progress[1].completed, 2);
         assert_eq!(progress[1].total, 2);
         assert_eq!(progress[1].target_id, plan.targets[1].id);
+        assert_eq!(progress[1].status, ExecutionTargetStatus::Succeeded);
+    }
+
+    #[test]
+    fn observed_execution_progress_reports_typed_target_outcomes() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let success_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: success_path.clone(),
+                    },
+                    Some(success_path),
+                ),
+                target("cargo.home.inspect", CleanAction::NoopInspectOnly, None),
+                target(
+                    "rust.target",
+                    CleanAction::Command {
+                        program: "cargo".to_string(),
+                        args: vec!["clean".to_string()],
+                        cwd: None,
+                        irreversible: true,
+                    },
+                    None,
+                ),
+            ],
+        };
+        let executor = Executor::new(
+            RecordingCommandRunner::failing("cargo unavailable"),
+            RecordingTrashRunner::default(),
+        );
+        let mut progress = Vec::new();
+
+        let report = executor
+            .run_plan_with_progress(
+                &plan,
+                ExecutionRequest {
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path),
+                },
+                |event| progress.push(event),
+            )
+            .expect("execute returns partial-failure report");
+
+        assert_eq!(report.succeeded, 1);
+        assert_eq!(report.skipped, 1);
+        assert_eq!(report.failed, 1);
+        assert_eq!(progress.len(), 3);
+        assert_eq!(progress[0].status, ExecutionTargetStatus::Succeeded);
+        assert_eq!(progress[0].message, "completed");
+        assert_eq!(progress[1].status, ExecutionTargetStatus::Skipped);
+        assert!(progress[1].message.contains("inspect-only"));
+        assert_eq!(progress[2].status, ExecutionTargetStatus::Failed);
+        assert!(progress[2].message.contains("cargo unavailable"));
     }
 
     #[derive(Clone, Default)]

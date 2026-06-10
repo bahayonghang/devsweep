@@ -23,7 +23,7 @@ use ratatui::{
 };
 
 use crate::{
-    executor::{ExecutionReport, ExecutionRequest, Executor},
+    executor::{ExecutionReport, ExecutionRequest, ExecutionTargetStatus, Executor},
     model::{
         CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     },
@@ -143,16 +143,9 @@ fn scan_current_workspace() -> Result<CleanupPlan> {
 }
 
 fn run_clean_worker(job_id: JobId, plan: CleanupPlan, worker_tx: Sender<WorkerEvent>) {
-    let total = plan
-        .targets
-        .iter()
-        .filter(|target| target.selected_by_default)
-        .count();
-    let _ = worker_tx.send(WorkerEvent::CleanProgress {
+    let _ = worker_tx.send(WorkerEvent::JobProgress {
         job_id,
         message: "Executing selected cleanup plan".to_string(),
-        completed: 0,
-        total,
     });
 
     let result = Executor::default().run_plan_with_progress(
@@ -163,13 +156,14 @@ fn run_clean_worker(job_id: JobId, plan: CleanupPlan, worker_tx: Sender<WorkerEv
             audit_log: None,
         },
         |progress| {
+            let target_id = progress.target_id;
+            let detail = progress.message;
             let _ = worker_tx.send(WorkerEvent::CleanProgress {
                 job_id,
-                message: format!(
-                    "{}: {}",
-                    compact_target_id(&progress.target_id),
-                    progress.message
-                ),
+                target_id: target_id.clone(),
+                status: progress.status,
+                message: format!("{}: {}", compact_target_id(&target_id), detail),
+                detail,
                 completed: progress.completed,
                 total: progress.total,
             });
@@ -201,6 +195,7 @@ struct App {
     overlay: Overlay,
     jobs: Vec<JobRecord>,
     logs: Vec<LogEntry>,
+    next_log_seq: u64,
     cleanup_progress: Option<CleanupProgress>,
     should_quit: bool,
     next_job_id: JobId,
@@ -213,7 +208,12 @@ impl App {
 
     fn startup_effects(&mut self) -> Vec<Effect> {
         let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
-        self.log("Startup scan requested");
+        self.log_job(
+            AppLogLevel::Info,
+            AppLogSource::Scan,
+            job_id,
+            "Startup scan requested",
+        );
         vec![Effect::StartScan { job_id }]
     }
 
@@ -236,6 +236,7 @@ impl App {
             overlay: Overlay::None,
             jobs: Vec::new(),
             logs: Vec::new(),
+            next_log_seq: 1,
             cleanup_progress: None,
             should_quit: false,
             next_job_id: 1,
@@ -293,12 +294,23 @@ impl App {
             }
             KeyCode::Char('s') => {
                 let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
-                self.log("Scan requested");
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Scan,
+                    job_id,
+                    "Scan requested",
+                );
                 vec![Effect::StartScan { job_id }]
             }
             KeyCode::Char('c') => {
                 if self.selected_ids.is_empty() {
-                    self.log("No selected targets to clean");
+                    self.log_entry(
+                        AppLogLevel::Warning,
+                        AppLogSource::Clean,
+                        None,
+                        None,
+                        "No selected targets to clean",
+                    );
                 } else {
                     self.overlay = Overlay::Confirm(self.confirm_state());
                 }
@@ -432,7 +444,13 @@ impl App {
                             confirm.required_phrase
                         ));
                     }
-                    self.log("Confirmation phrase did not match");
+                    self.log_entry(
+                        AppLogLevel::Warning,
+                        AppLogSource::Clean,
+                        None,
+                        None,
+                        "Confirmation phrase did not match",
+                    );
                     return Vec::new();
                 }
 
@@ -441,14 +459,13 @@ impl App {
                 self.overlay = Overlay::None;
                 let job_id =
                     self.start_job(JobKind::Clean, format!("Clean {target_count} target(s)"));
-                self.cleanup_progress = Some(CleanupProgress {
+                self.cleanup_progress = Some(cleanup_progress_for_plan(job_id, &plan));
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Clean,
                     job_id,
-                    completed: 0,
-                    total: target_count,
-                    message: "Executing selected cleanup plan".to_string(),
-                    finished: false,
-                });
-                self.log(format!("Clean requested for {target_count} target(s)"));
+                    format!("Clean requested for {target_count} target(s)"),
+                );
                 vec![Effect::StartClean { job_id, plan }]
             }
             _ => Vec::new(),
@@ -463,11 +480,14 @@ impl App {
             }
             WorkerEvent::JobProgress { job_id, message } => {
                 self.mark_job(job_id, JobStatus::Running, message.clone());
-                self.log(message);
+                self.log_job(AppLogLevel::Info, self.job_source(job_id), job_id, message);
             }
             WorkerEvent::CleanProgress {
                 job_id,
+                target_id,
+                status,
                 message,
+                detail,
                 completed,
                 total,
             } => {
@@ -476,14 +496,22 @@ impl App {
                     JobStatus::Running,
                     format_cleanup_progress(completed, total, &message),
                 );
-                self.cleanup_progress = Some(CleanupProgress {
+                self.update_cleanup_progress_item(CleanupProgressUpdate {
                     job_id,
                     completed,
                     total,
-                    message: message.clone(),
-                    finished: false,
+                    summary: message.clone(),
+                    target_id: target_id.clone(),
+                    status,
+                    detail,
                 });
-                self.log(format_cleanup_progress(completed, total, &message));
+                self.log_target(
+                    log_level_for_execution_status(status),
+                    AppLogSource::Clean,
+                    job_id,
+                    target_id,
+                    format_cleanup_progress(completed, total, &message),
+                );
             }
             WorkerEvent::ScanFinished { job_id, plan } => {
                 let count = plan.targets.len();
@@ -500,7 +528,12 @@ impl App {
                     JobStatus::Succeeded,
                     format!("Found {count} target(s)"),
                 );
-                self.log(format!("Scan finished: {count} target(s)"));
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Scan,
+                    job_id,
+                    format!("Scan finished: {count} target(s)"),
+                );
             }
             WorkerEvent::CleanFinished { job_id, report } => {
                 let status = if report.failed == 0 {
@@ -513,15 +546,24 @@ impl App {
                     report.succeeded, report.failed, report.skipped
                 );
                 self.mark_job(job_id, status, summary.clone());
-                self.cleanup_progress = Some(CleanupProgress {
+                self.finish_cleanup_progress(job_id, &report, &summary);
+                self.log_job(
+                    if report.failed == 0 {
+                        AppLogLevel::Info
+                    } else {
+                        AppLogLevel::Error
+                    },
+                    AppLogSource::Clean,
                     job_id,
-                    completed: report.succeeded + report.failed + report.skipped,
-                    total: report.selected,
-                    message: format!("finished: {summary}"),
-                    finished: true,
-                });
+                    format!("Clean finished: {summary}"),
+                );
                 if let Some(path) = report.audit_log {
-                    self.log(format!("Audit log: {}", display_path(&path)));
+                    self.log_job(
+                        AppLogLevel::Info,
+                        AppLogSource::Audit,
+                        job_id,
+                        format!("Audit log: {}", display_path(&path)),
+                    );
                 }
             }
             WorkerEvent::JobFailed { job_id, message } => {
@@ -529,17 +571,22 @@ impl App {
                 if self.cleanup_progress_matches(job_id)
                     && let Some(progress) = &mut self.cleanup_progress
                 {
-                    progress.message = format!("failed: {message}");
+                    progress.summary = format!("failed: {message}");
                     progress.finished = true;
                 }
-                self.log(message);
+                self.log_job(AppLogLevel::Error, self.job_source(job_id), job_id, message);
             }
             WorkerEvent::JobCanceled { job_id } => {
                 self.mark_job(job_id, JobStatus::Canceled, "Canceled");
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;
                 }
-                self.log(format!("Job {job_id} canceled"));
+                self.log_job(
+                    AppLogLevel::Warning,
+                    self.job_source(job_id),
+                    job_id,
+                    format!("Job {job_id} canceled"),
+                );
             }
         }
 
@@ -656,10 +703,102 @@ impl App {
         }
     }
 
+    fn job_source(&self, job_id: JobId) -> AppLogSource {
+        self.jobs
+            .iter()
+            .find(|job| job.id == job_id)
+            .map(|job| match job.kind {
+                JobKind::Scan => AppLogSource::Scan,
+                JobKind::Clean => AppLogSource::Clean,
+            })
+            .unwrap_or(AppLogSource::App)
+    }
+
     fn cleanup_progress_matches(&self, job_id: JobId) -> bool {
         self.cleanup_progress
             .as_ref()
             .is_some_and(|progress| progress.job_id == job_id)
+    }
+
+    fn update_cleanup_progress_item(&mut self, update: CleanupProgressUpdate) {
+        if !self.cleanup_progress_matches(update.job_id) {
+            self.cleanup_progress = Some(CleanupProgress {
+                job_id: update.job_id,
+                completed: 0,
+                total: update.total,
+                summary: "Executing selected cleanup plan".to_string(),
+                finished: false,
+                items: Vec::new(),
+            });
+        }
+
+        let Some(progress) = &mut self.cleanup_progress else {
+            return;
+        };
+
+        progress.completed = update.completed;
+        progress.total = update.total;
+        progress.summary = update.summary;
+        progress.finished = false;
+
+        let item_status = CleanupItemStatus::from(update.status);
+        let item_detail = cleanup_item_detail(item_status, update.detail);
+        if let Some(item) = progress
+            .items
+            .iter_mut()
+            .find(|item| item.target_id == update.target_id)
+        {
+            item.status = item_status;
+            item.detail = item_detail;
+            return;
+        }
+
+        progress.items.push(CleanupProgressItem {
+            label: compact_target_id(&update.target_id),
+            target_id: update.target_id,
+            status: item_status,
+            detail: item_detail,
+        });
+    }
+
+    fn finish_cleanup_progress(&mut self, job_id: JobId, report: &ExecutionReport, summary: &str) {
+        if !self.cleanup_progress_matches(job_id) {
+            self.cleanup_progress = Some(CleanupProgress {
+                job_id,
+                completed: 0,
+                total: report.selected,
+                summary: String::new(),
+                finished: false,
+                items: Vec::new(),
+            });
+        }
+
+        let Some(progress) = &mut self.cleanup_progress else {
+            return;
+        };
+
+        progress.completed = report.succeeded + report.failed + report.skipped;
+        progress.total = report.selected;
+        progress.summary = format!("finished: {summary}");
+        progress.finished = true;
+
+        for failure in &report.failures {
+            if let Some(item) = progress
+                .items
+                .iter_mut()
+                .find(|item| item.target_id == failure.target_id)
+            {
+                item.status = CleanupItemStatus::Failed;
+                item.detail = Some(failure.message.clone());
+            } else {
+                progress.items.push(CleanupProgressItem {
+                    target_id: failure.target_id.clone(),
+                    label: compact_target_id(&failure.target_id),
+                    status: CleanupItemStatus::Failed,
+                    detail: Some(failure.message.clone()),
+                });
+            }
+        }
     }
 
     fn confirm_state(&self) -> ConfirmState {
@@ -772,7 +911,46 @@ impl App {
     }
 
     fn log(&mut self, message: impl Into<String>) {
+        self.log_entry(AppLogLevel::Info, AppLogSource::App, None, None, message);
+    }
+
+    fn log_job(
+        &mut self,
+        level: AppLogLevel,
+        source: AppLogSource,
+        job_id: JobId,
+        message: impl Into<String>,
+    ) {
+        self.log_entry(level, source, Some(job_id), None, message);
+    }
+
+    fn log_target(
+        &mut self,
+        level: AppLogLevel,
+        source: AppLogSource,
+        job_id: JobId,
+        target_id: TargetId,
+        message: impl Into<String>,
+    ) {
+        self.log_entry(level, source, Some(job_id), Some(target_id), message);
+    }
+
+    fn log_entry(
+        &mut self,
+        level: AppLogLevel,
+        source: AppLogSource,
+        job_id: Option<JobId>,
+        target_id: Option<TargetId>,
+        message: impl Into<String>,
+    ) {
+        let seq = self.next_log_seq;
+        self.next_log_seq += 1;
         self.logs.push(LogEntry {
+            seq,
+            level,
+            source,
+            job_id,
+            target_id,
             message: message.into(),
         });
         if self.logs.len() > 200 {
@@ -835,7 +1013,10 @@ enum WorkerEvent {
     },
     CleanProgress {
         job_id: JobId,
+        target_id: TargetId,
+        status: ExecutionTargetStatus,
         message: String,
+        detail: String,
         completed: usize,
         total: usize,
     },
@@ -938,8 +1119,46 @@ struct CleanupProgress {
     job_id: JobId,
     completed: usize,
     total: usize,
-    message: String,
+    summary: String,
     finished: bool,
+    items: Vec<CleanupProgressItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CleanupProgressItem {
+    target_id: TargetId,
+    label: String,
+    status: CleanupItemStatus,
+    detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CleanupItemStatus {
+    Pending,
+    Succeeded,
+    Failed,
+    Skipped,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CleanupProgressUpdate {
+    job_id: JobId,
+    completed: usize,
+    total: usize,
+    summary: String,
+    target_id: TargetId,
+    status: ExecutionTargetStatus,
+    detail: String,
+}
+
+impl From<ExecutionTargetStatus> for CleanupItemStatus {
+    fn from(status: ExecutionTargetStatus) -> Self {
+        match status {
+            ExecutionTargetStatus::Succeeded => Self::Succeeded,
+            ExecutionTargetStatus::Failed => Self::Failed,
+            ExecutionTargetStatus::Skipped => Self::Skipped,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -989,7 +1208,61 @@ struct JobRecord {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct LogEntry {
+    seq: u64,
+    level: AppLogLevel,
+    source: AppLogSource,
+    job_id: Option<JobId>,
+    target_id: Option<TargetId>,
     message: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AppLogLevel {
+    Info,
+    Warning,
+    Error,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AppLogSource {
+    App,
+    Scan,
+    Clean,
+    Audit,
+}
+
+fn cleanup_progress_for_plan(job_id: JobId, plan: &CleanupPlan) -> CleanupProgress {
+    CleanupProgress {
+        job_id,
+        completed: 0,
+        total: plan.targets.len(),
+        summary: "Executing selected cleanup plan".to_string(),
+        finished: false,
+        items: plan
+            .targets
+            .iter()
+            .map(|target| CleanupProgressItem {
+                target_id: target.id.clone(),
+                label: target_title(target),
+                status: CleanupItemStatus::Pending,
+                detail: None,
+            })
+            .collect(),
+    }
+}
+
+fn cleanup_item_detail(status: CleanupItemStatus, detail: String) -> Option<String> {
+    match status {
+        CleanupItemStatus::Pending | CleanupItemStatus::Succeeded => None,
+        CleanupItemStatus::Failed | CleanupItemStatus::Skipped => Some(detail),
+    }
+}
+
+fn log_level_for_execution_status(status: ExecutionTargetStatus) -> AppLogLevel {
+    match status {
+        ExecutionTargetStatus::Succeeded | ExecutionTargetStatus::Skipped => AppLogLevel::Info,
+        ExecutionTargetStatus::Failed => AppLogLevel::Error,
+    }
 }
 
 fn render_app(frame: &mut Frame<'_>, app: &App) {
@@ -1056,6 +1329,14 @@ fn error_style() -> Style {
         .fg(Color::Rgb(239, 112, 138))
         .bg(Color::Rgb(28, 31, 44))
         .add_modifier(Modifier::BOLD)
+}
+
+fn app_log_level_style(level: AppLogLevel) -> Style {
+    match level {
+        AppLogLevel::Info => muted_style(),
+        AppLogLevel::Warning => warning_style(),
+        AppLogLevel::Error => error_style(),
+    }
 }
 
 fn risk_style(risk: &RiskLevel) -> Style {
@@ -1306,12 +1587,7 @@ fn render_jobs_logs(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let log_lines = if app.logs.is_empty() {
         vec![Line::from("No logs yet.")]
     } else {
-        app.logs
-            .iter()
-            .rev()
-            .take(16)
-            .map(|entry| Line::from(entry.message.clone()))
-            .collect()
+        app.logs.iter().rev().take(16).map(log_entry_line).collect()
     };
 
     frame.render_widget(
@@ -1328,6 +1604,31 @@ fn render_jobs_logs(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .wrap(Wrap { trim: false }),
         chunks[1],
     );
+}
+
+fn log_entry_line(entry: &LogEntry) -> Line<'static> {
+    let mut spans = vec![
+        Span::styled(format!("#{} ", entry.seq), muted_style()),
+        Span::styled(
+            format!("{:<4} ", app_log_level_label(entry.level)),
+            app_log_level_style(entry.level),
+        ),
+        Span::styled(
+            format!("{:<5} ", app_log_source_label(entry.source)),
+            accent_style(),
+        ),
+    ];
+    if let Some(job_id) = entry.job_id {
+        spans.push(Span::styled(format!("job:{job_id} "), muted_style()));
+    }
+    spans.push(Span::styled(entry.message.clone(), panel_style()));
+    if let Some(target_id) = &entry.target_id {
+        spans.push(Span::styled(
+            format!(" target:{}", compact_target_id(target_id)),
+            muted_style(),
+        ));
+    }
+    Line::from(spans)
 }
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -1584,22 +1885,106 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
 }
 
 fn render_cleanup_progress(frame: &mut Frame<'_>, progress: &CleanupProgress) {
-    let mut lines = vec![
-        Line::from(format!(
-            "Progress: {}",
-            format_cleanup_progress(progress.completed, progress.total, &progress.message)
+    let area = centered_rect(70, 60, frame.area());
+    let block = focused_panel_block("Cleanup progress");
+    let inner = block.inner(area);
+    frame.render_widget(Clear, area);
+    frame.render_widget(block, area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(1),
+            Constraint::Length(1),
+        ])
+        .split(inner);
+
+    let summary = vec![
+        Line::from(format_cleanup_progress(
+            progress.completed,
+            progress.total,
+            &progress.summary,
         )),
         Line::from(cleanup_progress_bar(progress.completed, progress.total, 32)),
-        Line::from(format!("Current: {}", progress.message)),
     ];
+    frame.render_widget(
+        Paragraph::new(Text::from(summary))
+            .style(panel_style())
+            .alignment(Alignment::Center),
+        chunks[0],
+    );
 
-    if progress.finished {
-        lines.push(Line::styled("Enter/Esc close", muted_style()));
+    let list_lines = cleanup_progress_item_lines(progress, chunks[1].height as usize);
+    frame.render_widget(
+        Paragraph::new(Text::from(list_lines))
+            .style(panel_style())
+            .wrap(Wrap { trim: false }),
+        chunks[1],
+    );
+
+    let hint = if progress.finished {
+        "Enter/Esc close"
     } else {
-        lines.push(Line::styled("x cancel", muted_style()));
+        "x cancel"
+    };
+    frame.render_widget(
+        Paragraph::new(Line::styled(hint, muted_style())).alignment(Alignment::Center),
+        chunks[2],
+    );
+}
+
+fn cleanup_progress_item_lines(progress: &CleanupProgress, max_lines: usize) -> Vec<Line<'static>> {
+    if max_lines == 0 {
+        return Vec::new();
     }
 
-    render_modal(frame, "Cleanup progress", lines);
+    let mut lines = vec![Line::styled("Results", muted_style())];
+    let available_items = max_lines.saturating_sub(1);
+    if available_items == 0 {
+        return lines;
+    }
+
+    let item_limit = if progress.items.len() > available_items {
+        available_items.saturating_sub(1)
+    } else {
+        available_items
+    };
+
+    for item in progress.items.iter().take(item_limit) {
+        lines.push(cleanup_progress_item_line(item));
+    }
+
+    if progress.items.len() > item_limit {
+        lines.push(Line::styled(
+            format!("... {} more target(s)", progress.items.len() - item_limit),
+            muted_style(),
+        ));
+    }
+
+    lines
+}
+
+fn cleanup_progress_item_line(item: &CleanupProgressItem) -> Line<'static> {
+    let (label, style) = cleanup_item_status_display(item.status);
+    let mut spans = vec![
+        Span::styled(format!("{label:<7} "), style),
+        Span::styled(item.label.clone(), panel_style()),
+    ];
+    if let Some(detail) = &item.detail {
+        spans.push(Span::styled(" - ", muted_style()));
+        spans.push(Span::styled(detail.clone(), muted_style()));
+    }
+    Line::from(spans)
+}
+
+fn cleanup_item_status_display(status: CleanupItemStatus) -> (&'static str, Style) {
+    match status {
+        CleanupItemStatus::Pending => ("PENDING", muted_style()),
+        CleanupItemStatus::Succeeded => ("OK", accent_style()),
+        CleanupItemStatus::Failed => ("FAILED", error_style()),
+        CleanupItemStatus::Skipped => ("SKIPPED", warning_style()),
+    }
 }
 
 fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'static>>) {
@@ -1750,6 +2135,23 @@ fn risk_label(risk: &RiskLevel) -> &'static str {
         RiskLevel::Medium => "Medium",
         RiskLevel::High => "High",
         RiskLevel::Dangerous => "Dangerous",
+    }
+}
+
+fn app_log_level_label(level: AppLogLevel) -> &'static str {
+    match level {
+        AppLogLevel::Info => "INFO",
+        AppLogLevel::Warning => "WARN",
+        AppLogLevel::Error => "ERR",
+    }
+}
+
+fn app_log_source_label(source: AppLogSource) -> &'static str {
+    match source {
+        AppLogSource::App => "App",
+        AppLogSource::Scan => "Scan",
+        AppLogSource::Clean => "Clean",
+        AppLogSource::Audit => "Audit",
     }
 }
 
@@ -2045,16 +2447,18 @@ mod tests {
         assert_eq!(plan.targets[0].id, app.targets[0].id);
         assert!(plan.targets[0].selected_by_default);
         assert!(matches!(app.overlay, Overlay::None));
-        assert_eq!(
-            app.cleanup_progress,
-            Some(CleanupProgress {
-                job_id: *job_id,
-                completed: 0,
-                total: 1,
-                message: "Executing selected cleanup plan".to_string(),
-                finished: false,
-            })
-        );
+        let progress = app
+            .cleanup_progress
+            .as_ref()
+            .expect("accepted confirmation initializes progress");
+        assert_eq!(progress.job_id, *job_id);
+        assert_eq!(progress.completed, 0);
+        assert_eq!(progress.total, 1);
+        assert_eq!(progress.summary, "Executing selected cleanup plan");
+        assert!(!progress.finished);
+        assert_eq!(progress.items.len(), 1);
+        assert_eq!(progress.items[0].target_id, app.targets[0].id);
+        assert_eq!(progress.items[0].status, CleanupItemStatus::Pending);
     }
 
     #[test]
@@ -2106,16 +2510,34 @@ mod tests {
         let rendered = render_text(&app);
         assert!(rendered.contains("Cleanup progress"));
         assert!(rendered.contains("0 / 1 Executing selected cleanup plan"));
+        assert!(rendered.contains("PENDING"));
     }
 
     #[test]
     fn cleanup_progress_updates_job_and_renders_modal() {
         let mut app = App::with_plan(representative_plan());
         let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+        let target_id = app.targets[1].id.clone();
+        app.cleanup_progress = Some(CleanupProgress {
+            job_id,
+            completed: 0,
+            total: 3,
+            summary: "Executing selected cleanup plan".to_string(),
+            finished: false,
+            items: vec![CleanupProgressItem {
+                target_id: target_id.clone(),
+                label: "npm cache clean".to_string(),
+                status: CleanupItemStatus::Pending,
+                detail: None,
+            }],
+        });
 
         app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
             job_id,
+            target_id,
+            status: ExecutionTargetStatus::Succeeded,
             message: "npm cache clean".to_string(),
+            detail: "completed".to_string(),
             completed: 1,
             total: 3,
         }));
@@ -2125,20 +2547,111 @@ mod tests {
         assert!(rendered.contains("Cleanup progress"));
         assert!(rendered.contains("1 / 3 npm cache clean"));
         assert!(rendered.contains("[##########----------------------]"));
+        assert!(rendered.contains("OK"));
 
         app.active_tab = ActiveTab::JobsLogs;
+        app.cleanup_progress = None;
         let jobs_logs = render_text(&app);
         assert!(jobs_logs.contains("1 / 3 npm cache clean"));
+        assert!(jobs_logs.contains("INFO Clean"));
+    }
+
+    #[test]
+    fn cleanup_progress_renders_mixed_target_results() {
+        let mut app = App::with_plan(representative_plan());
+        let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: app.targets.clone(),
+        };
+        app.cleanup_progress = Some(cleanup_progress_for_plan(job_id, &plan));
+        let success_id = app.targets[0].id.clone();
+        let failed_id = app.targets[1].id.clone();
+        let skipped_id = app.targets[2].id.clone();
+
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id: success_id,
+            status: ExecutionTargetStatus::Succeeded,
+            message: "node cache: completed".to_string(),
+            detail: "completed".to_string(),
+            completed: 1,
+            total: 3,
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id: failed_id.clone(),
+            status: ExecutionTargetStatus::Failed,
+            message: "npm cache clean: failed".to_string(),
+            detail: "Access denied".to_string(),
+            completed: 2,
+            total: 3,
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id: skipped_id,
+            status: ExecutionTargetStatus::Skipped,
+            message: "cargo home: skipped".to_string(),
+            detail: "inspect-only target has no executable cleanup action".to_string(),
+            completed: 3,
+            total: 3,
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::CleanFinished {
+            job_id,
+            report: ExecutionReport {
+                dry_run: false,
+                selected: 3,
+                attempted: 2,
+                succeeded: 1,
+                failed: 1,
+                skipped: 1,
+                failures: vec![crate::executor::ActionFailure {
+                    target_id: failed_id,
+                    message: "Access denied: file is locked".to_string(),
+                }],
+                audit_log: Some(PathBuf::from("audit.jsonl")),
+            },
+        }));
+
+        let rendered = render_text(&app);
+        assert!(rendered.contains("OK"));
+        assert!(rendered.contains("FAILED"));
+        assert!(rendered.contains("SKIPPED"));
+        assert!(rendered.contains("Access denied: file is locked"));
+
+        app.active_tab = ActiveTab::JobsLogs;
+        app.cleanup_progress = None;
+        let jobs_logs = render_text(&app);
+        assert!(jobs_logs.contains("ERR"));
+        assert!(jobs_logs.contains("Audit"));
+        assert!(jobs_logs.contains("audit.jsonl"));
     }
 
     #[test]
     fn finished_cleanup_progress_stays_visible_until_dismissed() {
         let mut app = App::with_plan(representative_plan());
         let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+        let target_id = app.targets[1].id.clone();
+        app.cleanup_progress = Some(CleanupProgress {
+            job_id,
+            completed: 0,
+            total: 1,
+            summary: "Executing selected cleanup plan".to_string(),
+            finished: false,
+            items: vec![CleanupProgressItem {
+                target_id: target_id.clone(),
+                label: "npm cache clean".to_string(),
+                status: CleanupItemStatus::Pending,
+                detail: None,
+            }],
+        });
 
         app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
             job_id,
+            target_id,
+            status: ExecutionTargetStatus::Succeeded,
             message: "npm cache clean".to_string(),
+            detail: "completed".to_string(),
             completed: 0,
             total: 1,
         }));
@@ -2196,8 +2709,9 @@ mod tests {
             job_id: 1,
             completed: 1,
             total: 1,
-            message: "finished: 1 succeeded, 0 failed, 0 skipped".to_string(),
+            summary: "finished: 1 succeeded, 0 failed, 0 skipped".to_string(),
             finished: true,
+            items: Vec::new(),
         });
         let done = render_text(&app);
         assert!(done.contains("DONE"));

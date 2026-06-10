@@ -19,6 +19,10 @@ state instead of global mutable state or widget-owned side effects.
   visibility. These live in `App`.
 - Worker state: scan/execution jobs, progress, cancellation, and logs. These
   enter the app through explicit `WorkerEvent` values.
+- App logs: recent TUI logs are typed in-memory records owned by `App`. They may
+  include level, source, job id, target id, and display message fields. Durable
+  cleanup action history remains the executor-owned audit JSONL contract, not a
+  hidden TUI database.
 
 ---
 
