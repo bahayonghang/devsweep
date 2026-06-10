@@ -27,6 +27,7 @@ use crate::{
     model::{
         CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     },
+    path_safety::target_contains_current_exe,
     providers::GlobalProviderScanner,
     scanner::ProjectScanner,
 };
@@ -218,12 +219,7 @@ impl App {
     }
 
     fn with_plan(plan: CleanupPlan) -> Self {
-        let selected_ids = plan
-            .targets
-            .iter()
-            .filter(|target| target.selected_by_default)
-            .map(|target| target.id.clone())
-            .collect();
+        let selected_ids = default_selected_ids(&plan.targets);
 
         let mut app = Self {
             targets: plan.targets,
@@ -516,12 +512,7 @@ impl App {
             WorkerEvent::ScanFinished { job_id, plan } => {
                 let count = plan.targets.len();
                 self.targets = plan.targets;
-                self.selected_ids = self
-                    .targets
-                    .iter()
-                    .filter(|target| target.selected_by_default)
-                    .map(|target| target.id.clone())
-                    .collect();
+                self.selected_ids = default_selected_ids(&self.targets);
                 self.selected_index = 0;
                 self.mark_job(
                     job_id,
@@ -830,6 +821,10 @@ impl App {
             input: String::new(),
             feedback: None,
             message,
+            selected_targets: selected
+                .iter()
+                .map(|target| selected_target_summary(target))
+                .collect(),
             command_previews: command_previews(selected.iter().copied()),
         }
     }
@@ -1105,6 +1100,7 @@ struct ConfirmState {
     input: String,
     feedback: Option<String>,
     message: String,
+    selected_targets: Vec<String>,
     command_previews: Vec<CommandPreview>,
 }
 
@@ -1263,6 +1259,15 @@ fn log_level_for_execution_status(status: ExecutionTargetStatus) -> AppLogLevel 
         ExecutionTargetStatus::Succeeded | ExecutionTargetStatus::Skipped => AppLogLevel::Info,
         ExecutionTargetStatus::Failed => AppLogLevel::Error,
     }
+}
+
+fn default_selected_ids(targets: &[CleanTarget]) -> HashSet<TargetId> {
+    targets
+        .iter()
+        .filter(|target| target.selected_by_default)
+        .filter(|target| !target_contains_current_exe(target.path.as_deref()))
+        .map(|target| target.id.clone())
+        .collect()
 }
 
 fn render_app(frame: &mut Frame<'_>, app: &App) {
@@ -1833,6 +1838,26 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         ]),
     ];
 
+    if !confirm.selected_targets.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::styled("Selected targets:", muted_style()));
+        lines.extend(confirm.selected_targets.iter().take(8).map(|target| {
+            Line::from(vec![
+                Span::styled("  - ", muted_style()),
+                Span::styled(target.clone(), panel_style()),
+            ])
+        }));
+        if confirm.selected_targets.len() > 8 {
+            lines.push(Line::styled(
+                format!(
+                    "  ... {} more target(s)",
+                    confirm.selected_targets.len() - 8
+                ),
+                muted_style(),
+            ));
+        }
+    }
+
     if !confirm.command_previews.is_empty() {
         lines.push(Line::from(""));
         lines.push(Line::styled("Cleanup commands:", muted_style()));
@@ -2036,7 +2061,7 @@ fn dry_run_lines(app: &App) -> Vec<Line<'static>> {
     lines.extend(selected.into_iter().take(12).map(|target| {
         Line::from(format!(
             "{} | {} | {}",
-            target_title(target),
+            selected_target_summary(target),
             risk_label(&target.risk),
             action_summary(&target.action)
         ))
@@ -2127,6 +2152,15 @@ fn scope_label(scope: &Scope) -> String {
 fn path_label(path: Option<&PathBuf>) -> String {
     path.map(|path| display_path(path))
         .unwrap_or_else(|| "none".to_string())
+}
+
+fn selected_target_summary(target: &CleanTarget) -> String {
+    format!(
+        "{} | {} | {}",
+        scope_label(&target.scope),
+        target_title(target),
+        path_label(target.path.as_ref())
+    )
 }
 
 fn risk_label(risk: &RiskLevel) -> &'static str {
@@ -2425,6 +2459,137 @@ mod tests {
             confirm.command_previews[0].command,
             "argv: npm cache clean --force"
         );
+    }
+
+    #[test]
+    fn startup_default_selection_skips_target_containing_running_executable() {
+        let current_exe = std::env::current_exe().expect("current executable path");
+        let current_exe_dir = current_exe.parent().expect("current executable has parent");
+        let safe_path = PathBuf::from("D:/code/web/.next/cache");
+        let plan = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "rust.target",
+                    Scope::Project {
+                        root: current_exe_dir.to_path_buf(),
+                    },
+                    Ecosystem::Rust,
+                    TargetKind::BuildArtifacts,
+                    Some(current_exe_dir.to_path_buf()),
+                    4096,
+                    RiskLevel::Low,
+                    true,
+                    false,
+                    CleanAction::Command {
+                        program: "cargo".to_string(),
+                        args: vec!["clean".to_string()],
+                        cwd: None,
+                        irreversible: true,
+                    },
+                ),
+                target(
+                    "node.next_cache",
+                    Scope::Project {
+                        root: PathBuf::from("D:/code/web"),
+                    },
+                    Ecosystem::Node,
+                    TargetKind::BuildArtifacts,
+                    Some(safe_path.clone()),
+                    1024,
+                    RiskLevel::Low,
+                    true,
+                    true,
+                    CleanAction::MoveToTrash { path: safe_path },
+                ),
+            ],
+        };
+
+        let app = App::with_plan(plan);
+
+        assert!(!app.selected_ids.contains(&app.targets[0].id));
+        assert!(app.selected_ids.contains(&app.targets[1].id));
+    }
+
+    #[test]
+    fn scan_finished_default_selection_skips_target_containing_running_executable() {
+        let current_exe = std::env::current_exe().expect("current executable path");
+        let current_exe_dir = current_exe.parent().expect("current executable has parent");
+        let mut app = App::new();
+        let effects = app.update(key(KeyCode::Char('s')));
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("scan key starts scan");
+        };
+        let plan = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "rust.target",
+                Scope::Project {
+                    root: current_exe_dir.to_path_buf(),
+                },
+                Ecosystem::Rust,
+                TargetKind::BuildArtifacts,
+                Some(current_exe_dir.to_path_buf()),
+                4096,
+                RiskLevel::Low,
+                true,
+                false,
+                CleanAction::Command {
+                    program: "cargo".to_string(),
+                    args: vec!["clean".to_string()],
+                    cwd: None,
+                    irreversible: true,
+                },
+            )],
+        };
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: *job_id,
+            plan,
+        }));
+
+        assert_eq!(app.targets.len(), 1);
+        assert!(app.selected_ids.is_empty());
+    }
+
+    #[test]
+    fn confirmation_and_dry_run_show_selected_targets_across_scopes() {
+        let mut app = App::with_plan(representative_plan());
+        app.selected_ids.clear();
+        app.selected_ids.insert(app.targets[0].id.clone());
+        app.selected_ids.insert(app.targets[1].id.clone());
+
+        let dry_run = dry_run_lines(&app)
+            .into_iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(dry_run.contains("Project (D:/code/web)"));
+        assert!(dry_run.contains("Global"));
+        assert!(dry_run.contains("D:/code/web/.next/cache"));
+        assert!(dry_run.contains("C:/Users/me/AppData/Local/npm-cache"));
+
+        app.update(key(KeyCode::Char('c')));
+        let Overlay::Confirm(confirm) = &app.overlay else {
+            panic!("mixed selection opens confirm");
+        };
+        assert_eq!(confirm.selected_targets.len(), 2);
+        assert!(
+            confirm
+                .selected_targets
+                .iter()
+                .any(|target| target.contains("Project (D:/code/web)"))
+        );
+        assert!(
+            confirm
+                .selected_targets
+                .iter()
+                .any(|target| target.contains("Global"))
+        );
+        let rendered = render_text(&app);
+        assert!(rendered.contains("Selected targets:"));
+        assert!(rendered.contains("Project (D:/code/web)"));
+        assert!(rendered.contains("Global"));
     }
 
     #[test]

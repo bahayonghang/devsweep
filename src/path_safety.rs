@@ -1,0 +1,67 @@
+use std::path::{Path, PathBuf};
+
+pub(crate) fn target_contains_current_exe(target_path: Option<&Path>) -> bool {
+    let Some(target_path) = target_path else {
+        return false;
+    };
+    let Ok(current_exe) = std::env::current_exe() else {
+        return false;
+    };
+
+    path_contains_path(target_path, &current_exe)
+}
+
+pub(crate) fn path_contains_path(parent: &Path, child: &Path) -> bool {
+    normalize_path(child).starts_with(normalize_path(parent))
+}
+
+fn normalize_path(path: &Path) -> PathBuf {
+    if let Ok(canonical) = path.canonicalize() {
+        return canonical;
+    }
+
+    let mut missing = Vec::new();
+    let mut current = path;
+    while !current.as_os_str().is_empty() {
+        if let Ok(canonical) = current.canonicalize() {
+            let mut normalized = canonical;
+            for component in missing.iter().rev() {
+                normalized.push(component);
+            }
+            return normalized;
+        }
+        let Some(name) = current.file_name() else {
+            break;
+        };
+        missing.push(name.to_os_string());
+        let Some(parent) = current.parent() else {
+            break;
+        };
+        current = parent;
+    }
+
+    path.to_path_buf()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::TempDir;
+
+    use super::*;
+
+    #[test]
+    fn path_contains_path_handles_existing_and_missing_children() {
+        let fixture = TempDir::new().expect("temp dir");
+        let parent = fixture.path().join("target");
+        let child_dir = parent.join("debug");
+        let child = child_dir.join("devsweep.exe");
+        fs::create_dir_all(&child_dir).expect("child dir");
+        fs::write(&child, "exe").expect("child file");
+
+        assert!(path_contains_path(&parent, &child));
+        assert!(path_contains_path(&parent, &parent.join("missing.exe")));
+        assert!(!path_contains_path(&child_dir, &parent));
+    }
+}

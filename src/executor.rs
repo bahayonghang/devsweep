@@ -9,7 +9,10 @@ use std::{
 use anyhow::{Context, Result, anyhow, bail};
 use serde::Serialize;
 
-use crate::model::{CleanAction, CleanTarget, CleanupPlan, TargetId};
+use crate::{
+    model::{CleanAction, CleanTarget, CleanupPlan, TargetId},
+    path_safety::target_contains_current_exe,
+};
 
 #[derive(Debug, Clone)]
 pub struct ExecutionRequest {
@@ -251,6 +254,12 @@ where
         target: &CleanTarget,
         _allow_permanent_delete: bool,
     ) -> Result<ActionStatus> {
+        if target_contains_current_exe(target.path.as_deref()) {
+            return Ok(ActionStatus::Skipped {
+                message: SELF_CLEAN_SKIP_MESSAGE.to_string(),
+            });
+        }
+
         match &target.action {
             CleanAction::Command {
                 program,
@@ -287,6 +296,8 @@ enum ActionStatus {
     Success { command: Option<Vec<String>> },
     Skipped { message: String },
 }
+
+const SELF_CLEAN_SKIP_MESSAGE: &str = "target contains the running devsweep executable";
 
 #[derive(Debug)]
 struct AuditLog {
@@ -842,6 +853,59 @@ mod tests {
         assert!(progress[1].message.contains("inspect-only"));
         assert_eq!(progress[2].status, ExecutionTargetStatus::Failed);
         assert!(progress[2].message.contains("cargo unavailable"));
+    }
+
+    #[test]
+    fn target_containing_running_executable_is_skipped_before_command_runs() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let current_exe = std::env::current_exe().expect("current executable path");
+        let current_exe_dir = current_exe.parent().expect("current executable has parent");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "rust.target",
+                CleanAction::Command {
+                    program: "cargo".to_string(),
+                    args: vec!["clean".to_string()],
+                    cwd: None,
+                    irreversible: true,
+                },
+                Some(current_exe_dir.to_path_buf()),
+            )],
+        };
+        let command_runner = RecordingCommandRunner::default();
+        let executor = Executor::new(command_runner.clone(), RecordingTrashRunner::default());
+        let mut progress = Vec::new();
+
+        let report = executor
+            .run_plan_with_progress(
+                &plan,
+                ExecutionRequest {
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path.clone()),
+                },
+                |event| progress.push(event),
+            )
+            .expect("self-clean target is skipped");
+
+        assert_eq!(report.succeeded, 0);
+        assert_eq!(report.failed, 0);
+        assert_eq!(report.skipped, 1);
+        assert!(command_runner.requests().is_empty());
+        assert_eq!(progress.len(), 1);
+        assert_eq!(progress[0].status, ExecutionTargetStatus::Skipped);
+        assert!(progress[0].message.contains(SELF_CLEAN_SKIP_MESSAGE));
+
+        let records = read_jsonl(&audit_path);
+        assert_eq!(records[0]["status"], "skipped");
+        assert!(
+            records[0]["error"]
+                .as_str()
+                .expect("skip reason")
+                .contains(SELF_CLEAN_SKIP_MESSAGE)
+        );
     }
 
     #[derive(Clone, Default)]
