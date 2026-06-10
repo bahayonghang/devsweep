@@ -202,6 +202,10 @@ CommandRequest {
   future `CleanAction::Command` plans.
 - npm, pip, pnpm, and Yarn global cache cleanup targets use
   `CleanAction::Command` with program and argv stored separately.
+- A provider must not emit multiple user-facing cleanup targets for the same
+  cache path just because the tool has alternative commands. Keep one cleanup
+  target per physical cache footprint and record related official commands in
+  evidence unless the model grows an explicit action-choice contract.
 - Missing npm, pip, pnpm, or Yarn executables are non-fatal unavailable
   providers.
 - Cargo home is inspect-only by default and uses
@@ -221,6 +225,8 @@ CommandRequest {
 #### 5. Good/Base/Bad Cases
 - Good: npm target plans `["cache", "verify"]` or
   `["cache", "clean", "--force"]` without running either command.
+- Good: npm cache discovery emits one target for the cache directory and may
+  list `npm cache verify` as evidence for the same target.
 - Good: pip target plans `["-m", "pip", "cache", "purge"]` and uses
   `pip cache dir` only for discovery evidence.
 - Good: pnpm target plans `["store", "prune"]`.
@@ -230,11 +236,15 @@ CommandRequest {
   inspect-only.
 - Bad: deleting `_cacache`, pip `http-v2`, pnpm store internals, Yarn cache
   folders, or Cargo home directories directly.
+- Bad: emitting both `npm.cache.verify:<path>` and `npm.cache.clean:<path>` as
+  separate targets with the same estimated size.
 - Bad: adding Docker builder cache to this MVP provider set.
 
 #### 6. Tests Required
 - Missing-tool provider test proving scan succeeds with no targets.
 - Available-tool provider test asserting official program/argv pairs.
+- Duplicate-path provider test proving alternative commands do not create
+  duplicate user-facing targets for the same cache directory.
 - Yarn version-branch test for classic and modern command arguments.
 - Cargo home test proving the action is inspect-only and no cargo `bin` or
   credential path is emitted as cleanable.

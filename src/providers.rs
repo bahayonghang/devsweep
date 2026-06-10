@@ -1,7 +1,8 @@
 use std::{
-    env,
+    env, fs,
     path::{Path, PathBuf},
     process::Command,
+    time::SystemTime,
 };
 
 use crate::model::{
@@ -33,6 +34,7 @@ trait ProviderProbe {
     fn env_path(&self, key: &str) -> Option<PathBuf>;
     fn home_dir(&self) -> Option<PathBuf>;
     fn is_dir(&self, path: &Path) -> bool;
+    fn estimate_tree(&self, path: &Path) -> (u64, Option<SystemTime>);
 }
 
 struct SystemProviderProbe;
@@ -72,6 +74,10 @@ impl ProviderProbe for SystemProviderProbe {
     fn is_dir(&self, path: &Path) -> bool {
         path.is_dir()
     }
+
+    fn estimate_tree(&self, path: &Path) -> (u64, Option<SystemTime>) {
+        estimate_tree(path)
+    }
 }
 
 fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
@@ -93,26 +99,14 @@ fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         return;
     };
     let cache_path = output_path(probe.command_output(&npm, &["config", "get", "cache"]));
+    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
 
-    targets.push(command_target(CommandTargetInput {
-        rule_id: "npm.cache.verify",
-        ecosystem: Ecosystem::Node,
-        path: cache_path.clone(),
-        risk: RiskLevel::Low,
-        selected_by_default: false,
-        program: npm.clone(),
-        args: vec!["cache", "verify"],
-        evidence: command_evidence(
-            "npm.cache.verify",
-            cache_path.clone(),
-            "npm config get cache",
-            &["npm cache verify"],
-        ),
-    }));
     targets.push(command_target(CommandTargetInput {
         rule_id: "npm.cache.clean",
         ecosystem: Ecosystem::Node,
         path: cache_path.clone(),
+        estimated_bytes: cache_bytes,
+        last_modified: cache_modified,
         risk: RiskLevel::Medium,
         selected_by_default: false,
         program: npm,
@@ -121,7 +115,7 @@ fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
             "npm.cache.clean",
             cache_path,
             "npm config get cache",
-            &["npm cache clean --force"],
+            &["npm cache verify", "npm cache clean --force"],
         ),
     }));
 }
@@ -140,6 +134,7 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
     let cache_path =
         output_path(probe.command_output(&pip_program, &["-m", "pip", "cache", "dir"]));
+    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
     let purge_command = format!("{pip_program_name} -m pip cache purge");
     let dir_command = format!("{pip_program_name} -m pip cache dir");
     let info_command = format!("{pip_program_name} -m pip cache info");
@@ -148,6 +143,8 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         rule_id: "pip.cache.purge",
         ecosystem: Ecosystem::Python,
         path: cache_path.clone(),
+        estimated_bytes: cache_bytes,
+        last_modified: cache_modified,
         risk: RiskLevel::Medium,
         selected_by_default: false,
         program: pip_program,
@@ -166,11 +163,14 @@ fn add_pnpm_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         return;
     };
     let store_path = output_path(probe.command_output(&pnpm, &["store", "path"]));
+    let (store_bytes, store_modified) = estimate_path(probe, store_path.as_deref());
 
     targets.push(command_target(CommandTargetInput {
         rule_id: "pnpm.store.prune",
         ecosystem: Ecosystem::Node,
         path: store_path.clone(),
+        estimated_bytes: store_bytes,
+        last_modified: store_modified,
         risk: RiskLevel::Low,
         selected_by_default: false,
         program: pnpm,
@@ -208,6 +208,7 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         )
     };
     let cache_path = output_path(probe.command_output(&yarn, &path_command));
+    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
     let path_command_display = if major_version <= 1 {
         "yarn cache dir"
     } else {
@@ -218,6 +219,8 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         rule_id,
         ecosystem: Ecosystem::Node,
         path: cache_path.clone(),
+        estimated_bytes: cache_bytes,
+        last_modified: cache_modified,
         risk: RiskLevel::Medium,
         selected_by_default: false,
         program: yarn,
@@ -239,14 +242,16 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         return;
     }
 
+    let (estimated_bytes, last_modified) = probe.estimate_tree(&cargo_home);
+
     targets.push(CleanTarget {
         id: TargetId::new(format!("cargo.home.inspect:{}", cargo_home.display())),
         scope: Scope::Global,
         ecosystem: Ecosystem::Rust,
         kind: TargetKind::PackageCache,
         path: Some(cargo_home.clone()),
-        estimated_bytes: 0,
-        last_modified: None,
+        estimated_bytes,
+        last_modified,
         risk: RiskLevel::High,
         reversible: true,
         selected_by_default: false,
@@ -267,6 +272,8 @@ struct CommandTargetInput<'a> {
     rule_id: &'a str,
     ecosystem: Ecosystem,
     path: Option<PathBuf>,
+    estimated_bytes: u64,
+    last_modified: Option<SystemTime>,
     risk: RiskLevel,
     selected_by_default: bool,
     program: PathBuf,
@@ -279,6 +286,8 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         rule_id,
         ecosystem,
         path,
+        estimated_bytes,
+        last_modified,
         risk,
         selected_by_default,
         program,
@@ -296,8 +305,8 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         ecosystem,
         kind: TargetKind::PackageCache,
         path,
-        estimated_bytes: 0,
-        last_modified: None,
+        estimated_bytes,
+        last_modified,
         risk,
         reversible: false,
         selected_by_default,
@@ -357,6 +366,62 @@ fn output_path(output: Option<String>) -> Option<PathBuf> {
                 .map(str::to_string)
         })
         .map(PathBuf::from)
+}
+
+fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> (u64, Option<SystemTime>) {
+    path.map(|path| probe.estimate_tree(path))
+        .unwrap_or((0, None))
+}
+
+fn estimate_tree(path: &Path) -> (u64, Option<SystemTime>) {
+    let Ok(metadata) = fs::symlink_metadata(path) else {
+        return (0, None);
+    };
+    if is_unsafe_link(&metadata) {
+        return (0, metadata.modified().ok());
+    }
+    if metadata.is_file() {
+        return (metadata.len(), metadata.modified().ok());
+    }
+    if !metadata.is_dir() {
+        return (0, metadata.modified().ok());
+    }
+
+    let mut bytes = 0;
+    let mut latest = metadata.modified().ok();
+    let Ok(entries) = fs::read_dir(path) else {
+        return (bytes, latest);
+    };
+
+    for entry in entries.flatten() {
+        let (entry_bytes, entry_modified) = estimate_tree(&entry.path());
+        bytes += entry_bytes;
+        if let Some(modified) = entry_modified {
+            match latest {
+                Some(current) if current >= modified => {}
+                _ => latest = Some(modified),
+            }
+        }
+    }
+
+    (bytes, latest)
+}
+
+fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
+    metadata.file_type().is_symlink() || has_windows_reparse_point(metadata)
+}
+
+#[cfg(windows)]
+fn has_windows_reparse_point(metadata: &fs::Metadata) -> bool {
+    use std::os::windows::fs::MetadataExt;
+
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+    metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+}
+
+#[cfg(not(windows))]
+fn has_windows_reparse_point(_metadata: &fs::Metadata) -> bool {
+    false
 }
 
 fn parse_major_version(version: &str) -> Option<u64> {
@@ -443,16 +508,13 @@ mod tests {
         probe.output(&pnpm, &["store", "path"], "/cache/pnpm\n");
         probe.output(&yarn, &["--version"], "4.12.0\n");
         probe.output(&yarn, &["config", "get", "cacheFolder"], "/cache/yarn\n");
+        probe.path_size("/cache/npm", 100);
+        probe.path_size("/cache/pip", 200);
+        probe.path_size("/cache/pnpm", 300);
+        probe.path_size("/cache/yarn", 400);
 
         let plan = scan_with_probe(&probe);
 
-        assert_command(
-            &plan,
-            "npm.cache.verify",
-            "/tools/npm",
-            &["cache", "verify"],
-            false,
-        );
         assert_command(
             &plan,
             "npm.cache.clean",
@@ -487,10 +549,41 @@ mod tests {
             assert!(!target.evidence.is_empty());
             assert_ne!(target.ecosystem, Ecosystem::Docker);
             assert!(
+                target.estimated_bytes > 0,
+                "{} should include an estimated cache size",
+                target.id.as_str()
+            );
+            assert!(
                 !matches!(target.action, CleanAction::MoveToTrash { .. }),
                 "global providers must not delete cache internals directly"
             );
         }
+    }
+
+    #[test]
+    fn npm_cache_path_emits_one_cleanup_target() {
+        let mut probe = FakeProbe::default();
+        let npm = probe.tool("npm", "/tools/npm");
+        probe.output(&npm, &["config", "get", "cache"], "/cache/npm\n");
+        probe.path_size("/cache/npm", 100);
+
+        let plan = scan_with_probe(&probe);
+
+        let npm_targets: Vec<_> = plan
+            .targets
+            .iter()
+            .filter(|target| target.path == Some(PathBuf::from("/cache/npm")))
+            .collect();
+        assert_eq!(npm_targets.len(), 1);
+
+        let target = npm_targets[0];
+        assert!(target.id.as_str().starts_with("npm.cache.clean"));
+        assert!(target.evidence.iter().any(|evidence| {
+            matches!(
+                evidence,
+                Evidence::OfficialCommand { command } if command == "npm cache verify"
+            )
+        }));
     }
 
     #[test]
@@ -499,6 +592,7 @@ mod tests {
         let yarn = probe.tool("yarn", "/tools/yarn");
         probe.output(&yarn, &["--version"], "1.22.22\n");
         probe.output(&yarn, &["cache", "dir"], "/cache/yarn-classic\n");
+        probe.path_size("/cache/yarn-classic", 512);
 
         let plan = scan_with_probe(&probe);
 
@@ -511,6 +605,7 @@ mod tests {
         );
         let target = find_target(&plan, "yarn.cache.clean.classic");
         assert_eq!(target.path, Some(PathBuf::from("/cache/yarn-classic")));
+        assert_eq!(target.estimated_bytes, 512);
     }
 
     #[test]
@@ -522,6 +617,7 @@ mod tests {
         probe.dirs.insert(PathBuf::from("/cargo"));
         probe.dirs.insert(PathBuf::from("/cargo/bin"));
         probe.dirs.insert(PathBuf::from("/cargo/registry/cache"));
+        probe.path_size("/cargo", 777);
 
         let plan = scan_with_probe(&probe);
 
@@ -529,6 +625,7 @@ mod tests {
         let target = &plan.targets[0];
         assert!(target.id.as_str().starts_with("cargo.home.inspect"));
         assert_eq!(target.path, Some(PathBuf::from("/cargo")));
+        assert_eq!(target.estimated_bytes, 777);
         assert_eq!(target.action, CleanAction::NoopInspectOnly);
         assert!(!target.selected_by_default);
         assert!(
@@ -546,6 +643,7 @@ mod tests {
         env: HashMap<String, PathBuf>,
         home: Option<PathBuf>,
         dirs: HashSet<PathBuf>,
+        sizes: HashMap<PathBuf, u64>,
     }
 
     impl FakeProbe {
@@ -563,6 +661,10 @@ mod tests {
                 ),
                 output.to_string(),
             );
+        }
+
+        fn path_size(&mut self, path: &str, bytes: u64) {
+            self.sizes.insert(PathBuf::from(path), bytes);
         }
     }
 
@@ -590,6 +692,10 @@ mod tests {
 
         fn is_dir(&self, path: &Path) -> bool {
             self.dirs.contains(path)
+        }
+
+        fn estimate_tree(&self, path: &Path) -> (u64, Option<SystemTime>) {
+            (self.sizes.get(path).copied().unwrap_or_default(), None)
         }
     }
 
