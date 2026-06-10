@@ -136,11 +136,16 @@ CleanAction::Command {
 - Individual target failure -> record failed audit entry, continue remaining
   targets, return a report with failures.
 - Inspect-only target -> skipped audit entry, no side effect.
+- Target path contains the running `devsweep` executable -> skipped audit entry,
+  no command/trash side effect. Use the shared path-safety helper rather than
+  duplicating path prefix checks in callers.
 - Permanent delete target -> failed audit entry, no side effect.
 
 #### 5. Good/Base/Bad Cases
 - Good: command-backed Rust target records `["cargo", "clean",
   "--manifest-path", "<Cargo.toml>"]`.
+- Good: a selected target that contains `std::env::current_exe()` is skipped
+  before invoking `CommandRunner` or `TrashRunner`.
 - Good: trash-backed target moves exactly the path from
   `CleanAction::MoveToTrash`.
 - Base: `devsweep clean` reports a dry-run with zero selected targets when no
@@ -152,6 +157,8 @@ CleanAction::Command {
 #### 6. Tests Required
 - Dry-run test proving command and trash runners are not called.
 - Command-runner test asserting program and argv are separate.
+- Self-clean guard test asserting the command runner is not called and the audit
+  record status is `skipped`.
 - Trash-runner test asserting the exact plan path is used.
 - Audit JSONL test covering both success and failure records in one job.
 - Permanent-delete test proving the file remains present even with the flag.

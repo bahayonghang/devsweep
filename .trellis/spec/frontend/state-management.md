@@ -44,6 +44,11 @@ Selection state should store `TargetId` values, not row numbers. The row index i
 only a cursor into the current filtered view and must be clamped or validated
 before use.
 
+Interactive default selection must use the shared path-safety helper to exclude
+targets that contain the running `devsweep` executable. This prevents a target
+hidden by the active tab, such as the current checkout's Rust `target/`, from
+being executed by surprise when the TUI is launched with `just dev`.
+
 ---
 
 ## Server State
@@ -60,3 +65,6 @@ be treated as stale after a new scan or cleanup job.
 - Do not keep a cached selected total without a clear invalidation path.
 - Do not let filter changes leave the selected row pointing past the visible
   target list.
+- Do not rebuild default-selection filtering with local path-prefix logic in the
+  TUI. Reuse the shared path-safety helper so UI selection and executor safety
+  stay consistent.
