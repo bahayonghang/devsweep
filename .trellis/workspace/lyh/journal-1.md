@@ -415,3 +415,37 @@ Lowered TUI cleanup confirmation friction to fixed confirm, normalized Windows v
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: TUI cleanup progress and logs
+
+**Date**: 2026-06-10
+**Task**: TUI cleanup progress and logs
+**Branch**: `main`
+
+### Summary
+
+Added typed cleanup progress outcomes, per-target TUI result list, structured in-memory app logs, and task docs; just ci passed.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b1c7c33ad5a5e5c3446bf60d7c4bc868c921cc0e` | (see git log) |
+| `74d9fe6ca1cb7ebee85b0e737e366e619d6eac88` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

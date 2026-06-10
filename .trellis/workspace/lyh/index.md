@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 12
+- **Total Sessions**: 13
 - **Last Active**: 2026-06-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~417 | Active |
+| `journal-1.md` | ~451 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 13 | 2026-06-10 | TUI cleanup progress and logs | `b1c7c33ad5a5e5c3446bf60d7c4bc868c921cc0e`, `74d9fe6ca1cb7ebee85b0e737e366e619d6eac88` | `main` |
 | 12 | 2026-06-10 | TUI cleanup confirmation UX | `c4ff62d`, `770adf9`, `ae601d5` | `main` |
 | 11 | 2026-06-10 | 修复 TUI 清理确认反馈 | `df3f725`, `1ed76f8`, `09e2cdc` | `main` |
 | 10 | 2026-06-10 | Improve TUI cleanup confirmation and progress | `c40b091`, `9f919c8` | `main` |
