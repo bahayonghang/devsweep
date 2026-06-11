@@ -979,6 +979,13 @@ enum ScopeKind {
     Project,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BodyLayoutKind {
+    Full,
+    Focused,
+    Compact,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum UiEvent {
     Key(KeyEvent),
@@ -1165,6 +1172,21 @@ enum FooterTone {
     Neutral,
 }
 
+const SURFACE: Color = Color::Rgb(28, 31, 44);
+const SURFACE_RAISED: Color = Color::Rgb(42, 47, 62);
+const FOOTER_SURFACE: Color = Color::Rgb(22, 25, 35);
+const BORDER: Color = Color::Rgb(92, 101, 135);
+const TEXT: Color = Color::Rgb(206, 212, 236);
+const TEXT_MUTED: Color = Color::Rgb(134, 143, 177);
+const TEXT_STRONG: Color = Color::Rgb(190, 198, 230);
+const ACCENT: Color = Color::Rgb(112, 208, 178);
+const ACCENT_SOFT: Color = Color::Rgb(190, 236, 220);
+const WARNING: Color = Color::Rgb(245, 215, 132);
+const DANGER: Color = Color::Rgb(239, 112, 138);
+const RISK_LOW: Color = Color::Rgb(130, 198, 167);
+const RISK_MEDIUM: Color = Color::Rgb(221, 185, 112);
+const RISK_HIGH: Color = Color::Rgb(231, 137, 111);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct FooterAction {
     key: &'static str,
@@ -1294,46 +1316,44 @@ fn panel_block(title: &'static str) -> Block<'static> {
         .title(title)
         .title_style(
             Style::default()
-                .fg(Color::Rgb(190, 198, 230))
+                .fg(TEXT_STRONG)
                 .add_modifier(Modifier::BOLD),
         )
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(Color::Rgb(92, 101, 135)))
-        .style(Style::default().bg(Color::Rgb(28, 31, 44)))
+        .border_style(Style::default().fg(BORDER))
+        .style(Style::default().bg(SURFACE))
         .padding(Padding::horizontal(1))
 }
 
 fn focused_panel_block(title: &'static str) -> Block<'static> {
-    panel_block(title).border_style(Style::default().fg(Color::Rgb(112, 208, 178)))
+    panel_block(title).border_style(Style::default().fg(ACCENT))
 }
 
 fn panel_style() -> Style {
-    Style::default()
-        .fg(Color::Rgb(206, 212, 236))
-        .bg(Color::Rgb(28, 31, 44))
+    Style::default().fg(TEXT).bg(SURFACE)
 }
 
 fn muted_style() -> Style {
-    Style::default().fg(Color::Rgb(134, 143, 177))
+    Style::default().fg(TEXT_MUTED)
 }
 
 fn accent_style() -> Style {
-    Style::default()
-        .fg(Color::Rgb(112, 208, 178))
-        .add_modifier(Modifier::BOLD)
+    Style::default().fg(ACCENT).add_modifier(Modifier::BOLD)
 }
 
 fn warning_style() -> Style {
-    Style::default()
-        .fg(Color::Rgb(245, 215, 132))
-        .add_modifier(Modifier::BOLD)
+    Style::default().fg(WARNING).add_modifier(Modifier::BOLD)
 }
 
 fn error_style() -> Style {
     Style::default()
-        .fg(Color::Rgb(239, 112, 138))
-        .bg(Color::Rgb(28, 31, 44))
+        .fg(DANGER)
+        .bg(SURFACE)
         .add_modifier(Modifier::BOLD)
+}
+
+fn selected_row_style() -> Style {
+    Style::default().bg(SURFACE_RAISED)
 }
 
 fn app_log_level_style(level: AppLogLevel) -> Style {
@@ -1346,14 +1366,28 @@ fn app_log_level_style(level: AppLogLevel) -> Style {
 
 fn risk_style(risk: &RiskLevel) -> Style {
     match risk {
-        RiskLevel::Low => Style::default().fg(Color::Rgb(130, 198, 167)),
-        RiskLevel::Medium => Style::default().fg(Color::Rgb(221, 185, 112)),
-        RiskLevel::High => Style::default()
-            .fg(Color::Rgb(231, 137, 111))
-            .add_modifier(Modifier::BOLD),
-        RiskLevel::Dangerous => Style::default()
-            .fg(Color::Rgb(239, 112, 138))
-            .add_modifier(Modifier::BOLD),
+        RiskLevel::Low => Style::default().fg(RISK_LOW),
+        RiskLevel::Medium => Style::default().fg(RISK_MEDIUM),
+        RiskLevel::High => Style::default().fg(RISK_HIGH).add_modifier(Modifier::BOLD),
+        RiskLevel::Dangerous => Style::default().fg(DANGER).add_modifier(Modifier::BOLD),
+    }
+}
+
+fn body_layout_kind(area: Rect) -> BodyLayoutKind {
+    if area.width >= 100 {
+        BodyLayoutKind::Full
+    } else if area.width >= 80 {
+        BodyLayoutKind::Focused
+    } else {
+        BodyLayoutKind::Compact
+    }
+}
+
+fn header_layout_kind(area: Rect) -> BodyLayoutKind {
+    if area.width >= 100 {
+        BodyLayoutKind::Full
+    } else {
+        BodyLayoutKind::Focused
     }
 }
 
@@ -1365,10 +1399,76 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
         app.filter.clone()
     };
     let risk = app.risk_filter.as_ref().map(risk_label).unwrap_or("all");
-    let text = vec![
-        Line::from(vec![
+    let text = match header_layout_kind(area) {
+        BodyLayoutKind::Full => vec![
+            Line::from(vec![
+                Span::styled("devsweep", accent_style()),
+                Span::styled("  cleanup plan cockpit", muted_style()),
+                Span::styled("  |  ", muted_style()),
+                Span::styled("Selected ", muted_style()),
+                Span::styled(
+                    format!(
+                        "{} ({})",
+                        app.selected_ids.len(),
+                        format_bytes(app.selected_bytes())
+                    ),
+                    warning_style(),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("Global ", muted_style()),
+                Span::styled(
+                    format_bytes(app.scope_bytes(ScopeKind::Global)),
+                    panel_style(),
+                ),
+                Span::styled("  Projects ", muted_style()),
+                Span::styled(
+                    format_bytes(app.scope_bytes(ScopeKind::Project)),
+                    panel_style(),
+                ),
+                Span::styled("  Filter ", muted_style()),
+                Span::styled(filter, panel_style()),
+                Span::styled("  Risk ", muted_style()),
+                Span::styled(risk, panel_style()),
+                Span::styled("  Jobs ", muted_style()),
+                Span::styled(active_jobs.to_string(), panel_style()),
+            ]),
+        ],
+        BodyLayoutKind::Focused => vec![
+            Line::from(vec![
+                Span::styled("devsweep", accent_style()),
+                Span::styled("  |  ", muted_style()),
+                Span::styled("Selected ", muted_style()),
+                Span::styled(
+                    format!(
+                        "{} ({})",
+                        app.selected_ids.len(),
+                        format_bytes(app.selected_bytes())
+                    ),
+                    warning_style(),
+                ),
+                Span::styled("  Jobs ", muted_style()),
+                Span::styled(active_jobs.to_string(), panel_style()),
+            ]),
+            Line::from(vec![
+                Span::styled("G ", muted_style()),
+                Span::styled(
+                    format_bytes(app.scope_bytes(ScopeKind::Global)),
+                    panel_style(),
+                ),
+                Span::styled("  P ", muted_style()),
+                Span::styled(
+                    format_bytes(app.scope_bytes(ScopeKind::Project)),
+                    panel_style(),
+                ),
+                Span::styled("  F ", muted_style()),
+                Span::styled(filter, panel_style()),
+                Span::styled("  R ", muted_style()),
+                Span::styled(risk, panel_style()),
+            ]),
+        ],
+        BodyLayoutKind::Compact => vec![Line::from(vec![
             Span::styled("devsweep", accent_style()),
-            Span::styled("  cleanup plan cockpit", muted_style()),
             Span::styled("  |  ", muted_style()),
             Span::styled("Selected ", muted_style()),
             Span::styled(
@@ -1377,30 +1477,12 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     app.selected_ids.len(),
                     format_bytes(app.selected_bytes())
                 ),
-                Style::default()
-                    .fg(Color::Rgb(245, 215, 132))
-                    .add_modifier(Modifier::BOLD),
+                warning_style(),
             ),
-        ]),
-        Line::from(vec![
-            Span::styled("Global ", muted_style()),
-            Span::styled(
-                format_bytes(app.scope_bytes(ScopeKind::Global)),
-                panel_style(),
-            ),
-            Span::styled("  Projects ", muted_style()),
-            Span::styled(
-                format_bytes(app.scope_bytes(ScopeKind::Project)),
-                panel_style(),
-            ),
-            Span::styled("  Filter ", muted_style()),
-            Span::styled(filter, panel_style()),
-            Span::styled("  Risk ", muted_style()),
-            Span::styled(risk, panel_style()),
             Span::styled("  Jobs ", muted_style()),
             Span::styled(active_jobs.to_string(), panel_style()),
-        ]),
-    ];
+        ])],
+    };
     frame.render_widget(
         Paragraph::new(Text::from(text))
             .block(focused_panel_block("Summary"))
@@ -1422,12 +1504,8 @@ fn render_tabs(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let tabs = Tabs::new(titles)
         .select(selected)
         .block(panel_block("Views"))
-        .style(muted_style().bg(Color::Rgb(28, 31, 44)))
-        .highlight_style(
-            Style::default()
-                .fg(Color::Rgb(112, 208, 178))
-                .add_modifier(Modifier::BOLD),
-        );
+        .style(muted_style().bg(SURFACE))
+        .highlight_style(Style::default().fg(ACCENT).add_modifier(Modifier::BOLD));
     frame.render_widget(tabs, area);
 }
 
@@ -1436,17 +1514,42 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &App) {
         ActiveTab::Rules => render_rules(frame, area),
         ActiveTab::JobsLogs => render_jobs_logs(frame, area, app),
         ActiveTab::Dashboard | ActiveTab::Global | ActiveTab::Projects => {
-            let chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([
-                    Constraint::Percentage(22),
-                    Constraint::Percentage(45),
-                    Constraint::Percentage(33),
-                ])
-                .split(area);
-            render_categories(frame, chunks[0], app);
-            render_targets(frame, chunks[1], app);
-            render_details_panel(frame, chunks[2], app);
+            match body_layout_kind(area) {
+                BodyLayoutKind::Full => {
+                    let chunks = Layout::default()
+                        .direction(Direction::Horizontal)
+                        .constraints([
+                            Constraint::Percentage(22),
+                            Constraint::Percentage(45),
+                            Constraint::Percentage(33),
+                        ])
+                        .split(area);
+                    render_categories(frame, chunks[0], app);
+                    render_targets(frame, chunks[1], app);
+                    render_details_panel(frame, chunks[2], app);
+                }
+                BodyLayoutKind::Focused => {
+                    let chunks = Layout::default()
+                        .direction(Direction::Horizontal)
+                        .constraints([Constraint::Percentage(58), Constraint::Percentage(42)])
+                        .split(area);
+                    render_targets(frame, chunks[0], app);
+                    render_details_panel(frame, chunks[1], app);
+                }
+                BodyLayoutKind::Compact => {
+                    let chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints([
+                            Constraint::Length(5),
+                            Constraint::Min(10),
+                            Constraint::Length(7),
+                        ])
+                        .split(area);
+                    render_compact_summary(frame, chunks[0], app);
+                    render_targets(frame, chunks[1], app);
+                    render_details_panel(frame, chunks[2], app);
+                }
+            }
         }
     }
 }
@@ -1471,6 +1574,44 @@ fn render_categories(frame: &mut Frame<'_>, area: Rect, app: &App) {
     );
 }
 
+fn render_compact_summary(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    let active_jobs = app.jobs.iter().filter(|job| job.status.is_active()).count();
+    let filter = if app.filter.is_empty() {
+        "none".to_string()
+    } else {
+        app.filter.clone()
+    };
+    let risk = app.risk_filter.as_ref().map(risk_label).unwrap_or("all");
+    let lines = vec![
+        Line::from(vec![
+            Span::styled("Selected ", muted_style()),
+            Span::styled(
+                format!(
+                    "{} ({})",
+                    app.selected_ids.len(),
+                    format_bytes(app.selected_bytes())
+                ),
+                warning_style(),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("Filter ", muted_style()),
+            Span::styled(filter, panel_style()),
+            Span::styled("  Risk ", muted_style()),
+            Span::styled(risk, panel_style()),
+            Span::styled("  Jobs ", muted_style()),
+            Span::styled(active_jobs.to_string(), panel_style()),
+        ]),
+    ];
+
+    frame.render_widget(
+        Paragraph::new(Text::from(lines))
+            .block(panel_block("Summary"))
+            .style(panel_style()),
+        area,
+    );
+}
+
 fn metric_line(label: &'static str, count: usize) -> Line<'static> {
     Line::from(vec![
         Span::styled(format!("{label:<10}"), panel_style()),
@@ -1484,42 +1625,17 @@ fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let lines = if visible.is_empty() {
         vec![Line::styled("No targets in this view.", muted_style())]
     } else {
-        visible
-            .iter()
-            .enumerate()
-            .map(|(row, index)| {
-                let target = &app.targets[*index];
-                let selected = row == selected_row;
-                let cursor_style = if selected {
-                    accent_style()
-                } else {
-                    muted_style()
-                };
-                let cursor = if selected { ">" } else { " " };
-                let mark = if app.selected_ids.contains(&target.id) {
-                    "[x]"
-                } else {
-                    "[ ]"
-                };
-                let mut line = Line::from(vec![
-                    Span::styled(format!("{cursor} "), cursor_style),
-                    Span::styled(format!("{mark} "), accent_style()),
-                    Span::styled(
-                        format!("{:<9} ", risk_label(&target.risk)),
-                        risk_style(&target.risk),
-                    ),
-                    Span::styled(
-                        format!("{:>9} ", format_bytes(target.estimated_bytes)),
-                        Style::default().fg(Color::Rgb(245, 215, 132)),
-                    ),
-                    Span::styled(target_title(target), panel_style()),
-                ]);
-                if selected {
-                    line = line.style(Style::default().bg(Color::Rgb(42, 47, 62)));
-                }
-                line
-            })
-            .collect()
+        let mut rows = vec![target_header_row(area)];
+        rows.extend(visible.iter().enumerate().map(|(row, index)| {
+            let target = &app.targets[*index];
+            target_row(
+                target,
+                row == selected_row,
+                app.selected_ids.contains(&target.id),
+                area,
+            )
+        }));
+        rows
     };
 
     frame.render_widget(
@@ -1529,6 +1645,72 @@ fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .wrap(Wrap { trim: false }),
         area,
     );
+}
+
+fn target_header_row(_area: Rect) -> Line<'static> {
+    let mut spans = vec![
+        Span::styled("  ", muted_style()),
+        Span::styled("Sel ", muted_style()),
+        Span::styled("Risk ", muted_style()),
+        Span::styled("Size ", muted_style()),
+    ];
+    spans.push(Span::styled("Target", muted_style()));
+    Line::from(spans)
+}
+
+fn target_row(target: &CleanTarget, selected: bool, checked: bool, area: Rect) -> Line<'static> {
+    let cursor_style = if selected {
+        accent_style()
+    } else {
+        muted_style()
+    };
+    let mark = if checked { "[x]" } else { "[ ]" };
+    let cursor = if selected { ">" } else { " " };
+    let target_width = target_text_width(area);
+    let identity = if area.width >= 70 {
+        compact_target_identity(target)
+    } else {
+        target_title(target)
+    };
+    let target_text = compact_text(&identity, target_width);
+
+    let spans = vec![
+        Span::styled(format!("{cursor} "), cursor_style),
+        Span::styled(format!("{mark} "), accent_style()),
+        Span::styled(
+            format!("{:<9} ", risk_label(&target.risk)),
+            risk_style(&target.risk),
+        ),
+        Span::styled(
+            format!("{:>9} ", format_bytes(target.estimated_bytes)),
+            warning_style(),
+        ),
+        Span::styled(target_text, panel_style()),
+    ];
+
+    let mut line = Line::from(spans);
+    if selected {
+        line = line.style(selected_row_style());
+    }
+    line
+}
+
+fn short_target_identity(target: &CleanTarget) -> String {
+    compact_text(&target_title(target), 32)
+}
+
+fn compact_target_identity(target: &CleanTarget) -> String {
+    let scope = match &target.scope {
+        Scope::Global => "Global".to_string(),
+        Scope::Project { root } => format!("Project {}", compact_path(root)),
+    };
+    let identity = short_target_identity(target);
+    format!("{scope} | {identity}")
+}
+
+fn target_text_width(area: Rect) -> usize {
+    let inner_width = area.width.saturating_sub(4) as usize;
+    inner_width.saturating_sub(26).max(12)
 }
 
 fn render_details_panel(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -1569,10 +1751,17 @@ fn render_rules(frame: &mut Frame<'_>, area: Rect) {
 }
 
 fn render_jobs_logs(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
-        .split(area);
+    let chunks = if area.width >= 100 {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
+            .split(area)
+    } else {
+        Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(8), Constraint::Min(6)])
+            .split(area)
+    };
 
     let job_lines = if app.jobs.is_empty() {
         vec![Line::from("No jobs yet.")]
@@ -1638,11 +1827,12 @@ fn log_entry_line(entry: &LogEntry) -> Line<'static> {
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let (mode, mode_tone, actions) = footer_actions(app);
+    let visible_actions = footer_visible_actions(area.width, mode, &actions);
     let mut spans = vec![
         Span::styled(format!(" {mode} "), footer_mode_style(mode_tone)),
         Span::styled(" ", footer_bar_style()),
     ];
-    for action in actions {
+    for action in visible_actions {
         spans.push(Span::styled(
             format!("[{}]", action.key),
             footer_key_style(action.tone),
@@ -1655,10 +1845,35 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let text = Line::from(spans);
     frame.render_widget(
         Paragraph::new(text)
-            .style(Style::default().bg(Color::Rgb(22, 25, 35)))
+            .style(Style::default().bg(FOOTER_SURFACE))
             .alignment(Alignment::Left),
         area,
     );
+}
+
+fn footer_visible_actions(
+    width: u16,
+    mode: &'static str,
+    actions: &[FooterAction],
+) -> Vec<FooterAction> {
+    let mut visible = Vec::new();
+    let mut used = mode.len() + 2 + 1;
+    let limit = width as usize;
+
+    for action in actions {
+        let action_width = footer_action_width(action);
+        if used + action_width > limit {
+            break;
+        }
+        used += action_width;
+        visible.push(*action);
+    }
+
+    visible
+}
+
+fn footer_action_width(action: &FooterAction) -> usize {
+    action.key.len() + action.label.len() + 5
 }
 
 fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
@@ -1729,16 +1944,16 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
     let mut actions = vec![
         footer_action("s", "Scan", FooterTone::Accent),
         footer_action("Space", "Select", FooterTone::Neutral),
+        footer_action("c", "Clean", FooterTone::Danger),
+        footer_action("q", "Quit", FooterTone::Danger),
+        footer_action("/", "Filter", FooterTone::Neutral),
+        footer_action("?", "Help", FooterTone::Neutral),
         footer_action("a", "All", FooterTone::Neutral),
         footer_action("d", "Dry-run", FooterTone::Neutral),
-        footer_action("c", "Clean", FooterTone::Danger),
-        footer_action("/", "Filter", FooterTone::Neutral),
         footer_action("r", "Risk", FooterTone::Neutral),
-        footer_action("?", "Help", FooterTone::Neutral),
-        footer_action("q", "Quit", FooterTone::Danger),
     ];
     if app.jobs.iter().any(|job| job.status.is_active()) {
-        actions.insert(8, footer_action("x", "Cancel", FooterTone::Danger));
+        actions.insert(3, footer_action("x", "Cancel", FooterTone::Danger));
     }
 
     ("NORMAL", FooterTone::Accent, actions)
@@ -1749,42 +1964,40 @@ fn footer_action(key: &'static str, label: &'static str, tone: FooterTone) -> Fo
 }
 
 fn footer_bar_style() -> Style {
-    Style::default()
-        .fg(Color::Rgb(190, 198, 230))
-        .bg(Color::Rgb(22, 25, 35))
+    Style::default().fg(TEXT_STRONG).bg(FOOTER_SURFACE)
 }
 
 fn footer_tone_color(tone: FooterTone) -> Color {
     match tone {
-        FooterTone::Accent => Color::Rgb(112, 208, 178),
-        FooterTone::Warning => Color::Rgb(245, 215, 132),
-        FooterTone::Danger => Color::Rgb(239, 112, 138),
-        FooterTone::Neutral => Color::Rgb(92, 101, 135),
+        FooterTone::Accent => ACCENT,
+        FooterTone::Warning => WARNING,
+        FooterTone::Danger => DANGER,
+        FooterTone::Neutral => BORDER,
     }
 }
 
 fn footer_mode_style(tone: FooterTone) -> Style {
     Style::default()
-        .fg(Color::Rgb(22, 25, 35))
+        .fg(FOOTER_SURFACE)
         .bg(footer_tone_color(tone))
         .add_modifier(Modifier::BOLD)
 }
 
 fn footer_key_style(tone: FooterTone) -> Style {
     Style::default()
-        .fg(Color::Rgb(22, 25, 35))
+        .fg(FOOTER_SURFACE)
         .bg(footer_tone_color(tone))
         .add_modifier(Modifier::BOLD)
 }
 
 fn footer_label_style(tone: FooterTone) -> Style {
     let fg = match tone {
-        FooterTone::Danger => Color::Rgb(239, 112, 138),
-        FooterTone::Warning => Color::Rgb(245, 215, 132),
-        FooterTone::Accent => Color::Rgb(190, 236, 220),
-        FooterTone::Neutral => Color::Rgb(190, 198, 230),
+        FooterTone::Danger => DANGER,
+        FooterTone::Warning => WARNING,
+        FooterTone::Accent => ACCENT_SOFT,
+        FooterTone::Neutral => TEXT_STRONG,
     };
-    Style::default().fg(fg).bg(Color::Rgb(22, 25, 35))
+    Style::default().fg(fg).bg(FOOTER_SURFACE)
 }
 
 fn render_overlay(frame: &mut Frame<'_>, app: &App) {
@@ -1910,7 +2123,7 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
 }
 
 fn render_cleanup_progress(frame: &mut Frame<'_>, progress: &CleanupProgress) {
-    let area = centered_rect(70, 60, frame.area());
+    let area = centered_modal_rect(frame.area(), 84, 22, 52, 12);
     let block = focused_panel_block("Cleanup progress");
     let inner = block.inner(area);
     frame.render_widget(Clear, area);
@@ -2013,7 +2226,7 @@ fn cleanup_item_status_display(status: CleanupItemStatus) -> (&'static str, Styl
 }
 
 fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'static>>) {
-    let area = centered_rect(70, 60, frame.area());
+    let area = centered_modal_rect(frame.area(), 80, 20, 52, 10);
     frame.render_widget(Clear, area);
     frame.render_widget(
         Paragraph::new(Text::from(lines))
@@ -2024,24 +2237,27 @@ fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'sta
     );
 }
 
-fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
-    let vertical = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(area);
-    let horizontal = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(vertical[1]);
-    horizontal[1]
+fn centered_modal_rect(
+    area: Rect,
+    desired_width: u16,
+    desired_height: u16,
+    min_width: u16,
+    min_height: u16,
+) -> Rect {
+    let max_width = area.width.saturating_sub(4).max(1);
+    let max_height = area.height.saturating_sub(4).max(1);
+    let min_width = min_width.min(max_width);
+    let min_height = min_height.min(max_height);
+    let width = desired_width.clamp(min_width, max_width);
+    let height = desired_height.clamp(min_height, max_height);
+    let x = area.x + area.width.saturating_sub(width) / 2;
+    let y = area.y + area.height.saturating_sub(height) / 2;
+    Rect {
+        x,
+        y,
+        width,
+        height,
+    }
 }
 
 fn dry_run_lines(app: &App) -> Vec<Line<'static>> {
@@ -2125,16 +2341,19 @@ fn target_title(target: &CleanTarget) -> String {
 }
 
 fn compact_path(path: &std::path::Path) -> String {
-    let text = display_path(path);
-    let char_count = text.chars().count();
-    if char_count <= 48 {
-        return text;
+    compact_text(&display_path(path), 48)
+}
+
+fn compact_text(text: &str, max_chars: usize) -> String {
+    if text.chars().count() <= max_chars {
+        return text.to_string();
     }
 
+    let tail_len = max_chars.saturating_sub(3);
     let tail = text
         .chars()
         .rev()
-        .take(45)
+        .take(tail_len)
         .collect::<Vec<_>>()
         .into_iter()
         .rev()
@@ -2263,20 +2482,7 @@ fn display_path_text(text: &str) -> String {
 }
 
 fn compact_target_id(target_id: &TargetId) -> String {
-    let text = display_path_text(target_id.as_str());
-    if text.chars().count() <= 48 {
-        text
-    } else {
-        let tail = text
-            .chars()
-            .rev()
-            .take(45)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .rev()
-            .collect::<String>();
-        format!("...{tail}")
-    }
+    compact_text(&display_path_text(target_id.as_str()), 48)
 }
 
 fn format_cleanup_progress(completed: usize, total: usize, message: &str) -> String {
@@ -2336,6 +2542,35 @@ mod tests {
         terminal
             .draw(|frame| render_app(frame, &app))
             .expect("representative app renders");
+    }
+
+    #[test]
+    fn representative_state_renders_at_full_supported_size() {
+        let app = App::with_plan(representative_plan());
+        let rendered = render_text_with_size(&app, 100, 28);
+
+        assert!(rendered.contains("devsweep"));
+        assert!(rendered.contains("Summary"));
+        assert!(rendered.contains("Categories"));
+        assert!(rendered.contains("Targets"));
+        assert!(rendered.contains("Details"));
+        assert!(rendered.contains("Global"));
+        assert!(rendered.contains("Sel Risk Size Target"));
+        assert!(rendered.contains("> [x] Low"));
+        assert!(rendered.contains("1.0 KiB"));
+        assert!(rendered.contains("D:/code/web/.next/cache"));
+    }
+
+    #[test]
+    fn representative_state_renders_at_degraded_supported_size() {
+        let app = App::with_plan(representative_plan());
+        let rendered = render_text_with_size(&app, 80, 24);
+
+        assert!(rendered.contains("Summary"));
+        assert!(rendered.contains("Targets"));
+        assert!(rendered.contains("Details"));
+        assert!(!rendered.contains("Categories"));
+        assert!(rendered.contains("D:/code/web/.next/cache"));
     }
 
     #[test]
@@ -2885,6 +3120,17 @@ mod tests {
     }
 
     #[test]
+    fn narrow_footer_keeps_primary_actions_visible() {
+        let app = App::with_plan(representative_plan());
+        let rendered = render_text_with_size(&app, 80, 24);
+
+        assert!(rendered.contains("NORMAL"));
+        assert!(rendered.contains("[s] Scan"));
+        assert!(rendered.contains("[c] Clean"));
+        assert!(rendered.contains("[q] Quit"));
+    }
+
+    #[test]
     fn worker_events_update_jobs_and_targets() {
         let mut app = App::new();
         let effects = app.update(key(KeyCode::Char('s')));
@@ -3073,7 +3319,11 @@ mod tests {
     }
 
     fn render_text(app: &App) -> String {
-        let backend = TestBackend::new(120, 32);
+        render_text_with_size(app, 120, 32)
+    }
+
+    fn render_text_with_size(app: &App, width: u16, height: u16) -> String {
+        let backend = TestBackend::new(width, height);
         let mut terminal = Terminal::new(backend).expect("test terminal");
         terminal
             .draw(|frame| render_app(frame, app))
