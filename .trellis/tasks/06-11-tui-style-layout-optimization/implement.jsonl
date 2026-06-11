@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "TUI pre-development checklist and required guideline routing"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "render purity, TestBackend expectations, and TUI quality gate"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "ratatui render function conventions and styling boundaries"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "rules for keeping src/tui.rs or splitting cohesive TUI modules"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "App state ownership and selection safety constraints"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "event/update/render boundary for TUI behavior"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "typed model usage and forbidden stringly render schemas"}
+{"file": "design.md", "reason": "historical TUI information architecture and ratatui application pattern context"}

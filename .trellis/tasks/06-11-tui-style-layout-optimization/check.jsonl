@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "final render purity, TestBackend coverage, and usability checklist"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "final component and styling conformance review"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "verify any TUI module split is justified"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "verify layout changes did not duplicate selection or derived state"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "verify display changes still consume typed domain data"}
