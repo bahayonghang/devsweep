@@ -519,3 +519,37 @@ Implemented width-aware ratatui layout, semantic TUI styling, scannable target r
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: TUI Startup Loading Performance
+
+**Date**: 2026-06-11
+**Task**: TUI Startup Loading Performance
+**Branch**: `main`
+
+### Summary
+
+Implemented staged TUI startup scanning so project results render before slower global provider size estimation, documented the worker progress contract, and recorded the task artifacts after passing just ci.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ff6ef78` | (see git log) |
+| `1b4b682` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
