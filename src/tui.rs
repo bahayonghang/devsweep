@@ -114,12 +114,8 @@ fn dispatch_effect(effect: Effect, worker_tx: Sender<WorkerEvent>) -> Result<()>
 
 fn run_scan_worker(job_id: JobId, worker_tx: Sender<WorkerEvent>) {
     let _ = worker_tx.send(WorkerEvent::ScanStarted { job_id });
-    let _ = worker_tx.send(WorkerEvent::JobProgress {
-        job_id,
-        message: "Scanning current directory and global providers".to_string(),
-    });
 
-    let result = scan_current_workspace();
+    let result = run_staged_scan(job_id, &worker_tx);
     match result {
         Ok(plan) => {
             let _ = worker_tx.send(WorkerEvent::ScanFinished { job_id, plan });
@@ -133,14 +129,72 @@ fn run_scan_worker(job_id: JobId, worker_tx: Sender<WorkerEvent>) {
     }
 }
 
-fn scan_current_workspace() -> Result<CleanupPlan> {
+fn run_staged_scan(job_id: JobId, worker_tx: &Sender<WorkerEvent>) -> Result<CleanupPlan> {
     let current_dir = std::env::current_dir().context("failed to get current directory")?;
-    let mut plan = CleanupPlan::empty();
-    plan.targets
-        .extend(ProjectScanner::new().scan_roots(&[current_dir])?.targets);
-    plan.targets
-        .extend(GlobalProviderScanner::new().scan().targets);
+
+    send_scan_progress(
+        worker_tx,
+        job_id,
+        ScanPhase::Projects,
+        "Scanning current directory",
+        None,
+    );
+    let project_plan = ProjectScanner::new().scan_roots(&[current_dir])?;
+    send_scan_progress(
+        worker_tx,
+        job_id,
+        ScanPhase::Projects,
+        format!(
+            "Project scan finished: {} target(s)",
+            project_plan.targets.len()
+        ),
+        Some(project_plan.clone()),
+    );
+
+    send_scan_progress(
+        worker_tx,
+        job_id,
+        ScanPhase::Global,
+        "Scanning global providers",
+        None,
+    );
+    send_scan_progress(
+        worker_tx,
+        job_id,
+        ScanPhase::Global,
+        "Estimating global cache sizes",
+        None,
+    );
+    let global_plan = GlobalProviderScanner::new().scan();
+    send_scan_progress(
+        worker_tx,
+        job_id,
+        ScanPhase::Global,
+        format!(
+            "Global scan finished: {} target(s)",
+            global_plan.targets.len()
+        ),
+        Some(global_plan.clone()),
+    );
+
+    let mut plan = project_plan;
+    plan.targets.extend(global_plan.targets);
     Ok(plan)
+}
+
+fn send_scan_progress(
+    worker_tx: &Sender<WorkerEvent>,
+    job_id: JobId,
+    phase: ScanPhase,
+    message: impl Into<String>,
+    plan: Option<CleanupPlan>,
+) {
+    let _ = worker_tx.send(WorkerEvent::ScanProgress {
+        job_id,
+        phase,
+        message: message.into(),
+        plan,
+    });
 }
 
 fn run_clean_worker(job_id: JobId, plan: CleanupPlan, worker_tx: Sender<WorkerEvent>) {
@@ -198,6 +252,7 @@ struct App {
     logs: Vec<LogEntry>,
     next_log_seq: u64,
     cleanup_progress: Option<CleanupProgress>,
+    scan_snapshot: Option<ScanSnapshot>,
     should_quit: bool,
     next_job_id: JobId,
 }
@@ -208,13 +263,7 @@ impl App {
     }
 
     fn startup_effects(&mut self) -> Vec<Effect> {
-        let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
-        self.log_job(
-            AppLogLevel::Info,
-            AppLogSource::Scan,
-            job_id,
-            "Startup scan requested",
-        );
+        let job_id = self.start_scan_job("Startup scan requested");
         vec![Effect::StartScan { job_id }]
     }
 
@@ -234,6 +283,7 @@ impl App {
             logs: Vec::new(),
             next_log_seq: 1,
             cleanup_progress: None,
+            scan_snapshot: None,
             should_quit: false,
             next_job_id: 1,
         };
@@ -289,13 +339,7 @@ impl App {
                 vec![Effect::Quit]
             }
             KeyCode::Char('s') => {
-                let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
-                self.log_job(
-                    AppLogLevel::Info,
-                    AppLogSource::Scan,
-                    job_id,
-                    "Scan requested",
-                );
+                let job_id = self.start_scan_job("Scan requested");
                 vec![Effect::StartScan { job_id }]
             }
             KeyCode::Char('c') => {
@@ -478,6 +522,14 @@ impl App {
                 self.mark_job(job_id, JobStatus::Running, message.clone());
                 self.log_job(AppLogLevel::Info, self.job_source(job_id), job_id, message);
             }
+            WorkerEvent::ScanProgress {
+                job_id,
+                phase,
+                message,
+                plan,
+            } => {
+                self.handle_scan_progress(job_id, phase, message, plan);
+            }
             WorkerEvent::CleanProgress {
                 job_id,
                 target_id,
@@ -511,9 +563,12 @@ impl App {
             }
             WorkerEvent::ScanFinished { job_id, plan } => {
                 let count = plan.targets.len();
-                self.targets = plan.targets;
-                self.selected_ids = default_selected_ids(&self.targets);
-                self.selected_index = 0;
+                if self.should_apply_scan_update(job_id) {
+                    self.targets = plan.targets;
+                    self.selected_ids = default_selected_ids(&self.targets);
+                    self.selected_index = 0;
+                    self.scan_snapshot = None;
+                }
                 self.mark_job(
                     job_id,
                     JobStatus::Succeeded,
@@ -558,6 +613,7 @@ impl App {
                 }
             }
             WorkerEvent::JobFailed { job_id, message } => {
+                self.clear_scan_snapshot(job_id);
                 self.mark_job(job_id, JobStatus::Failed, message.clone());
                 if self.cleanup_progress_matches(job_id)
                     && let Some(progress) = &mut self.cleanup_progress
@@ -568,6 +624,7 @@ impl App {
                 self.log_job(AppLogLevel::Error, self.job_source(job_id), job_id, message);
             }
             WorkerEvent::JobCanceled { job_id } => {
+                self.clear_scan_snapshot(job_id);
                 self.mark_job(job_id, JobStatus::Canceled, "Canceled");
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;
@@ -588,6 +645,81 @@ impl App {
         self.active_tab = tab;
         self.selected_index = 0;
         Vec::new()
+    }
+
+    fn start_scan_job(&mut self, log_message: impl Into<String>) -> JobId {
+        let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
+        self.scan_snapshot = Some(ScanSnapshot::new(job_id));
+        self.log_job(AppLogLevel::Info, AppLogSource::Scan, job_id, log_message);
+        job_id
+    }
+
+    fn handle_scan_progress(
+        &mut self,
+        job_id: JobId,
+        phase: ScanPhase,
+        message: String,
+        plan: Option<CleanupPlan>,
+    ) {
+        self.mark_job(job_id, JobStatus::Running, message.clone());
+        self.log_job(AppLogLevel::Info, AppLogSource::Scan, job_id, message);
+
+        let Some(plan) = plan else {
+            return;
+        };
+
+        if !self.should_apply_scan_update(job_id) {
+            return;
+        }
+
+        if self.scan_snapshot.is_none() {
+            self.scan_snapshot = Some(ScanSnapshot::new(job_id));
+        }
+
+        let mut updated = false;
+        if let Some(snapshot) = &mut self.scan_snapshot
+            && snapshot.job_id == job_id
+        {
+            snapshot.set_phase_targets(phase, plan.targets);
+            updated = true;
+        }
+
+        if updated {
+            self.rebuild_targets_from_scan_snapshot();
+        }
+    }
+
+    fn should_apply_scan_update(&self, job_id: JobId) -> bool {
+        let Some(job) = self.jobs.iter().find(|job| job.id == job_id) else {
+            return false;
+        };
+        if job.kind != JobKind::Scan || !job.status.is_active() {
+            return false;
+        }
+        self.jobs
+            .iter()
+            .filter(|job| job.kind == JobKind::Scan)
+            .map(|job| job.id)
+            .max()
+            == Some(job_id)
+    }
+
+    fn rebuild_targets_from_scan_snapshot(&mut self) {
+        if let Some(snapshot) = &self.scan_snapshot {
+            self.targets = snapshot.targets();
+            self.selected_ids = default_selected_ids(&self.targets);
+            self.selected_index = 0;
+        }
+    }
+
+    fn clear_scan_snapshot(&mut self, job_id: JobId) {
+        if self
+            .scan_snapshot
+            .as_ref()
+            .is_some_and(|snapshot| snapshot.job_id == job_id)
+        {
+            self.scan_snapshot = None;
+        }
     }
 
     fn move_selection(&mut self, delta: isize) {
@@ -1009,6 +1141,12 @@ enum WorkerEvent {
         job_id: JobId,
         message: String,
     },
+    ScanProgress {
+        job_id: JobId,
+        phase: ScanPhase,
+        message: String,
+        plan: Option<CleanupPlan>,
+    },
     ScanFinished {
         job_id: JobId,
         plan: CleanupPlan,
@@ -1033,6 +1171,44 @@ enum WorkerEvent {
     JobCanceled {
         job_id: JobId,
     },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ScanPhase {
+    Projects,
+    Global,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ScanSnapshot {
+    job_id: JobId,
+    project_targets: Vec<CleanTarget>,
+    global_targets: Vec<CleanTarget>,
+}
+
+impl ScanSnapshot {
+    fn new(job_id: JobId) -> Self {
+        Self {
+            job_id,
+            project_targets: Vec::new(),
+            global_targets: Vec::new(),
+        }
+    }
+
+    fn set_phase_targets(&mut self, phase: ScanPhase, targets: Vec<CleanTarget>) {
+        match phase {
+            ScanPhase::Projects => self.project_targets = targets,
+            ScanPhase::Global => self.global_targets = targets,
+        }
+    }
+
+    fn targets(&self) -> Vec<CleanTarget> {
+        self.project_targets
+            .iter()
+            .chain(&self.global_targets)
+            .cloned()
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -3170,6 +3346,120 @@ mod tests {
     }
 
     #[test]
+    fn scan_progress_shows_project_targets_before_global_scan_finishes() {
+        let mut app = App::new();
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests scan");
+        };
+        let job_id = *job_id;
+        let project_plan = plan_with_targets(vec![representative_plan().targets[0].clone()]);
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanStarted { job_id }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id,
+            phase: ScanPhase::Projects,
+            message: "Project scan finished: 1 target(s)".to_string(),
+            plan: Some(project_plan),
+        }));
+
+        assert_eq!(app.targets.len(), 1);
+        assert!(matches!(app.targets[0].scope, Scope::Project { .. }));
+        assert!(app.selected_ids.contains(&app.targets[0].id));
+        assert_eq!(app.jobs[0].status, JobStatus::Running);
+        assert_eq!(app.jobs[0].progress, "Project scan finished: 1 target(s)");
+
+        app.active_tab = ActiveTab::JobsLogs;
+        let rendered = render_text(&app);
+        assert!(rendered.contains("Project scan finished: 1 target(s)"));
+    }
+
+    #[test]
+    fn scan_progress_merges_project_and_global_targets_without_duplicates() {
+        let mut app = App::new();
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests scan");
+        };
+        let job_id = *job_id;
+        let representative = representative_plan();
+        let project_target = representative.targets[0].clone();
+        let global_target = representative.targets[1].clone();
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanStarted { job_id }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id,
+            phase: ScanPhase::Projects,
+            message: "Project scan finished: 1 target(s)".to_string(),
+            plan: Some(plan_with_targets(vec![project_target.clone()])),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id,
+            phase: ScanPhase::Global,
+            message: "Global scan finished: 1 target(s)".to_string(),
+            plan: Some(plan_with_targets(vec![global_target.clone()])),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id,
+            phase: ScanPhase::Global,
+            message: "Global scan finished: 1 target(s)".to_string(),
+            plan: Some(plan_with_targets(vec![global_target.clone()])),
+        }));
+
+        assert_eq!(
+            app.targets
+                .iter()
+                .map(|target| &target.id)
+                .collect::<Vec<_>>(),
+            vec![&project_target.id, &global_target.id]
+        );
+        assert_eq!(app.targets.len(), 2);
+        assert!(app.selected_ids.contains(&project_target.id));
+        assert!(!app.selected_ids.contains(&global_target.id));
+    }
+
+    #[test]
+    fn stale_scan_updates_do_not_overwrite_newer_scan_results() {
+        let mut app = App::new();
+        let startup_effects = app.startup_effects();
+        let [Effect::StartScan { job_id: first_job }] = startup_effects.as_slice() else {
+            panic!("startup requests scan");
+        };
+        let first_job = *first_job;
+        app.update(UiEvent::Worker(WorkerEvent::ScanStarted {
+            job_id: first_job,
+        }));
+
+        let manual_effects = app.update(key(KeyCode::Char('s')));
+        let [Effect::StartScan { job_id: second_job }] = manual_effects.as_slice() else {
+            panic!("manual scan starts second job");
+        };
+        let second_job = *second_job;
+        let representative = representative_plan();
+        let second_target = representative.targets[0].clone();
+        let stale_target = representative.targets[1].clone();
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanStarted {
+            job_id: second_job,
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id: second_job,
+            phase: ScanPhase::Projects,
+            message: "Project scan finished: 1 target(s)".to_string(),
+            plan: Some(plan_with_targets(vec![second_target.clone()])),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: first_job,
+            plan: plan_with_targets(vec![stale_target]),
+        }));
+
+        assert_eq!(app.targets.len(), 1);
+        assert_eq!(app.targets[0].id, second_target.id);
+        assert_eq!(app.jobs[0].status, JobStatus::Succeeded);
+        assert_eq!(app.jobs[1].status, JobStatus::Running);
+    }
+
+    #[test]
     fn cancellation_key_requests_active_job_cancellation() {
         let mut app = App::with_plan(representative_plan());
         let effects = app.update(key(KeyCode::Char('s')));
@@ -3385,6 +3675,13 @@ mod tests {
                     CleanAction::NoopInspectOnly,
                 ),
             ],
+        }
+    }
+
+    fn plan_with_targets(targets: Vec<CleanTarget>) -> CleanupPlan {
+        CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets,
         }
     }
 

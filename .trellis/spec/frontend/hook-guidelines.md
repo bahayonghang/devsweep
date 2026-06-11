@@ -23,9 +23,94 @@ Interactive code follows a simple state/update/render split:
 - worker progress that is meant to be visible must survive fast final events;
   keep a final state or require explicit dismissal instead of clearing it before
   the next render
+- long-running workers should emit staged progress before their slowest phase
+  completes when an earlier phase can produce useful UI state
+- staged worker updates must include a job id and the app must ignore stale
+  updates from older jobs after a newer job starts
 
 The terminal event loop is responsible for interpreting effects such as start
 scan, start clean, cancel job, and quit.
+
+---
+
+### Scenario: Staged scan worker progress
+
+#### 1. Scope / Trigger
+
+- Trigger: a scan or other worker has a fast phase that can produce useful
+  `App` state before a slower phase such as global provider discovery or size
+  estimation completes.
+
+#### 2. Signatures
+
+- Worker event shape:
+  - `WorkerEvent::ScanProgress { job_id, phase, message, plan }`
+- App-owned staging shape:
+  - current scan job id
+  - latest project-phase targets
+  - latest global-phase targets
+
+#### 3. Contracts
+
+- `job_id` identifies the worker that produced the update.
+- `phase` identifies which staged target slice the update owns.
+- `message` is user-visible job/log progress text.
+- `plan` is optional; progress-only updates may carry no targets.
+- Render functions must consume staged state after `App::update` applies it;
+  render functions must not call scanner/provider APIs.
+- A newer scan job invalidates older staged scan updates for visible target
+  replacement.
+
+#### 4. Validation & Error Matrix
+
+- Project phase succeeds, global phase still running -> visible targets may show
+  project results and job remains running.
+- Global phase succeeds -> project and global targets merge in stable order.
+- Same phase reports again -> replace that phase slice, do not append duplicate
+  rows.
+- Older job reports after a newer scan starts -> do not overwrite the newer
+  visible target snapshot.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: startup scan shows project targets before global cache size estimation
+  finishes.
+- Base: final scan completion still marks the scan job succeeded and leaves the
+  final target snapshot visible.
+- Bad: one final `ScanFinished` event gates all visible targets on the slowest
+  global provider.
+- Bad: stale worker results from an older manual scan replace newer visible
+  targets.
+
+#### 6. Tests Required
+
+- State-level test proving project-phase results populate `App.targets` before
+  global completion.
+- State-level test proving project/global phase updates merge without
+  duplicates.
+- State-level test proving stale scan job updates do not overwrite a newer scan.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```rust
+// Keeps the UI empty until every scan phase completes.
+let mut plan = project_scan()?;
+plan.targets.extend(global_scan().targets);
+send(WorkerEvent::ScanFinished { job_id, plan });
+```
+
+Correct:
+```rust
+// Lets the UI render useful partial state while slow global work continues.
+let project_plan = project_scan()?;
+send(WorkerEvent::ScanProgress {
+    job_id,
+    phase: ScanPhase::Projects,
+    message,
+    plan: Some(project_plan),
+});
+```
 
 ---
 
