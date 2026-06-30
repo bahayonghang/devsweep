@@ -27,6 +27,7 @@ src/
 ├── config.rs   # process-wide initialization such as tracing
 ├── executor.rs # dry-run, command/trash execution, and audit JSONL
 ├── model.rs    # serializable cleanup plan and domain contract
+├── ranking.rs  # cleanup-plan ordering and conservative default-selection pass
 ├── scanner.rs  # marker-first project discovery, non-mutating
 └── tui.rs      # ratatui placeholder/rendering boundary
 ```
@@ -44,6 +45,10 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
 - Put serializable cross-layer data in `src/model.rs`. `CleanupPlan`,
   `CleanTarget`, `CleanAction`, and evidence/risk enums are the plan contract
   shared by CLI, scanner, future executor, and TUI.
+- Put cleanup-plan post-processing in `src/ranking.rs`. Ranking may reorder
+  targets, calculate size/age scores, and make auto-selection more conservative
+  from existing `CleanTarget` fields; it must not inspect new filesystem state
+  or execute cleanup behavior.
 - Put project discovery in `src/scanner.rs`. Scanner code creates
   `CleanTarget` values only; it must not delete files, move to trash, or run
   cleanup commands.

@@ -58,6 +58,9 @@ scan, start clean, cancel job, and quit.
 - `plan` is optional; progress-only updates may carry no targets.
 - Render functions must consume staged state after `App::update` applies it;
   render functions must not call scanner/provider APIs.
+- Project/global target slices must merge through the shared cleanup-plan
+  ranking helper so staged TUI output matches `scan --json` ordering and
+  freshness default-selection behavior.
 - A newer scan job invalidates older staged scan updates for visible target
   replacement.
 
@@ -66,6 +69,9 @@ scan, start clean, cancel job, and quit.
 - Project phase succeeds, global phase still running -> visible targets may show
   project results and job remains running.
 - Global phase succeeds -> project and global targets merge in stable order.
+- Global phase includes larger targets than project phase -> larger global
+  targets may move ahead of smaller project targets after the shared ranking
+  pass.
 - Same phase reports again -> replace that phase slice, do not append duplicate
   rows.
 - Older job reports after a newer scan starts -> do not overwrite the newer

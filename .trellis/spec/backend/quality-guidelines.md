@@ -338,6 +338,81 @@ Generate dist/devsweep-x86_64-pc-windows-msvc.zip locally and keep dist/
 ignored by git.
 ```
 
+### Scenario: Cleanup plan ranking and freshness guard
+
+#### 1. Scope / Trigger
+- Trigger: scanner, provider, CLI, or TUI code changes the order or default
+  selection state of `CleanupPlan.targets`.
+
+#### 2. Signatures
+- Library entrypoint:
+  - `ranking::rank_cleanup_plan(&mut CleanupPlan)`
+- Score helper:
+  - `ranking::target_score(&CleanTarget, SystemTime) -> f64`
+- Assembly boundaries:
+  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+  - `GlobalProviderScanner::new().scan() -> CleanupPlan`
+  - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
+  - TUI scan merge paths that combine project and global targets
+
+#### 3. Contracts
+- Plan targets are ordered by descending `estimated_bytes`; ties use the shared
+  size/age score, older `last_modified`, then `TargetId` for deterministic
+  output.
+- The default freshness floor is seven days. A target modified within the floor
+  can only move from `selected_by_default = true` to `false`.
+- Missing `last_modified` leaves the existing default selection unchanged.
+  Future mtimes are treated as age zero and therefore conservative.
+- When the freshness guard deselects a target, add one
+  `Evidence::RuleMatched { rule_id: "ranking.freshness_guard.7d" }`.
+- Ranking must not add fields, enum variants, filesystem reads, process
+  execution, trash moves, or delete operations.
+- Manual TUI selection is not blocked by the freshness guard; selected cleanup
+  plans may still mark explicitly selected targets as selected for execution.
+
+#### 4. Validation & Error Matrix
+- Multiple targets -> output is size-ranked with deterministic tie-breakers.
+- Recently modified selected target -> deselected with freshness evidence.
+- Stale selected target -> remains selected.
+- Already unselected medium/high-risk target -> remains unselected.
+- Missing mtime -> no panic and no more aggressive default selection.
+- Future mtime -> no panic and conservative deselection if the target was
+  selected by default.
+
+#### 5. Good/Base/Bad Cases
+- Good: project, global, CLI, and TUI merged plans all call the shared ranking
+  helper instead of each implementing local ordering.
+- Good: a 2 GiB global target appears before a 1 GiB project target in both
+  `scan --json` and TUI results.
+- Base: calling the ranking helper twice is idempotent and does not duplicate
+  freshness evidence.
+- Bad: sorting only in render code while `scan --json` uses discovery order.
+- Bad: selecting a large target by default only because it is large.
+- Bad: scanning the filesystem again from ranking to calculate missing data.
+
+#### 6. Tests Required
+- Unit tests for size ranking, tie-breakers, score calculation, missing mtime,
+  future mtime, and freshness evidence idempotence.
+- Scanner/provider tests proving returned plans are ranked.
+- TUI state tests proving project/global staged scan results merge through the
+  shared ranking order.
+- TUI test proving explicit manual selection can still execute a fresh target.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```rust
+// UI-only sorting makes JSON output and TUI output disagree.
+targets.sort_by_key(|target| std::cmp::Reverse(target.estimated_bytes));
+```
+
+Correct:
+```rust
+let mut plan = project_plan;
+plan.targets.extend(global_plan.targets);
+ranking::rank_cleanup_plan(&mut plan);
+```
+
 ### Scenario: Project scanner and JSON cleanup plan
 
 #### 1. Scope / Trigger

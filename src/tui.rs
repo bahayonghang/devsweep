@@ -25,10 +25,12 @@ use ratatui::{
 use crate::{
     executor::{ExecutionReport, ExecutionRequest, ExecutionTargetStatus, Executor},
     model::{
-        CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
+        CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence,
+        RiskLevel, Scope, TargetId,
     },
     path_safety::target_contains_current_exe,
     providers::GlobalProviderScanner,
+    ranking::rank_cleanup_plan,
     scanner::ProjectScanner,
 };
 
@@ -179,6 +181,7 @@ fn run_staged_scan(job_id: JobId, worker_tx: &Sender<WorkerEvent>) -> Result<Cle
 
     let mut plan = project_plan;
     plan.targets.extend(global_plan.targets);
+    rank_cleanup_plan(&mut plan);
     Ok(plan)
 }
 
@@ -561,7 +564,8 @@ impl App {
                     format_cleanup_progress(completed, total, &message),
                 );
             }
-            WorkerEvent::ScanFinished { job_id, plan } => {
+            WorkerEvent::ScanFinished { job_id, mut plan } => {
+                rank_cleanup_plan(&mut plan);
                 let count = plan.targets.len();
                 if self.should_apply_scan_update(job_id) {
                     self.targets = plan.targets;
@@ -1203,11 +1207,17 @@ impl ScanSnapshot {
     }
 
     fn targets(&self) -> Vec<CleanTarget> {
-        self.project_targets
-            .iter()
-            .chain(&self.global_targets)
-            .cloned()
-            .collect()
+        let mut plan = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: self
+                .project_targets
+                .iter()
+                .chain(&self.global_targets)
+                .cloned()
+                .collect(),
+        };
+        rank_cleanup_plan(&mut plan);
+        plan.targets
     }
 }
 
@@ -2694,7 +2704,10 @@ fn format_bytes(bytes: u64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::{Path, PathBuf};
+    use std::{
+        path::{Path, PathBuf},
+        time::SystemTime,
+    };
 
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     use ratatui::{Terminal, backend::TestBackend};
@@ -2747,6 +2760,23 @@ mod tests {
         assert!(rendered.contains("Details"));
         assert!(!rendered.contains("Categories"));
         assert!(rendered.contains("D:/code/web/.next/cache"));
+    }
+
+    #[test]
+    fn target_details_show_freshness_guard_evidence() {
+        let mut target = representative_plan().targets[0].clone();
+        target.evidence.push(Evidence::RuleMatched {
+            rule_id: crate::ranking::FRESHNESS_GUARD_RULE_ID.to_string(),
+        });
+
+        let lines = target_details_lines(&target);
+        let rendered = lines
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(rendered.contains("rule ranking.freshness_guard.7d"));
     }
 
     #[test]
@@ -2918,8 +2948,18 @@ mod tests {
 
         let app = App::with_plan(plan);
 
-        assert!(!app.selected_ids.contains(&app.targets[0].id));
-        assert!(app.selected_ids.contains(&app.targets[1].id));
+        assert!(
+            app.targets
+                .iter()
+                .find(|target| target.id.as_str().starts_with("rust.target"))
+                .is_some_and(|target| !app.selected_ids.contains(&target.id))
+        );
+        assert!(
+            app.targets
+                .iter()
+                .find(|target| target.id.as_str().starts_with("node.next_cache"))
+                .is_some_and(|target| app.selected_ids.contains(&target.id))
+        );
     }
 
     #[test]
@@ -3035,6 +3075,31 @@ mod tests {
         assert_eq!(progress.items.len(), 1);
         assert_eq!(progress.items[0].target_id, app.targets[0].id);
         assert_eq!(progress.items[0].status, CleanupItemStatus::Pending);
+    }
+
+    #[test]
+    fn accepted_confirmation_keeps_explicit_fresh_target_selection() {
+        let mut target = representative_plan().targets[0].clone();
+        target.last_modified = Some(SystemTime::now());
+        target.selected_by_default = false;
+        target.evidence.push(Evidence::RuleMatched {
+            rule_id: crate::ranking::FRESHNESS_GUARD_RULE_ID.to_string(),
+        });
+        let mut app = App::with_plan(plan_with_targets(vec![target.clone()]));
+        app.selected_ids.insert(target.id.clone());
+
+        app.update(key(KeyCode::Char('c')));
+        for ch in "confirm".chars() {
+            app.update(key(KeyCode::Char(ch)));
+        }
+        let effects = app.update(key(KeyCode::Enter));
+
+        let [Effect::StartClean { plan, .. }] = effects.as_slice() else {
+            panic!("confirmation emits clean effect");
+        };
+        assert_eq!(plan.targets.len(), 1);
+        assert_eq!(plan.targets[0].id, target.id);
+        assert!(plan.targets[0].selected_by_default);
     }
 
     #[test]
@@ -3322,7 +3387,12 @@ mod tests {
 
         assert_eq!(app.targets.len(), 3);
         assert_eq!(app.jobs[0].status, JobStatus::Succeeded);
-        assert!(app.selected_ids.contains(&app.targets[0].id));
+        assert!(
+            app.targets
+                .iter()
+                .find(|target| target.id.as_str().starts_with("node.next_cache"))
+                .is_some_and(|target| app.selected_ids.contains(&target.id))
+        );
 
         let report = ExecutionReport {
             dry_run: false,
@@ -3411,7 +3481,7 @@ mod tests {
                 .iter()
                 .map(|target| &target.id)
                 .collect::<Vec<_>>(),
-            vec![&project_target.id, &global_target.id]
+            vec![&global_target.id, &project_target.id]
         );
         assert_eq!(app.targets.len(), 2);
         assert!(app.selected_ids.contains(&project_target.id));

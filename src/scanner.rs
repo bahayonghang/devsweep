@@ -10,6 +10,7 @@ use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
+use crate::ranking::rank_cleanup_plan;
 
 pub struct ProjectScanner;
 
@@ -30,10 +31,13 @@ impl ProjectScanner {
 
         targets = dedupe_targets(targets);
 
-        Ok(CleanupPlan {
+        let mut plan = CleanupPlan {
             version: crate::model::CLEANUP_PLAN_VERSION,
             targets,
-        })
+        };
+        rank_cleanup_plan(&mut plan);
+
+        Ok(plan)
     }
 
     fn scan_dir(
@@ -629,6 +633,28 @@ mod tests {
 
         assert_eq!(deduped.len(), 1);
         assert!(deduped[0].id.as_str().starts_with("python.venv_dot"));
+    }
+
+    #[test]
+    fn scan_roots_returns_ranked_targets_after_dedupe() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/.turbo/small.bin", "small");
+        fixture.file("node-app/.parcel-cache/large.bin", "larger payload");
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().to_path_buf()])
+            .expect("fixture scans");
+
+        let ids = target_ids(&plan);
+        assert!(
+            ids[0].starts_with("node.parcel_cache"),
+            "largest target should be first: {ids:?}"
+        );
+        assert!(
+            ids[1].starts_with("node.turbo"),
+            "smaller target should be second: {ids:?}"
+        );
     }
 
     fn target_ids(plan: &CleanupPlan) -> Vec<&str> {

@@ -6,6 +6,7 @@ use devsweep::{
     executor::{ExecutionRequest, Executor},
     model::CleanupPlan,
     providers::GlobalProviderScanner,
+    ranking::rank_cleanup_plan,
     scanner::ProjectScanner,
 };
 
@@ -33,6 +34,7 @@ fn run_scan(command: ScanCommand) -> Result<()> {
         plan.targets
             .extend(GlobalProviderScanner::new().scan().targets);
     }
+    rank_cleanup_plan(&mut plan);
 
     if command.json {
         serde_json::to_writer_pretty(std::io::stdout(), &plan)?;
