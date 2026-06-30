@@ -1,11 +1,11 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    time::SystemTime,
 };
 
 use anyhow::{Context, Result};
 
+use crate::fs_size::{estimate_tree, is_unsafe_link};
 use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
@@ -338,40 +338,6 @@ fn build_path_target(input: PathTargetInput) -> CleanTarget {
     }
 }
 
-fn estimate_tree(path: &Path) -> (u64, Option<SystemTime>) {
-    let Ok(metadata) = fs::symlink_metadata(path) else {
-        return (0, None);
-    };
-    if is_unsafe_link(&metadata) {
-        return (0, metadata.modified().ok());
-    }
-    if metadata.is_file() {
-        return (metadata.len(), metadata.modified().ok());
-    }
-    if !metadata.is_dir() {
-        return (0, metadata.modified().ok());
-    }
-
-    let mut bytes = 0;
-    let mut latest = metadata.modified().ok();
-    let Ok(entries) = fs::read_dir(path) else {
-        return (bytes, latest);
-    };
-
-    for entry in entries.flatten() {
-        let (entry_bytes, entry_modified) = estimate_tree(&entry.path());
-        bytes += entry_bytes;
-        if let Some(modified) = entry_modified {
-            match latest {
-                Some(current) if current >= modified => {}
-                _ => latest = Some(modified),
-            }
-        }
-    }
-
-    (bytes, latest)
-}
-
 fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
     targets.sort_by(|left, right| {
         let left_path = left.path.as_ref().map(|path| path.components().count());
@@ -448,23 +414,6 @@ fn should_stop_descent(dir: &Path) -> bool {
                 | ".tox"
         )
     )
-}
-
-fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
-    metadata.file_type().is_symlink() || has_windows_reparse_point(metadata)
-}
-
-#[cfg(windows)]
-fn has_windows_reparse_point(metadata: &fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-
-    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-    metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-}
-
-#[cfg(not(windows))]
-fn has_windows_reparse_point(_metadata: &fs::Metadata) -> bool {
-    false
 }
 
 #[cfg(test)]
@@ -571,7 +520,7 @@ mod tests {
         }
 
         let metadata = fs::symlink_metadata(&link).expect("link metadata");
-        assert!(has_windows_reparse_point(&metadata));
+        assert!(crate::fs_size::is_unsafe_link(&metadata));
 
         let plan = ProjectScanner::new()
             .scan_roots(&[fixture.path().join("scan")])

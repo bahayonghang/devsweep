@@ -1,10 +1,11 @@
 use std::{
-    env, fs,
+    env,
     path::{Path, PathBuf},
     process::Command,
     time::SystemTime,
 };
 
+use crate::fs_size::estimate_tree;
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, TargetId, TargetKind,
@@ -34,7 +35,7 @@ trait ProviderProbe {
     fn env_path(&self, key: &str) -> Option<PathBuf>;
     fn home_dir(&self) -> Option<PathBuf>;
     fn is_dir(&self, path: &Path) -> bool;
-    fn estimate_tree(&self, path: &Path) -> (u64, Option<SystemTime>);
+    fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>);
 }
 
 struct SystemProviderProbe;
@@ -75,7 +76,7 @@ impl ProviderProbe for SystemProviderProbe {
         path.is_dir()
     }
 
-    fn estimate_tree(&self, path: &Path) -> (u64, Option<SystemTime>) {
+    fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
         estimate_tree(path)
     }
 }
@@ -242,7 +243,7 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         return;
     }
 
-    let (estimated_bytes, last_modified) = probe.estimate_tree(&cargo_home);
+    let (estimated_bytes, last_modified) = probe.estimate_path_size(&cargo_home);
 
     targets.push(CleanTarget {
         id: TargetId::new(format!("cargo.home.inspect:{}", cargo_home.display())),
@@ -369,59 +370,8 @@ fn output_path(output: Option<String>) -> Option<PathBuf> {
 }
 
 fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> (u64, Option<SystemTime>) {
-    path.map(|path| probe.estimate_tree(path))
+    path.map(|path| probe.estimate_path_size(path))
         .unwrap_or((0, None))
-}
-
-fn estimate_tree(path: &Path) -> (u64, Option<SystemTime>) {
-    let Ok(metadata) = fs::symlink_metadata(path) else {
-        return (0, None);
-    };
-    if is_unsafe_link(&metadata) {
-        return (0, metadata.modified().ok());
-    }
-    if metadata.is_file() {
-        return (metadata.len(), metadata.modified().ok());
-    }
-    if !metadata.is_dir() {
-        return (0, metadata.modified().ok());
-    }
-
-    let mut bytes = 0;
-    let mut latest = metadata.modified().ok();
-    let Ok(entries) = fs::read_dir(path) else {
-        return (bytes, latest);
-    };
-
-    for entry in entries.flatten() {
-        let (entry_bytes, entry_modified) = estimate_tree(&entry.path());
-        bytes += entry_bytes;
-        if let Some(modified) = entry_modified {
-            match latest {
-                Some(current) if current >= modified => {}
-                _ => latest = Some(modified),
-            }
-        }
-    }
-
-    (bytes, latest)
-}
-
-fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
-    metadata.file_type().is_symlink() || has_windows_reparse_point(metadata)
-}
-
-#[cfg(windows)]
-fn has_windows_reparse_point(metadata: &fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-
-    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-    metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-}
-
-#[cfg(not(windows))]
-fn has_windows_reparse_point(_metadata: &fs::Metadata) -> bool {
-    false
 }
 
 fn parse_major_version(version: &str) -> Option<u64> {
@@ -694,7 +644,7 @@ mod tests {
             self.dirs.contains(path)
         }
 
-        fn estimate_tree(&self, path: &Path) -> (u64, Option<SystemTime>) {
+        fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
             (self.sizes.get(path).copied().unwrap_or_default(), None)
         }
     }

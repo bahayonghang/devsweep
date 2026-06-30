@@ -1,6 +1,7 @@
 pub mod cli;
 pub mod config;
 pub mod executor;
+pub mod fs_size;
 pub mod model;
 pub(crate) mod path_safety;
 pub mod providers;
