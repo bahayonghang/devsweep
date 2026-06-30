@@ -587,3 +587,36 @@ Extracted shared fs_size estimation, parallelized directory sizing with rayon, a
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: 按大小和新鲜度排名清理计划
+
+**Date**: 2026-06-30
+**Task**: 按大小和新鲜度排名清理计划
+**Branch**: `main`
+
+### Summary
+
+实现清理目标按 estimated_bytes 降序排名、size x age score helper、7 天 freshness guard，并同步 CLI/TUI 合并边界与规范。验证 cargo test --all-targets 和 just ci 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `06579fd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
