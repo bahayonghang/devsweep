@@ -553,3 +553,37 @@ Implemented staged TUI startup scanning so project results render before slower 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Parallel directory sizing
+
+**Date**: 2026-06-30
+**Task**: Parallel directory sizing
+**Branch**: `main`
+
+### Summary
+
+Extracted shared fs_size estimation, parallelized directory sizing with rayon, added release profile, recorded validation and archived perf-parallel-sizing.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0c4f7e5` | (see git log) |
+| `b04feb9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

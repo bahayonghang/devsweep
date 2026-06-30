@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
-- **Last Active**: 2026-06-11
+- **Total Sessions**: 17
+- **Last Active**: 2026-06-30
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~555 | Active |
+| `journal-1.md` | ~589 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-06-30 | Parallel directory sizing | `0c4f7e5`, `b04feb9` | `main` |
 | 16 | 2026-06-11 | TUI Startup Loading Performance | `ff6ef78`, `1b4b682` | `main` |
 | 15 | 2026-06-11 | Optimize TUI visual hierarchy and layout | `76ab154`, `3339c77` | `main` |
 | 14 | 2026-06-11 | 修复 TUI 隐藏默认清理选择 | `cfe127e`, `cbf6aa6`, `5ef529f`, `e439a8f` | `main` |
