@@ -1,0 +1,30 @@
+{
+  "id": "putzen-inspired-optimization",
+  "name": "putzen-inspired-optimization",
+  "title": "借鉴 putzen-rs 优化 devsweep:性能/排序/广度",
+  "description": "Parent task: adopt putzen-rs strengths (rayon parallelism, size×age ranking, declarative cache catalogue) into devsweep while preserving devsweep's safety-first command-based design.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-06-30",
+  "completedAt": "2026-07-01",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "06-30-perf-parallel-sizing",
+    "06-30-size-age-ranking",
+    "06-30-declarative-rules-catalogue"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
