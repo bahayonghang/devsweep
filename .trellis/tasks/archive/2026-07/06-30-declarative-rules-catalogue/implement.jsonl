@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Safety-first cleanup constraints: risk grading, no blind delete of cache internals without official command, trash/inspect-only rules for new global caches."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Rust module conventions for adding src/rules.rs and registering it in lib.rs."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Centralizing scattered scanner/provider rule branches into one declarative table; pre-modification search before changing rule constants."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rule table is consumed across scanner, providers, TUI render_rules, and CLI run_rules; keep one shared contract, avoid local casts of rule fields."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "render_rules must stay a pure render function and be TestBackend-verifiable when it switches to iterating rule_catalogue()."}

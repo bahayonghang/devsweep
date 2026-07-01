@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify new global-cache targets honor safety grading: no official-command spoofing, trash/inspect-only match risk, cargo home left untouched."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check rule table flows consistently through scanner/providers/tui/cli and that ranking (selected_by_default/freshness guard) is not disturbed."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Confirm scanner node/python rules now derive from the single table with zero behavior regression vs the former inline arrays."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Confirm render_rules purity and TestBackend coverage for the Rules tab listing."}
