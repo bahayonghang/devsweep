@@ -11,6 +11,7 @@ use crate::model::{
     TargetKind,
 };
 use crate::ranking::rank_cleanup_plan;
+use crate::rules::{ProjectMarker, project_dir_rules};
 
 pub struct ProjectScanner;
 
@@ -160,54 +161,23 @@ impl ProjectScanner {
             return;
         };
 
-        let rules = [
-            (
-                "node.node_modules",
-                PathBuf::from("node_modules"),
-                TargetKind::DependencyDirectory,
-                RiskLevel::Medium,
-                false,
-            ),
-            (
-                "node.next_cache",
-                PathBuf::from(".next").join("cache"),
-                TargetKind::BuildArtifacts,
-                RiskLevel::Low,
-                true,
-            ),
-            (
-                "node.turbo",
-                PathBuf::from(".turbo"),
-                TargetKind::ToolCache,
-                RiskLevel::Low,
-                true,
-            ),
-            (
-                "node.parcel_cache",
-                PathBuf::from(".parcel-cache"),
-                TargetKind::ToolCache,
-                RiskLevel::Low,
-                true,
-            ),
-        ];
-
-        for (rule_id, relative, kind, risk, selected) in rules {
-            let path = dir.join(relative);
+        for rule in project_dir_rules(ProjectMarker::Node) {
+            let path = dir.join(rule.relative);
             if is_real_dir(&path) {
                 targets.push(build_path_target(PathTargetInput {
-                    rule_id,
-                    ecosystem: Ecosystem::Node,
-                    kind,
+                    rule_id: rule.id,
+                    ecosystem: rule.ecosystem.clone(),
+                    kind: rule.kind.clone(),
                     project_root: dir.to_path_buf(),
                     path,
-                    risk,
-                    selected_by_default: selected,
+                    risk: rule.risk.clone(),
+                    selected_by_default: rule.selected_by_default,
                     evidence: vec![
                         Evidence::MarkerFile {
                             path: marker.clone(),
                         },
                         Evidence::RuleMatched {
-                            rule_id: rule_id.to_string(),
+                            rule_id: rule.id.to_string(),
                         },
                     ],
                 }));
@@ -221,68 +191,23 @@ impl ProjectScanner {
         context: &PythonContext,
         targets: &mut Vec<CleanTarget>,
     ) {
-        let rules = [
-            (
-                "python.venv_dot",
-                ".venv",
-                TargetKind::VirtualEnv,
-                RiskLevel::Medium,
-                false,
-            ),
-            (
-                "python.venv",
-                "venv",
-                TargetKind::VirtualEnv,
-                RiskLevel::Medium,
-                false,
-            ),
-            (
-                "python.pytest_cache",
-                ".pytest_cache",
-                TargetKind::TestCache,
-                RiskLevel::Low,
-                true,
-            ),
-            (
-                "python.mypy_cache",
-                ".mypy_cache",
-                TargetKind::ToolCache,
-                RiskLevel::Low,
-                true,
-            ),
-            (
-                "python.ruff_cache",
-                ".ruff_cache",
-                TargetKind::ToolCache,
-                RiskLevel::Low,
-                true,
-            ),
-            (
-                "python.tox",
-                ".tox",
-                TargetKind::ToolCache,
-                RiskLevel::Medium,
-                false,
-            ),
-        ];
-
-        for (rule_id, name, kind, risk, selected) in rules {
-            let path = dir.join(name);
+        for rule in project_dir_rules(ProjectMarker::Python) {
+            let path = dir.join(rule.relative);
             if is_real_dir(&path) {
                 targets.push(build_path_target(PathTargetInput {
-                    rule_id,
-                    ecosystem: Ecosystem::Python,
-                    kind,
+                    rule_id: rule.id,
+                    ecosystem: rule.ecosystem.clone(),
+                    kind: rule.kind.clone(),
                     project_root: context.project_root.clone(),
                     path,
-                    risk,
-                    selected_by_default: selected,
+                    risk: rule.risk.clone(),
+                    selected_by_default: rule.selected_by_default,
                     evidence: vec![
                         Evidence::MarkerFile {
                             path: context.marker.clone(),
                         },
                         Evidence::RuleMatched {
-                            rule_id: rule_id.to_string(),
+                            rule_id: rule.id.to_string(),
                         },
                     ],
                 }));

@@ -11,6 +11,7 @@ use crate::model::{
     Scope, TargetId, TargetKind,
 };
 use crate::ranking::rank_cleanup_plan;
+use crate::rules::{KnownCacheAction, global_cache_rules};
 
 pub struct GlobalProviderScanner;
 
@@ -89,6 +90,7 @@ fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
     add_pnpm_target(probe, &mut targets);
     add_yarn_target(probe, &mut targets);
     add_cargo_home_target(probe, &mut targets);
+    add_known_cache_targets(probe, &mut targets);
 
     let mut plan = CleanupPlan {
         version: CLEANUP_PLAN_VERSION,
@@ -270,6 +272,48 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         ],
         action: CleanAction::NoopInspectOnly,
     });
+}
+
+/// Emit targets for known home-relative cache directories that have no official
+/// cleanup command (gradle / maven / go / ...). Trash rules are reversible;
+/// inspect-only rules are surfaced but never auto-deleted. Never auto-selected.
+fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
+    let Some(home) = probe.home_dir() else {
+        return;
+    };
+    for rule in global_cache_rules() {
+        let path = home.join(rule.relative);
+        if !probe.is_dir(&path) {
+            continue;
+        }
+        let (estimated_bytes, last_modified) = probe.estimate_path_size(&path);
+        let action = match rule.action {
+            KnownCacheAction::Trash => CleanAction::MoveToTrash { path: path.clone() },
+            KnownCacheAction::InspectOnly => CleanAction::NoopInspectOnly,
+        };
+        targets.push(CleanTarget {
+            id: TargetId::new(format!("{}:{}", rule.id, path.display())),
+            scope: Scope::Global,
+            ecosystem: rule.ecosystem.clone(),
+            kind: rule.kind.clone(),
+            path: Some(path.clone()),
+            estimated_bytes,
+            last_modified,
+            risk: rule.risk.clone(),
+            reversible: true,
+            selected_by_default: false,
+            evidence: vec![
+                Evidence::KnownCacheDir {
+                    source: rule.label.to_string(),
+                    path,
+                },
+                Evidence::RuleMatched {
+                    rule_id: rule.id.to_string(),
+                },
+            ],
+            action,
+        });
+    }
 }
 
 struct CommandTargetInput<'a> {
@@ -613,6 +657,85 @@ mod tests {
         assert!(
             ids[1].starts_with("npm.cache.clean"),
             "smaller provider target should be second: {ids:?}"
+        );
+    }
+
+    #[test]
+    fn known_cache_targets_emit_trash_for_present_dirs() {
+        let home = PathBuf::from("/home");
+        let gradle = home.join(".gradle/caches");
+        let probe = FakeProbe {
+            home: Some(home),
+            dirs: HashSet::from([gradle.clone()]),
+            sizes: HashMap::from([(gradle.clone(), 4096)]),
+            ..Default::default()
+        };
+
+        let plan = scan_with_probe(&probe);
+
+        let target = plan
+            .targets
+            .iter()
+            .find(|target| target.id.as_str().starts_with("gradle.caches"))
+            .expect("gradle cache target discovered");
+        assert_eq!(target.scope, Scope::Global);
+        assert_eq!(target.path, Some(gradle.clone()));
+        assert_eq!(target.estimated_bytes, 4096);
+        assert!(!target.selected_by_default);
+        assert!(matches!(target.risk, RiskLevel::Medium));
+        assert_eq!(target.action, CleanAction::MoveToTrash { path: gradle });
+        assert!(target.evidence.iter().any(|evidence| matches!(
+            evidence,
+            Evidence::KnownCacheDir { source, .. } if source == "gradle caches"
+        )));
+        assert!(target.evidence.iter().any(|evidence| matches!(
+            evidence,
+            Evidence::RuleMatched { rule_id } if rule_id == "gradle.caches"
+        )));
+    }
+
+    #[test]
+    fn known_cache_inspect_rule_is_noop() {
+        let inspect_rule = global_cache_rules()
+            .find(|rule| rule.action == KnownCacheAction::InspectOnly)
+            .expect("an inspect-only global cache rule exists");
+        let home = PathBuf::from("/home");
+        let path = home.join(inspect_rule.relative);
+        let probe = FakeProbe {
+            home: Some(home),
+            dirs: HashSet::from([path.clone()]),
+            sizes: HashMap::from([(path, 123)]),
+            ..Default::default()
+        };
+
+        let plan = scan_with_probe(&probe);
+
+        let target = plan
+            .targets
+            .iter()
+            .find(|target| target.id.as_str().starts_with(inspect_rule.id))
+            .expect("inspect-only cache target discovered");
+        assert_eq!(target.action, CleanAction::NoopInspectOnly);
+        assert!(!target.selected_by_default);
+    }
+
+    #[test]
+    fn missing_home_dir_emits_no_known_cache_targets() {
+        // Even with a matching directory present, no resolvable home means no
+        // known-cache targets are emitted.
+        let mut probe = FakeProbe::default();
+        probe.dirs.insert(PathBuf::from("/home/.gradle/caches"));
+        probe
+            .sizes
+            .insert(PathBuf::from("/home/.gradle/caches"), 4096);
+
+        let plan = scan_with_probe(&probe);
+
+        assert!(
+            plan.targets
+                .iter()
+                .all(|target| !target.id.as_str().starts_with("gradle.caches")),
+            "known-cache targets must require a resolvable home dir"
         );
     }
 

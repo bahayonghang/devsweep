@@ -31,6 +31,7 @@ use crate::{
     path_safety::target_contains_current_exe,
     providers::GlobalProviderScanner,
     ranking::rank_cleanup_plan,
+    rules::{RuleScope, rule_catalogue},
     scanner::ProjectScanner,
 };
 
@@ -1915,18 +1916,38 @@ fn render_details_panel(frame: &mut Frame<'_>, area: Rect, app: &App) {
 }
 
 fn render_rules(frame: &mut Frame<'_>, area: Rect) {
-    let lines = vec![
-        Line::from("Project rules"),
-        Line::from("  rust.target -> cargo clean"),
-        Line::from("  node.node_modules -> trash"),
-        Line::from("  node cache dirs -> trash"),
-        Line::from("  python caches and venvs -> trash"),
-        Line::from(""),
-        Line::from("Global providers"),
-        Line::from("  npm, pip, pnpm, yarn -> official commands"),
-        Line::from("  cargo home -> inspect only"),
-        Line::from("  docker -> deferred"),
-    ];
+    let catalogue = rule_catalogue();
+    let mut lines = Vec::new();
+
+    lines.push(Line::styled("Project rules", muted_style()));
+    for doc in catalogue
+        .iter()
+        .filter(|doc| doc.scope == RuleScope::Project)
+    {
+        lines.push(Line::from(format!(
+            "  {:<22} {:<9} {:<16} {}",
+            doc.id,
+            risk_label(&doc.risk),
+            doc.action,
+            doc.summary
+        )));
+    }
+
+    lines.push(Line::from(""));
+    lines.push(Line::styled("Global providers & caches", muted_style()));
+    for doc in catalogue
+        .iter()
+        .filter(|doc| doc.scope == RuleScope::Global)
+    {
+        lines.push(Line::from(format!(
+            "  {:<22} {:<9} {:<16} {}",
+            doc.id,
+            risk_label(&doc.risk),
+            doc.action,
+            doc.summary
+        )));
+    }
+
     frame.render_widget(
         Paragraph::new(Text::from(lines))
             .block(panel_block("Rules"))
@@ -2760,6 +2781,21 @@ mod tests {
         assert!(rendered.contains("Details"));
         assert!(!rendered.contains("Categories"));
         assert!(rendered.contains("D:/code/web/.next/cache"));
+    }
+
+    #[test]
+    fn rules_tab_lists_catalogue_entries() {
+        let mut app = App::with_plan(representative_plan());
+        app.active_tab = ActiveTab::Rules;
+
+        let rendered = render_text_with_size(&app, 120, 50);
+
+        assert!(rendered.contains("Project rules"), "project section header");
+        assert!(rendered.contains("rust.target"), "project rule listed");
+        assert!(
+            rendered.contains("gradle.caches"),
+            "new global cache listed"
+        );
     }
 
     #[test]

@@ -98,6 +98,19 @@ fn run_clean(command: CleanCommand) -> Result<()> {
 }
 
 fn run_rules() -> Result<()> {
-    println!("Rules placeholder: built-in cleanup rules are not implemented yet.");
+    println!(
+        "{:<30} {:<8} {:<10} {:<18} SUMMARY",
+        "ID", "SCOPE", "RISK", "ACTION"
+    );
+    for doc in devsweep::rules::rule_catalogue() {
+        println!(
+            "{:<30} {:<8} {:<10} {:<18} {}",
+            doc.id,
+            format!("{:?}", doc.scope).to_lowercase(),
+            format!("{:?}", doc.risk).to_lowercase(),
+            doc.action,
+            doc.summary,
+        );
+    }
     Ok(())
 }

@@ -6,5 +6,6 @@ pub mod model;
 pub(crate) mod path_safety;
 pub mod providers;
 pub mod ranking;
+pub mod rules;
 pub mod scanner;
 pub mod tui;

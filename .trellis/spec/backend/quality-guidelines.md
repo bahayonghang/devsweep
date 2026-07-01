@@ -28,10 +28,12 @@ explicitly adds cleanup support.
 ### Scenario: Foundation CLI and command entrypoints
 
 #### 1. Scope / Trigger
+
 - Trigger: the foundation task defines the project command surface and the
   local validation entrypoint used by later Trellis tasks.
 
 #### 2. Signatures
+
 - Local command entrypoints:
   - `just ci`
   - `just build`
@@ -44,6 +46,7 @@ explicitly adds cleanup support.
   - `devsweep rules`
 
 #### 3. Contracts
+
 - `just ci` is the canonical local quality gate and must include formatting,
   type-checking, tests, and clippy.
 - `devsweep scan --json` must emit the current JSON cleanup plan contract.
@@ -59,6 +62,7 @@ explicitly adds cleanup support.
   engine task.
 
 #### 4. Validation & Error Matrix
+
 - `scan --json` succeeds -> valid JSON plan with `version` and `targets`.
 - `clean --plan PATH` without `--execute` succeeds -> reports dry-run and
   performs no action.
@@ -68,6 +72,7 @@ explicitly adds cleanup support.
   not side effects.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: `just ci` passes before a task is reported complete.
 - Base: `cargo check --all-targets` passes when run directly.
 - Bad: `scan` discovers or deletes directories before the scanner task exists.
@@ -75,6 +80,7 @@ explicitly adds cleanup support.
   `src/executor.rs`.
 
 #### 6. Tests Required
+
 - CLI definition test for subcommand shape.
 - Cleanup plan JSON serialization/round-trip tests for representative targets.
 - TUI placeholder render test through ratatui `TestBackend`.
@@ -84,12 +90,14 @@ explicitly adds cleanup support.
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 // Scanner/foundation code must not execute cleanup commands.
 std::process::Command::new("cargo").arg("clean").status()?;
 ```
 
 Correct:
+
 ```rust
 // Foundation only defines the serializable action contract.
 CleanAction::Command {
@@ -103,17 +111,20 @@ CleanAction::Command {
 ### Scenario: Execution engine and audit log
 
 #### 1. Scope / Trigger
+
 - Trigger: `devsweep clean` consumes an existing cleanup plan and either
   dry-runs selected actions or executes command/trash-backed actions with an
   audit JSONL record for each attempted target.
 
 #### 2. Signatures
+
 - CLI entrypoint:
   - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH] [--allow-permanent-delete]`
 - Library entrypoint:
   - `Executor::default().run_plan(&CleanupPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
 
 #### 3. Contracts
+
 - `clean` without `--execute` is always dry-run and must not call command or
   trash runners.
 - `clean --execute` requires `--plan PATH`; execution must never discover new
@@ -129,6 +140,7 @@ CleanAction::Command {
   `devsweep-audit.jsonl`.
 
 #### 4. Validation & Error Matrix
+
 - Dry-run with or without plan -> returns selected target count, no side
   effects, no audit file.
 - `--execute` without `--plan` -> error before executor runs.
@@ -142,8 +154,9 @@ CleanAction::Command {
 - Permanent delete target -> failed audit entry, no side effect.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: command-backed Rust target records `["cargo", "clean",
-  "--manifest-path", "<Cargo.toml>"]`.
+"--manifest-path", "<Cargo.toml>"]`.
 - Good: a selected target that contains `std::env::current_exe()` is skipped
   before invoking `CommandRunner` or `TrashRunner`.
 - Good: trash-backed target moves exactly the path from
@@ -155,6 +168,7 @@ CleanAction::Command {
 - Bad: a failed target aborts the job before later selected targets are audited.
 
 #### 6. Tests Required
+
 - Dry-run test proving command and trash runners are not called.
 - Command-runner test asserting program and argv are separate.
 - Self-clean guard test asserting the command runner is not called and the audit
@@ -167,6 +181,7 @@ CleanAction::Command {
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 std::process::Command::new("cmd")
     .args(["/C", &format!("cargo clean --manifest-path {}", manifest.display())])
@@ -174,6 +189,7 @@ std::process::Command::new("cmd")
 ```
 
 Correct:
+
 ```rust
 CommandRequest {
     program: "cargo".to_string(),
@@ -189,10 +205,12 @@ CommandRequest {
 ### Scenario: Global cache providers
 
 #### 1. Scope / Trigger
+
 - Trigger: `devsweep scan --global` discovers global package-manager cache
   providers and emits command-backed or inspect-only cleanup plan targets.
 
 #### 2. Signatures
+
 - CLI entrypoint:
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
 - Library entrypoint:
@@ -202,6 +220,7 @@ CommandRequest {
   - command output probes for official inspect commands only
 
 #### 3. Contracts
+
 - `scan --global` may run read-only or provider-owned inspect commands such as
   `npm config get cache`, `pip cache dir`, `pnpm store path`, `yarn --version`,
   and Yarn cache-folder commands.
@@ -220,8 +239,14 @@ CommandRequest {
   `credentials.toml`, `.crates.toml`, or the whole cargo home as a cleanable
   delete/trash target.
 - Docker builder cache is not part of the MVP global provider set.
+- The "never trash cache internals" rule here applies to command-backed
+  providers (npm/pip/pnpm/yarn), which own official cleanup commands. Known
+  cache directories with NO official command (gradle/maven/go/...) are handled
+  by the declarative rule catalogue and MAY trash the whole directory or be
+  inspect-only. See "Scenario: Declarative rule catalogue".
 
 #### 4. Validation & Error Matrix
+
 - Tool missing -> no target for that provider, scan still succeeds.
 - Cache path command fails -> command-backed target may still be emitted with
   no `path`, as long as official command evidence is present.
@@ -230,6 +255,7 @@ CommandRequest {
 - Cargo home missing or not a directory -> no Cargo home target.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: npm target plans `["cache", "verify"]` or
   `["cache", "clean", "--force"]` without running either command.
 - Good: npm cache discovery emits one target for the cache directory and may
@@ -248,6 +274,7 @@ CommandRequest {
 - Bad: adding Docker builder cache to this MVP provider set.
 
 #### 6. Tests Required
+
 - Missing-tool provider test proving scan succeeds with no targets.
 - Available-tool provider test asserting official program/argv pairs.
 - Duplicate-path provider test proving alternative commands do not create
@@ -259,6 +286,7 @@ CommandRequest {
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 // Provider discovery must not directly delete opaque cache internals.
 CleanAction::MoveToTrash {
@@ -267,6 +295,7 @@ CleanAction::MoveToTrash {
 ```
 
 Correct:
+
 ```rust
 CleanAction::Command {
     program: npm_program,
@@ -276,14 +305,109 @@ CleanAction::Command {
 }
 ```
 
+### Scenario: Declarative rule catalogue
+
+#### 1. Scope / Trigger
+- Trigger: adding or changing a cleanup rule, or listing rules via
+  `devsweep rules` / the TUI `Rules` tab. Rules are centralized in
+  `src/rules.rs`, not scattered across scanner/provider branches.
+
+#### 2. Signatures
+- `rules::PROJECT_DIR_RULES: &[ProjectDirRule]` — marker-gated project cache dirs.
+- `rules::GLOBAL_CACHE_RULES` + `rules::GLOBAL_CACHE_RULES_OS` (`#[cfg]`-split) —
+  known home-relative global caches with no official cleanup command.
+- `rules::project_dir_rules(marker) -> impl Iterator<Item = &'static ProjectDirRule>`
+- `rules::global_cache_rules() -> impl Iterator<Item = &'static GlobalCacheRule>`
+- `rules::rule_catalogue() -> Vec<RuleDoc>` — flat display list of every rule.
+
+#### 3. Contracts
+- Four rule shapes exist; two are data, two are procedural:
+  - A. Project marker -> relative dir (Node/Python): tabled in
+    `PROJECT_DIR_RULES`, consumed by `ProjectScanner::scan_*`.
+  - C. Known home-relative global cache (gradle/maven/go/...): tabled in
+    `GLOBAL_CACHE_RULES(_OS)`, consumed by `providers::add_known_cache_targets`.
+  - B. `cargo clean` project rule and D. command providers (npm/pip/pnpm/yarn):
+    stay procedural (B needs a `target/` check; D must run a tool and parse
+    stdout, yarn branches on version). They are NOT forced into tables, but MUST
+    appear in `rule_catalogue()` as static descriptors so the Rules view lists
+    everything.
+- Adding a rule of shape A or C means adding a table row, not a new branch.
+- `rule_catalogue()` ids must be unique and every field non-empty.
+- `GlobalCacheRule` carries a `KnownCacheAction`:
+  - `Trash` for re-downloadable package caches with no official command
+    (gradle/maven/go/ivy/nuget) -> `CleanAction::MoveToTrash` (reversible).
+  - `InspectOnly` for high-risk or expensive-to-refetch caches (e.g. huggingface
+    models) -> `CleanAction::NoopInspectOnly`.
+- Known-cache targets are NEVER `selected_by_default = true`, require a
+  resolvable home dir, and carry `KnownCacheDir` + `RuleMatched` evidence — never
+  a fabricated `OfficialCommand`.
+- New known caches map to `Ecosystem::Generic` unless a dedicated ecosystem
+  variant is added deliberately (that also touches `model.rs` and TUI category
+  counts).
+- Rules that reuse existing `CleanAction`/`Evidence` variants do NOT change
+  `CleanupPlan` shape; keep `CLEANUP_PLAN_VERSION` unchanged.
+
+#### 4. Validation & Error Matrix
+- Home dir unresolved -> `add_known_cache_targets` emits nothing, scan succeeds.
+- Known-cache dir absent -> that rule emits no target, scan succeeds.
+- Duplicate rule id in any table -> catalogue uniqueness test fails.
+- Known cache without an official command -> grade `Trash`/`InspectOnly` by risk;
+  never fabricate an `OfficialCommand`.
+
+#### 5. Good/Base/Bad Cases
+- Good: gradle/maven/go caches emit `MoveToTrash`, Medium risk, not selected,
+  with `KnownCacheDir` + `RuleMatched` evidence.
+- Good: huggingface hub graded `InspectOnly` (High risk) -> `NoopInspectOnly`.
+- Good: a new Node/Python cache added as one `PROJECT_DIR_RULES` row.
+- Bad: adding a new scanner/provider branch instead of a table row.
+- Bad: trashing `~/.cargo` internals or marking any known cache selected by
+  default.
+- Bad: giving a known cache an `OfficialCommand` evidence it does not have.
+
+#### 6. Tests Required
+- Catalogue id uniqueness and non-empty fields (`rules.rs`).
+- Project-dir table ids match the legacy scanner rule ids (regression guard).
+- Global-cache table uniqueness and coverage of new ecosystems (gradle/maven/go).
+- Provider test: present known-cache dir -> trash target with correct
+  risk/evidence and `!selected_by_default`.
+- Provider test: an `InspectOnly` rule -> `NoopInspectOnly` (platform-agnostic:
+  iterate `global_cache_rules()` to find one).
+- Provider test: no home dir -> no known-cache targets.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+```rust
+// New cache added as a scattered branch, trashed with a spoofed command.
+if home.join(".gradle/caches").is_dir() {
+    targets.push(command_target(/* pretend gradle has an official clean */));
+}
+```
+
+Correct:
+```rust
+// One table row; the provider grades it Trash (no official command exists).
+GlobalCacheRule {
+    id: "gradle.caches",
+    label: "gradle caches",
+    ecosystem: Ecosystem::Generic,
+    relative: ".gradle/caches",
+    kind: TargetKind::PackageCache,
+    risk: RiskLevel::Medium,
+    action: KnownCacheAction::Trash,
+}
+```
+
 ### Scenario: CI and release archive
 
 #### 1. Scope / Trigger
+
 - Trigger: repository-level validation or release packaging changes add or
   change CI workflow commands, `justfile` recipes, or generated release
   artifacts.
 
 #### 2. Signatures
+
 - Local validation:
   - `just ci`
 - Local release archive:
@@ -295,6 +419,7 @@ CleanAction::Command {
   - `cargo clippy --all-targets -- -D warnings`
 
 #### 3. Contracts
+
 - `just ci` remains the canonical local quality gate.
 - CI must run the same four validation classes as `just ci`: format, check,
   tests, and clippy.
@@ -305,6 +430,7 @@ CleanAction::Command {
   Winget, Homebrew, or cargo publish.
 
 #### 4. Validation & Error Matrix
+
 - Format/check/test/clippy failure -> CI fails and local `just ci` fails.
 - Release build failure -> `just release-archive` fails before creating or
   replacing the archive.
@@ -312,6 +438,7 @@ CleanAction::Command {
 - Generated `dist/` output -> ignored by git status.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: CI includes Windows and a non-Windows runner for the Rust validation
   matrix.
 - Good: release recipe uses the already built single binary.
@@ -321,6 +448,7 @@ CleanAction::Command {
   distribution as released MVP behavior.
 
 #### 6. Tests Required
+
 - Run `just ci` after workflow or validation command changes.
 - Run `just release-archive` after release recipe changes on Windows.
 - Check `git status --short --ignored` to confirm `dist/` is ignored.
@@ -328,11 +456,13 @@ CleanAction::Command {
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```text
 Commit dist/devsweep-x86_64-pc-windows-msvc.zip as a release artifact.
 ```
 
 Correct:
+
 ```text
 Generate dist/devsweep-x86_64-pc-windows-msvc.zip locally and keep dist/
 ignored by git.
@@ -341,10 +471,12 @@ ignored by git.
 ### Scenario: Cleanup plan ranking and freshness guard
 
 #### 1. Scope / Trigger
+
 - Trigger: scanner, provider, CLI, or TUI code changes the order or default
   selection state of `CleanupPlan.targets`.
 
 #### 2. Signatures
+
 - Library entrypoint:
   - `ranking::rank_cleanup_plan(&mut CleanupPlan)`
 - Score helper:
@@ -356,6 +488,7 @@ ignored by git.
   - TUI scan merge paths that combine project and global targets
 
 #### 3. Contracts
+
 - Plan targets are ordered by descending `estimated_bytes`; ties use the shared
   size/age score, older `last_modified`, then `TargetId` for deterministic
   output.
@@ -371,6 +504,7 @@ ignored by git.
   plans may still mark explicitly selected targets as selected for execution.
 
 #### 4. Validation & Error Matrix
+
 - Multiple targets -> output is size-ranked with deterministic tie-breakers.
 - Recently modified selected target -> deselected with freshness evidence.
 - Stale selected target -> remains selected.
@@ -380,6 +514,7 @@ ignored by git.
   selected by default.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: project, global, CLI, and TUI merged plans all call the shared ranking
   helper instead of each implementing local ordering.
 - Good: a 2 GiB global target appears before a 1 GiB project target in both
@@ -391,6 +526,7 @@ ignored by git.
 - Bad: scanning the filesystem again from ranking to calculate missing data.
 
 #### 6. Tests Required
+
 - Unit tests for size ranking, tie-breakers, score calculation, missing mtime,
   future mtime, and freshness evidence idempotence.
 - Scanner/provider tests proving returned plans are ranked.
@@ -401,12 +537,14 @@ ignored by git.
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 // UI-only sorting makes JSON output and TUI output disagree.
 targets.sort_by_key(|target| std::cmp::Reverse(target.estimated_bytes));
 ```
 
 Correct:
+
 ```rust
 let mut plan = project_plan;
 plan.targets.extend(global_plan.targets);
@@ -416,17 +554,20 @@ ranking::rank_cleanup_plan(&mut plan);
 ### Scenario: Project scanner and JSON cleanup plan
 
 #### 1. Scope / Trigger
+
 - Trigger: scanner code discovers project cleanup candidates and changes the
   `devsweep scan --json` output contract from an empty placeholder plan to real
   `CleanTarget` values.
 
 #### 2. Signatures
+
 - Library entrypoint:
   - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
 - CLI entrypoint:
   - `devsweep scan [ROOT]... [--json] [--projects]`
 
 #### 3. Contracts
+
 - Scanner code may only create `CleanTarget` values; it must not delete, move to
   trash, or execute cleanup commands.
 - Project matching is marker-first:
@@ -442,6 +583,7 @@ ranking::rank_cleanup_plan(&mut plan);
   or emits duplicate cleanup actions for nested targets.
 
 #### 4. Validation & Error Matrix
+
 - Missing scan root -> return an error to the CLI.
 - Markerless `target`, `build`, `dist`, or `node_modules` -> no target emitted.
 - Inaccessible nested entry -> skip that entry, continue scanning the rest of
@@ -450,6 +592,7 @@ ranking::rank_cleanup_plan(&mut plan);
   parent target and drop the nested target.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: fixture with `Cargo.toml` plus `target/` emits a Rust target with
   command-shaped `cargo clean` action data but does not run Cargo.
 - Good: fixture with `package.json` plus `node_modules/` emits a medium-risk,
@@ -463,6 +606,7 @@ ranking::rank_cleanup_plan(&mut plan);
   APIs.
 
 #### 6. Tests Required
+
 - Fixture tests for Rust, Node, and Python discovery.
 - Fixture tests proving markerless cleanup names are ignored.
 - Tests that serialized plan targets contain risk, evidence, selection, action,
@@ -473,6 +617,7 @@ ranking::rank_cleanup_plan(&mut plan);
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 // Name-only matching is unsafe.
 if path.file_name() == Some("target".as_ref()) {
@@ -481,6 +626,7 @@ if path.file_name() == Some("target".as_ref()) {
 ```
 
 Correct:
+
 ```rust
 // Marker-first: only a Rust project root can own target/.
 let manifest = project_root.join("Cargo.toml");
