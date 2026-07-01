@@ -4,6 +4,10 @@
 /target/
 /dist/
 
+.codegraph/
+.reasonix/
+
+
 ref/
 
 devsweep-audit.jsonl
