@@ -27,6 +27,24 @@ broad grep or repo-wide search so navigation starts from the maintained map.
 - Docker cleanup is not part of the current MVP behavior.
 - `target/` and `dist/` are generated outputs and must not be committed.
 
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues for `bahayonghang/devsweep`; external PRs
+are not a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default canonical labels: `needs-triage`, `needs-info`,
+`ready-for-agent`, `ready-for-human`, and `wontfix`. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repo uses a single-context domain-doc layout. See
+`docs/agents/domain.md`.
+
 ## Trellis And Codex
 
 - For backend changes, read `.trellis/spec/backend/index.md` before editing.
