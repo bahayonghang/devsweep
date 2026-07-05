@@ -8,4 +8,5 @@ pub mod providers;
 pub mod ranking;
 pub mod rules;
 pub mod scanner;
+pub mod sweep;
 pub mod tui;

@@ -25,14 +25,11 @@ use ratatui::{
 use crate::{
     executor::{ExecutionReport, ExecutionRequest, ExecutionTargetStatus, Executor},
     model::{
-        CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence,
-        RiskLevel, Scope, TargetId,
+        CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     },
     path_safety::target_contains_current_exe,
-    providers::GlobalProviderScanner,
-    ranking::rank_cleanup_plan,
     rules::{RuleScope, rule_catalogue},
-    scanner::ProjectScanner,
+    sweep::{ScanOptions, ScanPhase, ScanProgress, Sweeper},
 };
 
 type JobId = u64;
@@ -118,7 +115,23 @@ fn dispatch_effect(effect: Effect, worker_tx: Sender<WorkerEvent>) -> Result<()>
 fn run_scan_worker(job_id: JobId, worker_tx: Sender<WorkerEvent>) {
     let _ = worker_tx.send(WorkerEvent::ScanStarted { job_id });
 
-    let result = run_staged_scan(job_id, &worker_tx);
+    let result = std::env::current_dir()
+        .context("failed to get current directory")
+        .and_then(|current_dir| {
+            let options = ScanOptions {
+                include_projects: true,
+                include_global: true,
+                roots: vec![current_dir],
+            };
+            Sweeper::default().full_scan(&options, &mut |progress: ScanProgress| {
+                let _ = worker_tx.send(WorkerEvent::ScanProgress {
+                    job_id,
+                    phase: progress.phase,
+                    message: progress.message,
+                    plan: progress.partial,
+                });
+            })
+        });
     match result {
         Ok(plan) => {
             let _ = worker_tx.send(WorkerEvent::ScanFinished { job_id, plan });
@@ -130,75 +143,6 @@ fn run_scan_worker(job_id: JobId, worker_tx: Sender<WorkerEvent>) {
             });
         }
     }
-}
-
-fn run_staged_scan(job_id: JobId, worker_tx: &Sender<WorkerEvent>) -> Result<CleanupPlan> {
-    let current_dir = std::env::current_dir().context("failed to get current directory")?;
-
-    send_scan_progress(
-        worker_tx,
-        job_id,
-        ScanPhase::Projects,
-        "Scanning current directory",
-        None,
-    );
-    let project_plan = ProjectScanner::new().scan_roots(&[current_dir])?;
-    send_scan_progress(
-        worker_tx,
-        job_id,
-        ScanPhase::Projects,
-        format!(
-            "Project scan finished: {} target(s)",
-            project_plan.targets.len()
-        ),
-        Some(project_plan.clone()),
-    );
-
-    send_scan_progress(
-        worker_tx,
-        job_id,
-        ScanPhase::Global,
-        "Scanning global providers",
-        None,
-    );
-    send_scan_progress(
-        worker_tx,
-        job_id,
-        ScanPhase::Global,
-        "Estimating global cache sizes",
-        None,
-    );
-    let global_plan = GlobalProviderScanner::new().scan();
-    send_scan_progress(
-        worker_tx,
-        job_id,
-        ScanPhase::Global,
-        format!(
-            "Global scan finished: {} target(s)",
-            global_plan.targets.len()
-        ),
-        Some(global_plan.clone()),
-    );
-
-    let mut plan = project_plan;
-    plan.targets.extend(global_plan.targets);
-    rank_cleanup_plan(&mut plan);
-    Ok(plan)
-}
-
-fn send_scan_progress(
-    worker_tx: &Sender<WorkerEvent>,
-    job_id: JobId,
-    phase: ScanPhase,
-    message: impl Into<String>,
-    plan: Option<CleanupPlan>,
-) {
-    let _ = worker_tx.send(WorkerEvent::ScanProgress {
-        job_id,
-        phase,
-        message: message.into(),
-        plan,
-    });
 }
 
 fn run_clean_worker(job_id: JobId, plan: CleanupPlan, worker_tx: Sender<WorkerEvent>) {
@@ -565,8 +509,7 @@ impl App {
                     format_cleanup_progress(completed, total, &message),
                 );
             }
-            WorkerEvent::ScanFinished { job_id, mut plan } => {
-                rank_cleanup_plan(&mut plan);
+            WorkerEvent::ScanFinished { job_id, plan } => {
                 let count = plan.targets.len();
                 if self.should_apply_scan_update(job_id) {
                     self.targets = plan.targets;
@@ -662,7 +605,7 @@ impl App {
     fn handle_scan_progress(
         &mut self,
         job_id: JobId,
-        phase: ScanPhase,
+        _phase: ScanPhase,
         message: String,
         plan: Option<CleanupPlan>,
     ) {
@@ -685,7 +628,7 @@ impl App {
         if let Some(snapshot) = &mut self.scan_snapshot
             && snapshot.job_id == job_id
         {
-            snapshot.set_phase_targets(phase, plan.targets);
+            snapshot.set_targets(plan.targets);
             updated = true;
         }
 
@@ -1178,47 +1121,26 @@ enum WorkerEvent {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ScanPhase {
-    Projects,
-    Global,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ScanSnapshot {
     job_id: JobId,
-    project_targets: Vec<CleanTarget>,
-    global_targets: Vec<CleanTarget>,
+    latest_targets: Vec<CleanTarget>,
 }
 
 impl ScanSnapshot {
     fn new(job_id: JobId) -> Self {
         Self {
             job_id,
-            project_targets: Vec::new(),
-            global_targets: Vec::new(),
+            latest_targets: Vec::new(),
         }
     }
 
-    fn set_phase_targets(&mut self, phase: ScanPhase, targets: Vec<CleanTarget>) {
-        match phase {
-            ScanPhase::Projects => self.project_targets = targets,
-            ScanPhase::Global => self.global_targets = targets,
-        }
+    fn set_targets(&mut self, targets: Vec<CleanTarget>) {
+        self.latest_targets = targets;
     }
 
     fn targets(&self) -> Vec<CleanTarget> {
-        let mut plan = CleanupPlan {
-            version: CLEANUP_PLAN_VERSION,
-            targets: self
-                .project_targets
-                .iter()
-                .chain(&self.global_targets)
-                .cloned()
-                .collect(),
-        };
-        rank_cleanup_plan(&mut plan);
-        plan.targets
+        self.latest_targets.clone()
     }
 }
 
@@ -3481,7 +3403,7 @@ mod tests {
     }
 
     #[test]
-    fn scan_progress_merges_project_and_global_targets_without_duplicates() {
+    fn scan_progress_applies_latest_cumulative_partial_plan() {
         let mut app = App::new();
         let effects = app.startup_effects();
         let [Effect::StartScan { job_id }] = effects.as_slice() else {
@@ -3503,13 +3425,19 @@ mod tests {
             job_id,
             phase: ScanPhase::Global,
             message: "Global scan finished: 1 target(s)".to_string(),
-            plan: Some(plan_with_targets(vec![global_target.clone()])),
+            plan: Some(plan_with_targets(vec![
+                global_target.clone(),
+                project_target.clone(),
+            ])),
         }));
         app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
             job_id,
             phase: ScanPhase::Global,
             message: "Global scan finished: 1 target(s)".to_string(),
-            plan: Some(plan_with_targets(vec![global_target.clone()])),
+            plan: Some(plan_with_targets(vec![
+                global_target.clone(),
+                project_target.clone(),
+            ])),
         }));
 
         assert_eq!(

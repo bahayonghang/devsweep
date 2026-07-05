@@ -10,7 +10,6 @@ use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, TargetId, TargetKind,
 };
-use crate::ranking::rank_cleanup_plan;
 use crate::rules::{KnownCacheAction, global_cache_rules};
 
 pub struct GlobalProviderScanner;
@@ -92,12 +91,10 @@ fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
     add_cargo_home_target(probe, &mut targets);
     add_known_cache_targets(probe, &mut targets);
 
-    let mut plan = CleanupPlan {
+    CleanupPlan {
         version: CLEANUP_PLAN_VERSION,
         targets,
-    };
-    rank_cleanup_plan(&mut plan);
-    plan
+    }
 }
 
 fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
@@ -634,7 +631,7 @@ mod tests {
     }
 
     #[test]
-    fn provider_scan_returns_ranked_targets() {
+    fn provider_scan_returns_all_discovered_targets() {
         let mut probe = FakeProbe::default();
         let npm = probe.tool("npm", "/tools/npm");
         let py = probe.tool("py", "/tools/py");
@@ -650,13 +647,14 @@ mod tests {
             .iter()
             .map(|target| target.id.as_str())
             .collect();
+        assert_eq!(ids.len(), 2);
         assert!(
-            ids[0].starts_with("pip.cache.purge"),
-            "largest provider target should be first: {ids:?}"
+            ids.iter().any(|id| id.starts_with("pip.cache.purge")),
+            "pip target discovered: {ids:?}"
         );
         assert!(
-            ids[1].starts_with("npm.cache.clean"),
-            "smaller provider target should be second: {ids:?}"
+            ids.iter().any(|id| id.starts_with("npm.cache.clean")),
+            "npm target discovered: {ids:?}"
         );
     }
 

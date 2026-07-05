@@ -5,9 +5,7 @@ use devsweep::{
     config,
     executor::{ExecutionRequest, Executor},
     model::CleanupPlan,
-    providers::GlobalProviderScanner,
-    ranking::rank_cleanup_plan,
-    scanner::ProjectScanner,
+    sweep::{ScanOptions, Sweeper},
 };
 
 fn main() -> Result<()> {
@@ -22,19 +20,12 @@ fn main() -> Result<()> {
 }
 
 fn run_scan(command: ScanCommand) -> Result<()> {
-    let include_projects = command.projects || !command.global;
-    let include_global = command.global || !command.projects;
-    let mut plan = CleanupPlan::empty();
-
-    if include_projects {
-        plan.targets
-            .extend(ProjectScanner::new().scan_roots(&command.roots)?.targets);
-    }
-    if include_global {
-        plan.targets
-            .extend(GlobalProviderScanner::new().scan().targets);
-    }
-    rank_cleanup_plan(&mut plan);
+    let options = ScanOptions {
+        include_projects: command.projects || !command.global,
+        include_global: command.global || !command.projects,
+        roots: command.roots.clone(),
+    };
+    let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 
     if command.json {
         serde_json::to_writer_pretty(std::io::stdout(), &plan)?;

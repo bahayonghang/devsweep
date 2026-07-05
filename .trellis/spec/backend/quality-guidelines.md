@@ -308,11 +308,13 @@ CleanAction::Command {
 ### Scenario: Declarative rule catalogue
 
 #### 1. Scope / Trigger
+
 - Trigger: adding or changing a cleanup rule, or listing rules via
   `devsweep rules` / the TUI `Rules` tab. Rules are centralized in
   `src/rules.rs`, not scattered across scanner/provider branches.
 
 #### 2. Signatures
+
 - `rules::PROJECT_DIR_RULES: &[ProjectDirRule]` — marker-gated project cache dirs.
 - `rules::GLOBAL_CACHE_RULES` + `rules::GLOBAL_CACHE_RULES_OS` (`#[cfg]`-split) —
   known home-relative global caches with no official cleanup command.
@@ -321,6 +323,7 @@ CleanAction::Command {
 - `rules::rule_catalogue() -> Vec<RuleDoc>` — flat display list of every rule.
 
 #### 3. Contracts
+
 - Four rule shapes exist; two are data, two are procedural:
   - A. Project marker -> relative dir (Node/Python): tabled in
     `PROJECT_DIR_RULES`, consumed by `ProjectScanner::scan_*`.
@@ -348,6 +351,7 @@ CleanAction::Command {
   `CleanupPlan` shape; keep `CLEANUP_PLAN_VERSION` unchanged.
 
 #### 4. Validation & Error Matrix
+
 - Home dir unresolved -> `add_known_cache_targets` emits nothing, scan succeeds.
 - Known-cache dir absent -> that rule emits no target, scan succeeds.
 - Duplicate rule id in any table -> catalogue uniqueness test fails.
@@ -355,6 +359,7 @@ CleanAction::Command {
   never fabricate an `OfficialCommand`.
 
 #### 5. Good/Base/Bad Cases
+
 - Good: gradle/maven/go caches emit `MoveToTrash`, Medium risk, not selected,
   with `KnownCacheDir` + `RuleMatched` evidence.
 - Good: huggingface hub graded `InspectOnly` (High risk) -> `NoopInspectOnly`.
@@ -365,6 +370,7 @@ CleanAction::Command {
 - Bad: giving a known cache an `OfficialCommand` evidence it does not have.
 
 #### 6. Tests Required
+
 - Catalogue id uniqueness and non-empty fields (`rules.rs`).
 - Project-dir table ids match the legacy scanner rule ids (regression guard).
 - Global-cache table uniqueness and coverage of new ecosystems (gradle/maven/go).
@@ -377,6 +383,7 @@ CleanAction::Command {
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 // New cache added as a scattered branch, trashed with a spoofed command.
 if home.join(".gradle/caches").is_dir() {
@@ -385,6 +392,7 @@ if home.join(".gradle/caches").is_dir() {
 ```
 
 Correct:
+
 ```rust
 // One table row; the provider grades it Trash (no official command exists).
 GlobalCacheRule {
@@ -481,14 +489,21 @@ ignored by git.
   - `ranking::rank_cleanup_plan(&mut CleanupPlan)`
 - Score helper:
   - `ranking::target_score(&CleanTarget, SystemTime) -> f64`
+- Pipeline owner:
+  - `sweep::Sweeper::default().full_scan(&ScanOptions, &mut dyn FnMut(ScanProgress)) -> anyhow::Result<CleanupPlan>`
 - Assembly boundaries:
-  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
-  - `GlobalProviderScanner::new().scan() -> CleanupPlan`
+  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>` (returns unranked)
+  - `GlobalProviderScanner::new().scan() -> CleanupPlan` (returns unranked)
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-  - TUI scan merge paths that combine project and global targets
+  - TUI scan worker driving `sweep::full_scan`
 
 #### 3. Contracts
 
+- Ranking ownership lives in `sweep::full_scan`: it merges scanner and provider
+  results and calls the ranking helper exactly once per cumulative set. Scanner
+  and provider modules return unranked plans and must not call ranking
+  themselves; callers of `full_scan` receive a ranked plan and must not
+  re-rank.
 - Plan targets are ordered by descending `estimated_bytes`; ties use the shared
   size/age score, older `last_modified`, then `TargetId` for deterministic
   output.
@@ -515,8 +530,9 @@ ignored by git.
 
 #### 5. Good/Base/Bad Cases
 
-- Good: project, global, CLI, and TUI merged plans all call the shared ranking
-  helper instead of each implementing local ordering.
+- Good: CLI and TUI both obtain plans through `sweep::full_scan`, so ranking
+  runs in exactly one production call site instead of each entry point
+  implementing local ordering.
 - Good: a 2 GiB global target appears before a 1 GiB project target in both
   `scan --json` and TUI results.
 - Base: calling the ranking helper twice is idempotent and does not duplicate
@@ -524,14 +540,17 @@ ignored by git.
 - Bad: sorting only in render code while `scan --json` uses discovery order.
 - Bad: selecting a large target by default only because it is large.
 - Bad: scanning the filesystem again from ranking to calculate missing data.
+- Bad: a caller of `full_scan` defensively re-ranking the returned plan.
 
 #### 6. Tests Required
 
 - Unit tests for size ranking, tie-breakers, score calculation, missing mtime,
   future mtime, and freshness evidence idempotence.
-- Scanner/provider tests proving returned plans are ranked.
-- TUI state tests proving project/global staged scan results merge through the
-  shared ranking order.
+- Sweep tests with fake scanners proving merge order, single ranking pass with
+  freshness guard, staged progress event sequence, and cumulative ranked
+  partial plans.
+- TUI state tests proving staged scan partials apply as cumulative ranked
+  snapshots with stale-scan protection.
 - TUI test proving explicit manual selection can still execute a fresh target.
 
 #### 7. Wrong vs Correct
@@ -546,9 +565,8 @@ targets.sort_by_key(|target| std::cmp::Reverse(target.estimated_bytes));
 Correct:
 
 ```rust
-let mut plan = project_plan;
-plan.targets.extend(global_plan.targets);
-ranking::rank_cleanup_plan(&mut plan);
+let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
+// plan is merged and ranked by contract; do not re-rank.
 ```
 
 ### Scenario: Project scanner and JSON cleanup plan

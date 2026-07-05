@@ -10,7 +10,6 @@ use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
-use crate::ranking::rank_cleanup_plan;
 use crate::rules::{ProjectMarker, project_dir_rules};
 
 pub struct ProjectScanner;
@@ -32,13 +31,10 @@ impl ProjectScanner {
 
         targets = dedupe_targets(targets);
 
-        let mut plan = CleanupPlan {
+        Ok(CleanupPlan {
             version: crate::model::CLEANUP_PLAN_VERSION,
             targets,
-        };
-        rank_cleanup_plan(&mut plan);
-
-        Ok(plan)
+        })
     }
 
     fn scan_dir(
@@ -561,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn scan_roots_returns_ranked_targets_after_dedupe() {
+    fn scan_roots_keeps_sibling_cache_targets_after_dedupe() {
         let fixture = Fixture::new();
         fixture.file("node-app/package.json", "{}");
         fixture.file("node-app/.turbo/small.bin", "small");
@@ -572,13 +568,14 @@ mod tests {
             .expect("fixture scans");
 
         let ids = target_ids(&plan);
+        assert_eq!(ids.len(), 2, "both cache targets kept: {ids:?}");
         assert!(
-            ids[0].starts_with("node.parcel_cache"),
-            "largest target should be first: {ids:?}"
+            ids.iter().any(|id| id.starts_with("node.parcel_cache")),
+            "parcel cache target kept: {ids:?}"
         );
         assert!(
-            ids[1].starts_with("node.turbo"),
-            "smaller target should be second: {ids:?}"
+            ids.iter().any(|id| id.starts_with("node.turbo")),
+            "turbo cache target kept: {ids:?}"
         );
     }
 
