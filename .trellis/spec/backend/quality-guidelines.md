@@ -122,6 +122,9 @@ CleanAction::Command {
   - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH] [--allow-permanent-delete]`
 - Library entrypoint:
   - `Executor::default().run_plan(&CleanupPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
+  - `ExecutionRequest.selected: Vec<TargetId>` names the execution set
+    explicitly; `CleanupPlan::default_selected_ids()` provides the default
+    (all `selected_by_default` targets, plan order).
 
 #### 3. Contracts
 
@@ -129,7 +132,11 @@ CleanAction::Command {
   trash runners.
 - `clean --execute` requires `--plan PATH`; execution must never discover new
   targets.
-- The current CLI executes only targets where `selected_by_default` is true.
+- The executor runs exactly the intersection of `request.selected` with the
+  plan's targets, in plan order; unknown ids are ignored. It does not read
+  `selected_by_default` — that flag is a scan-time ranking hint, written only
+  by the freshness guard, and callers translate it into an explicit selection
+  via `default_selected_ids()`.
 - Command actions use `CommandRequest { program, args, cwd }`; do not combine
   user-controlled values into a shell string.
 - `MoveToTrash` actions pass only the path stored in the plan to the trash
@@ -515,8 +522,9 @@ ignored by git.
   `Evidence::RuleMatched { rule_id: "ranking.freshness_guard.7d" }`.
 - Ranking must not add fields, enum variants, filesystem reads, process
   execution, trash moves, or delete operations.
-- Manual TUI selection is not blocked by the freshness guard; selected cleanup
-  plans may still mark explicitly selected targets as selected for execution.
+- Manual TUI selection is not blocked by the freshness guard; the TUI passes
+  explicitly selected target ids through `ExecutionRequest.selected` without
+  rewriting `selected_by_default`.
 
 #### 4. Validation & Error Matrix
 

@@ -58,7 +58,7 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
   `CleanTarget` values only; it must not delete files, move to trash, or run
   cleanup commands.
 - Put execution behavior in `src/executor.rs`. It consumes `CleanupPlan`
-  targets, runs only `selected_by_default` actions for the current CLI, keeps
+  targets, runs exactly the explicit `ExecutionRequest.selected` set, keeps
   command program/argv separate, delegates trash moves through a small runner
   boundary, and owns audit JSONL writes.
 - Put binary orchestration in `src/main.rs`. It wires `clap` input to module

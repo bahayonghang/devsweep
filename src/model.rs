@@ -17,6 +17,14 @@ impl CleanupPlan {
             targets: Vec::new(),
         }
     }
+
+    pub fn default_selected_ids(&self) -> Vec<TargetId> {
+        self.targets
+            .iter()
+            .filter(|target| target.selected_by_default)
+            .map(|target| target.id.clone())
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -132,6 +140,40 @@ mod tests {
                 .expect("targets is an array")
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn default_selected_ids_returns_default_selected_targets_in_plan_order() {
+        let plan = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: vec![
+                minimal_target("a", true),
+                minimal_target("b", false),
+                minimal_target("c", true),
+            ],
+        };
+
+        assert_eq!(
+            plan.default_selected_ids(),
+            vec![TargetId::new("a"), TargetId::new("c")]
+        );
+    }
+
+    fn minimal_target(id: &str, selected_by_default: bool) -> CleanTarget {
+        CleanTarget {
+            id: TargetId::new(id),
+            scope: Scope::Global,
+            ecosystem: Ecosystem::Generic,
+            kind: TargetKind::PackageCache,
+            path: None,
+            estimated_bytes: 0,
+            last_modified: None,
+            risk: RiskLevel::Low,
+            reversible: true,
+            selected_by_default,
+            evidence: Vec::new(),
+            action: CleanAction::NoopInspectOnly,
+        }
     }
 
     #[test]

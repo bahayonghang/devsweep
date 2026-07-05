@@ -9,7 +9,7 @@ use crossterm::event::{self, Event as CrosstermEvent};
 
 use crate::{
     executor::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
-    model::CleanupPlan,
+    model::{CleanupPlan, TargetId},
     sweep::{ScanOptions, ScanProgress, Sweeper},
 };
 
@@ -125,9 +125,13 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
             let scan = scan.clone();
             thread::spawn(move || run_scan_worker(job_id, worker_tx, scan));
         }
-        Effect::StartClean { job_id, plan } => {
+        Effect::StartClean {
+            job_id,
+            plan,
+            selected,
+        } => {
             let clean = clean.clone();
-            thread::spawn(move || run_clean_worker(job_id, plan, worker_tx, clean));
+            thread::spawn(move || run_clean_worker(job_id, plan, selected, worker_tx, clean));
         }
         Effect::CancelJob { job_id } => {
             let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
@@ -174,6 +178,7 @@ fn run_scan_worker<S: ScanService>(job_id: JobId, worker_tx: Sender<WorkerEvent>
 fn run_clean_worker<C: CleanService>(
     job_id: JobId,
     plan: CleanupPlan,
+    selected: Vec<TargetId>,
     worker_tx: Sender<WorkerEvent>,
     clean: C,
 ) {
@@ -188,6 +193,7 @@ fn run_clean_worker<C: CleanService>(
             execute: true,
             allow_permanent_delete: false,
             audit_log: None,
+            selected,
         },
         &mut |progress| {
             let target_id = progress.target_id;
@@ -357,6 +363,7 @@ mod tests {
         run_clean_worker(
             3,
             plan,
+            vec![target_id.clone()],
             worker_tx,
             FakeCleanService {
                 progress: vec![ExecutionProgress {
@@ -397,6 +404,7 @@ mod tests {
         assert!(recorded[0].execute);
         assert!(!recorded[0].allow_permanent_delete);
         assert!(recorded[0].audit_log.is_none());
+        assert_eq!(recorded[0].selected, vec![target_id]);
     }
 
     #[test]
@@ -405,6 +413,7 @@ mod tests {
         run_clean_worker(
             4,
             representative_plan(),
+            representative_plan().default_selected_ids(),
             worker_tx,
             FakeCleanService {
                 progress: Vec::new(),
@@ -425,6 +434,7 @@ mod tests {
         run_clean_worker(
             5,
             representative_plan(),
+            representative_plan().default_selected_ids(),
             worker_tx,
             FakeCleanService {
                 progress: Vec::new(),

@@ -3,7 +3,7 @@
   "name": "executor-explicit-selection",
   "title": "Executor 显式选择接口",
   "description": "在 ExecutionRequest 中加入显式 selected 目标列表，终止 TUI 克隆并强写 selected_by_default 的旗标走私；自清理守卫收拢为 executor 单一强制点。",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

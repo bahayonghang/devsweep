@@ -64,6 +64,7 @@ fn run_clean(command: CleanCommand) -> Result<()> {
             execute: command.execute,
             allow_permanent_delete: command.allow_permanent_delete,
             audit_log: command.audit_log,
+            selected: plan.default_selected_ids(),
         },
     )?;
 

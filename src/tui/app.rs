@@ -5,7 +5,6 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use crate::{
     executor::{ExecutionReport, ExecutionTargetStatus},
     model::{CleanAction, CleanTarget, CleanupPlan, RiskLevel, Scope, TargetId},
-    path_safety::target_contains_current_exe,
     sweep::ScanPhase,
 };
 
@@ -273,6 +272,11 @@ impl App {
                 }
 
                 let plan = self.selected_cleanup_plan();
+                let selected: Vec<TargetId> = plan
+                    .targets
+                    .iter()
+                    .map(|target| target.id.clone())
+                    .collect();
                 let target_count = plan.targets.len();
                 self.overlay = Overlay::None;
                 let job_id =
@@ -284,7 +288,11 @@ impl App {
                     job_id,
                     format!("Clean requested for {target_count} target(s)"),
                 );
-                vec![Effect::StartClean { job_id, plan }]
+                vec![Effect::StartClean {
+                    job_id,
+                    plan,
+                    selected,
+                }]
             }
             _ => Vec::new(),
         }
@@ -747,10 +755,6 @@ impl App {
                 .iter()
                 .filter(|target| self.selected_ids.contains(&target.id))
                 .cloned()
-                .map(|mut target| {
-                    target.selected_by_default = true;
-                    target
-                })
                 .collect(),
         }
     }
@@ -897,9 +901,17 @@ pub(super) enum UiEvent {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Effect {
-    StartScan { job_id: JobId },
-    StartClean { job_id: JobId, plan: CleanupPlan },
-    CancelJob { job_id: JobId },
+    StartScan {
+        job_id: JobId,
+    },
+    StartClean {
+        job_id: JobId,
+        plan: CleanupPlan,
+        selected: Vec<TargetId>,
+    },
+    CancelJob {
+        job_id: JobId,
+    },
     Quit,
 }
 
@@ -1189,7 +1201,6 @@ fn default_selected_ids(targets: &[CleanTarget]) -> HashSet<TargetId> {
     targets
         .iter()
         .filter(|target| target.selected_by_default)
-        .filter(|target| !target_contains_current_exe(target.path.as_deref()))
         .map(|target| target.id.clone())
         .collect()
 }
@@ -1292,7 +1303,7 @@ mod tests {
     }
 
     #[test]
-    fn startup_default_selection_skips_target_containing_running_executable() {
+    fn startup_default_selection_follows_selected_by_default_even_for_self_targets() {
         let current_exe = std::env::current_exe().expect("current executable path");
         let current_exe_dir = current_exe.parent().expect("current executable has parent");
         let safe_path = PathBuf::from("D:/code/web/.next/cache");
@@ -1337,11 +1348,13 @@ mod tests {
 
         let app = App::with_plan(plan);
 
+        // The self-clean guard is enforced by the executor at run time; the UI
+        // default selection is a pure projection of `selected_by_default`.
         assert!(
             app.targets
                 .iter()
                 .find(|target| target.id.as_str().starts_with("rust.target"))
-                .is_some_and(|target| !app.selected_ids.contains(&target.id))
+                .is_some_and(|target| app.selected_ids.contains(&target.id))
         );
         assert!(
             app.targets
@@ -1349,47 +1362,6 @@ mod tests {
                 .find(|target| target.id.as_str().starts_with("node.next_cache"))
                 .is_some_and(|target| app.selected_ids.contains(&target.id))
         );
-    }
-
-    #[test]
-    fn scan_finished_default_selection_skips_target_containing_running_executable() {
-        let current_exe = std::env::current_exe().expect("current executable path");
-        let current_exe_dir = current_exe.parent().expect("current executable has parent");
-        let mut app = App::new();
-        let effects = app.update(key(KeyCode::Char('s')));
-        let [Effect::StartScan { job_id }] = effects.as_slice() else {
-            panic!("scan key starts scan");
-        };
-        let plan = CleanupPlan {
-            version: CLEANUP_PLAN_VERSION,
-            targets: vec![target(
-                "rust.target",
-                Scope::Project {
-                    root: current_exe_dir.to_path_buf(),
-                },
-                Ecosystem::Rust,
-                TargetKind::BuildArtifacts,
-                Some(current_exe_dir.to_path_buf()),
-                4096,
-                RiskLevel::Low,
-                true,
-                false,
-                CleanAction::Command {
-                    program: "cargo".to_string(),
-                    args: vec!["clean".to_string()],
-                    cwd: None,
-                    irreversible: true,
-                },
-            )],
-        };
-
-        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
-            job_id: *job_id,
-            plan,
-        }));
-
-        assert_eq!(app.targets.len(), 1);
-        assert!(app.selected_ids.is_empty());
     }
 
     #[test]
@@ -1404,13 +1376,20 @@ mod tests {
         }
         let effects = app.update(key(KeyCode::Enter));
 
-        let [Effect::StartClean { job_id, plan }] = effects.as_slice() else {
+        let [
+            Effect::StartClean {
+                job_id,
+                plan,
+                selected,
+            },
+        ] = effects.as_slice()
+        else {
             panic!("confirmation emits clean effect");
         };
         assert_eq!(*job_id, 1);
         assert_eq!(plan.targets.len(), 1);
         assert_eq!(plan.targets[0].id, app.targets[0].id);
-        assert!(plan.targets[0].selected_by_default);
+        assert_eq!(selected, &vec![app.targets[0].id.clone()]);
         assert!(matches!(app.overlay, Overlay::None));
         let progress = app
             .cleanup_progress
@@ -1443,12 +1422,16 @@ mod tests {
         }
         let effects = app.update(key(KeyCode::Enter));
 
-        let [Effect::StartClean { plan, .. }] = effects.as_slice() else {
+        let [Effect::StartClean { plan, selected, .. }] = effects.as_slice() else {
             panic!("confirmation emits clean effect");
         };
         assert_eq!(plan.targets.len(), 1);
         assert_eq!(plan.targets[0].id, target.id);
-        assert!(plan.targets[0].selected_by_default);
+        assert_eq!(selected, &vec![target.id.clone()]);
+        assert!(
+            !plan.targets[0].selected_by_default,
+            "explicit selection must not rewrite the ranking hint"
+        );
     }
 
     #[test]

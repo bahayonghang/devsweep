@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
@@ -19,6 +20,7 @@ pub struct ExecutionRequest {
     pub execute: bool,
     pub allow_permanent_delete: bool,
     pub audit_log: Option<PathBuf>,
+    pub selected: Vec<TargetId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -168,10 +170,11 @@ where
     where
         F: FnMut(ExecutionProgress),
     {
+        let selected_ids: HashSet<&TargetId> = request.selected.iter().collect();
         let selected_targets: Vec<&CleanTarget> = plan
             .targets
             .iter()
-            .filter(|target| target.selected_by_default)
+            .filter(|target| selected_ids.contains(&target.id))
             .collect();
 
         if !request.execute {
@@ -484,6 +487,7 @@ mod tests {
             .run_plan(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: false,
                     allow_permanent_delete: false,
                     audit_log: None,
@@ -528,6 +532,7 @@ mod tests {
             .run_plan(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
@@ -577,6 +582,7 @@ mod tests {
             .run_plan(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path),
@@ -622,6 +628,7 @@ mod tests {
             .run_plan(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
@@ -681,6 +688,7 @@ mod tests {
             .run_plan(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
@@ -731,6 +739,7 @@ mod tests {
             .run_plan(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: true,
                     audit_log: Some(audit_path),
@@ -777,6 +786,7 @@ mod tests {
             .run_plan_with_progress(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path),
@@ -835,6 +845,7 @@ mod tests {
             .run_plan_with_progress(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path),
@@ -882,6 +893,7 @@ mod tests {
             .run_plan_with_progress(
                 &plan,
                 ExecutionRequest {
+                    selected: plan.default_selected_ids(),
                     execute: true,
                     allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
@@ -906,6 +918,138 @@ mod tests {
                 .expect("skip reason")
                 .contains(SELF_CLEAN_SKIP_MESSAGE)
         );
+    }
+
+    #[test]
+    fn explicit_selection_drives_execution() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let chosen_path = fixture.path().join("node_modules");
+        let ignored_path = fixture.path().join(".pytest_cache");
+        let mut plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: chosen_path.clone(),
+                    },
+                    Some(chosen_path.clone()),
+                ),
+                target(
+                    "python.pytest_cache",
+                    CleanAction::MoveToTrash {
+                        path: ignored_path.clone(),
+                    },
+                    Some(ignored_path),
+                ),
+            ],
+        };
+        plan.targets[0].selected_by_default = false;
+        let trash_runner = RecordingTrashRunner::default();
+        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+
+        let report = executor
+            .run_plan(
+                &plan,
+                ExecutionRequest {
+                    selected: vec![plan.targets[0].id.clone()],
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path),
+                },
+            )
+            .expect("execute succeeds");
+
+        assert_eq!(report.selected, 1);
+        assert_eq!(report.succeeded, 1);
+        assert_eq!(trash_runner.paths(), vec![chosen_path]);
+    }
+
+    #[test]
+    fn empty_selection_executes_nothing() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let cleanup_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "node.node_modules",
+                CleanAction::MoveToTrash {
+                    path: cleanup_path.clone(),
+                },
+                Some(cleanup_path),
+            )],
+        };
+        let trash_runner = RecordingTrashRunner::default();
+        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+
+        let dry_run = executor
+            .run_plan(
+                &plan,
+                ExecutionRequest {
+                    selected: Vec::new(),
+                    execute: false,
+                    allow_permanent_delete: false,
+                    audit_log: None,
+                },
+            )
+            .expect("dry-run succeeds");
+        assert_eq!(dry_run.selected, 0);
+
+        let report = executor
+            .run_plan(
+                &plan,
+                ExecutionRequest {
+                    selected: Vec::new(),
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path),
+                },
+            )
+            .expect("execute succeeds");
+
+        assert_eq!(report.selected, 0);
+        assert_eq!(report.attempted, 0);
+        assert!(trash_runner.paths().is_empty());
+    }
+
+    #[test]
+    fn unknown_ids_in_selection_are_ignored() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let cleanup_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "node.node_modules",
+                CleanAction::MoveToTrash {
+                    path: cleanup_path.clone(),
+                },
+                Some(cleanup_path.clone()),
+            )],
+        };
+        let trash_runner = RecordingTrashRunner::default();
+        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+
+        let report = executor
+            .run_plan(
+                &plan,
+                ExecutionRequest {
+                    selected: vec![
+                        TargetId::new("ghost.target:none"),
+                        plan.targets[0].id.clone(),
+                    ],
+                    execute: true,
+                    allow_permanent_delete: false,
+                    audit_log: Some(audit_path),
+                },
+            )
+            .expect("execute succeeds");
+
+        assert_eq!(report.selected, 1);
+        assert_eq!(report.succeeded, 1);
+        assert_eq!(trash_runner.paths(), vec![cleanup_path]);
     }
 
     #[derive(Clone, Default)]
