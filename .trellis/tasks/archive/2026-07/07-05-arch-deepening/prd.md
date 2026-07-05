@@ -22,13 +22,13 @@
 
 ## 跨子任务验收标准
 
-- [ ] `rank_cleanup_plan` 在整个代码库只有 1 处生产调用点（sweep 模块内部）
-- [ ] `main.rs` 与 `tui` 不再各自拼装 scan→merge→rank 管线
-- [ ] `tui.rs` 单文件消失，替换为 `tui/` 模块目录，对外接口仍为 `run()`
-- [ ] 自清理守卫（target_contains_current_exe）只有 executor 一个强制点
-- [ ] 每条过程式规则的 RuleDoc 与其实现同处声明，无第二份手写副本
-- [ ] 全量 `cargo test` 通过；`cargo clippy` 无新增告警
-- [ ] CLI（scan/clean/rules）与 TUI 行为对外无回归
+- [x] `rank_cleanup_plan` 在整个代码库只有 1 处生产调用点（sweep 模块内部）
+- [x] `main.rs` 与 `tui` 不再各自拼装 scan→merge→rank 管线
+- [x] `tui.rs` 单文件消失，替换为 `tui/` 模块目录，对外接口仍为 `run()`
+- [x] 自清理守卫（target_contains_current_exe）只有 executor 一个强制点
+- [x] 每条过程式规则的 RuleDoc 与其实现同处声明，无第二份手写副本
+- [x] 全量 `cargo test` 通过；`cargo clippy` 无新增告警
+- [x] CLI（scan/clean/rules）与 TUI 行为对外无回归
 
 ## 约束
 
