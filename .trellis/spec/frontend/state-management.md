@@ -6,7 +6,7 @@
 
 ## Overview
 
-Interactive TUI state lives in `src/tui.rs::App`. Use this single explicit app
+Interactive TUI state lives in `src/tui/app.rs::App`. Use this single explicit app
 state instead of global mutable state or widget-owned side effects.
 
 ---

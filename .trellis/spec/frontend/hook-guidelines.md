@@ -7,7 +7,7 @@
 ## Overview
 
 This Rust TUI project does not use React hooks. The equivalent boundary is the
-event/update layer in `src/tui.rs`: keyboard events and worker messages enter
+event/update layer in `src/tui/app.rs`: keyboard events and worker messages enter
 `App::update`, which mutates state and returns side-effect requests.
 
 ---
@@ -99,6 +99,7 @@ scan, start clean, cancel job, and quit.
 #### 7. Wrong vs Correct
 
 Wrong:
+
 ```rust
 // Keeps the UI empty until every scan phase completes.
 let mut plan = project_scan()?;
@@ -107,6 +108,7 @@ send(WorkerEvent::ScanFinished { job_id, plan });
 ```
 
 Correct:
+
 ```rust
 // Lets the UI render useful partial state while slow global work continues.
 let project_plan = project_scan()?;

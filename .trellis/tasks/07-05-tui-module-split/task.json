@@ -3,7 +3,7 @@
   "name": "tui-module-split",
   "title": "拆分 tui.rs 为 terminal/runtime/app/render 模块",
   "description": "沿既有内部接缝将 3834 行的 tui.rs 拆为 tui/{terminal,runtime,app,render}；对外接口保持 run() 不变；runtime 改为注入扫描器与 Executor，使线程化运行时可测。依赖 sweep 模块先落地。",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

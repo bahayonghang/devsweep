@@ -13,14 +13,14 @@ This directory contains guidelines for the Rust terminal UI built with
 
 ## Guidelines Index
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | ratatui module conventions |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | render-function conventions |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | TUI event/update conventions |
-| [State Management](./state-management.md) | Local state, global state, server state | app-state boundaries |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | TestBackend and purity rules |
-| [Type Safety](./type-safety.md) | Type patterns, validation | Rust model sharing |
+| Guide                                             | Description                             | Status                       |
+| ------------------------------------------------- | --------------------------------------- | ---------------------------- |
+| [Directory Structure](./directory-structure.md)   | Module organization and file layout     | ratatui module conventions   |
+| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition  | render-function conventions  |
+| [Hook Guidelines](./hook-guidelines.md)           | Custom hooks, data fetching patterns    | TUI event/update conventions |
+| [State Management](./state-management.md)         | Local state, global state, server state | app-state boundaries         |
+| [Quality Guidelines](./quality-guidelines.md)     | Code standards, forbidden patterns      | TestBackend and purity rules |
+| [Type Safety](./type-safety.md)                   | Type patterns, validation               | Rust model sharing           |
 
 ---
 
@@ -30,8 +30,8 @@ Before TUI/frontend changes:
 
 1. Read [Quality Guidelines](./quality-guidelines.md) for render purity and
    `TestBackend` expectations.
-2. Read [Directory Structure](./directory-structure.md) before splitting
-   `src/tui.rs` into submodules.
+2. Read [Directory Structure](./directory-structure.md) for the `src/tui/`
+   module layout and visibility discipline.
 3. Read [Component Guidelines](./component-guidelines.md) before adding new
    render functions or widgets.
 4. Read [State Management](./state-management.md) and

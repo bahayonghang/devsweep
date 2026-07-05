@@ -16,8 +16,8 @@ evidence.
 
 - Shared cleanup types live in `src/model.rs`.
 - CLI argument types live in `src/cli.rs`.
-- TUI-only state types currently live in `src/tui.rs`. Move them under
-  `src/tui/` only if the TUI is split.
+- TUI-only state types live in `src/tui/app.rs` (shared by reducer and
+  render); render-only types stay private in `src/tui/render.rs`.
 
 Example shared type:
 

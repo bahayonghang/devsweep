@@ -12,8 +12,8 @@ the module has multiple cohesive submodules and the split removes real
 complexity.
 
 The backend boundary owns CLI parsing, cleanup-plan domain types, project
-scanning, configuration/logging setup, execution/audit code, and future provider
-code. The TUI rendering boundary lives in `src/tui.rs` and the frontend spec.
+scanning, configuration/logging setup, execution/audit code, and provider
+code. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
 
 ---
 
@@ -21,15 +21,20 @@ code. The TUI rendering boundary lives in `src/tui.rs` and the frontend spec.
 
 ```text
 src/
-├── main.rs     # Binary entrypoint and command dispatch
-├── lib.rs      # Public module exports for tests and future consumers
-├── cli.rs      # clap command definitions only
-├── config.rs   # process-wide initialization such as tracing
-├── executor.rs # dry-run, command/trash execution, and audit JSONL
-├── model.rs    # serializable cleanup plan and domain contract
-├── ranking.rs  # cleanup-plan ordering and conservative default-selection pass
-├── scanner.rs  # marker-first project discovery, non-mutating
-└── tui.rs      # ratatui placeholder/rendering boundary
+├── main.rs        # Binary entrypoint and command dispatch
+├── lib.rs         # Public module exports for tests and future consumers
+├── cli.rs         # clap command definitions only
+├── config.rs      # process-wide initialization such as tracing
+├── executor.rs    # dry-run, command/trash execution, and audit JSONL
+├── fs_size.rs     # parallel tree sizing with symlink safety
+├── model.rs       # serializable cleanup plan and domain contract
+├── path_safety.rs # current-exe containment guard helpers
+├── providers.rs   # global tool-cache discovery (npm/pip/pnpm/yarn/cargo/...)
+├── ranking.rs     # cleanup-plan ordering and conservative default-selection pass
+├── rules.rs       # declarative project-dir and global-cache rule tables
+├── scanner.rs     # marker-first project discovery, non-mutating
+├── sweep.rs       # scan→merge→rank pipeline owner (sole ranking call site)
+└── tui/           # ratatui TUI module (see frontend spec)
 ```
 
 There is no standalone `tests/` directory yet. Current tests live next to the
