@@ -23,7 +23,7 @@
 - [ ] 每个 rule id 字符串（如 `"npm.cache.clean"`、`"cargo.home.inspect"`）在生产代码中只出现一次
 - [ ] `rule_catalogue()` 中不再有手写的过程式规则 RuleDoc 文字
 - [ ] 行格式化逻辑只有一处实现，CLI 与 TUI 两个 adapter 复用
-- [ ] `devsweep rules` 输出与 TUI Rules 标签页内容对外无回归
+- [ ] `devsweep rules` 输出与 TUI Rules 标签页信息完整（每条规则的 id/scope/risk/action/summary 仍全部可见）；行格式统一后 CLI 允许改为与 TUI 一致的分组布局（scope 由分组标题表达），此为本任务批准的展示层变更
 - [ ] 防漂移测试被移除或改写为聚合完整性断言
 - [ ] `cargo test` 全量通过
 

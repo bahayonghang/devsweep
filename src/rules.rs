@@ -8,14 +8,18 @@
 //! - **Global cache rules** ([`GLOBAL_CACHE_RULES`]): "known home-relative cache
 //!   directory with no official cleanup command" (gradle / maven / go / ...).
 //!
-//! The other two are procedural and stay in their own functions, but are still
-//! registered in [`rule_catalogue`] so the `Rules` view lists everything:
+//! The other two are procedural and live next to their implementations, which
+//! declare their own [`RuleDoc`] constants; [`rule_catalogue`] only aggregates
+//! so the `Rules` view lists everything:
 //!
-//! - **Command project rule**: `cargo clean` (needs a `target/` subdir check).
+//! - **Command project rule**: `cargo clean` (needs a `target/` subdir check),
+//!   plus `__pycache__` descent — docs in [`crate::scanner`].
 //! - **Command providers**: npm / pip / pnpm / yarn (resolve a tool, run a
-//!   command, parse stdout; yarn even branches on version).
+//!   command, parse stdout; yarn even branches on version) — docs in
+//!   [`crate::providers`].
 
 use crate::model::{Ecosystem, RiskLevel, TargetKind};
+use crate::{providers, scanner};
 
 /// Which project marker gates a project-level directory rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -309,20 +313,14 @@ pub fn global_cache_rules() -> impl Iterator<Item = &'static GlobalCacheRule> {
 
 /// One flat, display-facing list of every cleanup rule (all four shapes).
 ///
-/// Project rules first, then global; procedural rules (B/D) appear as static
-/// descriptors because their scan logic is procedural but their docs are not.
+/// Pure aggregation: project rules first, then global. Table-driven rules
+/// (A/C) are derived from their tables; procedural rules (B/D) contribute the
+/// [`RuleDoc`] constants declared next to their implementations.
 pub fn rule_catalogue() -> Vec<RuleDoc> {
     let mut docs = Vec::new();
 
-    // B: command project rule.
-    docs.push(RuleDoc {
-        id: "rust.target",
-        ecosystem: Ecosystem::Rust,
-        scope: RuleScope::Project,
-        risk: RiskLevel::Low,
-        action: "cargo clean",
-        summary: "Rust build directory (target/) via cargo clean",
-    });
+    // B: command project rule, declared in the scanner.
+    docs.push(scanner::RUST_TARGET_RULE_DOC);
 
     // A: project directory rules, derived from the table.
     for rule in PROJECT_DIR_RULES {
@@ -337,55 +335,10 @@ pub fn rule_catalogue() -> Vec<RuleDoc> {
     }
 
     // Discovered during directory descent, not via the marker table.
-    docs.push(RuleDoc {
-        id: "python.__pycache__",
-        ecosystem: Ecosystem::Python,
-        scope: RuleScope::Project,
-        risk: RiskLevel::Low,
-        action: "trash",
-        summary: "Python __pycache__ directories",
-    });
+    docs.push(scanner::PYCACHE_RULE_DOC);
 
-    // D: command providers (procedural), documented statically.
-    for (id, ecosystem, summary) in [
-        (
-            "npm.cache.clean",
-            Ecosystem::Node,
-            "npm cache via npm cache clean --force",
-        ),
-        (
-            "pip.cache.purge",
-            Ecosystem::Python,
-            "pip cache via pip cache purge",
-        ),
-        (
-            "pnpm.store.prune",
-            Ecosystem::Node,
-            "pnpm store via pnpm store prune",
-        ),
-        (
-            "yarn.cache.clean",
-            Ecosystem::Node,
-            "yarn cache via yarn cache clean",
-        ),
-    ] {
-        docs.push(RuleDoc {
-            id,
-            ecosystem,
-            scope: RuleScope::Global,
-            risk: RiskLevel::Medium,
-            action: "official command",
-            summary,
-        });
-    }
-    docs.push(RuleDoc {
-        id: "cargo.home.inspect",
-        ecosystem: Ecosystem::Rust,
-        scope: RuleScope::Global,
-        risk: RiskLevel::High,
-        action: "inspect only",
-        summary: "Cargo home (~/.cargo) — inspect only, never auto-deleted",
-    });
+    // D: command providers (procedural), declared next to their implementations.
+    docs.extend(providers::PROVIDER_RULE_DOCS.iter().cloned());
 
     // C: known global cache rules, derived from the table.
     for rule in global_cache_rules() {
@@ -416,6 +369,28 @@ pub fn rule_catalogue() -> Vec<RuleDoc> {
     docs
 }
 
+/// One display row for a rule doc; shared by `devsweep rules` and the TUI
+/// Rules tab (the two adapters only differ in where the row is written).
+pub fn rule_row(doc: &RuleDoc) -> String {
+    format!(
+        "{:<22} {:<9} {:<16} {}",
+        doc.id,
+        risk_label(&doc.risk),
+        doc.action,
+        doc.summary
+    )
+}
+
+/// Human-facing label for a risk level.
+pub fn risk_label(risk: &RiskLevel) -> &'static str {
+    match risk {
+        RiskLevel::Low => "Low",
+        RiskLevel::Medium => "Medium",
+        RiskLevel::High => "High",
+        RiskLevel::Dangerous => "Dangerous",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
@@ -440,23 +415,17 @@ mod tests {
     }
 
     #[test]
-    fn project_dir_rules_match_legacy_scanner_ids() {
-        let ids: HashSet<_> = PROJECT_DIR_RULES.iter().map(|rule| rule.id).collect();
-        let expected: HashSet<_> = [
-            "node.node_modules",
-            "node.next_cache",
-            "node.turbo",
-            "node.parcel_cache",
-            "python.venv_dot",
-            "python.venv",
-            "python.pytest_cache",
-            "python.mypy_cache",
-            "python.ruff_cache",
-            "python.tox",
-        ]
-        .into_iter()
-        .collect();
-        assert_eq!(ids, expected);
+    fn catalogue_covers_all_declared_docs() {
+        let ids: HashSet<_> = rule_catalogue().into_iter().map(|doc| doc.id).collect();
+        let declared = scanner::SCANNER_RULE_DOCS
+            .iter()
+            .chain(providers::PROVIDER_RULE_DOCS)
+            .map(|doc| doc.id)
+            .chain(PROJECT_DIR_RULES.iter().map(|rule| rule.id))
+            .chain(global_cache_rules().map(|rule| rule.id));
+        for id in declared {
+            assert!(ids.contains(id), "catalogue missing declared rule {id}");
+        }
     }
 
     #[test]

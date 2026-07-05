@@ -5,6 +5,7 @@ use devsweep::{
     config,
     executor::{ExecutionRequest, Executor},
     model::CleanupPlan,
+    rules::RuleScope,
     sweep::{ScanOptions, Sweeper},
 };
 
@@ -90,19 +91,21 @@ fn run_clean(command: CleanCommand) -> Result<()> {
 }
 
 fn run_rules() -> Result<()> {
-    println!(
-        "{:<30} {:<8} {:<10} {:<18} SUMMARY",
-        "ID", "SCOPE", "RISK", "ACTION"
-    );
-    for doc in devsweep::rules::rule_catalogue() {
-        println!(
-            "{:<30} {:<8} {:<10} {:<18} {}",
-            doc.id,
-            format!("{:?}", doc.scope).to_lowercase(),
-            format!("{:?}", doc.risk).to_lowercase(),
-            doc.action,
-            doc.summary,
-        );
+    let catalogue = devsweep::rules::rule_catalogue();
+    println!("Project rules");
+    for doc in catalogue
+        .iter()
+        .filter(|doc| doc.scope == RuleScope::Project)
+    {
+        println!("  {}", devsweep::rules::rule_row(doc));
+    }
+    println!();
+    println!("Global providers & caches");
+    for doc in catalogue
+        .iter()
+        .filter(|doc| doc.scope == RuleScope::Global)
+    {
+        println!("  {}", devsweep::rules::rule_row(doc));
     }
     Ok(())
 }

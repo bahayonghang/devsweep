@@ -10,7 +10,34 @@ use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
-use crate::rules::{ProjectMarker, project_dir_rules};
+use crate::rules::{ProjectMarker, RuleDoc, RuleScope, project_dir_rules};
+
+/// Doc for the procedural `cargo clean` rule; the single source of its identity
+/// (id / risk / action / summary), consumed by [`crate::rules::rule_catalogue`].
+pub(crate) const RUST_TARGET_RULE_DOC: RuleDoc = RuleDoc {
+    id: "rust.target",
+    ecosystem: Ecosystem::Rust,
+    scope: RuleScope::Project,
+    risk: RiskLevel::Low,
+    action: "cargo clean",
+    summary: "Rust build directory (target/) via cargo clean",
+};
+
+/// Doc for the procedural `__pycache__` descent rule; single source of identity.
+pub(crate) const PYCACHE_RULE_DOC: RuleDoc = RuleDoc {
+    id: "python.__pycache__",
+    ecosystem: Ecosystem::Python,
+    scope: RuleScope::Project,
+    risk: RiskLevel::Low,
+    action: "trash",
+    summary: "Python __pycache__ directories",
+};
+
+/// All procedural rule docs declared by this scanner. Unlike the provider
+/// docs (extended wholesale into the catalogue), these are pushed one by one
+/// to keep the catalogue order, so the slice only feeds the aggregation test.
+#[cfg(test)]
+pub(crate) const SCANNER_RULE_DOCS: &[RuleDoc] = &[RUST_TARGET_RULE_DOC, PYCACHE_RULE_DOC];
 
 pub struct ProjectScanner;
 
@@ -54,19 +81,19 @@ impl ProjectScanner {
                 && let Some(context) = python_context
             {
                 targets.push(build_path_target(PathTargetInput {
-                    rule_id: "python.__pycache__",
+                    rule_id: PYCACHE_RULE_DOC.id,
                     ecosystem: Ecosystem::Python,
                     kind: TargetKind::TestCache,
                     project_root: context.project_root.clone(),
                     path: dir.to_path_buf(),
-                    risk: RiskLevel::Low,
+                    risk: PYCACHE_RULE_DOC.risk,
                     selected_by_default: true,
                     evidence: vec![
                         Evidence::MarkerFile {
                             path: context.marker.clone(),
                         },
                         Evidence::RuleMatched {
-                            rule_id: "python.__pycache__".to_string(),
+                            rule_id: PYCACHE_RULE_DOC.id.to_string(),
                         },
                     ],
                 }));
@@ -119,12 +146,12 @@ impl ProjectScanner {
 
         let manifest_arg = manifest.to_string_lossy().into_owned();
         let mut target = build_path_target(PathTargetInput {
-            rule_id: "rust.target",
+            rule_id: RUST_TARGET_RULE_DOC.id,
             ecosystem: Ecosystem::Rust,
             kind: TargetKind::BuildArtifacts,
             project_root: dir.to_path_buf(),
             path: target_dir,
-            risk: RiskLevel::Low,
+            risk: RUST_TARGET_RULE_DOC.risk,
             selected_by_default: true,
             evidence: vec![
                 Evidence::MarkerFile {
@@ -134,7 +161,7 @@ impl ProjectScanner {
                     command: format!("cargo clean --manifest-path {manifest_arg}"),
                 },
                 Evidence::RuleMatched {
-                    rule_id: "rust.target".to_string(),
+                    rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
                 },
             ],
         });

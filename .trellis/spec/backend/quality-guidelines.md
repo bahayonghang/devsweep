@@ -317,8 +317,9 @@ CleanAction::Command {
 #### 1. Scope / Trigger
 
 - Trigger: adding or changing a cleanup rule, or listing rules via
-  `devsweep rules` / the TUI `Rules` tab. Rules are centralized in
-  `src/rules.rs`, not scattered across scanner/provider branches.
+  `devsweep rules` / the TUI `Rules` tab. Table rules live in `src/rules.rs`;
+  each procedural rule declares its `RuleDoc` const next to its
+  implementation (scanner.rs / providers.rs); `rule_catalogue()` aggregates.
 
 #### 2. Signatures
 
@@ -327,7 +328,13 @@ CleanAction::Command {
   known home-relative global caches with no official cleanup command.
 - `rules::project_dir_rules(marker) -> impl Iterator<Item = &'static ProjectDirRule>`
 - `rules::global_cache_rules() -> impl Iterator<Item = &'static GlobalCacheRule>`
-- `rules::rule_catalogue() -> Vec<RuleDoc>` — flat display list of every rule.
+- `rules::rule_catalogue() -> Vec<RuleDoc>` — flat display list of every rule,
+  aggregated from the tables plus the co-located procedural docs
+  (`scanner::RUST_TARGET_RULE_DOC`/`PYCACHE_RULE_DOC`,
+  `providers::PROVIDER_RULE_DOCS`).
+- `rules::rule_row(&RuleDoc) -> String` + `rules::risk_label(&RiskLevel)` —
+  the single row formatter shared by the CLI `rules` command and the TUI
+  Rules tab (both group by scope with section headings).
 
 #### 3. Contracts
 
@@ -338,9 +345,13 @@ CleanAction::Command {
     `GLOBAL_CACHE_RULES(_OS)`, consumed by `providers::add_known_cache_targets`.
   - B. `cargo clean` project rule and D. command providers (npm/pip/pnpm/yarn):
     stay procedural (B needs a `target/` check; D must run a tool and parse
-    stdout, yarn branches on version). They are NOT forced into tables, but MUST
-    appear in `rule_catalogue()` as static descriptors so the Rules view lists
-    everything.
+    stdout, yarn branches on version). They are NOT forced into tables, but
+    each declares one `RuleDoc` const next to its implementation — the single
+    production home of its id/risk/action/summary — which `rule_catalogue()`
+    aggregates so the Rules view lists everything.
+- A procedural rule's id string appears exactly once in production code (its
+  doc const); implementations reference `DOC.id` for target rule ids and
+  `Evidence::RuleMatched` strings.
 - Adding a rule of shape A or C means adding a table row, not a new branch.
 - `rule_catalogue()` ids must be unique and every field non-empty.
 - `GlobalCacheRule` carries a `KnownCacheAction`:
@@ -379,7 +390,8 @@ CleanAction::Command {
 #### 6. Tests Required
 
 - Catalogue id uniqueness and non-empty fields (`rules.rs`).
-- Project-dir table ids match the legacy scanner rule ids (regression guard).
+- Catalogue aggregation completeness: every declared doc (scanner docs,
+  provider docs, both tables) appears in `rule_catalogue()`.
 - Global-cache table uniqueness and coverage of new ecosystems (gradle/maven/go).
 - Provider test: present known-cache dir -> trash target with correct
   risk/evidence and `!selected_by_default`.

@@ -10,7 +10,7 @@ use ratatui::{
 
 use crate::{
     model::{CleanAction, CleanTarget, Ecosystem, Evidence, RiskLevel, Scope, TargetId},
-    rules::{RuleScope, rule_catalogue},
+    rules::{RuleScope, risk_label, rule_catalogue, rule_row},
 };
 
 use super::app::{
@@ -500,13 +500,7 @@ fn render_rules(frame: &mut Frame<'_>, area: Rect) {
         .iter()
         .filter(|doc| doc.scope == RuleScope::Project)
     {
-        lines.push(Line::from(format!(
-            "  {:<22} {:<9} {:<16} {}",
-            doc.id,
-            risk_label(&doc.risk),
-            doc.action,
-            doc.summary
-        )));
+        lines.push(Line::from(format!("  {}", rule_row(doc))));
     }
 
     lines.push(Line::from(""));
@@ -515,13 +509,7 @@ fn render_rules(frame: &mut Frame<'_>, area: Rect) {
         .iter()
         .filter(|doc| doc.scope == RuleScope::Global)
     {
-        lines.push(Line::from(format!(
-            "  {:<22} {:<9} {:<16} {}",
-            doc.id,
-            risk_label(&doc.risk),
-            doc.action,
-            doc.summary
-        )));
+        lines.push(Line::from(format!("  {}", rule_row(doc))));
     }
 
     frame.render_widget(
@@ -1163,15 +1151,6 @@ pub(super) fn selected_target_summary(target: &CleanTarget) -> String {
         target_title(target),
         path_label(target.path.as_ref())
     )
-}
-
-fn risk_label(risk: &RiskLevel) -> &'static str {
-    match risk {
-        RiskLevel::Low => "Low",
-        RiskLevel::Medium => "Medium",
-        RiskLevel::High => "High",
-        RiskLevel::Dangerous => "Dangerous",
-    }
 }
 
 fn app_log_level_label(level: AppLogLevel) -> &'static str {

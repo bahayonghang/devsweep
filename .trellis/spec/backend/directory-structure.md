@@ -31,7 +31,7 @@ src/
 ├── path_safety.rs # current-exe containment guard helpers
 ├── providers.rs   # global tool-cache discovery (npm/pip/pnpm/yarn/cargo/...)
 ├── ranking.rs     # cleanup-plan ordering and conservative default-selection pass
-├── rules.rs       # declarative project-dir and global-cache rule tables
+├── rules.rs       # declarative rule tables + catalogue aggregation & row formatting
 ├── scanner.rs     # marker-first project discovery, non-mutating
 ├── sweep.rs       # scan→merge→rank pipeline owner (sole ranking call site)
 └── tui/           # ratatui TUI module (see frontend spec)
