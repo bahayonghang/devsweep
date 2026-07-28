@@ -698,3 +698,34 @@ Closed TUI confirmation drift, clean single-flight, terminal job revival, and sc
 ### Next Steps
 
 - Continue parent 07-28-audit-remediation; next child still planning
+
+
+## Session 22: License baseline complete
+
+**Date**: 2026-07-28
+**Task**: License baseline complete
+**Branch**: `dev`
+
+### Summary
+
+MIT LICENSE retained; Cargo repository/readme/rust-version filled; provenance and README License added; archived.
+
+### Main Changes
+
+- Cargo.toml distribution metadata
+- docs/provenance.md independent-implementation note
+- README License section
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dd85c12` | (see git log) |
+
+### Testing
+
+- [OK] cargo package --list --allow-dirty; just ci
+
+### Status
+
+[OK] **Completed**

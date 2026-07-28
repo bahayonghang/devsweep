@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
+- **Total Sessions**: 22
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~700 | Active |
+| `journal-1.md` | ~731 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-07-28 | License baseline complete | `dd85c12` | `dev` |
 | 21 | 2026-07-28 | TUI race hardening complete | `f3db10b` | `dev` |
 | 20 | 2026-07-28 | ProcessRunner 有界进程治理 | `2a9930b` | `dev` |
 | 19 | 2026-07-28 | 完成计划信任边界 | `f143484` | `dev` |
