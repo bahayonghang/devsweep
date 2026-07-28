@@ -14,7 +14,7 @@
 
 ## Requirements
 
-1. CI 强化（最低集）：全部 cargo 命令 `--locked`；`permissions: contents: read`；`timeout-minutes`；`concurrency` + cancel-in-progress；Actions pin 完整 commit SHA；矩阵加入 `macos-latest`；MSRV job（固定版本 + stable 双轨，MSRV 值与 license-baseline 写入 Cargo.toml 的 `rust-version` 一致）。
+1. CI 强化（最低集）：所有支持该 flag 且解析依赖图的 Cargo 子命令使用 `--locked`（`cargo fmt` 保持其不支持 `--locked` 的标准 `--all -- --check` 形式）；`permissions: contents: read`；`timeout-minutes`；`concurrency` + cancel-in-progress；Actions pin 完整 commit SHA；矩阵加入 `macos-latest`；MSRV job（固定版本 + stable 双轨，MSRV 值与 license-baseline 写入 Cargo.toml 的 `rust-version` 一致）。
 2. CI 安全 gate：`cargo audit`（或等价 RustSec gate）与 `cargo deny`（advisory/license/source policy）；secret scan（gitleaks 或等价）；豁免须有记录。
 3. 发布配方：产物命名取自实际构建 target triple；附 SHA-256；archive 内含 LICENSE + README；解压 smoke（`--version`、`scan --json`、dry-run）。
 4. 安全回归套件（前置 P1 子任务交付物）纳入 required checks 的清单写入 CI 文档；SBOM/签名/provenance 记为 stretch，不阻断本任务。
