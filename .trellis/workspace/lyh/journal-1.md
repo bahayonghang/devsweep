@@ -858,3 +858,28 @@ Durable action journal with started-before-side-effect, fault halt, replay API; 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 27: Release supply chain complete
+
+**Date**: 2026-07-28
+**Task**: Release supply chain complete
+**Branch**: `dev`
+
+### Summary
+
+CI hardened; release archive triple+checksum; archived.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c5ebc54` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
