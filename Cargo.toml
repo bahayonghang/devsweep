@@ -6,7 +6,7 @@ description = "A safety-first developer cleanup planner and executor."
 license = "MIT"
 repository = "https://github.com/bahayonghang/devsweep"
 readme = "README.md"
-rust-version = "1.85.0"
+rust-version = "1.88.0"
 
 [dependencies]
 anyhow = "1"

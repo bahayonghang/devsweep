@@ -2366,7 +2366,7 @@ mod tests {
 
     #[test]
     fn byte_summaries_count_duplicate_paths_once() {
-        let cache_path = PathBuf::from("C:/Users/me/AppData/Local/npm-cache");
+        let cache_path = std::env::temp_dir().join("devsweep-npm-cache");
         let plan = CleanupPlan {
             version: CLEANUP_PLAN_VERSION,
             targets: vec![

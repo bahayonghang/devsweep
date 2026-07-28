@@ -1842,6 +1842,8 @@ mod tests {
             }
         }
 
+        let fixture = TempDir::new().expect("temp dir");
+        let cleanup_path = fixture.path().join("node_modules");
         let mut journal = AuditJournal::with_io(
             PathBuf::from("memory-audit.jsonl"),
             Box::new(FailSyncIo { writes: 0 }),
@@ -1851,9 +1853,9 @@ mod tests {
             targets: vec![target(
                 "node.node_modules",
                 CleanAction::MoveToTrash {
-                    path: PathBuf::from("C:/tmp/node_modules"),
+                    path: cleanup_path.clone(),
                 },
-                Some(PathBuf::from("C:/tmp/node_modules")),
+                Some(cleanup_path.clone()),
             )],
         };
         let target = &plan.targets[0];
@@ -1866,7 +1868,7 @@ mod tests {
             target_id: target.id.as_str().into(),
             action: "move_to_trash".into(),
             command: None,
-            action_path: Some("C:/tmp/node_modules".into()),
+            action_path: Some(cleanup_path.display().to_string()),
             estimated_bytes: 1,
         };
         let err = journal
@@ -2007,7 +2009,12 @@ mod tests {
         let root = path
             .as_ref()
             .and_then(|path| path.parent().map(|parent| parent.to_path_buf()))
-            .unwrap_or_else(|| PathBuf::from("C:/workspace/app"));
+            .unwrap_or_else(|| {
+                std::env::temp_dir().join(format!(
+                    "devsweep-executor-{}-{rule_id}",
+                    std::process::id()
+                ))
+            });
         // Ensure the project root exists so live revalidation can open markers.
         let _ = fs::create_dir_all(&root);
         let marker = root.join("package.json");

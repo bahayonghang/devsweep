@@ -502,14 +502,14 @@ impl SafetyPolicy {
             )
         })?;
 
-        if let Some(expected) = context.expected_identity.as_ref().or(None) {
-            if &identity != expected {
-                return Err(denial(
-                    ProtectionCategory::AuthorizedFootprint,
-                    path,
-                    "path identity does not match the expected footprint; rescan required",
-                ));
-            }
+        if let Some(expected) = context.expected_identity.as_ref()
+            && &identity != expected
+        {
+            return Err(denial(
+                ProtectionCategory::AuthorizedFootprint,
+                path,
+                "path identity does not match the expected footprint; rescan required",
+            ));
         }
 
         Ok(identity)
@@ -1268,7 +1268,7 @@ mod tests {
         };
         assert!(policy.authorize(&validated_target, &context).is_ok());
 
-        fs::remove_dir_all(&path).expect("remove");
+        fs::rename(&path, root.join("node_modules-replaced")).expect("rename old target");
         fs::create_dir_all(&path).expect("recreate");
         let denial = policy
             .authorize(&validated_target, &context)

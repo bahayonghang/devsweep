@@ -148,10 +148,9 @@ fn drain_worker_events<S: ScanService, C: CleanService>(
         | WorkerEvent::JobFailed { job_id, .. }
         | WorkerEvent::JobCanceled { job_id }
         | WorkerEvent::ScanFinished { job_id, .. } = &event
+            && let Ok(mut guard) = cancel_registry.lock()
         {
-            if let Ok(mut guard) = cancel_registry.lock() {
-                guard.remove(job_id);
-            }
+            guard.remove(job_id);
         }
         let effects = app.update(UiEvent::Worker(event));
         dispatch_effects(

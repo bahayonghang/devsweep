@@ -761,6 +761,7 @@ pub mod test_support {
 mod tests {
     use super::*;
     use std::{sync::Arc, time::Duration};
+    use tempfile::TempDir;
 
     fn fixture_exe() -> PathBuf {
         crate::process_runner::test_support::process_fixture_exe()
@@ -815,10 +816,8 @@ mod tests {
             ..ProcessPolicy::default()
         });
 
-        let pid_dir = env::temp_dir().join(format!("devsweep-tree-{}", std::process::id()));
-        let _ = fs::create_dir_all(&pid_dir);
-        let pid_file = pid_dir.join("grandchild.pid");
-        let _ = fs::remove_file(&pid_file);
+        let pid_dir = TempDir::new().expect("pid temp dir");
+        let pid_file = pid_dir.path().join("grandchild.pid");
 
         let request = ProcessRequest {
             program: fixture_exe().into_os_string(),
@@ -859,13 +858,11 @@ mod tests {
         let dead_deadline = Instant::now() + Duration::from_secs(3);
         while Instant::now() < dead_deadline {
             if !process_is_alive(grandchild_pid) {
-                let _ = fs::remove_dir_all(&pid_dir);
                 return;
             }
             thread::sleep(Duration::from_millis(50));
         }
 
-        let _ = fs::remove_dir_all(&pid_dir);
         panic!(
             "No-Go: grandchild pid {grandchild_pid} still alive after timeout grace; \
              process-tree backend failed to prove termination on this platform"
@@ -1003,14 +1000,14 @@ mod tests {
             cancel: &cancel,
         });
         let printed = String::from_utf8_lossy(&result.output.stdout);
-        let _ = fs::remove_dir_all(&dir);
 
         assert_eq!(result.status, ProcessStatus::Success);
         let printed_path = PathBuf::from(printed.trim());
         // Windows may return different prefix spellings; compare canonically when possible.
-        let expected = dir.canonicalize().unwrap_or(dir);
+        let expected = dir.canonicalize().unwrap_or_else(|_| dir.clone());
         let actual = printed_path.canonicalize().unwrap_or(printed_path);
         assert_eq!(actual, expected);
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]

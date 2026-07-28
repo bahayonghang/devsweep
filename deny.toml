@@ -2,13 +2,10 @@
 # Advisory and license checks are required CI jobs.
 
 [advisories]
-vulnerability = "deny"
-unmaintained = "warn"
+unmaintained = "workspace"
 yanked = "warn"
-notice = "warn"
 
 [licenses]
-unlicensed = "deny"
 allow = [
     "MIT",
     "Apache-2.0",
@@ -19,8 +16,6 @@ allow = [
     "Unicode-3.0",
     "Zlib",
 ]
-copyleft = "warn"
-default = "deny"
 
 [sources]
 unknown-registry = "deny"
