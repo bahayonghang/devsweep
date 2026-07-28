@@ -641,3 +641,24 @@ Extracted shared fs_size estimation, parallelized directory sizing with rayon, a
 ### Status
 
 [OK] **Completed**
+
+
+## Session 20: ProcessRunner 有界进程治理
+
+**Date**: 2026-07-28
+**Task**: ProcessRunner 有界进程治理
+**Branch**: `dev`
+
+### Summary
+
+实现统一 ProcessRunner（超时、输出上限、Job Object/进程组、中性 cwd、sanitize、CancelObserver），迁移 provider probe 与 executor command runner；just ci 全绿；Windows 孙进程终止 fixture 通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a9930b` | (see git log) |
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 19
+- **Total Sessions**: 20
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~643 | Active |
+| `journal-1.md` | ~664 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 20 | 2026-07-28 | ProcessRunner 有界进程治理 | `2a9930b` | `dev` |
 | 19 | 2026-07-28 | 完成计划信任边界 | `f143484` | `dev` |
 | 18 | 2026-06-30 | 按大小和新鲜度排名清理计划 | `06579fd` | `main` |
 | 17 | 2026-06-30 | Parallel directory sizing | `0c4f7e5`, `b04feb9` | `main` |
