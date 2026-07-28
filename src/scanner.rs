@@ -10,6 +10,33 @@ use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
+
+/// Discovery diagnostic for a nested path that could not be fully scanned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScanDiagnostic {
+    pub stage: ScanDiagnosticStage,
+    pub path: PathBuf,
+    pub detail: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanDiagnosticStage {
+    Discovery,
+    Size,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanCompleteness {
+    Complete,
+    Partial,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScanOutcome {
+    pub plan: CleanupPlan,
+    pub diagnostics: Vec<ScanDiagnostic>,
+    pub completeness: ScanCompleteness,
+}
 use crate::rules::{ProjectMarker, RuleDoc, RuleScope, project_dir_rules};
 
 /// Doc for the procedural `cargo clean` rule; the single source of its identity
@@ -47,17 +74,39 @@ impl ProjectScanner {
     }
 
     pub fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
+        Ok(self.scan_roots_with_diagnostics(roots)?.plan)
+    }
+
+    pub fn scan_roots_with_diagnostics(&self, roots: &[PathBuf]) -> Result<ScanOutcome> {
         let mut targets = Vec::new();
+        let mut diagnostics = Vec::new();
 
         for root in normalize_scan_roots(roots)? {
-            self.scan_dir(&root, None, &mut targets)?;
+            // Root open failures remain hard errors.
+            let metadata = fs::symlink_metadata(&root)
+                .with_context(|| format!("failed to inspect scan root {}", root.display()))?;
+            if !metadata.is_dir() || is_unsafe_link(&metadata) {
+                continue;
+            }
+            fs::read_dir(&root)
+                .with_context(|| format!("failed to read scan root {}", root.display()))?;
+            self.scan_dir(&root, None, true, &mut targets, &mut diagnostics);
         }
 
         targets = dedupe_targets(targets);
+        let completeness = if diagnostics.is_empty() {
+            ScanCompleteness::Complete
+        } else {
+            ScanCompleteness::Partial
+        };
 
-        Ok(CleanupPlan {
-            version: crate::model::CLEANUP_PLAN_VERSION,
-            targets,
+        Ok(ScanOutcome {
+            plan: CleanupPlan {
+                version: crate::model::CLEANUP_PLAN_VERSION,
+                targets,
+            },
+            diagnostics,
+            completeness,
         })
     }
 
@@ -65,12 +114,26 @@ impl ProjectScanner {
         &self,
         dir: &Path,
         python_context: Option<&PythonContext>,
+        is_scan_root: bool,
         targets: &mut Vec<CleanTarget>,
-    ) -> Result<()> {
-        let metadata = fs::symlink_metadata(dir)
-            .with_context(|| format!("failed to inspect {}", dir.display()))?;
+        diagnostics: &mut Vec<ScanDiagnostic>,
+    ) {
+        let metadata = match fs::symlink_metadata(dir) {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                if is_scan_root {
+                    // Caller already validated roots; treat as nested failure.
+                }
+                diagnostics.push(ScanDiagnostic {
+                    stage: ScanDiagnosticStage::Discovery,
+                    path: dir.to_path_buf(),
+                    detail: format!("failed to inspect: {error}"),
+                });
+                return;
+            }
+        };
         if !metadata.is_dir() || is_unsafe_link(&metadata) {
-            return Ok(());
+            return;
         }
 
         if should_stop_descent(dir) {
@@ -95,7 +158,7 @@ impl ProjectScanner {
                     ],
                 }));
             }
-            return Ok(());
+            return;
         }
 
         self.scan_rust_project(dir, targets);
@@ -110,24 +173,46 @@ impl ProjectScanner {
             self.scan_python_project_dir(dir, context, targets);
         }
 
-        for entry in
-            fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))?
-        {
+        let entries = match fs::read_dir(dir) {
+            Ok(entries) => entries,
+            Err(error) => {
+                diagnostics.push(ScanDiagnostic {
+                    stage: ScanDiagnosticStage::Discovery,
+                    path: dir.to_path_buf(),
+                    detail: format!("failed to read: {error}"),
+                });
+                return;
+            }
+        };
+
+        for entry in entries {
             let entry = match entry {
                 Ok(entry) => entry,
-                Err(_) => continue,
+                Err(error) => {
+                    diagnostics.push(ScanDiagnostic {
+                        stage: ScanDiagnosticStage::Discovery,
+                        path: dir.to_path_buf(),
+                        detail: format!("failed to read directory entry: {error}"),
+                    });
+                    continue;
+                }
             };
             let path = entry.path();
             let metadata = match fs::symlink_metadata(&path) {
                 Ok(metadata) => metadata,
-                Err(_) => continue,
+                Err(error) => {
+                    diagnostics.push(ScanDiagnostic {
+                        stage: ScanDiagnosticStage::Discovery,
+                        path: path.clone(),
+                        detail: format!("failed to inspect: {error}"),
+                    });
+                    continue;
+                }
             };
             if metadata.is_dir() && !is_unsafe_link(&metadata) {
-                self.scan_dir(&path, active_python_context, targets)?;
+                self.scan_dir(&path, active_python_context, false, targets, diagnostics);
             }
         }
-
-        Ok(())
     }
 
     fn scan_rust_project(&self, dir: &Path, targets: &mut Vec<CleanTarget>) {
@@ -297,15 +382,17 @@ fn build_path_target(input: PathTargetInput) -> CleanTarget {
         selected_by_default,
         evidence,
     } = input;
-    let (estimated_bytes, last_modified) = estimate_tree(&path);
+    let estimate = estimate_tree(&path);
+    let selected_by_default = selected_by_default && estimate.complete;
     CleanTarget {
         id: TargetId::new(format!("{rule_id}:{}", path.display())),
         scope: Scope::Project { root: project_root },
         ecosystem,
         kind,
         path: Some(path.clone()),
-        estimated_bytes,
-        last_modified,
+        estimated_bytes: estimate.display_bytes(),
+        size_complete: estimate.complete,
+        last_modified: estimate.last_modified,
         risk,
         reversible: true,
         selected_by_default,
@@ -825,6 +912,94 @@ mod tests {
         );
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn unreadable_nested_child_keeps_sibling_targets_and_is_partial() {
+        let fixture = Fixture::new();
+        fixture.file("app/package.json", "{}");
+        fixture.file("app/node_modules/pkg/index.js", "module");
+        let denied = fixture.path().join("app/secret");
+        fs::create_dir_all(&denied).expect("denied dir");
+        fs::write(denied.join("hidden.bin"), "x").expect("hidden file");
+        if deny_directory_read(&denied).is_err() {
+            return;
+        }
+        assert!(
+            fs::read_dir(&denied).is_err(),
+            "fixture must deny read_dir before asserting partial scan"
+        );
+
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics(&[fixture.path().to_path_buf()])
+            .expect("partial scan succeeds");
+        let _ = restore_directory_read(&denied);
+
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|diag| diag.path.ends_with("secret")),
+            "diagnostic names denied child: {:?}",
+            outcome.diagnostics
+        );
+        assert!(
+            outcome
+                .plan
+                .targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("node.node_modules")),
+            "sibling target kept: {:?}",
+            target_ids(&outcome.plan)
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unreadable_nested_child_keeps_sibling_targets_and_is_partial() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let fixture = Fixture::new();
+        fixture.file("app/package.json", "{}");
+        fixture.file("app/node_modules/pkg/index.js", "module");
+        let denied = fixture.path().join("app/secret");
+        fs::create_dir_all(&denied).expect("denied dir");
+        fs::write(denied.join("hidden.bin"), "x").expect("hidden file");
+        fs::set_permissions(&denied, fs::Permissions::from_mode(0o000)).expect("chmod");
+        assert!(fs::read_dir(&denied).is_err());
+
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics(&[fixture.path().to_path_buf()])
+            .expect("partial scan succeeds");
+        let _ = fs::set_permissions(&denied, fs::Permissions::from_mode(0o755));
+
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert!(!outcome.diagnostics.is_empty());
+        assert!(
+            outcome
+                .plan
+                .targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("node.node_modules"))
+        );
+    }
+
+    #[test]
+    fn unreadable_root_remains_a_hard_error() {
+        let fixture = Fixture::new();
+        let missing = fixture.path().join("does-not-exist");
+        let error = ProjectScanner::new()
+            .scan_roots(&[missing])
+            .expect_err("missing root is hard error");
+        assert!(
+            error.to_string().contains("failed to")
+                || error
+                    .chain()
+                    .any(|cause| cause.to_string().contains("failed to")),
+            "root failure keeps context: {error:#}"
+        );
+    }
+
     fn target_ids(plan: &CleanupPlan) -> Vec<&str> {
         plan.targets
             .iter()
@@ -864,5 +1039,38 @@ mod tests {
     #[cfg(windows)]
     fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
         std::os::windows::fs::symlink_dir(target, link)
+    }
+
+    #[cfg(windows)]
+    fn deny_directory_read(path: &Path) -> std::io::Result<()> {
+        use std::process::Command;
+        let output = Command::new("icacls")
+            .arg(path)
+            .arg("/deny")
+            .arg(format!("{}:(OI)(CI)(R,X)", current_user()?))
+            .output()?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other(String::from_utf8_lossy(
+                &output.stderr,
+            )))
+        }
+    }
+
+    #[cfg(windows)]
+    fn restore_directory_read(path: &Path) -> std::io::Result<()> {
+        use std::process::Command;
+        let _ = Command::new("icacls")
+            .arg(path)
+            .arg("/remove:d")
+            .arg(current_user()?)
+            .status();
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    fn current_user() -> std::io::Result<String> {
+        std::env::var("USERNAME").map_err(|_| std::io::Error::other("USERNAME missing"))
     }
 }

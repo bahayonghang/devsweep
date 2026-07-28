@@ -24,11 +24,11 @@
 
 ## Acceptance Criteria
 
-- [ ] fixture：不可读子目录 —— sibling 结果保留，JSON/TUI 显示 partial + diagnostic；`.trellis/spec/backend/error-handling.md` 与实现一致
-- [ ] fixture：size 遍历中途权限错误 —— 显示 incomplete/unknown 而非 0 B；该 target 不被默认选中
-- [ ] fixture：root 本身不可读 —— 仍为 hard error（语义不放宽）
-- [ ] `scan --global` 文本输出无 "from 1 root(s)" 误导；`scan --json` 新增字段经由 plan-validation 的 schema v2 契约（不得私改 serde 格式）
-- [ ] `just ci` 全绿；先有 fail-red（当前不可读子目录导致整根失败的用例）再修复
+- [x] fixture：不可读子目录 —— sibling 结果保留，JSON/TUI 显示 partial + diagnostic；`.trellis/spec/backend/error-handling.md` 与实现一致
+- [x] fixture：size 遍历中途权限错误 —— 显示 incomplete/unknown 而非 0 B；该 target 不被默认选中
+- [x] fixture：root 本身不可读 —— 仍为 hard error（语义不放宽）
+- [x] `scan --global` 文本输出无 "from 1 root(s)" 误导；`scan --json` 新增字段经由 plan-validation 的 schema v2 契约（不得私改 serde 格式）
+- [x] `just ci` 全绿；先有 fail-red（当前不可读子目录导致整根失败的用例）再修复
 
 ## 约束与依赖
 

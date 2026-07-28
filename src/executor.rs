@@ -1314,6 +1314,7 @@ mod tests {
             kind: TargetKind::BuildArtifacts,
             path,
             estimated_bytes: 42,
+            size_complete: true,
             last_modified: None,
             risk: RiskLevel::Low,
             reversible: true,

@@ -38,12 +38,20 @@ fn run_scan(command: ScanCommand) -> Result<()> {
         return Ok(());
     }
 
-    println!(
-        "Scanner found {} cleanup target(s) from {} root(s), scope {}.",
-        plan.targets.len(),
-        command.roots.len(),
-        command.scope_label()
-    );
+    if options.include_projects {
+        println!(
+            "Scanner found {} cleanup target(s) from {} root(s), scope {}.",
+            plan.targets.len(),
+            command.roots.len(),
+            command.scope_label()
+        );
+    } else {
+        println!(
+            "Scanner found {} global cleanup target(s), scope {}.",
+            plan.targets.len(),
+            command.scope_label()
+        );
+    }
     println!("Run with --json to emit the cleanup plan.");
 
     Ok(())

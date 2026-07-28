@@ -121,6 +121,7 @@ pub(super) fn target(
         kind,
         path: path.clone(),
         estimated_bytes,
+        size_complete: true,
         last_modified: None,
         risk,
         reversible,

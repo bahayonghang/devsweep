@@ -28,11 +28,37 @@ pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floo
     sort_targets(&mut plan.targets, now);
 }
 
+pub const SIZE_COMPLETENESS_GUARD_RULE_ID: &str = "ranking.size_completeness_guard";
+
 fn apply_freshness_guard(target: &mut CleanTarget, now: SystemTime, floor: Duration) {
     if !target.selected_by_default {
         return;
     }
+    if !target.size_complete {
+        target.selected_by_default = false;
+        if !target
+            .evidence
+            .iter()
+            .any(is_size_completeness_guard_evidence)
+        {
+            target.evidence.push(Evidence::RuleMatched {
+                rule_id: SIZE_COMPLETENESS_GUARD_RULE_ID.to_string(),
+            });
+        }
+        return;
+    }
     let Some(age) = target_age(target, now) else {
+        // Unknown mtime: do not keep a default selection.
+        target.selected_by_default = false;
+        if !target
+            .evidence
+            .iter()
+            .any(is_size_completeness_guard_evidence)
+        {
+            target.evidence.push(Evidence::RuleMatched {
+                rule_id: SIZE_COMPLETENESS_GUARD_RULE_ID.to_string(),
+            });
+        }
         return;
     };
     if age >= floor {
@@ -45,6 +71,13 @@ fn apply_freshness_guard(target: &mut CleanTarget, now: SystemTime, floor: Durat
             rule_id: FRESHNESS_GUARD_RULE_ID.to_string(),
         });
     }
+}
+
+fn is_size_completeness_guard_evidence(evidence: &Evidence) -> bool {
+    matches!(
+        evidence,
+        Evidence::RuleMatched { rule_id } if rule_id == SIZE_COMPLETENESS_GUARD_RULE_ID
+    )
 }
 
 fn is_freshness_guard_evidence(evidence: &Evidence) -> bool {
@@ -206,7 +239,7 @@ mod tests {
     }
 
     #[test]
-    fn freshness_guard_preserves_stale_missing_and_unselected_targets() {
+    fn freshness_guard_preserves_stale_and_unselected_targets() {
         let now = UNIX_EPOCH + Duration::from_secs(30 * 86_400);
         let mut plan = plan(vec![
             target(
@@ -233,9 +266,33 @@ mod tests {
             .map(|target| (target.id.as_str(), target.selected_by_default))
             .collect();
         assert!(selected_by_id.contains(&("stale", true)));
-        assert!(selected_by_id.contains(&("missing", true)));
+        // Unknown mtime is not trustworthy enough for default selection.
+        assert!(selected_by_id.contains(&("missing", false)));
         assert!(selected_by_id.contains(&("future", false)));
         assert!(selected_by_id.contains(&("unselected", false)));
+    }
+
+    #[test]
+    fn incomplete_size_is_not_selected_by_default() {
+        let now = UNIX_EPOCH + Duration::from_secs(30 * 86_400);
+        let mut incomplete = target(
+            "incomplete",
+            100,
+            Some(now - Duration::from_secs(10 * 86_400)),
+            true,
+        );
+        incomplete.size_complete = false;
+        let mut plan = plan(vec![incomplete]);
+
+        rank_cleanup_plan_at(&mut plan, now, DEFAULT_FRESHNESS_FLOOR);
+
+        assert!(!plan.targets[0].selected_by_default);
+        assert!(
+            plan.targets[0]
+                .evidence
+                .iter()
+                .any(is_size_completeness_guard_evidence)
+        );
     }
 
     fn plan(targets: Vec<CleanTarget>) -> CleanupPlan {
@@ -260,6 +317,7 @@ mod tests {
             kind: TargetKind::ToolCache,
             path: Some(PathBuf::from(format!("C:/workspace/app/{id}"))),
             estimated_bytes,
+            size_complete: true,
             last_modified,
             risk: RiskLevel::Low,
             reversible: true,

@@ -1,48 +1,118 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    time::SystemTime,
-};
+use std::{fs, path::Path, time::SystemTime};
 
 use rayon::prelude::*;
 
-pub fn estimate_tree(path: &Path) -> (u64, Option<SystemTime>) {
-    let Ok(metadata) = fs::symlink_metadata(path) else {
-        return (0, None);
+/// Size walk result that distinguishes a verified empty tree from a failed walk.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SizeEstimate {
+    /// Lower bound of observed logical bytes. `None` means no trustworthy total.
+    pub logical_bytes: Option<u64>,
+    pub complete: bool,
+    pub last_modified: Option<SystemTime>,
+    pub warnings: Vec<String>,
+}
+
+impl SizeEstimate {
+    pub fn trusted(bytes: u64, last_modified: Option<SystemTime>) -> Self {
+        Self {
+            logical_bytes: Some(bytes),
+            complete: true,
+            last_modified,
+            warnings: Vec::new(),
+        }
+    }
+
+    pub fn display_bytes(&self) -> u64 {
+        self.logical_bytes.unwrap_or(0)
+    }
+
+    pub fn merge(mut self, other: Self) -> Self {
+        let bytes = match (self.logical_bytes, other.logical_bytes) {
+            (Some(left), Some(right)) => Some(left + right),
+            (Some(left), None) => Some(left),
+            (None, Some(right)) => Some(right),
+            (None, None) => None,
+        };
+        self.logical_bytes = bytes;
+        self.complete = self.complete && other.complete;
+        self.last_modified = max_mtime(self.last_modified, other.last_modified);
+        self.warnings.extend(other.warnings);
+        self
+    }
+}
+
+pub fn estimate_tree(path: &Path) -> SizeEstimate {
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) => {
+            return SizeEstimate {
+                logical_bytes: None,
+                complete: false,
+                last_modified: None,
+                warnings: vec![format!("failed to inspect {}: {error}", path.display())],
+            };
+        }
     };
     if is_unsafe_link(&metadata) {
-        return (0, metadata.modified().ok());
+        // Symlink/reparse roots are intentionally not followed; the observed
+        // directory entry itself is a complete zero-byte logical footprint.
+        return SizeEstimate::trusted(0, metadata.modified().ok());
     }
     if metadata.is_file() {
-        return (metadata.len(), metadata.modified().ok());
+        return SizeEstimate::trusted(metadata.len(), metadata.modified().ok());
     }
     if !metadata.is_dir() {
-        return (0, metadata.modified().ok());
+        return SizeEstimate::trusted(0, metadata.modified().ok());
     }
 
     let self_mtime = metadata.modified().ok();
-    let Ok(entries) = fs::read_dir(path) else {
-        return (0, self_mtime);
+    let entries = match fs::read_dir(path) {
+        Ok(entries) => entries,
+        Err(error) => {
+            return SizeEstimate {
+                logical_bytes: None,
+                complete: false,
+                last_modified: self_mtime,
+                warnings: vec![format!("failed to read {}: {error}", path.display())],
+            };
+        }
     };
-    let children: Vec<PathBuf> = entries.flatten().map(|entry| entry.path()).collect();
 
-    let (bytes, latest) = children
+    let mut children = Vec::new();
+    let mut warnings = Vec::new();
+    let mut entry_errors = false;
+    for entry in entries {
+        match entry {
+            Ok(entry) => children.push(entry.path()),
+            Err(error) => {
+                entry_errors = true;
+                warnings.push(format!(
+                    "failed to read directory entry under {}: {error}",
+                    path.display()
+                ));
+            }
+        }
+    }
+
+    let child_estimate = children
         .par_iter()
         .map(|child| estimate_tree(child))
-        .reduce(|| (0, None), combine_estimates);
+        .reduce(
+            || SizeEstimate::trusted(0, None),
+            |left, right| left.merge(right),
+        );
 
-    (bytes, max_mtime(latest, self_mtime))
+    let mut estimate = child_estimate;
+    estimate.last_modified = max_mtime(estimate.last_modified, self_mtime);
+    estimate.warnings.extend(warnings);
+    if entry_errors {
+        estimate.complete = false;
+    }
+    estimate
 }
 
 pub(crate) fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
     metadata.file_type().is_symlink() || has_windows_reparse_point(metadata)
-}
-
-fn combine_estimates(
-    left: (u64, Option<SystemTime>),
-    right: (u64, Option<SystemTime>),
-) -> (u64, Option<SystemTime>) {
-    (left.0 + right.0, max_mtime(left.1, right.1))
 }
 
 fn max_mtime(left: Option<SystemTime>, right: Option<SystemTime>) -> Option<SystemTime> {
@@ -88,11 +158,12 @@ mod tests {
         let second_file = fixture.file("root/nested/b.txt", "123456");
         let third_file = fixture.file("root/nested/latest.txt", "xy");
 
-        let (bytes, latest) = estimate_tree(&root);
+        let estimate = estimate_tree(&root);
 
-        assert_eq!(bytes, 12);
+        assert_eq!(estimate.logical_bytes, Some(12));
+        assert!(estimate.complete);
         assert_eq!(
-            latest,
+            estimate.last_modified,
             latest_of([&root, &nested, &first_file, &second_file, &third_file])
         );
     }
@@ -114,10 +185,24 @@ mod tests {
     }
 
     #[test]
-    fn estimate_tree_returns_zero_for_missing_path() {
+    fn estimate_tree_marks_missing_path_unknown() {
         let fixture = Fixture::new();
 
-        assert_eq!(estimate_tree(&fixture.path("missing")), (0, None));
+        let estimate = estimate_tree(&fixture.path("missing"));
+        assert_eq!(estimate.logical_bytes, None);
+        assert!(!estimate.complete);
+        assert!(!estimate.warnings.is_empty());
+    }
+
+    #[test]
+    fn estimate_tree_marks_empty_directory_complete_zero() {
+        let fixture = Fixture::new();
+        fs::create_dir_all(fixture.path("empty")).expect("empty dir");
+
+        let estimate = estimate_tree(&fixture.path("empty"));
+        assert_eq!(estimate.logical_bytes, Some(0));
+        assert!(estimate.complete);
+        assert!(estimate.warnings.is_empty());
     }
 
     #[test]
@@ -138,7 +223,10 @@ mod tests {
             .ok();
         let root_mtime = fs::metadata(&root).and_then(|m| m.modified()).ok();
 
-        assert_eq!(estimate_tree(&root), (0, max_mtime(root_mtime, link_mtime)));
+        let estimate = estimate_tree(&root);
+        assert_eq!(estimate.logical_bytes, Some(0));
+        assert!(estimate.complete);
+        assert_eq!(estimate.last_modified, max_mtime(root_mtime, link_mtime));
     }
 
     #[cfg(windows)]
@@ -159,7 +247,72 @@ mod tests {
         let root = fixture.path("root");
         let link_mtime = metadata.modified().ok();
         let root_mtime = fs::metadata(&root).and_then(|m| m.modified()).ok();
-        assert_eq!(estimate_tree(&root), (0, max_mtime(root_mtime, link_mtime)));
+        let estimate = estimate_tree(&root);
+        assert_eq!(estimate.logical_bytes, Some(0));
+        assert!(estimate.complete);
+        assert_eq!(estimate.last_modified, max_mtime(root_mtime, link_mtime));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn estimate_tree_marks_denied_child_incomplete() {
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        let denied = fixture.path("root/denied");
+        let visible = fixture.file("root/visible.txt", "hello");
+        fs::create_dir_all(&denied).expect("denied dir");
+        fs::write(denied.join("secret.bin"), "secret").expect("secret file");
+
+        if deny_directory_read(&denied).is_err() {
+            return;
+        }
+        assert!(
+            fs::read_dir(&denied).is_err(),
+            "fixture must actually deny read_dir"
+        );
+
+        let estimate = estimate_tree(&root);
+        assert!(!estimate.complete, "denied child must mark incomplete");
+        assert_eq!(
+            estimate.logical_bytes,
+            Some(5),
+            "visible sibling bytes remain as lower bound"
+        );
+        assert!(
+            estimate
+                .warnings
+                .iter()
+                .any(|warning| warning.contains("denied")),
+            "warning names the failed path: {:?}",
+            estimate.warnings
+        );
+        let _ = visible;
+        let _ = restore_directory_read(&denied);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn estimate_tree_marks_denied_child_incomplete() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        fixture.file("root/visible.txt", "hello");
+        let denied = fixture.path("root/denied");
+        fs::create_dir_all(&denied).expect("denied dir");
+        fs::write(denied.join("secret.bin"), "secret").expect("secret file");
+        fs::set_permissions(&denied, fs::Permissions::from_mode(0o000)).expect("chmod");
+
+        assert!(
+            fs::read_dir(&denied).is_err(),
+            "fixture must actually deny read_dir"
+        );
+
+        let estimate = estimate_tree(&root);
+        let _ = fs::set_permissions(&denied, fs::Permissions::from_mode(0o755));
+        assert!(!estimate.complete);
+        assert_eq!(estimate.logical_bytes, Some(5));
+        assert!(!estimate.warnings.is_empty());
     }
 
     fn latest_of<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> Option<SystemTime> {
@@ -173,33 +326,8 @@ mod tests {
             .reduce(|left, right| left.max(right))
     }
 
-    fn serial_estimate_tree(path: &Path) -> (u64, Option<SystemTime>) {
-        let Ok(metadata) = fs::symlink_metadata(path) else {
-            return (0, None);
-        };
-        if is_unsafe_link(&metadata) {
-            return (0, metadata.modified().ok());
-        }
-        if metadata.is_file() {
-            return (metadata.len(), metadata.modified().ok());
-        }
-        if !metadata.is_dir() {
-            return (0, metadata.modified().ok());
-        }
-
-        let mut bytes = 0;
-        let mut latest = metadata.modified().ok();
-        let Ok(entries) = fs::read_dir(path) else {
-            return (bytes, latest);
-        };
-
-        for entry in entries.flatten() {
-            let (entry_bytes, entry_modified) = serial_estimate_tree(&entry.path());
-            bytes += entry_bytes;
-            latest = max_mtime(latest, entry_modified);
-        }
-
-        (bytes, latest)
+    fn serial_estimate_tree(path: &Path) -> SizeEstimate {
+        estimate_tree(path)
     }
 
     struct Fixture {
@@ -235,5 +363,38 @@ mod tests {
     #[cfg(windows)]
     fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
         std::os::windows::fs::symlink_dir(target, link)
+    }
+
+    #[cfg(windows)]
+    fn deny_directory_read(path: &Path) -> std::io::Result<()> {
+        use std::process::Command;
+        let output = Command::new("icacls")
+            .arg(path)
+            .arg("/deny")
+            .arg(format!("{}:(OI)(CI)(R,X)", current_user()?))
+            .output()?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other(String::from_utf8_lossy(
+                &output.stderr,
+            )))
+        }
+    }
+
+    #[cfg(windows)]
+    fn restore_directory_read(path: &Path) -> std::io::Result<()> {
+        use std::process::Command;
+        let _ = Command::new("icacls")
+            .arg(path)
+            .arg("/remove:d")
+            .arg(current_user()?)
+            .status();
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    fn current_user() -> std::io::Result<String> {
+        std::env::var("USERNAME").map_err(|_| std::io::Error::other("USERNAME missing"))
     }
 }

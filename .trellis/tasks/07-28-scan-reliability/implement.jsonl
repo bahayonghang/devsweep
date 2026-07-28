@@ -1,1 +1,5 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Defines root hard-error and inaccessible nested-entry expectations."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Constrains scanner behavior to planning and requires safety-first validation."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Defines stale local scan snapshots, app-owned selection, and worker-state boundaries."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Guides TUI rendering and focused TestBackend coverage for partial states."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent contract for partial results, schema ownership, and cancellation hand-off."}

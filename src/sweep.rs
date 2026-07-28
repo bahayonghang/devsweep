@@ -329,6 +329,7 @@ mod tests {
             kind: TargetKind::ToolCache,
             path: Some(PathBuf::from(format!("C:/workspace/app/{id}"))),
             estimated_bytes,
+            size_complete: true,
             last_modified,
             risk: RiskLevel::Low,
             reversible: true,

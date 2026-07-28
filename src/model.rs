@@ -42,12 +42,19 @@ pub struct UntrustedTarget {
     pub kind: TargetKind,
     pub path: Option<PathBuf>,
     pub estimated_bytes: u64,
+    /// When false, `estimated_bytes` is only a lower bound (or zero is untrusted).
+    #[serde(default = "default_size_complete")]
+    pub size_complete: bool,
     pub last_modified: Option<SystemTime>,
     pub risk: RiskLevel,
     pub reversible: bool,
     pub selected_by_default: bool,
     pub evidence: Vec<Evidence>,
     pub intent: CleanupIntent,
+}
+
+fn default_size_complete() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,6 +117,8 @@ pub struct CleanTarget {
     pub kind: TargetKind,
     pub path: Option<PathBuf>,
     pub estimated_bytes: u64,
+    /// When false, `estimated_bytes` is only a lower bound (or zero is untrusted).
+    pub size_complete: bool,
     pub last_modified: Option<SystemTime>,
     pub risk: RiskLevel,
     pub reversible: bool,
@@ -233,6 +242,7 @@ mod tests {
             kind: TargetKind::PackageCache,
             path: None,
             estimated_bytes: 0,
+            size_complete: true,
             last_modified: None,
             risk: RiskLevel::Low,
             reversible: true,
@@ -254,6 +264,7 @@ mod tests {
             kind: TargetKind::BuildArtifacts,
             path: Some(PathBuf::from("C:/code/app/target")),
             estimated_bytes: 1024,
+            size_complete: true,
             last_modified: Some(UNIX_EPOCH),
             risk: RiskLevel::Low,
             reversible: false,

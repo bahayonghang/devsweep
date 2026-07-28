@@ -7,7 +7,7 @@ use std::{
 
 use tracing::warn;
 
-use crate::fs_size::estimate_tree;
+use crate::fs_size::{SizeEstimate, estimate_tree};
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, TargetId, TargetKind,
@@ -100,7 +100,7 @@ trait ProviderProbe {
     fn env_path(&self, key: &str) -> Option<PathBuf>;
     fn home_dir(&self) -> Option<PathBuf>;
     fn is_dir(&self, path: &Path) -> bool;
-    fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>);
+    fn estimate_path_size(&self, path: &Path) -> SizeEstimate;
 }
 
 struct SystemProviderProbe {
@@ -187,7 +187,7 @@ impl ProviderProbe for SystemProviderProbe {
         path.is_dir()
     }
 
-    fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
+    fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
         estimate_tree(path)
     }
 }
@@ -212,14 +212,15 @@ fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         return;
     };
     let cache_path = output_path(probe.command_output(&npm, &["config", "get", "cache"]));
-    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
+    let cache_estimate = estimate_path(probe, cache_path.as_deref());
 
     targets.push(command_target(CommandTargetInput {
         rule_id: NPM_CACHE_RULE_DOC.id,
         ecosystem: Ecosystem::Node,
         path: cache_path.clone(),
-        estimated_bytes: cache_bytes,
-        last_modified: cache_modified,
+        estimated_bytes: cache_estimate.display_bytes(),
+        size_complete: cache_estimate.complete,
+        last_modified: cache_estimate.last_modified,
         risk: NPM_CACHE_RULE_DOC.risk,
         selected_by_default: false,
         program: npm,
@@ -247,7 +248,7 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
     let cache_path =
         output_path(probe.command_output(&pip_program, &["-m", "pip", "cache", "dir"]));
-    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
+    let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let purge_command = format!("{pip_program_name} -m pip cache purge");
     let dir_command = format!("{pip_program_name} -m pip cache dir");
     let info_command = format!("{pip_program_name} -m pip cache info");
@@ -256,8 +257,9 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         rule_id: PIP_CACHE_RULE_DOC.id,
         ecosystem: Ecosystem::Python,
         path: cache_path.clone(),
-        estimated_bytes: cache_bytes,
-        last_modified: cache_modified,
+        estimated_bytes: cache_estimate.display_bytes(),
+        size_complete: cache_estimate.complete,
+        last_modified: cache_estimate.last_modified,
         risk: PIP_CACHE_RULE_DOC.risk,
         selected_by_default: false,
         program: pip_program,
@@ -276,14 +278,15 @@ fn add_pnpm_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         return;
     };
     let store_path = output_path(probe.command_output(&pnpm, &["store", "path"]));
-    let (store_bytes, store_modified) = estimate_path(probe, store_path.as_deref());
+    let store_estimate = estimate_path(probe, store_path.as_deref());
 
     targets.push(command_target(CommandTargetInput {
         rule_id: PNPM_STORE_RULE_DOC.id,
         ecosystem: Ecosystem::Node,
         path: store_path.clone(),
-        estimated_bytes: store_bytes,
-        last_modified: store_modified,
+        estimated_bytes: store_estimate.display_bytes(),
+        size_complete: store_estimate.complete,
+        last_modified: store_estimate.last_modified,
         risk: PNPM_STORE_RULE_DOC.risk,
         selected_by_default: false,
         program: pnpm,
@@ -322,7 +325,7 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
     let rule_id = format!("{}.{rule_suffix}", YARN_CACHE_RULE_DOC.id);
     let cache_path = output_path(probe.command_output(&yarn, &path_command));
-    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
+    let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let path_command_display = if major_version <= 1 {
         "yarn cache dir"
     } else {
@@ -333,8 +336,9 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         rule_id: &rule_id,
         ecosystem: Ecosystem::Node,
         path: cache_path.clone(),
-        estimated_bytes: cache_bytes,
-        last_modified: cache_modified,
+        estimated_bytes: cache_estimate.display_bytes(),
+        size_complete: cache_estimate.complete,
+        last_modified: cache_estimate.last_modified,
         risk: YARN_CACHE_RULE_DOC.risk,
         selected_by_default: false,
         program: yarn,
@@ -356,7 +360,7 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         return;
     }
 
-    let (estimated_bytes, last_modified) = probe.estimate_path_size(&cargo_home);
+    let estimate = probe.estimate_path_size(&cargo_home);
 
     targets.push(CleanTarget {
         id: TargetId::new(format!(
@@ -368,8 +372,9 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         ecosystem: Ecosystem::Rust,
         kind: TargetKind::PackageCache,
         path: Some(cargo_home.clone()),
-        estimated_bytes,
-        last_modified,
+        estimated_bytes: estimate.display_bytes(),
+        size_complete: estimate.complete,
+        last_modified: estimate.last_modified,
         risk: CARGO_HOME_RULE_DOC.risk,
         reversible: true,
         selected_by_default: false,
@@ -398,7 +403,7 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
         if !probe.is_dir(&path) {
             continue;
         }
-        let (estimated_bytes, last_modified) = probe.estimate_path_size(&path);
+        let estimate = probe.estimate_path_size(&path);
         let action = match rule.action {
             KnownCacheAction::Trash => CleanAction::MoveToTrash { path: path.clone() },
             KnownCacheAction::InspectOnly => CleanAction::NoopInspectOnly,
@@ -409,8 +414,9 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
             ecosystem: rule.ecosystem.clone(),
             kind: rule.kind.clone(),
             path: Some(path.clone()),
-            estimated_bytes,
-            last_modified,
+            estimated_bytes: estimate.display_bytes(),
+            size_complete: estimate.complete,
+            last_modified: estimate.last_modified,
             risk: rule.risk.clone(),
             reversible: true,
             selected_by_default: false,
@@ -433,6 +439,7 @@ struct CommandTargetInput<'a> {
     ecosystem: Ecosystem,
     path: Option<PathBuf>,
     estimated_bytes: u64,
+    size_complete: bool,
     last_modified: Option<SystemTime>,
     risk: RiskLevel,
     selected_by_default: bool,
@@ -447,6 +454,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         ecosystem,
         path,
         estimated_bytes,
+        size_complete,
         last_modified,
         risk,
         selected_by_default,
@@ -454,6 +462,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         args,
         evidence,
     } = input;
+    let selected_by_default = selected_by_default && size_complete;
     CleanTarget {
         id: TargetId::new(format!(
             "{rule_id}:{}",
@@ -466,6 +475,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         kind: TargetKind::PackageCache,
         path,
         estimated_bytes,
+        size_complete,
         last_modified,
         risk,
         reversible: false,
@@ -528,9 +538,14 @@ fn output_path(output: Option<String>) -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
-fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> (u64, Option<SystemTime>) {
+fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> SizeEstimate {
     path.map(|path| probe.estimate_path_size(path))
-        .unwrap_or((0, None))
+        .unwrap_or_else(|| SizeEstimate {
+            logical_bytes: None,
+            complete: false,
+            last_modified: None,
+            warnings: vec!["cache path was not resolved".to_string()],
+        })
 }
 
 fn parse_major_version(version: &str) -> Option<u64> {
@@ -972,8 +987,8 @@ mod tests {
             self.dirs.contains(path)
         }
 
-        fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
-            (self.sizes.get(path).copied().unwrap_or_default(), None)
+        fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
+            SizeEstimate::trusted(self.sizes.get(path).copied().unwrap_or_default(), None)
         }
     }
 
@@ -1052,8 +1067,8 @@ mod tests {
             self.dirs.contains(path)
         }
 
-        fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
-            (self.sizes.get(path).copied().unwrap_or_default(), None)
+        fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
+            SizeEstimate::trusted(self.sizes.get(path).copied().unwrap_or_default(), None)
         }
     }
 

@@ -445,7 +445,7 @@ fn target_row(target: &CleanTarget, selected: bool, checked: bool, area: Rect) -
             risk_style(&target.risk),
         ),
         Span::styled(
-            format!("{:>9} ", format_bytes(target.estimated_bytes)),
+            format!("{:>9} ", format_target_bytes(target)),
             warning_style(),
         ),
         Span::styled(target_text, panel_style()),
@@ -1094,7 +1094,7 @@ fn target_details_lines(target: &CleanTarget) -> Vec<Line<'static>> {
             Span::styled("Risk: ", muted_style()),
             Span::styled(risk_label(&target.risk), risk_style(&target.risk)),
         ]),
-        detail_line("Size", format_bytes(target.estimated_bytes)),
+        detail_line("Size", format_target_bytes(target)),
         detail_line("Reversible", target.reversible.to_string()),
         detail_line("Action", action_summary(&target.action)),
         Line::styled("Evidence:", muted_style()),
@@ -1311,6 +1311,17 @@ fn cleanup_progress_bar(completed: usize, total: usize, width: usize) -> String 
         "#".repeat(filled),
         "-".repeat(width.saturating_sub(filled))
     )
+}
+
+fn format_target_bytes(target: &crate::model::CleanTarget) -> String {
+    if !target.size_complete {
+        return if target.estimated_bytes == 0 {
+            "unknown".to_string()
+        } else {
+            format!(">= {}", format_bytes(target.estimated_bytes))
+        };
+    }
+    format_bytes(target.estimated_bytes)
 }
 
 fn format_bytes(bytes: u64) -> String {

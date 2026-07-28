@@ -36,7 +36,12 @@ let root = root
 - Use `anyhow::bail!` for explicit user-facing command failures. Current
   example: `clean --execute` fails because execution is not implemented yet.
 - Scanner root access failures are hard errors. Inaccessible nested entries are
-  skipped so one unreadable child does not abort the whole scan.
+  recorded as discovery diagnostics and skipped so one unreadable child does not
+  abort the whole scan; the outcome is marked partial while sibling candidates
+  remain.
+- Size walks never convert I/O failure into a trusted `0 B`. They return a
+  `SizeEstimate` that is either a complete total, a partial lower bound, or
+  unknown. Incomplete and unknown estimates are not selected by default.
 - Tests may use `expect(...)` with a specific reason.
 
 Example from `src/main.rs`:

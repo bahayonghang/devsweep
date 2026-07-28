@@ -3,7 +3,7 @@
   "name": "scan-reliability",
   "title": "扫描部分失败模型：child 降级与 size 未知语义",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
