@@ -827,3 +827,34 @@ TerminalSession RAII, viewport, cleaned tombstones, display hygiene; just ci gre
 ### Next Steps
 
 - 后续 rule-registry-providers 挂接 safety_contract
+
+
+## Session 26: Durable audit complete
+
+**Date**: 2026-07-28
+**Task**: Durable audit complete
+**Branch**: `dev`
+
+### Summary
+
+Durable action journal with started-before-side-effect, fault halt, replay API; just ci green.
+
+### Main Changes
+
+- action_started durable before side effect
+- enriched journal events
+- halt on audit failure + replay API
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a2a5193` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
