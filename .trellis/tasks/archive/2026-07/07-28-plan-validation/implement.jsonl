@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Safety-first execution, JSON-contract, argv, and no-permanent-delete constraints."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Defines expected error propagation for CLI and execution boundaries."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Guides placement of model, registry, and validation modules."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent-owned cross-task ownership, D1, digest, fingerprint, and acceptance contracts."}
