@@ -3,7 +3,7 @@
   "name": "process-runner-cancellation",
   "title": "ProcessRunner core：超时、输出上限与进程树治理",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

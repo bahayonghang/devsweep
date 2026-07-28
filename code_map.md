@@ -28,6 +28,9 @@ Rust crate plus Trellis/Codex workflow scaffolding.
   inspect-only Cargo home targets.
 - `src/executor.rs` - dry-run and execution engine, command/trash runner
   abstractions, partial-failure handling, and JSONL audit records.
+- `src/process_runner.rs` - bounded external process runner: timeout, output
+  caps, tree termination, neutral cwd, sanitize, typed diagnostics.
+- `src/bin/process_fixture.rs` - child/grandchild helper for process-tree tests.
 - `src/tui.rs` - ratatui entrypoint, app state, update/effect loop, worker
   events, render helpers, and TUI tests.
 - `src/config.rs` - tracing initialization; diagnostics go to stderr so JSON

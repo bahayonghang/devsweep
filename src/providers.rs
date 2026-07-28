@@ -1,14 +1,20 @@
 use std::{
     env,
+    ffi::OsString,
     path::{Path, PathBuf},
-    process::Command,
-    time::SystemTime,
+    time::{Instant, SystemTime},
 };
+
+use tracing::warn;
 
 use crate::fs_size::estimate_tree;
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, TargetId, TargetKind,
+};
+use crate::process_runner::{
+    CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT, NoopCancelObserver,
+    ProcessRequest, ProcessRunner, ProcessStatus,
 };
 use crate::rules::{KnownCacheAction, RuleDoc, RuleScope, global_cache_rules};
 
@@ -78,7 +84,7 @@ impl GlobalProviderScanner {
     }
 
     pub fn scan(&self) -> CleanupPlan {
-        scan_with_probe(&SystemProviderProbe)
+        scan_with_probe(&SystemProviderProbe::new())
     }
 }
 
@@ -97,7 +103,19 @@ trait ProviderProbe {
     fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>);
 }
 
-struct SystemProviderProbe;
+struct SystemProviderProbe {
+    runner: ProcessRunner,
+    phase_deadline: Instant,
+}
+
+impl SystemProviderProbe {
+    fn new() -> Self {
+        Self {
+            runner: ProcessRunner::default(),
+            phase_deadline: Instant::now() + DEFAULT_PROVIDER_PHASE_DEADLINE,
+        }
+    }
+}
 
 impl ProviderProbe for SystemProviderProbe {
     fn resolve_executable(&self, program: &str) -> Option<PathBuf> {
@@ -105,11 +123,45 @@ impl ProviderProbe for SystemProviderProbe {
     }
 
     fn command_output(&self, program: &Path, args: &[&str]) -> Option<String> {
-        let output = Command::new(program).args(args).output().ok()?;
-        if !output.status.success() {
+        let now = Instant::now();
+        if now >= self.phase_deadline {
+            warn!(
+                program = %program.display(),
+                args = ?args,
+                "provider probe skipped: global phase deadline reached"
+            );
             return None;
         }
-        Some(String::from_utf8_lossy(&output.stdout).into_owned())
+
+        let remaining = self.phase_deadline.saturating_duration_since(now);
+        let timeout = DEFAULT_PROVIDER_PROBE_TIMEOUT.min(remaining);
+        let cancel = NoopCancelObserver;
+        let request = ProcessRequest {
+            program: OsString::from(program.as_os_str()),
+            args: args.iter().map(|arg| OsString::from(*arg)).collect(),
+            cwd: CwdPolicy::Neutral,
+            timeout: Some(timeout),
+            job_deadline: Some(self.phase_deadline),
+            cancel: &cancel,
+        };
+
+        let result = self.runner.run(&request);
+        match result.status {
+            ProcessStatus::Success => {
+                Some(String::from_utf8_lossy(&result.output.stdout).into_owned())
+            }
+            status => {
+                warn!(
+                    program = %program.display(),
+                    args = ?args,
+                    ?status,
+                    stdout_truncated = result.output.stdout_truncated,
+                    stderr_truncated = result.output.stderr_truncated,
+                    "provider probe failed with typed process status"
+                );
+                None
+            }
+        }
     }
 
     fn env_path(&self, key: &str) -> Option<PathBuf> {
@@ -540,9 +592,17 @@ fn windows_path_extensions() -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::{
+        cell::Cell,
+        collections::{HashMap, HashSet},
+        time::Duration,
+    };
 
     use super::*;
+    use crate::process_runner::{
+        CwdPolicy, NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus,
+        test_support::process_fixture_exe,
+    };
 
     #[test]
     fn missing_command_providers_are_non_fatal() {
@@ -800,6 +860,60 @@ mod tests {
         );
     }
 
+    #[test]
+    fn provider_probe_timeout_does_not_abort_later_providers() {
+        let fixture = process_fixture_exe();
+
+        let mut probe = TimeoutAwareProbe {
+            runner: ProcessRunner::default(),
+            tools: HashMap::new(),
+            outputs: HashMap::new(),
+            hang: HashMap::new(),
+            env: HashMap::new(),
+            home: None,
+            dirs: HashSet::new(),
+            sizes: HashMap::new(),
+            phase_deadline: Instant::now() + Duration::from_secs(30),
+            seen_timeout: Cell::new(false),
+        };
+        let npm = probe.tool("npm", fixture.to_string_lossy().as_ref());
+        let py = probe.tool("py", "/tools/py");
+        probe.hang.insert(
+            (
+                npm.clone(),
+                vec!["config".to_string(), "get".to_string(), "cache".to_string()],
+            ),
+            true,
+        );
+        probe.output(&py, &["-m", "pip", "cache", "dir"], "/cache/pip\n");
+        probe.path_size("/cache/pip", 200);
+
+        let plan = scan_with_probe(&probe);
+
+        assert!(
+            probe.seen_timeout.get(),
+            "npm hang fixture must surface as a typed timeout"
+        );
+        assert!(
+            plan.targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("pip.cache.purge")),
+            "later providers must still run after an earlier probe timeout: {:?}",
+            plan.targets
+                .iter()
+                .map(|target| target.id.as_str())
+                .collect::<Vec<_>>()
+        );
+        // npm still emits a command target with unresolved path when the probe
+        // returns None — discovery failure is non-fatal.
+        assert!(
+            plan.targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("npm.cache.clean")),
+            "npm target remains discoverable without cache path"
+        );
+    }
+
     #[derive(Default)]
     struct FakeProbe {
         tools: HashMap<String, PathBuf>,
@@ -844,6 +958,86 @@ mod tests {
                     args.iter().map(|arg| (*arg).to_string()).collect(),
                 ))
                 .cloned()
+        }
+
+        fn env_path(&self, key: &str) -> Option<PathBuf> {
+            self.env.get(key).cloned()
+        }
+
+        fn home_dir(&self) -> Option<PathBuf> {
+            self.home.clone()
+        }
+
+        fn is_dir(&self, path: &Path) -> bool {
+            self.dirs.contains(path)
+        }
+
+        fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
+            (self.sizes.get(path).copied().unwrap_or_default(), None)
+        }
+    }
+
+    struct TimeoutAwareProbe {
+        runner: ProcessRunner,
+        tools: HashMap<String, PathBuf>,
+        outputs: HashMap<(PathBuf, Vec<String>), String>,
+        hang: HashMap<(PathBuf, Vec<String>), bool>,
+        env: HashMap<String, PathBuf>,
+        home: Option<PathBuf>,
+        dirs: HashSet<PathBuf>,
+        sizes: HashMap<PathBuf, u64>,
+        phase_deadline: Instant,
+        seen_timeout: Cell<bool>,
+    }
+
+    impl TimeoutAwareProbe {
+        fn tool(&mut self, name: &str, path: &str) -> PathBuf {
+            let path = PathBuf::from(path);
+            self.tools.insert(name.to_string(), path.clone());
+            path
+        }
+
+        fn output(&mut self, program: &Path, args: &[&str], output: &str) {
+            self.outputs.insert(
+                (
+                    program.to_path_buf(),
+                    args.iter().map(|arg| (*arg).to_string()).collect(),
+                ),
+                output.to_string(),
+            );
+        }
+
+        fn path_size(&mut self, path: &str, bytes: u64) {
+            self.sizes.insert(PathBuf::from(path), bytes);
+        }
+    }
+
+    impl ProviderProbe for TimeoutAwareProbe {
+        fn resolve_executable(&self, program: &str) -> Option<PathBuf> {
+            self.tools.get(program).cloned()
+        }
+
+        fn command_output(&self, program: &Path, args: &[&str]) -> Option<String> {
+            let key = (
+                program.to_path_buf(),
+                args.iter().map(|arg| (*arg).to_string()).collect(),
+            );
+            if self.hang.get(&key).copied().unwrap_or(false) {
+                let cancel = NoopCancelObserver;
+                let result = self.runner.run(&ProcessRequest {
+                    program: program.as_os_str().to_os_string(),
+                    args: vec![OsString::from("hang")],
+                    cwd: CwdPolicy::Neutral,
+                    timeout: Some(Duration::from_millis(300)),
+                    job_deadline: Some(self.phase_deadline),
+                    cancel: &cancel,
+                });
+                self.seen_timeout
+                    .set(result.status == ProcessStatus::Timeout);
+                assert_eq!(result.status, ProcessStatus::Timeout);
+                return None;
+            }
+            self.outputs.get(&key).cloned()
         }
 
         fn env_path(&self, key: &str) -> Option<PathBuf> {

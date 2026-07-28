@@ -6,6 +6,7 @@ pub mod model;
 pub(crate) mod path_identity;
 pub(crate) mod path_safety;
 pub mod plan_validation;
+pub mod process_runner;
 pub mod providers;
 pub mod ranking;
 pub mod registry;

@@ -31,12 +31,15 @@ src/
 ├── path_identity.rs # lexical canonical path identity for plan validation
 ├── path_safety.rs # current-exe containment guard helpers
 ├── plan_validation.rs # UntrustedPlan -> opaque ValidatedPlan boundary + digest
+├── process_runner.rs # bounded external command runner (timeout/caps/tree kill)
 ├── providers.rs   # global tool-cache discovery (npm/pip/pnpm/yarn/cargo/...)
 ├── ranking.rs     # cleanup-plan ordering and conservative default-selection pass
 ├── registry.rs    # trusted rule/intent -> action reconstruction
 ├── rules.rs       # declarative rule tables + catalogue aggregation & row formatting
 ├── scanner.rs     # marker-first project discovery, non-mutating
 ├── sweep.rs       # scan→merge→rank pipeline owner (sole ranking call site)
+├── bin/
+│   └── process_fixture.rs # child/grandchild fixture for ProcessRunner tests
 └── tui/           # ratatui TUI module (see frontend spec)
 ```
 
@@ -70,6 +73,14 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
   `ValidatedPlan`, runs exactly the explicit `ExecutionRequest.selected` set,
   keeps registry-reconstructed command program/argv separate, delegates trash
   moves through a small runner boundary, and owns audit JSONL writes.
+- Put all external-process spawning in `src/process_runner.rs`. Providers and
+  the executor command runner must call this port rather than
+  `Command::output()`. The runner owns timeout, output caps with tail capture,
+  neutral cwd by default, process-tree termination (Windows Job Object / Unix
+  process group), typed status, and `sanitize_process_output` for display and
+  audit. Keep program and argv separate; never shell-compose or shell out to
+  `kill` / `taskkill`. Cancellation is observed through `CancelObserver`; the
+  shared token type is owned by the true-cancellation task.
 - Put binary orchestration in `src/main.rs`. It wires `clap` input to module
   entrypoints and handles user-facing command output.
 - Export a module from `src/lib.rs` only when integration tests, the binary, or

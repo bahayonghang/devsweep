@@ -1,9 +1,9 @@
 use std::{
     collections::HashSet,
+    ffi::OsString,
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
-    process::Command,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -14,6 +14,10 @@ use crate::{
     model::{CleanAction, CleanTarget, TargetId},
     path_safety::target_contains_current_exe,
     plan_validation::ValidatedPlan,
+    process_runner::{
+        CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, NoopCancelObserver,
+        ProcessRequest, ProcessRunner, ProcessStatus, sanitize_process_output,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -85,38 +89,85 @@ pub trait TrashRunner {
     fn move_to_trash(&self, path: &Path) -> Result<()>;
 }
 
-#[derive(Debug, Default)]
-pub struct ProcessCommandRunner;
+#[derive(Debug)]
+pub struct ProcessCommandRunner {
+    runner: ProcessRunner,
+}
 
-impl CommandRunner for ProcessCommandRunner {
-    fn run(&self, request: &CommandRequest) -> Result<CommandOutcome> {
-        let mut command = Command::new(&request.program);
-        command.args(&request.args);
-        if let Some(cwd) = &request.cwd {
-            command.current_dir(cwd);
-        }
+impl Default for ProcessCommandRunner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-        let output = command
-            .output()
-            .with_context(|| format!("failed to run {}", command_display(request)))?;
-        let outcome = CommandOutcome {
-            code: output.status.code(),
-            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
-        };
-
-        if output.status.success() {
-            Ok(outcome)
-        } else {
-            Err(anyhow!(
-                "{} exited with status {:?}: {}",
-                command_display(request),
-                outcome.code,
-                outcome.stderr.trim()
-            ))
+impl ProcessCommandRunner {
+    pub fn new() -> Self {
+        Self {
+            runner: ProcessRunner::default(),
         }
     }
 }
+
+impl CommandRunner for ProcessCommandRunner {
+    fn run(&self, request: &CommandRequest) -> Result<CommandOutcome> {
+        self.run_with_cancel(request, &NoopCancelObserver)
+    }
+}
+
+impl ProcessCommandRunner {
+    fn run_with_cancel(
+        &self,
+        request: &CommandRequest,
+        cancel: &dyn CancelObserver,
+    ) -> Result<CommandOutcome> {
+        let cwd = match &request.cwd {
+            Some(path) => CwdPolicy::Explicit {
+                path: path.clone(),
+                reason: "executor command cwd from validated plan".to_string(),
+            },
+            None => CwdPolicy::Neutral,
+        };
+
+        let process_request = ProcessRequest {
+            program: OsString::from(&request.program),
+            args: request.args.iter().map(OsString::from).collect(),
+            cwd,
+            timeout: Some(DEFAULT_EXECUTOR_COMMAND_TIMEOUT),
+            job_deadline: None,
+            cancel,
+        };
+
+        let result = self.runner.run(&process_request);
+        let stdout = String::from_utf8_lossy(&result.output.stdout).into_owned();
+        let stderr = String::from_utf8_lossy(&result.output.stderr).into_owned();
+        let diagnostic = sanitize_process_output(&result.output.stderr, EXECUTOR_DIAGNOSTIC_CAP);
+        let display = command_display(request);
+
+        match result.status {
+            ProcessStatus::Success => Ok(CommandOutcome {
+                code: Some(0),
+                stdout,
+                stderr,
+            }),
+            ProcessStatus::NotFound => Err(anyhow!("failed to run {display}: program not found")),
+            ProcessStatus::Timeout => Err(anyhow!(
+                "{display} timed out after {:?}: {}",
+                DEFAULT_EXECUTOR_COMMAND_TIMEOUT,
+                diagnostic.trim()
+            )),
+            ProcessStatus::Canceled => Err(anyhow!("{display} canceled")),
+            ProcessStatus::InvalidOutput => Err(anyhow!(
+                "failed to run {display}: invalid process output or spawn failure"
+            )),
+            ProcessStatus::Exit { code } => Err(anyhow!(
+                "{display} exited with status {code:?}: {}",
+                diagnostic.trim()
+            )),
+        }
+    }
+}
+
+const EXECUTOR_DIAGNOSTIC_CAP: usize = 4 * 1024;
 
 #[derive(Debug, Default)]
 pub struct SystemTrashRunner;
@@ -135,7 +186,7 @@ pub struct Executor<C = ProcessCommandRunner, T = SystemTrashRunner> {
 
 impl Default for Executor<ProcessCommandRunner, SystemTrashRunner> {
     fn default() -> Self {
-        Self::new(ProcessCommandRunner, SystemTrashRunner)
+        Self::new(ProcessCommandRunner::new(), SystemTrashRunner)
     }
 }
 
@@ -1114,6 +1165,39 @@ mod tests {
         let records = read_jsonl(&audit_path);
         assert_eq!(records.len(), 2);
         assert_eq!(records[1]["status"], "failed");
+    }
+
+    #[test]
+    fn process_command_runner_sanitizes_control_chars_on_failure() {
+        use crate::process_runner::{sanitize_process_output, test_support::process_fixture_exe};
+
+        let fixture = process_fixture_exe();
+
+        let runner = ProcessCommandRunner::new();
+        let error = runner
+            .run(&CommandRequest {
+                program: fixture.to_string_lossy().into_owned(),
+                args: vec!["control-stderr".to_string()],
+                cwd: None,
+            })
+            .expect_err("control-stderr fixture exits nonzero");
+
+        let message = error.to_string();
+        assert!(
+            !message.as_bytes().contains(&0x1b),
+            "error message must not retain ESC control bytes: {message:?}"
+        );
+        assert!(
+            !message.as_bytes().contains(&0x07),
+            "error message must not retain BEL control bytes: {message:?}"
+        );
+        assert!(
+            message.contains("exited with status"),
+            "nonzero exit should stay typed in the message: {message}"
+        );
+        // Sanitizer contract shared with durable-audit consumers.
+        let sample = sanitize_process_output(b"\x1b[31m\x07x", 64);
+        assert!(!sample.as_bytes().contains(&0x1b));
     }
 
     #[test]
