@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 23
+- **Total Sessions**: 24
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~762 | Active |
+| `journal-1.md` | ~794 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 24 | 2026-07-28 | TUI UX reliability complete | `78c3b31` | `dev` |
 | 23 | 2026-07-28 | Scan reliability complete | `802b0ab` | `dev` |
 | 22 | 2026-07-28 | License baseline complete | `dd85c12` | `dev` |
 | 21 | 2026-07-28 | TUI race hardening complete | `f3db10b` | `dev` |

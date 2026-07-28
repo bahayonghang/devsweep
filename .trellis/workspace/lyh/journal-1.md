@@ -760,3 +760,35 @@ Partial scan diagnostics, SizeEstimate, completeness guard, global summary fix; 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 24: TUI UX reliability complete
+
+**Date**: 2026-07-28
+**Task**: TUI UX reliability complete
+**Branch**: `dev`
+
+### Summary
+
+TerminalSession RAII, viewport, cleaned tombstones, display hygiene; just ci green; archived.
+
+### Main Changes
+
+- TerminalSession + panic hook
+- list viewport and page keys
+- cleaned tombstones until rescan
+- argv quoting and unicode-width truncation
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `78c3b31` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
