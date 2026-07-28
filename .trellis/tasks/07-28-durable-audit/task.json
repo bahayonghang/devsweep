@@ -3,7 +3,7 @@
   "name": "durable-audit",
   "title": "Durable audit：action 边界持久化与记录权威",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

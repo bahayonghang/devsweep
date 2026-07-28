@@ -59,6 +59,8 @@ pub enum ExecutionTargetStatus {
     Succeeded,
     Failed,
     Skipped,
+    /// Side effect may have run but durable terminal audit failed.
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -264,10 +266,11 @@ where
             });
         }
 
-        let audit_path = request
-            .audit_log
-            .unwrap_or_else(|| PathBuf::from("devsweep-audit.jsonl"));
-        let mut audit = AuditLog::open(&audit_path)?;
+        let audit_path = match request.audit_log {
+            Some(path) => path,
+            None => default_audit_log_path()?,
+        };
+        let mut journal = AuditJournal::open(&audit_path, plan.digest().to_string())?;
         let mut report = ExecutionReport {
             dry_run: false,
             selected: selected_targets.len(),
@@ -288,48 +291,190 @@ where
         };
         for validated_target in selected_targets {
             let target = validated_target.target();
-            let started = Instant::now();
+            let started_at = Instant::now();
             let dispatch_attempted =
                 executed_fingerprints.insert(validated_target.fingerprint().clone());
-            let outcome = if dispatch_attempted {
-                self.execute_target(validated_target, &auth_context)
-            } else {
-                Err(anyhow!(
+
+            if !dispatch_attempted {
+                report.failed += 1;
+                let message = format!(
                     "duplicate action fingerprint rejected before execution: {}",
                     validated_target.fingerprint().as_str()
-                ))
-            };
-            let duration_ms = started.elapsed().as_millis();
+                );
+                report.failures.push(ActionFailure {
+                    target_id: target.id.clone(),
+                    message: message.clone(),
+                });
+                on_progress(ExecutionProgress {
+                    completed: report.succeeded + report.failed + report.skipped,
+                    total,
+                    target_id: target.id.clone(),
+                    status: ExecutionTargetStatus::Failed,
+                    message,
+                });
+                continue;
+            }
 
-            let (progress_status, progress_message) = match outcome {
-                Ok(ActionStatus::Success { command }) => {
-                    report.attempted += 1;
-                    report.succeeded += 1;
-                    audit.write(&AuditRecord::success(target, command, duration_ms))?;
-                    (ExecutionTargetStatus::Succeeded, "completed".to_string())
-                }
-                Ok(ActionStatus::Skipped { message }) => {
+            let authorized = match self.authorize_target(validated_target, &auth_context) {
+                Ok(ActionPrep::Skipped { message }) => {
                     report.skipped += 1;
-                    audit.write(&AuditRecord::skipped(target, message.clone(), duration_ms))?;
-                    (
-                        ExecutionTargetStatus::Skipped,
-                        format!("skipped: {message}"),
-                    )
+                    let seq = journal.next_sequence();
+                    let _ = journal.write_terminal(JournalEvent::skipped(
+                        journal.run_id(),
+                        seq,
+                        plan.digest(),
+                        target,
+                        message.clone(),
+                        started_at.elapsed().as_millis(),
+                    ));
+                    on_progress(ExecutionProgress {
+                        completed: report.succeeded + report.failed + report.skipped,
+                        total,
+                        target_id: target.id.clone(),
+                        status: ExecutionTargetStatus::Skipped,
+                        message: format!("skipped: {message}"),
+                    });
+                    continue;
                 }
+                Ok(ActionPrep::Ready(authorized)) => authorized,
                 Err(error) => {
-                    if dispatch_attempted {
-                        report.attempted += 1;
-                    }
+                    report.attempted += 1;
                     report.failed += 1;
                     let message = error.to_string();
                     report.failures.push(ActionFailure {
                         target_id: target.id.clone(),
                         message: message.clone(),
                     });
-                    audit.write(&AuditRecord::failed(target, message.clone(), duration_ms))?;
-                    (ExecutionTargetStatus::Failed, message)
+                    on_progress(ExecutionProgress {
+                        completed: report.succeeded + report.failed + report.skipped,
+                        total,
+                        target_id: target.id.clone(),
+                        status: ExecutionTargetStatus::Failed,
+                        message,
+                    });
+                    continue;
                 }
             };
+
+            let run_id = journal.run_id().to_string();
+            let seq = journal.next_sequence();
+            let started_event =
+                JournalEvent::started(&run_id, seq, plan.digest(), target, &authorized);
+            if let Err(error) = journal.write_started_durable(&started_event) {
+                report.failed += 1;
+                let message = format!("audit-blocked before side effect: {error}");
+                report.failures.push(ActionFailure {
+                    target_id: target.id.clone(),
+                    message: message.clone(),
+                });
+                on_progress(ExecutionProgress {
+                    completed: report.succeeded + report.failed + report.skipped,
+                    total,
+                    target_id: target.id.clone(),
+                    status: ExecutionTargetStatus::Failed,
+                    message,
+                });
+                // Halt further actions after audit-start failure.
+                break;
+            }
+
+            let outcome = self.dispatch_authorized(&authorized, target);
+            let duration_ms = started_at.elapsed().as_millis();
+            let finish_seq = journal.next_sequence();
+            let run_id = journal.run_id().to_string();
+            let (progress_status, progress_message, terminal) = match outcome {
+                Ok(ActionStatus::Success {
+                    command,
+                    exit_code,
+                    action_path,
+                }) => {
+                    report.attempted += 1;
+                    report.succeeded += 1;
+                    (
+                        ExecutionTargetStatus::Succeeded,
+                        "completed".to_string(),
+                        JournalEvent::finished(
+                            &run_id,
+                            finish_seq,
+                            plan.digest(),
+                            target,
+                            "success",
+                            command,
+                            exit_code,
+                            action_path,
+                            duration_ms,
+                            None,
+                        ),
+                    )
+                }
+                Ok(ActionStatus::Skipped { message }) => {
+                    report.skipped += 1;
+                    (
+                        ExecutionTargetStatus::Skipped,
+                        format!("skipped: {message}"),
+                        JournalEvent::finished(
+                            &run_id,
+                            finish_seq,
+                            plan.digest(),
+                            target,
+                            "skipped",
+                            None,
+                            None,
+                            action_path_from_authorized(&authorized),
+                            duration_ms,
+                            Some(message),
+                        ),
+                    )
+                }
+                Err(error) => {
+                    report.attempted += 1;
+                    report.failed += 1;
+                    let message = error.to_string();
+                    report.failures.push(ActionFailure {
+                        target_id: target.id.clone(),
+                        message: message.clone(),
+                    });
+                    (
+                        ExecutionTargetStatus::Failed,
+                        message.clone(),
+                        JournalEvent::finished(
+                            &run_id,
+                            finish_seq,
+                            plan.digest(),
+                            target,
+                            "failed",
+                            command_from_action(&target.action),
+                            None,
+                            action_path_from_authorized(&authorized),
+                            duration_ms,
+                            Some(message),
+                        ),
+                    )
+                }
+            };
+
+            if let Err(error) = journal.write_terminal(terminal) {
+                // Side effect already ran; durable terminal record failed.
+                if progress_status == ExecutionTargetStatus::Succeeded {
+                    report.succeeded = report.succeeded.saturating_sub(1);
+                }
+                report.failed += 1;
+                let message = format!(
+                    "action result known ({progress_message}); audit persistence failed: {error}"
+                );
+                report.failures.push(ActionFailure {
+                    target_id: target.id.clone(),
+                    message: message.clone(),
+                });
+                on_progress(ExecutionProgress {
+                    completed: report.succeeded + report.failed + report.skipped,
+                    total,
+                    target_id: target.id.clone(),
+                    status: ExecutionTargetStatus::Unknown,
+                    message,
+                });
+                break;
+            }
 
             on_progress(ExecutionProgress {
                 completed: report.succeeded + report.failed + report.skipped,
@@ -340,41 +485,36 @@ where
             });
         }
 
-        audit.flush()?;
+        let _ = journal.flush();
         Ok(report)
     }
 
-    fn execute_target(
+    fn authorize_target(
         &self,
         validated: &ValidatedTarget,
         context: &AuthorizationContext,
-    ) -> Result<ActionStatus> {
-        let target = validated.target();
+    ) -> Result<ActionPrep> {
         let mut context = AuthorizationContext {
             scan_roots: context.scan_roots.clone(),
             audit_log: context.audit_log.clone(),
             expected_identity: validated.path_identity().cloned(),
         };
 
-        let authorized = match self.safety.authorize(validated, &context) {
-            Ok(authorized) => authorized,
+        match self.safety.authorize(validated, &context) {
+            Ok(authorized) => {
+                context.expected_identity = None;
+                Ok(ActionPrep::Ready(authorized))
+            }
             Err(denial)
                 if denial.category == ProtectionCategory::ProtectedSubtree
                     && denial.message.contains(SELF_CLEAN_SKIP_MESSAGE) =>
             {
-                return Ok(ActionStatus::Skipped {
+                Ok(ActionPrep::Skipped {
                     message: SELF_CLEAN_SKIP_MESSAGE.to_string(),
-                });
+                })
             }
-            Err(denial) => {
-                return Err(anyhow!(denial.to_string()));
-            }
-        };
-
-        // Drop expected identity after authorize consumed it; side effects use
-        // only the opaque AuthorizedAction.
-        context.expected_identity = None;
-        self.dispatch_authorized(&authorized, target)
+            Err(denial) => Err(anyhow!(denial.to_string())),
+        }
     }
 
     fn dispatch_authorized(
@@ -395,15 +535,21 @@ where
                     args: args.clone(),
                     cwd: cwd.clone(),
                 };
-                self.command_runner.run(&request)?;
+                let outcome = self.command_runner.run(&request)?;
                 Ok(ActionStatus::Success {
                     command: Some(command_argv(&request)),
+                    exit_code: outcome.code,
+                    action_path: cwd.clone().or_else(|| Some(PathBuf::from(program))),
                 })
             }
             CleanAction::MoveToTrash { path } => {
                 let path = authorized.trash_path().unwrap_or(path.as_path());
                 self.trash_runner.move_to_trash(path)?;
-                Ok(ActionStatus::Success { command: None })
+                Ok(ActionStatus::Success {
+                    command: None,
+                    exit_code: None,
+                    action_path: Some(path.to_path_buf()),
+                })
             }
             CleanAction::DeletePermanently { .. } => {
                 bail!("permanent delete is disabled in this build")
@@ -415,19 +561,37 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum ActionStatus {
-    Success { command: Option<Vec<String>> },
+enum ActionPrep {
+    Ready(AuthorizedAction),
     Skipped { message: String },
 }
 
-#[derive(Debug)]
-struct AuditLog {
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ActionStatus {
+    Success {
+        command: Option<Vec<String>>,
+        exit_code: Option<i32>,
+        action_path: Option<PathBuf>,
+    },
+    Skipped {
+        message: String,
+    },
+}
+
+/// Fault-injectable durable journal backend.
+trait JournalIo {
+    fn write_line(&mut self, line: &str) -> Result<()>;
+    fn flush(&mut self) -> Result<()>;
+    fn sync_data(&mut self) -> Result<()>;
+}
+
+struct FileJournalIo {
     path: PathBuf,
+    file: File,
     writer: BufWriter<File>,
 }
 
-impl AuditLog {
+impl FileJournalIo {
     fn open(path: &Path) -> Result<Self> {
         if let Some(parent) = path.parent()
             && !parent.as_os_str().is_empty()
@@ -440,21 +604,28 @@ impl AuditLog {
         let file = OpenOptions::new()
             .create(true)
             .append(true)
+            .read(true)
             .open(path)
             .with_context(|| format!("failed to open audit log {}", path.display()))?;
+        // Separate handle for sync_data after buffered writes.
+        let sync_file = OpenOptions::new()
+            .append(true)
+            .open(path)
+            .with_context(|| format!("failed to reopen audit log {}", path.display()))?;
         Ok(Self {
             path: path.to_path_buf(),
+            file: sync_file,
             writer: BufWriter::new(file),
         })
     }
+}
 
-    fn write(&mut self, record: &AuditRecord) -> Result<()> {
-        serde_json::to_writer(&mut self.writer, record)
-            .with_context(|| format!("failed to write audit log {}", self.path.display()))?;
+impl JournalIo for FileJournalIo {
+    fn write_line(&mut self, line: &str) -> Result<()> {
         self.writer
-            .write_all(b"\n")
-            .with_context(|| format!("failed to write audit log {}", self.path.display()))?;
-        Ok(())
+            .write_all(line.as_bytes())
+            .and_then(|_| self.writer.write_all(b"\n"))
+            .with_context(|| format!("failed to write audit log {}", self.path.display()))
     }
 
     fn flush(&mut self) -> Result<()> {
@@ -462,59 +633,268 @@ impl AuditLog {
             .flush()
             .with_context(|| format!("failed to flush audit log {}", self.path.display()))
     }
+
+    fn sync_data(&mut self) -> Result<()> {
+        self.file
+            .sync_data()
+            .with_context(|| format!("failed to sync audit log {}", self.path.display()))
+    }
 }
 
-#[derive(Debug, Serialize)]
-struct AuditRecord {
-    timestamp_epoch_ms: u128,
-    target_id: String,
-    action: &'static str,
-    command: Option<Vec<String>>,
-    estimated_bytes: u64,
-    status: &'static str,
-    duration_ms: u128,
-    error: Option<String>,
-    partial: bool,
+struct AuditJournal {
+    path: PathBuf,
+    run_id: String,
+    sequence: u64,
+    io: Box<dyn JournalIo>,
 }
 
-impl AuditRecord {
-    fn success(target: &CleanTarget, command: Option<Vec<String>>, duration_ms: u128) -> Self {
-        Self::new(target, command, "success", duration_ms, None)
+impl AuditJournal {
+    fn open(path: &Path, _plan_digest: String) -> Result<Self> {
+        Ok(Self {
+            path: path.to_path_buf(),
+            run_id: format!("run-{}", unix_epoch_ms()),
+            sequence: 0,
+            io: Box::new(FileJournalIo::open(path)?),
+        })
     }
 
-    fn skipped(target: &CleanTarget, message: String, duration_ms: u128) -> Self {
-        Self::new(target, None, "skipped", duration_ms, Some(message))
+    #[cfg(test)]
+    fn with_io(path: PathBuf, io: Box<dyn JournalIo>) -> Self {
+        Self {
+            path,
+            run_id: "run-test".to_string(),
+            sequence: 0,
+            io,
+        }
     }
 
-    fn failed(target: &CleanTarget, message: String, duration_ms: u128) -> Self {
-        Self::new(
+    fn run_id(&self) -> &str {
+        &self.run_id
+    }
+
+    fn next_sequence(&mut self) -> u64 {
+        self.sequence += 1;
+        self.sequence
+    }
+
+    fn write_started_durable(&mut self, event: &JournalEvent) -> Result<()> {
+        self.write_event(event)?;
+        self.io.flush()?;
+        self.io.sync_data()?;
+        Ok(())
+    }
+
+    fn write_terminal(&mut self, event: JournalEvent) -> Result<()> {
+        self.write_event(&event)?;
+        self.io.flush()?;
+        // Terminal sync is best-effort; write+flush success is enough to avoid
+        // Unknown, but callers may still observe degraded sync separately.
+        let _ = self.io.sync_data();
+        Ok(())
+    }
+
+    fn write_event(&mut self, event: &JournalEvent) -> Result<()> {
+        let line = serde_json::to_string(event).with_context(|| {
+            format!(
+                "failed to serialize audit event for {}",
+                self.path.display()
+            )
+        })?;
+        self.io.write_line(&line)
+    }
+
+    fn flush(&mut self) -> Result<()> {
+        self.io.flush()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(tag = "event", rename_all = "snake_case")]
+enum JournalEvent {
+    ActionStarted {
+        timestamp_epoch_ms: u128,
+        run_id: String,
+        sequence: u64,
+        plan_digest: String,
+        target_id: String,
+        action: String,
+        command: Option<Vec<String>>,
+        action_path: Option<String>,
+        estimated_bytes: u64,
+    },
+    ActionFinished {
+        timestamp_epoch_ms: u128,
+        run_id: String,
+        sequence: u64,
+        plan_digest: String,
+        target_id: String,
+        action: String,
+        status: String,
+        command: Option<Vec<String>>,
+        action_path: Option<String>,
+        exit_code: Option<i32>,
+        estimated_bytes: u64,
+        duration_ms: u128,
+        error: Option<String>,
+    },
+}
+
+impl JournalEvent {
+    fn started(
+        run_id: &str,
+        sequence: u64,
+        plan_digest: &str,
+        target: &CleanTarget,
+        authorized: &AuthorizedAction,
+    ) -> Self {
+        Self::ActionStarted {
+            timestamp_epoch_ms: unix_epoch_ms(),
+            run_id: run_id.to_string(),
+            sequence,
+            plan_digest: plan_digest.to_string(),
+            target_id: target.id.as_str().to_string(),
+            action: action_name(&target.action).to_string(),
+            command: command_from_action(&target.action),
+            action_path: action_path_from_authorized(authorized)
+                .map(|path| path.display().to_string()),
+            estimated_bytes: target.estimated_bytes,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn finished(
+        run_id: &str,
+        sequence: u64,
+        plan_digest: &str,
+        target: &CleanTarget,
+        status: &str,
+        command: Option<Vec<String>>,
+        exit_code: Option<i32>,
+        action_path: Option<PathBuf>,
+        duration_ms: u128,
+        error: Option<String>,
+    ) -> Self {
+        Self::ActionFinished {
+            timestamp_epoch_ms: unix_epoch_ms(),
+            run_id: run_id.to_string(),
+            sequence,
+            plan_digest: plan_digest.to_string(),
+            target_id: target.id.as_str().to_string(),
+            action: action_name(&target.action).to_string(),
+            status: status.to_string(),
+            command,
+            action_path: action_path.map(|path| path.display().to_string()),
+            exit_code,
+            estimated_bytes: target.estimated_bytes,
+            duration_ms,
+            error: error.map(|message| sanitize_process_output(message.as_bytes(), 4_096)),
+        }
+    }
+
+    fn skipped(
+        run_id: &str,
+        sequence: u64,
+        plan_digest: &str,
+        target: &CleanTarget,
+        message: String,
+        duration_ms: u128,
+    ) -> Self {
+        Self::finished(
+            run_id,
+            sequence,
+            plan_digest,
             target,
-            command_from_action(&target.action),
-            "failed",
+            "skipped",
+            None,
+            None,
+            target.path.clone(),
             duration_ms,
             Some(message),
         )
     }
+}
 
-    fn new(
-        target: &CleanTarget,
-        command: Option<Vec<String>>,
-        status: &'static str,
-        duration_ms: u128,
-        error: Option<String>,
-    ) -> Self {
-        Self {
-            timestamp_epoch_ms: unix_epoch_ms(),
-            target_id: target.id.as_str().to_string(),
-            action: action_name(&target.action),
-            command,
-            estimated_bytes: target.estimated_bytes,
-            status,
-            duration_ms,
-            partial: status == "failed",
-            error,
+/// Replay API: find started events that never received a terminal record.
+pub fn replay_unconfirmed_starts(path: &Path) -> Result<Vec<String>> {
+    let text = std::fs::read_to_string(path)
+        .with_context(|| format!("failed to read audit log {}", path.display()))?;
+    let mut started = HashSet::new();
+    let mut finished = HashSet::new();
+    for line in text.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let value: serde_json::Value = match serde_json::from_str(line) {
+            Ok(value) => value,
+            Err(_) => continue,
+        };
+        let event = value.get("event").and_then(|v| v.as_str()).unwrap_or("");
+        let key = format!(
+            "{}:{}",
+            value.get("run_id").and_then(|v| v.as_str()).unwrap_or(""),
+            value.get("sequence").and_then(|v| v.as_u64()).unwrap_or(0)
+        );
+        match event {
+            "action_started" => {
+                started.insert(key);
+            }
+            "action_finished" => {
+                // finished sequences are distinct; pair by prior started target+run
+                if let Some(target) = value.get("target_id").and_then(|v| v.as_str()) {
+                    finished.insert(format!(
+                        "{}:{}",
+                        value.get("run_id").and_then(|v| v.as_str()).unwrap_or(""),
+                        target
+                    ));
+                }
+            }
+            _ => {}
         }
     }
+
+    let mut unconfirmed = Vec::new();
+    for line in text.lines() {
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+            continue;
+        };
+        if value.get("event").and_then(|v| v.as_str()) != Some("action_started") {
+            continue;
+        }
+        let run_id = value.get("run_id").and_then(|v| v.as_str()).unwrap_or("");
+        let target = value
+            .get("target_id")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let key = format!("{run_id}:{target}");
+        if !finished.contains(&key) {
+            unconfirmed.push(format!("started_unconfirmed:{target}"));
+        }
+    }
+    let _ = started;
+    Ok(unconfirmed)
+}
+
+pub fn default_audit_log_path() -> Result<PathBuf> {
+    let dir = crate::safety::UserProtectionList::config_path()
+        .ok()
+        .and_then(|path| path.parent().map(|parent| parent.to_path_buf()))
+        .unwrap_or_else(|| PathBuf::from("."));
+    std::fs::create_dir_all(&dir)
+        .with_context(|| format!("failed to create audit directory {}", dir.display()))?;
+    Ok(dir.join("audit.jsonl"))
+}
+
+fn action_path_from_authorized(authorized: &AuthorizedAction) -> Option<PathBuf> {
+    authorized
+        .trash_path()
+        .map(|path| path.to_path_buf())
+        .or_else(|| match authorized.action() {
+            CleanAction::Command { program, cwd, .. } => {
+                cwd.clone().or_else(|| Some(PathBuf::from(program)))
+            }
+            CleanAction::MoveToTrash { path } => Some(path.clone()),
+            _ => None,
+        })
 }
 
 fn command_from_action(action: &CleanAction) -> Option<Vec<String>> {
@@ -676,9 +1056,17 @@ mod tests {
         );
 
         let records = read_jsonl(&audit_path);
-        assert_eq!(records[0]["status"], "success");
-        assert_eq!(records[0]["command"][0], "cargo");
-        assert_eq!(records[0]["command"][3], manifest.display().to_string());
+        assert!(records.iter().any(|r| r["event"] == "action_started"));
+        let finished = records
+            .iter()
+            .find(|r| r["event"] == "action_finished")
+            .expect("finished record");
+        assert_eq!(finished["status"], "success");
+        assert_eq!(finished["command"][0], "cargo");
+        assert_eq!(finished["command"][3], manifest.display().to_string());
+        assert!(finished.get("plan_digest").is_some());
+        assert!(finished.get("run_id").is_some());
+        assert!(finished.get("sequence").is_some());
     }
 
     #[test]
@@ -761,12 +1149,17 @@ mod tests {
         assert_eq!(trash_runner.paths().len(), 1);
 
         let records = read_jsonl(&audit_path);
-        assert_eq!(records.len(), 2);
-        assert_eq!(records[0]["status"], "success");
-        assert_eq!(records[1]["status"], "failed");
-        assert_eq!(records[1]["partial"], true);
+        // started+finished for each of two targets
+        assert_eq!(records.len(), 4);
+        let finished: Vec<_> = records
+            .iter()
+            .filter(|r| r["event"] == "action_finished")
+            .collect();
+        assert_eq!(finished.len(), 2);
+        assert_eq!(finished[0]["status"], "success");
+        assert_eq!(finished[1]["status"], "failed");
         assert!(
-            records[1]["error"]
+            finished[1]["error"]
                 .as_str()
                 .expect("error string")
                 .contains("cargo unavailable")
@@ -825,10 +1218,14 @@ mod tests {
         assert_eq!(trash_runner.paths(), vec![locked_path, later_path]);
 
         let records = read_jsonl(&audit_path);
-        assert_eq!(records.len(), 2);
-        assert_eq!(records[0]["status"], "failed");
-        assert_eq!(records[0]["partial"], true);
-        assert_eq!(records[1]["status"], "success");
+        assert_eq!(records.len(), 4);
+        let finished: Vec<_> = records
+            .iter()
+            .filter(|r| r["event"] == "action_finished")
+            .collect();
+        assert_eq!(finished.len(), 2);
+        assert_eq!(finished[0]["status"], "failed");
+        assert_eq!(finished[1]["status"], "success");
     }
 
     #[test]
@@ -1216,8 +1613,21 @@ mod tests {
                 .contains("duplicate action fingerprint")
         );
         let records = read_jsonl(&audit_path);
-        assert_eq!(records.len(), 2);
-        assert_eq!(records[1]["status"], "failed");
+        // first target: started+finished success; second: no started (blocked pre-dispatch)
+        // duplicate failure is report-only without journal start
+        assert!(
+            records
+                .iter()
+                .filter(|r| r["event"] == "action_finished")
+                .any(|r| r["status"] == "success")
+        );
+        assert_eq!(
+            records
+                .iter()
+                .filter(|r| r["event"] == "action_started")
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -1251,6 +1661,73 @@ mod tests {
         // Sanitizer contract shared with durable-audit consumers.
         let sample = sanitize_process_output(b"\x1b[31m\x07x", 64);
         assert!(!sample.as_bytes().contains(&0x1b));
+    }
+
+    #[test]
+    fn started_sync_failure_blocks_side_effect() {
+        struct FailSyncIo {
+            writes: usize,
+        }
+        impl JournalIo for FailSyncIo {
+            fn write_line(&mut self, _line: &str) -> Result<()> {
+                self.writes += 1;
+                Ok(())
+            }
+            fn flush(&mut self) -> Result<()> {
+                Ok(())
+            }
+            fn sync_data(&mut self) -> Result<()> {
+                bail!("injected sync failure")
+            }
+        }
+
+        let mut journal = AuditJournal::with_io(
+            PathBuf::from("memory-audit.jsonl"),
+            Box::new(FailSyncIo { writes: 0 }),
+        );
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "node.node_modules",
+                CleanAction::MoveToTrash {
+                    path: PathBuf::from("C:/tmp/node_modules"),
+                },
+                Some(PathBuf::from("C:/tmp/node_modules")),
+            )],
+        };
+        let target = &plan.targets[0];
+        // Build a minimal started event without full authorize.
+        let event = JournalEvent::ActionStarted {
+            timestamp_epoch_ms: 1,
+            run_id: "run-test".into(),
+            sequence: 1,
+            plan_digest: "digest".into(),
+            target_id: target.id.as_str().into(),
+            action: "move_to_trash".into(),
+            command: None,
+            action_path: Some("C:/tmp/node_modules".into()),
+            estimated_bytes: 1,
+        };
+        let err = journal
+            .write_started_durable(&event)
+            .expect_err("sync failure blocks");
+        assert!(err.to_string().contains("injected sync failure"));
+    }
+
+    #[test]
+    fn replay_marks_started_without_finished_as_unconfirmed() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        fs::write(
+            &audit_path,
+            concat!(
+                r#"{"event":"action_started","timestamp_epoch_ms":1,"run_id":"r1","sequence":1,"plan_digest":"d","target_id":"t1","action":"move_to_trash","command":null,"action_path":"C:/x","estimated_bytes":1}"#,
+                "\n"
+            ),
+        )
+        .expect("write partial journal");
+        let unconfirmed = replay_unconfirmed_starts(&audit_path).expect("replay");
+        assert_eq!(unconfirmed, vec!["started_unconfirmed:t1".to_string()]);
     }
 
     #[test]

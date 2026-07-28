@@ -1,1 +1,4 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Defines execution/audit safety constraints and canonical quality gate."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Guides partial report, I/O failure, and no-side-effect ordering behavior."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Guides structured and sanitized diagnostic handling."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent-owned D2 durability matrix and digest/safety/runner contracts."}

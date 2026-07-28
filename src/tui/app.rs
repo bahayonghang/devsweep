@@ -1399,7 +1399,7 @@ impl From<ExecutionTargetStatus> for CleanupItemStatus {
     fn from(status: ExecutionTargetStatus) -> Self {
         match status {
             ExecutionTargetStatus::Succeeded => Self::Succeeded,
-            ExecutionTargetStatus::Failed => Self::Failed,
+            ExecutionTargetStatus::Failed | ExecutionTargetStatus::Unknown => Self::Failed,
             ExecutionTargetStatus::Skipped => Self::Skipped,
         }
     }
@@ -1503,7 +1503,7 @@ fn cleanup_item_detail(status: CleanupItemStatus, detail: String) -> Option<Stri
 fn log_level_for_execution_status(status: ExecutionTargetStatus) -> AppLogLevel {
     match status {
         ExecutionTargetStatus::Succeeded | ExecutionTargetStatus::Skipped => AppLogLevel::Info,
-        ExecutionTargetStatus::Failed => AppLogLevel::Error,
+        ExecutionTargetStatus::Failed | ExecutionTargetStatus::Unknown => AppLogLevel::Error,
     }
 }
 
