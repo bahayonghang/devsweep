@@ -736,6 +736,17 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
                 ],
             );
         }
+        Overlay::QuitConfirm => {
+            return (
+                "QUIT?",
+                FooterTone::Warning,
+                vec![
+                    footer_action("w", "Wait", FooterTone::Accent),
+                    footer_action("c", "Cancel+Wait", FooterTone::Danger),
+                    footer_action("Esc", "Stay", FooterTone::Neutral),
+                ],
+            );
+        }
         Overlay::None => {}
     }
 
@@ -852,6 +863,17 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
         }
         Overlay::DryRun => render_modal(frame, "Dry-run preview", dry_run_lines(app)),
         Overlay::Confirm(confirm) => render_confirm(frame, confirm),
+        Overlay::QuitConfirm => render_modal(
+            frame,
+            "Active job running",
+            vec![
+                Line::from("A scan or cleanup job is still active."),
+                Line::from("w  keep waiting (do not quit yet)"),
+                Line::from("c  request cancel and wait for worker confirmation"),
+                Line::from("Esc stay in the app"),
+                Line::from("Quit is blocked until jobs reach a terminal state."),
+            ],
+        ),
     }
 }
 

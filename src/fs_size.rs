@@ -1,6 +1,8 @@
-use std::{fs, path::Path, time::SystemTime};
+use std::{fs, path::Path, sync::Arc, time::SystemTime};
 
 use rayon::prelude::*;
+
+use crate::process_runner::{CancelObserver, FlagCancelObserver};
 
 /// Size walk result that distinguishes a verified empty tree from a failed walk.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,8 +51,22 @@ pub fn estimate_tree(path: &Path) -> SizeEstimate {
 }
 
 pub fn estimate_tree_with_budget(path: &Path, entry_budget: usize) -> SizeEstimate {
+    estimate_tree_with_budget_and_cancel(path, entry_budget, None)
+}
+
+pub fn estimate_tree_with_budget_and_cancel(
+    path: &Path,
+    entry_budget: usize,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> SizeEstimate {
     let mut remaining = entry_budget;
-    estimate_tree_bounded(path, &mut remaining, 0, 64)
+    estimate_tree_bounded(
+        path,
+        &mut remaining,
+        0,
+        64,
+        cancel.map(|flag| flag.as_ref()),
+    )
 }
 
 fn estimate_tree_bounded(
@@ -58,7 +74,16 @@ fn estimate_tree_bounded(
     remaining: &mut usize,
     depth: usize,
     max_depth: usize,
+    cancel: Option<&FlagCancelObserver>,
 ) -> SizeEstimate {
+    if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+        return SizeEstimate {
+            logical_bytes: None,
+            complete: false,
+            last_modified: None,
+            warnings: vec![format!("size walk canceled at {}", path.display())],
+        };
+    }
     if *remaining == 0 {
         return SizeEstimate {
             logical_bytes: None,
@@ -143,7 +168,7 @@ fn estimate_tree_bounded(
             .par_iter()
             .map(|child| {
                 let mut local = (*remaining).min(DEFAULT_SIZE_ENTRY_BUDGET);
-                estimate_tree_bounded(child, &mut local, depth + 1, max_depth)
+                estimate_tree_bounded(child, &mut local, depth + 1, max_depth, cancel)
             })
             .reduce(
                 || SizeEstimate::trusted(0, None),
@@ -152,11 +177,18 @@ fn estimate_tree_bounded(
     } else {
         let mut acc = SizeEstimate::trusted(0, None);
         for child in &children {
+            if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                acc.complete = false;
+                acc.warnings
+                    .push(format!("size walk canceled under {}", path.display()));
+                break;
+            }
             acc = acc.merge(estimate_tree_bounded(
                 child,
                 remaining,
                 depth + 1,
                 max_depth,
+                cancel,
             ));
         }
         acc
@@ -241,6 +273,33 @@ mod tests {
         assert_eq!(
             estimate_tree(&fixture.path("root")),
             serial_estimate_tree(&fixture.path("root"))
+        );
+    }
+
+    #[test]
+    fn estimate_tree_stops_promptly_when_cancel_is_requested() {
+        use crate::process_runner::FlagCancelObserver;
+        use std::sync::Arc;
+
+        let fixture = Fixture::new();
+        for i in 0..200 {
+            fixture.file(&format!("root/file-{i}.txt"), "payload");
+        }
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+        let started = std::time::Instant::now();
+        let estimate =
+            estimate_tree_with_budget_and_cancel(&fixture.path("root"), 50_000, Some(&cancel));
+        let elapsed = started.elapsed();
+        assert!(!estimate.complete);
+        assert!(
+            estimate.warnings.iter().any(|w| w.contains("canceled")),
+            "expected cancel warning: {:?}",
+            estimate.warnings
+        );
+        assert!(
+            elapsed.as_millis() < 250,
+            "cancel should abort size walk quickly, took {elapsed:?}"
         );
     }
 

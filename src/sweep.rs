@@ -1,29 +1,46 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 
 use crate::model::CleanupPlan;
+use crate::process_runner::{CancelObserver, FlagCancelObserver};
 use crate::providers::GlobalProviderScanner;
 use crate::ranking::rank_cleanup_plan;
 use crate::scanner::ProjectScanner;
 
 pub trait ProjectScan {
-    fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan>;
+    fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
+        self.scan_roots_with_cancel(roots, None)
+    }
+
+    fn scan_roots_with_cancel(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<CleanupPlan>;
 }
 
 pub trait GlobalScan {
-    fn scan(&self) -> CleanupPlan;
+    fn scan(&self) -> CleanupPlan {
+        self.scan_with_cancel(None)
+    }
+
+    fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan;
 }
 
 impl ProjectScan for ProjectScanner {
-    fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
-        ProjectScanner::scan_roots(self, roots)
+    fn scan_roots_with_cancel(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<CleanupPlan> {
+        Ok(ProjectScanner::scan_roots_with_diagnostics_and_cancel(self, roots, cancel)?.plan)
     }
 }
 
 impl GlobalScan for GlobalProviderScanner {
-    fn scan(&self) -> CleanupPlan {
-        GlobalProviderScanner::scan(self)
+    fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
+        GlobalProviderScanner::scan_with_cancel(self, cancel)
     }
 }
 
@@ -73,6 +90,15 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
     ) -> Result<CleanupPlan> {
+        self.full_scan_with_cancel(options, progress, None)
+    }
+
+    pub fn full_scan_with_cancel(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<CleanupPlan> {
         let mut plan = CleanupPlan::empty();
 
         if options.include_projects {
@@ -81,7 +107,9 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
                 message: "Scanning current directory".to_string(),
                 partial: None,
             });
-            let project_plan = self.projects.scan_roots(&options.roots)?;
+            let project_plan = self
+                .projects
+                .scan_roots_with_cancel(&options.roots, cancel)?;
             let count = project_plan.targets.len();
             plan.targets.extend(project_plan.targets);
             rank_merged_plan(&mut plan);
@@ -90,6 +118,10 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
                 message: format!("Project scan finished: {count} target(s)"),
                 partial: Some(plan.clone()),
             });
+        }
+
+        if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+            return Ok(plan);
         }
 
         if options.include_global {
@@ -103,7 +135,7 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
                 message: "Estimating global cache sizes".to_string(),
                 partial: None,
             });
-            let global_plan = self.global.scan();
+            let global_plan = self.global.scan_with_cancel(cancel);
             let count = global_plan.targets.len();
             plan.targets.extend(global_plan.targets);
             rank_merged_plan(&mut plan);
@@ -294,7 +326,11 @@ mod tests {
     struct FakeProjects(Vec<CleanTarget>);
 
     impl ProjectScan for FakeProjects {
-        fn scan_roots(&self, _roots: &[PathBuf]) -> Result<CleanupPlan> {
+        fn scan_roots_with_cancel(
+            &self,
+            _roots: &[PathBuf],
+            _cancel: Option<&Arc<FlagCancelObserver>>,
+        ) -> Result<CleanupPlan> {
             Ok(plan_with(self.0.clone()))
         }
     }
@@ -302,7 +338,7 @@ mod tests {
     struct FakeGlobal(Vec<CleanTarget>);
 
     impl GlobalScan for FakeGlobal {
-        fn scan(&self) -> CleanupPlan {
+        fn scan_with_cancel(&self, _cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
             plan_with(self.0.clone())
         }
     }

@@ -6,12 +6,15 @@ use std::{
 use anyhow::{Context, Result};
 use tracing::warn;
 
+use std::sync::Arc;
+
 use crate::fs_size::{estimate_tree, is_unsafe_link};
 use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
 use crate::process_runner::ProcessRunner;
+use crate::process_runner::{CancelObserver, FlagCancelObserver};
 use crate::safety::query_cargo_metadata;
 
 /// Discovery diagnostic for a nested path that could not be fully scanned.
@@ -81,10 +84,26 @@ impl ProjectScanner {
     }
 
     pub fn scan_roots_with_diagnostics(&self, roots: &[PathBuf]) -> Result<ScanOutcome> {
+        self.scan_roots_with_diagnostics_and_cancel(roots, None)
+    }
+
+    pub fn scan_roots_with_diagnostics_and_cancel(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanOutcome> {
         let mut targets = Vec::new();
         let mut diagnostics = Vec::new();
 
         for root in normalize_scan_roots(roots)? {
+            if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                diagnostics.push(ScanDiagnostic {
+                    stage: ScanDiagnosticStage::Discovery,
+                    path: root.clone(),
+                    detail: "scan canceled".to_string(),
+                });
+                break;
+            }
             // Root open failures remain hard errors.
             let metadata = fs::symlink_metadata(&root)
                 .with_context(|| format!("failed to inspect scan root {}", root.display()))?;
@@ -93,7 +112,7 @@ impl ProjectScanner {
             }
             fs::read_dir(&root)
                 .with_context(|| format!("failed to read scan root {}", root.display()))?;
-            self.scan_dir(&root, None, true, &mut targets, &mut diagnostics);
+            self.scan_dir(&root, None, true, &mut targets, &mut diagnostics, cancel);
         }
 
         targets = dedupe_targets(targets);
@@ -120,7 +139,16 @@ impl ProjectScanner {
         is_scan_root: bool,
         targets: &mut Vec<CleanTarget>,
         diagnostics: &mut Vec<ScanDiagnostic>,
+        cancel: Option<&Arc<FlagCancelObserver>>,
     ) {
+        if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+            diagnostics.push(ScanDiagnostic {
+                stage: ScanDiagnosticStage::Discovery,
+                path: dir.to_path_buf(),
+                detail: "scan canceled".to_string(),
+            });
+            return;
+        }
         let metadata = match fs::symlink_metadata(dir) {
             Ok(metadata) => metadata,
             Err(error) => {
@@ -213,7 +241,14 @@ impl ProjectScanner {
                 }
             };
             if metadata.is_dir() && !is_unsafe_link(&metadata) {
-                self.scan_dir(&path, active_python_context, false, targets, diagnostics);
+                self.scan_dir(
+                    &path,
+                    active_python_context,
+                    false,
+                    targets,
+                    diagnostics,
+                    cancel,
+                );
             }
         }
     }
@@ -1067,6 +1102,38 @@ mod tests {
                 .targets
                 .iter()
                 .any(|target| target.id.as_str().starts_with("node.node_modules"))
+        );
+    }
+
+    #[test]
+    fn scan_honors_cancel_flag_without_full_tree_walk() {
+        use crate::process_runner::FlagCancelObserver;
+        use std::sync::Arc;
+
+        let fixture = Fixture::new();
+        for i in 0..50 {
+            fixture.file(&format!("p{i}/package.json"), "{}");
+            fixture.file(&format!("p{i}/node_modules/x/index.js"), "m");
+        }
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+        let started = std::time::Instant::now();
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics_and_cancel(&[fixture.path().to_path_buf()], Some(&cancel))
+            .expect("canceled scan still returns");
+        let elapsed = started.elapsed();
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|d| d.detail.contains("canceled")),
+            "expected cancel diagnostic: {:?}",
+            outcome.diagnostics
+        );
+        assert!(
+            elapsed.as_millis() < 250,
+            "cancel should stop discovery quickly, took {elapsed:?}"
         );
     }
 

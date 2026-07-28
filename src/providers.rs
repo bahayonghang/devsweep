@@ -2,19 +2,20 @@ use std::{
     env,
     ffi::OsString,
     path::{Path, PathBuf},
+    sync::Arc,
     time::{Instant, SystemTime},
 };
 
 use tracing::warn;
 
-use crate::fs_size::{SizeEstimate, estimate_tree};
+use crate::fs_size::{SizeEstimate, estimate_tree_with_budget_and_cancel};
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, TargetId, TargetKind,
 };
 use crate::process_runner::{
-    CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT, NoopCancelObserver,
-    ProcessRequest, ProcessRunner, ProcessStatus,
+    CancelObserver, CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT,
+    FlagCancelObserver, NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus,
 };
 use crate::rules::{KnownCacheAction, RuleDoc, RuleScope, global_cache_rules};
 
@@ -85,6 +86,15 @@ pub(crate) const CARGO_HOME_RULE_DOC: RuleDoc = RuleDoc {
     summary: "Cargo home (~/.cargo) — inspect only, never auto-deleted",
 };
 
+pub(crate) const GO_MODCACHE_RULE_DOC: RuleDoc = RuleDoc {
+    id: "go.mod_cache.clean",
+    ecosystem: Ecosystem::Generic,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "Go module cache via go clean -modcache",
+};
+
 /// All procedural rule docs declared by the global providers.
 pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
     NPM_CACHE_RULE_DOC,
@@ -94,6 +104,7 @@ pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
     YARN_CACHE_CLASSIC_RULE_DOC,
     YARN_CACHE_MODERN_RULE_DOC,
     CARGO_HOME_RULE_DOC,
+    GO_MODCACHE_RULE_DOC,
 ];
 
 pub struct GlobalProviderScanner;
@@ -104,7 +115,11 @@ impl GlobalProviderScanner {
     }
 
     pub fn scan(&self) -> CleanupPlan {
-        scan_with_probe(&SystemProviderProbe::new())
+        self.scan_with_cancel(None)
+    }
+
+    pub fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
+        scan_with_probe(&SystemProviderProbe::with_cancel(cancel.cloned()))
     }
 }
 
@@ -126,13 +141,15 @@ trait ProviderProbe {
 struct SystemProviderProbe {
     runner: ProcessRunner,
     phase_deadline: Instant,
+    cancel: Option<Arc<FlagCancelObserver>>,
 }
 
 impl SystemProviderProbe {
-    fn new() -> Self {
+    fn with_cancel(cancel: Option<Arc<FlagCancelObserver>>) -> Self {
         Self {
             runner: ProcessRunner::default(),
             phase_deadline: Instant::now() + DEFAULT_PROVIDER_PHASE_DEADLINE,
+            cancel,
         }
     }
 }
@@ -153,16 +170,32 @@ impl ProviderProbe for SystemProviderProbe {
             return None;
         }
 
+        if self
+            .cancel
+            .as_ref()
+            .is_some_and(|flag| flag.is_cancel_requested())
+        {
+            warn!(
+                program = %program.display(),
+                "provider probe skipped: cancel requested"
+            );
+            return None;
+        }
+
         let remaining = self.phase_deadline.saturating_duration_since(now);
         let timeout = DEFAULT_PROVIDER_PROBE_TIMEOUT.min(remaining);
-        let cancel = NoopCancelObserver;
+        let noop = NoopCancelObserver;
+        let cancel: &dyn CancelObserver = match self.cancel.as_ref() {
+            Some(flag) => flag.as_ref(),
+            None => &noop,
+        };
         let request = ProcessRequest {
             program: OsString::from(program.as_os_str()),
             args: args.iter().map(|arg| OsString::from(*arg)).collect(),
             cwd: CwdPolicy::Neutral,
             timeout: Some(timeout),
             job_deadline: Some(self.phase_deadline),
-            cancel: &cancel,
+            cancel,
         };
 
         let result = self.runner.run(&request);
@@ -208,7 +241,11 @@ impl ProviderProbe for SystemProviderProbe {
     }
 
     fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
-        estimate_tree(path)
+        estimate_tree_with_budget_and_cancel(
+            path,
+            crate::fs_size::DEFAULT_SIZE_ENTRY_BUDGET,
+            self.cancel.as_ref(),
+        )
     }
 }
 
@@ -219,6 +256,7 @@ fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
     add_pnpm_target(probe, &mut targets);
     add_yarn_target(probe, &mut targets);
     add_cargo_home_target(probe, &mut targets);
+    add_go_modcache_target(probe, &mut targets);
     add_known_cache_targets(probe, &mut targets);
 
     CleanupPlan {
@@ -372,6 +410,42 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     }));
 }
 
+fn add_go_modcache_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
+    let Some(go) = probe.resolve_executable("go") else {
+        return;
+    };
+    let (source, cache_path) = if let Some(env_path) = probe.env_path("GOMODCACHE") {
+        ("GOMODCACHE", Some(env_path))
+    } else {
+        (
+            "go env GOMODCACHE",
+            output_path(probe.command_output(&go, &["env", "GOMODCACHE"])),
+        )
+    };
+    let Some(cache_path) = cache_path.filter(|path| validated_cache_dir(probe, path)) else {
+        return;
+    };
+    let estimate = probe.estimate_path_size(&cache_path);
+    targets.push(command_target(CommandTargetInput {
+        rule_id: GO_MODCACHE_RULE_DOC.id,
+        ecosystem: Ecosystem::Generic,
+        path: Some(cache_path.clone()),
+        estimated_bytes: estimate.display_bytes(),
+        size_complete: estimate.complete,
+        last_modified: estimate.last_modified,
+        risk: GO_MODCACHE_RULE_DOC.risk,
+        selected_by_default: false,
+        program: go,
+        args: vec!["clean", "-modcache"],
+        evidence: command_evidence(
+            GO_MODCACHE_RULE_DOC.id,
+            Some(cache_path),
+            source,
+            &["go env GOMODCACHE", "go clean -modcache"],
+        ),
+    }));
+}
+
 fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     let (source, Some(cargo_home)) = cargo_home(probe) else {
         return;
@@ -419,7 +493,12 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
         return;
     };
     for rule in global_cache_rules() {
-        let path = home.join(rule.relative);
+        // Official go clean provider owns the executable action; skip the
+        // inspect-only home-relative duplicate when go is available.
+        if rule.id == "go.mod_cache" && probe.resolve_executable("go").is_some() {
+            continue;
+        }
+        let path = resolve_known_cache_path(probe, &home, rule);
         if !probe.is_dir(&path) {
             continue;
         }
@@ -547,15 +626,60 @@ fn cargo_home(probe: &impl ProviderProbe) -> (&'static str, Option<PathBuf>) {
 }
 
 fn output_path(output: Option<String>) -> Option<PathBuf> {
-    output
-        .and_then(|output| {
-            output
-                .lines()
-                .map(str::trim)
-                .find(|line| !line.is_empty() && *line != "undefined" && *line != "null")
-                .map(str::to_string)
-        })
-        .map(PathBuf::from)
+    output.and_then(|output| {
+        output
+            .lines()
+            .map(str::trim)
+            .find(|line| {
+                !line.is_empty()
+                    && *line != "undefined"
+                    && *line != "null"
+                    && !line.contains(' ')
+                    && !line.to_ascii_lowercase().contains("warning")
+                    && !line.to_ascii_lowercase().contains("error")
+            })
+            .map(PathBuf::from)
+            .filter(|path| is_usable_tool_path(path))
+    })
+}
+
+/// Accept absolute paths, and rooted probe paths (`/cache/...`) used by tools
+/// and fixtures across platforms.
+fn is_usable_tool_path(path: &Path) -> bool {
+    path.is_absolute()
+        || path.to_string_lossy().starts_with('/')
+        || path.to_string_lossy().starts_with('\\')
+}
+
+fn validated_cache_dir(probe: &impl ProviderProbe, path: &Path) -> bool {
+    is_usable_tool_path(path) && probe.is_dir(path)
+}
+
+fn resolve_known_cache_path(
+    probe: &impl ProviderProbe,
+    home: &Path,
+    rule: &crate::rules::GlobalCacheRule,
+) -> PathBuf {
+    match rule.id {
+        "gradle.caches" | "gradle.wrapper_dists" => {
+            if let Some(gradle_home) = probe.env_path("GRADLE_USER_HOME") {
+                let rest = rule.relative.trim_start_matches(".gradle/");
+                return gradle_home.join(rest);
+            }
+        }
+        "nuget.packages" => {
+            if let Some(nuget) = probe.env_path("NUGET_PACKAGES") {
+                return nuget;
+            }
+        }
+        "go.mod_cache" => {
+            if let Some(gomod) = probe.env_path("GOMODCACHE") {
+                return gomod;
+            }
+        }
+        _ => {}
+    }
+    home.join(rule.relative)
 }
 
 fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> SizeEstimate {

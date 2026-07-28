@@ -25,12 +25,12 @@
 
 ## Acceptance Criteria
 
-- [ ] 测试：catalogue 与实际 target 的 risk/action/selection 由同一数据推导，注入不一致即编译失败或测试失败（不可能再漂移）
-- [ ] fixture 矩阵（每 provider）：默认路径、env 重定向、配置重定向、缺工具、多 launcher、无效 stdout（警告文本/相对路径/不存在路径）——行为全部符合契约
-- [ ] macOS 路径集与 Linux 分离，三平台各有 resolver 单元测试
-- [ ] maven/JetBrains/go 规则按新粒度出 plan：整仓/vendor-root Trash 的旧行为在测试中被明确拒绝
-- [ ] pip 在第一个 launcher 无 pip 模块时成功回退到下一个
-- [ ] `devsweep rules`、TUI Rules tab、plan 中的 rule id/risk 三处一致（回归测试锁定）
+- [x] 测试：catalogue 与实际 target 的 risk/action/selection 由同一数据推导，注入不一致即编译失败或测试失败（不可能再漂移）
+- [x] fixture 矩阵（每 provider）：默认路径、env 重定向、配置重定向、缺工具、多 launcher、无效 stdout（警告文本/相对路径/不存在路径）——行为全部符合契约
+- [x] macOS 路径集与 Linux 分离，三平台各有 resolver 单元测试
+- [x] maven/JetBrains/go 规则按新粒度出 plan：整仓/vendor-root Trash 的旧行为在测试中被明确拒绝
+- [x] pip 在第一个 launcher 无 pip 模块时成功回退到下一个
+- [x] `devsweep rules`、TUI Rules tab、plan 中的 rule id/risk 三处一致（回归测试锁定）
 
 ## 约束与依赖
 

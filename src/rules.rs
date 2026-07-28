@@ -278,8 +278,31 @@ pub const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
     },
 ];
 
-/// OS-specific global caches. Same ids per platform; only one set compiles.
-#[cfg(not(windows))]
+/// macOS-specific cache roots (Library/Caches), distinct from Linux XDG paths.
+#[cfg(target_os = "macos")]
+pub const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
+    GlobalCacheRule {
+        id: "jetbrains.caches",
+        label: "JetBrains IDE caches (vendor root inspect)",
+        ecosystem: Ecosystem::Generic,
+        relative: "Library/Caches/JetBrains",
+        kind: TargetKind::ToolCache,
+        risk: RiskLevel::High,
+        action: KnownCacheAction::InspectOnly,
+    },
+    GlobalCacheRule {
+        id: "huggingface.hub",
+        label: "HuggingFace hub models",
+        ecosystem: Ecosystem::Generic,
+        relative: "Library/Caches/huggingface",
+        kind: TargetKind::PackageCache,
+        risk: RiskLevel::High,
+        action: KnownCacheAction::InspectOnly,
+    },
+];
+
+/// Linux and other non-Windows, non-macOS platforms use XDG-style cache paths.
+#[cfg(all(not(windows), not(target_os = "macos")))]
 pub const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
     GlobalCacheRule {
         id: "jetbrains.caches",
@@ -502,10 +525,36 @@ mod tests {
             .collect();
         assert!(ids.contains("yarn.cache.clean.classic"));
         assert!(ids.contains("yarn.cache.clean.modern"));
+        assert!(ids.contains("go.mod_cache.clean"));
         assert_eq!(
             providers::PNPM_STORE_RULE_DOC.risk,
             RiskLevel::Medium,
             "pnpm catalogue risk is the single source"
+        );
+    }
+
+    #[test]
+    fn os_cache_roots_are_platform_specific() {
+        let jetbrains = global_cache_rules()
+            .find(|rule| rule.id == "jetbrains.caches")
+            .expect("jetbrains rule");
+        #[cfg(windows)]
+        assert!(
+            jetbrains.relative.contains("AppData"),
+            "windows jetbrains path: {}",
+            jetbrains.relative
+        );
+        #[cfg(target_os = "macos")]
+        assert!(
+            jetbrains.relative.contains("Library/Caches"),
+            "macos jetbrains path: {}",
+            jetbrains.relative
+        );
+        #[cfg(all(not(windows), not(target_os = "macos")))]
+        assert!(
+            jetbrains.relative.starts_with(".cache/"),
+            "linux jetbrains path: {}",
+            jetbrains.relative
         );
     }
 }

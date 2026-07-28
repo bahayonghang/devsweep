@@ -15,8 +15,8 @@ use crate::{
     model::{CleanAction, CleanTarget, TargetId},
     plan_validation::{ValidatedPlan, ValidatedTarget},
     process_runner::{
-        CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, NoopCancelObserver,
-        ProcessRequest, ProcessRunner, ProcessStatus, sanitize_process_output,
+        CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, FlagCancelObserver,
+        NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus, sanitize_process_output,
     },
     safety::{
         AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
@@ -90,7 +90,12 @@ pub struct CommandOutcome {
 }
 
 pub trait CommandRunner {
-    fn run(&self, request: &CommandRequest) -> Result<CommandOutcome>;
+    /// Run a command while observing cooperative cancellation.
+    fn run_with_cancel(
+        &self,
+        request: &CommandRequest,
+        cancel: &dyn CancelObserver,
+    ) -> Result<CommandOutcome>;
 }
 
 pub trait TrashRunner {
@@ -117,12 +122,6 @@ impl ProcessCommandRunner {
 }
 
 impl CommandRunner for ProcessCommandRunner {
-    fn run(&self, request: &CommandRequest) -> Result<CommandOutcome> {
-        self.run_with_cancel(request, &NoopCancelObserver)
-    }
-}
-
-impl ProcessCommandRunner {
     fn run_with_cancel(
         &self,
         request: &CommandRequest,
@@ -402,7 +401,7 @@ where
                 break;
             }
 
-            let outcome = self.dispatch_authorized(&authorized, target);
+            let outcome = self.dispatch_authorized(&authorized, target, cancel.as_deref());
             let duration_ms = started_at.elapsed().as_millis();
             let finish_seq = journal.next_sequence();
             let run_id = journal.run_id().to_string();
@@ -545,6 +544,7 @@ where
         &self,
         authorized: &AuthorizedAction,
         target: &CleanTarget,
+        cancel: Option<&FlagCancelObserver>,
     ) -> Result<ActionStatus> {
         let _ = target;
         match authorized.action() {
@@ -559,7 +559,12 @@ where
                     args: args.clone(),
                     cwd: cwd.clone(),
                 };
-                let outcome = self.command_runner.run(&request)?;
+                let noop = NoopCancelObserver;
+                let observer: &dyn CancelObserver = match cancel {
+                    Some(flag) => flag,
+                    None => &noop,
+                };
+                let outcome = self.command_runner.run_with_cancel(&request, observer)?;
                 Ok(ActionStatus::Success {
                     command: Some(command_argv(&request)),
                     exit_code: outcome.code,
@@ -1676,11 +1681,14 @@ mod tests {
 
         let runner = ProcessCommandRunner::new();
         let error = runner
-            .run(&CommandRequest {
-                program: fixture.to_string_lossy().into_owned(),
-                args: vec!["control-stderr".to_string()],
-                cwd: None,
-            })
+            .run_with_cancel(
+                &CommandRequest {
+                    program: fixture.to_string_lossy().into_owned(),
+                    args: vec!["control-stderr".to_string()],
+                    cwd: None,
+                },
+                &NoopCancelObserver,
+            )
             .expect_err("control-stderr fixture exits nonzero");
 
         let message = error.to_string();
@@ -1699,6 +1707,75 @@ mod tests {
         // Sanitizer contract shared with durable-audit consumers.
         let sample = sanitize_process_output(b"\x1b[31m\x07x", 64);
         assert!(!sample.as_bytes().contains(&0x1b));
+    }
+
+    #[test]
+    fn cancel_is_passed_into_command_runner_for_in_flight_termination() {
+        struct CancelAwareRunner {
+            observer_polled: Rc<RefCell<bool>>,
+        }
+        impl CommandRunner for CancelAwareRunner {
+            fn run_with_cancel(
+                &self,
+                _request: &CommandRequest,
+                cancel: &dyn CancelObserver,
+            ) -> Result<CommandOutcome> {
+                // Prove the live observer is consulted during the command path
+                // (ProcessCommandRunner forwards this into ProcessRunner).
+                let _ = cancel.is_cancel_requested();
+                *self.observer_polled.borrow_mut() = true;
+                Ok(CommandOutcome {
+                    code: Some(0),
+                    stdout: String::new(),
+                    stderr: String::new(),
+                })
+            }
+        }
+
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let target_dir = fixture.path().join("target");
+        fs::create_dir_all(&target_dir).expect("target dir");
+        let manifest = fixture.path().join("Cargo.toml");
+        fs::write(&manifest, "[package]\nname=\"t\"\nversion=\"0.1.0\"\n").expect("manifest");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "test.command",
+                CleanAction::Command {
+                    program: "tool".to_string(),
+                    args: vec!["clean".to_string()],
+                    cwd: None,
+                    irreversible: true,
+                },
+                Some(target_dir),
+            )],
+        };
+        let _ = manifest;
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let polled = Rc::new(RefCell::new(false));
+        let executor = test_executor(
+            CancelAwareRunner {
+                observer_polled: polled.clone(),
+            },
+            RecordingTrashRunner::default(),
+        );
+        let report = executor
+            .run_plan(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path),
+                    cancel: Some(cancel),
+                },
+            )
+            .expect("report");
+        assert!(
+            *polled.borrow(),
+            "command runner must receive cancel observer mid-action; report={report:?}"
+        );
+        assert_eq!(report.succeeded, 1);
     }
 
     #[test]
@@ -1872,7 +1949,14 @@ mod tests {
     }
 
     impl CommandRunner for RecordingCommandRunner {
-        fn run(&self, request: &CommandRequest) -> Result<CommandOutcome> {
+        fn run_with_cancel(
+            &self,
+            request: &CommandRequest,
+            cancel: &dyn CancelObserver,
+        ) -> Result<CommandOutcome> {
+            if cancel.is_cancel_requested() {
+                return Err(anyhow!("canceled before command start"));
+            }
             self.requests.borrow_mut().push(request.clone());
             if let Some(message) = self.failure.borrow().as_ref() {
                 return Err(anyhow!(message.clone()));

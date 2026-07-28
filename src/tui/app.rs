@@ -43,6 +43,8 @@ pub(super) struct App {
     pub(super) cleanup_progress: Option<CleanupProgress>,
     pub(super) scan_snapshot: Option<ScanSnapshot>,
     pub(super) should_quit: bool,
+    /// User asked to quit after active jobs reach a terminal state (D9).
+    pub(super) quit_after_jobs: bool,
     pub(super) next_job_id: JobId,
 }
 
@@ -77,6 +79,7 @@ impl App {
             cleanup_progress: None,
             scan_snapshot: None,
             should_quit: false,
+            quit_after_jobs: false,
             next_job_id: 1,
         };
         app.log("Ready");
@@ -84,10 +87,12 @@ impl App {
     }
 
     pub(super) fn update(&mut self, event: UiEvent) -> Vec<Effect> {
-        match event {
+        let effects = match event {
             UiEvent::Key(key) => self.handle_key(key),
             UiEvent::Worker(event) => self.handle_worker_event(event),
-        }
+        };
+        self.maybe_finish_pending_quit();
+        effects
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> Vec<Effect> {
@@ -98,8 +103,7 @@ impl App {
         if key.modifiers.contains(KeyModifiers::CONTROL)
             && matches!(key.code, KeyCode::Char('c' | 'C'))
         {
-            self.should_quit = true;
-            return vec![Effect::Quit];
+            return self.request_quit();
         }
 
         if self.filter_active {
@@ -119,6 +123,7 @@ impl App {
 
         match self.overlay {
             Overlay::Confirm(_) => self.handle_confirm_key(key),
+            Overlay::QuitConfirm => self.handle_quit_confirm_key(key),
             Overlay::Help | Overlay::Details | Overlay::DryRun => self.handle_overlay_key(key),
             Overlay::None => self.handle_normal_key(key),
         }
@@ -126,9 +131,14 @@ impl App {
 
     fn handle_normal_key(&mut self, key: KeyEvent) -> Vec<Effect> {
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => {
-                self.should_quit = true;
-                vec![Effect::Quit]
+            KeyCode::Char('q') => self.request_quit(),
+            KeyCode::Esc => {
+                if self.has_active_mutation_job() {
+                    self.request_quit()
+                } else {
+                    self.should_quit = true;
+                    vec![Effect::Quit]
+                }
             }
             KeyCode::Char('s') => {
                 if self.has_active_clean_job() {
@@ -273,6 +283,92 @@ impl App {
             _ => {}
         }
         Vec::new()
+    }
+
+    fn handle_quit_confirm_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match key.code {
+            KeyCode::Char('w') | KeyCode::Enter => {
+                // Keep waiting for the active job; dismiss the overlay.
+                self.overlay = Overlay::None;
+                self.log_entry(
+                    AppLogLevel::Info,
+                    AppLogSource::App,
+                    None,
+                    None,
+                    "Continuing to wait for active jobs before quit is allowed",
+                );
+                Vec::new()
+            }
+            KeyCode::Char('c') | KeyCode::Char('x') => {
+                self.overlay = Overlay::None;
+                self.quit_after_jobs = true;
+                let mut effects = self.cancel_all_active_jobs();
+                self.log_entry(
+                    AppLogLevel::Warning,
+                    AppLogSource::App,
+                    None,
+                    None,
+                    "Cancel requested; waiting for workers to confirm before quit",
+                );
+                if !self.has_active_mutation_job() {
+                    self.should_quit = true;
+                    effects.push(Effect::Quit);
+                }
+                effects
+            }
+            KeyCode::Esc => {
+                self.overlay = Overlay::None;
+                self.quit_after_jobs = false;
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn request_quit(&mut self) -> Vec<Effect> {
+        if self.has_active_mutation_job() {
+            self.overlay = Overlay::QuitConfirm;
+            self.log_entry(
+                AppLogLevel::Warning,
+                AppLogSource::App,
+                None,
+                None,
+                "Active job running: press w to wait, c to cancel-and-wait, Esc to stay",
+            );
+            return Vec::new();
+        }
+        self.should_quit = true;
+        vec![Effect::Quit]
+    }
+
+    fn cancel_all_active_jobs(&mut self) -> Vec<Effect> {
+        let active: Vec<JobId> = self
+            .jobs
+            .iter()
+            .filter(|job| job.status.is_active())
+            .map(|job| job.id)
+            .collect();
+        let mut effects = Vec::new();
+        for job_id in active {
+            if self.transition_job(
+                job_id,
+                JobStatus::Cancelling,
+                "Cancellation requested; waiting for worker confirmation.",
+            ) {
+                effects.push(Effect::CancelJob { job_id });
+            }
+        }
+        effects
+    }
+
+    fn has_active_mutation_job(&self) -> bool {
+        self.jobs.iter().any(|job| job.status.is_active())
+    }
+
+    fn maybe_finish_pending_quit(&mut self) {
+        if self.quit_after_jobs && !self.has_active_mutation_job() {
+            self.should_quit = true;
+        }
     }
 
     fn handle_confirm_key(&mut self, key: KeyEvent) -> Vec<Effect> {
@@ -1303,6 +1399,8 @@ pub(super) enum Overlay {
     Details,
     DryRun,
     Confirm(ConfirmState),
+    /// D9: mutation running; user must wait or cancel-and-wait before quit.
+    QuitConfirm,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1558,6 +1656,11 @@ mod tests {
         assert!(matches!(app.overlay, Overlay::Help));
         app.update(key(KeyCode::Esc));
 
+        // Finish the earlier scan job so quit is not blocked by D9.
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: 1,
+            plan: representative_plan(),
+        }));
         app.update(key(KeyCode::Char('q')));
         assert!(app.should_quit);
     }
@@ -2319,6 +2422,38 @@ mod tests {
                 .estimated_bytes,
             2048
         );
+    }
+
+    #[test]
+    fn quit_during_active_job_opens_confirm_instead_of_detaching() {
+        let mut app = App::with_plan(representative_plan());
+        let _job = app.start_job(JobKind::Clean, "Clean fixture");
+        let effects = app.update(key(KeyCode::Char('q')));
+        assert!(effects.is_empty());
+        assert!(!app.should_quit);
+        assert!(matches!(app.overlay, Overlay::QuitConfirm));
+
+        // Wait path keeps the app running.
+        app.update(key(KeyCode::Char('w')));
+        assert!(matches!(app.overlay, Overlay::None));
+        assert!(!app.should_quit);
+
+        // Cancel-and-wait requests CancelJob and defers quit until terminal.
+        app.overlay = Overlay::QuitConfirm;
+        let effects = app.update(key(KeyCode::Char('c')));
+        assert!(
+            effects
+                .iter()
+                .any(|effect| matches!(effect, Effect::CancelJob { .. }))
+        );
+        assert!(app.quit_after_jobs);
+        assert!(!app.should_quit);
+        assert_eq!(app.jobs[0].status, JobStatus::Cancelling);
+
+        app.update(UiEvent::Worker(WorkerEvent::JobCanceled {
+            job_id: app.jobs[0].id,
+        }));
+        assert!(app.should_quit);
     }
 
     #[test]

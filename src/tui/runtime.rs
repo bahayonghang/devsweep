@@ -29,10 +29,11 @@ use super::{
 };
 
 pub(super) trait ScanService: Send + Clone + 'static {
-    fn full_scan(
+    fn full_scan_with_cancel(
         &self,
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
     ) -> Result<CleanupPlan>;
 }
 
@@ -50,12 +51,13 @@ pub(super) trait CleanService: Send + Clone + 'static {
 pub(super) struct SweepScanService;
 
 impl ScanService for SweepScanService {
-    fn full_scan(
+    fn full_scan_with_cancel(
         &self,
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
     ) -> Result<CleanupPlan> {
-        Sweeper::default().full_scan(options, progress)
+        Sweeper::default().full_scan_with_cancel(options, progress, cancel)
     }
 }
 
@@ -200,7 +202,7 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
                 guard.insert(job_id, Arc::clone(&cancel));
             }
             let scan = scan.clone();
-            thread::spawn(move || run_scan_worker(job_id, worker_tx, scan));
+            thread::spawn(move || run_scan_worker(job_id, worker_tx, scan, cancel));
         }
         Effect::StartClean {
             job_id,
@@ -251,7 +253,12 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
     Ok(())
 }
 
-fn run_scan_worker<S: ScanService>(job_id: JobId, worker_tx: Sender<WorkerEvent>, scan: S) {
+fn run_scan_worker<S: ScanService>(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    scan: S,
+    cancel: Arc<FlagCancelObserver>,
+) {
     let _ = worker_tx.send(WorkerEvent::ScanStarted { job_id });
 
     let result = std::env::current_dir()
@@ -262,18 +269,29 @@ fn run_scan_worker<S: ScanService>(job_id: JobId, worker_tx: Sender<WorkerEvent>
                 include_global: true,
                 roots: vec![current_dir],
             };
-            scan.full_scan(&options, &mut |progress: ScanProgress| {
-                let _ = worker_tx.send(WorkerEvent::ScanProgress {
-                    job_id,
-                    phase: progress.phase,
-                    message: progress.message,
-                    plan: progress.partial,
-                });
-            })
+            scan.full_scan_with_cancel(
+                &options,
+                &mut |progress: ScanProgress| {
+                    let _ = worker_tx.send(WorkerEvent::ScanProgress {
+                        job_id,
+                        phase: progress.phase,
+                        message: progress.message,
+                        plan: progress.partial,
+                    });
+                },
+                Some(&cancel),
+            )
         });
     match result {
+        Ok(plan) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+            let _ = worker_tx.send(WorkerEvent::ScanFinished { job_id, plan });
+        }
         Ok(plan) => {
             let _ = worker_tx.send(WorkerEvent::ScanFinished { job_id, plan });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
         }
         Err(error) => {
             let _ = worker_tx.send(WorkerEvent::JobFailed {
@@ -367,10 +385,11 @@ mod tests {
     }
 
     impl ScanService for FakeScanService {
-        fn full_scan(
+        fn full_scan_with_cancel(
             &self,
             _options: &ScanOptions,
             progress: &mut dyn FnMut(ScanProgress),
+            _cancel: Option<&Arc<FlagCancelObserver>>,
         ) -> Result<CleanupPlan> {
             progress(ScanProgress {
                 phase: ScanPhase::Projects,
@@ -483,6 +502,7 @@ mod tests {
                 partial: Some(partial.clone()),
                 outcome: Ok(full.clone()),
             },
+            Arc::new(FlagCancelObserver::new()),
         );
 
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
@@ -515,6 +535,7 @@ mod tests {
                 partial: None,
                 outcome: Err("scan exploded".to_string()),
             },
+            Arc::new(FlagCancelObserver::new()),
         );
 
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();

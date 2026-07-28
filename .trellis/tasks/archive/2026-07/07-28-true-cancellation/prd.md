@@ -24,12 +24,12 @@
 
 ## Acceptance Criteria
 
-- [ ] 回归测试：第 N 个 fake action 阻塞时取消，worker 确认停止后第 N+1 个 runner 调用次数为 0；report 标记 canceled
-- [ ] scan/size 取消：大 fixture 上取消后 walker 在检查点退出（目标 SLO：walker < 250 ms、target 边界 < 100 ms，实测值记录）
-- [ ] provider probe 取消：token 触发后 probe 经 ProcessRunner 终止，scan 返回 partial
-- [ ] 迟到 worker 事件不能把 `Canceled` 改回任何状态（衔接 race-hardening 状态机测试）
-- [ ] TUI 退出：mutation 运行中 `q` 弹出等待/取消选择；选择取消后进程树无孤儿（平台 fixture 验证）
-- [ ] `just ci` 全绿
+- [x] 回归测试：第 N 个 fake action 阻塞时取消，worker 确认停止后第 N+1 个 runner 调用次数为 0；report 标记 canceled
+- [x] scan/size 取消：大 fixture 上取消后 walker 在检查点退出（目标 SLO：walker < 250 ms、target 边界 < 100 ms，实测值记录）
+- [x] provider probe 取消：token 触发后 probe 经 ProcessRunner 终止，scan 返回 partial
+- [x] 迟到 worker 事件不能把 `Canceled` 改回任何状态（衔接 race-hardening 状态机测试）
+- [x] TUI 退出：mutation 运行中 `q` 弹出等待/取消选择；选择取消后进程树无孤儿（平台 fixture 验证）
+- [x] `just ci` 全绿
 
 ## 约束与依赖
 
