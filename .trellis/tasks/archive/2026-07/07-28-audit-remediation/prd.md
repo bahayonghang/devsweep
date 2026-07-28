@@ -16,7 +16,7 @@
 - 审计报告：`DevSweep_Deep_Audit_2026-07-27.md`
 - 报告 SHA-256：`6440B6295FDC3DF109091C04A8359F59D089813252689238475C73C268F24EE2`（2026-07-28 复核确认）
 - 代码复核基准：当前 dev HEAD（审计原基线 `02e0925` 落后约 4 周，行号引用已全部按当前 HEAD 重定位进各子任务 PRD）
-- ⚠️ 待办：报告与全部任务文件当前 untracked。实施开始前应将报告 + 父任务 + 全部子任务 PRD 作为同一个可审阅规划基线提交（提交动作待维护者确认）。
+- 审计报告与全部任务 PRD 已作为可审阅规划基线提交于 `3c9ca9c`；后续实现须以该提交后的当前 `dev` HEAD 为准。
 
 ## 复核结论摘要
 
@@ -45,9 +45,9 @@
 |---|---|---|---|---|
 | 1 | 07-28-tui-race-hardening | P1 | F-02、F-07(UI层)、F-03(止血)、F-20 | 无 — 先行（Phase 0 止血） |
 | 2 | 07-28-plan-validation | P1 | F-01、F-15(残留)、F-27 + 契约 owner | 无，可与 #1 并行 |
-| 3 | 07-28-license-baseline | P1 | F-10 | 仅需维护者许可证决策（D4），可立即做 |
+| 3 | 07-28-license-baseline | P1 | F-10 | 无外部依赖；MIT 基线已采用，可立即做 |
 | 4 | 07-28-scan-reliability | P1 | F-09、F-26 | 独立可并行 |
-| 5 | 07-28-central-safety-policy | P1 | F-04、F-05 | 后于 #2（消费 ValidatedAction） |
+| 5 | 07-28-central-safety-policy | P1 | F-04、F-05 | 后于 #2（消费 ValidatedAction）与 #6（有界 cargo metadata runner） |
 | 6 | 07-28-process-runner-cancellation | P1 | F-06、F-13(进程上下文) | 独立可并行 |
 | 7 | 07-28-durable-audit | P1 | F-08、F-22 | 后于 #2（digest）；stderr sanitize 接口与 #6 协商 |
 | 8 | 07-28-true-cancellation | P1 | F-03(真取消) | 后于 #1（状态机约定）与 #6（runner/进程树） |
@@ -62,8 +62,13 @@
 |---|---|---|
 | D1 | v1 plan 兼容策略 | **已采纳默认**：直接拒绝并提示 rescan（不做迁移）；错误文案在 plan-validation design.md 确认 |
 | D2 | audit 默认持久化等级 | **已采纳默认**：`action_started` 必须 sync 落盘先于副作用；`finished` flush + 尽力 sync，持久化失败 → outcome unknown 并停止后续 action（故障矩阵见 durable-audit PRD） |
-| D3 | 排名语义（F-19） | **建议默认**：保持 size-first 主序（现行为），`target_score` 降级为显式命名的 freshness tiebreaker 或删除。依据：design.md 经查无任何排名意图记载，size-first 是对清理工具最可预期的 UX。终案在 scan-walker-budgets design.md 记录 |
-| D4 | 许可证选择 | **待维护者决策**（建议 MIT OR Apache-2.0 双许可）。license-baseline 任务的唯一外部输入 |
+| D3 | 排名语义（F-19） | **已采用**：保持 size-first 主序；`target_score` 改为显式命名的 freshness tiebreaker，仅在大小相等时排序。依据：size-first 是清理工具最可预期的空间收益 UX；年龄仍保留为稳定次序和新鲜度保护信号。 |
+| D4 | 许可证选择 | **已采用 MIT**：`7300d8a` 已加入根 `LICENSE` 与 Cargo `license = "MIT"`。license-baseline 继续补齐其余分发 metadata、provenance 与 README。 |
+| D5 | 确认期间的扫描更新 | **已采用**：立即使确认失效并要求重新确认。扫描结果不得与已打开的确认窗口并存为可执行的最新状态；Enter 必须被拒绝并提示重新确认。 |
+| D6 | UserProtectionList 持久化与管理 | **已采用**：OS app-data 下版本化 JSON；`devsweep protect add|remove|list` 管理。add 只接受存在的 canonical 绝对路径，remove 对已不存在条目按规范化已存值匹配。 |
+| D7 | TUI clean 成功后的 stale 行 | **已采用**：保留禁用 tombstone 行直到下一次 rescan；从选择、总量和执行集合移除，显示已清理状态和 rescan 提示。 |
+| D8 | TUI 列表翻页 | **已采用**：提供标准 PgUp/PgDn 行为，光标始终位于可视窗口。 |
+| D9 | mutation 运行时 TUI 退出 | **已采用**：只允许继续等待，或请求取消并等待 worker 确认；不提供默认或隐式 detach，未达终态不得退出。 |
 
 ## 启动门禁（Planning No-Go）
 
