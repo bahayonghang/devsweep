@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
+- **Total Sessions**: 21
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~664 | Active |
+| `journal-1.md` | ~700 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-07-28 | TUI race hardening complete | `f3db10b` | `dev` |
 | 20 | 2026-07-28 | ProcessRunner 有界进程治理 | `2a9930b` | `dev` |
 | 19 | 2026-07-28 | 完成计划信任边界 | `f143484` | `dev` |
 | 18 | 2026-06-30 | 按大小和新鲜度排名清理计划 | `06579fd` | `main` |

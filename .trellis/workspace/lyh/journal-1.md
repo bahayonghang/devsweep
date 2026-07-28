@@ -662,3 +662,39 @@ Extracted shared fs_size estimation, parallelized directory sizing with rayon, a
 ### Status
 
 [OK] **Completed**
+
+
+## Session 21: TUI race hardening complete
+
+**Date**: 2026-07-28
+**Task**: TUI race hardening complete
+**Branch**: `dev`
+
+### Summary
+
+Closed TUI confirmation drift, clean single-flight, terminal job revival, and scanner exact-dedupe races for 07-28-tui-race-hardening; just ci green; archived.
+
+### Main Changes
+
+- Frozen ExecutionManifest + scan-invalidated confirmation (D5)
+- App + runtime clean single-flight permit
+- Terminal job transitions ignore late events; honest boundary-cancel copy
+- Scanner footprint+action dedupe with Windows case/separator coverage
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f3db10b` | (see git log) |
+
+### Testing
+
+- [OK] just ci (fmt, check, 143+ tests, clippy -D warnings)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Continue parent 07-28-audit-remediation; next child still planning
