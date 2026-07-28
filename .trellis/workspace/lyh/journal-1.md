@@ -729,3 +729,34 @@ MIT LICENSE retained; Cargo repository/readme/rust-version filled; provenance an
 ### Status
 
 [OK] **Completed**
+
+
+## Session 23: Scan reliability complete
+
+**Date**: 2026-07-28
+**Task**: Scan reliability complete
+**Branch**: `dev`
+
+### Summary
+
+Partial scan diagnostics, SizeEstimate, completeness guard, global summary fix; just ci green; archived.
+
+### Main Changes
+
+- ScanOutcome + nested discovery diagnostics
+- SizeEstimate complete/partial/unknown
+- Ranking completeness guard + TUI size labels
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `802b0ab` | (see git log) |
+
+### Testing
+
+- [OK] just ci; unreadable child/root fixtures
+
+### Status
+
+[OK] **Completed**
