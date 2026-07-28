@@ -19,7 +19,7 @@
 2. 遍历预算触发时产出 diagnostic（消费 scan-reliability 的 `ScanOutcome`/`SizeEstimate` 契约，标记 incomplete），不静默截断。
 3. 剪枝修正：`.git/.hg/.svn` 无条件跳过；`cache` 仅在已被识别为 cleanup target 时剪枝，不再按裸名字全局剪。
 4. hardlink/sparse 的已知偏差在文档与 estimate warnings 中明示（allocated bytes 支持可作后续扩展，不在本任务强制）。
-5. **排名语义定案（决策 D3）**：默认采纳"保持 size-first 主序，`target_score` 降级为显式命名的 freshness tiebreaker 或删除"；终案连同理由记入本任务 design.md，测试与文档同步。
+5. **排名语义定案（决策 D3，已采用）**：保持 size-first 主序；`target_score` 改为显式命名的 freshness tiebreaker，仅在大小相等时参与排序。年龄仍用于新鲜度保护；测试与文档同步，禁止保留暗示主排序的旧名称。
 
 ## Acceptance Criteria
 

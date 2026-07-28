@@ -601,23 +601,18 @@ fn is_real_dir(path: &Path) -> bool {
 }
 
 fn should_stop_descent(dir: &Path) -> bool {
-    matches!(
-        dir.file_name().and_then(|name| name.to_str()),
+    match dir.file_name().and_then(|name| name.to_str()) {
+        // Always skip VCS metadata trees — they are huge and never cleanup roots.
+        Some(".git" | ".hg" | ".svn") => true,
+        // Known cleanup footprints: stop descent after the target itself is
+        // considered. Bare name "cache" is intentionally NOT listed so a
+        // directory named cache that contains real projects remains visible.
         Some(
-            "target"
-                | "node_modules"
-                | "cache"
-                | ".turbo"
-                | ".parcel-cache"
-                | ".venv"
-                | "venv"
-                | "__pycache__"
-                | ".pytest_cache"
-                | ".mypy_cache"
-                | ".ruff_cache"
-                | ".tox"
-        )
-    )
+            "target" | "node_modules" | ".turbo" | ".parcel-cache" | ".next" | ".venv" | "venv"
+            | "__pycache__" | ".pytest_cache" | ".mypy_cache" | ".ruff_cache" | ".tox",
+        ) => true,
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -1072,6 +1067,24 @@ mod tests {
                 .targets
                 .iter()
                 .any(|target| target.id.as_str().starts_with("node.node_modules"))
+        );
+    }
+
+    #[test]
+    fn cache_named_directory_still_discovers_nested_projects() {
+        let fixture = Fixture::new();
+        fixture.file("cache/nested-app/package.json", "{}");
+        fixture.file("cache/nested-app/node_modules/pkg/index.js", "module");
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().to_path_buf()])
+            .expect("cache-named root still scans");
+        assert!(
+            plan.targets
+                .iter()
+                .any(|target| target.id.as_str().contains("node_modules")),
+            "project under bare cache/ name must be discovered: {:?}",
+            target_ids(&plan)
         );
     }
 

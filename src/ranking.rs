@@ -12,13 +12,20 @@ pub fn rank_cleanup_plan(plan: &mut CleanupPlan) {
     rank_cleanup_plan_at(plan, SystemTime::now(), DEFAULT_FRESHNESS_FLOOR);
 }
 
-pub fn target_score(target: &CleanTarget, now: SystemTime) -> f64 {
+/// Freshness tie-breaker used only when two targets share the same size.
+/// Primary sort order is always estimated_bytes descending (decision D3).
+pub fn freshness_tiebreaker(target: &CleanTarget, now: SystemTime) -> f64 {
     let Some(age) = target_age(target, now) else {
         return 0.0;
     };
     let size_mib = target.estimated_bytes as f64 / 1_048_576.0;
     let age_days = age.as_secs_f64() / 86_400.0;
     size_mib * age_days
+}
+
+#[deprecated(note = "renamed to freshness_tiebreaker; size is the primary sort key")]
+pub fn target_score(target: &CleanTarget, now: SystemTime) -> f64 {
+    freshness_tiebreaker(target, now)
 }
 
 pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floor: Duration) {
@@ -97,12 +104,13 @@ fn sort_targets(targets: &mut [CleanTarget], now: SystemTime) {
 }
 
 fn compare_targets(left: &CleanTarget, right: &CleanTarget, now: SystemTime) -> Ordering {
+    // Decision D3: size-first primary order; freshness only breaks ties.
     right
         .estimated_bytes
         .cmp(&left.estimated_bytes)
         .then_with(|| {
-            target_score(right, now)
-                .partial_cmp(&target_score(left, now))
+            freshness_tiebreaker(right, now)
+                .partial_cmp(&freshness_tiebreaker(left, now))
                 .unwrap_or(Ordering::Equal)
         })
         .then_with(|| compare_last_modified(left, right))
@@ -195,7 +203,7 @@ mod tests {
             false,
         );
 
-        assert_eq!(target_score(&target, now), 6.0);
+        assert_eq!(freshness_tiebreaker(&target, now), 6.0);
     }
 
     #[test]
@@ -209,8 +217,8 @@ mod tests {
             false,
         );
 
-        assert_eq!(target_score(&missing, now), 0.0);
-        assert_eq!(target_score(&future, now), 0.0);
+        assert_eq!(freshness_tiebreaker(&missing, now), 0.0);
+        assert_eq!(freshness_tiebreaker(&future, now), 0.0);
     }
 
     #[test]

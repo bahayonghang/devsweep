@@ -41,7 +41,34 @@ impl SizeEstimate {
     }
 }
 
+/// Default entry budget for a single size walk root.
+pub const DEFAULT_SIZE_ENTRY_BUDGET: usize = 50_000;
+
 pub fn estimate_tree(path: &Path) -> SizeEstimate {
+    estimate_tree_with_budget(path, DEFAULT_SIZE_ENTRY_BUDGET)
+}
+
+pub fn estimate_tree_with_budget(path: &Path, entry_budget: usize) -> SizeEstimate {
+    let mut remaining = entry_budget;
+    estimate_tree_bounded(path, &mut remaining, 0, 64)
+}
+
+fn estimate_tree_bounded(
+    path: &Path,
+    remaining: &mut usize,
+    depth: usize,
+    max_depth: usize,
+) -> SizeEstimate {
+    if *remaining == 0 {
+        return SizeEstimate {
+            logical_bytes: None,
+            complete: false,
+            last_modified: None,
+            warnings: vec![format!("size entry budget exhausted at {}", path.display())],
+        };
+    }
+    *remaining = remaining.saturating_sub(1);
+
     let metadata = match fs::symlink_metadata(path) {
         Ok(metadata) => metadata,
         Err(error) => {
@@ -54,8 +81,6 @@ pub fn estimate_tree(path: &Path) -> SizeEstimate {
         }
     };
     if is_unsafe_link(&metadata) {
-        // Symlink/reparse roots are intentionally not followed; the observed
-        // directory entry itself is a complete zero-byte logical footprint.
         return SizeEstimate::trusted(0, metadata.modified().ok());
     }
     if metadata.is_file() {
@@ -63,6 +88,14 @@ pub fn estimate_tree(path: &Path) -> SizeEstimate {
     }
     if !metadata.is_dir() {
         return SizeEstimate::trusted(0, metadata.modified().ok());
+    }
+    if depth >= max_depth {
+        return SizeEstimate {
+            logical_bytes: Some(0),
+            complete: false,
+            last_modified: metadata.modified().ok(),
+            warnings: vec![format!("max depth reached at {}", path.display())],
+        };
     }
 
     let self_mtime = metadata.modified().ok();
@@ -81,7 +114,16 @@ pub fn estimate_tree(path: &Path) -> SizeEstimate {
     let mut children = Vec::new();
     let mut warnings = Vec::new();
     let mut entry_errors = false;
+    let mut budget_hit = false;
     for entry in entries {
+        if *remaining == 0 {
+            budget_hit = true;
+            warnings.push(format!(
+                "size entry budget exhausted under {}",
+                path.display()
+            ));
+            break;
+        }
         match entry {
             Ok(entry) => children.push(entry.path()),
             Err(error) => {
@@ -94,18 +136,36 @@ pub fn estimate_tree(path: &Path) -> SizeEstimate {
         }
     }
 
-    let child_estimate = children
-        .par_iter()
-        .map(|child| estimate_tree(child))
-        .reduce(
-            || SizeEstimate::trusted(0, None),
-            |left, right| left.merge(right),
-        );
+    // Top-level fan-out may use rayon; nested walks stay sequential to avoid
+    // task explosion on deep trees.
+    let child_estimate = if depth == 0 && children.len() > 1 {
+        children
+            .par_iter()
+            .map(|child| {
+                let mut local = (*remaining).min(DEFAULT_SIZE_ENTRY_BUDGET);
+                estimate_tree_bounded(child, &mut local, depth + 1, max_depth)
+            })
+            .reduce(
+                || SizeEstimate::trusted(0, None),
+                |left, right| left.merge(right),
+            )
+    } else {
+        let mut acc = SizeEstimate::trusted(0, None);
+        for child in &children {
+            acc = acc.merge(estimate_tree_bounded(
+                child,
+                remaining,
+                depth + 1,
+                max_depth,
+            ));
+        }
+        acc
+    };
 
     let mut estimate = child_estimate;
     estimate.last_modified = max_mtime(estimate.last_modified, self_mtime);
     estimate.warnings.extend(warnings);
-    if entry_errors {
+    if entry_errors || budget_hit {
         estimate.complete = false;
     }
     estimate

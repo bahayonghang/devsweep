@@ -1,1 +1,4 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Constrains non-mutating scanner behavior and validation requirements."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Guides diagnostics and hard-error versus partial-result behavior."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Guides propagation of partial scan states into the TUI."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent-owned D3, cancellation ownership, and cross-task acceptance metrics."}
