@@ -73,3 +73,11 @@ just release-archive
 ```
 
 The archive is written to `dist/devsweep-x86_64-pc-windows-msvc.zip`.
+
+## License
+
+`devsweep` is distributed under the MIT License. See [`LICENSE`](LICENSE) for
+the full text.
+
+Design provenance relative to other public cleanup tools is recorded in
+[`docs/provenance.md`](docs/provenance.md).
