@@ -908,3 +908,28 @@ Prune/budget/ranking D3; just ci green.
 ### Status
 
 [OK] **Completed**
+
+
+## Session 29: True cancellation complete
+
+**Date**: 2026-07-28
+**Task**: True cancellation complete
+**Branch**: `dev`
+
+### Summary
+
+Cancel token wired through runtime and executor; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc11170` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
