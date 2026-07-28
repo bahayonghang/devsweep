@@ -1,10 +1,13 @@
+use std::path::Path;
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use devsweep::{
     cli::{CleanCommand, Cli, Command, ScanCommand},
     config,
     executor::{ExecutionRequest, Executor},
-    model::CleanupPlan,
+    model::{LEGACY_CLEANUP_PLAN_VERSION, UntrustedPlan},
+    plan_validation::{V1_RESCAN_MESSAGE, untrusted_plan_from_scan, validate_plan},
     rules::RuleScope,
     sweep::{ScanOptions, Sweeper},
 };
@@ -29,7 +32,8 @@ fn run_scan(command: ScanCommand) -> Result<()> {
     let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 
     if command.json {
-        serde_json::to_writer_pretty(std::io::stdout(), &plan)?;
+        let untrusted = untrusted_plan_from_scan(&plan)?;
+        serde_json::to_writer_pretty(std::io::stdout(), &untrusted)?;
         println!();
         return Ok(());
     }
@@ -50,20 +54,15 @@ fn run_clean(command: CleanCommand) -> Result<()> {
         anyhow::bail!("cleanup execution requires --plan PATH");
     }
 
-    let plan = match command.plan.as_deref() {
-        Some(path) => {
-            let file = std::fs::File::open(path)
-                .with_context(|| format!("failed to open cleanup plan {}", path.display()))?;
-            serde_json::from_reader(file)
-                .with_context(|| format!("failed to parse cleanup plan {}", path.display()))?
-        }
-        None => CleanupPlan::empty(),
+    let untrusted = match command.plan.as_deref() {
+        Some(path) => read_untrusted_plan(path)?,
+        None => UntrustedPlan::empty(),
     };
+    let plan = validate_plan(&untrusted)?;
     let report = Executor::default().run_plan(
         &plan,
         ExecutionRequest {
             execute: command.execute,
-            allow_permanent_delete: command.allow_permanent_delete,
             audit_log: command.audit_log,
             selected: plan.default_selected_ids(),
         },
@@ -90,6 +89,22 @@ fn run_clean(command: CleanCommand) -> Result<()> {
     Ok(())
 }
 
+fn read_untrusted_plan(path: &Path) -> Result<UntrustedPlan> {
+    let file = std::fs::File::open(path)
+        .with_context(|| format!("failed to open cleanup plan {}", path.display()))?;
+    let value: serde_json::Value = serde_json::from_reader(file)
+        .with_context(|| format!("failed to parse cleanup plan {}", path.display()))?;
+
+    if value.get("version").and_then(serde_json::Value::as_u64)
+        == Some(u64::from(LEGACY_CLEANUP_PLAN_VERSION))
+    {
+        anyhow::bail!(V1_RESCAN_MESSAGE);
+    }
+
+    serde_json::from_value(value)
+        .with_context(|| format!("failed to parse cleanup plan {}", path.display()))
+}
+
 fn run_rules() -> Result<()> {
     let catalogue = devsweep::rules::rule_catalogue();
     println!("Project rules");
@@ -108,4 +123,49 @@ fn run_rules() -> Result<()> {
         println!("  {}", devsweep::rules::rule_row(doc));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::NamedTempFile;
+
+    use super::*;
+
+    #[test]
+    fn legacy_saved_plan_reports_the_rescan_guidance_before_v2_decoding() {
+        let file = NamedTempFile::new().expect("temporary plan file");
+        fs::write(
+            file.path(),
+            r#"{
+                "version": 1,
+                "targets": [{
+                    "id": "node.node_modules:C:/code/app/node_modules",
+                    "scope": { "type": "project", "root": "C:/code/app" },
+                    "ecosystem": "node",
+                    "kind": "dependency_directory",
+                    "path": "C:/code/app/node_modules",
+                    "estimated_bytes": 1,
+                    "last_modified": null,
+                    "risk": "medium",
+                    "reversible": true,
+                    "selected_by_default": false,
+                    "evidence": [],
+                    "action": {
+                        "type": "move_to_trash",
+                        "path": "C:/code/app/node_modules"
+                    }
+                }]
+            }"#,
+        )
+        .expect("legacy plan writes");
+
+        assert_eq!(
+            read_untrusted_plan(file.path())
+                .expect_err("legacy plan rejects")
+                .to_string(),
+            V1_RESCAN_MESSAGE
+        );
+    }
 }

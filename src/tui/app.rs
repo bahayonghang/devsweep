@@ -5,6 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use crate::{
     executor::{ExecutionReport, ExecutionTargetStatus},
     model::{CleanAction, CleanTarget, CleanupPlan, RiskLevel, Scope, TargetId},
+    plan_validation::validate_scanned_plan,
     sweep::ScanPhase,
 };
 
@@ -129,7 +130,16 @@ impl App {
                         "No selected targets to clean",
                     );
                 } else {
-                    self.overlay = Overlay::Confirm(self.confirm_state());
+                    match self.confirm_state() {
+                        Ok(confirm) => self.overlay = Overlay::Confirm(confirm),
+                        Err(error) => self.log_entry(
+                            AppLogLevel::Error,
+                            AppLogSource::Clean,
+                            None,
+                            None,
+                            format!("Selected cleanup plan failed validation: {error}"),
+                        ),
+                    }
                 }
                 Vec::new()
             }
@@ -271,12 +281,15 @@ impl App {
                     return Vec::new();
                 }
 
-                let plan = self.selected_cleanup_plan();
-                let selected: Vec<TargetId> = plan
-                    .targets
-                    .iter()
-                    .map(|target| target.id.clone())
-                    .collect();
+                let manifest = match &self.overlay {
+                    Overlay::Confirm(confirm) => confirm.manifest.clone(),
+                    _ => return Vec::new(),
+                };
+                let ExecutionManifest {
+                    plan,
+                    selected,
+                    digest,
+                } = *manifest;
                 let target_count = plan.targets.len();
                 self.overlay = Overlay::None;
                 let job_id =
@@ -292,6 +305,7 @@ impl App {
                     job_id,
                     plan,
                     selected,
+                    plan_digest: digest,
                 }]
             }
             _ => Vec::new(),
@@ -710,10 +724,12 @@ impl App {
         }
     }
 
-    fn confirm_state(&self) -> ConfirmState {
+    fn confirm_state(&self) -> Result<ConfirmState, String> {
         let selected = self.selected_targets();
-        let estimated_bytes = sum_unique_target_bytes(selected.iter().copied());
-        let has_irreversible_commands = selected.iter().any(|target| {
+        let manifest = ExecutionManifest::from_targets(&selected)?;
+        let selected_targets = &manifest.plan.targets;
+        let estimated_bytes = sum_unique_target_bytes(selected_targets.iter());
+        let has_irreversible_commands = selected_targets.iter().any(|target| {
             matches!(
                 target.action,
                 CleanAction::Command {
@@ -731,32 +747,23 @@ impl App {
             "Type confirm to move selected targets to Trash.".to_string()
         };
 
-        ConfirmState {
-            target_count: selected.len(),
+        Ok(ConfirmState {
+            target_count: selected_targets.len(),
             estimated_bytes,
             has_irreversible_commands,
             required_phrase,
             input: String::new(),
             feedback: None,
             message,
-            selected_targets: selected
+            plan_digest_prefix: manifest.digest_prefix().to_string(),
+            selected_targets: selected_targets
                 .iter()
-                .map(|target| selected_target_summary(target))
+                .map(selected_target_summary)
                 .collect(),
-            command_previews: command_previews(selected.iter().copied()),
-        }
-    }
-
-    fn selected_cleanup_plan(&self) -> CleanupPlan {
-        CleanupPlan {
-            version: crate::model::CLEANUP_PLAN_VERSION,
-            targets: self
-                .targets
-                .iter()
-                .filter(|target| self.selected_ids.contains(&target.id))
-                .cloned()
-                .collect(),
-        }
+            command_previews: command_previews(selected_targets.iter()),
+            manifest: Box::new(manifest),
+            invalidated_by_scan: false,
+        })
     }
 
     pub(super) fn selected_target(&self) -> Option<&CleanTarget> {
@@ -768,7 +775,9 @@ impl App {
     pub(super) fn selected_targets(&self) -> Vec<&CleanTarget> {
         self.targets
             .iter()
-            .filter(|target| self.selected_ids.contains(&target.id))
+            .filter(|target| {
+                self.selected_ids.contains(&target.id) && target.action.is_executable()
+            })
             .collect()
     }
 
@@ -908,6 +917,7 @@ pub(super) enum Effect {
         job_id: JobId,
         plan: CleanupPlan,
         selected: Vec<TargetId>,
+        plan_digest: String,
     },
     CancelJob {
         job_id: JobId,
@@ -1046,6 +1056,7 @@ pub(super) enum Overlay {
 pub(super) struct ConfirmState {
     pub(super) target_count: usize,
     pub(super) estimated_bytes: u64,
+    pub(super) plan_digest_prefix: String,
     pub(super) has_irreversible_commands: bool,
     pub(super) required_phrase: String,
     pub(super) input: String,
@@ -1053,6 +1064,39 @@ pub(super) struct ConfirmState {
     pub(super) message: String,
     pub(super) selected_targets: Vec<String>,
     pub(super) command_previews: Vec<CommandPreview>,
+    manifest: Box<ExecutionManifest>,
+    pub(super) invalidated_by_scan: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExecutionManifest {
+    plan: CleanupPlan,
+    selected: Vec<TargetId>,
+    digest: String,
+}
+
+impl ExecutionManifest {
+    fn from_targets(targets: &[&CleanTarget]) -> Result<Self, String> {
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: targets.iter().map(|target| (*target).clone()).collect(),
+        };
+        let validated = validate_scanned_plan(&plan).map_err(|error| error.to_string())?;
+        let selected = plan
+            .targets
+            .iter()
+            .map(|target| target.id.clone())
+            .collect();
+        Ok(Self {
+            plan,
+            selected,
+            digest: validated.digest().to_string(),
+        })
+    }
+
+    fn digest_prefix(&self) -> &str {
+        &self.digest[..12]
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1200,7 +1244,7 @@ fn log_level_for_execution_status(status: ExecutionTargetStatus) -> AppLogLevel 
 fn default_selected_ids(targets: &[CleanTarget]) -> HashSet<TargetId> {
     targets
         .iter()
-        .filter(|target| target.selected_by_default)
+        .filter(|target| target.selected_by_default && target.action.is_executable())
         .map(|target| target.id.clone())
         .collect()
 }
@@ -1371,6 +1415,10 @@ mod tests {
         app.selected_ids.insert(app.targets[0].id.clone());
 
         app.update(key(KeyCode::Char('c')));
+        let confirmation_digest_prefix = match &app.overlay {
+            Overlay::Confirm(confirm) => confirm.plan_digest_prefix.clone(),
+            _ => panic!("confirmation opens with a digest"),
+        };
         for ch in "confirm".chars() {
             app.update(key(KeyCode::Char(ch)));
         }
@@ -1381,6 +1429,7 @@ mod tests {
                 job_id,
                 plan,
                 selected,
+                plan_digest,
             },
         ] = effects.as_slice()
         else {
@@ -1390,6 +1439,17 @@ mod tests {
         assert_eq!(plan.targets.len(), 1);
         assert_eq!(plan.targets[0].id, app.targets[0].id);
         assert_eq!(selected, &vec![app.targets[0].id.clone()]);
+        assert_eq!(
+            plan_digest,
+            crate::plan_validation::validate_scanned_plan(plan)
+                .expect("frozen plan validates")
+                .digest()
+        );
+        assert_eq!(
+            confirmation_digest_prefix,
+            plan_digest[..12],
+            "the confirmation prefix belongs to the exact plan sent to the worker"
+        );
         assert!(matches!(app.overlay, Overlay::None));
         let progress = app
             .cleanup_progress
@@ -1751,6 +1811,13 @@ mod tests {
 
         assert_eq!(app.scope_bytes(ScopeKind::Global), 2048);
         assert_eq!(app.selected_bytes(), 2048);
-        assert_eq!(app.confirm_state().estimated_bytes, 2048);
+        let mut app = app;
+        app.selected_ids.remove(&app.targets[0].id);
+        assert_eq!(
+            app.confirm_state()
+                .expect("selected cleanup target validates")
+                .estimated_bytes,
+            2048
+        );
     }
 }

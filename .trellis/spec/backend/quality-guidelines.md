@@ -18,8 +18,8 @@ explicitly adds cleanup support.
   execution from scanner or plan code.
 - Do not shell-compose commands. Command-backed cleanup must keep program and
   argv separate.
-- Do not run permanent delete in the current implementation, even when
-  `--allow-permanent-delete` is present.
+- Do not run permanent delete in the current implementation. It is not exposed
+  as a CLI flag.
 
 ---
 
@@ -42,18 +42,20 @@ explicitly adds cleanup support.
 - CLI entrypoints:
   - `devsweep tui`
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-  - `devsweep clean [--plan PATH] [--execute] [--allow-permanent-delete]`
+  - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
   - `devsweep rules`
 
 #### 3. Contracts
 
 - `just ci` is the canonical local quality gate and must include formatting,
   type-checking, tests, and clippy.
-- `devsweep scan --json` must emit the current JSON cleanup plan contract.
-  During foundation it emits an empty plan:
+- `devsweep scan --json` must emit the current JSON cleanup plan contract. It
+  is a declarative v2 `UntrustedPlan`; a saved target carries typed intent and
+  observed facts, never executable argv, cwd, or an authoritative action path.
+  An empty plan is:
   ```json
   {
-    "version": 1,
+    "version": 2,
     "targets": []
   }
   ```
@@ -99,12 +101,10 @@ std::process::Command::new("cargo").arg("clean").status()?;
 Correct:
 
 ```rust
-// Foundation only defines the serializable action contract.
-CleanAction::Command {
-    program: "cargo".to_string(),
-    args: vec!["clean".to_string()],
-    cwd: None,
-    irreversible: true,
+// Saved plans declare an intent; the registry owns the argv template.
+CleanupIntent::RunBuiltInAction {
+    provider_id: "cargo".to_string(),
+    action_id: "clean_manifest".to_string(),
 }
 ```
 
@@ -119,11 +119,11 @@ CleanAction::Command {
 #### 2. Signatures
 
 - CLI entrypoint:
-  - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH] [--allow-permanent-delete]`
+  - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
 - Library entrypoint:
-  - `Executor::default().run_plan(&CleanupPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
+  - `Executor::default().run_plan(&ValidatedPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
   - `ExecutionRequest.selected: Vec<TargetId>` names the execution set
-    explicitly; `CleanupPlan::default_selected_ids()` provides the default
+    explicitly; `ValidatedPlan::default_selected_ids()` provides the default
     (all `selected_by_default` targets, plan order).
 
 #### 3. Contracts
@@ -132,17 +132,18 @@ CleanAction::Command {
   trash runners.
 - `clean --execute` requires `--plan PATH`; execution must never discover new
   targets.
-- The executor runs exactly the intersection of `request.selected` with the
-  plan's targets, in plan order; unknown ids are ignored. It does not read
+- The CLI/TUI validates a v2 `UntrustedPlan` once before the executor sees it.
+  The executor runs exactly the intersection of `request.selected` with the
+  validated plan's targets, in plan order; unknown ids are ignored. It does not read
   `selected_by_default` — that flag is a scan-time ranking hint, written only
   by the freshness guard, and callers translate it into an explicit selection
   via `default_selected_ids()`.
-- Command actions use `CommandRequest { program, args, cwd }`; do not combine
-  user-controlled values into a shell string.
-- `MoveToTrash` actions pass only the path stored in the plan to the trash
-  runner.
-- `DeletePermanently` is disabled in this build, including when
-  `--allow-permanent-delete` is set.
+- Command actions use `CommandRequest { program, args, cwd }`; the registry,
+  not a plan file, reconstructs those values and they must never form a shell
+  string.
+- `MoveToTrash` actions use the registry-reconstructed path only after it
+  matches the validated observed target path.
+- `DeletePermanently` is disabled in this build and cannot be selected.
 - Execution appends JSONL audit records to `--audit-log PATH` or
   `devsweep-audit.jsonl`.
 
@@ -154,11 +155,11 @@ CleanAction::Command {
 - Audit file cannot be opened -> error before any target action runs.
 - Individual target failure -> record failed audit entry, continue remaining
   targets, return a report with failures.
-- Inspect-only target -> skipped audit entry, no side effect.
+- Inspect-only target selected for cleanup -> error before audit or side effect.
 - Target path contains the running `devsweep` executable -> skipped audit entry,
   no command/trash side effect. Use the shared path-safety helper rather than
   duplicating path prefix checks in callers.
-- Permanent delete target -> failed audit entry, no side effect.
+- Permanent delete action -> error before audit or side effect.
 
 #### 5. Good/Base/Bad Cases
 
@@ -166,8 +167,7 @@ CleanAction::Command {
 "--manifest-path", "<Cargo.toml>"]`.
 - Good: a selected target that contains `std::env::current_exe()` is skipped
   before invoking `CommandRunner` or `TrashRunner`.
-- Good: trash-backed target moves exactly the path from
-  `CleanAction::MoveToTrash`.
+- Good: a registry-resolved trash target moves exactly the validated path.
 - Base: `devsweep clean` reports a dry-run with zero selected targets when no
   plan is provided.
 - Bad: executor reruns scanner logic to infer paths.
@@ -182,7 +182,8 @@ CleanAction::Command {
   record status is `skipped`.
 - Trash-runner test asserting the exact plan path is used.
 - Audit JSONL test covering both success and failure records in one job.
-- Permanent-delete test proving the file remains present even with the flag.
+- Permanent-delete test proving the action is rejected before runner or audit
+  calls.
 - Scanner regression proving Rust target plans keep `--manifest-path`.
 
 #### 7. Wrong vs Correct
@@ -209,6 +210,105 @@ CommandRequest {
 }
 ```
 
+### Scenario: Declarative plan trust boundary
+
+#### 1. Scope / Trigger
+
+- Trigger: changing the JSON plan schema, loading a saved plan, resolving a
+  cleanup rule, calculating a manifest identity, or passing a plan from the
+  TUI into execution.
+
+#### 2. Signatures
+
+- Persisted input: `UntrustedPlan { version, targets: Vec<UntrustedTarget> }`.
+- Trust conversion: `validate_plan(&UntrustedPlan) -> Result<ValidatedPlan>`.
+- Scan serialization: `untrusted_plan_from_scan(&CleanupPlan) -> Result<UntrustedPlan>`.
+- Execution boundary:
+  `Executor::run_plan(&ValidatedPlan, ExecutionRequest) -> Result<ExecutionReport>`.
+- Identity: `ActionFingerprint` and lowercase SHA-256 `ValidatedPlan::digest()`.
+
+#### 3. Contracts
+
+- Persisted plans are exact schema v2. v1 fails with
+  `plan format v1 is no longer accepted; re-run \`devsweep scan --json\``;
+  every other version fails before execution.
+- `UntrustedPlan`/nested DTOs are closed-world serde types. They serialize
+  facts, `rule_id`, and `CleanupIntent`, never `CleanAction`, `program`,
+  `args`, `cwd`, or permanent-delete authority.
+- `RuleRegistry` is the only action factory. It reconstructs trusted argv and
+  trash paths from rule/intent IDs, then validates scope, path, ecosystem,
+  kind, risk, and reversibility against the observed target.
+- Canonical identity sorts normalized targets, normalizes lexical absolute
+  paths, sorts evidence, includes the reconstructed trusted `CleanAction`, and
+  hashes the domain-separated v2 representation. `ActionFingerprint` combines
+  registry action identity with a canonical path or a registry-owned logical
+  provider footprint. Duplicate fingerprints fail validation; the executor
+  additionally keeps a once ledger.
+- CLI dry-run and execute consume the same validated plan. TUI confirmation
+  displays the digest prefix, carries the full digest with its frozen snapshot,
+  and revalidates both before creating an executor request.
+
+#### 4. Validation & Error Matrix
+
+- v1 or unsupported version -> error before runner, trash, audit, or worker
+  dispatch.
+- Unknown serde field, arbitrary command field, relative path, scope escape,
+  unknown rule/action, or inconsistent risk/reversibility -> validation error.
+- Selected inspect-only target -> error before audit or cleanup side effect.
+- Equivalent Windows case/separator/trailing-slash paths, equivalent POSIX
+  leading separators, or two provider targets sharing a logical command
+  footprint -> duplicate fingerprint error.
+- A child under project root `/` -> valid containment; a path merely sharing a
+  non-root textual prefix -> scope-escape error.
+- TUI digest differs after runtime revalidation -> failed job before executor.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: a saved Rust target declares `cargo/clean_manifest`; the registry
+  reconstructs `cargo clean --manifest-path <Cargo.toml>`.
+- Good: a provider-supplied cache path is evidence only and cannot create a
+  second command footprint or change its argv.
+- Good: `py` and `python` are one logical pip-purge footprint for duplicate
+  prevention, while their different trusted commands produce different
+  confirmation digests when validated separately.
+- Base: an empty v2 plan validates and dry-runs with zero selected targets.
+- Bad: deserializing `cmd.exe`, PowerShell, `/bin/sh`, or extra argv from a
+  plan file.
+- Bad: accepting a v1 plan or deriving execution authority directly from a
+  target path/action stored in JSON.
+
+#### 6. Tests Required
+
+- Serde tests reject executable and unknown nested fields; v1 tests assert the
+  exact rescan wording.
+- Validation tests cover relative/scope-mismatched paths, unknown IDs,
+  inspect-only selection, risk/action drift, and duplicate canonical
+  fingerprints, including Windows spelling variants and POSIX leading
+  separator variants.
+- Digest tests prove input target ordering is insensitive and a logical target
+  change or reconstructed provider command changes the digest.
+- Executor test injects a malformed test-only validated plan and proves the
+  once ledger blocks the second runner call.
+- CLI/TUI tests prove dry-run/execute share validation and a digest mismatch
+  reaches no executor action.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+let plan: CleanupPlan = serde_json::from_reader(file)?;
+Executor::default().run_plan(&plan, request)?;
+```
+
+Correct:
+
+```rust
+let plan: UntrustedPlan = serde_json::from_reader(file)?;
+let validated = validate_plan(&plan)?;
+Executor::default().run_plan(&validated, request)?;
+```
+
 ### Scenario: Global cache providers
 
 #### 1. Scope / Trigger
@@ -231,10 +331,11 @@ CommandRequest {
 - `scan --global` may run read-only or provider-owned inspect commands such as
   `npm config get cache`, `pip cache dir`, `pnpm store path`, `yarn --version`,
   and Yarn cache-folder commands.
-- `scan --global` must never execute cleanup commands. It only serializes
-  future `CleanAction::Command` plans.
-- npm, pip, pnpm, and Yarn global cache cleanup targets use
-  `CleanAction::Command` with program and argv stored separately.
+- `scan --global` must never execute cleanup commands. It produces typed
+  in-memory scan facts; `scan --json` converts those facts to declarative
+  `RunBuiltInAction` intents.
+- npm, pip, pnpm, and Yarn cleanup argv are reconstructed by the trusted
+  registry from provider/action IDs. JSON must not carry program, args, or cwd.
 - A provider must not emit multiple user-facing cleanup targets for the same
   cache path just because the tool has alternative commands. Keep one cleanup
   target per physical cache footprint and record related official commands in

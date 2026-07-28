@@ -14,7 +14,8 @@ evidence.
 
 ## Type Organization
 
-- Shared cleanup types live in `src/model.rs`.
+- Shared cleanup types live in `src/model.rs`; JSON-facing `UntrustedPlan` and
+  `CleanupIntent` are distinct from internal `CleanupPlan`/`CleanAction`.
 - CLI argument types live in `src/cli.rs`.
 - TUI-only state types live in `src/tui/app.rs` (shared by reducer and
   render); render-only types stay private in `src/tui/render.rs`.
@@ -37,7 +38,9 @@ pub struct CleanTarget {
 
 The TUI should receive already-typed data. JSON decoding belongs at file/CLI
 boundaries, not in widget code. If future UI code loads a plan file, decode it
-into `CleanupPlan` before rendering.
+into `UntrustedPlan`, validate it through `plan_validation`, and only then use
+the resulting typed projection; never deserialize executable action details
+into UI state.
 
 ---
 

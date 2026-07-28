@@ -4,12 +4,13 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use crossterm::event::{self, Event as CrosstermEvent};
 
 use crate::{
     executor::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
     model::{CleanupPlan, TargetId},
+    plan_validation::{ValidatedPlan, validate_scanned_plan},
     sweep::{ScanOptions, ScanProgress, Sweeper},
 };
 
@@ -31,6 +32,7 @@ pub(super) trait CleanService: Send + Clone + 'static {
     fn run_plan(
         &self,
         plan: &CleanupPlan,
+        expected_digest: &str,
         request: ExecutionRequest,
         on_progress: &mut dyn FnMut(ExecutionProgress),
     ) -> Result<ExecutionReport>;
@@ -56,11 +58,21 @@ impl CleanService for ExecutorCleanService {
     fn run_plan(
         &self,
         plan: &CleanupPlan,
+        expected_digest: &str,
         request: ExecutionRequest,
         on_progress: &mut dyn FnMut(ExecutionProgress),
     ) -> Result<ExecutionReport> {
-        Executor::default().run_plan_with_progress(plan, request, on_progress)
+        let validated = validate_confirmed_plan(plan, expected_digest)?;
+        Executor::default().run_plan_with_progress(&validated, request, on_progress)
     }
+}
+
+fn validate_confirmed_plan(plan: &CleanupPlan, expected_digest: &str) -> Result<ValidatedPlan> {
+    let validated = validate_scanned_plan(plan)?;
+    if validated.digest() != expected_digest {
+        bail!("confirmed cleanup plan digest does not match the validated plan")
+    }
+    Ok(validated)
 }
 
 pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
@@ -129,9 +141,12 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
             job_id,
             plan,
             selected,
+            plan_digest,
         } => {
             let clean = clean.clone();
-            thread::spawn(move || run_clean_worker(job_id, plan, selected, worker_tx, clean));
+            thread::spawn(move || {
+                run_clean_worker(job_id, plan, selected, plan_digest, worker_tx, clean)
+            });
         }
         Effect::CancelJob { job_id } => {
             let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
@@ -179,6 +194,7 @@ fn run_clean_worker<C: CleanService>(
     job_id: JobId,
     plan: CleanupPlan,
     selected: Vec<TargetId>,
+    plan_digest: String,
     worker_tx: Sender<WorkerEvent>,
     clean: C,
 ) {
@@ -189,9 +205,9 @@ fn run_clean_worker<C: CleanService>(
 
     let result = clean.run_plan(
         &plan,
+        &plan_digest,
         ExecutionRequest {
             execute: true,
-            allow_permanent_delete: false,
             audit_log: None,
             selected,
         },
@@ -266,6 +282,7 @@ mod tests {
         fn run_plan(
             &self,
             _plan: &CleanupPlan,
+            _expected_digest: &str,
             request: ExecutionRequest,
             on_progress: &mut dyn FnMut(ExecutionProgress),
         ) -> Result<ExecutionReport> {
@@ -290,6 +307,29 @@ mod tests {
             failures: Vec::new(),
             audit_log: None,
         }
+    }
+
+    #[test]
+    fn confirmed_digest_must_match_the_revalidated_snapshot() {
+        let mut plan = representative_plan();
+        plan.targets.truncate(1);
+        let digest = validate_scanned_plan(&plan)
+            .expect("representative project target validates")
+            .digest()
+            .to_string();
+
+        assert_eq!(
+            validate_confirmed_plan(&plan, &digest)
+                .expect("matching digest validates")
+                .digest(),
+            digest
+        );
+        assert!(
+            validate_confirmed_plan(&plan, "different-digest")
+                .expect_err("mismatched digest rejects")
+                .to_string()
+                .contains("does not match")
+        );
     }
 
     #[test]
@@ -364,6 +404,7 @@ mod tests {
             3,
             plan,
             vec![target_id.clone()],
+            "fixture-digest".to_string(),
             worker_tx,
             FakeCleanService {
                 progress: vec![ExecutionProgress {
@@ -402,7 +443,6 @@ mod tests {
         let recorded = requests.lock().expect("requests lock");
         assert_eq!(recorded.len(), 1);
         assert!(recorded[0].execute);
-        assert!(!recorded[0].allow_permanent_delete);
         assert!(recorded[0].audit_log.is_none());
         assert_eq!(recorded[0].selected, vec![target_id]);
     }
@@ -414,6 +454,7 @@ mod tests {
             4,
             representative_plan(),
             representative_plan().default_selected_ids(),
+            "fixture-digest".to_string(),
             worker_tx,
             FakeCleanService {
                 progress: Vec::new(),
@@ -435,6 +476,7 @@ mod tests {
             5,
             representative_plan(),
             representative_plan().default_selected_ids(),
+            "fixture-digest".to_string(),
             worker_tx,
             FakeCleanService {
                 progress: Vec::new(),

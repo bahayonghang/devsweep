@@ -503,17 +503,22 @@ mod tests {
         assert!(!target.selected_by_default);
         assert!(matches!(target.action, CleanAction::MoveToTrash { .. }));
 
-        let json = serde_json::to_value(&plan).expect("plan serializes");
+        let json = serde_json::to_value(
+            crate::plan_validation::untrusted_plan_from_scan(&plan).expect("v2 plan converts"),
+        )
+        .expect("plan serializes");
         let first = &json["targets"][0];
         for key in [
             "risk",
             "evidence",
             "selected_by_default",
-            "action",
+            "intent",
+            "rule_id",
             "estimated_bytes",
         ] {
             assert!(!first[key].is_null(), "missing JSON field {key}");
         }
+        assert!(first["action"].is_null());
     }
 
     #[test]

@@ -820,6 +820,10 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
             Span::styled("  Estimated: ", muted_style()),
             Span::styled(format_bytes(confirm.estimated_bytes), warning_style()),
         ]),
+        Line::from(vec![
+            Span::styled("Plan digest: ", muted_style()),
+            Span::styled(confirm.plan_digest_prefix.clone(), accent_style()),
+        ]),
     ];
 
     if !confirm.selected_targets.is_empty() {
@@ -828,7 +832,7 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         lines.extend(confirm.selected_targets.iter().take(8).map(|target| {
             Line::from(vec![
                 Span::styled("  - ", muted_style()),
-                Span::styled(target.clone(), panel_style()),
+                Span::styled(compact_text(target, 46), panel_style()),
             ])
         }));
         if confirm.selected_targets.len() > 8 {
@@ -848,7 +852,10 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         lines.extend(confirm.command_previews.iter().take(8).map(|preview| {
             Line::from(vec![
                 Span::styled("  - ", muted_style()),
-                Span::styled(format!("{} -> ", preview.target), panel_style()),
+                Span::styled(
+                    format!("{} -> ", compact_text(&preview.target, 14)),
+                    panel_style(),
+                ),
                 Span::styled(preview.command.clone(), accent_style()),
             ])
         }));
@@ -997,7 +1004,8 @@ fn cleanup_item_status_display(status: CleanupItemStatus) -> (&'static str, Styl
 }
 
 fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'static>>) {
-    let area = centered_modal_rect(frame.area(), 80, 20, 52, 10);
+    let desired_height = (lines.len() as u16).saturating_add(4).max(10);
+    let area = centered_modal_rect(frame.area(), 80, desired_height, 52, 10);
     frame.render_widget(Clear, area);
     frame.render_widget(
         Paragraph::new(Text::from(lines))
@@ -1325,7 +1333,6 @@ mod tests {
         assert!(rendered.contains("Sel Risk Size Target"));
         assert!(rendered.contains("> [x] Low"));
         assert!(rendered.contains("1.0 KiB"));
-        assert!(rendered.contains("D:/code/web/.next/cache"));
     }
 
     #[test]
@@ -1337,7 +1344,6 @@ mod tests {
         assert!(rendered.contains("Targets"));
         assert!(rendered.contains("Details"));
         assert!(!rendered.contains("Categories"));
-        assert!(rendered.contains("D:/code/web/.next/cache"));
     }
 
     #[test]
@@ -1394,6 +1400,7 @@ mod tests {
         assert!(confirm.contains("Irreversible command-backed cleanup"));
         assert!(confirm.contains("Cleanup commands"));
         assert!(confirm.contains("argv: npm cache clean --force"));
+        assert!(confirm.contains("Plan digest:"));
         assert!(confirm.contains("Required: confirm"));
         assert!(confirm.contains("Enter runs after confirm matches"));
 
@@ -1416,16 +1423,29 @@ mod tests {
         app.selected_ids.clear();
         app.selected_ids.insert(app.targets[0].id.clone());
         app.selected_ids.insert(app.targets[1].id.clone());
+        let project_scope = scope_label(&app.targets[0].scope);
+        let project_path = app.targets[0]
+            .path
+            .as_ref()
+            .expect("project target path")
+            .display()
+            .to_string();
+        let global_path = app.targets[1]
+            .path
+            .as_ref()
+            .expect("global target path")
+            .display()
+            .to_string();
 
         let dry_run = dry_run_lines(&app)
             .into_iter()
             .map(|line| line.to_string())
             .collect::<Vec<_>>()
             .join("\n");
-        assert!(dry_run.contains("Project (D:/code/web)"));
+        assert!(dry_run.contains(&project_scope));
         assert!(dry_run.contains("Global"));
-        assert!(dry_run.contains("D:/code/web/.next/cache"));
-        assert!(dry_run.contains("C:/Users/me/AppData/Local/npm-cache"));
+        assert!(dry_run.contains(&project_path));
+        assert!(dry_run.contains(&global_path));
 
         app.update(key(KeyCode::Char('c')));
         let Overlay::Confirm(confirm) = &app.overlay else {
@@ -1436,7 +1456,7 @@ mod tests {
             confirm
                 .selected_targets
                 .iter()
-                .any(|target| target.contains("Project (D:/code/web)"))
+                .any(|target| target.contains(&project_scope))
         );
         assert!(
             confirm
@@ -1446,7 +1466,7 @@ mod tests {
         );
         let rendered = render_text(&app);
         assert!(rendered.contains("Selected targets:"));
-        assert!(rendered.contains("Project (D:/code/web)"));
+        assert!(rendered.contains("Project"));
         assert!(rendered.contains("Global"));
     }
 
@@ -1587,7 +1607,7 @@ mod tests {
         assert!(rendered.contains("OK"));
         assert!(rendered.contains("FAILED"));
         assert!(rendered.contains("SKIPPED"));
-        assert!(rendered.contains("Access denied: file is locked"));
+        assert!(rendered.contains("Access denied"));
 
         app.active_tab = ActiveTab::JobsLogs;
         app.cleanup_progress = None;

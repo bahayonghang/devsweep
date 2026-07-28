@@ -232,7 +232,7 @@ fn add_pnpm_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         path: store_path.clone(),
         estimated_bytes: store_bytes,
         last_modified: store_modified,
-        risk: RiskLevel::Low,
+        risk: PNPM_STORE_RULE_DOC.risk,
         selected_by_default: false,
         program: pnpm,
         args: vec!["store", "prune"],

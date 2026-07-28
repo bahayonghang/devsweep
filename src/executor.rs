@@ -11,14 +11,14 @@ use anyhow::{Context, Result, anyhow, bail};
 use serde::Serialize;
 
 use crate::{
-    model::{CleanAction, CleanTarget, CleanupPlan, TargetId},
+    model::{CleanAction, CleanTarget, TargetId},
     path_safety::target_contains_current_exe,
+    plan_validation::ValidatedPlan,
 };
 
 #[derive(Debug, Clone)]
 pub struct ExecutionRequest {
     pub execute: bool,
-    pub allow_permanent_delete: bool,
     pub audit_log: Option<PathBuf>,
     pub selected: Vec<TargetId>,
 }
@@ -155,7 +155,7 @@ where
 {
     pub fn run_plan(
         &self,
-        plan: &CleanupPlan,
+        plan: &ValidatedPlan,
         request: ExecutionRequest,
     ) -> Result<ExecutionReport> {
         self.run_plan_with_progress(plan, request, |_| {})
@@ -163,7 +163,7 @@ where
 
     pub fn run_plan_with_progress<F>(
         &self,
-        plan: &CleanupPlan,
+        plan: &ValidatedPlan,
         request: ExecutionRequest,
         mut on_progress: F,
     ) -> Result<ExecutionReport>
@@ -171,11 +171,21 @@ where
         F: FnMut(ExecutionProgress),
     {
         let selected_ids: HashSet<&TargetId> = request.selected.iter().collect();
-        let selected_targets: Vec<&CleanTarget> = plan
-            .targets
+        let selected_targets: Vec<_> = plan
+            .targets()
             .iter()
-            .filter(|target| selected_ids.contains(&target.id))
+            .filter(|target| selected_ids.contains(&target.target().id))
             .collect();
+
+        if let Some(target) = selected_targets
+            .iter()
+            .find(|target| !target.target().action.is_executable())
+        {
+            bail!(
+                "target {} has no executable cleanup action",
+                target.target().id.as_str()
+            )
+        }
 
         if !request.execute {
             return Ok(ExecutionReport {
@@ -206,9 +216,20 @@ where
         };
 
         let total = selected_targets.len();
-        for target in selected_targets {
+        let mut executed_fingerprints = HashSet::new();
+        for validated_target in selected_targets {
+            let target = validated_target.target();
             let started = Instant::now();
-            let outcome = self.execute_target(target, request.allow_permanent_delete);
+            let dispatch_attempted =
+                executed_fingerprints.insert(validated_target.fingerprint().clone());
+            let outcome = if dispatch_attempted {
+                self.execute_target(target)
+            } else {
+                Err(anyhow!(
+                    "duplicate action fingerprint rejected before execution: {}",
+                    validated_target.fingerprint().as_str()
+                ))
+            };
             let duration_ms = started.elapsed().as_millis();
 
             let (progress_status, progress_message) = match outcome {
@@ -227,7 +248,9 @@ where
                     )
                 }
                 Err(error) => {
-                    report.attempted += 1;
+                    if dispatch_attempted {
+                        report.attempted += 1;
+                    }
                     report.failed += 1;
                     let message = error.to_string();
                     report.failures.push(ActionFailure {
@@ -252,11 +275,7 @@ where
         Ok(report)
     }
 
-    fn execute_target(
-        &self,
-        target: &CleanTarget,
-        _allow_permanent_delete: bool,
-    ) -> Result<ActionStatus> {
+    fn execute_target(&self, target: &CleanTarget) -> Result<ActionStatus> {
         if target_contains_current_exe(target.path.as_deref()) {
             return Ok(ActionStatus::Skipped {
                 message: SELF_CLEAN_SKIP_MESSAGE.to_string(),
@@ -461,8 +480,12 @@ mod tests {
 
     use super::*;
     use crate::model::{
-        CleanAction, CleanTarget, Ecosystem, Evidence, RiskLevel, Scope, TargetKind,
+        CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetKind,
     };
+
+    fn test_validated_plan(plan: &CleanupPlan) -> ValidatedPlan {
+        ValidatedPlan::from_cleanup_plan_for_test(plan.clone())
+    }
 
     #[test]
     fn dry_run_does_not_call_command_or_trash_runners() {
@@ -485,11 +508,10 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: false,
-                    allow_permanent_delete: false,
                     audit_log: None,
                 },
             )
@@ -530,11 +552,10 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
                 },
             )
@@ -580,11 +601,10 @@ mod tests {
 
         executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path),
                 },
             )
@@ -626,11 +646,10 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
                 },
             )
@@ -686,11 +705,10 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
                 },
             )
@@ -714,7 +732,7 @@ mod tests {
     }
 
     #[test]
-    fn permanent_delete_is_disabled_even_when_flag_is_present() {
+    fn permanent_delete_action_is_rejected_before_execution() {
         let fixture = TempDir::new().expect("temp dir");
         let audit_path = fixture.path().join("audit.jsonl");
         let doomed = fixture.path().join("do-not-delete");
@@ -735,19 +753,22 @@ mod tests {
             RecordingTrashRunner::default(),
         );
 
-        let report = executor
+        let error = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: true,
                     audit_log: Some(audit_path),
                 },
             )
-            .expect("job records disabled permanent delete");
+            .expect_err("disabled permanent delete cannot be selected");
 
-        assert_eq!(report.failed, 1);
+        assert!(
+            error
+                .to_string()
+                .contains("has no executable cleanup action")
+        );
         assert!(doomed.exists(), "permanent delete must remain disabled");
     }
 
@@ -784,11 +805,10 @@ mod tests {
 
         let report = executor
             .run_plan_with_progress(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path),
                 },
                 |event| progress.push(event),
@@ -808,7 +828,7 @@ mod tests {
     }
 
     #[test]
-    fn observed_execution_progress_reports_typed_target_outcomes() {
+    fn observed_execution_progress_reports_success_and_failure_outcomes() {
         let fixture = TempDir::new().expect("temp dir");
         let audit_path = fixture.path().join("audit.jsonl");
         let success_path = fixture.path().join("node_modules");
@@ -822,7 +842,6 @@ mod tests {
                     },
                     Some(success_path),
                 ),
-                target("cargo.home.inspect", CleanAction::NoopInspectOnly, None),
                 target(
                     "rust.target",
                     CleanAction::Command {
@@ -843,11 +862,10 @@ mod tests {
 
         let report = executor
             .run_plan_with_progress(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path),
                 },
                 |event| progress.push(event),
@@ -855,15 +873,50 @@ mod tests {
             .expect("execute returns partial-failure report");
 
         assert_eq!(report.succeeded, 1);
-        assert_eq!(report.skipped, 1);
+        assert_eq!(report.skipped, 0);
         assert_eq!(report.failed, 1);
-        assert_eq!(progress.len(), 3);
+        assert_eq!(progress.len(), 2);
         assert_eq!(progress[0].status, ExecutionTargetStatus::Succeeded);
         assert_eq!(progress[0].message, "completed");
-        assert_eq!(progress[1].status, ExecutionTargetStatus::Skipped);
-        assert!(progress[1].message.contains("inspect-only"));
-        assert_eq!(progress[2].status, ExecutionTargetStatus::Failed);
-        assert!(progress[2].message.contains("cargo unavailable"));
+        assert_eq!(progress[1].status, ExecutionTargetStatus::Failed);
+        assert!(progress[1].message.contains("cargo unavailable"));
+    }
+
+    #[test]
+    fn inspect_only_selection_is_rejected_before_audit_or_runner_calls() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "cargo.home.inspect",
+                CleanAction::NoopInspectOnly,
+                None,
+            )],
+        };
+        let command_runner = RecordingCommandRunner::default();
+        let trash_runner = RecordingTrashRunner::default();
+        let executor = Executor::new(command_runner.clone(), trash_runner.clone());
+
+        let error = executor
+            .run_plan(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path.clone()),
+                },
+            )
+            .expect_err("inspect-only target cannot be selected");
+
+        assert!(
+            error
+                .to_string()
+                .contains("has no executable cleanup action")
+        );
+        assert!(command_runner.requests().is_empty());
+        assert!(trash_runner.paths().is_empty());
+        assert!(!audit_path.exists());
     }
 
     #[test]
@@ -891,11 +944,10 @@ mod tests {
 
         let report = executor
             .run_plan_with_progress(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path.clone()),
                 },
                 |event| progress.push(event),
@@ -951,11 +1003,10 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: vec![plan.targets[0].id.clone()],
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path),
                 },
             )
@@ -986,11 +1037,10 @@ mod tests {
 
         let dry_run = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: Vec::new(),
                     execute: false,
-                    allow_permanent_delete: false,
                     audit_log: None,
                 },
             )
@@ -999,11 +1049,10 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: Vec::new(),
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path),
                 },
             )
@@ -1012,6 +1061,59 @@ mod tests {
         assert_eq!(report.selected, 0);
         assert_eq!(report.attempted, 0);
         assert!(trash_runner.paths().is_empty());
+    }
+
+    #[test]
+    fn once_ledger_rejects_a_duplicate_fingerprint_before_second_runner_call() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let cleanup_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: cleanup_path.clone(),
+                    },
+                    Some(cleanup_path.clone()),
+                ),
+                target(
+                    "duplicate.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: cleanup_path.clone(),
+                    },
+                    Some(cleanup_path.clone()),
+                ),
+            ],
+        };
+        let validated = test_validated_plan(&plan);
+        let trash_runner = RecordingTrashRunner::default();
+        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+
+        let report = executor
+            .run_plan(
+                &validated,
+                ExecutionRequest {
+                    selected: validated.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path.clone()),
+                },
+            )
+            .expect("duplicate is recorded as a partial failure");
+
+        assert_eq!(report.succeeded, 1);
+        assert_eq!(report.failed, 1);
+        assert_eq!(report.attempted, 1);
+        assert_eq!(trash_runner.paths(), vec![cleanup_path]);
+        assert!(
+            report.failures[0]
+                .message
+                .contains("duplicate action fingerprint")
+        );
+        let records = read_jsonl(&audit_path);
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[1]["status"], "failed");
     }
 
     #[test]
@@ -1034,14 +1136,13 @@ mod tests {
 
         let report = executor
             .run_plan(
-                &plan,
+                &test_validated_plan(&plan),
                 ExecutionRequest {
                     selected: vec![
                         TargetId::new("ghost.target:none"),
                         plan.targets[0].id.clone(),
                     ],
                     execute: true,
-                    allow_permanent_delete: false,
                     audit_log: Some(audit_path),
                 },
             )
