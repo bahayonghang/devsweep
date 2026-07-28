@@ -620,3 +620,24 @@ Extracted shared fs_size estimation, parallelized directory sizing with rayon, a
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: 完成计划信任边界
+
+**Date**: 2026-07-28
+**Task**: 完成计划信任边界
+**Branch**: `dev`
+
+### Summary
+
+完成 v2 声明式计划信任边界、可信 ActionRegistry、canonical digest 与 TUI 执行重验证，并通过 just ci。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f143484` | (see git log) |
+
+### Status
+
+[OK] **Completed**
