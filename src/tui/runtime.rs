@@ -1,6 +1,7 @@
 use std::{
+    collections::HashMap,
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, Sender},
     },
@@ -15,8 +16,11 @@ use crate::{
     executor::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
     model::{CleanupPlan, TargetId},
     plan_validation::{ValidatedPlan, validate_scanned_plan},
+    process_runner::{CancelObserver, FlagCancelObserver},
     sweep::{ScanOptions, ScanProgress, Sweeper},
 };
+
+type CancelRegistry = Arc<Mutex<HashMap<JobId, Arc<FlagCancelObserver>>>>;
 
 use super::{
     app::{App, Effect, JobId, UiEvent, WorkerEvent},
@@ -87,6 +91,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
     let mut app = App::new();
     let (worker_tx, worker_rx) = mpsc::channel();
     let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
+    let cancel_registry: CancelRegistry = Arc::new(Mutex::new(HashMap::new()));
     let startup_effects = app.startup_effects();
     dispatch_effects(
         startup_effects,
@@ -94,6 +99,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
         &scan,
         &clean,
         &clean_dispatch_in_flight,
+        &cancel_registry,
     )?;
 
     while !app.should_quit {
@@ -104,6 +110,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
             &scan,
             &clean,
             &clean_dispatch_in_flight,
+            &cancel_registry,
         )?;
         terminal.draw(|frame| render_app(frame, &app))?;
 
@@ -117,6 +124,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
                 &scan,
                 &clean,
                 &clean_dispatch_in_flight,
+                &cancel_registry,
             )?;
         }
     }
@@ -131,10 +139,27 @@ fn drain_worker_events<S: ScanService, C: CleanService>(
     scan: &S,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
+    cancel_registry: &CancelRegistry,
 ) -> Result<()> {
     while let Ok(event) = worker_rx.try_recv() {
+        if let WorkerEvent::CleanFinished { job_id, .. }
+        | WorkerEvent::JobFailed { job_id, .. }
+        | WorkerEvent::JobCanceled { job_id }
+        | WorkerEvent::ScanFinished { job_id, .. } = &event
+        {
+            if let Ok(mut guard) = cancel_registry.lock() {
+                guard.remove(job_id);
+            }
+        }
         let effects = app.update(UiEvent::Worker(event));
-        dispatch_effects(effects, worker_tx, scan, clean, clean_dispatch_in_flight)?;
+        dispatch_effects(
+            effects,
+            worker_tx,
+            scan,
+            clean,
+            clean_dispatch_in_flight,
+            cancel_registry,
+        )?;
     }
     Ok(())
 }
@@ -145,6 +170,7 @@ fn dispatch_effects<S: ScanService, C: CleanService>(
     scan: &S,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
+    cancel_registry: &CancelRegistry,
 ) -> Result<()> {
     for effect in effects {
         dispatch_effect(
@@ -153,6 +179,7 @@ fn dispatch_effects<S: ScanService, C: CleanService>(
             scan,
             clean,
             clean_dispatch_in_flight,
+            cancel_registry,
         )?;
     }
     Ok(())
@@ -164,9 +191,14 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
     scan: &S,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
+    cancel_registry: &CancelRegistry,
 ) -> Result<()> {
     match effect {
         Effect::StartScan { job_id } => {
+            let cancel = Arc::new(FlagCancelObserver::new());
+            if let Ok(mut guard) = cancel_registry.lock() {
+                guard.insert(job_id, Arc::clone(&cancel));
+            }
             let scan = scan.clone();
             thread::spawn(move || run_scan_worker(job_id, worker_tx, scan));
         }
@@ -187,6 +219,10 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
                 });
                 return Ok(());
             }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            if let Ok(mut guard) = cancel_registry.lock() {
+                guard.insert(job_id, Arc::clone(&cancel));
+            }
             let clean = clean.clone();
             let clean_dispatch_in_flight = Arc::clone(clean_dispatch_in_flight);
             thread::spawn(move || {
@@ -198,10 +234,17 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
                     worker_tx,
                     clean,
                     clean_dispatch_in_flight,
+                    cancel,
                 )
             });
         }
-        Effect::CancelJob { .. } => {}
+        Effect::CancelJob { job_id } => {
+            if let Ok(guard) = cancel_registry.lock()
+                && let Some(flag) = guard.get(&job_id)
+            {
+                flag.request_cancel();
+            }
+        }
         Effect::Quit => {}
     }
 
@@ -241,6 +284,7 @@ fn run_scan_worker<S: ScanService>(job_id: JobId, worker_tx: Sender<WorkerEvent>
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_clean_worker<C: CleanService>(
     job_id: JobId,
     plan: CleanupPlan,
@@ -249,6 +293,7 @@ fn run_clean_worker<C: CleanService>(
     worker_tx: Sender<WorkerEvent>,
     clean: C,
     clean_dispatch_in_flight: Arc<AtomicBool>,
+    cancel: Arc<FlagCancelObserver>,
 ) {
     let _ = worker_tx.send(WorkerEvent::JobProgress {
         job_id,
@@ -262,6 +307,7 @@ fn run_clean_worker<C: CleanService>(
             execute: true,
             audit_log: None,
             selected,
+            cancel: Some(Arc::clone(&cancel)),
         },
         &mut |progress| {
             let target_id = progress.target_id;
@@ -279,8 +325,14 @@ fn run_clean_worker<C: CleanService>(
     );
 
     match result {
+        Ok(_report) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
         Ok(report) => {
             let _ = worker_tx.send(WorkerEvent::CleanFinished { job_id, report });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
         }
         Err(error) => {
             let _ = worker_tx.send(WorkerEvent::JobFailed {
@@ -504,6 +556,7 @@ mod tests {
                 requests: requests.clone(),
             },
             Arc::new(AtomicBool::new(false)),
+            Arc::new(FlagCancelObserver::new()),
         );
 
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
@@ -549,6 +602,7 @@ mod tests {
                 requests: Arc::new(Mutex::new(Vec::new())),
             },
             Arc::new(AtomicBool::new(false)),
+            Arc::new(FlagCancelObserver::new()),
         );
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
         assert_eq!(
@@ -572,6 +626,7 @@ mod tests {
                 requests: Arc::new(Mutex::new(Vec::new())),
             },
             Arc::new(AtomicBool::new(false)),
+            Arc::new(FlagCancelObserver::new()),
         );
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
         assert_eq!(
@@ -621,6 +676,7 @@ mod tests {
             &scan,
             &clean,
             &clean_dispatch_in_flight,
+            &Arc::new(Mutex::new(HashMap::new())),
         )
         .expect("effects dispatch");
 
@@ -680,6 +736,7 @@ mod tests {
             &scan,
             &clean,
             &clean_dispatch_in_flight,
+            &Arc::new(Mutex::new(HashMap::new())),
         )
         .expect("cancel effect dispatches");
 

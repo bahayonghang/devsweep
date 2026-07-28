@@ -75,6 +75,7 @@ fn run_clean(command: CleanCommand) -> Result<()> {
             execute: command.execute,
             audit_log: command.audit_log,
             selected: plan.default_selected_ids(),
+            cancel: None,
         },
     )?;
 

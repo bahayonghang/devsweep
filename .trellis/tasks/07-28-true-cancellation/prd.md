@@ -19,7 +19,7 @@
 1. cancellation token 接口定型（owner）：scan walker、size 估算、provider probe、executor 每个 target 前后为检查点；ProcessRunner 的 no-op token 参数接入真实 token。
 2. worker 确认协议：`Cancelling` 只有在 worker 确认停止（当前 action 完成或被安全终止、不再启动下一 action）后才迁移到 `Canceled`；不可安全中断的 action 显示 `cancel_pending`，在 action 边界停止。
 3. executor 取消语义：token 触发后，当前 target 按其可中断性处理（Trash 等待完成；command 经 ProcessRunner 终止进程树），后续 target 一律不启动，report 标记 canceled/partial。
-4. TUI 退出治理：`q`/Ctrl-C 在 mutation job 运行时要求用户选择"继续等待"或"请求边界取消"；退出前 join worker 或显式记录 detach 决策，不得默认留下孤儿删除进程。
+4. TUI 退出治理（决策 D9）：`q`/Ctrl-C 在 mutation job 运行时要求用户选择"继续等待"或"请求取消并等待 worker 确认"；不提供默认或隐式 detach，未达终态不得退出，不得留下孤儿删除进程。
 5. 恢复 `x` 取消快捷键的完整语义（race-hardening 止血阶段的降级文案由本任务替换为真实行为）。
 
 ## Acceptance Criteria

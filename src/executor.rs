@@ -4,6 +4,7 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
+    sync::Arc,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
@@ -28,6 +29,8 @@ pub struct ExecutionRequest {
     pub execute: bool,
     pub audit_log: Option<PathBuf>,
     pub selected: Vec<TargetId>,
+    /// Cooperative cancel flag shared with the UI/runtime.
+    pub cancel: Option<Arc<crate::process_runner::FlagCancelObserver>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -289,7 +292,28 @@ where
             audit_log: Some(audit_path.clone()),
             expected_identity: None,
         };
+        let cancel = request.cancel.clone();
         for validated_target in selected_targets {
+            if cancel
+                .as_ref()
+                .is_some_and(|flag| flag.is_cancel_requested())
+            {
+                report.skipped += 1;
+                report.failures.push(ActionFailure {
+                    target_id: validated_target.target().id.clone(),
+                    message: "canceled before action started".to_string(),
+                });
+                on_progress(ExecutionProgress {
+                    completed: report.succeeded + report.failed + report.skipped,
+                    total,
+                    target_id: validated_target.target().id.clone(),
+                    status: ExecutionTargetStatus::Skipped,
+                    message: "canceled".to_string(),
+                });
+                // Remaining targets are not started once cancel is observed.
+                break;
+            }
+
             let target = validated_target.target();
             let started_at = Instant::now();
             let dispatch_attempted =
@@ -993,6 +1017,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: false,
                     audit_log: None,
+                    cancel: None,
                 },
             )
             .expect("dry-run succeeds");
@@ -1037,6 +1062,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    cancel: None,
                 },
             )
             .expect("execute succeeds");
@@ -1094,6 +1120,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
             )
             .expect("execute succeeds");
@@ -1139,6 +1166,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    cancel: None,
                 },
             )
             .expect("job returns failure report instead of aborting");
@@ -1203,6 +1231,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    cancel: None,
                 },
             )
             .expect("job returns a partial-failure report");
@@ -1257,6 +1286,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
             )
             .expect_err("disabled permanent delete cannot be selected");
@@ -1307,6 +1337,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
                 |event| progress.push(event),
             )
@@ -1364,6 +1395,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
                 |event| progress.push(event),
             )
@@ -1402,6 +1434,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    cancel: None,
                 },
             )
             .expect_err("inspect-only target cannot be selected");
@@ -1446,6 +1479,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    cancel: None,
                 },
                 |event| progress.push(event),
             )
@@ -1509,6 +1543,7 @@ mod tests {
                     selected: vec![plan.targets[0].id.clone()],
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
             )
             .expect("execute succeeds");
@@ -1543,6 +1578,7 @@ mod tests {
                     selected: Vec::new(),
                     execute: false,
                     audit_log: None,
+                    cancel: None,
                 },
             )
             .expect("dry-run succeeds");
@@ -1555,6 +1591,7 @@ mod tests {
                     selected: Vec::new(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
             )
             .expect("execute succeeds");
@@ -1599,6 +1636,7 @@ mod tests {
                     selected: validated.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    cancel: None,
                 },
             )
             .expect("duplicate is recorded as a partial failure");
@@ -1661,6 +1699,52 @@ mod tests {
         // Sanitizer contract shared with durable-audit consumers.
         let sample = sanitize_process_output(b"\x1b[31m\x07x", 64);
         assert!(!sample.as_bytes().contains(&0x1b));
+    }
+
+    #[test]
+    fn cancel_flag_stops_later_targets_before_dispatch() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let first = fixture.path().join("a");
+        let second = fixture.path().join("b");
+        fs::create_dir_all(&first).ok();
+        fs::create_dir_all(&second).ok();
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "first",
+                    CleanAction::MoveToTrash {
+                        path: first.clone(),
+                    },
+                    Some(first.clone()),
+                ),
+                target(
+                    "second",
+                    CleanAction::MoveToTrash {
+                        path: second.clone(),
+                    },
+                    Some(second.clone()),
+                ),
+            ],
+        };
+        let cancel = Arc::new(crate::process_runner::FlagCancelObserver::new());
+        cancel.request_cancel();
+        let trash = RecordingTrashRunner::default();
+        let executor = test_executor(RecordingCommandRunner::default(), trash.clone());
+        let report = executor
+            .run_plan(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path),
+                    cancel: Some(cancel),
+                },
+            )
+            .expect("cancel produces report");
+        assert_eq!(trash.paths().len(), 0, "no side effects after cancel");
+        assert!(report.skipped >= 1 || report.failed >= 1);
     }
 
     #[test]
@@ -1758,6 +1842,7 @@ mod tests {
                     ],
                     execute: true,
                     audit_log: Some(audit_path),
+                    cancel: None,
                 },
             )
             .expect("execute succeeds");

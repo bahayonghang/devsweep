@@ -3,7 +3,7 @@
   "name": "true-cancellation",
   "title": "真实取消：token 贯穿、job 状态机接线与退出治理",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
