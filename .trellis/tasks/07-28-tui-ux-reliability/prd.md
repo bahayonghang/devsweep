@@ -16,18 +16,18 @@
 ## Requirements
 
 1. `TerminalSession` RAII：构造即 enter、`Drop` 逐项 best-effort restore（disable raw mode、leave alternate screen、show cursor 各自独立尝试，不因前者失败中断）；安装 panic hook 保证 panic 时终端仍被恢复。
-2. 目标列表视口：基于面板高度维护 scroll window，光标始终可见；页面滚动键（PgUp/PgDn 或等价）可选。
-3. stale 目标治理：clean 成功的 target 标记 tombstone（显示已清理/从列表移除），并从 `selected_ids` 移除；提示 rescan；在 rescan 前不可再次进入执行选择。
+2. 目标列表视口：基于面板高度维护 scroll window，光标始终可见；提供标准 PgUp/PgDn 翻页（决策 D8）。
+3. stale 目标治理：clean 成功的 target 保留为禁用 tombstone 行直到下一次 rescan（决策 D7），并从 `selected_ids`、总量和执行集合移除；显示已清理状态与 rescan 提示，在 rescan 前不可再次进入执行选择。
 4. 渲染净化：argv preview 对含空格/特殊字符参数加引号或转义；所有进入 UI 的 path/stderr 过滤控制字符；截断按 unicode cell width（CJK=2）计算。
 
 ## Acceptance Criteria
 
-- [ ] 单元测试：事件循环内 panic → 终端 restore 仍被执行（可通过 mock backend/hook 验证 Drop 路径）
-- [ ] 单元测试：restore 第一步失败时其余步骤仍尝试执行
-- [ ] 渲染测试：targets 数 > 面板高度时，光标行始终在渲染窗口内；首/尾边界移动正确
-- [ ] 回归测试：clean 成功后该 target 不再出现在可执行选择中；再次执行需 rescan
-- [ ] 渲染测试：含空格 argv、含控制字符 stderr、CJK 长路径 —— 输出转义/净化/按 cell width 截断正确
-- [ ] `cargo test` 全绿；现有 render 快照测试同步更新
+- [x] 单元测试：事件循环内 panic → 终端 restore 仍被执行（可通过 mock backend/hook 验证 Drop 路径）
+- [x] 单元测试：restore 第一步失败时其余步骤仍尝试执行
+- [x] 渲染测试：targets 数 > 面板高度时，光标行始终在渲染窗口内；首/尾边界移动正确
+- [x] 回归测试：clean 成功后该 target 不再出现在可执行选择中；再次执行需 rescan
+- [x] 渲染测试：含空格 argv、含控制字符 stderr、CJK 长路径 —— 输出转义/净化/按 cell width 截断正确
+- [x] `cargo test` 全绿；现有 render 快照测试同步更新
 
 ## 约束与依赖
 

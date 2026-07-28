@@ -3,7 +3,7 @@
   "name": "tui-ux-reliability",
   "title": "TUI 可靠性补齐：终端 RAII、列表视口与 stale 目标",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

@@ -384,17 +384,37 @@ fn metric_line(label: &'static str, count: usize) -> Line<'static> {
 
 fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let visible = app.visible_target_indices();
+    let content_height = area.height.saturating_sub(3) as usize; // borders + header
+    let page_size = content_height.max(1);
+    // Render is pure: clamp reads against a local window derived from app state.
     let selected_row = app.selected_index.min(visible.len().saturating_sub(1));
+    let mut scroll = app.list_scroll.min(visible.len().saturating_sub(1));
+    if selected_row < scroll {
+        scroll = selected_row;
+    } else if selected_row >= scroll + page_size {
+        scroll = selected_row + 1 - page_size;
+    }
+    let max_scroll = visible.len().saturating_sub(page_size);
+    scroll = scroll.min(max_scroll);
+    let window = if visible.is_empty() {
+        Vec::new()
+    } else {
+        let end = (scroll + page_size).min(visible.len());
+        visible[scroll..end].to_vec()
+    };
+
     let lines = if visible.is_empty() {
         vec![Line::styled("No targets in this view.", muted_style())]
     } else {
         let mut rows = vec![target_header_row(area)];
-        rows.extend(visible.iter().enumerate().map(|(row, index)| {
+        rows.extend(window.iter().enumerate().map(|(row, index)| {
             let target = &app.targets[*index];
+            let absolute = scroll + row;
             target_row(
                 target,
-                row == selected_row,
+                absolute == selected_row,
                 app.selected_ids.contains(&target.id),
+                app.is_cleaned(&target.id),
                 area,
             )
         }));
@@ -421,21 +441,47 @@ fn target_header_row(_area: Rect) -> Line<'static> {
     Line::from(spans)
 }
 
-fn target_row(target: &CleanTarget, selected: bool, checked: bool, area: Rect) -> Line<'static> {
+fn target_row(
+    target: &CleanTarget,
+    selected: bool,
+    checked: bool,
+    cleaned: bool,
+    area: Rect,
+) -> Line<'static> {
     let cursor_style = if selected {
         accent_style()
     } else {
         muted_style()
     };
-    let mark = if checked { "[x]" } else { "[ ]" };
+    let mark = if cleaned {
+        "[-]"
+    } else if checked {
+        "[x]"
+    } else {
+        "[ ]"
+    };
     let cursor = if selected { ">" } else { " " };
     let target_width = target_text_width(area);
-    let identity = if area.width >= 70 {
+    let identity = if cleaned {
+        format!(
+            "{}  cleaned; rescan to refresh",
+            if area.width >= 70 {
+                compact_target_identity(target)
+            } else {
+                target_title(target)
+            }
+        )
+    } else if area.width >= 70 {
         compact_target_identity(target)
     } else {
         target_title(target)
     };
     let target_text = compact_text(&identity, target_width);
+    let text_style = if cleaned {
+        muted_style()
+    } else {
+        panel_style()
+    };
 
     let spans = vec![
         Span::styled(format!("{cursor} "), cursor_style),
@@ -448,7 +494,7 @@ fn target_row(target: &CleanTarget, selected: bool, checked: bool, area: Rect) -
             format!("{:>9} ", format_target_bytes(target)),
             warning_style(),
         ),
-        Span::styled(target_text, panel_style()),
+        Span::styled(target_text, text_style),
     ];
 
     let mut line = Line::from(spans);
@@ -1144,40 +1190,76 @@ fn compact_path(path: &std::path::Path) -> String {
     compact_text(&display_path(path), 48)
 }
 
-fn compact_text(text: &str, max_chars: usize) -> String {
-    if text.chars().count() <= max_chars {
-        return text.to_string();
+fn compact_text(text: &str, max_cells: usize) -> String {
+    let cleaned = sanitize_display_text(text);
+    truncate_to_width(&cleaned, max_cells)
+}
+
+fn compact_context_text(text: &str, max_cells: usize) -> String {
+    let cleaned = sanitize_display_text(text);
+    if display_width(&cleaned) <= max_cells {
+        return cleaned;
     }
 
-    let tail_len = max_chars.saturating_sub(3);
-    let tail = text
-        .chars()
-        .rev()
-        .take(tail_len)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect::<String>();
+    let prefix_budget = max_cells.min(12);
+    let prefix = truncate_to_width(&cleaned, prefix_budget);
+    let tail_budget = max_cells.saturating_sub(display_width(&prefix) + 3);
+    let tail = take_width_suffix(&cleaned, tail_budget);
+    format!("{prefix}...{tail}")
+}
+
+fn display_width(text: &str) -> usize {
+    unicode_width::UnicodeWidthStr::width(text)
+}
+
+fn truncate_to_width(text: &str, max_cells: usize) -> String {
+    if display_width(text) <= max_cells {
+        return text.to_string();
+    }
+    if max_cells <= 3 {
+        return ".".repeat(max_cells.min(3));
+    }
+    let tail_budget = max_cells.saturating_sub(3);
+    let tail = take_width_suffix(text, tail_budget);
     format!("...{tail}")
 }
 
-fn compact_context_text(text: &str, max_chars: usize) -> String {
-    if text.chars().count() <= max_chars {
-        return text.to_string();
+fn take_width_suffix(text: &str, max_cells: usize) -> String {
+    let mut width = 0usize;
+    let mut chars = Vec::new();
+    for ch in text.chars().rev() {
+        let ch_width = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+        if width + ch_width > max_cells {
+            break;
+        }
+        width += ch_width;
+        chars.push(ch);
     }
+    chars.into_iter().rev().collect()
+}
 
-    let prefix_len = max_chars.min(12);
-    let tail_len = max_chars.saturating_sub(prefix_len + 3);
-    let prefix = text.chars().take(prefix_len).collect::<String>();
-    let tail = text
-        .chars()
-        .rev()
-        .take(tail_len)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect::<String>();
-    format!("{prefix}...{tail}")
+pub(super) fn sanitize_display_text(text: &str) -> String {
+    text.chars()
+        .map(|ch| match ch {
+            '\n' | '\r' | '\t' => ' ',
+            c if c.is_control() || c == '\u{7f}' => '?',
+            c => c,
+        })
+        .collect()
+}
+
+fn quote_argv_part(part: &str) -> String {
+    let cleaned = sanitize_display_text(part);
+    if cleaned.is_empty()
+        || cleaned.chars().any(|ch| {
+            ch.is_whitespace()
+                || matches!(ch, '"' | '\'' | '\\' | '*' | '?' | '|' | '&' | ';' | '>')
+        })
+    {
+        format!("\"{}\"", cleaned.replace('\\', "\\\\").replace('"', "\\\""))
+    } else {
+        cleaned
+    }
 }
 
 fn scope_label(scope: &Scope) -> String {
@@ -1275,8 +1357,11 @@ pub(super) fn command_previews<'a>(
 
 fn command_preview(program: &str, args: &[String], cwd: &Option<PathBuf>) -> String {
     let mut parts = Vec::with_capacity(args.len() + 1);
-    parts.push(display_path_text(program));
-    parts.extend(args.iter().map(|arg| display_path_text(arg)));
+    parts.push(quote_argv_part(&display_path_text(program)));
+    parts.extend(
+        args.iter()
+            .map(|arg| quote_argv_part(&display_path_text(arg))),
+    );
     let argv = parts.join(" ");
     if let Some(cwd) = cwd {
         format!("argv: {argv}  cwd: {}", display_path(cwd))
@@ -1286,7 +1371,7 @@ fn command_preview(program: &str, args: &[String], cwd: &Option<PathBuf>) -> Str
 }
 
 pub(super) fn display_path(path: &Path) -> String {
-    display_path_text(&path.display().to_string())
+    sanitize_display_text(&display_path_text(&path.display().to_string()))
 }
 
 fn display_path_text(text: &str) -> String {
@@ -1466,6 +1551,36 @@ mod tests {
         assert!(jobs_logs.contains("Jobs"));
         assert!(jobs_logs.contains("Logs"));
         assert!(jobs_logs.contains("Scanning fixture"));
+    }
+
+    #[test]
+    fn display_hygiene_quotes_argv_and_strips_controls() {
+        assert_eq!(
+            super::command_preview(
+                "npm",
+                &["cache".into(), "clean".into(), "--force".into()],
+                &None
+            ),
+            "argv: npm cache clean --force"
+        );
+        assert!(
+            super::command_preview("tool", &["path with space".into()], &None)
+                .contains("\"path with space\"")
+        );
+        assert!(!super::sanitize_display_text("a\u{1b}[31mb\u{07}c").contains('\u{1b}'));
+        assert!(!super::sanitize_display_text("a\u{1b}[31mb\u{07}c").contains('\u{07}'));
+        let cjk = "中文路径需要按显示宽度截断并且不能越界溢出";
+        let truncated = super::compact_text(cjk, 12);
+        assert!(unicode_width::UnicodeWidthStr::width(truncated.as_str()) <= 12);
+    }
+
+    #[test]
+    fn cleaned_target_renders_as_tombstone() {
+        let mut app = App::with_plan(representative_plan());
+        let target_id = app.targets[0].id.clone();
+        app.cleaned_ids.insert(target_id);
+        let text = render_text(&app);
+        assert!(text.contains("cleaned; rescan to refresh") || text.contains("[-]"));
     }
 
     #[test]

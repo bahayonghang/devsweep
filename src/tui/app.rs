@@ -27,7 +27,11 @@ pub(super) struct App {
     pub(super) targets: Vec<CleanTarget>,
     pub(super) selected_ids: HashSet<TargetId>,
     selection_overrides: HashMap<TargetId, SelectionOverride>,
+    /// Target ids successfully cleaned in this session until the next rescan.
+    pub(super) cleaned_ids: HashSet<TargetId>,
     pub(super) selected_index: usize,
+    /// First visible target-list row for the current viewport.
+    pub(super) list_scroll: usize,
     pub(super) active_tab: ActiveTab,
     pub(super) filter: String,
     pub(super) filter_active: bool,
@@ -59,7 +63,9 @@ impl App {
             targets: plan.targets,
             selected_ids,
             selection_overrides: HashMap::new(),
+            cleaned_ids: HashSet::new(),
             selected_index: 0,
+            list_scroll: 0,
             active_tab: ActiveTab::Dashboard,
             filter: String::new(),
             filter_active: false,
@@ -217,6 +223,14 @@ impl App {
             }
             KeyCode::Up | KeyCode::Char('k') => {
                 self.move_selection(-1);
+                Vec::new()
+            }
+            KeyCode::PageDown => {
+                self.page_selection(1);
+                Vec::new()
+            }
+            KeyCode::PageUp => {
+                self.page_selection(-1);
                 Vec::new()
             }
             KeyCode::Enter => {
@@ -403,6 +417,9 @@ impl App {
                     status,
                     detail,
                 });
+                if status == ExecutionTargetStatus::Succeeded {
+                    self.mark_target_cleaned(target_id.clone());
+                }
                 self.log_target(
                     log_level_for_execution_status(status),
                     AppLogSource::Clean,
@@ -424,6 +441,7 @@ impl App {
                 }
                 if should_apply_scan_update {
                     self.invalidate_confirmation_due_to_scan();
+                    self.cleaned_ids.clear();
                     self.replace_targets_preserving_selection(plan.targets);
                     self.scan_snapshot = None;
                 }
@@ -588,7 +606,7 @@ impl App {
         self.selected_ids = targets
             .iter()
             .filter_map(|target| {
-                if !target.action.is_executable() {
+                if !target.action.is_executable() || self.cleaned_ids.contains(&target.id) {
                     return None;
                 }
                 match self.selection_overrides.get(&target.id) {
@@ -601,6 +619,7 @@ impl App {
             .collect();
         self.targets = targets;
         self.selected_index = 0;
+        self.list_scroll = 0;
     }
 
     fn invalidate_confirmation_due_to_scan(&mut self) {
@@ -627,12 +646,54 @@ impl App {
         let count = self.visible_target_indices().len();
         if count == 0 {
             self.selected_index = 0;
+            self.list_scroll = 0;
             return;
         }
 
         let current = self.selected_index.min(count - 1) as isize;
         let next = (current + delta).clamp(0, count as isize - 1);
         self.selected_index = next as usize;
+        self.ensure_selection_visible(count.saturating_sub(1).max(1));
+    }
+
+    fn page_selection(&mut self, direction: isize) {
+        let page = self.viewport_page_size().max(1) as isize;
+        self.move_selection(direction * page);
+    }
+
+    /// Keep the selected row inside a viewport of `page_size` content rows.
+    pub(super) fn ensure_selection_visible(&mut self, page_size: usize) {
+        let count = self.visible_target_indices().len();
+        if count == 0 || page_size == 0 {
+            self.list_scroll = 0;
+            self.selected_index = 0;
+            return;
+        }
+        self.selected_index = self.selected_index.min(count - 1);
+        if self.selected_index < self.list_scroll {
+            self.list_scroll = self.selected_index;
+        } else if self.selected_index >= self.list_scroll + page_size {
+            self.list_scroll = self.selected_index + 1 - page_size;
+        }
+        let max_scroll = count.saturating_sub(page_size);
+        self.list_scroll = self.list_scroll.min(max_scroll);
+    }
+
+    fn viewport_page_size(&self) -> usize {
+        // Default page used by keyboard navigation before the next render
+        // reports an exact panel height.
+        10
+    }
+
+    pub(super) fn is_cleaned(&self, target_id: &TargetId) -> bool {
+        self.cleaned_ids.contains(target_id)
+    }
+
+    fn mark_target_cleaned(&mut self, target_id: TargetId) {
+        self.cleaned_ids.insert(target_id.clone());
+        self.selected_ids.remove(&target_id);
+        self.selection_overrides
+            .insert(target_id, SelectionOverride::Deselected);
     }
 
     fn toggle_selected_target(&mut self) {
@@ -642,6 +703,17 @@ impl App {
         else {
             return;
         };
+
+        if self.cleaned_ids.contains(&target_id) {
+            self.log_entry(
+                AppLogLevel::Warning,
+                AppLogSource::Clean,
+                None,
+                Some(target_id),
+                "Cleaned targets stay disabled until the next rescan",
+            );
+            return;
+        }
 
         if !executable {
             self.log_entry(
@@ -677,6 +749,9 @@ impl App {
     }
 
     fn set_target_selected(&mut self, target_id: TargetId, selected: bool) {
+        if selected && self.cleaned_ids.contains(&target_id) {
+            return;
+        }
         if selected
             && self
                 .targets
@@ -951,7 +1026,9 @@ impl App {
         self.targets
             .iter()
             .filter(|target| {
-                self.selected_ids.contains(&target.id) && target.action.is_executable()
+                self.selected_ids.contains(&target.id)
+                    && target.action.is_executable()
+                    && !self.cleaned_ids.contains(&target.id)
             })
             .collect()
     }
@@ -2242,6 +2319,76 @@ mod tests {
                 .estimated_bytes,
             2048
         );
+    }
+
+    #[test]
+    fn successful_cleanup_tombstones_target_until_rescan() {
+        let mut app = App::with_plan(representative_plan());
+        let target_id = app.targets[0].id.clone();
+        app.selected_ids.insert(target_id.clone());
+        let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id: target_id.clone(),
+            status: ExecutionTargetStatus::Succeeded,
+            message: "cleaned".to_string(),
+            detail: "ok".to_string(),
+            completed: 1,
+            total: 1,
+        }));
+
+        assert!(app.is_cleaned(&target_id));
+        assert!(!app.selected_ids.contains(&target_id));
+        assert!(
+            !app.selected_targets()
+                .iter()
+                .any(|target| target.id == target_id)
+        );
+
+        app.update(key(KeyCode::Char(' ')));
+        assert!(
+            app.logs.iter().any(|entry| {
+                entry
+                    .message
+                    .contains("Cleaned targets stay disabled until the next rescan")
+            }) || !app.selected_ids.contains(&target_id)
+        );
+
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("rescan starts");
+        };
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: *job_id,
+            plan: representative_plan(),
+        }));
+        assert!(!app.is_cleaned(&target_id));
+    }
+
+    #[test]
+    fn viewport_keeps_selection_visible_for_long_lists() {
+        let mut targets = Vec::new();
+        for index in 0..30 {
+            let mut target = representative_plan().targets[0].clone();
+            target.id = TargetId::new(format!("item-{index}"));
+            targets.push(target);
+        }
+        let mut app = App::with_plan(CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets,
+        });
+        app.selected_index = 0;
+        app.list_scroll = 0;
+        for _ in 0..20 {
+            app.move_selection(1);
+        }
+        app.ensure_selection_visible(5);
+        assert!(app.selected_index >= app.list_scroll);
+        assert!(app.selected_index < app.list_scroll + 5);
+        app.page_selection(1);
+        app.ensure_selection_visible(5);
+        assert!(app.selected_index < app.targets.len());
     }
 
     fn assert_terminal_job_ignores_late_events(

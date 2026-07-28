@@ -10,11 +10,12 @@ use anyhow::Result;
 use self::runtime::{ExecutorCleanService, SweepScanService};
 
 pub fn run() -> Result<()> {
-    let mut terminal = terminal::enter()?;
-    let loop_result =
-        runtime::run_event_loop(&mut terminal, SweepScanService, ExecutorCleanService);
-    let restore_result = terminal::restore_terminal(&mut terminal);
-
-    restore_result?;
+    terminal::install_panic_hook();
+    let mut session = terminal::TerminalSession::enter()?;
+    let terminal = session
+        .terminal_mut()
+        .expect("live terminal session owns a backend");
+    let loop_result = runtime::run_event_loop(terminal, SweepScanService, ExecutorCleanService);
+    session.restore_best_effort();
     loop_result
 }
