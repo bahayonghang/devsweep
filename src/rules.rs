@@ -219,8 +219,9 @@ pub const GLOBAL_CACHE_RULES: &[GlobalCacheRule] = &[
         ecosystem: Ecosystem::Generic,
         relative: ".m2/repository",
         kind: TargetKind::PackageCache,
-        risk: RiskLevel::Medium,
-        action: KnownCacheAction::Trash,
+        // Local installs may not be re-downloadable; inspect only.
+        risk: RiskLevel::High,
+        action: KnownCacheAction::InspectOnly,
     },
     GlobalCacheRule {
         id: "go.mod_cache",
@@ -228,8 +229,10 @@ pub const GLOBAL_CACHE_RULES: &[GlobalCacheRule] = &[
         ecosystem: Ecosystem::Generic,
         relative: "go/pkg/mod",
         kind: TargetKind::PackageCache,
-        risk: RiskLevel::Medium,
-        action: KnownCacheAction::Trash,
+        // Prefer official `go clean -modcache` via a future command provider;
+        // bare trash of the whole tree is too coarse for the default rule.
+        risk: RiskLevel::High,
+        action: KnownCacheAction::InspectOnly,
     },
     GlobalCacheRule {
         id: "ivy.cache",
@@ -255,13 +258,14 @@ pub const GLOBAL_CACHE_RULES: &[GlobalCacheRule] = &[
 #[cfg(windows)]
 pub const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
     GlobalCacheRule {
+        // Vendor root is inspect-only; never trash the whole JetBrains tree.
         id: "jetbrains.caches",
-        label: "JetBrains IDE caches",
+        label: "JetBrains IDE caches (vendor root inspect)",
         ecosystem: Ecosystem::Generic,
         relative: "AppData/Local/JetBrains",
         kind: TargetKind::ToolCache,
-        risk: RiskLevel::Medium,
-        action: KnownCacheAction::Trash,
+        risk: RiskLevel::High,
+        action: KnownCacheAction::InspectOnly,
     },
     GlobalCacheRule {
         id: "huggingface.hub",
@@ -279,12 +283,12 @@ pub const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
 pub const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
     GlobalCacheRule {
         id: "jetbrains.caches",
-        label: "JetBrains IDE caches",
+        label: "JetBrains IDE caches (vendor root inspect)",
         ecosystem: Ecosystem::Generic,
         relative: ".cache/JetBrains",
         kind: TargetKind::ToolCache,
-        risk: RiskLevel::Medium,
-        action: KnownCacheAction::Trash,
+        risk: RiskLevel::High,
+        action: KnownCacheAction::InspectOnly,
     },
     GlobalCacheRule {
         id: "huggingface.hub",
@@ -471,5 +475,37 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn maven_jetbrains_and_go_are_not_whole_tree_trash() {
+        for rule in global_cache_rules() {
+            if matches!(
+                rule.id,
+                "maven.repository" | "jetbrains.caches" | "go.mod_cache"
+            ) {
+                assert_eq!(
+                    rule.action,
+                    KnownCacheAction::InspectOnly,
+                    "{} must not trash a coarse vendor/repo tree",
+                    rule.id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn provider_docs_include_yarn_classic_and_modern_variants() {
+        let ids: HashSet<_> = providers::PROVIDER_RULE_DOCS
+            .iter()
+            .map(|doc| doc.id)
+            .collect();
+        assert!(ids.contains("yarn.cache.clean.classic"));
+        assert!(ids.contains("yarn.cache.clean.modern"));
+        assert_eq!(
+            providers::PNPM_STORE_RULE_DOC.risk,
+            RiskLevel::Medium,
+            "pnpm catalogue risk is the single source"
+        );
     }
 }

@@ -1,1 +1,6 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/index.md","reason":"Backend pre-development checklist and applicable scanner, provider, plan, and audit guidance."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Defines ownership boundaries for rules, providers, model, executor, CLI, and inline tests."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Safety-first constraints for plan creation, provider probes, command argv separation, and cleanup execution boundaries."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Required error categorization and JSON-safe diagnostics for resolver/probe failures."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Controls recoverable provider diagnostics without contaminating JSON stdout."}
+{"file":".trellis/spec/frontend/index.md","reason":"Required context for the TUI Rules tab and cross-layer rule presentation changes."}

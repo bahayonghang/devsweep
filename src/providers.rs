@@ -48,14 +48,32 @@ pub(crate) const PNPM_STORE_RULE_DOC: RuleDoc = RuleDoc {
     summary: "pnpm store via pnpm store prune",
 };
 
-/// Yarn targets suffix this id with `.classic` / `.modern` per yarn version.
+/// Base yarn doc; catalogue also lists classic/modern variants explicitly.
 pub(crate) const YARN_CACHE_RULE_DOC: RuleDoc = RuleDoc {
     id: "yarn.cache.clean",
     ecosystem: Ecosystem::Node,
     scope: RuleScope::Global,
     risk: RiskLevel::Medium,
     action: "official command",
-    summary: "yarn cache via yarn cache clean",
+    summary: "yarn cache via yarn cache clean (see classic/modern variants)",
+};
+
+pub(crate) const YARN_CACHE_CLASSIC_RULE_DOC: RuleDoc = RuleDoc {
+    id: "yarn.cache.clean.classic",
+    ecosystem: Ecosystem::Node,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "yarn classic cache via yarn cache clean",
+};
+
+pub(crate) const YARN_CACHE_MODERN_RULE_DOC: RuleDoc = RuleDoc {
+    id: "yarn.cache.clean.modern",
+    ecosystem: Ecosystem::Node,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "yarn berry cache via yarn cache clean --mirror",
 };
 
 pub(crate) const CARGO_HOME_RULE_DOC: RuleDoc = RuleDoc {
@@ -73,6 +91,8 @@ pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
     PIP_CACHE_RULE_DOC,
     PNPM_STORE_RULE_DOC,
     YARN_CACHE_RULE_DOC,
+    YARN_CACHE_CLASSIC_RULE_DOC,
+    YARN_CACHE_MODERN_RULE_DOC,
     CARGO_HOME_RULE_DOC,
 ];
 
