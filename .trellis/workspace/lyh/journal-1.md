@@ -883,3 +883,28 @@ CI hardened; release archive triple+checksum; archived.
 ### Status
 
 [OK] **Completed**
+
+
+## Session 28: Scan walker budgets complete
+
+**Date**: 2026-07-28
+**Task**: Scan walker budgets complete
+**Branch**: `dev`
+
+### Summary
+
+Prune/budget/ranking D3; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `16ddaba` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
