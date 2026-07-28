@@ -933,3 +933,28 @@ Cancel token wired through runtime and executor; just ci green.
 ### Status
 
 [OK] **Completed**
+
+
+## Session 30: Rule registry providers complete
+
+**Date**: 2026-07-28
+**Task**: Rule registry providers complete
+**Branch**: `dev`
+
+### Summary
+
+Rule granularity and yarn catalogue; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `859771a` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**

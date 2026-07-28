@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 29
+- **Total Sessions**: 30
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~935 | Active |
+| `journal-1.md` | ~960 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 30 | 2026-07-28 | Rule registry providers complete | `859771a` | `dev` |
 | 29 | 2026-07-28 | True cancellation complete | `bc11170` | `dev` |
 | 28 | 2026-07-28 | Scan walker budgets complete | `16ddaba` | `dev` |
 | 27 | 2026-07-28 | Release supply chain complete | `c5ebc54` | `dev` |
