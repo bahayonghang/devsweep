@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 24
+- **Total Sessions**: 25
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~794 | Active |
+| `journal-1.md` | ~829 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 25 | 2026-07-28 | 中央 SafetyPolicy 与 live revalidation | `02e15c67f5c1d419719b4e13bba253be434f1cb0` | `dev` |
 | 24 | 2026-07-28 | TUI UX reliability complete | `78c3b31` | `dev` |
 | 23 | 2026-07-28 | Scan reliability complete | `802b0ab` | `dev` |
 | 22 | 2026-07-28 | License baseline complete | `dd85c12` | `dev` |

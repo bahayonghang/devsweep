@@ -792,3 +792,38 @@ TerminalSession RAII, viewport, cleaned tombstones, display hygiene; just ci gre
 ### Status
 
 [OK] **Completed**
+
+
+## Session 25: 中央 SafetyPolicy 与 live revalidation
+
+**Date**: 2026-07-28
+**Task**: 中央 SafetyPolicy 与 live revalidation
+**Branch**: `dev`
+
+### Summary
+
+实现 SafetyPolicy::authorize 漏斗、五类保护语义、UserProtectionList、cargo metadata 作用域绑定；just ci 通过
+
+### Main Changes
+
+- 新增 src/safety.rs 与 protect CLI
+- executor 仅经 AuthorizedAction 执行 Command/Trash
+- scanner/registry 绑定 cargo --target-dir
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `02e15c67f5c1d419719b4e13bba253be434f1cb0` | (see git log) |
+
+### Testing
+
+- [OK] just ci 163+1 tests clippy -D warnings
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续 rule-registry-providers 挂接 safety_contract
