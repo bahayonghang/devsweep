@@ -1,1 +1,5 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Defines app-owned view and worker state, stale local snapshots, and TargetId-based selection."}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"Covers TUI event/effect boundaries needed for worker event handling."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Provides TestBackend and event-loop quality constraints for TUI changes."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Provides safety-first constraints for scanner dedupe behavior."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent-owned audit mapping, cross-task contracts, and acceptance criteria for this phase-zero child."}

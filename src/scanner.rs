@@ -49,10 +49,7 @@ impl ProjectScanner {
     pub fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
         let mut targets = Vec::new();
 
-        for root in roots {
-            let root = root
-                .canonicalize()
-                .with_context(|| format!("failed to access scan root {}", root.display()))?;
+        for root in normalize_scan_roots(roots)? {
             self.scan_dir(&root, None, &mut targets)?;
         }
 
@@ -239,6 +236,33 @@ impl ProjectScanner {
     }
 }
 
+fn normalize_scan_roots(roots: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut roots: Vec<PathBuf> = roots
+        .iter()
+        .map(|root| {
+            root.canonicalize()
+                .with_context(|| format!("failed to access scan root {}", root.display()))
+        })
+        .collect::<Result<_>>()?;
+    roots.sort_by(|left, right| {
+        footprint_depth(left)
+            .cmp(&footprint_depth(right))
+            .then_with(|| left.cmp(right))
+    });
+    roots.dedup();
+
+    let mut covered = Vec::new();
+    for root in roots {
+        if !covered
+            .iter()
+            .any(|parent: &PathBuf| root.starts_with(parent))
+        {
+            covered.push(root);
+        }
+    }
+    Ok(covered)
+}
+
 impl Default for ProjectScanner {
     fn default() -> Self {
         Self::new()
@@ -292,8 +316,8 @@ fn build_path_target(input: PathTargetInput) -> CleanTarget {
 
 fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
     targets.sort_by(|left, right| {
-        let left_path = left.path.as_ref().map(|path| path.components().count());
-        let right_path = right.path.as_ref().map(|path| path.components().count());
+        let left_path = left.path.as_deref().map(footprint_depth);
+        let right_path = right.path.as_deref().map(footprint_depth);
         left_path
             .cmp(&right_path)
             .then_with(|| left.id.as_str().cmp(right.id.as_str()))
@@ -301,20 +325,95 @@ fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
 
     let mut kept: Vec<CleanTarget> = Vec::new();
     for target in targets {
-        let is_nested = target.path.as_ref().is_some_and(|path| {
-            kept.iter().any(|existing| {
-                existing.path.as_ref().is_some_and(|existing_path| {
-                    path != existing_path && path.starts_with(existing_path)
-                })
-            })
-        });
-
-        if !is_nested {
-            kept.push(target);
+        if let Some(existing) = kept.iter_mut().find(|existing| {
+            same_action_identity(existing, &target) && same_footprint(existing, &target)
+        }) {
+            merge_unique_evidence(existing, target.evidence);
+            continue;
         }
+
+        let is_nested_with_same_action = kept.iter().any(|existing| {
+            same_action_identity(existing, &target) && parent_footprint_covers(existing, &target)
+        });
+        if is_nested_with_same_action {
+            continue;
+        }
+
+        kept.push(target);
     }
 
     kept
+}
+
+fn footprint_depth(path: &Path) -> usize {
+    canonical_footprint(path).components().count()
+}
+
+fn canonical_footprint(path: &Path) -> PathBuf {
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+}
+
+fn same_action_identity(left: &CleanTarget, right: &CleanTarget) -> bool {
+    match (&left.action, &right.action) {
+        (CleanAction::MoveToTrash { .. }, CleanAction::MoveToTrash { .. })
+        | (CleanAction::NoopInspectOnly, CleanAction::NoopInspectOnly) => true,
+        (
+            CleanAction::DeletePermanently {
+                requires_explicit_flag: left_flag,
+                ..
+            },
+            CleanAction::DeletePermanently {
+                requires_explicit_flag: right_flag,
+                ..
+            },
+        ) => left_flag == right_flag,
+        (
+            CleanAction::Command {
+                program: left_program,
+                args: left_args,
+                cwd: left_cwd,
+                irreversible: left_irreversible,
+            },
+            CleanAction::Command {
+                program: right_program,
+                args: right_args,
+                cwd: right_cwd,
+                irreversible: right_irreversible,
+            },
+        ) => {
+            left_program == right_program
+                && left_args == right_args
+                && left_cwd == right_cwd
+                && left_irreversible == right_irreversible
+        }
+        _ => false,
+    }
+}
+
+fn same_footprint(left: &CleanTarget, right: &CleanTarget) -> bool {
+    match (&left.path, &right.path) {
+        (Some(left), Some(right)) => canonical_footprint(left) == canonical_footprint(right),
+        _ => false,
+    }
+}
+
+fn parent_footprint_covers(parent: &CleanTarget, child: &CleanTarget) -> bool {
+    match (&parent.path, &child.path) {
+        (Some(parent), Some(child)) => {
+            let parent = canonical_footprint(parent);
+            let child = canonical_footprint(child);
+            child != parent && child.starts_with(parent)
+        }
+        _ => false,
+    }
+}
+
+fn merge_unique_evidence(existing: &mut CleanTarget, evidence: Vec<Evidence>) {
+    for item in evidence {
+        if !existing.evidence.contains(&item) {
+            existing.evidence.push(item);
+        }
+    }
 }
 
 fn find_node_marker(dir: &Path) -> Option<PathBuf> {
@@ -552,6 +651,121 @@ mod tests {
             }
             action => panic!("unexpected rust target action: {action:?}"),
         }
+    }
+
+    #[test]
+    fn scan_roots_reduces_duplicate_and_nested_roots() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/node_modules/pkg/index.js", "module");
+
+        let root = fixture.path().to_path_buf();
+        let plan = ProjectScanner::new()
+            .scan_roots(&[root.clone(), root.clone(), root.join("node-app")])
+            .expect("overlapping roots scan once");
+
+        assert_eq!(plan.targets.len(), 1);
+        assert!(plan.targets[0].id.as_str().starts_with("node.node_modules"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn scan_roots_collapses_case_and_separator_equivalent_roots() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/node_modules/pkg/index.js", "module");
+
+        let root = fixture
+            .path()
+            .canonicalize()
+            .expect("fixture root canonicalizes");
+        let forward_slash_root = PathBuf::from(root.display().to_string().replace('\\', "/"));
+        let uppercase_root = PathBuf::from(root.to_string_lossy().to_ascii_uppercase());
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[root, forward_slash_root, uppercase_root])
+            .expect("equivalent roots scan once");
+
+        assert_eq!(plan.targets.len(), 1);
+        assert!(plan.targets[0].id.as_str().starts_with("node.node_modules"));
+    }
+
+    #[test]
+    fn dedupe_targets_merges_evidence_for_exact_footprint_and_action() {
+        let fixture = Fixture::new();
+        fixture.file("cache/item", "payload");
+        let root = fixture.path().to_path_buf();
+        let path = root.join("cache");
+        let target = build_path_target(PathTargetInput {
+            rule_id: "node.next_cache",
+            ecosystem: Ecosystem::Node,
+            kind: TargetKind::BuildArtifacts,
+            project_root: root,
+            path,
+            risk: RiskLevel::Low,
+            selected_by_default: true,
+            evidence: vec![Evidence::RuleMatched {
+                rule_id: "node.next_cache".to_string(),
+            }],
+        });
+        let mut duplicate = target.clone();
+        duplicate.evidence.push(Evidence::UserConfigured);
+
+        let deduped = dedupe_targets(vec![target, duplicate]);
+
+        assert_eq!(deduped.len(), 1);
+        assert!(deduped[0].evidence.contains(&Evidence::RuleMatched {
+            rule_id: "node.next_cache".to_string(),
+        }));
+        assert!(deduped[0].evidence.contains(&Evidence::UserConfigured));
+    }
+
+    #[test]
+    fn dedupe_targets_keeps_same_footprint_with_distinct_actions() {
+        let fixture = Fixture::new();
+        fixture.file("cache/item", "payload");
+        let root = fixture.path().to_path_buf();
+        let path = root.join("cache");
+        let trash_target = build_path_target(PathTargetInput {
+            rule_id: "node.next_cache",
+            ecosystem: Ecosystem::Node,
+            kind: TargetKind::BuildArtifacts,
+            project_root: root,
+            path,
+            risk: RiskLevel::Low,
+            selected_by_default: true,
+            evidence: vec![Evidence::RuleMatched {
+                rule_id: "node.next_cache".to_string(),
+            }],
+        });
+        let mut command_target = trash_target.clone();
+        command_target.id = TargetId::new("node.next_cache.command");
+        command_target.action = CleanAction::Command {
+            program: "npm".to_string(),
+            args: vec!["cache".to_string(), "clean".to_string()],
+            cwd: None,
+            irreversible: true,
+        };
+
+        let deduped = dedupe_targets(vec![trash_target, command_target]);
+
+        assert_eq!(deduped.len(), 2);
+        assert!(
+            deduped
+                .iter()
+                .any(|target| matches!(target.action, CleanAction::MoveToTrash { .. }))
+        );
+        assert!(deduped.iter().any(|target| {
+            matches!(
+                target.action,
+                CleanAction::Command {
+                    ref program,
+                    ref args,
+                    ..
+                } if program == "npm"
+                    && args.iter().map(String::as_str).eq(["cache", "clean"])
+            )
+        }));
     }
 
     #[test]

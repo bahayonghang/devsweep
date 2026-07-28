@@ -120,6 +120,106 @@ send(WorkerEvent::ScanProgress {
 });
 ```
 
+### Scenario: Confirmation snapshots and cleanup worker ownership
+
+#### 1. Scope / Trigger
+
+- Trigger: a TUI change can replace scan results while a cleanup confirmation is
+  open, start cleanup work, or receive delayed worker events.
+
+#### 2. Signatures
+
+- Reducer boundary: `App::update(UiEvent) -> Vec<Effect>`.
+- Cleanup request: `Effect::StartClean { job_id, plan, selected, plan_digest }`.
+- Worker boundaries: `WorkerEvent::ScanProgress`, `WorkerEvent::ScanFinished`,
+  `WorkerEvent::CleanProgress`, `WorkerEvent::CleanFinished`, and
+  `WorkerEvent::JobFailed`.
+
+#### 3. Contracts
+
+- Opening confirmation creates a private immutable execution manifest from the
+  selected typed targets and validates it before showing its canonical digest
+  prefix. Enter must emit `StartClean` with that exact manifest and full
+  `plan_digest`, not reconstruct a plan from the current mutable target list
+  or selection state.
+- The cleanup worker revalidates the frozen plan and compares its canonical
+  digest with `plan_digest` before it constructs an executor request. A
+  mismatch fails the job before audit or cleanup side effects.
+- A current scan update immediately invalidates an open confirmation. Keep the
+  modal visible with re-confirmation feedback, apply the scan update normally,
+  and emit no cleanup effect until the user closes and reopens confirmation.
+- Selection state is keyed by `TargetId`. Preserve explicit select/deselect
+  overrides for matching staged-scan targets; use `selected_by_default` only
+  for targets without an override.
+- The app rejects scan and cleanup requests while a cleanup job is active. The
+  runtime independently permits only one clean worker, so an accidental second
+  `StartClean` cannot spawn a second mutation worker.
+- Legal job transitions are `Running -> Cancelling`, `Running ->
+  Succeeded|Failed`, and `Cancelling -> Canceled|Succeeded|Failed`. Terminal
+  jobs ignore delayed progress, finish, and cancel events after logging them.
+- Before real cancellation is wired, `Effect::CancelJob` must not fabricate a
+  `JobCanceled` event. Show that the request waits for an action boundary and
+  let the worker report its actual terminal result.
+
+#### 4. Validation & Error Matrix
+
+- Scan update while confirmation is open -> confirmation becomes invalid, the
+  new snapshot renders, and Enter returns no `StartClean` effect.
+- Second app-level cleanup or scan request during cleanup -> no effect and a
+  visible log message.
+- Second runtime `StartClean` while the permit is held -> no worker is spawned;
+  the rejected job receives `JobFailed`.
+- Delayed progress after `Cancelling` is ignored; a real worker finish may still
+  land as `Succeeded` or `Failed` until true cancellation is wired. Terminal
+  states ignore delayed progress, finish, and cancel events.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: a confirmation runs exactly the targets displayed when it was opened.
+- Good: a user deselects an existing target, then receives a staged scan update;
+  that target remains deselected while a new default-selected target is added.
+- Base: a cancellation request may still end as succeeded or failed until the
+  real cancellation token reaches the worker.
+- Bad: rebuilding a cleanup plan from `App.targets` when Enter is pressed.
+- Bad: treating a UI cancellation request as proof that a worker stopped.
+
+#### 6. Tests Required
+
+- Reducer test: open confirmation, inject scan progress or finish, type the
+  phrase, and assert no clean effect is emitted.
+- Reducer test: mutate current selection after opening confirmation and assert
+  the emitted plan still equals the frozen manifest.
+- Reducer test: preserve an explicit selection override across a staged scan.
+- Runtime test with a blocking clean service: dispatch two clean effects and
+  assert exactly one service invocation.
+- Runtime test: a revalidated snapshot with a different digest is rejected
+  before the executor is called.
+- State-machine test: inject delayed worker events after `Cancelling`,
+  `Succeeded`, `Failed`, and `Canceled` and assert no terminal revival.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+// The selected set can drift while the modal is open.
+let plan = self.selected_cleanup_plan();
+return vec![Effect::StartClean { job_id, plan, selected }];
+```
+
+Correct:
+
+```rust
+// Confirmation owns the exact typed snapshot and identity that will execute.
+let ExecutionManifest { plan, selected, digest } = *confirm.manifest.clone();
+return vec![Effect::StartClean {
+    job_id,
+    plan,
+    selected,
+    plan_digest: digest,
+}];
+```
+
 ---
 
 ## Data Fetching

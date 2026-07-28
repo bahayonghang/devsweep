@@ -1,5 +1,9 @@
 use std::{
-    sync::mpsc::{self, Receiver, Sender},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{self, Receiver, Sender},
+    },
     thread,
     time::Duration,
 };
@@ -82,18 +86,38 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
 ) -> Result<()> {
     let mut app = App::new();
     let (worker_tx, worker_rx) = mpsc::channel();
+    let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
     let startup_effects = app.startup_effects();
-    dispatch_effects(startup_effects, &worker_tx, &scan, &clean)?;
+    dispatch_effects(
+        startup_effects,
+        &worker_tx,
+        &scan,
+        &clean,
+        &clean_dispatch_in_flight,
+    )?;
 
     while !app.should_quit {
-        drain_worker_events(&mut app, &worker_rx, &worker_tx, &scan, &clean)?;
+        drain_worker_events(
+            &mut app,
+            &worker_rx,
+            &worker_tx,
+            &scan,
+            &clean,
+            &clean_dispatch_in_flight,
+        )?;
         terminal.draw(|frame| render_app(frame, &app))?;
 
         if event::poll(Duration::from_millis(100))?
             && let CrosstermEvent::Key(key) = event::read()?
         {
             let effects = app.update(UiEvent::Key(key));
-            dispatch_effects(effects, &worker_tx, &scan, &clean)?;
+            dispatch_effects(
+                effects,
+                &worker_tx,
+                &scan,
+                &clean,
+                &clean_dispatch_in_flight,
+            )?;
         }
     }
 
@@ -106,10 +130,11 @@ fn drain_worker_events<S: ScanService, C: CleanService>(
     worker_tx: &Sender<WorkerEvent>,
     scan: &S,
     clean: &C,
+    clean_dispatch_in_flight: &Arc<AtomicBool>,
 ) -> Result<()> {
     while let Ok(event) = worker_rx.try_recv() {
         let effects = app.update(UiEvent::Worker(event));
-        dispatch_effects(effects, worker_tx, scan, clean)?;
+        dispatch_effects(effects, worker_tx, scan, clean, clean_dispatch_in_flight)?;
     }
     Ok(())
 }
@@ -119,9 +144,16 @@ fn dispatch_effects<S: ScanService, C: CleanService>(
     worker_tx: &Sender<WorkerEvent>,
     scan: &S,
     clean: &C,
+    clean_dispatch_in_flight: &Arc<AtomicBool>,
 ) -> Result<()> {
     for effect in effects {
-        dispatch_effect(effect, worker_tx.clone(), scan, clean)?;
+        dispatch_effect(
+            effect,
+            worker_tx.clone(),
+            scan,
+            clean,
+            clean_dispatch_in_flight,
+        )?;
     }
     Ok(())
 }
@@ -131,6 +163,7 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
     worker_tx: Sender<WorkerEvent>,
     scan: &S,
     clean: &C,
+    clean_dispatch_in_flight: &Arc<AtomicBool>,
 ) -> Result<()> {
     match effect {
         Effect::StartScan { job_id } => {
@@ -143,14 +176,32 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
             selected,
             plan_digest,
         } => {
+            if clean_dispatch_in_flight
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .is_err()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Cleanup dispatch rejected: another cleanup job is already running"
+                        .to_string(),
+                });
+                return Ok(());
+            }
             let clean = clean.clone();
+            let clean_dispatch_in_flight = Arc::clone(clean_dispatch_in_flight);
             thread::spawn(move || {
-                run_clean_worker(job_id, plan, selected, plan_digest, worker_tx, clean)
+                run_clean_worker(
+                    job_id,
+                    plan,
+                    selected,
+                    plan_digest,
+                    worker_tx,
+                    clean,
+                    clean_dispatch_in_flight,
+                )
             });
         }
-        Effect::CancelJob { job_id } => {
-            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
-        }
+        Effect::CancelJob { .. } => {}
         Effect::Quit => {}
     }
 
@@ -197,6 +248,7 @@ fn run_clean_worker<C: CleanService>(
     plan_digest: String,
     worker_tx: Sender<WorkerEvent>,
     clean: C,
+    clean_dispatch_in_flight: Arc<AtomicBool>,
 ) {
     let _ = worker_tx.send(WorkerEvent::JobProgress {
         job_id,
@@ -237,11 +289,19 @@ fn run_clean_worker<C: CleanService>(
             });
         }
     }
+
+    clean_dispatch_in_flight.store(false, Ordering::Release);
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
+    use std::{
+        sync::{
+            Arc, Mutex,
+            atomic::{AtomicUsize, Ordering},
+        },
+        time::Duration,
+    };
 
     use super::*;
     use crate::{
@@ -293,6 +353,32 @@ mod tests {
             self.outcome
                 .clone()
                 .map_err(|message| anyhow::anyhow!(message))
+        }
+    }
+
+    #[derive(Clone)]
+    struct BlockingCleanService {
+        invocations: Arc<AtomicUsize>,
+        started_tx: Sender<()>,
+        release_rx: Arc<Mutex<Receiver<()>>>,
+    }
+
+    impl CleanService for BlockingCleanService {
+        fn run_plan(
+            &self,
+            _plan: &CleanupPlan,
+            _expected_digest: &str,
+            _request: ExecutionRequest,
+            _on_progress: &mut dyn FnMut(ExecutionProgress),
+        ) -> Result<ExecutionReport> {
+            self.invocations.fetch_add(1, Ordering::SeqCst);
+            self.started_tx.send(()).expect("worker start signal");
+            self.release_rx
+                .lock()
+                .expect("release lock")
+                .recv()
+                .expect("worker release signal");
+            Ok(successful_report())
         }
     }
 
@@ -417,6 +503,7 @@ mod tests {
                 outcome: Ok(successful_report()),
                 requests: requests.clone(),
             },
+            Arc::new(AtomicBool::new(false)),
         );
 
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
@@ -461,6 +548,7 @@ mod tests {
                 outcome: Ok(successful_report()),
                 requests: Arc::new(Mutex::new(Vec::new())),
             },
+            Arc::new(AtomicBool::new(false)),
         );
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
         assert_eq!(
@@ -483,6 +571,7 @@ mod tests {
                 outcome: Err("clean exploded".to_string()),
                 requests: Arc::new(Mutex::new(Vec::new())),
             },
+            Arc::new(AtomicBool::new(false)),
         );
         let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
         assert_eq!(
@@ -492,5 +581,108 @@ mod tests {
                 message: "clean exploded".to_string(),
             })
         );
+    }
+
+    #[test]
+    fn duplicate_clean_dispatch_starts_only_one_worker() {
+        let (worker_tx, worker_rx) = mpsc::channel();
+        let (started_tx, started_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let invocations = Arc::new(AtomicUsize::new(0));
+        let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
+        let clean = BlockingCleanService {
+            invocations: invocations.clone(),
+            started_tx,
+            release_rx: Arc::new(Mutex::new(release_rx)),
+        };
+        let scan = FakeScanService {
+            partial: None,
+            outcome: Ok(CleanupPlan::empty()),
+        };
+        let plan = representative_plan();
+        let selected = plan.default_selected_ids();
+
+        dispatch_effects(
+            vec![
+                Effect::StartClean {
+                    job_id: 1,
+                    plan: plan.clone(),
+                    selected: selected.clone(),
+                    plan_digest: "fixture-digest".to_string(),
+                },
+                Effect::StartClean {
+                    job_id: 2,
+                    plan,
+                    selected,
+                    plan_digest: "fixture-digest".to_string(),
+                },
+            ],
+            &worker_tx,
+            &scan,
+            &clean,
+            &clean_dispatch_in_flight,
+        )
+        .expect("effects dispatch");
+
+        started_rx
+            .recv_timeout(Duration::from_secs(1))
+            .expect("first clean worker starts");
+        assert_eq!(invocations.load(Ordering::SeqCst), 1);
+        assert!(clean_dispatch_in_flight.load(Ordering::Acquire));
+        let early_events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
+        assert!(early_events.iter().any(|event| {
+            matches!(
+                event,
+                WorkerEvent::JobFailed { job_id: 2, message }
+                    if message.contains("another cleanup job is already running")
+            )
+        }));
+
+        release_tx.send(()).expect("release first worker");
+        let mut saw_terminal_event = false;
+        for _ in 0..2 {
+            let event = worker_rx
+                .recv_timeout(Duration::from_secs(1))
+                .expect("worker emits terminal event");
+            if matches!(event, WorkerEvent::CleanFinished { job_id: 1, .. }) {
+                saw_terminal_event = true;
+                break;
+            }
+        }
+        assert!(saw_terminal_event);
+        for _ in 0..100 {
+            if !clean_dispatch_in_flight.load(Ordering::Acquire) {
+                break;
+            }
+            thread::sleep(Duration::from_millis(1));
+        }
+        assert!(!clean_dispatch_in_flight.load(Ordering::Acquire));
+        assert_eq!(invocations.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn cancel_effect_does_not_fabricate_a_cancellation_event() {
+        let (worker_tx, worker_rx) = mpsc::channel();
+        let scan = FakeScanService {
+            partial: None,
+            outcome: Ok(CleanupPlan::empty()),
+        };
+        let clean = FakeCleanService {
+            progress: Vec::new(),
+            outcome: Ok(successful_report()),
+            requests: Arc::new(Mutex::new(Vec::new())),
+        };
+        let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
+
+        dispatch_effect(
+            Effect::CancelJob { job_id: 7 },
+            worker_tx,
+            &scan,
+            &clean,
+            &clean_dispatch_in_flight,
+        )
+        .expect("cancel effect dispatches");
+
+        assert!(worker_rx.try_recv().is_err());
     }
 }

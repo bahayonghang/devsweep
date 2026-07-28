@@ -466,8 +466,9 @@ CleanAction::Command {
 - New known caches map to `Ecosystem::Generic` unless a dedicated ecosystem
   variant is added deliberately (that also touches `model.rs` and TUI category
   counts).
-- Rules that reuse existing `CleanAction`/`Evidence` variants do NOT change
-  `CleanupPlan` shape; keep `CLEANUP_PLAN_VERSION` unchanged.
+- Ordinary rule additions must use an existing `CleanupIntent` and the shared
+  registry contract. Any persisted plan, canonical digest, or version change
+  requires the plan-validation owner and a compatibility review.
 
 #### 4. Validation & Error Matrix
 
@@ -716,10 +717,16 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 - `.gitignore` filtering must not hide cleanup candidates. The current scanner
   uses `std::fs` traversal and therefore does not apply ignore files.
 - Symlinks, Windows junctions, and reparse points are not followed by default.
-- JSON plan targets must include `risk`, `evidence`, `selected_by_default`,
-  `action`, and `estimated_bytes`.
-- Parent/child cleanup paths must be deduplicated so one plan never double-counts
-  or emits duplicate cleanup actions for nested targets.
+- JSON plan targets must include `rule_id`, `risk`, `evidence`,
+  `selected_by_default`, `intent`, and `estimated_bytes`; they must not expose
+  an executable `action`.
+- Normalize scan roots before traversal and reduce them to the smallest covering
+  set. Parent/child cleanup paths are deduplicated by canonical footprint plus
+  action identity so one scan does not double-count or emit duplicate actions.
+  Exact duplicates merge unique evidence; nested paths collapse only when their
+  semantic action is the same, while the same footprint with distinct actions
+  remains visible. This is scan-output quality only: validated-plan/executor
+  invariants own the once-only guarantee for externally supplied plans.
 
 #### 4. Validation & Error Matrix
 
@@ -727,8 +734,12 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 - Markerless `target`, `build`, `dist`, or `node_modules` -> no target emitted.
 - Inaccessible nested entry -> skip that entry, continue scanning the rest of
   the root.
-- Nested cleanup target under an already selected cleanup path -> keep the
-  parent target and drop the nested target.
+- Equivalent duplicate roots, including Windows case/separator variants -> scan
+  once after canonicalization.
+- Exact footprint with the same action -> keep one target and merge evidence.
+- Nested cleanup target under a parent with the same action -> keep the parent
+  target and drop the nested target.
+- Same footprint with distinct actions -> keep both targets.
 
 #### 5. Good/Base/Bad Cases
 
@@ -738,6 +749,10 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
   not-selected-by-default dependency-directory target.
 - Good: fixture with `pyproject.toml` plus `__pycache__/` emits a low-risk test
   cache target.
+- Good: repeated or parent/child scan roots produce one target per
+  footprint/action pair.
+- Good: two rules with the same footprint but distinct command/trash actions
+  remain independently visible.
 - Base: `devsweep scan . --json` emits valid plan JSON.
 - Bad: matching a markerless directory because its name is `target`, `build`,
   or `dist`.
@@ -748,9 +763,11 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 
 - Fixture tests for Rust, Node, and Python discovery.
 - Fixture tests proving markerless cleanup names are ignored.
-- Tests that serialized plan targets contain risk, evidence, selection, action,
-  and size fields.
-- Dedupe tests for nested cleanup paths.
+- Tests that serialized plan targets contain rule, risk, evidence, selection,
+  intent, and size fields, and omit executable action fields.
+- Dedupe tests for duplicate roots, exact evidence merging, nested paths with
+  the same action, and equal paths with distinct actions.
+- On Windows, fixture coverage for case and separator-equivalent roots.
 - Non-mutating test that scanned fixture files still exist after scan.
 
 #### 7. Wrong vs Correct

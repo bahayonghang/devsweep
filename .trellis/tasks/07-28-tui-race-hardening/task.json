@@ -3,7 +3,7 @@
   "name": "tui-race-hardening",
   "title": "TUI 竞态止血：确认冻结、single-flight 与精确去重",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

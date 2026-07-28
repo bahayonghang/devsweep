@@ -662,12 +662,17 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
     }
 
     match &app.overlay {
-        Overlay::Confirm(_) => {
+        Overlay::Confirm(confirm) => {
+            let enter_action = if confirm.invalidated_by_scan {
+                footer_action("Enter", "Blocked", FooterTone::Warning)
+            } else {
+                footer_action("Enter", "Run", FooterTone::Danger)
+            };
             return (
                 "CONFIRM",
                 FooterTone::Danger,
                 vec![
-                    footer_action("Enter", "Run", FooterTone::Danger),
+                    enter_action,
                     footer_action("Esc", "Cancel", FooterTone::Neutral),
                     footer_action("Backspace", "Edit", FooterTone::Neutral),
                     footer_action("Ctrl-C", "Quit", FooterTone::Danger),
@@ -705,7 +710,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
             "CLEANING",
             FooterTone::Warning,
             vec![
-                footer_action("x", "Cancel", FooterTone::Danger),
+                footer_action("x", "Request stop", FooterTone::Danger),
                 footer_action("l", "Logs", FooterTone::Neutral),
                 footer_action("Ctrl-C", "Quit", FooterTone::Danger),
             ],
@@ -724,7 +729,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
         footer_action("r", "Risk", FooterTone::Neutral),
     ];
     if app.jobs.iter().any(|job| job.status.is_active()) {
-        actions.insert(3, footer_action("x", "Cancel", FooterTone::Danger));
+        actions.insert(3, footer_action("x", "Request stop", FooterTone::Danger));
     }
 
     ("NORMAL", FooterTone::Accent, actions)
@@ -788,7 +793,7 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
                 Line::from("d opens dry-run preview"),
                 Line::from("c opens cleanup confirmation"),
                 Line::from("/ filters targets; r cycles risk filter"),
-                Line::from("x requests active job cancellation"),
+                Line::from("x requests a stop at the next action boundary"),
                 Line::from("Esc closes overlays; q quits"),
             ],
         ),
@@ -826,13 +831,25 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         ]),
     ];
 
+    if confirm.invalidated_by_scan {
+        lines.push(Line::from(""));
+        lines.push(Line::styled(
+            "Scan results changed. This confirmation is disabled.",
+            error_style(),
+        ));
+        lines.push(Line::styled(
+            "Press Esc, then confirm the updated selection again.",
+            warning_style(),
+        ));
+    }
+
     if !confirm.selected_targets.is_empty() {
         lines.push(Line::from(""));
         lines.push(Line::styled("Selected targets:", muted_style()));
         lines.extend(confirm.selected_targets.iter().take(8).map(|target| {
             Line::from(vec![
                 Span::styled("  - ", muted_style()),
-                Span::styled(compact_text(target, 46), panel_style()),
+                Span::styled(compact_context_text(target, 46), panel_style()),
             ])
         }));
         if confirm.selected_targets.len() > 8 {
@@ -893,7 +910,11 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         lines.push(Line::styled(feedback.clone(), error_style()));
     }
     lines.push(Line::styled(
-        "Enter runs after confirm matches.  Esc cancels.",
+        if confirm.invalidated_by_scan {
+            "Enter is disabled until you confirm the updated selection.  Esc cancels."
+        } else {
+            "Enter runs after confirm matches.  Esc cancels."
+        },
         muted_style(),
     ));
 
@@ -985,7 +1006,7 @@ fn cleanup_progress_item_line(item: &CleanupProgressItem) -> Line<'static> {
     let (label, style) = cleanup_item_status_display(item.status);
     let mut spans = vec![
         Span::styled(format!("{label:<7} "), style),
-        Span::styled(item.label.clone(), panel_style()),
+        Span::styled(compact_text(&item.label, 12), panel_style()),
     ];
     if let Some(detail) = &item.detail {
         spans.push(Span::styled(" - ", muted_style()));
@@ -1138,6 +1159,25 @@ fn compact_text(text: &str, max_chars: usize) -> String {
         .rev()
         .collect::<String>();
     format!("...{tail}")
+}
+
+fn compact_context_text(text: &str, max_chars: usize) -> String {
+    if text.chars().count() <= max_chars {
+        return text.to_string();
+    }
+
+    let prefix_len = max_chars.min(12);
+    let tail_len = max_chars.saturating_sub(prefix_len + 3);
+    let prefix = text.chars().take(prefix_len).collect::<String>();
+    let tail = text
+        .chars()
+        .rev()
+        .take(tail_len)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<String>();
+    format!("{prefix}...{tail}")
 }
 
 fn scope_label(scope: &Scope) -> String {
@@ -1415,6 +1455,28 @@ mod tests {
         assert!(jobs_logs.contains("Jobs"));
         assert!(jobs_logs.contains("Logs"));
         assert!(jobs_logs.contains("Scanning fixture"));
+    }
+
+    #[test]
+    fn invalidated_confirmation_renders_reconfirmation_state() {
+        let mut app = App::with_plan(representative_plan());
+        app.update(key(KeyCode::Char('c')));
+        let effects = app.startup_effects();
+        let [crate::tui::app::Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests a scan");
+        };
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id: *job_id,
+            phase: crate::sweep::ScanPhase::Projects,
+            message: "Scan state changed".to_string(),
+            plan: None,
+        }));
+
+        let rendered = render_text(&app);
+        assert!(rendered.contains("This confirmation is disabled."));
+        assert!(rendered.contains("confirm the updated selection again"));
+        assert!(rendered.contains("[Enter] Blocked"));
     }
 
     #[test]

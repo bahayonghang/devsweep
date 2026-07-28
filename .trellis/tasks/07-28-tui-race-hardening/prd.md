@@ -17,7 +17,7 @@
 ## Requirements
 
 1. `ConfirmState` 持有不可变 `ExecutionManifest`（选中 targets 的完整快照）；Enter 只消费该 manifest，不得重读可变 state。manifest 身份先以结构等价（同一 target 集合 + action identity）断言；canonical digest 契约由 07-28-plan-validation 拥有，落地后确认文案接入其前 8–12 位展示——本任务不得发明第二种 digest。
-2. 确认期间到达的 scan 更新：要么延迟应用，要么使 modal 失效并要求重新确认。
+2. 确认期间到达的 scan 更新必须立即使 modal 失效并要求重新确认（决策 D5）：更新不得与已打开的确认窗口并存为可执行的最新状态；Enter 被拒绝并提示重新确认。不得延迟应用扫描更新。
 3. mutation single-flight：application 层与 UI 层双重保证——clean 运行期间再次触发 `c`（以及会改写 targets 的 `s`）被拒绝并给出提示；`dispatch_effect` 层拒绝并发 `StartClean`。
 4. 修复 exact duplicate：dedupe key 使用 canonical footprint + action identity；完全相等路径合并 evidence 而非保留双份；roots 先 canonicalize 再取最小覆盖集。**定位（二轮评审 SEC-002）**：scanner 端 dedupe 属展示层/扫描产物质量修复，不是安全边界——外部 plan 完全绕过 scanner；"每 fingerprint 恰好执行一次"的强制点在 07-28-plan-validation 的 ValidatedPlan 不变量与 executor once-ledger。
 5. Job 状态机立约：`Running → Cancelling → Canceled / Succeeded / Failed`，终态不可被后续事件改写；迟到事件仅进 log。
@@ -26,13 +26,13 @@
 
 ## Acceptance Criteria
 
-- [ ] 回归测试：open confirm → `ScanProgress`/`ScanFinished` → Enter，runner 收到的 target IDs 与打开 modal 时完全一致；或 Enter 被拒绝并要求重新确认
-- [ ] 回归测试：clean 运行中按 `c`/`s`，`StartClean`/`StartScan` effect 不再产生第二个 mutation worker；请求被明确拒绝且有日志
-- [ ] 回归测试：重复 root、parent+child root、相同 path 不同 rule、连续两次 clean —— 每个 physical/action footprint 的 runner 调用次数恰好为 1（覆盖 scanner/TUI 路径；外部 plan 路径的等价保证由 plan-validation 的 fingerprint 套件负责）
-- [ ] 回归测试：`Cancelling`/`Canceled`/`Succeeded`/`Failed` 之后注入迟到 `JobProgress`/`CleanFinished`/`JobCanceled`，终态不变
-- [ ] 回归测试：用户显式取消勾选某 default-selected target 后触发 staged scan 更新，该 target 保持未选中
-- [ ] UI 不再出现与 worker 实际状态不符的 "Canceled" 文案
-- [ ] `cargo test` 全绿；`cargo clippy -D warnings` 无新增告警
+- [x] 回归测试：open confirm → `ScanProgress`/`ScanFinished` → Enter，Enter 被拒绝且提示重新确认，runner 调用次数为 0
+- [x] 回归测试：clean 运行中按 `c`/`s`，`StartClean`/`StartScan` effect 不再产生第二个 mutation worker；请求被明确拒绝且有日志
+- [x] 回归测试：重复 root、parent+child root、相同 path 不同 rule、连续两次 clean —— 每个 physical/action footprint 的 runner 调用次数恰好为 1（覆盖 scanner/TUI 路径；外部 plan 路径的等价保证由 plan-validation 的 fingerprint 套件负责）
+- [x] 回归测试：`Cancelling`/`Canceled`/`Succeeded`/`Failed` 之后注入迟到 `JobProgress`/`CleanFinished`/`JobCanceled`，终态不变
+- [x] 回归测试：用户显式取消勾选某 default-selected target 后触发 staged scan 更新，该 target 保持未选中
+- [x] UI 不再出现与 worker 实际状态不符的 "Canceled" 文案
+- [x] `cargo test` 全绿；`cargo clippy -D warnings` 无新增告警
 
 ## 约束与依赖
 
