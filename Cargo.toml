@@ -3,6 +3,7 @@ name = "devsweep"
 version = "0.1.0"
 edition = "2024"
 description = "A safety-first developer cleanup planner and executor."
+license = "MIT"
 
 [dependencies]
 anyhow = "1"
