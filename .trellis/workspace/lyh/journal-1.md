@@ -998,3 +998,28 @@ All 12 audit-remediation children completed and archived; parent closed. just ci
 ### Status
 
 [OK] **Completed**
+
+
+## Session 32: Skeptic gap closeout: cancel+registry
+
+**Date**: 2026-07-28
+**Task**: Skeptic gap closeout: cancel+registry
+**Branch**: `dev`
+
+### Summary
+
+Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry platform/env/go fixes; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9dc3535` | (see git log) |
+
+### Testing
+
+- [OK] just ci (174 tests)
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 31
+- **Total Sessions**: 32
 - **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1000 | Active |
+| `journal-1.md` | ~1025 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 32 | 2026-07-28 | Skeptic gap closeout: cancel+registry | `9dc3535` | `dev` |
 | 31 | 2026-07-28 | Audit remediation parent complete 12/12 | `47f55c2`, `ee1415e`, `2ec5bba`, `859771a`, `d75613b`, `0388695`, `bc11170`, `736c237`, `5a1501f`, `16ddaba`, `124299a`, `2ab327a` | `dev` |
 | 30 | 2026-07-28 | Rule registry providers complete | `859771a` | `dev` |
 | 29 | 2026-07-28 | True cancellation complete | `bc11170` | `dev` |
