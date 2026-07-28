@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
-- **Last Active**: 2026-06-30
+- **Total Sessions**: 32
+- **Last Active**: 2026-07-28
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~622 | Active |
+| `journal-1.md` | ~1025 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,20 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 32 | 2026-07-28 | Skeptic gap closeout: cancel+registry | `9dc3535` | `dev` |
+| 31 | 2026-07-28 | Audit remediation parent complete 12/12 | `47f55c2`, `ee1415e`, `2ec5bba`, `859771a`, `d75613b`, `0388695`, `bc11170`, `736c237`, `5a1501f`, `16ddaba`, `124299a`, `2ab327a` | `dev` |
+| 30 | 2026-07-28 | Rule registry providers complete | `859771a` | `dev` |
+| 29 | 2026-07-28 | True cancellation complete | `bc11170` | `dev` |
+| 28 | 2026-07-28 | Scan walker budgets complete | `16ddaba` | `dev` |
+| 27 | 2026-07-28 | Release supply chain complete | `c5ebc54` | `dev` |
+| 26 | 2026-07-28 | Durable audit complete | `a2a5193` | `dev` |
+| 25 | 2026-07-28 | 中央 SafetyPolicy 与 live revalidation | `02e15c67f5c1d419719b4e13bba253be434f1cb0` | `dev` |
+| 24 | 2026-07-28 | TUI UX reliability complete | `78c3b31` | `dev` |
+| 23 | 2026-07-28 | Scan reliability complete | `802b0ab` | `dev` |
+| 22 | 2026-07-28 | License baseline complete | `dd85c12` | `dev` |
+| 21 | 2026-07-28 | TUI race hardening complete | `f3db10b` | `dev` |
+| 20 | 2026-07-28 | ProcessRunner 有界进程治理 | `2a9930b` | `dev` |
+| 19 | 2026-07-28 | 完成计划信任边界 | `f143484` | `dev` |
 | 18 | 2026-06-30 | 按大小和新鲜度排名清理计划 | `06579fd` | `main` |
 | 17 | 2026-06-30 | Parallel directory sizing | `0c4f7e5`, `b04feb9` | `main` |
 | 16 | 2026-06-11 | TUI Startup Loading Performance | `ff6ef78`, `1b4b682` | `main` |

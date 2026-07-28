@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Review side-effect ordering, audit authority, and safety regressions."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Review fault matrix, partial outcomes, and durable failure handling."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Review record sanitization and structured diagnostics."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Verify D2 and cross-task dependency compliance."}

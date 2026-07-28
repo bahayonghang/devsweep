@@ -1,0 +1,14 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend checklist for cancellation changes spanning scanner, providers, executor, and reports."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Safety invariants for cleanup execution, partial outcomes, and regression tests."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Module ownership for the shared token, scan and sizing paths, and executor-only side effects."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Typed error and partial-result conventions at cancellation boundaries."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Lifecycle and recoverable-failure diagnostics without corrupting JSON output."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Execution-report and audit JSONL contracts for canceled or partial work."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "TUI checklist for state, event, runtime, and render changes."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Runtime ownership of worker threads, channels, service injection, and test seams."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "App-owned worker state and explicit WorkerEvent cancellation transitions."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Event, update, and effect conventions for worker lifecycle and cancellation behavior."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typed UiEvent, WorkerEvent, Effect, and shared-model boundaries."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Required state and worker cancellation tests plus render-purity constraints."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Quit-overlay rendering and component boundaries for the D9 choice."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer contract review for token propagation, partial outcomes, and worker confirmation."}

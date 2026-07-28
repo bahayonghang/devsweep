@@ -31,31 +31,33 @@ pub(super) fn render_text_with_size(app: &App, width: u16, height: u16) -> Strin
 }
 
 pub(super) fn representative_plan() -> CleanupPlan {
+    let fixture_root = std::env::temp_dir().join("devsweep-tui-fixture");
+    let project_root = fixture_root.join("web");
+    let next_cache = project_root.join(".next/cache");
+    let npm_cache = fixture_root.join("npm-cache");
+    let cargo_home = fixture_root.join("cargo-home");
+
     CleanupPlan {
         version: CLEANUP_PLAN_VERSION,
         targets: vec![
             target(
                 "node.next_cache",
-                Scope::Project {
-                    root: PathBuf::from("D:/code/web"),
-                },
+                Scope::Project { root: project_root },
                 Ecosystem::Node,
                 TargetKind::BuildArtifacts,
-                Some(PathBuf::from("D:/code/web/.next/cache")),
+                Some(next_cache.clone()),
                 1024,
                 RiskLevel::Low,
                 true,
                 true,
-                CleanAction::MoveToTrash {
-                    path: PathBuf::from("D:/code/web/.next/cache"),
-                },
+                CleanAction::MoveToTrash { path: next_cache },
             ),
             target(
                 "npm.cache.clean",
                 Scope::Global,
                 Ecosystem::Node,
                 TargetKind::PackageCache,
-                Some(PathBuf::from("C:/Users/me/AppData/Local/npm-cache")),
+                Some(npm_cache),
                 2048,
                 RiskLevel::Medium,
                 false,
@@ -76,7 +78,7 @@ pub(super) fn representative_plan() -> CleanupPlan {
                 Scope::Global,
                 Ecosystem::Rust,
                 TargetKind::PackageCache,
-                Some(PathBuf::from("C:/Users/me/.cargo")),
+                Some(cargo_home),
                 0,
                 RiskLevel::High,
                 false,
@@ -119,6 +121,7 @@ pub(super) fn target(
         kind,
         path: path.clone(),
         estimated_bytes,
+        size_complete: true,
         last_modified: None,
         risk,
         reversible,

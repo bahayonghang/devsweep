@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/error-handling.md","reason":"Review correct root-versus-child error classification and context."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Review non-mutating scanner behavior and complete validation coverage."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Review incomplete selection and worker-event state behavior."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Verify cross-task schema and cancellation ownership are respected."}

@@ -1,0 +1,12 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Review cleanup safety, cancellation boundaries, and regression coverage."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Verify scanner, sizing, provider, and executor responsibilities remain separated."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Check typed cancellation, partial-result, and failure propagation semantics."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Check cancellation diagnostics remain structured and JSON-safe."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Check truthful canceled or partial execution-report and audit JSONL changes."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check worker cancellation and failure events have reducer and render coverage."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Check runtime owns thread, channel, join, and fake-service behavior."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Check cancellation remains explicit worker state rather than hidden global state."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Check event-to-effect and worker lifecycle handling is deterministic."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Check typed UI, worker-event, and effect boundaries for new cancellation states."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check the D9 quit-choice overlay remains a pure rendering component."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Review ownership and propagation of the shared token across all consumers."}

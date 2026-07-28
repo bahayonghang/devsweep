@@ -1,0 +1,5 @@
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Defines pure render, TestBackend, and explicit confirmation requirements."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Defines app-owned view/worker state and stale local snapshot behavior."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Guides render component boundaries and viewport presentation."}
+{"file":".trellis/spec/frontend/type-safety.md","reason":"Guides typed TUI state and data-contract changes."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent-owned D7/D8 and ProcessRunner/race dependencies."}

@@ -620,3 +620,406 @@ Extracted shared fs_size estimation, parallelized directory sizing with rayon, a
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: 完成计划信任边界
+
+**Date**: 2026-07-28
+**Task**: 完成计划信任边界
+**Branch**: `dev`
+
+### Summary
+
+完成 v2 声明式计划信任边界、可信 ActionRegistry、canonical digest 与 TUI 执行重验证，并通过 just ci。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f143484` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 20: ProcessRunner 有界进程治理
+
+**Date**: 2026-07-28
+**Task**: ProcessRunner 有界进程治理
+**Branch**: `dev`
+
+### Summary
+
+实现统一 ProcessRunner（超时、输出上限、Job Object/进程组、中性 cwd、sanitize、CancelObserver），迁移 provider probe 与 executor command runner；just ci 全绿；Windows 孙进程终止 fixture 通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a9930b` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 21: TUI race hardening complete
+
+**Date**: 2026-07-28
+**Task**: TUI race hardening complete
+**Branch**: `dev`
+
+### Summary
+
+Closed TUI confirmation drift, clean single-flight, terminal job revival, and scanner exact-dedupe races for 07-28-tui-race-hardening; just ci green; archived.
+
+### Main Changes
+
+- Frozen ExecutionManifest + scan-invalidated confirmation (D5)
+- App + runtime clean single-flight permit
+- Terminal job transitions ignore late events; honest boundary-cancel copy
+- Scanner footprint+action dedupe with Windows case/separator coverage
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f3db10b` | (see git log) |
+
+### Testing
+
+- [OK] just ci (fmt, check, 143+ tests, clippy -D warnings)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Continue parent 07-28-audit-remediation; next child still planning
+
+
+## Session 22: License baseline complete
+
+**Date**: 2026-07-28
+**Task**: License baseline complete
+**Branch**: `dev`
+
+### Summary
+
+MIT LICENSE retained; Cargo repository/readme/rust-version filled; provenance and README License added; archived.
+
+### Main Changes
+
+- Cargo.toml distribution metadata
+- docs/provenance.md independent-implementation note
+- README License section
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dd85c12` | (see git log) |
+
+### Testing
+
+- [OK] cargo package --list --allow-dirty; just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 23: Scan reliability complete
+
+**Date**: 2026-07-28
+**Task**: Scan reliability complete
+**Branch**: `dev`
+
+### Summary
+
+Partial scan diagnostics, SizeEstimate, completeness guard, global summary fix; just ci green; archived.
+
+### Main Changes
+
+- ScanOutcome + nested discovery diagnostics
+- SizeEstimate complete/partial/unknown
+- Ranking completeness guard + TUI size labels
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `802b0ab` | (see git log) |
+
+### Testing
+
+- [OK] just ci; unreadable child/root fixtures
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 24: TUI UX reliability complete
+
+**Date**: 2026-07-28
+**Task**: TUI UX reliability complete
+**Branch**: `dev`
+
+### Summary
+
+TerminalSession RAII, viewport, cleaned tombstones, display hygiene; just ci green; archived.
+
+### Main Changes
+
+- TerminalSession + panic hook
+- list viewport and page keys
+- cleaned tombstones until rescan
+- argv quoting and unicode-width truncation
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `78c3b31` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 25: 中央 SafetyPolicy 与 live revalidation
+
+**Date**: 2026-07-28
+**Task**: 中央 SafetyPolicy 与 live revalidation
+**Branch**: `dev`
+
+### Summary
+
+实现 SafetyPolicy::authorize 漏斗、五类保护语义、UserProtectionList、cargo metadata 作用域绑定；just ci 通过
+
+### Main Changes
+
+- 新增 src/safety.rs 与 protect CLI
+- executor 仅经 AuthorizedAction 执行 Command/Trash
+- scanner/registry 绑定 cargo --target-dir
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `02e15c67f5c1d419719b4e13bba253be434f1cb0` | (see git log) |
+
+### Testing
+
+- [OK] just ci 163+1 tests clippy -D warnings
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续 rule-registry-providers 挂接 safety_contract
+
+
+## Session 26: Durable audit complete
+
+**Date**: 2026-07-28
+**Task**: Durable audit complete
+**Branch**: `dev`
+
+### Summary
+
+Durable action journal with started-before-side-effect, fault halt, replay API; just ci green.
+
+### Main Changes
+
+- action_started durable before side effect
+- enriched journal events
+- halt on audit failure + replay API
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a2a5193` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 27: Release supply chain complete
+
+**Date**: 2026-07-28
+**Task**: Release supply chain complete
+**Branch**: `dev`
+
+### Summary
+
+CI hardened; release archive triple+checksum; archived.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c5ebc54` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 28: Scan walker budgets complete
+
+**Date**: 2026-07-28
+**Task**: Scan walker budgets complete
+**Branch**: `dev`
+
+### Summary
+
+Prune/budget/ranking D3; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `16ddaba` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 29: True cancellation complete
+
+**Date**: 2026-07-28
+**Task**: True cancellation complete
+**Branch**: `dev`
+
+### Summary
+
+Cancel token wired through runtime and executor; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc11170` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 30: Rule registry providers complete
+
+**Date**: 2026-07-28
+**Task**: Rule registry providers complete
+**Branch**: `dev`
+
+### Summary
+
+Rule granularity and yarn catalogue; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `859771a` | (see git log) |
+
+### Testing
+
+- [OK] just ci
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 31: Audit remediation parent complete 12/12
+
+**Date**: 2026-07-28
+**Task**: Audit remediation parent complete 12/12
+**Branch**: `dev`
+
+### Summary
+
+All 12 audit-remediation children completed and archived; parent closed. just ci green on final tree.
+
+### Main Changes
+
+- 12/12 child tasks archived
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `47f55c2` | (see git log) |
+| `ee1415e` | (see git log) |
+| `2ec5bba` | (see git log) |
+| `859771a` | (see git log) |
+| `d75613b` | (see git log) |
+| `0388695` | (see git log) |
+| `bc11170` | (see git log) |
+| `736c237` | (see git log) |
+| `5a1501f` | (see git log) |
+| `16ddaba` | (see git log) |
+| `124299a` | (see git log) |
+| `2ab327a` | (see git log) |
+
+### Testing
+
+- [OK] just ci final
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 32: Skeptic gap closeout: cancel+registry
+
+**Date**: 2026-07-28
+**Task**: Skeptic gap closeout: cancel+registry
+**Branch**: `dev`
+
+### Summary
+
+Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry platform/env/go fixes; just ci green.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9dc3535` | (see git log) |
+
+### Testing
+
+- [OK] just ci (174 tests)
+
+### Status
+
+[OK] **Completed**

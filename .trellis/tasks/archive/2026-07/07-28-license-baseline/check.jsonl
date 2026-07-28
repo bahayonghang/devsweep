@@ -1,0 +1,2 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Review that the task remains documentation and metadata only with no cleanup behavior change."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Verify provenance and release metadata work satisfy the parent legal baseline."}

@@ -1,0 +1,3 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Defines the repository safety and release-documentation boundary for metadata changes."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Provides repository documentation and module-placement conventions."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Records D4, parent acceptance, and the release-chain hand-off."}

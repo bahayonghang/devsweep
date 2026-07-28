@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Review that CI and archive validation preserve the canonical local gate and do not create cleanup side effects."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Review failure paths for locked dependencies, security tools, unsupported targets, and archive smoke failures."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Verify F-23, fixed decisions, P1 sequencing, and required-check hand-off remain aligned with the parent contract."}
+{"file":".trellis/tasks/07-28-license-baseline/prd.md","reason":"Verify the release workflow consumes, rather than redefines, LICENSE and rust-version metadata."}

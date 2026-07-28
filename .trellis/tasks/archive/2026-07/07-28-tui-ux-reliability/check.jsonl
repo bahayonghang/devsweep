@@ -1,0 +1,4 @@
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Review render purity, terminal tests, and TUI acceptance coverage."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Review viewport and tombstone state ownership and selection safety."}
+{"file":".trellis/spec/frontend/type-safety.md","reason":"Review typed lifecycle and display-state changes."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Verify D7/D8 and child ownership boundaries."}

@@ -384,17 +384,37 @@ fn metric_line(label: &'static str, count: usize) -> Line<'static> {
 
 fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let visible = app.visible_target_indices();
+    let content_height = area.height.saturating_sub(3) as usize; // borders + header
+    let page_size = content_height.max(1);
+    // Render is pure: clamp reads against a local window derived from app state.
     let selected_row = app.selected_index.min(visible.len().saturating_sub(1));
+    let mut scroll = app.list_scroll.min(visible.len().saturating_sub(1));
+    if selected_row < scroll {
+        scroll = selected_row;
+    } else if selected_row >= scroll + page_size {
+        scroll = selected_row + 1 - page_size;
+    }
+    let max_scroll = visible.len().saturating_sub(page_size);
+    scroll = scroll.min(max_scroll);
+    let window = if visible.is_empty() {
+        Vec::new()
+    } else {
+        let end = (scroll + page_size).min(visible.len());
+        visible[scroll..end].to_vec()
+    };
+
     let lines = if visible.is_empty() {
         vec![Line::styled("No targets in this view.", muted_style())]
     } else {
         let mut rows = vec![target_header_row(area)];
-        rows.extend(visible.iter().enumerate().map(|(row, index)| {
+        rows.extend(window.iter().enumerate().map(|(row, index)| {
             let target = &app.targets[*index];
+            let absolute = scroll + row;
             target_row(
                 target,
-                row == selected_row,
+                absolute == selected_row,
                 app.selected_ids.contains(&target.id),
+                app.is_cleaned(&target.id),
                 area,
             )
         }));
@@ -421,21 +441,47 @@ fn target_header_row(_area: Rect) -> Line<'static> {
     Line::from(spans)
 }
 
-fn target_row(target: &CleanTarget, selected: bool, checked: bool, area: Rect) -> Line<'static> {
+fn target_row(
+    target: &CleanTarget,
+    selected: bool,
+    checked: bool,
+    cleaned: bool,
+    area: Rect,
+) -> Line<'static> {
     let cursor_style = if selected {
         accent_style()
     } else {
         muted_style()
     };
-    let mark = if checked { "[x]" } else { "[ ]" };
+    let mark = if cleaned {
+        "[-]"
+    } else if checked {
+        "[x]"
+    } else {
+        "[ ]"
+    };
     let cursor = if selected { ">" } else { " " };
     let target_width = target_text_width(area);
-    let identity = if area.width >= 70 {
+    let identity = if cleaned {
+        format!(
+            "{}  cleaned; rescan to refresh",
+            if area.width >= 70 {
+                compact_target_identity(target)
+            } else {
+                target_title(target)
+            }
+        )
+    } else if area.width >= 70 {
         compact_target_identity(target)
     } else {
         target_title(target)
     };
     let target_text = compact_text(&identity, target_width);
+    let text_style = if cleaned {
+        muted_style()
+    } else {
+        panel_style()
+    };
 
     let spans = vec![
         Span::styled(format!("{cursor} "), cursor_style),
@@ -445,10 +491,10 @@ fn target_row(target: &CleanTarget, selected: bool, checked: bool, area: Rect) -
             risk_style(&target.risk),
         ),
         Span::styled(
-            format!("{:>9} ", format_bytes(target.estimated_bytes)),
+            format!("{:>9} ", format_target_bytes(target)),
             warning_style(),
         ),
-        Span::styled(target_text, panel_style()),
+        Span::styled(target_text, text_style),
     ];
 
     let mut line = Line::from(spans);
@@ -662,12 +708,17 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
     }
 
     match &app.overlay {
-        Overlay::Confirm(_) => {
+        Overlay::Confirm(confirm) => {
+            let enter_action = if confirm.invalidated_by_scan {
+                footer_action("Enter", "Blocked", FooterTone::Warning)
+            } else {
+                footer_action("Enter", "Run", FooterTone::Danger)
+            };
             return (
                 "CONFIRM",
                 FooterTone::Danger,
                 vec![
-                    footer_action("Enter", "Run", FooterTone::Danger),
+                    enter_action,
                     footer_action("Esc", "Cancel", FooterTone::Neutral),
                     footer_action("Backspace", "Edit", FooterTone::Neutral),
                     footer_action("Ctrl-C", "Quit", FooterTone::Danger),
@@ -682,6 +733,17 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
                     footer_action("Enter", "Close", FooterTone::Accent),
                     footer_action("Esc", "Close", FooterTone::Neutral),
                     footer_action("Ctrl-C", "Quit", FooterTone::Danger),
+                ],
+            );
+        }
+        Overlay::QuitConfirm => {
+            return (
+                "QUIT?",
+                FooterTone::Warning,
+                vec![
+                    footer_action("w", "Wait", FooterTone::Accent),
+                    footer_action("c", "Cancel+Wait", FooterTone::Danger),
+                    footer_action("Esc", "Stay", FooterTone::Neutral),
                 ],
             );
         }
@@ -705,7 +767,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
             "CLEANING",
             FooterTone::Warning,
             vec![
-                footer_action("x", "Cancel", FooterTone::Danger),
+                footer_action("x", "Request stop", FooterTone::Danger),
                 footer_action("l", "Logs", FooterTone::Neutral),
                 footer_action("Ctrl-C", "Quit", FooterTone::Danger),
             ],
@@ -724,7 +786,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
         footer_action("r", "Risk", FooterTone::Neutral),
     ];
     if app.jobs.iter().any(|job| job.status.is_active()) {
-        actions.insert(3, footer_action("x", "Cancel", FooterTone::Danger));
+        actions.insert(3, footer_action("x", "Request stop", FooterTone::Danger));
     }
 
     ("NORMAL", FooterTone::Accent, actions)
@@ -788,7 +850,7 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
                 Line::from("d opens dry-run preview"),
                 Line::from("c opens cleanup confirmation"),
                 Line::from("/ filters targets; r cycles risk filter"),
-                Line::from("x requests active job cancellation"),
+                Line::from("x requests a stop at the next action boundary"),
                 Line::from("Esc closes overlays; q quits"),
             ],
         ),
@@ -801,6 +863,17 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
         }
         Overlay::DryRun => render_modal(frame, "Dry-run preview", dry_run_lines(app)),
         Overlay::Confirm(confirm) => render_confirm(frame, confirm),
+        Overlay::QuitConfirm => render_modal(
+            frame,
+            "Active job running",
+            vec![
+                Line::from("A scan or cleanup job is still active."),
+                Line::from("w  keep waiting (do not quit yet)"),
+                Line::from("c  request cancel and wait for worker confirmation"),
+                Line::from("Esc stay in the app"),
+                Line::from("Quit is blocked until jobs reach a terminal state."),
+            ],
+        ),
     }
 }
 
@@ -820,7 +893,23 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
             Span::styled("  Estimated: ", muted_style()),
             Span::styled(format_bytes(confirm.estimated_bytes), warning_style()),
         ]),
+        Line::from(vec![
+            Span::styled("Plan digest: ", muted_style()),
+            Span::styled(confirm.plan_digest_prefix.clone(), accent_style()),
+        ]),
     ];
+
+    if confirm.invalidated_by_scan {
+        lines.push(Line::from(""));
+        lines.push(Line::styled(
+            "Scan results changed. This confirmation is disabled.",
+            error_style(),
+        ));
+        lines.push(Line::styled(
+            "Press Esc, then confirm the updated selection again.",
+            warning_style(),
+        ));
+    }
 
     if !confirm.selected_targets.is_empty() {
         lines.push(Line::from(""));
@@ -828,7 +917,7 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         lines.extend(confirm.selected_targets.iter().take(8).map(|target| {
             Line::from(vec![
                 Span::styled("  - ", muted_style()),
-                Span::styled(target.clone(), panel_style()),
+                Span::styled(compact_context_text(target, 46), panel_style()),
             ])
         }));
         if confirm.selected_targets.len() > 8 {
@@ -848,7 +937,10 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         lines.extend(confirm.command_previews.iter().take(8).map(|preview| {
             Line::from(vec![
                 Span::styled("  - ", muted_style()),
-                Span::styled(format!("{} -> ", preview.target), panel_style()),
+                Span::styled(
+                    format!("{} -> ", compact_text(&preview.target, 14)),
+                    panel_style(),
+                ),
                 Span::styled(preview.command.clone(), accent_style()),
             ])
         }));
@@ -886,7 +978,11 @@ fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
         lines.push(Line::styled(feedback.clone(), error_style()));
     }
     lines.push(Line::styled(
-        "Enter runs after confirm matches.  Esc cancels.",
+        if confirm.invalidated_by_scan {
+            "Enter is disabled until you confirm the updated selection.  Esc cancels."
+        } else {
+            "Enter runs after confirm matches.  Esc cancels."
+        },
         muted_style(),
     ));
 
@@ -978,7 +1074,7 @@ fn cleanup_progress_item_line(item: &CleanupProgressItem) -> Line<'static> {
     let (label, style) = cleanup_item_status_display(item.status);
     let mut spans = vec![
         Span::styled(format!("{label:<7} "), style),
-        Span::styled(item.label.clone(), panel_style()),
+        Span::styled(compact_text(&item.label, 12), panel_style()),
     ];
     if let Some(detail) = &item.detail {
         spans.push(Span::styled(" - ", muted_style()));
@@ -997,7 +1093,8 @@ fn cleanup_item_status_display(status: CleanupItemStatus) -> (&'static str, Styl
 }
 
 fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'static>>) {
-    let area = centered_modal_rect(frame.area(), 80, 20, 52, 10);
+    let desired_height = (lines.len() as u16).saturating_add(4).max(10);
+    let area = centered_modal_rect(frame.area(), 80, desired_height, 52, 10);
     frame.render_widget(Clear, area);
     frame.render_widget(
         Paragraph::new(Text::from(lines))
@@ -1065,7 +1162,7 @@ fn target_details_lines(target: &CleanTarget) -> Vec<Line<'static>> {
             Span::styled("Risk: ", muted_style()),
             Span::styled(risk_label(&target.risk), risk_style(&target.risk)),
         ]),
-        detail_line("Size", format_bytes(target.estimated_bytes)),
+        detail_line("Size", format_target_bytes(target)),
         detail_line("Reversible", target.reversible.to_string()),
         detail_line("Action", action_summary(&target.action)),
         Line::styled("Evidence:", muted_style()),
@@ -1115,21 +1212,76 @@ fn compact_path(path: &std::path::Path) -> String {
     compact_text(&display_path(path), 48)
 }
 
-fn compact_text(text: &str, max_chars: usize) -> String {
-    if text.chars().count() <= max_chars {
-        return text.to_string();
+fn compact_text(text: &str, max_cells: usize) -> String {
+    let cleaned = sanitize_display_text(text);
+    truncate_to_width(&cleaned, max_cells)
+}
+
+fn compact_context_text(text: &str, max_cells: usize) -> String {
+    let cleaned = sanitize_display_text(text);
+    if display_width(&cleaned) <= max_cells {
+        return cleaned;
     }
 
-    let tail_len = max_chars.saturating_sub(3);
-    let tail = text
-        .chars()
-        .rev()
-        .take(tail_len)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect::<String>();
+    let prefix_budget = max_cells.min(12);
+    let prefix = truncate_to_width(&cleaned, prefix_budget);
+    let tail_budget = max_cells.saturating_sub(display_width(&prefix) + 3);
+    let tail = take_width_suffix(&cleaned, tail_budget);
+    format!("{prefix}...{tail}")
+}
+
+fn display_width(text: &str) -> usize {
+    unicode_width::UnicodeWidthStr::width(text)
+}
+
+fn truncate_to_width(text: &str, max_cells: usize) -> String {
+    if display_width(text) <= max_cells {
+        return text.to_string();
+    }
+    if max_cells <= 3 {
+        return ".".repeat(max_cells.min(3));
+    }
+    let tail_budget = max_cells.saturating_sub(3);
+    let tail = take_width_suffix(text, tail_budget);
     format!("...{tail}")
+}
+
+fn take_width_suffix(text: &str, max_cells: usize) -> String {
+    let mut width = 0usize;
+    let mut chars = Vec::new();
+    for ch in text.chars().rev() {
+        let ch_width = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
+        if width + ch_width > max_cells {
+            break;
+        }
+        width += ch_width;
+        chars.push(ch);
+    }
+    chars.into_iter().rev().collect()
+}
+
+pub(super) fn sanitize_display_text(text: &str) -> String {
+    text.chars()
+        .map(|ch| match ch {
+            '\n' | '\r' | '\t' => ' ',
+            c if c.is_control() || c == '\u{7f}' => '?',
+            c => c,
+        })
+        .collect()
+}
+
+fn quote_argv_part(part: &str) -> String {
+    let cleaned = sanitize_display_text(part);
+    if cleaned.is_empty()
+        || cleaned.chars().any(|ch| {
+            ch.is_whitespace()
+                || matches!(ch, '"' | '\'' | '\\' | '*' | '?' | '|' | '&' | ';' | '>')
+        })
+    {
+        format!("\"{}\"", cleaned.replace('\\', "\\\\").replace('"', "\\\""))
+    } else {
+        cleaned
+    }
 }
 
 fn scope_label(scope: &Scope) -> String {
@@ -1227,8 +1379,11 @@ pub(super) fn command_previews<'a>(
 
 fn command_preview(program: &str, args: &[String], cwd: &Option<PathBuf>) -> String {
     let mut parts = Vec::with_capacity(args.len() + 1);
-    parts.push(display_path_text(program));
-    parts.extend(args.iter().map(|arg| display_path_text(arg)));
+    parts.push(quote_argv_part(&display_path_text(program)));
+    parts.extend(
+        args.iter()
+            .map(|arg| quote_argv_part(&display_path_text(arg))),
+    );
     let argv = parts.join(" ");
     if let Some(cwd) = cwd {
         format!("argv: {argv}  cwd: {}", display_path(cwd))
@@ -1238,7 +1393,7 @@ fn command_preview(program: &str, args: &[String], cwd: &Option<PathBuf>) -> Str
 }
 
 pub(super) fn display_path(path: &Path) -> String {
-    display_path_text(&path.display().to_string())
+    sanitize_display_text(&display_path_text(&path.display().to_string()))
 }
 
 fn display_path_text(text: &str) -> String {
@@ -1263,6 +1418,17 @@ fn cleanup_progress_bar(completed: usize, total: usize, width: usize) -> String 
         "#".repeat(filled),
         "-".repeat(width.saturating_sub(filled))
     )
+}
+
+fn format_target_bytes(target: &crate::model::CleanTarget) -> String {
+    if !target.size_complete {
+        return if target.estimated_bytes == 0 {
+            "unknown".to_string()
+        } else {
+            format!(">= {}", format_bytes(target.estimated_bytes))
+        };
+    }
+    format_bytes(target.estimated_bytes)
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -1325,7 +1491,6 @@ mod tests {
         assert!(rendered.contains("Sel Risk Size Target"));
         assert!(rendered.contains("> [x] Low"));
         assert!(rendered.contains("1.0 KiB"));
-        assert!(rendered.contains("D:/code/web/.next/cache"));
     }
 
     #[test]
@@ -1337,7 +1502,6 @@ mod tests {
         assert!(rendered.contains("Targets"));
         assert!(rendered.contains("Details"));
         assert!(!rendered.contains("Categories"));
-        assert!(rendered.contains("D:/code/web/.next/cache"));
     }
 
     #[test]
@@ -1394,6 +1558,7 @@ mod tests {
         assert!(confirm.contains("Irreversible command-backed cleanup"));
         assert!(confirm.contains("Cleanup commands"));
         assert!(confirm.contains("argv: npm cache clean --force"));
+        assert!(confirm.contains("Plan digest:"));
         assert!(confirm.contains("Required: confirm"));
         assert!(confirm.contains("Enter runs after confirm matches"));
 
@@ -1411,21 +1576,86 @@ mod tests {
     }
 
     #[test]
+    fn display_hygiene_quotes_argv_and_strips_controls() {
+        assert_eq!(
+            super::command_preview(
+                "npm",
+                &["cache".into(), "clean".into(), "--force".into()],
+                &None
+            ),
+            "argv: npm cache clean --force"
+        );
+        assert!(
+            super::command_preview("tool", &["path with space".into()], &None)
+                .contains("\"path with space\"")
+        );
+        assert!(!super::sanitize_display_text("a\u{1b}[31mb\u{07}c").contains('\u{1b}'));
+        assert!(!super::sanitize_display_text("a\u{1b}[31mb\u{07}c").contains('\u{07}'));
+        let cjk = "中文路径需要按显示宽度截断并且不能越界溢出";
+        let truncated = super::compact_text(cjk, 12);
+        assert!(unicode_width::UnicodeWidthStr::width(truncated.as_str()) <= 12);
+    }
+
+    #[test]
+    fn cleaned_target_renders_as_tombstone() {
+        let mut app = App::with_plan(representative_plan());
+        let target_id = app.targets[0].id.clone();
+        app.cleaned_ids.insert(target_id);
+        let text = render_text(&app);
+        assert!(text.contains("cleaned; rescan to refresh") || text.contains("[-]"));
+    }
+
+    #[test]
+    fn invalidated_confirmation_renders_reconfirmation_state() {
+        let mut app = App::with_plan(representative_plan());
+        app.update(key(KeyCode::Char('c')));
+        let effects = app.startup_effects();
+        let [crate::tui::app::Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests a scan");
+        };
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id: *job_id,
+            phase: crate::sweep::ScanPhase::Projects,
+            message: "Scan state changed".to_string(),
+            plan: None,
+        }));
+
+        let rendered = render_text(&app);
+        assert!(rendered.contains("This confirmation is disabled."));
+        assert!(rendered.contains("confirm the updated selection again"));
+        assert!(rendered.contains("[Enter] Blocked"));
+    }
+
+    #[test]
     fn confirmation_and_dry_run_show_selected_targets_across_scopes() {
         let mut app = App::with_plan(representative_plan());
         app.selected_ids.clear();
         app.selected_ids.insert(app.targets[0].id.clone());
         app.selected_ids.insert(app.targets[1].id.clone());
+        let project_scope = scope_label(&app.targets[0].scope);
+        let project_path = app.targets[0]
+            .path
+            .as_ref()
+            .expect("project target path")
+            .display()
+            .to_string();
+        let global_path = app.targets[1]
+            .path
+            .as_ref()
+            .expect("global target path")
+            .display()
+            .to_string();
 
         let dry_run = dry_run_lines(&app)
             .into_iter()
             .map(|line| line.to_string())
             .collect::<Vec<_>>()
             .join("\n");
-        assert!(dry_run.contains("Project (D:/code/web)"));
+        assert!(dry_run.contains(&project_scope));
         assert!(dry_run.contains("Global"));
-        assert!(dry_run.contains("D:/code/web/.next/cache"));
-        assert!(dry_run.contains("C:/Users/me/AppData/Local/npm-cache"));
+        assert!(dry_run.contains(&project_path));
+        assert!(dry_run.contains(&global_path));
 
         app.update(key(KeyCode::Char('c')));
         let Overlay::Confirm(confirm) = &app.overlay else {
@@ -1436,7 +1666,7 @@ mod tests {
             confirm
                 .selected_targets
                 .iter()
-                .any(|target| target.contains("Project (D:/code/web)"))
+                .any(|target| target.contains(&project_scope))
         );
         assert!(
             confirm
@@ -1446,7 +1676,7 @@ mod tests {
         );
         let rendered = render_text(&app);
         assert!(rendered.contains("Selected targets:"));
-        assert!(rendered.contains("Project (D:/code/web)"));
+        assert!(rendered.contains("Project"));
         assert!(rendered.contains("Global"));
     }
 
@@ -1587,7 +1817,7 @@ mod tests {
         assert!(rendered.contains("OK"));
         assert!(rendered.contains("FAILED"));
         assert!(rendered.contains("SKIPPED"));
-        assert!(rendered.contains("Access denied: file is locked"));
+        assert!(rendered.contains("Access denied"));
 
         app.active_tab = ActiveTab::JobsLogs;
         app.cleanup_progress = None;

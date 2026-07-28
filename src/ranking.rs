@@ -12,13 +12,20 @@ pub fn rank_cleanup_plan(plan: &mut CleanupPlan) {
     rank_cleanup_plan_at(plan, SystemTime::now(), DEFAULT_FRESHNESS_FLOOR);
 }
 
-pub fn target_score(target: &CleanTarget, now: SystemTime) -> f64 {
+/// Freshness tie-breaker used only when two targets share the same size.
+/// Primary sort order is always estimated_bytes descending (decision D3).
+pub fn freshness_tiebreaker(target: &CleanTarget, now: SystemTime) -> f64 {
     let Some(age) = target_age(target, now) else {
         return 0.0;
     };
     let size_mib = target.estimated_bytes as f64 / 1_048_576.0;
     let age_days = age.as_secs_f64() / 86_400.0;
     size_mib * age_days
+}
+
+#[deprecated(note = "renamed to freshness_tiebreaker; size is the primary sort key")]
+pub fn target_score(target: &CleanTarget, now: SystemTime) -> f64 {
+    freshness_tiebreaker(target, now)
 }
 
 pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floor: Duration) {
@@ -28,11 +35,37 @@ pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floo
     sort_targets(&mut plan.targets, now);
 }
 
+pub const SIZE_COMPLETENESS_GUARD_RULE_ID: &str = "ranking.size_completeness_guard";
+
 fn apply_freshness_guard(target: &mut CleanTarget, now: SystemTime, floor: Duration) {
     if !target.selected_by_default {
         return;
     }
+    if !target.size_complete {
+        target.selected_by_default = false;
+        if !target
+            .evidence
+            .iter()
+            .any(is_size_completeness_guard_evidence)
+        {
+            target.evidence.push(Evidence::RuleMatched {
+                rule_id: SIZE_COMPLETENESS_GUARD_RULE_ID.to_string(),
+            });
+        }
+        return;
+    }
     let Some(age) = target_age(target, now) else {
+        // Unknown mtime: do not keep a default selection.
+        target.selected_by_default = false;
+        if !target
+            .evidence
+            .iter()
+            .any(is_size_completeness_guard_evidence)
+        {
+            target.evidence.push(Evidence::RuleMatched {
+                rule_id: SIZE_COMPLETENESS_GUARD_RULE_ID.to_string(),
+            });
+        }
         return;
     };
     if age >= floor {
@@ -45,6 +78,13 @@ fn apply_freshness_guard(target: &mut CleanTarget, now: SystemTime, floor: Durat
             rule_id: FRESHNESS_GUARD_RULE_ID.to_string(),
         });
     }
+}
+
+fn is_size_completeness_guard_evidence(evidence: &Evidence) -> bool {
+    matches!(
+        evidence,
+        Evidence::RuleMatched { rule_id } if rule_id == SIZE_COMPLETENESS_GUARD_RULE_ID
+    )
 }
 
 fn is_freshness_guard_evidence(evidence: &Evidence) -> bool {
@@ -64,12 +104,13 @@ fn sort_targets(targets: &mut [CleanTarget], now: SystemTime) {
 }
 
 fn compare_targets(left: &CleanTarget, right: &CleanTarget, now: SystemTime) -> Ordering {
+    // Decision D3: size-first primary order; freshness only breaks ties.
     right
         .estimated_bytes
         .cmp(&left.estimated_bytes)
         .then_with(|| {
-            target_score(right, now)
-                .partial_cmp(&target_score(left, now))
+            freshness_tiebreaker(right, now)
+                .partial_cmp(&freshness_tiebreaker(left, now))
                 .unwrap_or(Ordering::Equal)
         })
         .then_with(|| compare_last_modified(left, right))
@@ -162,7 +203,7 @@ mod tests {
             false,
         );
 
-        assert_eq!(target_score(&target, now), 6.0);
+        assert_eq!(freshness_tiebreaker(&target, now), 6.0);
     }
 
     #[test]
@@ -176,8 +217,8 @@ mod tests {
             false,
         );
 
-        assert_eq!(target_score(&missing, now), 0.0);
-        assert_eq!(target_score(&future, now), 0.0);
+        assert_eq!(freshness_tiebreaker(&missing, now), 0.0);
+        assert_eq!(freshness_tiebreaker(&future, now), 0.0);
     }
 
     #[test]
@@ -206,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn freshness_guard_preserves_stale_missing_and_unselected_targets() {
+    fn freshness_guard_preserves_stale_and_unselected_targets() {
         let now = UNIX_EPOCH + Duration::from_secs(30 * 86_400);
         let mut plan = plan(vec![
             target(
@@ -233,9 +274,33 @@ mod tests {
             .map(|target| (target.id.as_str(), target.selected_by_default))
             .collect();
         assert!(selected_by_id.contains(&("stale", true)));
-        assert!(selected_by_id.contains(&("missing", true)));
+        // Unknown mtime is not trustworthy enough for default selection.
+        assert!(selected_by_id.contains(&("missing", false)));
         assert!(selected_by_id.contains(&("future", false)));
         assert!(selected_by_id.contains(&("unselected", false)));
+    }
+
+    #[test]
+    fn incomplete_size_is_not_selected_by_default() {
+        let now = UNIX_EPOCH + Duration::from_secs(30 * 86_400);
+        let mut incomplete = target(
+            "incomplete",
+            100,
+            Some(now - Duration::from_secs(10 * 86_400)),
+            true,
+        );
+        incomplete.size_complete = false;
+        let mut plan = plan(vec![incomplete]);
+
+        rank_cleanup_plan_at(&mut plan, now, DEFAULT_FRESHNESS_FLOOR);
+
+        assert!(!plan.targets[0].selected_by_default);
+        assert!(
+            plan.targets[0]
+                .evidence
+                .iter()
+                .any(is_size_completeness_guard_evidence)
+        );
     }
 
     fn plan(targets: Vec<CleanTarget>) -> CleanupPlan {
@@ -260,6 +325,7 @@ mod tests {
             kind: TargetKind::ToolCache,
             path: Some(PathBuf::from(format!("C:/workspace/app/{id}"))),
             estimated_bytes,
+            size_complete: true,
             last_modified,
             risk: RiskLevel::Low,
             reversible: true,

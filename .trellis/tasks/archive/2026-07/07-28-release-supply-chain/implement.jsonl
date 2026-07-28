@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Defines the canonical CI gate, generated dist boundary, and dry-run safety contract used by release smoke checks."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Guides bounded CI and release-recipe failure handling, including fail-before-publish behavior."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Provides F-23 scope, D4-D9 decisions, task order, and the required-checks no-go condition."}
+{"file":".trellis/tasks/07-28-license-baseline/prd.md","reason":"Owns the MIT, Cargo metadata, and rust-version handoff consumed by the CI MSRV and archive work."}

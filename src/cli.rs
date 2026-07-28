@@ -19,8 +19,27 @@ pub enum Command {
     Scan(ScanCommand),
     /// Dry-run or execute an existing cleanup plan.
     Clean(CleanCommand),
+    /// Manage the persistent user protection list.
+    #[command(subcommand)]
+    Protect(ProtectCommand),
     /// Inspect cleanup rules.
     Rules,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ProtectCommand {
+    /// Add an existing path that must never be cleaned.
+    Add {
+        /// Existing path to protect.
+        path: PathBuf,
+    },
+    /// Remove a path from the protection list.
+    Remove {
+        /// Path to remove from the protection list.
+        path: PathBuf,
+    },
+    /// List protected paths.
+    List,
 }
 
 #[derive(Debug, Args)]
@@ -60,9 +79,6 @@ pub struct CleanCommand {
     /// Append execution audit records to this JSONL file. Defaults to devsweep-audit.jsonl when executing.
     #[arg(long, value_name = "PATH")]
     pub audit_log: Option<PathBuf>,
-    /// Future guard for permanent delete. Not used in the foundation build.
-    #[arg(long)]
-    pub allow_permanent_delete: bool,
 }
 
 #[cfg(test)]
@@ -74,5 +90,22 @@ mod tests {
     #[test]
     fn cli_definition_is_valid() {
         Cli::command().debug_assert();
+    }
+
+    #[test]
+    fn clean_help_does_not_expose_permanent_delete() {
+        let mut command = Cli::command();
+        let clean = command
+            .find_subcommand_mut("clean")
+            .expect("clean subcommand exists");
+        let mut help = Vec::new();
+
+        clean.write_long_help(&mut help).expect("help renders");
+
+        assert!(
+            !String::from_utf8(help)
+                .expect("help is UTF-8")
+                .contains("allow-permanent-delete")
+        );
     }
 }

@@ -1,10 +1,11 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 use crate::{
     executor::{ExecutionReport, ExecutionTargetStatus},
     model::{CleanAction, CleanTarget, CleanupPlan, RiskLevel, Scope, TargetId},
+    plan_validation::validate_scanned_plan,
     sweep::ScanPhase,
 };
 
@@ -15,11 +16,22 @@ use super::render::{
 
 pub(super) type JobId = u64;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SelectionOverride {
+    Selected,
+    Deselected,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct App {
     pub(super) targets: Vec<CleanTarget>,
     pub(super) selected_ids: HashSet<TargetId>,
+    selection_overrides: HashMap<TargetId, SelectionOverride>,
+    /// Target ids successfully cleaned in this session until the next rescan.
+    pub(super) cleaned_ids: HashSet<TargetId>,
     pub(super) selected_index: usize,
+    /// First visible target-list row for the current viewport.
+    pub(super) list_scroll: usize,
     pub(super) active_tab: ActiveTab,
     pub(super) filter: String,
     pub(super) filter_active: bool,
@@ -31,6 +43,8 @@ pub(super) struct App {
     pub(super) cleanup_progress: Option<CleanupProgress>,
     pub(super) scan_snapshot: Option<ScanSnapshot>,
     pub(super) should_quit: bool,
+    /// User asked to quit after active jobs reach a terminal state (D9).
+    pub(super) quit_after_jobs: bool,
     pub(super) next_job_id: JobId,
 }
 
@@ -50,7 +64,10 @@ impl App {
         let mut app = Self {
             targets: plan.targets,
             selected_ids,
+            selection_overrides: HashMap::new(),
+            cleaned_ids: HashSet::new(),
             selected_index: 0,
+            list_scroll: 0,
             active_tab: ActiveTab::Dashboard,
             filter: String::new(),
             filter_active: false,
@@ -62,6 +79,7 @@ impl App {
             cleanup_progress: None,
             scan_snapshot: None,
             should_quit: false,
+            quit_after_jobs: false,
             next_job_id: 1,
         };
         app.log("Ready");
@@ -69,10 +87,12 @@ impl App {
     }
 
     pub(super) fn update(&mut self, event: UiEvent) -> Vec<Effect> {
-        match event {
+        let effects = match event {
             UiEvent::Key(key) => self.handle_key(key),
             UiEvent::Worker(event) => self.handle_worker_event(event),
-        }
+        };
+        self.maybe_finish_pending_quit();
+        effects
     }
 
     fn handle_key(&mut self, key: KeyEvent) -> Vec<Effect> {
@@ -83,8 +103,7 @@ impl App {
         if key.modifiers.contains(KeyModifiers::CONTROL)
             && matches!(key.code, KeyCode::Char('c' | 'C'))
         {
-            self.should_quit = true;
-            return vec![Effect::Quit];
+            return self.request_quit();
         }
 
         if self.filter_active {
@@ -104,6 +123,7 @@ impl App {
 
         match self.overlay {
             Overlay::Confirm(_) => self.handle_confirm_key(key),
+            Overlay::QuitConfirm => self.handle_quit_confirm_key(key),
             Overlay::Help | Overlay::Details | Overlay::DryRun => self.handle_overlay_key(key),
             Overlay::None => self.handle_normal_key(key),
         }
@@ -111,16 +131,39 @@ impl App {
 
     fn handle_normal_key(&mut self, key: KeyEvent) -> Vec<Effect> {
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => {
-                self.should_quit = true;
-                vec![Effect::Quit]
+            KeyCode::Char('q') => self.request_quit(),
+            KeyCode::Esc => {
+                if self.has_active_mutation_job() {
+                    self.request_quit()
+                } else {
+                    self.should_quit = true;
+                    vec![Effect::Quit]
+                }
             }
             KeyCode::Char('s') => {
+                if self.has_active_clean_job() {
+                    self.log_entry(
+                        AppLogLevel::Warning,
+                        AppLogSource::Scan,
+                        None,
+                        None,
+                        "Cleanup is active; scan requests are disabled until it finishes",
+                    );
+                    return Vec::new();
+                }
                 let job_id = self.start_scan_job("Scan requested");
                 vec![Effect::StartScan { job_id }]
             }
             KeyCode::Char('c') => {
-                if self.selected_ids.is_empty() {
+                if self.has_active_clean_job() {
+                    self.log_entry(
+                        AppLogLevel::Warning,
+                        AppLogSource::Clean,
+                        None,
+                        None,
+                        "Cleanup is already active; a second cleanup cannot start",
+                    );
+                } else if self.selected_targets().is_empty() {
                     self.log_entry(
                         AppLogLevel::Warning,
                         AppLogSource::Clean,
@@ -129,7 +172,16 @@ impl App {
                         "No selected targets to clean",
                     );
                 } else {
-                    self.overlay = Overlay::Confirm(self.confirm_state());
+                    match self.confirm_state() {
+                        Ok(confirm) => self.overlay = Overlay::Confirm(confirm),
+                        Err(error) => self.log_entry(
+                            AppLogLevel::Error,
+                            AppLogSource::Clean,
+                            None,
+                            None,
+                            format!("Selected cleanup plan failed validation: {error}"),
+                        ),
+                    }
                 }
                 Vec::new()
             }
@@ -183,6 +235,14 @@ impl App {
                 self.move_selection(-1);
                 Vec::new()
             }
+            KeyCode::PageDown => {
+                self.page_selection(1);
+                Vec::new()
+            }
+            KeyCode::PageUp => {
+                self.page_selection(-1);
+                Vec::new()
+            }
             KeyCode::Enter => {
                 if self.selected_target().is_some() {
                     self.overlay = Overlay::Details;
@@ -225,6 +285,92 @@ impl App {
         Vec::new()
     }
 
+    fn handle_quit_confirm_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match key.code {
+            KeyCode::Char('w') | KeyCode::Enter => {
+                // Keep waiting for the active job; dismiss the overlay.
+                self.overlay = Overlay::None;
+                self.log_entry(
+                    AppLogLevel::Info,
+                    AppLogSource::App,
+                    None,
+                    None,
+                    "Continuing to wait for active jobs before quit is allowed",
+                );
+                Vec::new()
+            }
+            KeyCode::Char('c') | KeyCode::Char('x') => {
+                self.overlay = Overlay::None;
+                self.quit_after_jobs = true;
+                let mut effects = self.cancel_all_active_jobs();
+                self.log_entry(
+                    AppLogLevel::Warning,
+                    AppLogSource::App,
+                    None,
+                    None,
+                    "Cancel requested; waiting for workers to confirm before quit",
+                );
+                if !self.has_active_mutation_job() {
+                    self.should_quit = true;
+                    effects.push(Effect::Quit);
+                }
+                effects
+            }
+            KeyCode::Esc => {
+                self.overlay = Overlay::None;
+                self.quit_after_jobs = false;
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn request_quit(&mut self) -> Vec<Effect> {
+        if self.has_active_mutation_job() {
+            self.overlay = Overlay::QuitConfirm;
+            self.log_entry(
+                AppLogLevel::Warning,
+                AppLogSource::App,
+                None,
+                None,
+                "Active job running: press w to wait, c to cancel-and-wait, Esc to stay",
+            );
+            return Vec::new();
+        }
+        self.should_quit = true;
+        vec![Effect::Quit]
+    }
+
+    fn cancel_all_active_jobs(&mut self) -> Vec<Effect> {
+        let active: Vec<JobId> = self
+            .jobs
+            .iter()
+            .filter(|job| job.status.is_active())
+            .map(|job| job.id)
+            .collect();
+        let mut effects = Vec::new();
+        for job_id in active {
+            if self.transition_job(
+                job_id,
+                JobStatus::Cancelling,
+                "Cancellation requested; waiting for worker confirmation.",
+            ) {
+                effects.push(Effect::CancelJob { job_id });
+            }
+        }
+        effects
+    }
+
+    fn has_active_mutation_job(&self) -> bool {
+        self.jobs.iter().any(|job| job.status.is_active())
+    }
+
+    fn maybe_finish_pending_quit(&mut self) {
+        if self.quit_after_jobs && !self.has_active_mutation_job() {
+            self.should_quit = true;
+        }
+    }
+
     fn handle_confirm_key(&mut self, key: KeyEvent) -> Vec<Effect> {
         match key.code {
             KeyCode::Esc => {
@@ -248,11 +394,30 @@ impl App {
                 Vec::new()
             }
             KeyCode::Enter => {
-                let accepted = matches!(
-                    &self.overlay,
-                    Overlay::Confirm(confirm)
-                        if confirm.input.trim() == confirm.required_phrase
-                );
+                let (invalidated_by_scan, accepted) = match &self.overlay {
+                    Overlay::Confirm(confirm) => (
+                        confirm.invalidated_by_scan,
+                        confirm.input.trim() == confirm.required_phrase,
+                    ),
+                    _ => return Vec::new(),
+                };
+
+                if invalidated_by_scan {
+                    if let Overlay::Confirm(confirm) = &mut self.overlay {
+                        confirm.feedback = Some(
+                            "Scan results changed. Close this dialog and confirm the updated selection."
+                                .to_string(),
+                        );
+                    }
+                    self.log_entry(
+                        AppLogLevel::Warning,
+                        AppLogSource::Clean,
+                        None,
+                        None,
+                        "Confirmation rejected because scan results changed",
+                    );
+                    return Vec::new();
+                }
 
                 if !accepted {
                     if let Overlay::Confirm(confirm) = &mut self.overlay {
@@ -271,12 +436,15 @@ impl App {
                     return Vec::new();
                 }
 
-                let plan = self.selected_cleanup_plan();
-                let selected: Vec<TargetId> = plan
-                    .targets
-                    .iter()
-                    .map(|target| target.id.clone())
-                    .collect();
+                let manifest = match &self.overlay {
+                    Overlay::Confirm(confirm) => confirm.manifest.clone(),
+                    _ => return Vec::new(),
+                };
+                let ExecutionManifest {
+                    plan,
+                    selected,
+                    digest,
+                } = *manifest;
                 let target_count = plan.targets.len();
                 self.overlay = Overlay::None;
                 let job_id =
@@ -292,6 +460,7 @@ impl App {
                     job_id,
                     plan,
                     selected,
+                    plan_digest: digest,
                 }]
             }
             _ => Vec::new(),
@@ -302,11 +471,16 @@ impl App {
         match event {
             WorkerEvent::ScanStarted { job_id } => {
                 self.ensure_job(job_id, JobKind::Scan, "Scan current directory and globals");
-                self.mark_job(job_id, JobStatus::Running, "Started");
+                if !self.transition_job(job_id, JobStatus::Running, "Started") {
+                    self.log_ignored_worker_event(job_id, "scan started");
+                }
             }
             WorkerEvent::JobProgress { job_id, message } => {
-                self.mark_job(job_id, JobStatus::Running, message.clone());
-                self.log_job(AppLogLevel::Info, self.job_source(job_id), job_id, message);
+                if self.transition_job(job_id, JobStatus::Running, message.clone()) {
+                    self.log_job(AppLogLevel::Info, self.job_source(job_id), job_id, message);
+                } else {
+                    self.log_ignored_worker_event(job_id, "job progress");
+                }
             }
             WorkerEvent::ScanProgress {
                 job_id,
@@ -325,11 +499,11 @@ impl App {
                 completed,
                 total,
             } => {
-                self.mark_job(
-                    job_id,
-                    JobStatus::Running,
-                    format_cleanup_progress(completed, total, &message),
-                );
+                let progress = format_cleanup_progress(completed, total, &message);
+                if !self.transition_job(job_id, JobStatus::Running, progress) {
+                    self.log_ignored_worker_event(job_id, "cleanup progress");
+                    return Vec::new();
+                }
                 self.update_cleanup_progress_item(CleanupProgressUpdate {
                     job_id,
                     completed,
@@ -339,6 +513,9 @@ impl App {
                     status,
                     detail,
                 });
+                if status == ExecutionTargetStatus::Succeeded {
+                    self.mark_target_cleaned(target_id.clone());
+                }
                 self.log_target(
                     log_level_for_execution_status(status),
                     AppLogSource::Clean,
@@ -349,17 +526,21 @@ impl App {
             }
             WorkerEvent::ScanFinished { job_id, plan } => {
                 let count = plan.targets.len();
-                if self.should_apply_scan_update(job_id) {
-                    self.targets = plan.targets;
-                    self.selected_ids = default_selected_ids(&self.targets);
-                    self.selected_index = 0;
-                    self.scan_snapshot = None;
-                }
-                self.mark_job(
+                let should_apply_scan_update = self.should_apply_scan_update(job_id);
+                if !self.transition_job(
                     job_id,
                     JobStatus::Succeeded,
                     format!("Found {count} target(s)"),
-                );
+                ) {
+                    self.log_ignored_worker_event(job_id, "scan finished");
+                    return Vec::new();
+                }
+                if should_apply_scan_update {
+                    self.invalidate_confirmation_due_to_scan();
+                    self.cleaned_ids.clear();
+                    self.replace_targets_preserving_selection(plan.targets);
+                    self.scan_snapshot = None;
+                }
                 self.log_job(
                     AppLogLevel::Info,
                     AppLogSource::Scan,
@@ -377,7 +558,10 @@ impl App {
                     "{} succeeded, {} failed, {} skipped",
                     report.succeeded, report.failed, report.skipped
                 );
-                self.mark_job(job_id, status, summary.clone());
+                if !self.transition_job(job_id, status, summary.clone()) {
+                    self.log_ignored_worker_event(job_id, "cleanup finished");
+                    return Vec::new();
+                }
                 self.finish_cleanup_progress(job_id, &report, &summary);
                 self.log_job(
                     if report.failed == 0 {
@@ -399,8 +583,11 @@ impl App {
                 }
             }
             WorkerEvent::JobFailed { job_id, message } => {
+                if !self.transition_job(job_id, JobStatus::Failed, message.clone()) {
+                    self.log_ignored_worker_event(job_id, "job failure");
+                    return Vec::new();
+                }
                 self.clear_scan_snapshot(job_id);
-                self.mark_job(job_id, JobStatus::Failed, message.clone());
                 if self.cleanup_progress_matches(job_id)
                     && let Some(progress) = &mut self.cleanup_progress
                 {
@@ -410,8 +597,11 @@ impl App {
                 self.log_job(AppLogLevel::Error, self.job_source(job_id), job_id, message);
             }
             WorkerEvent::JobCanceled { job_id } => {
+                if !self.transition_job(job_id, JobStatus::Canceled, "Canceled") {
+                    self.log_ignored_worker_event(job_id, "job cancellation");
+                    return Vec::new();
+                }
                 self.clear_scan_snapshot(job_id);
-                self.mark_job(job_id, JobStatus::Canceled, "Canceled");
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;
                 }
@@ -447,14 +637,22 @@ impl App {
         message: String,
         plan: Option<CleanupPlan>,
     ) {
-        self.mark_job(job_id, JobStatus::Running, message.clone());
+        if !self.transition_job(job_id, JobStatus::Running, message.clone()) {
+            self.log_ignored_worker_event(job_id, "scan progress");
+            return;
+        }
         self.log_job(AppLogLevel::Info, AppLogSource::Scan, job_id, message);
+
+        let should_apply_scan_update = self.should_apply_scan_update(job_id);
+        if should_apply_scan_update {
+            self.invalidate_confirmation_due_to_scan();
+        }
 
         let Some(plan) = plan else {
             return;
         };
 
-        if !self.should_apply_scan_update(job_id) {
+        if !should_apply_scan_update {
             return;
         }
 
@@ -492,9 +690,41 @@ impl App {
 
     fn rebuild_targets_from_scan_snapshot(&mut self) {
         if let Some(snapshot) = &self.scan_snapshot {
-            self.targets = snapshot.targets();
-            self.selected_ids = default_selected_ids(&self.targets);
-            self.selected_index = 0;
+            self.replace_targets_preserving_selection(snapshot.targets());
+        }
+    }
+
+    fn replace_targets_preserving_selection(&mut self, targets: Vec<CleanTarget>) {
+        let available_ids: HashSet<TargetId> =
+            targets.iter().map(|target| target.id.clone()).collect();
+        self.selection_overrides
+            .retain(|target_id, _| available_ids.contains(target_id));
+        self.selected_ids = targets
+            .iter()
+            .filter_map(|target| {
+                if !target.action.is_executable() || self.cleaned_ids.contains(&target.id) {
+                    return None;
+                }
+                match self.selection_overrides.get(&target.id) {
+                    Some(SelectionOverride::Selected) => Some(target.id.clone()),
+                    Some(SelectionOverride::Deselected) => None,
+                    None if target.selected_by_default => Some(target.id.clone()),
+                    None => None,
+                }
+            })
+            .collect();
+        self.targets = targets;
+        self.selected_index = 0;
+        self.list_scroll = 0;
+    }
+
+    fn invalidate_confirmation_due_to_scan(&mut self) {
+        if let Overlay::Confirm(confirm) = &mut self.overlay {
+            confirm.invalidated_by_scan = true;
+            confirm.feedback = Some(
+                "Scan results changed. Close this dialog and confirm the updated selection."
+                    .to_string(),
+            );
         }
     }
 
@@ -512,28 +742,95 @@ impl App {
         let count = self.visible_target_indices().len();
         if count == 0 {
             self.selected_index = 0;
+            self.list_scroll = 0;
             return;
         }
 
         let current = self.selected_index.min(count - 1) as isize;
         let next = (current + delta).clamp(0, count as isize - 1);
         self.selected_index = next as usize;
+        self.ensure_selection_visible(count.saturating_sub(1).max(1));
+    }
+
+    fn page_selection(&mut self, direction: isize) {
+        let page = self.viewport_page_size().max(1) as isize;
+        self.move_selection(direction * page);
+    }
+
+    /// Keep the selected row inside a viewport of `page_size` content rows.
+    pub(super) fn ensure_selection_visible(&mut self, page_size: usize) {
+        let count = self.visible_target_indices().len();
+        if count == 0 || page_size == 0 {
+            self.list_scroll = 0;
+            self.selected_index = 0;
+            return;
+        }
+        self.selected_index = self.selected_index.min(count - 1);
+        if self.selected_index < self.list_scroll {
+            self.list_scroll = self.selected_index;
+        } else if self.selected_index >= self.list_scroll + page_size {
+            self.list_scroll = self.selected_index + 1 - page_size;
+        }
+        let max_scroll = count.saturating_sub(page_size);
+        self.list_scroll = self.list_scroll.min(max_scroll);
+    }
+
+    fn viewport_page_size(&self) -> usize {
+        // Default page used by keyboard navigation before the next render
+        // reports an exact panel height.
+        10
+    }
+
+    pub(super) fn is_cleaned(&self, target_id: &TargetId) -> bool {
+        self.cleaned_ids.contains(target_id)
+    }
+
+    fn mark_target_cleaned(&mut self, target_id: TargetId) {
+        self.cleaned_ids.insert(target_id.clone());
+        self.selected_ids.remove(&target_id);
+        self.selection_overrides
+            .insert(target_id, SelectionOverride::Deselected);
     }
 
     fn toggle_selected_target(&mut self) {
-        let Some(target_id) = self.selected_target().map(|target| target.id.clone()) else {
+        let Some((target_id, executable)) = self
+            .selected_target()
+            .map(|target| (target.id.clone(), target.action.is_executable()))
+        else {
             return;
         };
 
-        if !self.selected_ids.remove(&target_id) {
-            self.selected_ids.insert(target_id);
+        if self.cleaned_ids.contains(&target_id) {
+            self.log_entry(
+                AppLogLevel::Warning,
+                AppLogSource::Clean,
+                None,
+                Some(target_id),
+                "Cleaned targets stay disabled until the next rescan",
+            );
+            return;
         }
+
+        if !executable {
+            self.log_entry(
+                AppLogLevel::Warning,
+                AppLogSource::Clean,
+                None,
+                Some(target_id),
+                "Inspect-only targets cannot be selected for cleanup",
+            );
+            return;
+        }
+
+        let selected = !self.selected_ids.contains(&target_id);
+        self.set_target_selected(target_id, selected);
     }
 
     fn toggle_visible_selection(&mut self) {
         let visible_ids: Vec<TargetId> = self
             .visible_target_indices()
             .into_iter()
+            .filter(|index| self.targets[*index].action.is_executable())
             .map(|index| self.targets[index].id.clone())
             .collect();
 
@@ -542,12 +839,32 @@ impl App {
         }
 
         let all_selected = visible_ids.iter().all(|id| self.selected_ids.contains(id));
-        if all_selected {
-            for id in visible_ids {
-                self.selected_ids.remove(&id);
-            }
+        for id in visible_ids {
+            self.set_target_selected(id, !all_selected);
+        }
+    }
+
+    fn set_target_selected(&mut self, target_id: TargetId, selected: bool) {
+        if selected && self.cleaned_ids.contains(&target_id) {
+            return;
+        }
+        if selected
+            && self
+                .targets
+                .iter()
+                .any(|target| target.id == target_id && !target.action.is_executable())
+        {
+            return;
+        }
+
+        if selected {
+            self.selected_ids.insert(target_id.clone());
+            self.selection_overrides
+                .insert(target_id, SelectionOverride::Selected);
         } else {
-            self.selected_ids.extend(visible_ids);
+            self.selected_ids.remove(&target_id);
+            self.selection_overrides
+                .insert(target_id, SelectionOverride::Deselected);
         }
     }
 
@@ -573,7 +890,25 @@ impl App {
             return Vec::new();
         };
 
-        self.mark_job(job_id, JobStatus::Cancelling, "Cancellation requested");
+        if !self.transition_job(
+            job_id,
+            JobStatus::Cancelling,
+            "Cancellation requested; current action cannot be interrupted.",
+        ) {
+            self.log_job(
+                AppLogLevel::Warning,
+                self.job_source(job_id),
+                job_id,
+                "Cancellation was already requested",
+            );
+            return Vec::new();
+        }
+        self.log_job(
+            AppLogLevel::Warning,
+            self.job_source(job_id),
+            job_id,
+            "Cancellation requested; current action cannot be interrupted.",
+        );
         vec![Effect::CancelJob { job_id }]
     }
 
@@ -605,11 +940,36 @@ impl App {
         self.next_job_id = self.next_job_id.max(job_id + 1);
     }
 
-    fn mark_job(&mut self, job_id: JobId, status: JobStatus, progress: impl Into<String>) {
+    fn transition_job(
+        &mut self,
+        job_id: JobId,
+        status: JobStatus,
+        progress: impl Into<String>,
+    ) -> bool {
         if let Some(job) = self.jobs.iter_mut().find(|job| job.id == job_id) {
+            if !job.status.can_transition_to(status) {
+                return false;
+            }
             job.status = status;
             job.progress = progress.into();
+            return true;
         }
+        false
+    }
+
+    fn has_active_clean_job(&self) -> bool {
+        self.jobs
+            .iter()
+            .any(|job| job.kind == JobKind::Clean && job.status.is_active())
+    }
+
+    fn log_ignored_worker_event(&mut self, job_id: JobId, event: &str) {
+        self.log_job(
+            AppLogLevel::Warning,
+            self.job_source(job_id),
+            job_id,
+            format!("Ignored delayed {event} event"),
+        );
     }
 
     fn job_source(&self, job_id: JobId) -> AppLogSource {
@@ -710,10 +1070,12 @@ impl App {
         }
     }
 
-    fn confirm_state(&self) -> ConfirmState {
+    fn confirm_state(&self) -> Result<ConfirmState, String> {
         let selected = self.selected_targets();
-        let estimated_bytes = sum_unique_target_bytes(selected.iter().copied());
-        let has_irreversible_commands = selected.iter().any(|target| {
+        let manifest = ExecutionManifest::from_targets(&selected)?;
+        let selected_targets = &manifest.plan.targets;
+        let estimated_bytes = sum_unique_target_bytes(selected_targets.iter());
+        let has_irreversible_commands = selected_targets.iter().any(|target| {
             matches!(
                 target.action,
                 CleanAction::Command {
@@ -731,32 +1093,23 @@ impl App {
             "Type confirm to move selected targets to Trash.".to_string()
         };
 
-        ConfirmState {
-            target_count: selected.len(),
+        Ok(ConfirmState {
+            target_count: selected_targets.len(),
             estimated_bytes,
             has_irreversible_commands,
             required_phrase,
             input: String::new(),
             feedback: None,
             message,
-            selected_targets: selected
+            plan_digest_prefix: manifest.digest_prefix().to_string(),
+            selected_targets: selected_targets
                 .iter()
-                .map(|target| selected_target_summary(target))
+                .map(selected_target_summary)
                 .collect(),
-            command_previews: command_previews(selected.iter().copied()),
-        }
-    }
-
-    fn selected_cleanup_plan(&self) -> CleanupPlan {
-        CleanupPlan {
-            version: crate::model::CLEANUP_PLAN_VERSION,
-            targets: self
-                .targets
-                .iter()
-                .filter(|target| self.selected_ids.contains(&target.id))
-                .cloned()
-                .collect(),
-        }
+            command_previews: command_previews(selected_targets.iter()),
+            manifest: Box::new(manifest),
+            invalidated_by_scan: false,
+        })
     }
 
     pub(super) fn selected_target(&self) -> Option<&CleanTarget> {
@@ -768,7 +1121,11 @@ impl App {
     pub(super) fn selected_targets(&self) -> Vec<&CleanTarget> {
         self.targets
             .iter()
-            .filter(|target| self.selected_ids.contains(&target.id))
+            .filter(|target| {
+                self.selected_ids.contains(&target.id)
+                    && target.action.is_executable()
+                    && !self.cleaned_ids.contains(&target.id)
+            })
             .collect()
     }
 
@@ -908,6 +1265,7 @@ pub(super) enum Effect {
         job_id: JobId,
         plan: CleanupPlan,
         selected: Vec<TargetId>,
+        plan_digest: String,
     },
     CancelJob {
         job_id: JobId,
@@ -951,6 +1309,7 @@ pub(super) enum WorkerEvent {
         job_id: JobId,
         message: String,
     },
+    #[allow(dead_code)] // Retained for the true-cancellation worker handoff.
     JobCanceled {
         job_id: JobId,
     },
@@ -1040,12 +1399,15 @@ pub(super) enum Overlay {
     Details,
     DryRun,
     Confirm(ConfirmState),
+    /// D9: mutation running; user must wait or cancel-and-wait before quit.
+    QuitConfirm,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ConfirmState {
     pub(super) target_count: usize,
     pub(super) estimated_bytes: u64,
+    pub(super) plan_digest_prefix: String,
     pub(super) has_irreversible_commands: bool,
     pub(super) required_phrase: String,
     pub(super) input: String,
@@ -1053,6 +1415,39 @@ pub(super) struct ConfirmState {
     pub(super) message: String,
     pub(super) selected_targets: Vec<String>,
     pub(super) command_previews: Vec<CommandPreview>,
+    manifest: Box<ExecutionManifest>,
+    pub(super) invalidated_by_scan: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExecutionManifest {
+    plan: CleanupPlan,
+    selected: Vec<TargetId>,
+    digest: String,
+}
+
+impl ExecutionManifest {
+    fn from_targets(targets: &[&CleanTarget]) -> Result<Self, String> {
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: targets.iter().map(|target| (*target).clone()).collect(),
+        };
+        let validated = validate_scanned_plan(&plan).map_err(|error| error.to_string())?;
+        let selected = plan
+            .targets
+            .iter()
+            .map(|target| target.id.clone())
+            .collect();
+        Ok(Self {
+            plan,
+            selected,
+            digest: validated.digest().to_string(),
+        })
+    }
+
+    fn digest_prefix(&self) -> &str {
+        &self.digest[..12]
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1102,7 +1497,7 @@ impl From<ExecutionTargetStatus> for CleanupItemStatus {
     fn from(status: ExecutionTargetStatus) -> Self {
         match status {
             ExecutionTargetStatus::Succeeded => Self::Succeeded,
-            ExecutionTargetStatus::Failed => Self::Failed,
+            ExecutionTargetStatus::Failed | ExecutionTargetStatus::Unknown => Self::Failed,
             ExecutionTargetStatus::Skipped => Self::Skipped,
         }
     }
@@ -1126,6 +1521,19 @@ pub(super) enum JobStatus {
 impl JobStatus {
     pub(super) fn is_active(self) -> bool {
         matches!(self, Self::Running | Self::Cancelling)
+    }
+
+    fn can_transition_to(self, next: Self) -> bool {
+        matches!(
+            (self, next),
+            (
+                Self::Running,
+                Self::Running | Self::Cancelling | Self::Succeeded | Self::Failed
+            ) | (
+                Self::Cancelling,
+                Self::Canceled | Self::Succeeded | Self::Failed
+            )
+        )
     }
 }
 
@@ -1193,14 +1601,14 @@ fn cleanup_item_detail(status: CleanupItemStatus, detail: String) -> Option<Stri
 fn log_level_for_execution_status(status: ExecutionTargetStatus) -> AppLogLevel {
     match status {
         ExecutionTargetStatus::Succeeded | ExecutionTargetStatus::Skipped => AppLogLevel::Info,
-        ExecutionTargetStatus::Failed => AppLogLevel::Error,
+        ExecutionTargetStatus::Failed | ExecutionTargetStatus::Unknown => AppLogLevel::Error,
     }
 }
 
 fn default_selected_ids(targets: &[CleanTarget]) -> HashSet<TargetId> {
     targets
         .iter()
-        .filter(|target| target.selected_by_default)
+        .filter(|target| target.selected_by_default && target.action.is_executable())
         .map(|target| target.id.clone())
         .collect()
 }
@@ -1248,6 +1656,11 @@ mod tests {
         assert!(matches!(app.overlay, Overlay::Help));
         app.update(key(KeyCode::Esc));
 
+        // Finish the earlier scan job so quit is not blocked by D9.
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: 1,
+            plan: representative_plan(),
+        }));
         app.update(key(KeyCode::Char('q')));
         assert!(app.should_quit);
     }
@@ -1300,6 +1713,25 @@ mod tests {
             confirm.command_previews[0].command,
             "argv: npm cache clean --force"
         );
+    }
+
+    #[test]
+    fn inspect_only_targets_are_not_selectable_for_cleanup() {
+        let mut app = App::with_plan(representative_plan());
+        app.selected_ids.clear();
+        app.selected_index = 2;
+
+        app.update(key(KeyCode::Char(' ')));
+
+        let inspect_id = app.targets[2].id.clone();
+        assert!(!app.selected_ids.contains(&inspect_id));
+        assert!(app.logs.iter().any(|entry| {
+            entry.message == "Inspect-only targets cannot be selected for cleanup"
+        }));
+
+        app.selected_ids.insert(inspect_id);
+        app.update(key(KeyCode::Char('c')));
+        assert!(matches!(app.overlay, Overlay::None));
     }
 
     #[test]
@@ -1371,6 +1803,10 @@ mod tests {
         app.selected_ids.insert(app.targets[0].id.clone());
 
         app.update(key(KeyCode::Char('c')));
+        let confirmation_digest_prefix = match &app.overlay {
+            Overlay::Confirm(confirm) => confirm.plan_digest_prefix.clone(),
+            _ => panic!("confirmation opens with a digest"),
+        };
         for ch in "confirm".chars() {
             app.update(key(KeyCode::Char(ch)));
         }
@@ -1381,6 +1817,7 @@ mod tests {
                 job_id,
                 plan,
                 selected,
+                plan_digest,
             },
         ] = effects.as_slice()
         else {
@@ -1390,6 +1827,17 @@ mod tests {
         assert_eq!(plan.targets.len(), 1);
         assert_eq!(plan.targets[0].id, app.targets[0].id);
         assert_eq!(selected, &vec![app.targets[0].id.clone()]);
+        assert_eq!(
+            plan_digest,
+            crate::plan_validation::validate_scanned_plan(plan)
+                .expect("frozen plan validates")
+                .digest()
+        );
+        assert_eq!(
+            confirmation_digest_prefix,
+            plan_digest[..12],
+            "the confirmation prefix belongs to the exact plan sent to the worker"
+        );
         assert!(matches!(app.overlay, Overlay::None));
         let progress = app
             .cleanup_progress
@@ -1549,8 +1997,9 @@ mod tests {
             failures: Vec::new(),
             audit_log: Some(PathBuf::from("audit.jsonl")),
         };
+        let clean_job_id = app.start_job(JobKind::Clean, "Clean fixture");
         app.update(UiEvent::Worker(WorkerEvent::CleanFinished {
-            job_id,
+            job_id: clean_job_id,
             report,
         }));
         assert!(
@@ -1696,14 +2145,228 @@ mod tests {
             [Effect::CancelJob { job_id: requested }] if *requested == job_id
         ));
         assert_eq!(app.jobs[0].status, JobStatus::Cancelling);
+        assert_eq!(
+            app.jobs[0].progress,
+            "Cancellation requested; current action cannot be interrupted."
+        );
 
         app.update(UiEvent::Worker(WorkerEvent::JobCanceled { job_id }));
         assert_eq!(app.jobs[0].status, JobStatus::Canceled);
     }
 
     #[test]
+    fn scan_updates_invalidate_open_confirmation_and_block_enter() {
+        let mut app = App::with_plan(representative_plan());
+        app.selected_ids.clear();
+        let selected_target = app.targets[0].clone();
+        app.selected_ids.insert(selected_target.id.clone());
+        app.update(key(KeyCode::Char('c')));
+
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests a scan");
+        };
+        let job_id = *job_id;
+        let updated_plan = plan_with_targets(vec![app.targets[1].clone()]);
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id,
+            phase: ScanPhase::Projects,
+            message: "Scan found an updated target".to_string(),
+            plan: Some(updated_plan.clone()),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id,
+            plan: updated_plan,
+        }));
+        for ch in "confirm".chars() {
+            app.update(key(KeyCode::Char(ch)));
+        }
+
+        let effects = app.update(key(KeyCode::Enter));
+
+        assert!(effects.is_empty());
+        let Overlay::Confirm(confirm) = &app.overlay else {
+            panic!("invalidated confirmation remains visible");
+        };
+        assert!(confirm.invalidated_by_scan);
+        assert_eq!(
+            confirm.feedback.as_deref(),
+            Some("Scan results changed. Close this dialog and confirm the updated selection.")
+        );
+        assert!(render_text(&app).contains("This confirmation is disabled."));
+        assert!(app.logs.iter().any(|entry| {
+            entry
+                .message
+                .contains("Confirmation rejected because scan results changed")
+        }));
+    }
+
+    #[test]
+    fn accepted_confirmation_executes_its_frozen_manifest() {
+        let mut app = App::with_plan(representative_plan());
+        app.selected_ids.clear();
+        let frozen_target = app.targets[0].clone();
+        app.selected_ids.insert(frozen_target.id.clone());
+        app.update(key(KeyCode::Char('c')));
+
+        app.selected_ids.clear();
+        app.selected_ids.insert(app.targets[1].id.clone());
+        for ch in "confirm".chars() {
+            app.update(key(KeyCode::Char(ch)));
+        }
+
+        let effects = app.update(key(KeyCode::Enter));
+
+        let [Effect::StartClean { plan, selected, .. }] = effects.as_slice() else {
+            panic!("confirmation emits one clean effect");
+        };
+        assert_eq!(plan.targets, vec![frozen_target.clone()]);
+        assert_eq!(selected, &vec![frozen_target.id]);
+    }
+
+    #[test]
+    fn staged_scan_preserves_explicit_selection_and_defaults_new_targets() {
+        let original_target = representative_plan().targets[0].clone();
+        let mut new_target = representative_plan().targets[1].clone();
+        new_target.selected_by_default = true;
+        let mut app = App::with_plan(plan_with_targets(vec![original_target.clone()]));
+
+        app.update(key(KeyCode::Char(' ')));
+        assert!(!app.selected_ids.contains(&original_target.id));
+
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests a scan");
+        };
+        let job_id = *job_id;
+        let updated_plan = plan_with_targets(vec![original_target.clone(), new_target.clone()]);
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+            job_id,
+            phase: ScanPhase::Projects,
+            message: "Project scan updated".to_string(),
+            plan: Some(updated_plan.clone()),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id,
+            plan: updated_plan,
+        }));
+
+        assert!(!app.selected_ids.contains(&original_target.id));
+        assert!(app.selected_ids.contains(&new_target.id));
+
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("follow-up scan starts");
+        };
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: *job_id,
+            plan: plan_with_targets(vec![new_target]),
+        }));
+        assert!(!app.selection_overrides.contains_key(&original_target.id));
+    }
+
+    #[test]
+    fn active_cleanup_rejects_new_scan_and_cleanup_requests() {
+        let mut app = App::with_plan(representative_plan());
+        let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+
+        assert!(app.update(key(KeyCode::Char('s'))).is_empty());
+        assert!(app.update(key(KeyCode::Char('c'))).is_empty());
+
+        assert_eq!(app.jobs.len(), 1);
+        assert_eq!(app.jobs[0].id, job_id);
+        assert!(matches!(app.overlay, Overlay::None));
+        assert!(app.logs.iter().any(|entry| {
+            entry
+                .message
+                .contains("scan requests are disabled until it finishes")
+        }));
+        assert!(
+            app.logs
+                .iter()
+                .any(|entry| { entry.message.contains("a second cleanup cannot start") })
+        );
+    }
+
+    #[test]
+    fn cancelling_job_ignores_late_progress_events() {
+        let mut app = App::with_plan(representative_plan());
+        let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+        let target_id = app.targets[0].id.clone();
+        let plan = plan_with_targets(vec![app.targets[0].clone()]);
+        app.cleanup_progress = Some(cleanup_progress_for_plan(job_id, &plan));
+
+        app.update(key(KeyCode::Char('x')));
+        let cancelling_progress = app.jobs[0].progress.clone();
+        app.update(UiEvent::Worker(WorkerEvent::JobProgress {
+            job_id,
+            message: "Late worker progress".to_string(),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id,
+            status: ExecutionTargetStatus::Succeeded,
+            message: "Late cleanup progress".to_string(),
+            detail: "completed".to_string(),
+            completed: 1,
+            total: 1,
+        }));
+
+        assert_eq!(app.jobs[0].status, JobStatus::Cancelling);
+        assert_eq!(app.jobs[0].progress, cancelling_progress);
+        assert_eq!(
+            app.cleanup_progress
+                .as_ref()
+                .map(|progress| progress.completed),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn terminal_jobs_ignore_late_worker_events() {
+        let mut succeeded = App::with_plan(representative_plan());
+        let succeeded_job = succeeded.start_job(JobKind::Clean, "Clean fixture");
+        succeeded.update(UiEvent::Worker(WorkerEvent::CleanFinished {
+            job_id: succeeded_job,
+            report: ExecutionReport {
+                dry_run: false,
+                selected: 1,
+                attempted: 1,
+                succeeded: 1,
+                failed: 0,
+                skipped: 0,
+                failures: Vec::new(),
+                audit_log: None,
+            },
+        }));
+        assert_terminal_job_ignores_late_events(
+            &mut succeeded,
+            succeeded_job,
+            JobStatus::Succeeded,
+        );
+
+        let mut failed = App::with_plan(representative_plan());
+        let failed_job = failed.start_job(JobKind::Clean, "Clean fixture");
+        failed.update(UiEvent::Worker(WorkerEvent::JobFailed {
+            job_id: failed_job,
+            message: "Cleanup failed".to_string(),
+        }));
+        assert_terminal_job_ignores_late_events(&mut failed, failed_job, JobStatus::Failed);
+
+        let mut canceled = App::with_plan(representative_plan());
+        let canceled_job = canceled.start_job(JobKind::Clean, "Clean fixture");
+        canceled.update(key(KeyCode::Char('x')));
+        canceled.update(UiEvent::Worker(WorkerEvent::JobCanceled {
+            job_id: canceled_job,
+        }));
+        assert_terminal_job_ignores_late_events(&mut canceled, canceled_job, JobStatus::Canceled);
+    }
+
+    #[test]
     fn byte_summaries_count_duplicate_paths_once() {
-        let cache_path = PathBuf::from("C:/Users/me/AppData/Local/npm-cache");
+        let cache_path = std::env::temp_dir().join("devsweep-npm-cache");
         let plan = CleanupPlan {
             version: CLEANUP_PLAN_VERSION,
             targets: vec![
@@ -1751,6 +2414,159 @@ mod tests {
 
         assert_eq!(app.scope_bytes(ScopeKind::Global), 2048);
         assert_eq!(app.selected_bytes(), 2048);
-        assert_eq!(app.confirm_state().estimated_bytes, 2048);
+        let mut app = app;
+        app.selected_ids.remove(&app.targets[0].id);
+        assert_eq!(
+            app.confirm_state()
+                .expect("selected cleanup target validates")
+                .estimated_bytes,
+            2048
+        );
+    }
+
+    #[test]
+    fn quit_during_active_job_opens_confirm_instead_of_detaching() {
+        let mut app = App::with_plan(representative_plan());
+        let _job = app.start_job(JobKind::Clean, "Clean fixture");
+        let effects = app.update(key(KeyCode::Char('q')));
+        assert!(effects.is_empty());
+        assert!(!app.should_quit);
+        assert!(matches!(app.overlay, Overlay::QuitConfirm));
+
+        // Wait path keeps the app running.
+        app.update(key(KeyCode::Char('w')));
+        assert!(matches!(app.overlay, Overlay::None));
+        assert!(!app.should_quit);
+
+        // Cancel-and-wait requests CancelJob and defers quit until terminal.
+        app.overlay = Overlay::QuitConfirm;
+        let effects = app.update(key(KeyCode::Char('c')));
+        assert!(
+            effects
+                .iter()
+                .any(|effect| matches!(effect, Effect::CancelJob { .. }))
+        );
+        assert!(app.quit_after_jobs);
+        assert!(!app.should_quit);
+        assert_eq!(app.jobs[0].status, JobStatus::Cancelling);
+
+        app.update(UiEvent::Worker(WorkerEvent::JobCanceled {
+            job_id: app.jobs[0].id,
+        }));
+        assert!(app.should_quit);
+    }
+
+    #[test]
+    fn successful_cleanup_tombstones_target_until_rescan() {
+        let mut app = App::with_plan(representative_plan());
+        let target_id = app.targets[0].id.clone();
+        app.selected_ids.insert(target_id.clone());
+        let job_id = app.start_job(JobKind::Clean, "Clean fixture");
+
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id: target_id.clone(),
+            status: ExecutionTargetStatus::Succeeded,
+            message: "cleaned".to_string(),
+            detail: "ok".to_string(),
+            completed: 1,
+            total: 1,
+        }));
+
+        assert!(app.is_cleaned(&target_id));
+        assert!(!app.selected_ids.contains(&target_id));
+        assert!(
+            !app.selected_targets()
+                .iter()
+                .any(|target| target.id == target_id)
+        );
+
+        app.update(key(KeyCode::Char(' ')));
+        assert!(
+            app.logs.iter().any(|entry| {
+                entry
+                    .message
+                    .contains("Cleaned targets stay disabled until the next rescan")
+            }) || !app.selected_ids.contains(&target_id)
+        );
+
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("rescan starts");
+        };
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id: *job_id,
+            plan: representative_plan(),
+        }));
+        assert!(!app.is_cleaned(&target_id));
+    }
+
+    #[test]
+    fn viewport_keeps_selection_visible_for_long_lists() {
+        let mut targets = Vec::new();
+        for index in 0..30 {
+            let mut target = representative_plan().targets[0].clone();
+            target.id = TargetId::new(format!("item-{index}"));
+            targets.push(target);
+        }
+        let mut app = App::with_plan(CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets,
+        });
+        app.selected_index = 0;
+        app.list_scroll = 0;
+        for _ in 0..20 {
+            app.move_selection(1);
+        }
+        app.ensure_selection_visible(5);
+        assert!(app.selected_index >= app.list_scroll);
+        assert!(app.selected_index < app.list_scroll + 5);
+        app.page_selection(1);
+        app.ensure_selection_visible(5);
+        assert!(app.selected_index < app.targets.len());
+    }
+
+    fn assert_terminal_job_ignores_late_events(
+        app: &mut App,
+        job_id: JobId,
+        expected_status: JobStatus,
+    ) {
+        let target_id = app.targets[0].id.clone();
+        let targets = app.targets.clone();
+        let progress = app.jobs[0].progress.clone();
+        let cleanup_progress = app.cleanup_progress.clone();
+
+        app.update(UiEvent::Worker(WorkerEvent::JobProgress {
+            job_id,
+            message: "Late worker progress".to_string(),
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::CleanProgress {
+            job_id,
+            target_id,
+            status: ExecutionTargetStatus::Succeeded,
+            message: "Late cleanup progress".to_string(),
+            detail: "completed".to_string(),
+            completed: 1,
+            total: 1,
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::CleanFinished {
+            job_id,
+            report: ExecutionReport {
+                dry_run: false,
+                selected: 1,
+                attempted: 1,
+                succeeded: 1,
+                failed: 0,
+                skipped: 0,
+                failures: Vec::new(),
+                audit_log: None,
+            },
+        }));
+        app.update(UiEvent::Worker(WorkerEvent::JobCanceled { job_id }));
+
+        assert_eq!(app.jobs[0].status, expected_status);
+        assert_eq!(app.jobs[0].progress, progress);
+        assert_eq!(app.cleanup_progress, cleanup_progress);
+        assert_eq!(app.targets, targets);
     }
 }

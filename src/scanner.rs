@@ -4,12 +4,45 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use tracing::warn;
+
+use std::sync::Arc;
 
 use crate::fs_size::{estimate_tree, is_unsafe_link};
 use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
+use crate::process_runner::ProcessRunner;
+use crate::process_runner::{CancelObserver, FlagCancelObserver};
+use crate::safety::query_cargo_metadata;
+
+/// Discovery diagnostic for a nested path that could not be fully scanned.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScanDiagnostic {
+    pub stage: ScanDiagnosticStage,
+    pub path: PathBuf,
+    pub detail: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanDiagnosticStage {
+    Discovery,
+    Size,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanCompleteness {
+    Complete,
+    Partial,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScanOutcome {
+    pub plan: CleanupPlan,
+    pub diagnostics: Vec<ScanDiagnostic>,
+    pub completeness: ScanCompleteness,
+}
 use crate::rules::{ProjectMarker, RuleDoc, RuleScope, project_dir_rules};
 
 /// Doc for the procedural `cargo clean` rule; the single source of its identity
@@ -47,20 +80,55 @@ impl ProjectScanner {
     }
 
     pub fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
-        let mut targets = Vec::new();
+        Ok(self.scan_roots_with_diagnostics(roots)?.plan)
+    }
 
-        for root in roots {
-            let root = root
-                .canonicalize()
-                .with_context(|| format!("failed to access scan root {}", root.display()))?;
-            self.scan_dir(&root, None, &mut targets)?;
+    pub fn scan_roots_with_diagnostics(&self, roots: &[PathBuf]) -> Result<ScanOutcome> {
+        self.scan_roots_with_diagnostics_and_cancel(roots, None)
+    }
+
+    pub fn scan_roots_with_diagnostics_and_cancel(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanOutcome> {
+        let mut targets = Vec::new();
+        let mut diagnostics = Vec::new();
+
+        for root in normalize_scan_roots(roots)? {
+            if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                diagnostics.push(ScanDiagnostic {
+                    stage: ScanDiagnosticStage::Discovery,
+                    path: root.clone(),
+                    detail: "scan canceled".to_string(),
+                });
+                break;
+            }
+            // Root open failures remain hard errors.
+            let metadata = fs::symlink_metadata(&root)
+                .with_context(|| format!("failed to inspect scan root {}", root.display()))?;
+            if !metadata.is_dir() || is_unsafe_link(&metadata) {
+                continue;
+            }
+            fs::read_dir(&root)
+                .with_context(|| format!("failed to read scan root {}", root.display()))?;
+            self.scan_dir(&root, None, true, &mut targets, &mut diagnostics, cancel);
         }
 
         targets = dedupe_targets(targets);
+        let completeness = if diagnostics.is_empty() {
+            ScanCompleteness::Complete
+        } else {
+            ScanCompleteness::Partial
+        };
 
-        Ok(CleanupPlan {
-            version: crate::model::CLEANUP_PLAN_VERSION,
-            targets,
+        Ok(ScanOutcome {
+            plan: CleanupPlan {
+                version: crate::model::CLEANUP_PLAN_VERSION,
+                targets,
+            },
+            diagnostics,
+            completeness,
         })
     }
 
@@ -68,12 +136,35 @@ impl ProjectScanner {
         &self,
         dir: &Path,
         python_context: Option<&PythonContext>,
+        is_scan_root: bool,
         targets: &mut Vec<CleanTarget>,
-    ) -> Result<()> {
-        let metadata = fs::symlink_metadata(dir)
-            .with_context(|| format!("failed to inspect {}", dir.display()))?;
+        diagnostics: &mut Vec<ScanDiagnostic>,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) {
+        if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+            diagnostics.push(ScanDiagnostic {
+                stage: ScanDiagnosticStage::Discovery,
+                path: dir.to_path_buf(),
+                detail: "scan canceled".to_string(),
+            });
+            return;
+        }
+        let metadata = match fs::symlink_metadata(dir) {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                if is_scan_root {
+                    // Caller already validated roots; treat as nested failure.
+                }
+                diagnostics.push(ScanDiagnostic {
+                    stage: ScanDiagnosticStage::Discovery,
+                    path: dir.to_path_buf(),
+                    detail: format!("failed to inspect: {error}"),
+                });
+                return;
+            }
+        };
         if !metadata.is_dir() || is_unsafe_link(&metadata) {
-            return Ok(());
+            return;
         }
 
         if should_stop_descent(dir) {
@@ -98,7 +189,7 @@ impl ProjectScanner {
                     ],
                 }));
             }
-            return Ok(());
+            return;
         }
 
         self.scan_rust_project(dir, targets);
@@ -113,24 +204,53 @@ impl ProjectScanner {
             self.scan_python_project_dir(dir, context, targets);
         }
 
-        for entry in
-            fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))?
-        {
+        let entries = match fs::read_dir(dir) {
+            Ok(entries) => entries,
+            Err(error) => {
+                diagnostics.push(ScanDiagnostic {
+                    stage: ScanDiagnosticStage::Discovery,
+                    path: dir.to_path_buf(),
+                    detail: format!("failed to read: {error}"),
+                });
+                return;
+            }
+        };
+
+        for entry in entries {
             let entry = match entry {
                 Ok(entry) => entry,
-                Err(_) => continue,
+                Err(error) => {
+                    diagnostics.push(ScanDiagnostic {
+                        stage: ScanDiagnosticStage::Discovery,
+                        path: dir.to_path_buf(),
+                        detail: format!("failed to read directory entry: {error}"),
+                    });
+                    continue;
+                }
             };
             let path = entry.path();
             let metadata = match fs::symlink_metadata(&path) {
                 Ok(metadata) => metadata,
-                Err(_) => continue,
+                Err(error) => {
+                    diagnostics.push(ScanDiagnostic {
+                        stage: ScanDiagnosticStage::Discovery,
+                        path: path.clone(),
+                        detail: format!("failed to inspect: {error}"),
+                    });
+                    continue;
+                }
             };
             if metadata.is_dir() && !is_unsafe_link(&metadata) {
-                self.scan_dir(&path, active_python_context, targets)?;
+                self.scan_dir(
+                    &path,
+                    active_python_context,
+                    false,
+                    targets,
+                    diagnostics,
+                    cancel,
+                );
             }
         }
-
-        Ok(())
     }
 
     fn scan_rust_project(&self, dir: &Path, targets: &mut Vec<CleanTarget>) {
@@ -139,44 +259,107 @@ impl ProjectScanner {
             return;
         }
 
-        let target_dir = dir.join("target");
-        if !is_real_dir(&target_dir) {
-            return;
+        let runner = ProcessRunner::default();
+        // Prefer the absolute manifest path so cargo metadata works even when the
+        // process runner uses a neutral working directory for other probes.
+        match query_cargo_metadata(&runner, dir) {
+            Ok(scope) => {
+                let target_dir = scope.target_directory;
+                if !is_real_dir(&target_dir) {
+                    return;
+                }
+                let workspace_root = if scope.workspace_root.as_os_str().is_empty() {
+                    dir.to_path_buf()
+                } else {
+                    scope.workspace_root
+                };
+                let project_root = if workspace_root.join("Cargo.toml").is_file() {
+                    workspace_root
+                } else {
+                    dir.to_path_buf()
+                };
+                let manifest_path = project_root.join("Cargo.toml");
+                let manifest_arg = manifest_path.to_string_lossy().into_owned();
+                let target_arg = target_dir.to_string_lossy().into_owned();
+                let mut target = build_path_target(PathTargetInput {
+                    rule_id: RUST_TARGET_RULE_DOC.id,
+                    ecosystem: Ecosystem::Rust,
+                    kind: TargetKind::BuildArtifacts,
+                    project_root,
+                    path: target_dir.clone(),
+                    risk: RUST_TARGET_RULE_DOC.risk,
+                    selected_by_default: true,
+                    evidence: vec![
+                        Evidence::MarkerFile {
+                            path: manifest_path,
+                        },
+                        Evidence::OfficialCommand {
+                            command: format!(
+                                "cargo clean --manifest-path {manifest_arg} --target-dir {target_arg}"
+                            ),
+                        },
+                        Evidence::RuleMatched {
+                            rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
+                        },
+                    ],
+                });
+                target.reversible = false;
+                target.action = CleanAction::Command {
+                    program: "cargo".to_string(),
+                    args: vec![
+                        "clean".to_string(),
+                        "--manifest-path".to_string(),
+                        manifest_arg,
+                        "--target-dir".to_string(),
+                        target_arg,
+                    ],
+                    cwd: None,
+                    irreversible: true,
+                };
+                targets.push(target);
+            }
+            Err(error) => {
+                // Metadata failure: downgrade to a local trash candidate only when
+                // `<dir>/target` exists as a real directory under the project.
+                let local_target = dir.join("target");
+                if !is_real_dir(&local_target) {
+                    warn!(
+                        project = %dir.display(),
+                        error = %error,
+                        "cargo metadata failed and no local target/ is available"
+                    );
+                    return;
+                }
+                warn!(
+                    project = %dir.display(),
+                    error = %error,
+                    "cargo metadata failed; downgrading rust.target to local trash candidate"
+                );
+                let mut target = build_path_target(PathTargetInput {
+                    rule_id: RUST_TARGET_RULE_DOC.id,
+                    ecosystem: Ecosystem::Rust,
+                    kind: TargetKind::BuildArtifacts,
+                    project_root: dir.to_path_buf(),
+                    path: local_target,
+                    risk: RiskLevel::Medium,
+                    selected_by_default: false,
+                    evidence: vec![
+                        Evidence::MarkerFile {
+                            path: manifest.clone(),
+                        },
+                        Evidence::RuleMatched {
+                            rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
+                        },
+                        Evidence::RuleMatched {
+                            rule_id: "rust.target.metadata_fallback_trash".to_string(),
+                        },
+                    ],
+                });
+                // Keep MoveToTrash from build_path_target; raise risk already set.
+                target.reversible = true;
+                targets.push(target);
+            }
         }
-
-        let manifest_arg = manifest.to_string_lossy().into_owned();
-        let mut target = build_path_target(PathTargetInput {
-            rule_id: RUST_TARGET_RULE_DOC.id,
-            ecosystem: Ecosystem::Rust,
-            kind: TargetKind::BuildArtifacts,
-            project_root: dir.to_path_buf(),
-            path: target_dir,
-            risk: RUST_TARGET_RULE_DOC.risk,
-            selected_by_default: true,
-            evidence: vec![
-                Evidence::MarkerFile {
-                    path: manifest.clone(),
-                },
-                Evidence::OfficialCommand {
-                    command: format!("cargo clean --manifest-path {manifest_arg}"),
-                },
-                Evidence::RuleMatched {
-                    rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
-                },
-            ],
-        });
-        target.reversible = false;
-        target.action = CleanAction::Command {
-            program: "cargo".to_string(),
-            args: vec![
-                "clean".to_string(),
-                "--manifest-path".to_string(),
-                manifest_arg,
-            ],
-            cwd: None,
-            irreversible: true,
-        };
-        targets.push(target);
     }
 
     fn scan_node_project(&self, dir: &Path, targets: &mut Vec<CleanTarget>) {
@@ -239,6 +422,33 @@ impl ProjectScanner {
     }
 }
 
+fn normalize_scan_roots(roots: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut roots: Vec<PathBuf> = roots
+        .iter()
+        .map(|root| {
+            root.canonicalize()
+                .with_context(|| format!("failed to access scan root {}", root.display()))
+        })
+        .collect::<Result<_>>()?;
+    roots.sort_by(|left, right| {
+        footprint_depth(left)
+            .cmp(&footprint_depth(right))
+            .then_with(|| left.cmp(right))
+    });
+    roots.dedup();
+
+    let mut covered = Vec::new();
+    for root in roots {
+        if !covered
+            .iter()
+            .any(|parent: &PathBuf| root.starts_with(parent))
+        {
+            covered.push(root);
+        }
+    }
+    Ok(covered)
+}
+
 impl Default for ProjectScanner {
     fn default() -> Self {
         Self::new()
@@ -273,15 +483,17 @@ fn build_path_target(input: PathTargetInput) -> CleanTarget {
         selected_by_default,
         evidence,
     } = input;
-    let (estimated_bytes, last_modified) = estimate_tree(&path);
+    let estimate = estimate_tree(&path);
+    let selected_by_default = selected_by_default && estimate.complete;
     CleanTarget {
         id: TargetId::new(format!("{rule_id}:{}", path.display())),
         scope: Scope::Project { root: project_root },
         ecosystem,
         kind,
         path: Some(path.clone()),
-        estimated_bytes,
-        last_modified,
+        estimated_bytes: estimate.display_bytes(),
+        size_complete: estimate.complete,
+        last_modified: estimate.last_modified,
         risk,
         reversible: true,
         selected_by_default,
@@ -292,8 +504,8 @@ fn build_path_target(input: PathTargetInput) -> CleanTarget {
 
 fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
     targets.sort_by(|left, right| {
-        let left_path = left.path.as_ref().map(|path| path.components().count());
-        let right_path = right.path.as_ref().map(|path| path.components().count());
+        let left_path = left.path.as_deref().map(footprint_depth);
+        let right_path = right.path.as_deref().map(footprint_depth);
         left_path
             .cmp(&right_path)
             .then_with(|| left.id.as_str().cmp(right.id.as_str()))
@@ -301,20 +513,95 @@ fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
 
     let mut kept: Vec<CleanTarget> = Vec::new();
     for target in targets {
-        let is_nested = target.path.as_ref().is_some_and(|path| {
-            kept.iter().any(|existing| {
-                existing.path.as_ref().is_some_and(|existing_path| {
-                    path != existing_path && path.starts_with(existing_path)
-                })
-            })
-        });
-
-        if !is_nested {
-            kept.push(target);
+        if let Some(existing) = kept.iter_mut().find(|existing| {
+            same_action_identity(existing, &target) && same_footprint(existing, &target)
+        }) {
+            merge_unique_evidence(existing, target.evidence);
+            continue;
         }
+
+        let is_nested_with_same_action = kept.iter().any(|existing| {
+            same_action_identity(existing, &target) && parent_footprint_covers(existing, &target)
+        });
+        if is_nested_with_same_action {
+            continue;
+        }
+
+        kept.push(target);
     }
 
     kept
+}
+
+fn footprint_depth(path: &Path) -> usize {
+    canonical_footprint(path).components().count()
+}
+
+fn canonical_footprint(path: &Path) -> PathBuf {
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+}
+
+fn same_action_identity(left: &CleanTarget, right: &CleanTarget) -> bool {
+    match (&left.action, &right.action) {
+        (CleanAction::MoveToTrash { .. }, CleanAction::MoveToTrash { .. })
+        | (CleanAction::NoopInspectOnly, CleanAction::NoopInspectOnly) => true,
+        (
+            CleanAction::DeletePermanently {
+                requires_explicit_flag: left_flag,
+                ..
+            },
+            CleanAction::DeletePermanently {
+                requires_explicit_flag: right_flag,
+                ..
+            },
+        ) => left_flag == right_flag,
+        (
+            CleanAction::Command {
+                program: left_program,
+                args: left_args,
+                cwd: left_cwd,
+                irreversible: left_irreversible,
+            },
+            CleanAction::Command {
+                program: right_program,
+                args: right_args,
+                cwd: right_cwd,
+                irreversible: right_irreversible,
+            },
+        ) => {
+            left_program == right_program
+                && left_args == right_args
+                && left_cwd == right_cwd
+                && left_irreversible == right_irreversible
+        }
+        _ => false,
+    }
+}
+
+fn same_footprint(left: &CleanTarget, right: &CleanTarget) -> bool {
+    match (&left.path, &right.path) {
+        (Some(left), Some(right)) => canonical_footprint(left) == canonical_footprint(right),
+        _ => false,
+    }
+}
+
+fn parent_footprint_covers(parent: &CleanTarget, child: &CleanTarget) -> bool {
+    match (&parent.path, &child.path) {
+        (Some(parent), Some(child)) => {
+            let parent = canonical_footprint(parent);
+            let child = canonical_footprint(child);
+            child != parent && child.starts_with(parent)
+        }
+        _ => false,
+    }
+}
+
+fn merge_unique_evidence(existing: &mut CleanTarget, evidence: Vec<Evidence>) {
+    for item in evidence {
+        if !existing.evidence.contains(&item) {
+            existing.evidence.push(item);
+        }
+    }
 }
 
 fn find_node_marker(dir: &Path) -> Option<PathBuf> {
@@ -349,23 +636,18 @@ fn is_real_dir(path: &Path) -> bool {
 }
 
 fn should_stop_descent(dir: &Path) -> bool {
-    matches!(
-        dir.file_name().and_then(|name| name.to_str()),
+    match dir.file_name().and_then(|name| name.to_str()) {
+        // Always skip VCS metadata trees — they are huge and never cleanup roots.
+        Some(".git" | ".hg" | ".svn") => true,
+        // Known cleanup footprints: stop descent after the target itself is
+        // considered. Bare name "cache" is intentionally NOT listed so a
+        // directory named cache that contains real projects remains visible.
         Some(
-            "target"
-                | "node_modules"
-                | "cache"
-                | ".turbo"
-                | ".parcel-cache"
-                | ".venv"
-                | "venv"
-                | "__pycache__"
-                | ".pytest_cache"
-                | ".mypy_cache"
-                | ".ruff_cache"
-                | ".tox"
-        )
-    )
+            "target" | "node_modules" | ".turbo" | ".parcel-cache" | ".next" | ".venv" | "venv"
+            | "__pycache__" | ".pytest_cache" | ".mypy_cache" | ".ruff_cache" | ".tox",
+        ) => true,
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -379,7 +661,11 @@ mod tests {
     #[test]
     fn scanner_finds_marker_backed_project_targets() {
         let fixture = Fixture::new();
-        fixture.file("rust-app/Cargo.toml", "[package]\nname = \"rust-app\"\n");
+        fixture.file(
+            "rust-app/Cargo.toml",
+            "[package]\nname = \"rust-app\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+        );
+        fixture.file("rust-app/src/lib.rs", "");
         fixture.file("rust-app/target/debug/app.bin", "binary");
         fixture.file("node-app/package.json", "{}");
         fixture.file("node-app/node_modules/pkg/index.js", "module");
@@ -503,26 +789,40 @@ mod tests {
         assert!(!target.selected_by_default);
         assert!(matches!(target.action, CleanAction::MoveToTrash { .. }));
 
-        let json = serde_json::to_value(&plan).expect("plan serializes");
+        let json = serde_json::to_value(
+            crate::plan_validation::untrusted_plan_from_scan(&plan).expect("v2 plan converts"),
+        )
+        .expect("plan serializes");
         let first = &json["targets"][0];
         for key in [
             "risk",
             "evidence",
             "selected_by_default",
-            "action",
+            "intent",
+            "rule_id",
             "estimated_bytes",
         ] {
             assert!(!first[key].is_null(), "missing JSON field {key}");
         }
+        assert!(first["action"].is_null());
     }
 
     #[test]
     fn rust_target_uses_cargo_clean_with_manifest_path() {
         let fixture = Fixture::new();
-        fixture.file("rust-app/Cargo.toml", "[package]\nname = \"rust-app\"\n");
+        fixture.file(
+            "rust-app/Cargo.toml",
+            "[package]\nname = \"rust-app\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+        );
+        fixture.file("rust-app/src/lib.rs", "");
         fixture.file("rust-app/target/debug/app.bin", "binary");
         let manifest = fixture.path().join("rust-app/Cargo.toml");
         let manifest = manifest.canonicalize().expect("manifest canonicalizes");
+        let target_dir = fixture
+            .path()
+            .join("rust-app/target")
+            .canonicalize()
+            .expect("target canonicalizes");
 
         let plan = ProjectScanner::new()
             .scan_roots(&[fixture.path().to_path_buf()])
@@ -544,9 +844,136 @@ mod tests {
                 assert_eq!(args[0], "clean");
                 assert_eq!(args[1], "--manifest-path");
                 assert_eq!(PathBuf::from(&args[2]), manifest);
+                assert_eq!(args[3], "--target-dir");
+                assert_eq!(
+                    PathBuf::from(&args[4]).canonicalize().expect("target-dir"),
+                    target_dir
+                );
+                assert_eq!(
+                    target
+                        .path
+                        .as_ref()
+                        .and_then(|path| path.canonicalize().ok()),
+                    Some(target_dir)
+                );
             }
             action => panic!("unexpected rust target action: {action:?}"),
         }
+    }
+
+    #[test]
+    fn scan_roots_reduces_duplicate_and_nested_roots() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/node_modules/pkg/index.js", "module");
+
+        let root = fixture.path().to_path_buf();
+        let plan = ProjectScanner::new()
+            .scan_roots(&[root.clone(), root.clone(), root.join("node-app")])
+            .expect("overlapping roots scan once");
+
+        assert_eq!(plan.targets.len(), 1);
+        assert!(plan.targets[0].id.as_str().starts_with("node.node_modules"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn scan_roots_collapses_case_and_separator_equivalent_roots() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/node_modules/pkg/index.js", "module");
+
+        let root = fixture
+            .path()
+            .canonicalize()
+            .expect("fixture root canonicalizes");
+        let forward_slash_root = PathBuf::from(root.display().to_string().replace('\\', "/"));
+        let uppercase_root = PathBuf::from(root.to_string_lossy().to_ascii_uppercase());
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[root, forward_slash_root, uppercase_root])
+            .expect("equivalent roots scan once");
+
+        assert_eq!(plan.targets.len(), 1);
+        assert!(plan.targets[0].id.as_str().starts_with("node.node_modules"));
+    }
+
+    #[test]
+    fn dedupe_targets_merges_evidence_for_exact_footprint_and_action() {
+        let fixture = Fixture::new();
+        fixture.file("cache/item", "payload");
+        let root = fixture.path().to_path_buf();
+        let path = root.join("cache");
+        let target = build_path_target(PathTargetInput {
+            rule_id: "node.next_cache",
+            ecosystem: Ecosystem::Node,
+            kind: TargetKind::BuildArtifacts,
+            project_root: root,
+            path,
+            risk: RiskLevel::Low,
+            selected_by_default: true,
+            evidence: vec![Evidence::RuleMatched {
+                rule_id: "node.next_cache".to_string(),
+            }],
+        });
+        let mut duplicate = target.clone();
+        duplicate.evidence.push(Evidence::UserConfigured);
+
+        let deduped = dedupe_targets(vec![target, duplicate]);
+
+        assert_eq!(deduped.len(), 1);
+        assert!(deduped[0].evidence.contains(&Evidence::RuleMatched {
+            rule_id: "node.next_cache".to_string(),
+        }));
+        assert!(deduped[0].evidence.contains(&Evidence::UserConfigured));
+    }
+
+    #[test]
+    fn dedupe_targets_keeps_same_footprint_with_distinct_actions() {
+        let fixture = Fixture::new();
+        fixture.file("cache/item", "payload");
+        let root = fixture.path().to_path_buf();
+        let path = root.join("cache");
+        let trash_target = build_path_target(PathTargetInput {
+            rule_id: "node.next_cache",
+            ecosystem: Ecosystem::Node,
+            kind: TargetKind::BuildArtifacts,
+            project_root: root,
+            path,
+            risk: RiskLevel::Low,
+            selected_by_default: true,
+            evidence: vec![Evidence::RuleMatched {
+                rule_id: "node.next_cache".to_string(),
+            }],
+        });
+        let mut command_target = trash_target.clone();
+        command_target.id = TargetId::new("node.next_cache.command");
+        command_target.action = CleanAction::Command {
+            program: "npm".to_string(),
+            args: vec!["cache".to_string(), "clean".to_string()],
+            cwd: None,
+            irreversible: true,
+        };
+
+        let deduped = dedupe_targets(vec![trash_target, command_target]);
+
+        assert_eq!(deduped.len(), 2);
+        assert!(
+            deduped
+                .iter()
+                .any(|target| matches!(target.action, CleanAction::MoveToTrash { .. }))
+        );
+        assert!(deduped.iter().any(|target| {
+            matches!(
+                target.action,
+                CleanAction::Command {
+                    ref program,
+                    ref args,
+                    ..
+                } if program == "npm"
+                    && args.iter().map(String::as_str).eq(["cache", "clean"])
+            )
+        }));
     }
 
     #[test]
@@ -606,6 +1033,144 @@ mod tests {
         );
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn unreadable_nested_child_keeps_sibling_targets_and_is_partial() {
+        let fixture = Fixture::new();
+        fixture.file("app/package.json", "{}");
+        fixture.file("app/node_modules/pkg/index.js", "module");
+        let denied = fixture.path().join("app/secret");
+        fs::create_dir_all(&denied).expect("denied dir");
+        fs::write(denied.join("hidden.bin"), "x").expect("hidden file");
+        if deny_directory_read(&denied).is_err() {
+            return;
+        }
+        assert!(
+            fs::read_dir(&denied).is_err(),
+            "fixture must deny read_dir before asserting partial scan"
+        );
+
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics(&[fixture.path().to_path_buf()])
+            .expect("partial scan succeeds");
+        let _ = restore_directory_read(&denied);
+
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|diag| diag.path.ends_with("secret")),
+            "diagnostic names denied child: {:?}",
+            outcome.diagnostics
+        );
+        assert!(
+            outcome
+                .plan
+                .targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("node.node_modules")),
+            "sibling target kept: {:?}",
+            target_ids(&outcome.plan)
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unreadable_nested_child_keeps_sibling_targets_and_is_partial() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let fixture = Fixture::new();
+        fixture.file("app/package.json", "{}");
+        fixture.file("app/node_modules/pkg/index.js", "module");
+        let denied = fixture.path().join("app/secret");
+        fs::create_dir_all(&denied).expect("denied dir");
+        fs::write(denied.join("hidden.bin"), "x").expect("hidden file");
+        fs::set_permissions(&denied, fs::Permissions::from_mode(0o000)).expect("chmod");
+        assert!(fs::read_dir(&denied).is_err());
+
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics(&[fixture.path().to_path_buf()])
+            .expect("partial scan succeeds");
+        let _ = fs::set_permissions(&denied, fs::Permissions::from_mode(0o755));
+
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert!(!outcome.diagnostics.is_empty());
+        assert!(
+            outcome
+                .plan
+                .targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("node.node_modules"))
+        );
+    }
+
+    #[test]
+    fn scan_honors_cancel_flag_without_full_tree_walk() {
+        use crate::process_runner::FlagCancelObserver;
+        use std::sync::Arc;
+
+        let fixture = Fixture::new();
+        for i in 0..50 {
+            fixture.file(&format!("p{i}/package.json"), "{}");
+            fixture.file(&format!("p{i}/node_modules/x/index.js"), "m");
+        }
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+        let started = std::time::Instant::now();
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics_and_cancel(&[fixture.path().to_path_buf()], Some(&cancel))
+            .expect("canceled scan still returns");
+        let elapsed = started.elapsed();
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|d| d.detail.contains("canceled")),
+            "expected cancel diagnostic: {:?}",
+            outcome.diagnostics
+        );
+        assert!(
+            elapsed.as_millis() < 250,
+            "cancel should stop discovery quickly, took {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn cache_named_directory_still_discovers_nested_projects() {
+        let fixture = Fixture::new();
+        fixture.file("cache/nested-app/package.json", "{}");
+        fixture.file("cache/nested-app/node_modules/pkg/index.js", "module");
+
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().to_path_buf()])
+            .expect("cache-named root still scans");
+        assert!(
+            plan.targets
+                .iter()
+                .any(|target| target.id.as_str().contains("node_modules")),
+            "project under bare cache/ name must be discovered: {:?}",
+            target_ids(&plan)
+        );
+    }
+
+    #[test]
+    fn unreadable_root_remains_a_hard_error() {
+        let fixture = Fixture::new();
+        let missing = fixture.path().join("does-not-exist");
+        let error = ProjectScanner::new()
+            .scan_roots(&[missing])
+            .expect_err("missing root is hard error");
+        assert!(
+            error.to_string().contains("failed to")
+                || error
+                    .chain()
+                    .any(|cause| cause.to_string().contains("failed to")),
+            "root failure keeps context: {error:#}"
+        );
+    }
+
     fn target_ids(plan: &CleanupPlan) -> Vec<&str> {
         plan.targets
             .iter()
@@ -645,5 +1210,38 @@ mod tests {
     #[cfg(windows)]
     fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
         std::os::windows::fs::symlink_dir(target, link)
+    }
+
+    #[cfg(windows)]
+    fn deny_directory_read(path: &Path) -> std::io::Result<()> {
+        use std::process::Command;
+        let output = Command::new("icacls")
+            .arg(path)
+            .arg("/deny")
+            .arg(format!("{}:(OI)(CI)(R,X)", current_user()?))
+            .output()?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other(String::from_utf8_lossy(
+                &output.stderr,
+            )))
+        }
+    }
+
+    #[cfg(windows)]
+    fn restore_directory_read(path: &Path) -> std::io::Result<()> {
+        use std::process::Command;
+        let _ = Command::new("icacls")
+            .arg(path)
+            .arg("/remove:d")
+            .arg(current_user()?)
+            .status();
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    fn current_user() -> std::io::Result<String> {
+        std::env::var("USERNAME").map_err(|_| std::io::Error::other("USERNAME missing"))
     }
 }

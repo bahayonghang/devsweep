@@ -1,14 +1,21 @@
 use std::{
     env,
+    ffi::OsString,
     path::{Path, PathBuf},
-    process::Command,
-    time::SystemTime,
+    sync::Arc,
+    time::{Instant, SystemTime},
 };
 
-use crate::fs_size::estimate_tree;
+use tracing::warn;
+
+use crate::fs_size::{SizeEstimate, estimate_tree_with_budget_and_cancel};
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, TargetId, TargetKind,
+};
+use crate::process_runner::{
+    CancelObserver, CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT,
+    FlagCancelObserver, NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus,
 };
 use crate::rules::{KnownCacheAction, RuleDoc, RuleScope, global_cache_rules};
 
@@ -42,14 +49,32 @@ pub(crate) const PNPM_STORE_RULE_DOC: RuleDoc = RuleDoc {
     summary: "pnpm store via pnpm store prune",
 };
 
-/// Yarn targets suffix this id with `.classic` / `.modern` per yarn version.
+/// Base yarn doc; catalogue also lists classic/modern variants explicitly.
 pub(crate) const YARN_CACHE_RULE_DOC: RuleDoc = RuleDoc {
     id: "yarn.cache.clean",
     ecosystem: Ecosystem::Node,
     scope: RuleScope::Global,
     risk: RiskLevel::Medium,
     action: "official command",
-    summary: "yarn cache via yarn cache clean",
+    summary: "yarn cache via yarn cache clean (see classic/modern variants)",
+};
+
+pub(crate) const YARN_CACHE_CLASSIC_RULE_DOC: RuleDoc = RuleDoc {
+    id: "yarn.cache.clean.classic",
+    ecosystem: Ecosystem::Node,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "yarn classic cache via yarn cache clean",
+};
+
+pub(crate) const YARN_CACHE_MODERN_RULE_DOC: RuleDoc = RuleDoc {
+    id: "yarn.cache.clean.modern",
+    ecosystem: Ecosystem::Node,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "yarn berry cache via yarn cache clean --mirror",
 };
 
 pub(crate) const CARGO_HOME_RULE_DOC: RuleDoc = RuleDoc {
@@ -61,13 +86,25 @@ pub(crate) const CARGO_HOME_RULE_DOC: RuleDoc = RuleDoc {
     summary: "Cargo home (~/.cargo) — inspect only, never auto-deleted",
 };
 
+pub(crate) const GO_MODCACHE_RULE_DOC: RuleDoc = RuleDoc {
+    id: "go.mod_cache.clean",
+    ecosystem: Ecosystem::Generic,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "Go module cache via go clean -modcache",
+};
+
 /// All procedural rule docs declared by the global providers.
 pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
     NPM_CACHE_RULE_DOC,
     PIP_CACHE_RULE_DOC,
     PNPM_STORE_RULE_DOC,
     YARN_CACHE_RULE_DOC,
+    YARN_CACHE_CLASSIC_RULE_DOC,
+    YARN_CACHE_MODERN_RULE_DOC,
     CARGO_HOME_RULE_DOC,
+    GO_MODCACHE_RULE_DOC,
 ];
 
 pub struct GlobalProviderScanner;
@@ -78,7 +115,11 @@ impl GlobalProviderScanner {
     }
 
     pub fn scan(&self) -> CleanupPlan {
-        scan_with_probe(&SystemProviderProbe)
+        self.scan_with_cancel(None)
+    }
+
+    pub fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
+        scan_with_probe(&SystemProviderProbe::with_cancel(cancel.cloned()))
     }
 }
 
@@ -94,10 +135,24 @@ trait ProviderProbe {
     fn env_path(&self, key: &str) -> Option<PathBuf>;
     fn home_dir(&self) -> Option<PathBuf>;
     fn is_dir(&self, path: &Path) -> bool;
-    fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>);
+    fn estimate_path_size(&self, path: &Path) -> SizeEstimate;
 }
 
-struct SystemProviderProbe;
+struct SystemProviderProbe {
+    runner: ProcessRunner,
+    phase_deadline: Instant,
+    cancel: Option<Arc<FlagCancelObserver>>,
+}
+
+impl SystemProviderProbe {
+    fn with_cancel(cancel: Option<Arc<FlagCancelObserver>>) -> Self {
+        Self {
+            runner: ProcessRunner::default(),
+            phase_deadline: Instant::now() + DEFAULT_PROVIDER_PHASE_DEADLINE,
+            cancel,
+        }
+    }
+}
 
 impl ProviderProbe for SystemProviderProbe {
     fn resolve_executable(&self, program: &str) -> Option<PathBuf> {
@@ -105,11 +160,61 @@ impl ProviderProbe for SystemProviderProbe {
     }
 
     fn command_output(&self, program: &Path, args: &[&str]) -> Option<String> {
-        let output = Command::new(program).args(args).output().ok()?;
-        if !output.status.success() {
+        let now = Instant::now();
+        if now >= self.phase_deadline {
+            warn!(
+                program = %program.display(),
+                args = ?args,
+                "provider probe skipped: global phase deadline reached"
+            );
             return None;
         }
-        Some(String::from_utf8_lossy(&output.stdout).into_owned())
+
+        if self
+            .cancel
+            .as_ref()
+            .is_some_and(|flag| flag.is_cancel_requested())
+        {
+            warn!(
+                program = %program.display(),
+                "provider probe skipped: cancel requested"
+            );
+            return None;
+        }
+
+        let remaining = self.phase_deadline.saturating_duration_since(now);
+        let timeout = DEFAULT_PROVIDER_PROBE_TIMEOUT.min(remaining);
+        let noop = NoopCancelObserver;
+        let cancel: &dyn CancelObserver = match self.cancel.as_ref() {
+            Some(flag) => flag.as_ref(),
+            None => &noop,
+        };
+        let request = ProcessRequest {
+            program: OsString::from(program.as_os_str()),
+            args: args.iter().map(|arg| OsString::from(*arg)).collect(),
+            cwd: CwdPolicy::Neutral,
+            timeout: Some(timeout),
+            job_deadline: Some(self.phase_deadline),
+            cancel,
+        };
+
+        let result = self.runner.run(&request);
+        match result.status {
+            ProcessStatus::Success => {
+                Some(String::from_utf8_lossy(&result.output.stdout).into_owned())
+            }
+            status => {
+                warn!(
+                    program = %program.display(),
+                    args = ?args,
+                    ?status,
+                    stdout_truncated = result.output.stdout_truncated,
+                    stderr_truncated = result.output.stderr_truncated,
+                    "provider probe failed with typed process status"
+                );
+                None
+            }
+        }
     }
 
     fn env_path(&self, key: &str) -> Option<PathBuf> {
@@ -135,8 +240,12 @@ impl ProviderProbe for SystemProviderProbe {
         path.is_dir()
     }
 
-    fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
-        estimate_tree(path)
+    fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
+        estimate_tree_with_budget_and_cancel(
+            path,
+            crate::fs_size::DEFAULT_SIZE_ENTRY_BUDGET,
+            self.cancel.as_ref(),
+        )
     }
 }
 
@@ -147,6 +256,7 @@ fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
     add_pnpm_target(probe, &mut targets);
     add_yarn_target(probe, &mut targets);
     add_cargo_home_target(probe, &mut targets);
+    add_go_modcache_target(probe, &mut targets);
     add_known_cache_targets(probe, &mut targets);
 
     CleanupPlan {
@@ -160,14 +270,15 @@ fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         return;
     };
     let cache_path = output_path(probe.command_output(&npm, &["config", "get", "cache"]));
-    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
+    let cache_estimate = estimate_path(probe, cache_path.as_deref());
 
     targets.push(command_target(CommandTargetInput {
         rule_id: NPM_CACHE_RULE_DOC.id,
         ecosystem: Ecosystem::Node,
         path: cache_path.clone(),
-        estimated_bytes: cache_bytes,
-        last_modified: cache_modified,
+        estimated_bytes: cache_estimate.display_bytes(),
+        size_complete: cache_estimate.complete,
+        last_modified: cache_estimate.last_modified,
         risk: NPM_CACHE_RULE_DOC.risk,
         selected_by_default: false,
         program: npm,
@@ -195,7 +306,7 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
     let cache_path =
         output_path(probe.command_output(&pip_program, &["-m", "pip", "cache", "dir"]));
-    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
+    let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let purge_command = format!("{pip_program_name} -m pip cache purge");
     let dir_command = format!("{pip_program_name} -m pip cache dir");
     let info_command = format!("{pip_program_name} -m pip cache info");
@@ -204,8 +315,9 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         rule_id: PIP_CACHE_RULE_DOC.id,
         ecosystem: Ecosystem::Python,
         path: cache_path.clone(),
-        estimated_bytes: cache_bytes,
-        last_modified: cache_modified,
+        estimated_bytes: cache_estimate.display_bytes(),
+        size_complete: cache_estimate.complete,
+        last_modified: cache_estimate.last_modified,
         risk: PIP_CACHE_RULE_DOC.risk,
         selected_by_default: false,
         program: pip_program,
@@ -224,15 +336,16 @@ fn add_pnpm_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         return;
     };
     let store_path = output_path(probe.command_output(&pnpm, &["store", "path"]));
-    let (store_bytes, store_modified) = estimate_path(probe, store_path.as_deref());
+    let store_estimate = estimate_path(probe, store_path.as_deref());
 
     targets.push(command_target(CommandTargetInput {
         rule_id: PNPM_STORE_RULE_DOC.id,
         ecosystem: Ecosystem::Node,
         path: store_path.clone(),
-        estimated_bytes: store_bytes,
-        last_modified: store_modified,
-        risk: RiskLevel::Low,
+        estimated_bytes: store_estimate.display_bytes(),
+        size_complete: store_estimate.complete,
+        last_modified: store_estimate.last_modified,
+        risk: PNPM_STORE_RULE_DOC.risk,
         selected_by_default: false,
         program: pnpm,
         args: vec!["store", "prune"],
@@ -270,7 +383,7 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
     let rule_id = format!("{}.{rule_suffix}", YARN_CACHE_RULE_DOC.id);
     let cache_path = output_path(probe.command_output(&yarn, &path_command));
-    let (cache_bytes, cache_modified) = estimate_path(probe, cache_path.as_deref());
+    let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let path_command_display = if major_version <= 1 {
         "yarn cache dir"
     } else {
@@ -281,8 +394,9 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         rule_id: &rule_id,
         ecosystem: Ecosystem::Node,
         path: cache_path.clone(),
-        estimated_bytes: cache_bytes,
-        last_modified: cache_modified,
+        estimated_bytes: cache_estimate.display_bytes(),
+        size_complete: cache_estimate.complete,
+        last_modified: cache_estimate.last_modified,
         risk: YARN_CACHE_RULE_DOC.risk,
         selected_by_default: false,
         program: yarn,
@@ -296,6 +410,42 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     }));
 }
 
+fn add_go_modcache_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
+    let Some(go) = probe.resolve_executable("go") else {
+        return;
+    };
+    let (source, cache_path) = if let Some(env_path) = probe.env_path("GOMODCACHE") {
+        ("GOMODCACHE", Some(env_path))
+    } else {
+        (
+            "go env GOMODCACHE",
+            output_path(probe.command_output(&go, &["env", "GOMODCACHE"])),
+        )
+    };
+    let Some(cache_path) = cache_path.filter(|path| validated_cache_dir(probe, path)) else {
+        return;
+    };
+    let estimate = probe.estimate_path_size(&cache_path);
+    targets.push(command_target(CommandTargetInput {
+        rule_id: GO_MODCACHE_RULE_DOC.id,
+        ecosystem: Ecosystem::Generic,
+        path: Some(cache_path.clone()),
+        estimated_bytes: estimate.display_bytes(),
+        size_complete: estimate.complete,
+        last_modified: estimate.last_modified,
+        risk: GO_MODCACHE_RULE_DOC.risk,
+        selected_by_default: false,
+        program: go,
+        args: vec!["clean", "-modcache"],
+        evidence: command_evidence(
+            GO_MODCACHE_RULE_DOC.id,
+            Some(cache_path),
+            source,
+            &["go env GOMODCACHE", "go clean -modcache"],
+        ),
+    }));
+}
+
 fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     let (source, Some(cargo_home)) = cargo_home(probe) else {
         return;
@@ -304,7 +454,7 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         return;
     }
 
-    let (estimated_bytes, last_modified) = probe.estimate_path_size(&cargo_home);
+    let estimate = probe.estimate_path_size(&cargo_home);
 
     targets.push(CleanTarget {
         id: TargetId::new(format!(
@@ -316,8 +466,9 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         ecosystem: Ecosystem::Rust,
         kind: TargetKind::PackageCache,
         path: Some(cargo_home.clone()),
-        estimated_bytes,
-        last_modified,
+        estimated_bytes: estimate.display_bytes(),
+        size_complete: estimate.complete,
+        last_modified: estimate.last_modified,
         risk: CARGO_HOME_RULE_DOC.risk,
         reversible: true,
         selected_by_default: false,
@@ -342,11 +493,16 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
         return;
     };
     for rule in global_cache_rules() {
-        let path = home.join(rule.relative);
+        // Official go clean provider owns the executable action; skip the
+        // inspect-only home-relative duplicate when go is available.
+        if rule.id == "go.mod_cache" && probe.resolve_executable("go").is_some() {
+            continue;
+        }
+        let path = resolve_known_cache_path(probe, &home, rule);
         if !probe.is_dir(&path) {
             continue;
         }
-        let (estimated_bytes, last_modified) = probe.estimate_path_size(&path);
+        let estimate = probe.estimate_path_size(&path);
         let action = match rule.action {
             KnownCacheAction::Trash => CleanAction::MoveToTrash { path: path.clone() },
             KnownCacheAction::InspectOnly => CleanAction::NoopInspectOnly,
@@ -357,8 +513,9 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
             ecosystem: rule.ecosystem.clone(),
             kind: rule.kind.clone(),
             path: Some(path.clone()),
-            estimated_bytes,
-            last_modified,
+            estimated_bytes: estimate.display_bytes(),
+            size_complete: estimate.complete,
+            last_modified: estimate.last_modified,
             risk: rule.risk.clone(),
             reversible: true,
             selected_by_default: false,
@@ -381,6 +538,7 @@ struct CommandTargetInput<'a> {
     ecosystem: Ecosystem,
     path: Option<PathBuf>,
     estimated_bytes: u64,
+    size_complete: bool,
     last_modified: Option<SystemTime>,
     risk: RiskLevel,
     selected_by_default: bool,
@@ -395,6 +553,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         ecosystem,
         path,
         estimated_bytes,
+        size_complete,
         last_modified,
         risk,
         selected_by_default,
@@ -402,6 +561,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         args,
         evidence,
     } = input;
+    let selected_by_default = selected_by_default && size_complete;
     CleanTarget {
         id: TargetId::new(format!(
             "{rule_id}:{}",
@@ -414,6 +574,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         kind: TargetKind::PackageCache,
         path,
         estimated_bytes,
+        size_complete,
         last_modified,
         risk,
         reversible: false,
@@ -465,20 +626,70 @@ fn cargo_home(probe: &impl ProviderProbe) -> (&'static str, Option<PathBuf>) {
 }
 
 fn output_path(output: Option<String>) -> Option<PathBuf> {
-    output
-        .and_then(|output| {
-            output
-                .lines()
-                .map(str::trim)
-                .find(|line| !line.is_empty() && *line != "undefined" && *line != "null")
-                .map(str::to_string)
-        })
-        .map(PathBuf::from)
+    output.and_then(|output| {
+        output
+            .lines()
+            .map(str::trim)
+            .find(|line| {
+                !line.is_empty()
+                    && *line != "undefined"
+                    && *line != "null"
+                    && !line.contains(' ')
+                    && !line.to_ascii_lowercase().contains("warning")
+                    && !line.to_ascii_lowercase().contains("error")
+            })
+            .map(PathBuf::from)
+            .filter(|path| is_usable_tool_path(path))
+    })
 }
 
-fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> (u64, Option<SystemTime>) {
+/// Accept absolute paths, and rooted probe paths (`/cache/...`) used by tools
+/// and fixtures across platforms.
+fn is_usable_tool_path(path: &Path) -> bool {
+    path.is_absolute()
+        || path.to_string_lossy().starts_with('/')
+        || path.to_string_lossy().starts_with('\\')
+}
+
+fn validated_cache_dir(probe: &impl ProviderProbe, path: &Path) -> bool {
+    is_usable_tool_path(path) && probe.is_dir(path)
+}
+
+fn resolve_known_cache_path(
+    probe: &impl ProviderProbe,
+    home: &Path,
+    rule: &crate::rules::GlobalCacheRule,
+) -> PathBuf {
+    match rule.id {
+        "gradle.caches" | "gradle.wrapper_dists" => {
+            if let Some(gradle_home) = probe.env_path("GRADLE_USER_HOME") {
+                let rest = rule.relative.trim_start_matches(".gradle/");
+                return gradle_home.join(rest);
+            }
+        }
+        "nuget.packages" => {
+            if let Some(nuget) = probe.env_path("NUGET_PACKAGES") {
+                return nuget;
+            }
+        }
+        "go.mod_cache" => {
+            if let Some(gomod) = probe.env_path("GOMODCACHE") {
+                return gomod;
+            }
+        }
+        _ => {}
+    }
+    home.join(rule.relative)
+}
+
+fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> SizeEstimate {
     path.map(|path| probe.estimate_path_size(path))
-        .unwrap_or((0, None))
+        .unwrap_or_else(|| SizeEstimate {
+            logical_bytes: None,
+            complete: false,
+            last_modified: None,
+            warnings: vec!["cache path was not resolved".to_string()],
+        })
 }
 
 fn parse_major_version(version: &str) -> Option<u64> {
@@ -540,9 +751,17 @@ fn windows_path_extensions() -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::{
+        cell::Cell,
+        collections::{HashMap, HashSet},
+        time::Duration,
+    };
 
     use super::*;
+    use crate::process_runner::{
+        CwdPolicy, NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus,
+        test_support::process_fixture_exe,
+    };
 
     #[test]
     fn missing_command_providers_are_non_fatal() {
@@ -800,6 +1019,60 @@ mod tests {
         );
     }
 
+    #[test]
+    fn provider_probe_timeout_does_not_abort_later_providers() {
+        let fixture = process_fixture_exe();
+
+        let mut probe = TimeoutAwareProbe {
+            runner: ProcessRunner::default(),
+            tools: HashMap::new(),
+            outputs: HashMap::new(),
+            hang: HashMap::new(),
+            env: HashMap::new(),
+            home: None,
+            dirs: HashSet::new(),
+            sizes: HashMap::new(),
+            phase_deadline: Instant::now() + Duration::from_secs(30),
+            seen_timeout: Cell::new(false),
+        };
+        let npm = probe.tool("npm", fixture.to_string_lossy().as_ref());
+        let py = probe.tool("py", "/tools/py");
+        probe.hang.insert(
+            (
+                npm.clone(),
+                vec!["config".to_string(), "get".to_string(), "cache".to_string()],
+            ),
+            true,
+        );
+        probe.output(&py, &["-m", "pip", "cache", "dir"], "/cache/pip\n");
+        probe.path_size("/cache/pip", 200);
+
+        let plan = scan_with_probe(&probe);
+
+        assert!(
+            probe.seen_timeout.get(),
+            "npm hang fixture must surface as a typed timeout"
+        );
+        assert!(
+            plan.targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("pip.cache.purge")),
+            "later providers must still run after an earlier probe timeout: {:?}",
+            plan.targets
+                .iter()
+                .map(|target| target.id.as_str())
+                .collect::<Vec<_>>()
+        );
+        // npm still emits a command target with unresolved path when the probe
+        // returns None — discovery failure is non-fatal.
+        assert!(
+            plan.targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with("npm.cache.clean")),
+            "npm target remains discoverable without cache path"
+        );
+    }
+
     #[derive(Default)]
     struct FakeProbe {
         tools: HashMap<String, PathBuf>,
@@ -858,8 +1131,88 @@ mod tests {
             self.dirs.contains(path)
         }
 
-        fn estimate_path_size(&self, path: &Path) -> (u64, Option<SystemTime>) {
-            (self.sizes.get(path).copied().unwrap_or_default(), None)
+        fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
+            SizeEstimate::trusted(self.sizes.get(path).copied().unwrap_or_default(), None)
+        }
+    }
+
+    struct TimeoutAwareProbe {
+        runner: ProcessRunner,
+        tools: HashMap<String, PathBuf>,
+        outputs: HashMap<(PathBuf, Vec<String>), String>,
+        hang: HashMap<(PathBuf, Vec<String>), bool>,
+        env: HashMap<String, PathBuf>,
+        home: Option<PathBuf>,
+        dirs: HashSet<PathBuf>,
+        sizes: HashMap<PathBuf, u64>,
+        phase_deadline: Instant,
+        seen_timeout: Cell<bool>,
+    }
+
+    impl TimeoutAwareProbe {
+        fn tool(&mut self, name: &str, path: &str) -> PathBuf {
+            let path = PathBuf::from(path);
+            self.tools.insert(name.to_string(), path.clone());
+            path
+        }
+
+        fn output(&mut self, program: &Path, args: &[&str], output: &str) {
+            self.outputs.insert(
+                (
+                    program.to_path_buf(),
+                    args.iter().map(|arg| (*arg).to_string()).collect(),
+                ),
+                output.to_string(),
+            );
+        }
+
+        fn path_size(&mut self, path: &str, bytes: u64) {
+            self.sizes.insert(PathBuf::from(path), bytes);
+        }
+    }
+
+    impl ProviderProbe for TimeoutAwareProbe {
+        fn resolve_executable(&self, program: &str) -> Option<PathBuf> {
+            self.tools.get(program).cloned()
+        }
+
+        fn command_output(&self, program: &Path, args: &[&str]) -> Option<String> {
+            let key = (
+                program.to_path_buf(),
+                args.iter().map(|arg| (*arg).to_string()).collect(),
+            );
+            if self.hang.get(&key).copied().unwrap_or(false) {
+                let cancel = NoopCancelObserver;
+                let result = self.runner.run(&ProcessRequest {
+                    program: program.as_os_str().to_os_string(),
+                    args: vec![OsString::from("hang")],
+                    cwd: CwdPolicy::Neutral,
+                    timeout: Some(Duration::from_millis(300)),
+                    job_deadline: Some(self.phase_deadline),
+                    cancel: &cancel,
+                });
+                self.seen_timeout
+                    .set(result.status == ProcessStatus::Timeout);
+                assert_eq!(result.status, ProcessStatus::Timeout);
+                return None;
+            }
+            self.outputs.get(&key).cloned()
+        }
+
+        fn env_path(&self, key: &str) -> Option<PathBuf> {
+            self.env.get(key).cloned()
+        }
+
+        fn home_dir(&self) -> Option<PathBuf> {
+            self.home.clone()
+        }
+
+        fn is_dir(&self, path: &Path) -> bool {
+            self.dirs.contains(path)
+        }
+
+        fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
+            SizeEstimate::trusted(self.sizes.get(path).copied().unwrap_or_default(), None)
         }
     }
 

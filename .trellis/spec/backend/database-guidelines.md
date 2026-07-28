@@ -18,18 +18,23 @@ scanner, CLI, or TUI work unless a task explicitly adds persistence.
 
 ## Current Data Contracts
 
-The cleanup plan contract is owned by `src/model.rs`:
+The persisted cleanup plan contract is owned by `src/model.rs`:
 
 ```rust
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CleanupPlan {
+pub struct UntrustedPlan {
     pub version: u32,
-    pub targets: Vec<CleanTarget>,
+    pub targets: Vec<UntrustedTarget>,
 }
 ```
 
-JSON output is a command/API boundary, not a database. It must remain
-round-trip tested when fields are added or renamed.
+JSON output is a command/API boundary, not a database. The current schema is
+v2: targets carry observed facts and a typed `CleanupIntent`, never
+`program`, `args`, `cwd`, or a serialized executable action. Decode
+`UntrustedPlan` at the file/CLI boundary, validate it into the opaque
+`ValidatedPlan`, and pass only that value to the executor. Persisted-shape,
+canonical-digest, and compatibility changes need round-trip and fail-closed
+validation tests.
 
 The audit JSONL contract is owned by `src/executor.rs`. Each line is one
 append-only action record and must include at least:
@@ -67,7 +72,8 @@ or a database, they must also add:
 - JSON fields use Serde defaults or explicit `snake_case` settings already
   present on enums in `src/model.rs`.
 - Versioned persisted formats must include a top-level version field. The
-  current cleanup plan uses `CLEANUP_PLAN_VERSION`.
+  current cleanup plan uses `CLEANUP_PLAN_VERSION = 2`; v1 plans are rejected
+  with rescan guidance rather than migrated into executable data.
 
 ---
 
