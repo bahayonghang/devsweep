@@ -13,7 +13,7 @@ use crate::{
         CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupIntent, CleanupPlan, Evidence,
         LEGACY_CLEANUP_PLAN_VERSION, Scope, TargetId, UntrustedPlan, UntrustedTarget,
     },
-    path_identity::normalize_absolute_path,
+    path_identity::{PathIdentity, capture_path_identity, normalize_absolute_path},
     registry::{ActionSpec, RuleRegistry},
 };
 
@@ -35,6 +35,8 @@ pub struct ValidatedTarget {
     rule_id: String,
     action_identity: String,
     fingerprint: ActionFingerprint,
+    /// Live object identity captured at validation time when the path exists.
+    path_identity: Option<PathIdentity>,
 }
 
 impl ValidatedTarget {
@@ -42,8 +44,16 @@ impl ValidatedTarget {
         &self.target
     }
 
+    pub fn rule_id(&self) -> &str {
+        &self.rule_id
+    }
+
     pub fn fingerprint(&self) -> &ActionFingerprint {
         &self.fingerprint
+    }
+
+    pub fn path_identity(&self) -> Option<&PathIdentity> {
+        self.path_identity.as_ref()
     }
 }
 
@@ -96,11 +106,16 @@ impl ValidatedPlan {
                     .as_ref()
                     .map(|path| normalize_absolute_path(path).expect("test target path"))
                     .unwrap_or_else(|| format!("logical:{rule_id}"));
+                let path_identity = target
+                    .path
+                    .as_ref()
+                    .and_then(|path| capture_path_identity(path).ok());
                 ValidatedTarget {
                     target,
                     rule_id,
                     action_identity: action_identity.clone(),
                     fingerprint: ActionFingerprint(format!("{action_identity}|{footprint}")),
+                    path_identity,
                 }
             })
             .collect::<Vec<_>>();
@@ -166,11 +181,17 @@ pub fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
             )
         }
 
+        let resolved = resolved_target(untrusted, spec.action);
+        let path_identity = resolved
+            .path
+            .as_ref()
+            .and_then(|path| capture_path_identity(path).ok());
         targets.push(ValidatedTarget {
-            target: resolved_target(untrusted, spec.action),
+            target: resolved,
             rule_id: untrusted.rule_id.clone(),
             action_identity: spec.identity,
             fingerprint,
+            path_identity,
         });
     }
 

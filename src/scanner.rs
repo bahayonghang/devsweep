@@ -4,12 +4,15 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use tracing::warn;
 
 use crate::fs_size::{estimate_tree, is_unsafe_link};
 use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
     TargetKind,
 };
+use crate::process_runner::ProcessRunner;
+use crate::safety::query_cargo_metadata;
 
 /// Discovery diagnostic for a nested path that could not be fully scanned.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -221,44 +224,107 @@ impl ProjectScanner {
             return;
         }
 
-        let target_dir = dir.join("target");
-        if !is_real_dir(&target_dir) {
-            return;
+        let runner = ProcessRunner::default();
+        // Prefer the absolute manifest path so cargo metadata works even when the
+        // process runner uses a neutral working directory for other probes.
+        match query_cargo_metadata(&runner, dir) {
+            Ok(scope) => {
+                let target_dir = scope.target_directory;
+                if !is_real_dir(&target_dir) {
+                    return;
+                }
+                let workspace_root = if scope.workspace_root.as_os_str().is_empty() {
+                    dir.to_path_buf()
+                } else {
+                    scope.workspace_root
+                };
+                let project_root = if workspace_root.join("Cargo.toml").is_file() {
+                    workspace_root
+                } else {
+                    dir.to_path_buf()
+                };
+                let manifest_path = project_root.join("Cargo.toml");
+                let manifest_arg = manifest_path.to_string_lossy().into_owned();
+                let target_arg = target_dir.to_string_lossy().into_owned();
+                let mut target = build_path_target(PathTargetInput {
+                    rule_id: RUST_TARGET_RULE_DOC.id,
+                    ecosystem: Ecosystem::Rust,
+                    kind: TargetKind::BuildArtifacts,
+                    project_root,
+                    path: target_dir.clone(),
+                    risk: RUST_TARGET_RULE_DOC.risk,
+                    selected_by_default: true,
+                    evidence: vec![
+                        Evidence::MarkerFile {
+                            path: manifest_path,
+                        },
+                        Evidence::OfficialCommand {
+                            command: format!(
+                                "cargo clean --manifest-path {manifest_arg} --target-dir {target_arg}"
+                            ),
+                        },
+                        Evidence::RuleMatched {
+                            rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
+                        },
+                    ],
+                });
+                target.reversible = false;
+                target.action = CleanAction::Command {
+                    program: "cargo".to_string(),
+                    args: vec![
+                        "clean".to_string(),
+                        "--manifest-path".to_string(),
+                        manifest_arg,
+                        "--target-dir".to_string(),
+                        target_arg,
+                    ],
+                    cwd: None,
+                    irreversible: true,
+                };
+                targets.push(target);
+            }
+            Err(error) => {
+                // Metadata failure: downgrade to a local trash candidate only when
+                // `<dir>/target` exists as a real directory under the project.
+                let local_target = dir.join("target");
+                if !is_real_dir(&local_target) {
+                    warn!(
+                        project = %dir.display(),
+                        error = %error,
+                        "cargo metadata failed and no local target/ is available"
+                    );
+                    return;
+                }
+                warn!(
+                    project = %dir.display(),
+                    error = %error,
+                    "cargo metadata failed; downgrading rust.target to local trash candidate"
+                );
+                let mut target = build_path_target(PathTargetInput {
+                    rule_id: RUST_TARGET_RULE_DOC.id,
+                    ecosystem: Ecosystem::Rust,
+                    kind: TargetKind::BuildArtifacts,
+                    project_root: dir.to_path_buf(),
+                    path: local_target,
+                    risk: RiskLevel::Medium,
+                    selected_by_default: false,
+                    evidence: vec![
+                        Evidence::MarkerFile {
+                            path: manifest.clone(),
+                        },
+                        Evidence::RuleMatched {
+                            rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
+                        },
+                        Evidence::RuleMatched {
+                            rule_id: "rust.target.metadata_fallback_trash".to_string(),
+                        },
+                    ],
+                });
+                // Keep MoveToTrash from build_path_target; raise risk already set.
+                target.reversible = true;
+                targets.push(target);
+            }
         }
-
-        let manifest_arg = manifest.to_string_lossy().into_owned();
-        let mut target = build_path_target(PathTargetInput {
-            rule_id: RUST_TARGET_RULE_DOC.id,
-            ecosystem: Ecosystem::Rust,
-            kind: TargetKind::BuildArtifacts,
-            project_root: dir.to_path_buf(),
-            path: target_dir,
-            risk: RUST_TARGET_RULE_DOC.risk,
-            selected_by_default: true,
-            evidence: vec![
-                Evidence::MarkerFile {
-                    path: manifest.clone(),
-                },
-                Evidence::OfficialCommand {
-                    command: format!("cargo clean --manifest-path {manifest_arg}"),
-                },
-                Evidence::RuleMatched {
-                    rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
-                },
-            ],
-        });
-        target.reversible = false;
-        target.action = CleanAction::Command {
-            program: "cargo".to_string(),
-            args: vec![
-                "clean".to_string(),
-                "--manifest-path".to_string(),
-                manifest_arg,
-            ],
-            cwd: None,
-            irreversible: true,
-        };
-        targets.push(target);
     }
 
     fn scan_node_project(&self, dir: &Path, targets: &mut Vec<CleanTarget>) {
@@ -565,7 +631,11 @@ mod tests {
     #[test]
     fn scanner_finds_marker_backed_project_targets() {
         let fixture = Fixture::new();
-        fixture.file("rust-app/Cargo.toml", "[package]\nname = \"rust-app\"\n");
+        fixture.file(
+            "rust-app/Cargo.toml",
+            "[package]\nname = \"rust-app\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+        );
+        fixture.file("rust-app/src/lib.rs", "");
         fixture.file("rust-app/target/debug/app.bin", "binary");
         fixture.file("node-app/package.json", "{}");
         fixture.file("node-app/node_modules/pkg/index.js", "module");
@@ -710,10 +780,19 @@ mod tests {
     #[test]
     fn rust_target_uses_cargo_clean_with_manifest_path() {
         let fixture = Fixture::new();
-        fixture.file("rust-app/Cargo.toml", "[package]\nname = \"rust-app\"\n");
+        fixture.file(
+            "rust-app/Cargo.toml",
+            "[package]\nname = \"rust-app\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+        );
+        fixture.file("rust-app/src/lib.rs", "");
         fixture.file("rust-app/target/debug/app.bin", "binary");
         let manifest = fixture.path().join("rust-app/Cargo.toml");
         let manifest = manifest.canonicalize().expect("manifest canonicalizes");
+        let target_dir = fixture
+            .path()
+            .join("rust-app/target")
+            .canonicalize()
+            .expect("target canonicalizes");
 
         let plan = ProjectScanner::new()
             .scan_roots(&[fixture.path().to_path_buf()])
@@ -735,6 +814,18 @@ mod tests {
                 assert_eq!(args[0], "clean");
                 assert_eq!(args[1], "--manifest-path");
                 assert_eq!(PathBuf::from(&args[2]), manifest);
+                assert_eq!(args[3], "--target-dir");
+                assert_eq!(
+                    PathBuf::from(&args[4]).canonicalize().expect("target-dir"),
+                    target_dir
+                );
+                assert_eq!(
+                    target
+                        .path
+                        .as_ref()
+                        .and_then(|path| path.canonicalize().ok()),
+                    Some(target_dir)
+                );
             }
             action => panic!("unexpected rust target action: {action:?}"),
         }

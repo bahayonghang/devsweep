@@ -28,10 +28,11 @@ src/
 ├── executor.rs    # dry-run, command/trash execution, and audit JSONL
 ├── fs_size.rs     # parallel tree sizing with symlink safety
 ├── model.rs       # v2 untrusted JSON DTOs and internal scan/action types
-├── path_identity.rs # lexical canonical path identity for plan validation
+├── path_identity.rs # lexical canonical path identity + live file identity
 ├── path_safety.rs # current-exe containment guard helpers
 ├── plan_validation.rs # UntrustedPlan -> opaque ValidatedPlan boundary + digest
 ├── process_runner.rs # bounded external command runner (timeout/caps/tree kill)
+├── safety.rs      # SafetyPolicy authorize funnel, protections, user list
 ├── providers.rs   # global tool-cache discovery (npm/pip/pnpm/yarn/cargo/...)
 ├── ranking.rs     # cleanup-plan ordering and conservative default-selection pass
 ├── registry.rs    # trusted rule/intent -> action reconstruction
@@ -73,6 +74,9 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
   `ValidatedPlan`, runs exactly the explicit `ExecutionRequest.selected` set,
   keeps registry-reconstructed command program/argv separate, delegates trash
   moves through a small runner boundary, and owns audit JSONL writes.
+- Put the central execution-time safety funnel in `src/safety.rs`. Command and
+  trash side effects must receive an `AuthorizedAction` from
+  `SafetyPolicy::authorize`; do not reintroduce a bypass path.
 - Put all external-process spawning in `src/process_runner.rs`. Providers and
   the executor command runner must call this port rather than
   `Command::output()`. The runner owns timeout, output caps with tail capture,

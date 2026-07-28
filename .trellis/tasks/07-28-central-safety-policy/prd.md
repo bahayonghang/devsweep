@@ -30,6 +30,7 @@
 3. 执行前实时重验证：路径存在性与身份（Windows file ID / Unix dev+inode 或等价指纹）、ancestor 链无新增 symlink/junction/reparse、root containment、marker 仍在；任一不满足 → 拒绝该 target 并要求 rescan。
 4. `current_exe()` 等身份查询失败 → fail closed（拒绝执行，而非放行）。
 5. Cargo 作用域：`cargo metadata --format-version 1 --no-deps` 解析真实 `target_directory` 与 `workspace_root`；展示/估算/守卫/动作全部绑定 resolved 路径，action 显式带 `--target-dir <resolved>`；execute 前重新解析，路径变化则要求 rescan/reconfirm；metadata 不可解析时降级为 Trash local target 或 inspect-only，不得静默运行范围未知的命令。
+6. **UserProtectionList 管理（决策 D6）**：在 OS app-data 存储版本化 JSON（Windows `%APPDATA%`、macOS Application Support、Unix XDG config）；`devsweep protect add|remove|list` 是唯一管理面。add 只接受存在的 canonical 绝对路径；remove 对不存在路径按已存规范化值匹配；解析/写入失败必须 fail closed，禁止退回临时内存名单。
 
 ## Acceptance Criteria
 

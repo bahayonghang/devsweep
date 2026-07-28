@@ -12,11 +12,14 @@ use serde::Serialize;
 
 use crate::{
     model::{CleanAction, CleanTarget, TargetId},
-    path_safety::target_contains_current_exe,
-    plan_validation::ValidatedPlan,
+    plan_validation::{ValidatedPlan, ValidatedTarget},
     process_runner::{
         CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, NoopCancelObserver,
         ProcessRequest, ProcessRunner, ProcessStatus, sanitize_process_output,
+    },
+    safety::{
+        AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
+        SafetyPolicy,
     },
 };
 
@@ -178,10 +181,10 @@ impl TrashRunner for SystemTrashRunner {
     }
 }
 
-#[derive(Debug)]
 pub struct Executor<C = ProcessCommandRunner, T = SystemTrashRunner> {
     command_runner: C,
     trash_runner: T,
+    safety: SafetyPolicy,
 }
 
 impl Default for Executor<ProcessCommandRunner, SystemTrashRunner> {
@@ -195,7 +198,17 @@ impl<C, T> Executor<C, T> {
         Self {
             command_runner,
             trash_runner,
+            safety: SafetyPolicy::from_user_list(
+                crate::safety::UserProtectionList::load().unwrap_or_else(|_| {
+                    crate::safety::UserProtectionList::empty_in_memory_for_tests_only()
+                }),
+            ),
         }
+    }
+
+    pub fn with_safety_policy(mut self, safety: SafetyPolicy) -> Self {
+        self.safety = safety;
+        self
     }
 }
 
@@ -268,13 +281,18 @@ where
 
         let total = selected_targets.len();
         let mut executed_fingerprints = HashSet::new();
+        let auth_context = AuthorizationContext {
+            scan_roots: Vec::new(),
+            audit_log: Some(audit_path.clone()),
+            expected_identity: None,
+        };
         for validated_target in selected_targets {
             let target = validated_target.target();
             let started = Instant::now();
             let dispatch_attempted =
                 executed_fingerprints.insert(validated_target.fingerprint().clone());
             let outcome = if dispatch_attempted {
-                self.execute_target(target)
+                self.execute_target(validated_target, &auth_context)
             } else {
                 Err(anyhow!(
                     "duplicate action fingerprint rejected before execution: {}",
@@ -326,14 +344,46 @@ where
         Ok(report)
     }
 
-    fn execute_target(&self, target: &CleanTarget) -> Result<ActionStatus> {
-        if target_contains_current_exe(target.path.as_deref()) {
-            return Ok(ActionStatus::Skipped {
-                message: SELF_CLEAN_SKIP_MESSAGE.to_string(),
-            });
-        }
+    fn execute_target(
+        &self,
+        validated: &ValidatedTarget,
+        context: &AuthorizationContext,
+    ) -> Result<ActionStatus> {
+        let target = validated.target();
+        let mut context = AuthorizationContext {
+            scan_roots: context.scan_roots.clone(),
+            audit_log: context.audit_log.clone(),
+            expected_identity: validated.path_identity().cloned(),
+        };
 
-        match &target.action {
+        let authorized = match self.safety.authorize(validated, &context) {
+            Ok(authorized) => authorized,
+            Err(denial)
+                if denial.category == ProtectionCategory::ProtectedSubtree
+                    && denial.message.contains(SELF_CLEAN_SKIP_MESSAGE) =>
+            {
+                return Ok(ActionStatus::Skipped {
+                    message: SELF_CLEAN_SKIP_MESSAGE.to_string(),
+                });
+            }
+            Err(denial) => {
+                return Err(anyhow!(denial.to_string()));
+            }
+        };
+
+        // Drop expected identity after authorize consumed it; side effects use
+        // only the opaque AuthorizedAction.
+        context.expected_identity = None;
+        self.dispatch_authorized(&authorized, target)
+    }
+
+    fn dispatch_authorized(
+        &self,
+        authorized: &AuthorizedAction,
+        target: &CleanTarget,
+    ) -> Result<ActionStatus> {
+        let _ = target;
+        match authorized.action() {
             CleanAction::Command {
                 program,
                 args,
@@ -351,6 +401,7 @@ where
                 })
             }
             CleanAction::MoveToTrash { path } => {
+                let path = authorized.trash_path().unwrap_or(path.as_path());
                 self.trash_runner.move_to_trash(path)?;
                 Ok(ActionStatus::Success { command: None })
             }
@@ -369,8 +420,6 @@ enum ActionStatus {
     Success { command: Option<Vec<String>> },
     Skipped { message: String },
 }
-
-const SELF_CLEAN_SKIP_MESSAGE: &str = "target contains the running devsweep executable";
 
 #[derive(Debug)]
 struct AuditLog {
@@ -555,7 +604,7 @@ mod tests {
         };
         let command_runner = RecordingCommandRunner::default();
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(command_runner.clone(), trash_runner.clone());
+        let executor = test_executor(command_runner.clone(), trash_runner.clone());
 
         let report = executor
             .run_plan(
@@ -584,7 +633,7 @@ mod tests {
         let plan = CleanupPlan {
             version: crate::model::CLEANUP_PLAN_VERSION,
             targets: vec![target(
-                "rust.target",
+                "test.command",
                 CleanAction::Command {
                     program: "cargo".to_string(),
                     args: vec![
@@ -599,7 +648,7 @@ mod tests {
             )],
         };
         let command_runner = RecordingCommandRunner::default();
-        let executor = Executor::new(command_runner.clone(), RecordingTrashRunner::default());
+        let executor = test_executor(command_runner.clone(), RecordingTrashRunner::default());
 
         let report = executor
             .run_plan(
@@ -648,7 +697,7 @@ mod tests {
             )],
         };
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+        let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
         executor
             .run_plan(
@@ -693,7 +742,7 @@ mod tests {
         };
         let command_runner = RecordingCommandRunner::failing("cargo unavailable");
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(command_runner, trash_runner.clone());
+        let executor = test_executor(command_runner, trash_runner.clone());
 
         let report = executor
             .run_plan(
@@ -752,7 +801,7 @@ mod tests {
         let failed_id = plan.targets[0].id.clone();
         let trash_runner =
             RecordingTrashRunner::failing_on(&locked_path, "Access denied: file is locked");
-        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+        let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
         let report = executor
             .run_plan(
@@ -799,7 +848,7 @@ mod tests {
                 Some(doomed.clone()),
             )],
         };
-        let executor = Executor::new(
+        let executor = test_executor(
             RecordingCommandRunner::default(),
             RecordingTrashRunner::default(),
         );
@@ -848,7 +897,7 @@ mod tests {
                 ),
             ],
         };
-        let executor = Executor::new(
+        let executor = test_executor(
             RecordingCommandRunner::default(),
             RecordingTrashRunner::default(),
         );
@@ -905,7 +954,7 @@ mod tests {
                 ),
             ],
         };
-        let executor = Executor::new(
+        let executor = test_executor(
             RecordingCommandRunner::failing("cargo unavailable"),
             RecordingTrashRunner::default(),
         );
@@ -947,7 +996,7 @@ mod tests {
         };
         let command_runner = RecordingCommandRunner::default();
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(command_runner.clone(), trash_runner.clone());
+        let executor = test_executor(command_runner.clone(), trash_runner.clone());
 
         let error = executor
             .run_plan(
@@ -979,7 +1028,7 @@ mod tests {
         let plan = CleanupPlan {
             version: crate::model::CLEANUP_PLAN_VERSION,
             targets: vec![target(
-                "rust.target",
+                "test.self_clean",
                 CleanAction::Command {
                     program: "cargo".to_string(),
                     args: vec!["clean".to_string()],
@@ -990,7 +1039,7 @@ mod tests {
             )],
         };
         let command_runner = RecordingCommandRunner::default();
-        let executor = Executor::new(command_runner.clone(), RecordingTrashRunner::default());
+        let executor = test_executor(command_runner.clone(), RecordingTrashRunner::default());
         let mut progress = Vec::new();
 
         let report = executor
@@ -1005,8 +1054,12 @@ mod tests {
             )
             .expect("self-clean target is skipped");
 
+        assert_eq!(
+            report.failed, 0,
+            "self-clean should skip, not fail: {:?}",
+            report.failures
+        );
         assert_eq!(report.succeeded, 0);
-        assert_eq!(report.failed, 0);
         assert_eq!(report.skipped, 1);
         assert!(command_runner.requests().is_empty());
         assert_eq!(progress.len(), 1);
@@ -1050,7 +1103,7 @@ mod tests {
         };
         plan.targets[0].selected_by_default = false;
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+        let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
         let report = executor
             .run_plan(
@@ -1084,7 +1137,7 @@ mod tests {
             )],
         };
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+        let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
         let dry_run = executor
             .run_plan(
@@ -1140,7 +1193,7 @@ mod tests {
         };
         let validated = test_validated_plan(&plan);
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+        let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
         let report = executor
             .run_plan(
@@ -1216,7 +1269,7 @@ mod tests {
             )],
         };
         let trash_runner = RecordingTrashRunner::default();
-        let executor = Executor::new(RecordingCommandRunner::default(), trash_runner.clone());
+        let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
         let report = executor
             .run_plan(
@@ -1305,25 +1358,53 @@ mod tests {
     }
 
     fn target(rule_id: &str, action: CleanAction, path: Option<PathBuf>) -> CleanTarget {
+        let root = path
+            .as_ref()
+            .and_then(|path| path.parent().map(|parent| parent.to_path_buf()))
+            .unwrap_or_else(|| PathBuf::from("C:/workspace/app"));
+        // Ensure the project root exists so live revalidation can open markers.
+        let _ = fs::create_dir_all(&root);
+        let marker = root.join("package.json");
+        if !marker.exists() {
+            let _ = fs::write(&marker, "{}");
+        }
+        if let Some(path) = path.as_ref() {
+            let _ = fs::create_dir_all(path);
+        }
         CleanTarget {
             id: TargetId::new(format!("{rule_id}:{}", path_display(path.as_deref()))),
-            scope: Scope::Project {
-                root: PathBuf::from("C:/workspace/app"),
-            },
+            scope: Scope::Project { root: root.clone() },
             ecosystem: Ecosystem::Generic,
             kind: TargetKind::BuildArtifacts,
-            path,
+            path: path.clone(),
             estimated_bytes: 42,
             size_complete: true,
             last_modified: None,
             risk: RiskLevel::Low,
             reversible: true,
             selected_by_default: true,
-            evidence: vec![Evidence::RuleMatched {
-                rule_id: rule_id.to_string(),
-            }],
+            evidence: vec![
+                Evidence::MarkerFile { path: marker },
+                Evidence::RuleMatched {
+                    rule_id: rule_id.to_string(),
+                },
+            ],
             action,
         }
+    }
+
+    fn test_executor<C: CommandRunner, T: TrashRunner>(
+        command_runner: C,
+        trash_runner: T,
+    ) -> Executor<C, T> {
+        let home = std::env::temp_dir().join("devsweep-test-home");
+        let _ = fs::create_dir_all(&home);
+        Executor::new(command_runner, trash_runner).with_safety_policy(
+            SafetyPolicy::from_user_list(
+                crate::safety::UserProtectionList::empty_in_memory_for_tests_only(),
+            )
+            .with_home(Some(home)),
+        )
     }
 
     fn path_display(path: Option<&Path>) -> String {

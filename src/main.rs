@@ -3,12 +3,13 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use clap::Parser;
 use devsweep::{
-    cli::{CleanCommand, Cli, Command, ScanCommand},
+    cli::{CleanCommand, Cli, Command, ProtectCommand, ScanCommand},
     config,
     executor::{ExecutionRequest, Executor},
     model::{LEGACY_CLEANUP_PLAN_VERSION, UntrustedPlan},
     plan_validation::{V1_RESCAN_MESSAGE, untrusted_plan_from_scan, validate_plan},
     rules::RuleScope,
+    safety::UserProtectionList,
     sweep::{ScanOptions, Sweeper},
 };
 
@@ -19,6 +20,7 @@ fn main() -> Result<()> {
         Command::Tui => devsweep::tui::run(),
         Command::Scan(command) => run_scan(command),
         Command::Clean(command) => run_clean(command),
+        Command::Protect(command) => run_protect(command),
         Command::Rules => run_rules(),
     }
 }
@@ -111,6 +113,35 @@ fn read_untrusted_plan(path: &Path) -> Result<UntrustedPlan> {
 
     serde_json::from_value(value)
         .with_context(|| format!("failed to parse cleanup plan {}", path.display()))
+}
+
+fn run_protect(command: ProtectCommand) -> Result<()> {
+    match command {
+        ProtectCommand::Add { path } => {
+            let mut list = UserProtectionList::load()?;
+            list.add(&path)?;
+            println!("Protected {}", path.display());
+        }
+        ProtectCommand::Remove { path } => {
+            let mut list = UserProtectionList::load()?;
+            if list.remove(&path)? {
+                println!("Removed protection for {}", path.display());
+            } else {
+                println!("No protection entry matched {}", path.display());
+            }
+        }
+        ProtectCommand::List => {
+            let list = UserProtectionList::load()?;
+            if list.list().is_empty() {
+                println!("No protected paths.");
+            } else {
+                for path in list.list() {
+                    println!("{}", path.display());
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn run_rules() -> Result<()> {

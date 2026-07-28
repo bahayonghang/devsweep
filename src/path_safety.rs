@@ -1,13 +1,19 @@
 use std::path::{Path, PathBuf};
 
+/// Returns whether `target_path` contains the running executable.
+///
+/// Prefer the central [`crate::safety::SafetyPolicy`] for execution-time checks
+/// (including fail-closed `current_exe` lookup). This helper remains for
+/// lightweight containment queries.
+#[allow(dead_code)]
 pub(crate) fn target_contains_current_exe(target_path: Option<&Path>) -> bool {
     let Some(target_path) = target_path else {
         return false;
     };
     let Ok(current_exe) = std::env::current_exe() else {
+        // Callers that need fail-closed behavior must use SafetyPolicy.
         return false;
     };
-
     path_contains_path(target_path, &current_exe)
 }
 

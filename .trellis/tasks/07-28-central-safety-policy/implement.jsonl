@@ -1,1 +1,4 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Defines safety-first mutation, path-safety, and no-bypass constraints."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Guides fail-closed policy/config and metadata error behavior."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Guides module placement for policy, protection config, and path identity."}
+{"file":".trellis/tasks/07-28-audit-remediation/prd.md","reason":"Parent-owned protection semantics, D6, and cross-task contracts."}

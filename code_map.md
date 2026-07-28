@@ -18,7 +18,7 @@ Rust crate plus Trellis/Codex workflow scaffolding.
 ## Rust Source
 
 - `src/main.rs` - CLI dispatch and top-level handlers for `tui`, `scan`,
-  `clean`, and `rules`.
+  `clean`, `protect`, and `rules`.
 - `src/cli.rs` - `clap` command definitions and command-line option shapes.
 - `src/model.rs` - serialized cleanup-plan contract: `CleanupPlan`,
   `CleanTarget`, `CleanAction`, risk, evidence, scope, and ecosystem enums.
@@ -28,6 +28,9 @@ Rust crate plus Trellis/Codex workflow scaffolding.
   inspect-only Cargo home targets.
 - `src/executor.rs` - dry-run and execution engine, command/trash runner
   abstractions, partial-failure handling, and JSONL audit records.
+- `src/safety.rs` - central `SafetyPolicy::authorize` funnel, protection
+  categories, user protection list, live revalidation, cargo metadata scope.
+- `src/path_identity.rs` - lexical path normalization and live file identity.
 - `src/process_runner.rs` - bounded external process runner: timeout, output
   caps, tree termination, neutral cwd, sanitize, typed diagnostics.
 - `src/bin/process_fixture.rs` - child/grandchild helper for process-tree tests.

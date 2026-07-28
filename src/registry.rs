@@ -70,6 +70,24 @@ impl RuleRegistry {
     }
 
     fn resolve_trash(&self, target: &UntrustedTarget) -> Result<ActionSpec> {
+        if target.rule_id == RUST_TARGET_RULE_DOC.id {
+            // Metadata-failure fallback only: local `<project>/target` trash.
+            let (root, path) = project_target_path(target)?;
+            require_same_path(&path, &root.join("target"), "target path")?;
+            require_target_facts(
+                target,
+                &Ecosystem::Rust,
+                &TargetKind::BuildArtifacts,
+                &RiskLevel::Medium,
+                true,
+            )?;
+            return Ok(trash_spec(
+                path,
+                RUST_TARGET_RULE_DOC.id,
+                &RiskLevel::Medium,
+            ));
+        }
+
         for marker in [ProjectMarker::Node, ProjectMarker::Python] {
             if let Some(rule) = project_dir_rules(marker).find(|rule| rule.id == target.rule_id) {
                 let (root, path) = project_target_path(target)?;
@@ -129,8 +147,19 @@ impl RuleRegistry {
                     target.rule_id
                 )
             }
-            let (root, path) = project_target_path(target)?;
-            require_same_path(&path, &root.join("target"), "target path")?;
+            let Scope::Project { root } = &target.scope else {
+                bail!("rule {} requires project scope", target.rule_id)
+            };
+            let path = target
+                .path
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("rule {} requires a target path", target.rule_id))?
+                .clone();
+            normalize_absolute_path(root)?;
+            normalize_absolute_path(&path)?;
+            // Custom --target-dir may place the directory outside the project
+            // root; containment is enforced by SafetyPolicy live revalidation
+            // against cargo metadata rather than a hard root join("target").
             require_target_facts(
                 target,
                 &Ecosystem::Rust,
@@ -144,6 +173,8 @@ impl RuleRegistry {
                     "clean".to_string(),
                     "--manifest-path".to_string(),
                     root.join("Cargo.toml").display().to_string(),
+                    "--target-dir".to_string(),
+                    path.display().to_string(),
                 ],
                 "rust.target:cargo_clean_manifest",
                 &RUST_TARGET_RULE_DOC.risk,

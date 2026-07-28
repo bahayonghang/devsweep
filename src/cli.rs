@@ -19,8 +19,27 @@ pub enum Command {
     Scan(ScanCommand),
     /// Dry-run or execute an existing cleanup plan.
     Clean(CleanCommand),
+    /// Manage the persistent user protection list.
+    #[command(subcommand)]
+    Protect(ProtectCommand),
     /// Inspect cleanup rules.
     Rules,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum ProtectCommand {
+    /// Add an existing path that must never be cleaned.
+    Add {
+        /// Existing path to protect.
+        path: PathBuf,
+    },
+    /// Remove a path from the protection list.
+    Remove {
+        /// Path to remove from the protection list.
+        path: PathBuf,
+    },
+    /// List protected paths.
+    List,
 }
 
 #[derive(Debug, Args)]
