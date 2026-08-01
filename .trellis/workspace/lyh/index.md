@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 33
+- **Total Sessions**: 34
 - **Last Active**: 2026-08-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1058 | Active |
+| `journal-1.md` | ~1094 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 34 | 2026-08-01 | 纠正任务归档并归档 D 盘审计 | `2d546af`, `b13da4a` | `dev` |
 | 33 | 2026-08-01 | 归档扫描规则加固规划 | `db9ec4b6ed0709b282f0fae603c8b6edfb98ffee` | `dev` |
 | 32 | 2026-07-28 | Skeptic gap closeout: cancel+registry | `9dc3535` | `dev` |
 | 31 | 2026-07-28 | Audit remediation parent complete 12/12 | `47f55c2`, `ee1415e`, `2ec5bba`, `859771a`, `d75613b`, `0388695`, `bc11170`, `736c237`, `5a1501f`, `16ddaba`, `124299a`, `2ab327a` | `dev` |

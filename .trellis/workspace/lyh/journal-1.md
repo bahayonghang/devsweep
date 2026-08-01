@@ -1056,3 +1056,39 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Next Steps
 
 - 如需实施，基于归档规划重新创建或恢复任务并取得明确启动授权。
+
+
+## Session 34: 纠正任务归档并归档 D 盘审计
+
+**Date**: 2026-08-01
+**Task**: 纠正任务归档并归档 D 盘审计
+**Branch**: `dev`
+
+### Summary
+
+恢复尚未实施的 scan-rule-hardening 为 planning，并归档已完成的 D 盘空间审计任务。
+
+### Main Changes
+
+- 纠正 scan-rule-hardening 的错误归档；其规划保留并等待明确实施授权。
+- 提交并归档 D 盘空间审计的原始扫描、对比报告及执行记录。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2d546af` | (see git log) |
+| `b13da4a` | (see git log) |
+
+### Testing
+
+- [OK] python .trellis/scripts/task.py validate 08-01-d-drive-space-audit
+- [OK] git diff --cached --check
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- scan-rule-hardening 保持 planning，等待明确启动与实施授权。
