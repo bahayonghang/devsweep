@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    path::Path,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -14,13 +15,20 @@ use crossterm::event::{self, Event as CrosstermEvent};
 
 use crate::{
     executor::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
-    model::{CleanupPlan, TargetId},
-    plan_validation::{ValidatedPlan, validate_scanned_plan},
+    inventory::{InventoryReport, inventory_root_with_cancel},
+    model::{CleanupPlan, ScanHealth, ScanReport, TargetId},
+    plan_validation::{ValidatedPlan, validate_plan, validate_scanned_plan},
     process_runner::{CancelObserver, FlagCancelObserver},
     sweep::{ScanOptions, ScanProgress, Sweeper},
 };
 
 type CancelRegistry = Arc<Mutex<HashMap<JobId, Arc<FlagCancelObserver>>>>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct ScanServiceOutcome {
+    pub(super) plan: CleanupPlan,
+    pub(super) health: ScanHealth,
+}
 
 use super::{
     app::{App, Effect, JobId, UiEvent, WorkerEvent},
@@ -34,7 +42,7 @@ pub(super) trait ScanService: Send + Clone + 'static {
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
         cancel: Option<&Arc<FlagCancelObserver>>,
-    ) -> Result<CleanupPlan>;
+    ) -> Result<ScanServiceOutcome>;
 }
 
 pub(super) trait CleanService: Send + Clone + 'static {
@@ -47,6 +55,14 @@ pub(super) trait CleanService: Send + Clone + 'static {
     ) -> Result<ExecutionReport>;
 }
 
+pub(super) trait InventoryService: Send + Clone + 'static {
+    fn inventory_root_with_cancel(
+        &self,
+        root: &Path,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<InventoryReport>;
+}
+
 #[derive(Clone)]
 pub(super) struct SweepScanService;
 
@@ -56,9 +72,39 @@ impl ScanService for SweepScanService {
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
         cancel: Option<&Arc<FlagCancelObserver>>,
-    ) -> Result<CleanupPlan> {
-        Sweeper::default().full_scan_with_cancel(options, progress, cancel)
+    ) -> Result<ScanServiceOutcome> {
+        let report = Sweeper::default().full_scan_report_with_cancel(options, progress, cancel)?;
+        scan_service_outcome_from_report(report)
     }
+}
+
+#[derive(Clone)]
+pub(super) struct LocalInventoryService;
+
+impl InventoryService for LocalInventoryService {
+    fn inventory_root_with_cancel(
+        &self,
+        root: &Path,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<InventoryReport> {
+        inventory_root_with_cancel(root, cancel)
+    }
+}
+
+fn scan_service_outcome_from_report(report: ScanReport) -> Result<ScanServiceOutcome> {
+    let validated = validate_plan(&report.plan)
+        .context("scan report plan failed validation before TUI presentation")?;
+    Ok(ScanServiceOutcome {
+        plan: CleanupPlan {
+            version: report.plan.version,
+            targets: validated
+                .targets()
+                .iter()
+                .map(|target| target.target().clone())
+                .collect(),
+        },
+        health: report.health,
+    })
 }
 
 #[derive(Clone)]
@@ -85,9 +131,10 @@ fn validate_confirmed_plan(plan: &CleanupPlan, expected_digest: &str) -> Result<
     Ok(validated)
 }
 
-pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
+pub(super) fn run_event_loop<S: ScanService, I: InventoryService, C: CleanService>(
     terminal: &mut Tui,
     scan: S,
+    inventory: I,
     clean: C,
 ) -> Result<()> {
     let mut app = App::new();
@@ -99,6 +146,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
         startup_effects,
         &worker_tx,
         &scan,
+        &inventory,
         &clean,
         &clean_dispatch_in_flight,
         &cancel_registry,
@@ -110,6 +158,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
             &worker_rx,
             &worker_tx,
             &scan,
+            &inventory,
             &clean,
             &clean_dispatch_in_flight,
             &cancel_registry,
@@ -124,6 +173,7 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
                 effects,
                 &worker_tx,
                 &scan,
+                &inventory,
                 &clean,
                 &clean_dispatch_in_flight,
                 &cancel_registry,
@@ -134,11 +184,13 @@ pub(super) fn run_event_loop<S: ScanService, C: CleanService>(
     Ok(())
 }
 
-fn drain_worker_events<S: ScanService, C: CleanService>(
+#[allow(clippy::too_many_arguments)]
+fn drain_worker_events<S: ScanService, I: InventoryService, C: CleanService>(
     app: &mut App,
     worker_rx: &Receiver<WorkerEvent>,
     worker_tx: &Sender<WorkerEvent>,
     scan: &S,
+    inventory: &I,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
     cancel_registry: &CancelRegistry,
@@ -147,7 +199,8 @@ fn drain_worker_events<S: ScanService, C: CleanService>(
         if let WorkerEvent::CleanFinished { job_id, .. }
         | WorkerEvent::JobFailed { job_id, .. }
         | WorkerEvent::JobCanceled { job_id }
-        | WorkerEvent::ScanFinished { job_id, .. } = &event
+        | WorkerEvent::ScanFinished { job_id, .. }
+        | WorkerEvent::InventoryFinished { job_id, .. } = &event
             && let Ok(mut guard) = cancel_registry.lock()
         {
             guard.remove(job_id);
@@ -157,6 +210,7 @@ fn drain_worker_events<S: ScanService, C: CleanService>(
             effects,
             worker_tx,
             scan,
+            inventory,
             clean,
             clean_dispatch_in_flight,
             cancel_registry,
@@ -165,10 +219,11 @@ fn drain_worker_events<S: ScanService, C: CleanService>(
     Ok(())
 }
 
-fn dispatch_effects<S: ScanService, C: CleanService>(
+fn dispatch_effects<S: ScanService, I: InventoryService, C: CleanService>(
     effects: Vec<Effect>,
     worker_tx: &Sender<WorkerEvent>,
     scan: &S,
+    inventory: &I,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
     cancel_registry: &CancelRegistry,
@@ -178,6 +233,7 @@ fn dispatch_effects<S: ScanService, C: CleanService>(
             effect,
             worker_tx.clone(),
             scan,
+            inventory,
             clean,
             clean_dispatch_in_flight,
             cancel_registry,
@@ -186,10 +242,11 @@ fn dispatch_effects<S: ScanService, C: CleanService>(
     Ok(())
 }
 
-fn dispatch_effect<S: ScanService, C: CleanService>(
+fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
     effect: Effect,
     worker_tx: Sender<WorkerEvent>,
     scan: &S,
+    inventory: &I,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
     cancel_registry: &CancelRegistry,
@@ -202,6 +259,14 @@ fn dispatch_effect<S: ScanService, C: CleanService>(
             }
             let scan = scan.clone();
             thread::spawn(move || run_scan_worker(job_id, worker_tx, scan, cancel));
+        }
+        Effect::StartInventory { job_id } => {
+            let cancel = Arc::new(FlagCancelObserver::new());
+            if let Ok(mut guard) = cancel_registry.lock() {
+                guard.insert(job_id, Arc::clone(&cancel));
+            }
+            let inventory = inventory.clone();
+            thread::spawn(move || run_inventory_worker(job_id, worker_tx, inventory, cancel));
         }
         Effect::StartClean {
             job_id,
@@ -282,12 +347,57 @@ fn run_scan_worker<S: ScanService>(
             )
         });
     match result {
-        Ok(plan) if cancel.is_cancel_requested() => {
+        Ok(outcome) if cancel.is_cancel_requested() => {
             let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
-            let _ = worker_tx.send(WorkerEvent::ScanFinished { job_id, plan });
+            let _ = worker_tx.send(WorkerEvent::ScanFinished {
+                job_id,
+                plan: outcome.plan,
+                health: outcome.health,
+            });
         }
-        Ok(plan) => {
-            let _ = worker_tx.send(WorkerEvent::ScanFinished { job_id, plan });
+        Ok(outcome) => {
+            let _ = worker_tx.send(WorkerEvent::ScanFinished {
+                job_id,
+                plan: outcome.plan,
+                health: outcome.health,
+            });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+fn run_inventory_worker<I: InventoryService>(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    inventory: I,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let _ = worker_tx.send(WorkerEvent::InventoryStarted { job_id });
+
+    let result = std::env::current_dir()
+        .context("failed to get current directory")
+        .and_then(|current_dir| inventory.inventory_root_with_cancel(&current_dir, Some(&cancel)));
+    match result {
+        Ok(report) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+            let _ = worker_tx.send(WorkerEvent::InventoryFinished {
+                job_id,
+                report: Box::new(report),
+            });
+        }
+        Ok(report) => {
+            let _ = worker_tx.send(WorkerEvent::InventoryFinished {
+                job_id,
+                report: Box::new(report),
+            });
         }
         Err(_error) if cancel.is_cancel_requested() => {
             let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
@@ -380,7 +490,7 @@ mod tests {
     #[derive(Clone)]
     struct FakeScanService {
         partial: Option<CleanupPlan>,
-        outcome: Result<CleanupPlan, String>,
+        outcome: Result<ScanServiceOutcome, String>,
     }
 
     impl ScanService for FakeScanService {
@@ -389,12 +499,29 @@ mod tests {
             _options: &ScanOptions,
             progress: &mut dyn FnMut(ScanProgress),
             _cancel: Option<&Arc<FlagCancelObserver>>,
-        ) -> Result<CleanupPlan> {
+        ) -> Result<ScanServiceOutcome> {
             progress(ScanProgress {
                 phase: ScanPhase::Projects,
                 message: "Fake project scan".to_string(),
                 partial: self.partial.clone(),
             });
+            self.outcome
+                .clone()
+                .map_err(|message| anyhow::anyhow!(message))
+        }
+    }
+
+    #[derive(Clone)]
+    struct FakeInventoryService {
+        outcome: Result<InventoryReport, String>,
+    }
+
+    impl InventoryService for FakeInventoryService {
+        fn inventory_root_with_cancel(
+            &self,
+            _root: &Path,
+            _cancel: Option<&Arc<FlagCancelObserver>>,
+        ) -> Result<InventoryReport> {
             self.outcome
                 .clone()
                 .map_err(|message| anyhow::anyhow!(message))
@@ -465,6 +592,23 @@ mod tests {
         }
     }
 
+    fn complete_scan_outcome(plan: CleanupPlan) -> ScanServiceOutcome {
+        ScanServiceOutcome {
+            plan,
+            health: ScanHealth::complete(),
+        }
+    }
+
+    fn empty_inventory_report() -> InventoryReport {
+        InventoryReport {
+            version: crate::inventory::INVENTORY_REPORT_VERSION,
+            root: std::env::temp_dir().join("devsweep-inventory-fixture"),
+            observations: Vec::new(),
+            health: ScanHealth::complete(),
+            orphan_pnpm_store: None,
+        }
+    }
+
     #[test]
     fn confirmed_digest_must_match_the_revalidated_snapshot() {
         let mut plan = representative_plan();
@@ -499,7 +643,7 @@ mod tests {
             worker_tx,
             FakeScanService {
                 partial: Some(partial.clone()),
-                outcome: Ok(full.clone()),
+                outcome: Ok(complete_scan_outcome(full.clone())),
             },
             Arc::new(FlagCancelObserver::new()),
         );
@@ -517,7 +661,8 @@ mod tests {
                 },
                 WorkerEvent::ScanFinished {
                     job_id: 7,
-                    plan: full
+                    plan: full,
+                    health: ScanHealth::complete(),
                 },
             ]
         );
@@ -548,6 +693,33 @@ mod tests {
                 job_id: 9,
                 message: "scan exploded".to_string(),
             })
+        );
+    }
+
+    #[test]
+    fn inventory_worker_emits_read_only_report_events() {
+        let (worker_tx, worker_rx) = mpsc::channel();
+        let report = empty_inventory_report();
+
+        run_inventory_worker(
+            10,
+            worker_tx,
+            FakeInventoryService {
+                outcome: Ok(report.clone()),
+            },
+            Arc::new(FlagCancelObserver::new()),
+        );
+
+        let events: Vec<WorkerEvent> = worker_rx.try_iter().collect();
+        assert_eq!(
+            events,
+            vec![
+                WorkerEvent::InventoryStarted { job_id: 10 },
+                WorkerEvent::InventoryFinished {
+                    job_id: 10,
+                    report: Box::new(report),
+                },
+            ]
         );
     }
 
@@ -672,7 +844,10 @@ mod tests {
         };
         let scan = FakeScanService {
             partial: None,
-            outcome: Ok(CleanupPlan::empty()),
+            outcome: Ok(complete_scan_outcome(CleanupPlan::empty())),
+        };
+        let inventory = FakeInventoryService {
+            outcome: Ok(empty_inventory_report()),
         };
         let plan = representative_plan();
         let selected = plan.default_selected_ids();
@@ -694,6 +869,7 @@ mod tests {
             ],
             &worker_tx,
             &scan,
+            &inventory,
             &clean,
             &clean_dispatch_in_flight,
             &Arc::new(Mutex::new(HashMap::new())),
@@ -741,12 +917,15 @@ mod tests {
         let (worker_tx, worker_rx) = mpsc::channel();
         let scan = FakeScanService {
             partial: None,
-            outcome: Ok(CleanupPlan::empty()),
+            outcome: Ok(complete_scan_outcome(CleanupPlan::empty())),
         };
         let clean = FakeCleanService {
             progress: Vec::new(),
             outcome: Ok(successful_report()),
             requests: Arc::new(Mutex::new(Vec::new())),
+        };
+        let inventory = FakeInventoryService {
+            outcome: Ok(empty_inventory_report()),
         };
         let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
 
@@ -754,6 +933,7 @@ mod tests {
             Effect::CancelJob { job_id: 7 },
             worker_tx,
             &scan,
+            &inventory,
             &clean,
             &clean_dispatch_in_flight,
             &Arc::new(Mutex::new(HashMap::new())),

@@ -363,7 +363,46 @@ where
                 Err(error) => {
                     report.attempted += 1;
                     report.failed += 1;
-                    let message = error.to_string();
+                    let message = sanitize_process_output(
+                        error.to_string().as_bytes(),
+                        EXECUTOR_DIAGNOSTIC_CAP,
+                    );
+                    let run_id = journal.run_id().to_string();
+                    let sequence = journal.next_sequence();
+                    let terminal = JournalEvent::finished(
+                        &run_id,
+                        sequence,
+                        plan.digest(),
+                        target,
+                        "failed",
+                        command_from_action(&target.action),
+                        None,
+                        target.path.clone(),
+                        started_at.elapsed().as_millis(),
+                        Some(message.clone()),
+                    );
+                    if let Err(audit_error) = journal.write_terminal(terminal) {
+                        let audit_message = format!(
+                            "authorization denied ({message}); audit persistence failed: {audit_error}"
+                        );
+                        let message = sanitize_process_output(
+                            audit_message.as_bytes(),
+                            EXECUTOR_DIAGNOSTIC_CAP,
+                        );
+                        report.failures.push(ActionFailure {
+                            target_id: target.id.clone(),
+                            message: message.clone(),
+                        });
+                        on_progress(ExecutionProgress {
+                            completed: report.succeeded + report.failed + report.skipped,
+                            total,
+                            target_id: target.id.clone(),
+                            status: ExecutionTargetStatus::Failed,
+                            message,
+                        });
+                        // Do not dispatch another target without recording this denial.
+                        break;
+                    }
                     report.failures.push(ActionFailure {
                         target_id: target.id.clone(),
                         message: message.clone(),
@@ -981,6 +1020,10 @@ mod tests {
         fs,
         path::{Path, PathBuf},
         rc::Rc,
+        sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        },
     };
 
     use anyhow::{Result, anyhow};
@@ -1513,6 +1556,90 @@ mod tests {
     }
 
     #[test]
+    fn authorization_denial_is_audited_before_later_target_dispatch() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let denied_path = fixture.path().join("denied").join("node_modules");
+        let allowed_path = fixture.path().join("allowed").join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: denied_path.clone(),
+                    },
+                    Some(denied_path.clone()),
+                ),
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: allowed_path.clone(),
+                    },
+                    Some(allowed_path.clone()),
+                ),
+            ],
+        };
+        let command_runner = RecordingCommandRunner::default();
+        let trash_runner = RecordingTrashRunner::default();
+        let authorization_calls = Arc::new(AtomicUsize::new(0));
+        let executor = test_executor(command_runner.clone(), trash_runner.clone())
+            .with_safety_policy(
+                SafetyPolicy::from_user_list(
+                    crate::safety::UserProtectionList::empty_in_memory_for_tests_only(),
+                )
+                .with_home(None)
+                .with_current_exe_fn({
+                    let authorization_calls = Arc::clone(&authorization_calls);
+                    move || {
+                        if authorization_calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                            Err(std::io::Error::other("\x1b[31mauthorization denied\x07"))
+                        } else {
+                            std::env::current_exe()
+                        }
+                    }
+                }),
+            );
+
+        let report = executor
+            .run_plan(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path.clone()),
+                    cancel: None,
+                },
+            )
+            .expect("authorization denial returns a partial-failure report");
+
+        assert_eq!(report.attempted, 2);
+        assert_eq!(report.failed, 1);
+        assert_eq!(report.succeeded, 1);
+        assert_eq!(report.failures.len(), 1);
+        assert_eq!(report.failures[0].target_id, plan.targets[0].id);
+        assert!(!report.failures[0].message.as_bytes().contains(&0x1b));
+        assert!(!report.failures[0].message.as_bytes().contains(&0x07));
+        assert!(command_runner.requests().is_empty());
+        assert_eq!(trash_runner.paths(), vec![allowed_path]);
+
+        let records = read_jsonl(&audit_path);
+        assert_eq!(records.len(), 3);
+        assert_eq!(records[0]["event"], "action_finished");
+        assert_eq!(records[0]["target_id"], plan.targets[0].id.as_str());
+        assert_eq!(records[0]["action_path"], denied_path.display().to_string());
+        assert_eq!(records[0]["status"], "failed");
+        let reason = records[0]["error"]
+            .as_str()
+            .expect("denial reason is recorded");
+        assert!(reason.contains("authorization denied"));
+        assert!(!reason.as_bytes().contains(&0x1b));
+        assert!(!reason.as_bytes().contains(&0x07));
+        assert_eq!(records[1]["event"], "action_started");
+        assert_eq!(records[1]["target_id"], plan.targets[1].id.as_str());
+    }
+
+    #[test]
     fn explicit_selection_drives_execution() {
         let fixture = TempDir::new().expect("temp dir");
         let audit_path = fixture.path().join("audit.jsonl");
@@ -2032,6 +2159,7 @@ mod tests {
             path: path.clone(),
             estimated_bytes: 42,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::Low,
             reversible: true,

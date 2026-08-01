@@ -15,8 +15,10 @@ pub struct Cli {
 pub enum Command {
     /// Open the interactive terminal UI.
     Tui,
-    /// Scan roots and emit a cleanup plan.
+    /// Scan roots and emit a cleanup report.
     Scan(ScanCommand),
+    /// Inspect capacity without creating cleanup targets.
+    Inventory(InventoryCommand),
     /// Dry-run or execute an existing cleanup plan.
     Clean(CleanCommand),
     /// Manage the persistent user protection list.
@@ -47,7 +49,7 @@ pub struct ScanCommand {
     /// Roots to scan.
     #[arg(value_name = "ROOT", default_value = ".")]
     pub roots: Vec<PathBuf>,
-    /// Emit the cleanup plan as JSON.
+    /// Emit the scan report as JSON.
     #[arg(long)]
     pub json: bool,
     /// Include global cache providers.
@@ -56,6 +58,9 @@ pub struct ScanCommand {
     /// Include project-level cleanup targets.
     #[arg(long)]
     pub projects: bool,
+    /// Re-estimate one target ID from this scan with a higher bounded budget.
+    #[arg(long, value_name = "TARGET_ID")]
+    pub rescan_target: Option<String>,
 }
 
 impl ScanCommand {
@@ -69,8 +74,18 @@ impl ScanCommand {
 }
 
 #[derive(Debug, Args)]
+pub struct InventoryCommand {
+    /// Root whose immediate contents should be inventoried.
+    #[arg(value_name = "ROOT", default_value = ".")]
+    pub root: PathBuf,
+    /// Emit the read-only inventory report as JSON.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Debug, Args)]
 pub struct CleanCommand {
-    /// Cleanup plan to dry-run or execute.
+    /// Cleanup plan or scan report to dry-run or execute.
     #[arg(long, value_name = "PATH")]
     pub plan: Option<PathBuf>,
     /// Execute the plan. Omit this flag for dry-run behavior.
@@ -83,9 +98,9 @@ pub struct CleanCommand {
 
 #[cfg(test)]
 mod tests {
-    use clap::CommandFactory;
+    use clap::{CommandFactory, Parser};
 
-    use super::Cli;
+    use super::{Cli, Command};
 
     #[test]
     fn cli_definition_is_valid() {
@@ -107,5 +122,28 @@ mod tests {
                 .expect("help is UTF-8")
                 .contains("allow-permanent-delete")
         );
+    }
+
+    #[test]
+    fn scan_rescan_target_parses_an_exact_target_id() {
+        let cli = Cli::try_parse_from([
+            "devsweep",
+            "scan",
+            "--projects",
+            "--rescan-target",
+            "python.pycache:C:/code/app/__pycache__",
+            "C:/code",
+        ])
+        .expect("scan command parses");
+
+        let Command::Scan(command) = cli.command else {
+            panic!("expected scan command");
+        };
+        assert_eq!(
+            command.rescan_target.as_deref(),
+            Some("python.pycache:C:/code/app/__pycache__")
+        );
+        assert_eq!(command.roots, vec![std::path::PathBuf::from("C:/code")]);
+        assert!(command.projects);
     }
 }

@@ -263,6 +263,7 @@ fn untrusted_target_from_scan(target: &CleanTarget) -> Result<UntrustedTarget> {
         path: target.path.clone(),
         estimated_bytes: target.estimated_bytes,
         size_complete: target.size_complete,
+        sizing_warnings: target.sizing_warnings.clone(),
         last_modified: target.last_modified,
         risk: target.risk.clone(),
         reversible: target.reversible,
@@ -348,6 +349,7 @@ fn resolved_target(target: &UntrustedTarget, action: CleanAction) -> CleanTarget
         path: target.path.clone(),
         estimated_bytes: target.estimated_bytes,
         size_complete: target.size_complete,
+        sizing_warnings: target.sizing_warnings.clone(),
         last_modified: target.last_modified,
         risk: target.risk.clone(),
         reversible: target.reversible,
@@ -521,7 +523,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::model::{Ecosystem, RiskLevel, Scope, TargetKind};
+    use crate::model::{Ecosystem, RiskLevel, Scope, SizingWarning, SizingWarningKind, TargetKind};
 
     #[test]
     fn rejects_v1_with_rescan_guidance() {
@@ -775,6 +777,7 @@ mod tests {
             path: None,
             estimated_bytes: 0,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::High,
             reversible: true,
@@ -942,6 +945,33 @@ mod tests {
         );
     }
 
+    #[test]
+    fn sizing_warnings_are_observational_and_do_not_change_cleanup_authority() {
+        let root = temp_root();
+        let target = project_target(
+            "node.next_cache",
+            &root,
+            root.join(".next/cache"),
+            TargetKind::BuildArtifacts,
+            RiskLevel::Low,
+            true,
+        );
+        let mut warned = target.clone();
+        warned.sizing_warnings.push(SizingWarning {
+            kind: SizingWarningKind::EntryBudgetExhausted,
+            detail: "review rescan reached its entry budget".to_string(),
+        });
+
+        assert_eq!(
+            validate_plan(&single_target_plan(target))
+                .expect("base target validates")
+                .digest(),
+            validate_plan(&single_target_plan(warned))
+                .expect("warning remains observational")
+                .digest(),
+        );
+    }
+
     #[cfg(windows)]
     #[test]
     fn rejects_windows_case_separator_and_trailing_separator_duplicates() {
@@ -1023,6 +1053,7 @@ mod tests {
             path,
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::Medium,
             reversible: false,
@@ -1047,6 +1078,7 @@ mod tests {
             path: None,
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::Medium,
             reversible: false,
@@ -1097,6 +1129,7 @@ mod tests {
             path: Some(path),
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk,
             reversible: true,

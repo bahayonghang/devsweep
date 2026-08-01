@@ -41,7 +41,8 @@ explicitly adds cleanup support.
   - `just test`
 - CLI entrypoints:
   - `devsweep tui`
-  - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
+  - `devsweep scan [ROOT]... [--json] [--global] [--projects] [--rescan-target TARGET_ID]`
+  - `devsweep inventory [ROOT] [--json]`
   - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
   - `devsweep rules`
 
@@ -49,10 +50,10 @@ explicitly adds cleanup support.
 
 - `just ci` is the canonical local quality gate and must include formatting,
   type-checking, tests, and clippy.
-- `devsweep scan --json` must emit the current JSON cleanup plan contract. It
-  is a declarative v2 `UntrustedPlan`; a saved target carries typed intent and
-  observed facts, never executable argv, cwd, or an authoritative action path.
-  An empty plan is:
+- `devsweep scan --json` emits a versioned `ScanReport` with an embedded
+  declarative v2 `UntrustedPlan` and non-authoritative health observations. A
+  saved target carries typed intent and observed facts, never executable argv,
+  cwd, or an authoritative action path. An empty embedded plan is:
   ```json
   {
     "version": 2,
@@ -65,7 +66,8 @@ explicitly adds cleanup support.
 
 #### 4. Validation & Error Matrix
 
-- `scan --json` succeeds -> valid JSON plan with `version` and `targets`.
+- `scan --json` succeeds -> valid JSON report with `version`, `plan`, and
+  `health`; `plan` remains a valid v2 cleanup plan.
 - `clean --plan PATH` without `--execute` succeeds -> reports dry-run and
   performs no action.
 - `clean --execute` without `--plan PATH` -> returns an error before execution
@@ -84,7 +86,7 @@ explicitly adds cleanup support.
 #### 6. Tests Required
 
 - CLI definition test for subcommand shape.
-- Cleanup plan JSON serialization/round-trip tests for representative targets.
+- Scan-report JSON serialization/round-trip tests for representative targets.
 - TUI placeholder render test through ratatui `TestBackend`.
 - Source scan or review confirming no deletion/trash/process execution code is
   present in foundation.
@@ -691,20 +693,20 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 // plan is merged and ranked by contract; do not re-rank.
 ```
 
-### Scenario: Project scanner and JSON cleanup plan
+### Scenario: Project scanner and JSON cleanup report
 
 #### 1. Scope / Trigger
 
-- Trigger: scanner code discovers project cleanup candidates and changes the
-  `devsweep scan --json` output contract from an empty placeholder plan to real
-  `CleanTarget` values.
+- Trigger: scanner code discovers project cleanup candidates or changes the
+  `devsweep scan --json` report projection from an empty placeholder to real
+  `CleanTarget` values and scan-health observations.
 
 #### 2. Signatures
 
 - Library entrypoint:
   - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
 - CLI entrypoint:
-  - `devsweep scan [ROOT]... [--json] [--projects]`
+  - `devsweep scan [ROOT]... [--json] [--projects] [--rescan-target TARGET_ID]`
 
 #### 3. Contracts
 
@@ -716,10 +718,12 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
   - Python cleanup targets require project markers or local virtualenv evidence.
 - `.gitignore` filtering must not hide cleanup candidates. The current scanner
   uses `std::fs` traversal and therefore does not apply ignore files.
-- Symlinks, Windows junctions, and reparse points are not followed by default.
-- JSON plan targets must include `rule_id`, `risk`, `evidence`,
-  `selected_by_default`, `intent`, and `estimated_bytes`; they must not expose
-  an executable `action`.
+- Symlinks, Windows junctions, and reparse points are not followed by default;
+  Windows decisions use a no-follow path-level tag probe and fail closed when
+  the probe cannot verify safety.
+- JSON reports embed plan targets with `rule_id`, `risk`, `evidence`,
+  `selected_by_default`, `intent`, `estimated_bytes`, and size-completeness
+  observations; they must not expose an executable `action`.
 - Normalize scan roots before traversal and reduce them to the smallest covering
   set. Parent/child cleanup paths are deduplicated by canonical footprint plus
   action identity so one scan does not double-count or emit duplicate actions.
@@ -733,7 +737,9 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 - Missing scan root -> return an error to the CLI.
 - Markerless `target`, `build`, `dist`, or `node_modules` -> no target emitted.
 - Inaccessible nested entry -> skip that entry, continue scanning the rest of
-  the root.
+  the root, and mark report health partial.
+- Reparse root, target, or marker -> skip it without descending or counting
+  descendant capacity.
 - Equivalent duplicate roots, including Windows case/separator variants -> scan
   once after canonicalization.
 - Exact footprint with the same action -> keep one target and merge evidence.
@@ -753,7 +759,8 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
   footprint/action pair.
 - Good: two rules with the same footprint but distinct command/trash actions
   remain independently visible.
-- Base: `devsweep scan . --json` emits valid plan JSON.
+- Base: `devsweep scan . --json` emits a valid report whose embedded plan
+  validates through the normal cleanup-plan boundary.
 - Bad: matching a markerless directory because its name is `target`, `build`,
   or `dist`.
 - Bad: scanner code importing `std::process::Command`, `trash`, or file removal
@@ -763,8 +770,9 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 
 - Fixture tests for Rust, Node, and Python discovery.
 - Fixture tests proving markerless cleanup names are ignored.
-- Tests that serialized plan targets contain rule, risk, evidence, selection,
-  intent, and size fields, and omit executable action fields.
+- Tests that serialized report targets contain rule, risk, evidence, selection,
+  intent, and size fields, omit executable action fields, and preserve partial
+  health diagnostics.
 - Dedupe tests for duplicate roots, exact evidence merging, nested paths with
   the same action, and equal paths with distinct actions.
 - On Windows, fixture coverage for case and separator-equivalent roots.
@@ -789,6 +797,102 @@ let manifest = project_root.join("Cargo.toml");
 if manifest.is_file() && project_root.join("target").is_dir() {
     targets.push(clean_target_with_marker(manifest));
 }
+```
+
+### Scenario: Scan safety, review reports, and capacity inventory
+
+#### 1. Scope / Trigger
+
+- Trigger: changing scan diagnostics, size estimates, reparse-point checks,
+  scan JSON, reviewed target rescan, or read-only capacity inventory.
+
+#### 2. Signatures
+
+- Report boundary: `ScanReport { version, plan, health }` and
+  `ScanHealth { completeness, diagnostics, totals }`.
+- CLI boundaries:
+  - `devsweep scan [ROOT]... --json [--rescan-target TARGET_ID]`
+  - `devsweep inventory [ROOT] [--json]`
+  - `devsweep clean --plan PATH [--execute]`
+- TUI inventory boundary:
+  `inventory_root_with_cancel(&Path, Option<&Arc<FlagCancelObserver>>) -> Result<InventoryReport>`.
+- Review boundary:
+  `rescan_target_size(&mut CleanupPlan, &TargetId, cancel) -> Result<()>`.
+
+#### 3. Contracts
+
+- Scan JSON is a report document. Only its embedded v2 `UntrustedPlan` can
+  cross into `validate_plan`; diagnostics, totals, and sizing warnings are
+  observations and cannot reconstruct actions or affect a validated digest.
+- Size totals keep verified bytes, partial lower bounds, and unknown-target
+  counts distinct. Incomplete size observations are not default-selected.
+- Traversal, marker validation, sizing, and execution-time ancestor checks use
+  the same no-follow reparse probe. A reparse or an unverifiable probe never
+  grants traversal or cleanup authority.
+- `--rescan-target` accepts only an exact target ID discovered by the current
+  scan. It replaces that target's size observation under a larger but bounded
+  walk, reusing cancellation and reparse checks.
+- `inventory` returns read-only `InventoryReport` observations and optional
+  inspect-only pnpm evidence. It has no cleanup intent/action and the plan
+  decoder must reject it explicitly.
+- A canceled inventory walk returns a partial read-only report with a typed
+  canceled diagnostic; the TUI may discard that unfinished snapshot, but it
+  must not turn cancellation into an executable action or resume traversal.
+
+#### 4. Validation & Error Matrix
+
+- Reparse point at root, child, marker, target, or execution ancestor -> skip
+  or deny, with no descendant candidate/capacity contribution.
+- Reparse probe failure -> partial health or execution denial; never fall back
+  to metadata-only approval.
+- Truncated Cargo metadata -> `output_truncated` diagnostic before JSON parse.
+- Unknown review target ID or pathless target -> rescan fails without walking
+  an arbitrary caller path.
+- Inventory report supplied to `clean --plan` -> reject before validation,
+  audit, or cleanup side effect.
+- Inventory cancellation before or during traversal -> no later top-level
+  observation or pnpm-reference probe runs after the cancellation check.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: a partial size appears as a lower bound with typed warnings, while a
+  successful reviewed rescan replaces those warnings with a complete estimate.
+- Good: `clean --plan` accepts either a plan-only v2 document or the
+  embedded plan from a supported scan report.
+- Good: a canceled TUI inventory worker receives a partial report containing a
+  `canceled` diagnostic and remains outside the cleanup-plan flow.
+- Base: a complete report with no diagnostics has zero partial/unknown totals.
+- Bad: serializing diagnostic process output as executable argv or using an
+  inventory observation as a cleanup target.
+- Bad: accepting a raw path for a high-budget rescan.
+
+#### 6. Tests Required
+
+- Probe-seam tests cover Cloud Files-style root, child, marker, target, and
+  execution-ancestor tags plus an unverifiable probe.
+- Report tests assert typed truncation process metadata, total separation, and
+  that warnings do not change validation or digest authority.
+- Rescan tests assert exact-ID replacement, cancellation, and reparse denial.
+- CLI tests assert report decoding, inventory rejection by `clean --plan`, and
+  valid `--rescan-target` parsing.
+- Inventory tests assert observations are read-only and an orphan-pnpm finding
+  requires complete non-candidate reference evidence; cancellation tests assert
+  a typed partial report without observations.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+// An arbitrary caller path could make the high-budget walker inspect anything.
+estimate_tree_with_budget(Path::new(user_path), REVIEW_SIZE_ENTRY_BUDGET);
+```
+
+Correct:
+
+```rust
+// Locate the reviewed object in the current scan before replacing its estimate.
+rescan_target_size(&mut plan, &target_id, None)?;
 ```
 
 ---

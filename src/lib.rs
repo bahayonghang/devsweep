@@ -2,6 +2,7 @@ pub mod cli;
 pub mod config;
 pub mod executor;
 pub mod fs_size;
+pub mod inventory;
 pub mod model;
 pub mod path_identity;
 pub(crate) mod path_safety;

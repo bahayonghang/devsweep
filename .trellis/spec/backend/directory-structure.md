@@ -27,6 +27,7 @@ src/
 ├── config.rs      # process-wide initialization such as tracing
 ├── executor.rs    # dry-run, command/trash execution, and audit JSONL
 ├── fs_size.rs     # parallel tree sizing with symlink safety
+├── inventory.rs   # read-only capacity observations and pnpm-store inspection
 ├── model.rs       # v2 untrusted JSON DTOs and internal scan/action types
 ├── path_identity.rs # lexical canonical path identity + live file identity
 ├── path_safety.rs # current-exe containment guard helpers
@@ -55,10 +56,11 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
 - Put CLI argument shape in `src/cli.rs`. Keep command parsing structs free of
   filesystem scanning or cleanup side effects.
 - Put JSON-facing cross-layer data in `src/model.rs`. `UntrustedPlan`,
-  `UntrustedTarget`, and `CleanupIntent` are the versioned persisted contract;
-  they describe observed facts and intent, never executable argv or an
-  authoritative cleanup path. `CleanupPlan`, `CleanTarget`, and `CleanAction`
-  are internal typed scan/execution values, not serde input.
+  `UntrustedTarget`, `ScanReport`, `ScanHealth`, and `CleanupIntent` are the
+  versioned report/plan contract; they describe observed facts and intent,
+  never executable argv or an authoritative cleanup path. `CleanupPlan`,
+  `CleanTarget`, and `CleanAction` are internal typed scan/execution values,
+  not serde input.
 - Put untrusted-plan validation, canonical digesting, and the opaque
   `ValidatedPlan` in `src/plan_validation.rs`; put rule/intent action
   reconstruction in `src/registry.rs`. Keep lexical identity normalization in
@@ -70,6 +72,9 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
 - Put project discovery in `src/scanner.rs`. Scanner code creates
   `CleanTarget` values only; it must not delete files, move to trash, or run
   cleanup commands.
+- Put storage-only inspection in `src/inventory.rs`. Inventory produces typed
+  observations and inspect-only findings; it never creates a `CleanupPlan` or
+  reaches the executor.
 - Put execution behavior in `src/executor.rs`. It consumes only a
   `ValidatedPlan`, runs exactly the explicit `ExecutionRequest.selected` set,
   keeps registry-reconstructed command program/argv separate, delegates trash

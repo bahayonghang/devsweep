@@ -122,6 +122,7 @@ pub(super) fn target(
         path: path.clone(),
         estimated_bytes,
         size_complete: true,
+        sizing_warnings: Vec::new(),
         last_modified: None,
         risk,
         reversible,

@@ -11,7 +11,7 @@ use tracing::warn;
 use crate::fs_size::{SizeEstimate, estimate_tree_with_budget_and_cancel};
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
-    Scope, TargetId, TargetKind,
+    Scope, SizingWarning, SizingWarningKind, TargetId, TargetKind,
 };
 use crate::process_runner::{
     CancelObserver, CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT,
@@ -278,6 +278,7 @@ fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         path: cache_path.clone(),
         estimated_bytes: cache_estimate.display_bytes(),
         size_complete: cache_estimate.complete,
+        sizing_warnings: cache_estimate.warnings,
         last_modified: cache_estimate.last_modified,
         risk: NPM_CACHE_RULE_DOC.risk,
         selected_by_default: false,
@@ -317,6 +318,7 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         path: cache_path.clone(),
         estimated_bytes: cache_estimate.display_bytes(),
         size_complete: cache_estimate.complete,
+        sizing_warnings: cache_estimate.warnings,
         last_modified: cache_estimate.last_modified,
         risk: PIP_CACHE_RULE_DOC.risk,
         selected_by_default: false,
@@ -344,6 +346,7 @@ fn add_pnpm_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         path: store_path.clone(),
         estimated_bytes: store_estimate.display_bytes(),
         size_complete: store_estimate.complete,
+        sizing_warnings: store_estimate.warnings,
         last_modified: store_estimate.last_modified,
         risk: PNPM_STORE_RULE_DOC.risk,
         selected_by_default: false,
@@ -396,6 +399,7 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
         path: cache_path.clone(),
         estimated_bytes: cache_estimate.display_bytes(),
         size_complete: cache_estimate.complete,
+        sizing_warnings: cache_estimate.warnings,
         last_modified: cache_estimate.last_modified,
         risk: YARN_CACHE_RULE_DOC.risk,
         selected_by_default: false,
@@ -432,6 +436,7 @@ fn add_go_modcache_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTar
         path: Some(cache_path.clone()),
         estimated_bytes: estimate.display_bytes(),
         size_complete: estimate.complete,
+        sizing_warnings: estimate.warnings,
         last_modified: estimate.last_modified,
         risk: GO_MODCACHE_RULE_DOC.risk,
         selected_by_default: false,
@@ -468,6 +473,7 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
         path: Some(cargo_home.clone()),
         estimated_bytes: estimate.display_bytes(),
         size_complete: estimate.complete,
+        sizing_warnings: estimate.warnings,
         last_modified: estimate.last_modified,
         risk: CARGO_HOME_RULE_DOC.risk,
         reversible: true,
@@ -515,6 +521,7 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
             path: Some(path.clone()),
             estimated_bytes: estimate.display_bytes(),
             size_complete: estimate.complete,
+            sizing_warnings: estimate.warnings,
             last_modified: estimate.last_modified,
             risk: rule.risk.clone(),
             reversible: true,
@@ -539,6 +546,7 @@ struct CommandTargetInput<'a> {
     path: Option<PathBuf>,
     estimated_bytes: u64,
     size_complete: bool,
+    sizing_warnings: Vec<SizingWarning>,
     last_modified: Option<SystemTime>,
     risk: RiskLevel,
     selected_by_default: bool,
@@ -554,6 +562,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         path,
         estimated_bytes,
         size_complete,
+        sizing_warnings,
         last_modified,
         risk,
         selected_by_default,
@@ -575,6 +584,7 @@ fn command_target(input: CommandTargetInput<'_>) -> CleanTarget {
         path,
         estimated_bytes,
         size_complete,
+        sizing_warnings,
         last_modified,
         risk,
         reversible: false,
@@ -688,7 +698,10 @@ fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> SizeEstimat
             logical_bytes: None,
             complete: false,
             last_modified: None,
-            warnings: vec!["cache path was not resolved".to_string()],
+            warnings: vec![SizingWarning {
+                kind: SizingWarningKind::PathUnresolved,
+                detail: "cache path was not resolved".to_string(),
+            }],
         })
 }
 
@@ -700,7 +713,7 @@ fn parse_major_version(version: &str) -> Option<u64> {
         .and_then(|major| major.parse().ok())
 }
 
-fn resolve_executable(program: &str) -> Option<PathBuf> {
+pub(crate) fn resolve_executable(program: &str) -> Option<PathBuf> {
     let program_path = Path::new(program);
     if program_path.components().count() > 1 && program_path.is_file() {
         return Some(program_path.to_path_buf());

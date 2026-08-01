@@ -9,13 +9,18 @@ use ratatui::{
 };
 
 use crate::{
-    model::{CleanAction, CleanTarget, Ecosystem, Evidence, RiskLevel, Scope, TargetId},
+    inventory::{CapacityObservation, InventoryClassification, InventoryReport},
+    model::{
+        CleanAction, CleanTarget, Ecosystem, Evidence, RiskLevel, ScanDiagnostic,
+        ScanDiagnosticOutcome, ScanDiagnosticStage, ScanHealth, Scope, SizingWarningKind, TargetId,
+    },
     rules::{RuleScope, risk_label, rule_catalogue, rule_row},
 };
 
 use super::app::{
     ActiveTab, App, AppLogLevel, AppLogSource, CleanupItemStatus, CleanupProgress,
-    CleanupProgressItem, CommandPreview, ConfirmState, LogEntry, Overlay, ScopeKind,
+    CleanupProgressItem, CommandPreview, ConfirmState, LogEntry, Overlay, PycacheGroup, ScopeKind,
+    TargetListRow,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -156,12 +161,6 @@ fn header_layout_kind(area: Rect) -> BodyLayoutKind {
 
 fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let active_jobs = app.jobs.iter().filter(|job| job.status.is_active()).count();
-    let filter = if app.filter.is_empty() {
-        "none".to_string()
-    } else {
-        app.filter.clone()
-    };
-    let risk = app.risk_filter.as_ref().map(risk_label).unwrap_or("all");
     let text = match header_layout_kind(area) {
         BodyLayoutKind::Full => vec![
             Line::from(vec![
@@ -177,25 +176,10 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     ),
                     warning_style(),
                 ),
+                Span::styled("  Scan ", muted_style()),
+                Span::styled(scan_health_label(app), scan_health_style(app)),
             ]),
-            Line::from(vec![
-                Span::styled("Global ", muted_style()),
-                Span::styled(
-                    format_bytes(app.scope_bytes(ScopeKind::Global)),
-                    panel_style(),
-                ),
-                Span::styled("  Projects ", muted_style()),
-                Span::styled(
-                    format_bytes(app.scope_bytes(ScopeKind::Project)),
-                    panel_style(),
-                ),
-                Span::styled("  Filter ", muted_style()),
-                Span::styled(filter, panel_style()),
-                Span::styled("  Risk ", muted_style()),
-                Span::styled(risk, panel_style()),
-                Span::styled("  Jobs ", muted_style()),
-                Span::styled(active_jobs.to_string(), panel_style()),
-            ]),
+            scan_totals_line(app, false),
         ],
         BodyLayoutKind::Focused => vec![
             Line::from(vec![
@@ -210,25 +194,12 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     ),
                     warning_style(),
                 ),
+                Span::styled("  Scan ", muted_style()),
+                Span::styled(scan_health_label(app), scan_health_style(app)),
                 Span::styled("  Jobs ", muted_style()),
                 Span::styled(active_jobs.to_string(), panel_style()),
             ]),
-            Line::from(vec![
-                Span::styled("G ", muted_style()),
-                Span::styled(
-                    format_bytes(app.scope_bytes(ScopeKind::Global)),
-                    panel_style(),
-                ),
-                Span::styled("  P ", muted_style()),
-                Span::styled(
-                    format_bytes(app.scope_bytes(ScopeKind::Project)),
-                    panel_style(),
-                ),
-                Span::styled("  F ", muted_style()),
-                Span::styled(filter, panel_style()),
-                Span::styled("  R ", muted_style()),
-                Span::styled(risk, panel_style()),
-            ]),
+            scan_totals_line(app, true),
         ],
         BodyLayoutKind::Compact => vec![Line::from(vec![
             Span::styled("devsweep", accent_style()),
@@ -242,6 +213,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 ),
                 warning_style(),
             ),
+            Span::styled("  Scan ", muted_style()),
+            Span::styled(scan_health_label(app), scan_health_style(app)),
             Span::styled("  Jobs ", muted_style()),
             Span::styled(active_jobs.to_string(), panel_style()),
         ])],
@@ -253,6 +226,67 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .alignment(Alignment::Left),
         area,
     );
+}
+
+fn scan_health_label(app: &App) -> &'static str {
+    health_label(&app.scan_health)
+}
+
+fn health_label(health: &ScanHealth) -> &'static str {
+    if health.is_complete() {
+        "complete"
+    } else {
+        "partial"
+    }
+}
+
+fn scan_health_style(app: &App) -> Style {
+    health_style(&app.scan_health)
+}
+
+fn health_style(health: &ScanHealth) -> Style {
+    if health.is_complete() {
+        accent_style()
+    } else {
+        warning_style()
+    }
+}
+
+fn scan_totals_line(app: &App, compact: bool) -> Line<'static> {
+    health_totals_line(&app.scan_health, compact)
+}
+
+fn health_totals_line(health: &ScanHealth, compact: bool) -> Line<'static> {
+    let totals = health.totals;
+    if compact {
+        return Line::from(vec![
+            Span::styled("Verified ", muted_style()),
+            Span::styled(format_bytes(totals.verified_bytes), accent_style()),
+            Span::styled("  >= ", muted_style()),
+            Span::styled(
+                format_bytes(totals.partial_lower_bound_bytes),
+                warning_style(),
+            ),
+            Span::styled("  Unknown ", muted_style()),
+            Span::styled(totals.unknown_target_count.to_string(), warning_style()),
+            Span::styled("  Diag ", muted_style()),
+            Span::styled(health.diagnostics.len().to_string(), health_style(health)),
+        ]);
+    }
+
+    Line::from(vec![
+        Span::styled("Verified ", muted_style()),
+        Span::styled(format_bytes(totals.verified_bytes), accent_style()),
+        Span::styled("  Partial lower bound >= ", muted_style()),
+        Span::styled(
+            format_bytes(totals.partial_lower_bound_bytes),
+            warning_style(),
+        ),
+        Span::styled("  Unknown ", muted_style()),
+        Span::styled(totals.unknown_target_count.to_string(), warning_style()),
+        Span::styled("  Diagnostics ", muted_style()),
+        Span::styled(health.diagnostics.len().to_string(), health_style(health)),
+    ])
 }
 
 fn render_tabs(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -276,6 +310,7 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &App) {
     match app.active_tab {
         ActiveTab::Rules => render_rules(frame, area),
         ActiveTab::JobsLogs => render_jobs_logs(frame, area, app),
+        ActiveTab::Inventory => render_inventory(frame, area, app),
         ActiveTab::Dashboard | ActiveTab::Global | ActiveTab::Projects => {
             match body_layout_kind(area) {
                 BodyLayoutKind::Full => {
@@ -315,6 +350,230 @@ fn render_body(frame: &mut Frame<'_>, area: Rect, app: &App) {
             }
         }
     }
+}
+
+fn render_inventory(frame: &mut Frame<'_>, area: Rect, app: &App) {
+    let Some(report) = &app.inventory_report else {
+        frame.render_widget(
+            Paragraph::new(Line::styled("No capacity observations.", muted_style()))
+                .block(focused_panel_block("Inventory"))
+                .style(panel_style()),
+            area,
+        );
+        return;
+    };
+
+    match body_layout_kind(area) {
+        BodyLayoutKind::Full => {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
+                .split(area);
+            render_inventory_observations(frame, chunks[0], app, report);
+            render_inventory_details(frame, chunks[1], app, report);
+        }
+        BodyLayoutKind::Focused | BodyLayoutKind::Compact => {
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(8), Constraint::Length(9)])
+                .split(area);
+            render_inventory_observations(frame, chunks[0], app, report);
+            render_inventory_details(frame, chunks[1], app, report);
+        }
+    }
+}
+
+fn render_inventory_observations(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    app: &App,
+    report: &InventoryReport,
+) {
+    let content_height = area.height.saturating_sub(3) as usize;
+    let page_size = content_height.saturating_sub(1).max(1);
+    let selected_index = app
+        .inventory_selected_index
+        .min(report.observations.len().saturating_sub(1));
+    let mut scroll = app
+        .inventory_list_scroll
+        .min(report.observations.len().saturating_sub(1));
+    if selected_index < scroll {
+        scroll = selected_index;
+    } else if selected_index >= scroll + page_size {
+        scroll = selected_index + 1 - page_size;
+    }
+    scroll = scroll.min(report.observations.len().saturating_sub(page_size));
+    let end = (scroll + page_size).min(report.observations.len());
+
+    let mut lines = vec![Line::styled(
+        "  Size          Class          Path",
+        muted_style(),
+    )];
+    if report.observations.is_empty() {
+        lines.push(Line::styled("No capacity observations.", muted_style()));
+    } else {
+        lines.extend(report.observations[scroll..end].iter().enumerate().map(
+            |(row, observation)| {
+                inventory_observation_line(observation, scroll + row == selected_index, area.width)
+            },
+        ));
+    }
+
+    frame.render_widget(
+        Paragraph::new(Text::from(lines))
+            .block(focused_panel_block("Capacity observations"))
+            .style(panel_style())
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
+fn inventory_observation_line(
+    observation: &CapacityObservation,
+    highlighted: bool,
+    available_width: u16,
+) -> Line<'static> {
+    let marker = if highlighted { ">" } else { " " };
+    let size = inventory_size_label(observation);
+    let classification = inventory_classification_label(observation.classification);
+    let path_width = available_width.saturating_sub(33).max(16) as usize;
+    let path = compact_text(&display_path(&observation.path), path_width);
+    let style = if highlighted {
+        selected_row_style()
+    } else {
+        panel_style()
+    };
+    Line::from(vec![
+        Span::styled(format!("{marker} {size:>12}  "), style),
+        Span::styled(format!("{classification:<13} "), muted_style()),
+        Span::styled(path, style),
+    ])
+}
+
+fn inventory_size_label(observation: &CapacityObservation) -> String {
+    if observation.size_complete {
+        format_bytes(observation.estimated_bytes)
+    } else if observation.estimated_bytes == 0 {
+        "unknown".to_string()
+    } else {
+        format!(">= {}", format_bytes(observation.estimated_bytes))
+    }
+}
+
+fn inventory_classification_label(classification: InventoryClassification) -> &'static str {
+    match classification {
+        InventoryClassification::InventoryOnly => "inventory only",
+        InventoryClassification::InspectOnly => "inspect only",
+    }
+}
+
+fn render_inventory_details(
+    frame: &mut Frame<'_>,
+    area: Rect,
+    app: &App,
+    report: &InventoryReport,
+) {
+    let evidence_path_width = area.width.saturating_sub(18).max(12) as usize;
+    let mut lines = vec![
+        Line::from(vec![
+            Span::styled("Root ", muted_style()),
+            Span::styled(display_path(&report.root), panel_style()),
+        ]),
+        Line::from(vec![
+            Span::styled("Health ", muted_style()),
+            Span::styled(health_label(&report.health), health_style(&report.health)),
+        ]),
+        health_totals_line(&report.health, true),
+    ];
+
+    if let Some(observation) = report.observations.get(
+        app.inventory_selected_index
+            .min(report.observations.len().saturating_sub(1)),
+    ) {
+        lines.push(Line::from(""));
+        lines.push(Line::styled("Observation", muted_style()));
+        lines.push(Line::from(vec![
+            Span::styled("Class ", muted_style()),
+            Span::styled(
+                inventory_classification_label(observation.classification),
+                panel_style(),
+            ),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled("Size ", muted_style()),
+            Span::styled(inventory_size_label(observation), panel_style()),
+        ]));
+        if !observation.warnings.is_empty() {
+            lines.push(Line::styled(
+                format!("Warnings {}", observation.warnings.len()),
+                warning_style(),
+            ));
+            lines.extend(observation.warnings.iter().take(1).map(|warning| {
+                Line::styled(
+                    format!(
+                        "{}: {}",
+                        sizing_warning_kind_label(warning.kind),
+                        sanitize_display_text(&warning.detail)
+                    ),
+                    warning_style(),
+                )
+            }));
+        }
+    }
+
+    if let Some(finding) = &report.orphan_pnpm_store {
+        lines.push(Line::from(""));
+        lines.push(Line::styled("Inspect-only pnpm store", warning_style()));
+        lines.push(Line::styled(
+            compact_context_text(&display_path(&finding.candidate_path), 48),
+            panel_style(),
+        ));
+        lines.push(Line::styled(
+            format!(
+                "Configured {}",
+                compact_context_text(
+                    &display_path(&finding.configured_store),
+                    evidence_path_width
+                )
+            ),
+            muted_style(),
+        ));
+        if let Some(reference) = finding.project_references.first() {
+            lines.push(Line::styled(
+                format!(
+                    "Reference {}",
+                    compact_context_text(&display_path(&reference.path), evidence_path_width)
+                ),
+                muted_style(),
+            ));
+        }
+        lines.push(Line::styled(
+            format!("{} reference file(s)", finding.project_references.len()),
+            muted_style(),
+        ));
+    }
+
+    if !report.health.diagnostics.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(Line::styled("Diagnostics", warning_style()));
+        lines.extend(
+            report
+                .health
+                .diagnostics
+                .iter()
+                .rev()
+                .take(1)
+                .flat_map(scan_diagnostic_lines),
+        );
+    }
+
+    frame.render_widget(
+        Paragraph::new(Text::from(lines))
+            .block(panel_block("Inventory details"))
+            .style(panel_style())
+            .wrap(Wrap { trim: false }),
+        area,
+    );
 }
 
 fn render_categories(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -365,6 +624,7 @@ fn render_compact_summary(frame: &mut Frame<'_>, area: Rect, app: &App) {
             Span::styled("  Jobs ", muted_style()),
             Span::styled(active_jobs.to_string(), panel_style()),
         ]),
+        scan_totals_line(app, true),
     ];
 
     frame.render_widget(
@@ -383,7 +643,7 @@ fn metric_line(label: &'static str, count: usize) -> Line<'static> {
 }
 
 fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let visible = app.visible_target_indices();
+    let visible = app.visible_target_rows();
     let content_height = area.height.saturating_sub(3) as usize; // borders + header
     let page_size = content_height.max(1);
     // Render is pure: clamp reads against a local window derived from app state.
@@ -407,16 +667,9 @@ fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
         vec![Line::styled("No targets in this view.", muted_style())]
     } else {
         let mut rows = vec![target_header_row(area)];
-        rows.extend(window.iter().enumerate().map(|(row, index)| {
-            let target = &app.targets[*index];
+        rows.extend(window.iter().enumerate().map(|(row, target_row)| {
             let absolute = scroll + row;
-            target_row(
-                target,
-                absolute == selected_row,
-                app.selected_ids.contains(&target.id),
-                app.is_cleaned(&target.id),
-                area,
-            )
+            render_target_row(target_row, app, absolute == selected_row, area)
         }));
         rows
     };
@@ -428,6 +681,22 @@ fn render_targets(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .wrap(Wrap { trim: false }),
         area,
     );
+}
+
+fn render_target_row(row: &TargetListRow, app: &App, selected: bool, area: Rect) -> Line<'static> {
+    match row {
+        TargetListRow::Target(index) => {
+            let target = &app.targets[*index];
+            target_row(
+                target,
+                selected,
+                app.selected_ids.contains(&target.id),
+                app.is_cleaned(&target.id),
+                area,
+            )
+        }
+        TargetListRow::PycacheGroup(group) => pycache_group_row(group, app, selected, area),
+    }
 }
 
 fn target_header_row(_area: Rect) -> Line<'static> {
@@ -504,6 +773,58 @@ fn target_row(
     line
 }
 
+fn pycache_group_row(group: &PycacheGroup, app: &App, selected: bool, area: Rect) -> Line<'static> {
+    let targets: Vec<&CleanTarget> = group
+        .target_indices
+        .iter()
+        .filter_map(|index| app.targets.get(*index))
+        .collect();
+    let executable: Vec<&CleanTarget> = targets
+        .iter()
+        .copied()
+        .filter(|target| target.action.is_executable() && !app.is_cleaned(&target.id))
+        .collect();
+    let selected_count = executable
+        .iter()
+        .filter(|target| app.selected_ids.contains(&target.id))
+        .count();
+    let mark = if executable.is_empty() || selected_count == 0 {
+        "[ ]"
+    } else if selected_count == executable.len() {
+        "[x]"
+    } else {
+        "[-]"
+    };
+    let cursor = if selected { ">" } else { " " };
+    let identity = format!(
+        "Python project {} | {} __pycache__ entries",
+        compact_path(&group.project_root),
+        targets.len()
+    );
+    let target_text = compact_text(&identity, target_text_width(area));
+    let mut line = Line::from(vec![
+        Span::styled(
+            format!("{cursor} "),
+            if selected {
+                accent_style()
+            } else {
+                muted_style()
+            },
+        ),
+        Span::styled(format!("{mark} "), accent_style()),
+        Span::styled(format!("{:<9} ", "Group"), muted_style()),
+        Span::styled(
+            format!("{:>9} ", format!("{} rows", targets.len())),
+            warning_style(),
+        ),
+        Span::styled(target_text, panel_style()),
+    ]);
+    if selected {
+        line = line.style(selected_row_style());
+    }
+    line
+}
+
 fn short_target_identity(target: &CleanTarget) -> String {
     compact_text(&target_title(target), 32)
 }
@@ -523,10 +844,7 @@ fn target_text_width(area: Rect) -> usize {
 }
 
 fn render_details_panel(frame: &mut Frame<'_>, area: Rect, app: &App) {
-    let lines = app
-        .selected_target()
-        .map(target_details_lines)
-        .unwrap_or_else(|| vec![Line::from("No target selected.")]);
+    let lines = selected_details_lines(app);
 
     frame.render_widget(
         Paragraph::new(Text::from(lines))
@@ -535,6 +853,40 @@ fn render_details_panel(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .wrap(Wrap { trim: false }),
         area,
     );
+}
+
+fn selected_details_lines(app: &App) -> Vec<Line<'static>> {
+    if let Some(target) = app.selected_target() {
+        target_details_lines(target)
+    } else if let Some(group) = app.selected_pycache_group() {
+        pycache_group_details_lines(&group, app)
+    } else {
+        vec![Line::from("No target selected.")]
+    }
+}
+
+fn pycache_group_details_lines(group: &PycacheGroup, app: &App) -> Vec<Line<'static>> {
+    let targets: Vec<&CleanTarget> = group
+        .target_indices
+        .iter()
+        .filter_map(|index| app.targets.get(*index))
+        .collect();
+    let selected = targets
+        .iter()
+        .filter(|target| app.selected_ids.contains(&target.id))
+        .count();
+    vec![
+        Line::styled("__pycache__ group", accent_style()),
+        detail_line("Project", display_path(&group.project_root)),
+        detail_line("Targets", targets.len().to_string()),
+        detail_line("Selected", selected.to_string()),
+        Line::from(""),
+        Line::styled("Enter or g expands this project group.", muted_style()),
+        Line::styled(
+            "Expand it to inspect each exact target path.",
+            muted_style(),
+        ),
+    ]
 }
 
 fn render_rules(frame: &mut Frame<'_>, area: Rect) {
@@ -595,11 +947,27 @@ fn render_jobs_logs(frame: &mut Frame<'_>, area: Rect, app: &App) {
             })
             .collect()
     };
-    let log_lines = if app.logs.is_empty() {
-        vec![Line::from("No logs yet.")]
-    } else {
-        app.logs.iter().rev().take(16).map(log_entry_line).collect()
-    };
+    let mut log_lines = Vec::new();
+    if !app.scan_health.diagnostics.is_empty() {
+        log_lines.push(Line::styled("Scan diagnostics", warning_style()));
+        log_lines.extend(
+            app.scan_health
+                .diagnostics
+                .iter()
+                .rev()
+                .take(6)
+                .flat_map(scan_diagnostic_lines),
+        );
+    }
+    if !app.logs.is_empty() {
+        if !log_lines.is_empty() {
+            log_lines.push(Line::from(""));
+        }
+        log_lines.extend(app.logs.iter().rev().take(16).map(log_entry_line));
+    }
+    if log_lines.is_empty() {
+        log_lines.push(Line::from("No logs yet."));
+    }
 
     frame.render_widget(
         Paragraph::new(Text::from(job_lines))
@@ -640,6 +1008,79 @@ fn log_entry_line(entry: &LogEntry) -> Line<'static> {
         ));
     }
     Line::from(spans)
+}
+
+fn scan_diagnostic_lines(diagnostic: &ScanDiagnostic) -> Vec<Line<'static>> {
+    let mut lines = vec![
+        Line::styled(
+            format!(
+                "{} {}",
+                scan_diagnostic_stage_label(diagnostic.stage),
+                scan_diagnostic_outcome_label(diagnostic.outcome),
+            ),
+            warning_style(),
+        ),
+        Line::styled(
+            format!("path {}", display_path(&diagnostic.path)),
+            warning_style(),
+        ),
+    ];
+    if let Some(process) = &diagnostic.process {
+        lines.push(Line::styled(
+            format!("status {:?}", process.status),
+            warning_style(),
+        ));
+        lines.push(scan_process_output_line(
+            "stdout",
+            process.stdout.retained_bytes,
+            process.stdout.total_bytes,
+            process.stdout.truncated,
+        ));
+        lines.push(scan_process_output_line(
+            "stderr",
+            process.stderr.retained_bytes,
+            process.stderr.total_bytes,
+            process.stderr.truncated,
+        ));
+    }
+    lines.push(Line::styled(
+        format!("detail {}", sanitize_display_text(&diagnostic.detail)),
+        warning_style(),
+    ));
+    lines
+}
+
+fn scan_process_output_line(
+    stream: &str,
+    retained_bytes: u64,
+    total_bytes: u64,
+    truncated: bool,
+) -> Line<'static> {
+    Line::styled(
+        format!(
+            "{stream} {retained_bytes}/{total_bytes}{}",
+            if truncated { " truncated" } else { "" },
+        ),
+        warning_style(),
+    )
+}
+
+fn scan_diagnostic_stage_label(stage: ScanDiagnosticStage) -> &'static str {
+    match stage {
+        ScanDiagnosticStage::Discovery => "discovery",
+        ScanDiagnosticStage::Sizing => "sizing",
+        ScanDiagnosticStage::CargoMetadata => "cargo metadata",
+        ScanDiagnosticStage::Provider => "provider",
+    }
+}
+
+fn scan_diagnostic_outcome_label(outcome: ScanDiagnosticOutcome) -> &'static str {
+    match outcome {
+        ScanDiagnosticOutcome::Skipped => "skipped",
+        ScanDiagnosticOutcome::Failed => "failed",
+        ScanDiagnosticOutcome::Canceled => "canceled",
+        ScanDiagnosticOutcome::OutputTruncated => "output truncated",
+    }
 }
 
 fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
@@ -774,6 +1215,19 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
         );
     }
 
+    if app.active_tab == ActiveTab::Inventory {
+        let mut actions = vec![
+            footer_action("i", "Refresh", FooterTone::Accent),
+            footer_action("Up/Down", "Browse", FooterTone::Neutral),
+            footer_action("q", "Quit", FooterTone::Danger),
+            footer_action("?", "Help", FooterTone::Neutral),
+        ];
+        if app.jobs.iter().any(|job| job.status.is_active()) {
+            actions.insert(2, footer_action("x", "Request stop", FooterTone::Danger));
+        }
+        return ("INVENTORY", FooterTone::Accent, actions);
+    }
+
     let mut actions = vec![
         footer_action("s", "Scan", FooterTone::Accent),
         footer_action("Space", "Select", FooterTone::Neutral),
@@ -784,6 +1238,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
         footer_action("a", "All", FooterTone::Neutral),
         footer_action("d", "Dry-run", FooterTone::Neutral),
         footer_action("r", "Risk", FooterTone::Neutral),
+        footer_action("g", "Group", FooterTone::Neutral),
     ];
     if app.jobs.iter().any(|job| job.status.is_active()) {
         actions.insert(3, footer_action("x", "Request stop", FooterTone::Danger));
@@ -845,8 +1300,10 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
             "Keyboard help",
             vec![
                 Line::from("s scan current directory and global providers"),
+                Line::from("i refreshes the read-only capacity inventory"),
                 Line::from("Space toggles the selected target"),
                 Line::from("a toggles all visible targets"),
+                Line::from("g expands or collapses a __pycache__ project group"),
                 Line::from("d opens dry-run preview"),
                 Line::from("c opens cleanup confirmation"),
                 Line::from("/ filters targets; r cycles risk filter"),
@@ -855,11 +1312,7 @@ fn render_overlay(frame: &mut Frame<'_>, app: &App) {
             ],
         ),
         Overlay::Details => {
-            let lines = app
-                .selected_target()
-                .map(target_details_lines)
-                .unwrap_or_else(|| vec![Line::from("No target selected.")]);
-            render_modal(frame, "Target details", lines);
+            render_modal(frame, "Target details", selected_details_lines(app));
         }
         Overlay::DryRun => render_modal(frame, "Dry-run preview", dry_run_lines(app)),
         Overlay::Confirm(confirm) => render_confirm(frame, confirm),
@@ -1173,7 +1626,33 @@ fn target_details_lines(target: &CleanTarget) -> Vec<Line<'static>> {
             Span::styled(evidence_summary(evidence), panel_style()),
         ])
     }));
+    if !target.sizing_warnings.is_empty() {
+        lines.push(Line::styled("Sizing warnings:", warning_style()));
+        lines.extend(target.sizing_warnings.iter().take(4).map(|warning| {
+            Line::styled(
+                format!(
+                    "  - {}: {}",
+                    sizing_warning_kind_label(warning.kind),
+                    sanitize_display_text(&warning.detail)
+                ),
+                warning_style(),
+            )
+        }));
+    }
     lines
+}
+
+fn sizing_warning_kind_label(kind: SizingWarningKind) -> &'static str {
+    match kind {
+        SizingWarningKind::Canceled => "canceled",
+        SizingWarningKind::EntryBudgetExhausted => "entry budget exhausted",
+        SizingWarningKind::MetadataUnavailable => "metadata unavailable",
+        SizingWarningKind::ReparseSafetyUnverified => "reparse safety unverified",
+        SizingWarningKind::MaxDepthReached => "max depth reached",
+        SizingWarningKind::DirectoryReadFailed => "directory read failed",
+        SizingWarningKind::DirectoryEntryReadFailed => "directory entry read failed",
+        SizingWarningKind::PathUnresolved => "path unresolved",
+    }
 }
 
 fn detail_line(label: &'static str, value: String) -> Line<'static> {
@@ -1317,6 +1796,7 @@ fn app_log_source_label(source: AppLogSource) -> &'static str {
     match source {
         AppLogSource::App => "App",
         AppLogSource::Scan => "Scan",
+        AppLogSource::Inventory => "Invent",
         AppLogSource::Clean => "Clean",
         AppLogSource::Audit => "Audit",
     }
@@ -1448,12 +1928,22 @@ fn format_bytes(bytes: u64) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use crossterm::event::KeyCode;
     use ratatui::{Terminal, backend::TestBackend};
 
     use super::*;
     use crate::executor::{ExecutionReport, ExecutionTargetStatus};
-    use crate::model::{CLEANUP_PLAN_VERSION, CleanupPlan, TargetKind};
+    use crate::inventory::{
+        CapacityObservation, INVENTORY_REPORT_VERSION, InventoryClassification, InventoryReport,
+        OrphanPnpmStoreFinding, PnpmProjectReference,
+    };
+    use crate::model::{
+        CLEANUP_PLAN_VERSION, CleanupPlan, ScanCompleteness, ScanDiagnostic, ScanDiagnosticOutcome,
+        ScanDiagnosticStage, ScanHealth, ScanProcessOutput, ScanProcessProbe, ScanProcessStatus,
+        ScanTotals, TargetKind,
+    };
     use crate::tui::app::{JobKind, UiEvent, WorkerEvent, cleanup_progress_for_plan};
     use crate::tui::test_support::{
         key, render_text, render_text_with_size, representative_plan, target,
@@ -1505,6 +1995,178 @@ mod tests {
     }
 
     #[test]
+    fn pycache_group_renders_collapsed_and_expanded_target_paths() {
+        let project_root = PathBuf::from("C:/workspace/python-project");
+        let paths = [
+            project_root.join("package_a/__pycache__"),
+            project_root.join("package_b/__pycache__"),
+            project_root.join("package_c/__pycache__"),
+        ];
+        let targets = paths
+            .iter()
+            .map(|path| {
+                target(
+                    "python.__pycache__",
+                    Scope::Project {
+                        root: project_root.clone(),
+                    },
+                    Ecosystem::Python,
+                    TargetKind::TestCache,
+                    Some(path.clone()),
+                    128,
+                    RiskLevel::Low,
+                    true,
+                    true,
+                    CleanAction::MoveToTrash { path: path.clone() },
+                )
+            })
+            .collect();
+        let mut app = App::with_plan(CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets,
+        });
+
+        let collapsed = render_text(&app);
+        assert!(collapsed.contains("3 __pycache__ entries"));
+        assert!(!collapsed.contains("package_a/__pycache__"));
+
+        app.update(key(KeyCode::Char('g')));
+        let expanded = render_text(&app);
+        assert!(expanded.contains("package_a/__pycache__"));
+        assert!(expanded.contains("package_b/__pycache__"));
+        assert!(expanded.contains("package_c/__pycache__"));
+    }
+
+    #[test]
+    fn partial_scan_health_renders_truthful_totals_and_diagnostics() {
+        let mut app = App::with_plan(representative_plan());
+        let mut plan = representative_plan();
+        plan.targets[1].size_complete = false;
+        plan.targets[2].size_complete = false;
+        let mut health = ScanHealth::new(
+            ScanCompleteness::Partial,
+            vec![ScanDiagnostic {
+                stage: ScanDiagnosticStage::CargoMetadata,
+                path: PathBuf::from("C:/workspace/project/Cargo.toml"),
+                outcome: ScanDiagnosticOutcome::OutputTruncated,
+                detail: "captured cargo metadata output was truncated".to_string(),
+                process: Some(ScanProcessProbe {
+                    status: ScanProcessStatus::InvalidOutput,
+                    stdout: ScanProcessOutput {
+                        truncated: true,
+                        retained_bytes: 1024,
+                        total_bytes: 4096,
+                    },
+                    stderr: ScanProcessOutput {
+                        truncated: false,
+                        retained_bytes: 0,
+                        total_bytes: 0,
+                    },
+                }),
+            }],
+        );
+        health.totals = ScanTotals::from_cleanup_plan(&plan);
+        let job_id = app.start_job(JobKind::Scan, "Scan fixture");
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id,
+            plan,
+            health,
+        }));
+        app.active_tab = ActiveTab::JobsLogs;
+
+        let rendered = render_text_with_size(&app, 120, 50);
+
+        assert!(rendered.contains("Scan partial"));
+        assert!(rendered.contains("Verified 1.0 KiB"));
+        assert!(rendered.contains("Partial lower bound >= 2.0 KiB"));
+        assert!(rendered.contains("Unknown 1"));
+        assert!(rendered.contains("Scan diagnostics"));
+        assert!(rendered.contains("cargo metadata output truncated"));
+        assert!(rendered.contains("path C:/workspace/project/Cargo.toml"));
+        assert!(rendered.contains("status InvalidOutput"));
+        assert!(rendered.contains("stdout 1024/4096 truncated"));
+        assert!(rendered.contains("stderr 0/0"));
+        assert!(rendered.contains("detail captured cargo metadata output was truncated"));
+    }
+
+    #[test]
+    fn inventory_tab_renders_read_only_observations_health_and_inspection() {
+        let mut app = App::with_plan(representative_plan());
+        let mut health = ScanHealth::new(
+            ScanCompleteness::Partial,
+            vec![ScanDiagnostic {
+                stage: ScanDiagnosticStage::Sizing,
+                path: PathBuf::from("C:/inventory-root/archive"),
+                outcome: ScanDiagnosticOutcome::Skipped,
+                detail: "size entry budget exhausted".to_string(),
+                process: None,
+            }],
+        );
+        health.totals = ScanTotals {
+            verified_bytes: 4096,
+            partial_lower_bound_bytes: 2048,
+            unknown_target_count: 1,
+        };
+        let report = InventoryReport {
+            version: INVENTORY_REPORT_VERSION,
+            root: PathBuf::from("C:/inventory-root"),
+            observations: vec![
+                CapacityObservation {
+                    path: PathBuf::from("C:/inventory-root/archive"),
+                    classification: InventoryClassification::InventoryOnly,
+                    estimated_bytes: 4096,
+                    size_complete: true,
+                    warnings: Vec::new(),
+                },
+                CapacityObservation {
+                    path: PathBuf::from("C:/inventory-root/old-store"),
+                    classification: InventoryClassification::InventoryOnly,
+                    estimated_bytes: 2048,
+                    size_complete: false,
+                    warnings: vec![crate::model::SizingWarning {
+                        kind: crate::model::SizingWarningKind::EntryBudgetExhausted,
+                        detail: "size entry budget exhausted".to_string(),
+                    }],
+                },
+            ],
+            health,
+            orphan_pnpm_store: Some(OrphanPnpmStoreFinding {
+                classification: InventoryClassification::InspectOnly,
+                candidate_path: PathBuf::from("C:/inventory-root/.pnpm-store"),
+                configured_store: PathBuf::from("C:/Users/test/AppData/Local/pnpm/store"),
+                project_references: vec![PnpmProjectReference {
+                    path: PathBuf::from("C:/inventory-root/app/.npmrc"),
+                    references_candidate: false,
+                    references_configured_store: true,
+                }],
+            }),
+        };
+        let job_id = app.start_job(JobKind::Inventory, "Inventory fixture");
+        app.update(UiEvent::Worker(WorkerEvent::InventoryFinished {
+            job_id,
+            report: Box::new(report),
+        }));
+        app.active_tab = ActiveTab::Inventory;
+
+        let rendered = render_text_with_size(&app, 120, 50);
+
+        assert!(rendered.contains("Capacity observations"));
+        assert!(rendered.contains("inventory only"));
+        assert!(rendered.contains("C:/inventory-root/archive"));
+        assert!(rendered.contains(">= 2.0 KiB"));
+        assert!(rendered.contains("Health partial"));
+        assert!(rendered.contains("Verified 4.0 KiB"));
+        assert!(rendered.contains("Inspect-only pnpm store"));
+        assert!(rendered.contains("Configured"), "{rendered}");
+        assert!(rendered.contains("pnpm/store"), "{rendered}");
+        assert!(rendered.contains("Reference"), "{rendered}");
+        assert!(rendered.contains(".npmrc"), "{rendered}");
+        assert!(rendered.contains("Diagnostics"));
+        assert!(rendered.contains("size entry budget exhausted"));
+        assert!(!rendered.contains("node.next_cache:C:"));
+    }
+
+    #[test]
     fn rules_tab_lists_catalogue_entries() {
         let mut app = App::with_plan(representative_plan());
         app.active_tab = ActiveTab::Rules;
@@ -1534,6 +2196,25 @@ mod tests {
             .join("\n");
 
         assert!(rendered.contains("rule ranking.freshness_guard.7d"));
+    }
+
+    #[test]
+    fn target_details_show_typed_sizing_warnings() {
+        let mut target = representative_plan().targets[0].clone();
+        target.sizing_warnings.push(crate::model::SizingWarning {
+            kind: crate::model::SizingWarningKind::EntryBudgetExhausted,
+            detail: "review rescan reached the entry budget".to_string(),
+        });
+
+        let rendered = target_details_lines(&target)
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(rendered.contains("Sizing warnings"));
+        assert!(rendered.contains("entry budget exhausted"));
+        assert!(rendered.contains("review rescan reached the entry budget"));
     }
 
     #[test]

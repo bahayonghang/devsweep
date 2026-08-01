@@ -1,10 +1,17 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 use crate::{
     executor::{ExecutionReport, ExecutionTargetStatus},
-    model::{CleanAction, CleanTarget, CleanupPlan, RiskLevel, Scope, TargetId},
+    inventory::InventoryReport,
+    model::{
+        CleanAction, CleanTarget, CleanupPlan, Evidence, RiskLevel, ScanHealth, ScanTotals, Scope,
+        TargetId,
+    },
     plan_validation::validate_scanned_plan,
     sweep::ScanPhase,
 };
@@ -25,6 +32,13 @@ enum SelectionOverride {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct App {
     pub(super) targets: Vec<CleanTarget>,
+    pub(super) scan_health: ScanHealth,
+    /// Read-only capacity observations kept separate from cleanup targets.
+    pub(super) inventory_report: Option<InventoryReport>,
+    pub(super) inventory_selected_index: usize,
+    pub(super) inventory_list_scroll: usize,
+    /// Display-only collapse state for high-volume Python bytecode cache rows.
+    collapsed_pycache_projects: HashSet<PathBuf>,
     pub(super) selected_ids: HashSet<TargetId>,
     selection_overrides: HashMap<TargetId, SelectionOverride>,
     /// Target ids successfully cleaned in this session until the next rescan.
@@ -60,9 +74,16 @@ impl App {
 
     pub(super) fn with_plan(plan: CleanupPlan) -> Self {
         let selected_ids = default_selected_ids(&plan.targets);
+        let collapsed_pycache_projects = pycache_project_roots(&plan.targets);
+        let scan_health = complete_health_for_plan(&plan);
 
         let mut app = Self {
             targets: plan.targets,
+            scan_health,
+            inventory_report: None,
+            inventory_selected_index: 0,
+            inventory_list_scroll: 0,
+            collapsed_pycache_projects,
             selected_ids,
             selection_overrides: HashMap::new(),
             cleaned_ids: HashSet::new(),
@@ -155,6 +176,9 @@ impl App {
                 vec![Effect::StartScan { job_id }]
             }
             KeyCode::Char('c') => {
+                if self.active_tab == ActiveTab::Inventory {
+                    return Vec::new();
+                }
                 if self.has_active_clean_job() {
                     self.log_entry(
                         AppLogLevel::Warning,
@@ -186,6 +210,9 @@ impl App {
                 Vec::new()
             }
             KeyCode::Char('d') => {
+                if self.active_tab == ActiveTab::Inventory {
+                    return Vec::new();
+                }
                 self.overlay = Overlay::DryRun;
                 Vec::new()
             }
@@ -194,63 +221,97 @@ impl App {
                 Vec::new()
             }
             KeyCode::Char('/') => {
+                if self.active_tab == ActiveTab::Inventory {
+                    return Vec::new();
+                }
                 self.filter_active = true;
                 Vec::new()
             }
             KeyCode::Char('r') => {
+                if self.active_tab == ActiveTab::Inventory {
+                    return Vec::new();
+                }
                 self.cycle_risk_filter();
                 self.selected_index = 0;
                 Vec::new()
             }
             KeyCode::Char('a') => {
+                if self.active_tab == ActiveTab::Inventory {
+                    return Vec::new();
+                }
                 self.toggle_visible_selection();
                 Vec::new()
             }
-            KeyCode::Char('l') => {
-                self.active_tab = ActiveTab::JobsLogs;
-                self.selected_index = 0;
-                Vec::new()
+            KeyCode::Char('i') => {
+                self.active_tab = ActiveTab::Inventory;
+                self.inventory_selected_index = 0;
+                self.inventory_list_scroll = 0;
+                self.request_inventory("Inventory refresh requested")
             }
+            KeyCode::Char('l') => self.set_tab(ActiveTab::JobsLogs),
             KeyCode::Char('x') => self.cancel_active_job(),
             KeyCode::Char('1') => self.set_tab(ActiveTab::Dashboard),
             KeyCode::Char('2') => self.set_tab(ActiveTab::Global),
             KeyCode::Char('3') => self.set_tab(ActiveTab::Projects),
             KeyCode::Char('4') => self.set_tab(ActiveTab::Rules),
             KeyCode::Char('5') => self.set_tab(ActiveTab::JobsLogs),
-            KeyCode::Tab | KeyCode::Right => {
-                self.active_tab = self.active_tab.next();
-                self.selected_index = 0;
-                Vec::new()
-            }
-            KeyCode::BackTab | KeyCode::Left => {
-                self.active_tab = self.active_tab.previous();
-                self.selected_index = 0;
-                Vec::new()
-            }
+            KeyCode::Char('6') => self.set_tab(ActiveTab::Inventory),
+            KeyCode::Tab | KeyCode::Right => self.set_tab(self.active_tab.next()),
+            KeyCode::BackTab | KeyCode::Left => self.set_tab(self.active_tab.previous()),
             KeyCode::Down | KeyCode::Char('j') => {
-                self.move_selection(1);
+                if self.active_tab == ActiveTab::Inventory {
+                    self.move_inventory_selection(1);
+                } else {
+                    self.move_selection(1);
+                }
                 Vec::new()
             }
             KeyCode::Up | KeyCode::Char('k') => {
-                self.move_selection(-1);
+                if self.active_tab == ActiveTab::Inventory {
+                    self.move_inventory_selection(-1);
+                } else {
+                    self.move_selection(-1);
+                }
                 Vec::new()
             }
             KeyCode::PageDown => {
-                self.page_selection(1);
+                if self.active_tab == ActiveTab::Inventory {
+                    self.move_inventory_selection(self.viewport_page_size() as isize);
+                } else {
+                    self.page_selection(1);
+                }
                 Vec::new()
             }
             KeyCode::PageUp => {
-                self.page_selection(-1);
+                if self.active_tab == ActiveTab::Inventory {
+                    self.move_inventory_selection(-(self.viewport_page_size() as isize));
+                } else {
+                    self.page_selection(-1);
+                }
                 Vec::new()
             }
             KeyCode::Enter => {
-                if self.selected_target().is_some() {
-                    self.overlay = Overlay::Details;
+                if self.active_tab != ActiveTab::Inventory {
+                    match self.selected_target_row() {
+                        Some(TargetListRow::Target(_)) => self.overlay = Overlay::Details,
+                        Some(TargetListRow::PycacheGroup(group)) => {
+                            self.toggle_pycache_project(&group.project_root);
+                        }
+                        None => {}
+                    }
+                }
+                Vec::new()
+            }
+            KeyCode::Char('g') => {
+                if self.active_tab != ActiveTab::Inventory {
+                    self.toggle_selected_pycache_project();
                 }
                 Vec::new()
             }
             KeyCode::Char(' ') => {
-                self.toggle_selected_target();
+                if self.active_tab != ActiveTab::Inventory {
+                    self.toggle_selected_target();
+                }
                 Vec::new()
             }
             _ => Vec::new(),
@@ -475,6 +536,12 @@ impl App {
                     self.log_ignored_worker_event(job_id, "scan started");
                 }
             }
+            WorkerEvent::InventoryStarted { job_id } => {
+                self.ensure_job(job_id, JobKind::Inventory, "Inventory current directory");
+                if !self.transition_job(job_id, JobStatus::Running, "Started") {
+                    self.log_ignored_worker_event(job_id, "inventory started");
+                }
+            }
             WorkerEvent::JobProgress { job_id, message } => {
                 if self.transition_job(job_id, JobStatus::Running, message.clone()) {
                     self.log_job(AppLogLevel::Info, self.job_source(job_id), job_id, message);
@@ -524,7 +591,11 @@ impl App {
                     format_cleanup_progress(completed, total, &message),
                 );
             }
-            WorkerEvent::ScanFinished { job_id, plan } => {
+            WorkerEvent::ScanFinished {
+                job_id,
+                plan,
+                health,
+            } => {
                 let count = plan.targets.len();
                 let should_apply_scan_update = self.should_apply_scan_update(job_id);
                 if !self.transition_job(
@@ -539,13 +610,53 @@ impl App {
                     self.invalidate_confirmation_due_to_scan();
                     self.cleaned_ids.clear();
                     self.replace_targets_preserving_selection(plan.targets);
+                    self.scan_health = health.clone();
                     self.scan_snapshot = None;
                 }
                 self.log_job(
-                    AppLogLevel::Info,
+                    if health.is_complete() {
+                        AppLogLevel::Info
+                    } else {
+                        AppLogLevel::Warning
+                    },
                     AppLogSource::Scan,
                     job_id,
-                    format!("Scan finished: {count} target(s)"),
+                    format!(
+                        "Scan finished: {count} target(s), {} health, {} diagnostic(s)",
+                        health.completeness.label(),
+                        health.diagnostics.len()
+                    ),
+                );
+            }
+            WorkerEvent::InventoryFinished { job_id, report } => {
+                let report = *report;
+                let count = report.observations.len();
+                let should_apply_inventory_update = self.should_apply_inventory_update(job_id);
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!("Observed {count} path(s)"),
+                ) {
+                    self.log_ignored_worker_event(job_id, "inventory finished");
+                    return Vec::new();
+                }
+                if should_apply_inventory_update {
+                    self.inventory_report = Some(report.clone());
+                    self.clamp_inventory_selection();
+                }
+                self.log_job(
+                    if report.health.is_complete() {
+                        AppLogLevel::Info
+                    } else {
+                        AppLogLevel::Warning
+                    },
+                    AppLogSource::Inventory,
+                    job_id,
+                    format!(
+                        "Inventory finished: {count} observation(s), {} health, {} diagnostic(s)",
+                        report.health.completeness.label(),
+                        report.health.diagnostics.len()
+                    ),
                 );
             }
             WorkerEvent::CleanFinished { job_id, report } => {
@@ -619,7 +730,15 @@ impl App {
 
     fn set_tab(&mut self, tab: ActiveTab) -> Vec<Effect> {
         self.active_tab = tab;
-        self.selected_index = 0;
+        if tab == ActiveTab::Inventory {
+            self.inventory_selected_index = 0;
+            self.inventory_list_scroll = 0;
+            if self.inventory_report.is_none() {
+                return self.request_inventory("Inventory requested");
+            }
+        } else {
+            self.selected_index = 0;
+        }
         Vec::new()
     }
 
@@ -627,6 +746,43 @@ impl App {
         let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
         self.scan_snapshot = Some(ScanSnapshot::new(job_id));
         self.log_job(AppLogLevel::Info, AppLogSource::Scan, job_id, log_message);
+        job_id
+    }
+
+    fn request_inventory(&mut self, log_message: impl Into<String>) -> Vec<Effect> {
+        if self.has_active_clean_job() {
+            self.log_entry(
+                AppLogLevel::Warning,
+                AppLogSource::Inventory,
+                None,
+                None,
+                "Cleanup is active; inventory requests are disabled until it finishes",
+            );
+            return Vec::new();
+        }
+        if self.has_active_inventory_job() {
+            self.log_entry(
+                AppLogLevel::Info,
+                AppLogSource::Inventory,
+                None,
+                None,
+                "Inventory is already running",
+            );
+            return Vec::new();
+        }
+
+        let job_id = self.start_inventory_job(log_message);
+        vec![Effect::StartInventory { job_id }]
+    }
+
+    fn start_inventory_job(&mut self, log_message: impl Into<String>) -> JobId {
+        let job_id = self.start_job(JobKind::Inventory, "Inventory current directory");
+        self.log_job(
+            AppLogLevel::Info,
+            AppLogSource::Inventory,
+            job_id,
+            log_message,
+        );
         job_id
     }
 
@@ -660,6 +816,8 @@ impl App {
             self.scan_snapshot = Some(ScanSnapshot::new(job_id));
         }
 
+        let mut staged_health = complete_health_for_plan(&plan);
+        staged_health.mark_partial();
         let mut updated = false;
         if let Some(snapshot) = &mut self.scan_snapshot
             && snapshot.job_id == job_id
@@ -669,6 +827,7 @@ impl App {
         }
 
         if updated {
+            self.scan_health = staged_health;
             self.rebuild_targets_from_scan_snapshot();
         }
     }
@@ -683,6 +842,21 @@ impl App {
         self.jobs
             .iter()
             .filter(|job| job.kind == JobKind::Scan)
+            .map(|job| job.id)
+            .max()
+            == Some(job_id)
+    }
+
+    fn should_apply_inventory_update(&self, job_id: JobId) -> bool {
+        let Some(job) = self.jobs.iter().find(|job| job.id == job_id) else {
+            return false;
+        };
+        if job.kind != JobKind::Inventory || !job.status.is_active() {
+            return false;
+        }
+        self.jobs
+            .iter()
+            .filter(|job| job.kind == JobKind::Inventory)
             .map(|job| job.id)
             .max()
             == Some(job_id)
@@ -714,6 +888,7 @@ impl App {
             })
             .collect();
         self.targets = targets;
+        self.collapsed_pycache_projects = pycache_project_roots(&self.targets);
         self.selected_index = 0;
         self.list_scroll = 0;
     }
@@ -739,7 +914,7 @@ impl App {
     }
 
     fn move_selection(&mut self, delta: isize) {
-        let count = self.visible_target_indices().len();
+        let count = self.visible_target_rows().len();
         if count == 0 {
             self.selected_index = 0;
             self.list_scroll = 0;
@@ -752,6 +927,45 @@ impl App {
         self.ensure_selection_visible(count.saturating_sub(1).max(1));
     }
 
+    fn move_inventory_selection(&mut self, delta: isize) {
+        let count = self
+            .inventory_report
+            .as_ref()
+            .map_or(0, |report| report.observations.len());
+        if count == 0 {
+            self.inventory_selected_index = 0;
+            self.inventory_list_scroll = 0;
+            return;
+        }
+
+        let current = self.inventory_selected_index.min(count - 1) as isize;
+        self.inventory_selected_index = (current + delta).clamp(0, count as isize - 1) as usize;
+        self.clamp_inventory_selection();
+    }
+
+    fn clamp_inventory_selection(&mut self) {
+        let count = self
+            .inventory_report
+            .as_ref()
+            .map_or(0, |report| report.observations.len());
+        if count == 0 {
+            self.inventory_selected_index = 0;
+            self.inventory_list_scroll = 0;
+            return;
+        }
+
+        self.inventory_selected_index = self.inventory_selected_index.min(count - 1);
+        let page_size = self.viewport_page_size().max(1);
+        if self.inventory_selected_index < self.inventory_list_scroll {
+            self.inventory_list_scroll = self.inventory_selected_index;
+        } else if self.inventory_selected_index >= self.inventory_list_scroll + page_size {
+            self.inventory_list_scroll = self.inventory_selected_index + 1 - page_size;
+        }
+        self.inventory_list_scroll = self
+            .inventory_list_scroll
+            .min(count.saturating_sub(page_size));
+    }
+
     fn page_selection(&mut self, direction: isize) {
         let page = self.viewport_page_size().max(1) as isize;
         self.move_selection(direction * page);
@@ -759,7 +973,7 @@ impl App {
 
     /// Keep the selected row inside a viewport of `page_size` content rows.
     pub(super) fn ensure_selection_visible(&mut self, page_size: usize) {
-        let count = self.visible_target_indices().len();
+        let count = self.visible_target_rows().len();
         if count == 0 || page_size == 0 {
             self.list_scroll = 0;
             self.selected_index = 0;
@@ -793,13 +1007,19 @@ impl App {
     }
 
     fn toggle_selected_target(&mut self) {
-        let Some((target_id, executable)) = self
-            .selected_target()
-            .map(|target| (target.id.clone(), target.action.is_executable()))
-        else {
-            return;
-        };
+        match self.selected_target_row() {
+            Some(TargetListRow::Target(index)) => {
+                let target = &self.targets[index];
+                self.toggle_target_selection(target.id.clone(), target.action.is_executable());
+            }
+            Some(TargetListRow::PycacheGroup(group)) => {
+                self.toggle_pycache_group_selection(&group);
+            }
+            None => {}
+        }
+    }
 
+    fn toggle_target_selection(&mut self, target_id: TargetId, executable: bool) {
         if self.cleaned_ids.contains(&target_id) {
             self.log_entry(
                 AppLogLevel::Warning,
@@ -822,16 +1042,39 @@ impl App {
             return;
         }
 
-        let selected = !self.selected_ids.contains(&target_id);
-        self.set_target_selected(target_id, selected);
+        self.set_target_selected(target_id.clone(), !self.selected_ids.contains(&target_id));
+    }
+
+    fn toggle_pycache_group_selection(&mut self, group: &PycacheGroup) {
+        let executable_ids: Vec<TargetId> = group
+            .target_indices
+            .iter()
+            .filter_map(|index| self.targets.get(*index))
+            .filter(|target| {
+                target.action.is_executable() && !self.cleaned_ids.contains(&target.id)
+            })
+            .map(|target| target.id.clone())
+            .collect();
+        if executable_ids.is_empty() {
+            return;
+        }
+
+        let select = !executable_ids
+            .iter()
+            .all(|target_id| self.selected_ids.contains(target_id));
+        for target_id in executable_ids {
+            self.set_target_selected(target_id, select);
+        }
     }
 
     fn toggle_visible_selection(&mut self) {
         let visible_ids: Vec<TargetId> = self
-            .visible_target_indices()
+            .visible_target_rows()
             .into_iter()
-            .filter(|index| self.targets[*index].action.is_executable())
-            .map(|index| self.targets[index].id.clone())
+            .flat_map(|row| row.target_indices())
+            .filter_map(|index| self.targets.get(index))
+            .filter(|target| target.action.is_executable())
+            .map(|target| target.id.clone())
             .collect();
 
         if visible_ids.is_empty() {
@@ -963,6 +1206,12 @@ impl App {
             .any(|job| job.kind == JobKind::Clean && job.status.is_active())
     }
 
+    fn has_active_inventory_job(&self) -> bool {
+        self.jobs
+            .iter()
+            .any(|job| job.kind == JobKind::Inventory && job.status.is_active())
+    }
+
     fn log_ignored_worker_event(&mut self, job_id: JobId, event: &str) {
         self.log_job(
             AppLogLevel::Warning,
@@ -979,6 +1228,7 @@ impl App {
             .map(|job| match job.kind {
                 JobKind::Scan => AppLogSource::Scan,
                 JobKind::Clean => AppLogSource::Clean,
+                JobKind::Inventory => AppLogSource::Inventory,
             })
             .unwrap_or(AppLogSource::App)
     }
@@ -1113,9 +1363,17 @@ impl App {
     }
 
     pub(super) fn selected_target(&self) -> Option<&CleanTarget> {
-        let indices = self.visible_target_indices();
-        let index = indices.get(self.selected_index.min(indices.len().saturating_sub(1)))?;
-        self.targets.get(*index)
+        let TargetListRow::Target(index) = self.selected_target_row()? else {
+            return None;
+        };
+        self.targets.get(index)
+    }
+
+    pub(super) fn selected_pycache_group(&self) -> Option<PycacheGroup> {
+        let TargetListRow::PycacheGroup(group) = self.selected_target_row()? else {
+            return None;
+        };
+        Some(group)
     }
 
     pub(super) fn selected_targets(&self) -> Vec<&CleanTarget> {
@@ -1129,13 +1387,58 @@ impl App {
             .collect()
     }
 
-    pub(super) fn visible_target_indices(&self) -> Vec<usize> {
-        self.targets
+    pub(super) fn visible_target_rows(&self) -> Vec<TargetListRow> {
+        let visible_indices: Vec<usize> = self
+            .targets
             .iter()
             .enumerate()
             .filter(|(_, target)| self.target_is_visible(target))
             .map(|(index, _)| index)
-            .collect()
+            .collect();
+        let mut pycache_groups: HashMap<PathBuf, Vec<usize>> = HashMap::new();
+        for index in &visible_indices {
+            if let Some(project_root) = pycache_project_root(&self.targets[*index]) {
+                pycache_groups
+                    .entry(project_root.clone())
+                    .or_default()
+                    .push(*index);
+            }
+        }
+
+        let mut grouped_projects = HashSet::new();
+        let mut rows = Vec::with_capacity(visible_indices.len());
+        for index in visible_indices {
+            let Some(project_root) = pycache_project_root(&self.targets[index]) else {
+                rows.push(TargetListRow::Target(index));
+                continue;
+            };
+            let Some(group) = pycache_groups.get(project_root) else {
+                rows.push(TargetListRow::Target(index));
+                continue;
+            };
+            if group.len() < 2 {
+                rows.push(TargetListRow::Target(index));
+                continue;
+            }
+            if !grouped_projects.insert(project_root.clone()) {
+                continue;
+            }
+            if self.collapsed_pycache_projects.contains(project_root) {
+                rows.push(TargetListRow::PycacheGroup(PycacheGroup {
+                    project_root: project_root.clone(),
+                    target_indices: group.clone(),
+                }));
+            } else {
+                rows.extend(group.iter().copied().map(TargetListRow::Target));
+            }
+        }
+        rows
+    }
+
+    pub(super) fn selected_target_row(&self) -> Option<TargetListRow> {
+        let rows = self.visible_target_rows();
+        rows.get(self.selected_index.min(rows.len().saturating_sub(1)))
+            .cloned()
     }
 
     fn target_is_visible(&self, target: &CleanTarget) -> bool {
@@ -1165,10 +1468,37 @@ impl App {
                 .contains(&needle)
     }
 
+    fn toggle_selected_pycache_project(&mut self) {
+        let project_root = match self.selected_target_row() {
+            Some(TargetListRow::PycacheGroup(group)) => Some(group.project_root),
+            Some(TargetListRow::Target(index)) => self
+                .targets
+                .get(index)
+                .and_then(pycache_project_root)
+                .cloned(),
+            None => None,
+        };
+        if let Some(project_root) = project_root {
+            self.toggle_pycache_project(&project_root);
+        }
+    }
+
+    fn toggle_pycache_project(&mut self, project_root: &PathBuf) {
+        if !pycache_project_roots(&self.targets).contains(project_root) {
+            return;
+        }
+        if !self.collapsed_pycache_projects.remove(project_root) {
+            self.collapsed_pycache_projects.insert(project_root.clone());
+        }
+        self.selected_index = 0;
+        self.list_scroll = 0;
+    }
+
     pub(super) fn selected_bytes(&self) -> u64 {
         sum_unique_target_bytes(self.selected_targets())
     }
 
+    #[cfg(test)]
     pub(super) fn scope_bytes(&self, scope_kind: ScopeKind) -> u64 {
         sum_unique_target_bytes(self.targets.iter().filter(|target| match scope_kind {
             ScopeKind::Global => matches!(target.scope, Scope::Global),
@@ -1244,10 +1574,61 @@ fn sum_unique_target_bytes<'a>(targets: impl IntoIterator<Item = &'a CleanTarget
     bytes
 }
 
+fn complete_health_for_plan(plan: &CleanupPlan) -> ScanHealth {
+    let mut health = ScanHealth::complete();
+    health.totals = ScanTotals::from_cleanup_plan(plan);
+    health
+}
+
+fn pycache_project_root(target: &CleanTarget) -> Option<&PathBuf> {
+    let Scope::Project { root } = &target.scope else {
+        return None;
+    };
+    target.evidence.iter().any(|evidence| {
+        matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == "python.__pycache__")
+    })
+    .then_some(root)
+}
+
+fn pycache_project_roots(targets: &[CleanTarget]) -> HashSet<PathBuf> {
+    let mut counts = HashMap::new();
+    for target in targets {
+        if let Some(project_root) = pycache_project_root(target) {
+            *counts.entry(project_root.clone()).or_insert(0usize) += 1;
+        }
+    }
+    counts
+        .into_iter()
+        .filter_map(|(project_root, count)| (count > 1).then_some(project_root))
+        .collect()
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ScopeKind {
     Global,
     Project,
+}
+
+/// A derived target-list row. It never changes the cleanup-plan target list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum TargetListRow {
+    Target(usize),
+    PycacheGroup(PycacheGroup),
+}
+
+impl TargetListRow {
+    fn target_indices(&self) -> Vec<usize> {
+        match self {
+            Self::Target(index) => vec![*index],
+            Self::PycacheGroup(group) => group.target_indices.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct PycacheGroup {
+    pub(super) project_root: PathBuf,
+    pub(super) target_indices: Vec<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1259,6 +1640,9 @@ pub(super) enum UiEvent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Effect {
     StartScan {
+        job_id: JobId,
+    },
+    StartInventory {
         job_id: JobId,
     },
     StartClean {
@@ -1278,6 +1662,9 @@ pub(super) enum WorkerEvent {
     ScanStarted {
         job_id: JobId,
     },
+    InventoryStarted {
+        job_id: JobId,
+    },
     JobProgress {
         job_id: JobId,
         message: String,
@@ -1291,6 +1678,11 @@ pub(super) enum WorkerEvent {
     ScanFinished {
         job_id: JobId,
         plan: CleanupPlan,
+        health: ScanHealth,
+    },
+    InventoryFinished {
+        job_id: JobId,
+        report: Box<InventoryReport>,
     },
     CleanProgress {
         job_id: JobId,
@@ -1345,15 +1737,17 @@ pub(super) enum ActiveTab {
     Projects,
     Rules,
     JobsLogs,
+    Inventory,
 }
 
 impl ActiveTab {
-    pub(super) const ALL: [Self; 5] = [
+    pub(super) const ALL: [Self; 6] = [
         Self::Dashboard,
         Self::Global,
         Self::Projects,
         Self::Rules,
         Self::JobsLogs,
+        Self::Inventory,
     ];
 
     pub(super) fn title(self) -> &'static str {
@@ -1363,6 +1757,7 @@ impl ActiveTab {
             Self::Projects => "Projects",
             Self::Rules => "Rules",
             Self::JobsLogs => "Jobs/Logs",
+            Self::Inventory => "Inventory",
         }
     }
 
@@ -1387,7 +1782,7 @@ impl ActiveTab {
             Self::Dashboard => true,
             Self::Global => matches!(target.scope, Scope::Global),
             Self::Projects => matches!(target.scope, Scope::Project { .. }),
-            Self::Rules | Self::JobsLogs => false,
+            Self::Rules | Self::JobsLogs | Self::Inventory => false,
         }
     }
 }
@@ -1506,6 +1901,7 @@ impl From<ExecutionTargetStatus> for CleanupItemStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum JobKind {
     Scan,
+    Inventory,
     Clean,
 }
 
@@ -1567,6 +1963,7 @@ pub(super) enum AppLogLevel {
 pub(super) enum AppLogSource {
     App,
     Scan,
+    Inventory,
     Clean,
     Audit,
 }
@@ -1620,7 +2017,13 @@ mod tests {
     use crossterm::event::KeyCode;
 
     use super::*;
-    use crate::model::{CLEANUP_PLAN_VERSION, Ecosystem, Evidence, TargetKind};
+    use crate::inventory::{
+        CapacityObservation, INVENTORY_REPORT_VERSION, InventoryClassification, InventoryReport,
+    };
+    use crate::model::{
+        CLEANUP_PLAN_VERSION, Ecosystem, Evidence, ScanCompleteness, ScanDiagnostic,
+        ScanDiagnosticOutcome, ScanDiagnosticStage, ScanHealth, TargetKind,
+    };
     use crate::tui::test_support::{
         key, plan_with_targets, render_text, representative_plan, target,
     };
@@ -1660,9 +2063,57 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id: 1,
             plan: representative_plan(),
+            health: ScanHealth::complete(),
         }));
         app.update(key(KeyCode::Char('q')));
         assert!(app.should_quit);
+    }
+
+    #[test]
+    fn inventory_report_is_display_only_and_cannot_change_cleanup_selection() {
+        let mut app = App::with_plan(representative_plan());
+        let targets_before = app.targets.clone();
+        let selected_before = app.selected_ids.clone();
+        let report = InventoryReport {
+            version: INVENTORY_REPORT_VERSION,
+            root: PathBuf::from("C:/inventory-root"),
+            observations: vec![
+                CapacityObservation {
+                    path: PathBuf::from("C:/inventory-root/archive"),
+                    classification: InventoryClassification::InventoryOnly,
+                    estimated_bytes: 4096,
+                    size_complete: true,
+                    warnings: Vec::new(),
+                },
+                CapacityObservation {
+                    path: PathBuf::from("C:/inventory-root/old-store"),
+                    classification: InventoryClassification::InventoryOnly,
+                    estimated_bytes: 1024,
+                    size_complete: false,
+                    warnings: Vec::new(),
+                },
+            ],
+            health: ScanHealth::complete(),
+            orphan_pnpm_store: None,
+        };
+        let job_id = app.start_job(JobKind::Inventory, "Inventory fixture");
+
+        app.update(UiEvent::Worker(WorkerEvent::InventoryFinished {
+            job_id,
+            report: Box::new(report.clone()),
+        }));
+        let effects = app.update(key(KeyCode::Char('6')));
+        assert!(effects.is_empty());
+        app.update(key(KeyCode::Down));
+        app.update(key(KeyCode::Char(' ')));
+        app.update(key(KeyCode::Char('c')));
+
+        assert_eq!(app.active_tab, ActiveTab::Inventory);
+        assert_eq!(app.inventory_report.as_ref(), Some(&report));
+        assert_eq!(app.inventory_selected_index, 1);
+        assert_eq!(app.targets, targets_before);
+        assert_eq!(app.selected_ids, selected_before);
+        assert!(matches!(app.overlay, Overlay::None));
     }
 
     #[test]
@@ -1732,6 +2183,79 @@ mod tests {
         app.selected_ids.insert(inspect_id);
         app.update(key(KeyCode::Char('c')));
         assert!(matches!(app.overlay, Overlay::None));
+    }
+
+    #[test]
+    fn pycache_groups_collapse_without_changing_target_selection_or_identity() {
+        let project_root = PathBuf::from("C:/workspace/python-project");
+        let paths = [
+            project_root.join("package_a/__pycache__"),
+            project_root.join("package_b/__pycache__"),
+            project_root.join("package_c/__pycache__"),
+        ];
+        let targets = paths
+            .iter()
+            .map(|path| {
+                target(
+                    "python.__pycache__",
+                    Scope::Project {
+                        root: project_root.clone(),
+                    },
+                    Ecosystem::Python,
+                    TargetKind::TestCache,
+                    Some(path.clone()),
+                    128,
+                    RiskLevel::Low,
+                    true,
+                    true,
+                    CleanAction::MoveToTrash { path: path.clone() },
+                )
+            })
+            .collect();
+        let mut app = App::with_plan(plan_with_targets(targets));
+        let target_ids: Vec<TargetId> =
+            app.targets.iter().map(|target| target.id.clone()).collect();
+
+        let rows = app.visible_target_rows();
+        assert_eq!(rows.len(), 1);
+        assert!(matches!(rows[0], TargetListRow::PycacheGroup(_)));
+        assert!(app.selected_target().is_none());
+        assert_eq!(
+            app.selected_pycache_group()
+                .expect("collapsed group is selected")
+                .target_indices
+                .len(),
+            3
+        );
+
+        app.update(key(KeyCode::Char(' ')));
+        assert!(
+            target_ids
+                .iter()
+                .all(|target_id| !app.selected_ids.contains(target_id))
+        );
+        app.update(key(KeyCode::Char(' ')));
+        assert!(
+            target_ids
+                .iter()
+                .all(|target_id| app.selected_ids.contains(target_id))
+        );
+
+        app.update(key(KeyCode::Enter));
+        assert_eq!(app.visible_target_rows().len(), 3);
+        assert!(app.selected_target().is_some());
+        app.update(key(KeyCode::Char('g')));
+        assert_eq!(app.visible_target_rows().len(), 1);
+
+        app.filter = "package_b".to_string();
+        let rows = app.visible_target_rows();
+        assert_eq!(rows.len(), 1);
+        assert!(matches!(rows[0], TargetListRow::Target(_)));
+        assert!(
+            app.selected_target()
+                .and_then(|target| target.path.as_ref())
+                .is_some_and(|path| path.ends_with("package_b/__pycache__"))
+        );
     }
 
     #[test]
@@ -1976,6 +2500,7 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id,
             plan: representative_plan(),
+            health: ScanHealth::complete(),
         }));
 
         assert_eq!(app.targets.len(), 3);
@@ -2007,6 +2532,44 @@ mod tests {
                 .iter()
                 .any(|entry| entry.message.contains("audit.jsonl"))
         );
+    }
+
+    #[test]
+    fn completed_scan_keeps_partial_health_and_capacity_totals_in_state() {
+        let mut app = App::new();
+        let effects = app.startup_effects();
+        let [Effect::StartScan { job_id }] = effects.as_slice() else {
+            panic!("startup requests a scan");
+        };
+        let job_id = *job_id;
+        let mut plan = representative_plan();
+        plan.targets[1].size_complete = false;
+        plan.targets[2].size_complete = false;
+        let mut health = ScanHealth::new(
+            ScanCompleteness::Partial,
+            vec![ScanDiagnostic {
+                stage: ScanDiagnosticStage::CargoMetadata,
+                path: PathBuf::from("C:/workspace/python-project/Cargo.toml"),
+                outcome: ScanDiagnosticOutcome::OutputTruncated,
+                detail: "captured cargo metadata output was truncated".to_string(),
+                process: None,
+            }],
+        );
+        health.totals = ScanTotals::from_cleanup_plan(&plan);
+
+        app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
+            job_id,
+            plan,
+            health: health.clone(),
+        }));
+
+        assert_eq!(app.scan_health, health);
+        assert_eq!(app.scan_health.totals.verified_bytes, 1024);
+        assert_eq!(app.scan_health.totals.partial_lower_bound_bytes, 2048);
+        assert_eq!(app.scan_health.totals.unknown_target_count, 1);
+        assert!(app.logs.iter().any(|entry| {
+            entry.level == AppLogLevel::Warning && entry.message.contains("partial health")
+        }));
     }
 
     #[test]
@@ -2121,6 +2684,7 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id: first_job,
             plan: plan_with_targets(vec![stale_target]),
+            health: ScanHealth::complete(),
         }));
 
         assert_eq!(app.targets.len(), 1);
@@ -2178,6 +2742,7 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id,
             plan: updated_plan,
+            health: ScanHealth::complete(),
         }));
         for ch in "confirm".chars() {
             app.update(key(KeyCode::Char(ch)));
@@ -2251,6 +2816,7 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id,
             plan: updated_plan,
+            health: ScanHealth::complete(),
         }));
 
         assert!(!app.selected_ids.contains(&original_target.id));
@@ -2263,6 +2829,7 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id: *job_id,
             plan: plan_with_targets(vec![new_target]),
+            health: ScanHealth::complete(),
         }));
         assert!(!app.selection_overrides.contains_key(&original_target.id));
     }
@@ -2497,6 +3064,7 @@ mod tests {
         app.update(UiEvent::Worker(WorkerEvent::ScanFinished {
             job_id: *job_id,
             plan: representative_plan(),
+            health: ScanHealth::complete(),
         }));
         assert!(!app.is_cleaned(&target_id));
     }

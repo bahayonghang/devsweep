@@ -2,7 +2,98 @@ use std::{fs, path::Path, sync::Arc, time::SystemTime};
 
 use rayon::prelude::*;
 
-use crate::process_runner::{CancelObserver, FlagCancelObserver};
+use crate::{
+    model::{SizingWarning, SizingWarningKind},
+    process_runner::{CancelObserver, FlagCancelObserver},
+};
+
+const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+
+/// Result of a no-follow reparse-point probe for one path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum ReparseProbeResult {
+    NotReparsePoint,
+    ReparsePoint { tag: u32 },
+    Unsupported { detail: String },
+    Error { detail: String },
+}
+
+/// Platform boundary for path-level reparse checks.
+///
+/// Windows callers must not infer reparse safety from `Metadata` alone: some
+/// Cloud Files providers do not report the reparse attribute through Rust's
+/// metadata view. Implementations inspect the path without following it.
+pub(crate) trait PathReparseProbe: Send + Sync {
+    fn probe(&self, path: &Path) -> ReparseProbeResult;
+}
+
+/// Path-level result used by traversal and live authorization callers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PathSafety {
+    Safe,
+    ReparsePoint { tag: Option<u32> },
+    Unverified { detail: String },
+}
+
+/// Native platform probe used outside tests.
+#[derive(Debug, Default)]
+pub(crate) struct SystemPathReparseProbe;
+
+impl PathReparseProbe for SystemPathReparseProbe {
+    fn probe(&self, path: &Path) -> ReparseProbeResult {
+        #[cfg(windows)]
+        {
+            probe_windows_reparse_point(path)
+        }
+
+        #[cfg(not(windows))]
+        {
+            let _ = path;
+            ReparseProbeResult::NotReparsePoint
+        }
+    }
+}
+
+/// Combines portable symlink detection with the path-level reparse probe.
+///
+/// A probe failure is deliberately not treated as a normal path. Callers must
+/// skip traversal or deny authority for [`PathSafety::Unverified`].
+pub(crate) fn inspect_path_no_follow(
+    path: &Path,
+    metadata: &fs::Metadata,
+    probe: &dyn PathReparseProbe,
+) -> PathSafety {
+    let metadata_reports_link = is_unsafe_link(metadata);
+    match probe.probe(path) {
+        ReparseProbeResult::NotReparsePoint if metadata_reports_link => {
+            PathSafety::ReparsePoint { tag: None }
+        }
+        ReparseProbeResult::NotReparsePoint => PathSafety::Safe,
+        ReparseProbeResult::ReparsePoint { tag } => PathSafety::ReparsePoint { tag: Some(tag) },
+        ReparseProbeResult::Unsupported { .. } | ReparseProbeResult::Error { .. }
+            if metadata_reports_link =>
+        {
+            PathSafety::ReparsePoint { tag: None }
+        }
+        ReparseProbeResult::Unsupported { detail } => PathSafety::Unverified {
+            detail: format!("reparse probe unsupported: {detail}"),
+        },
+        ReparseProbeResult::Error { detail } => PathSafety::Unverified {
+            detail: format!("reparse probe failed: {detail}"),
+        },
+    }
+}
+
+fn reparse_probe_result_from_tag_info(
+    file_attributes: u32,
+    reparse_tag: u32,
+) -> ReparseProbeResult {
+    if reparse_tag != 0 || file_attributes & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        ReparseProbeResult::ReparsePoint { tag: reparse_tag }
+    } else {
+        ReparseProbeResult::NotReparsePoint
+    }
+}
 
 /// Size walk result that distinguishes a verified empty tree from a failed walk.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,7 +102,7 @@ pub struct SizeEstimate {
     pub logical_bytes: Option<u64>,
     pub complete: bool,
     pub last_modified: Option<SystemTime>,
-    pub warnings: Vec<String>,
+    pub warnings: Vec<SizingWarning>,
 }
 
 impl SizeEstimate {
@@ -59,6 +150,16 @@ pub fn estimate_tree_with_budget_and_cancel(
     entry_budget: usize,
     cancel: Option<&Arc<FlagCancelObserver>>,
 ) -> SizeEstimate {
+    let probe = SystemPathReparseProbe;
+    estimate_tree_with_budget_and_cancel_and_probe(path, entry_budget, cancel, &probe)
+}
+
+pub(crate) fn estimate_tree_with_budget_and_cancel_and_probe(
+    path: &Path,
+    entry_budget: usize,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    probe: &dyn PathReparseProbe,
+) -> SizeEstimate {
     let mut remaining = entry_budget;
     estimate_tree_bounded(
         path,
@@ -66,6 +167,7 @@ pub fn estimate_tree_with_budget_and_cancel(
         0,
         64,
         cancel.map(|flag| flag.as_ref()),
+        probe,
     )
 }
 
@@ -75,13 +177,17 @@ fn estimate_tree_bounded(
     depth: usize,
     max_depth: usize,
     cancel: Option<&FlagCancelObserver>,
+    probe: &dyn PathReparseProbe,
 ) -> SizeEstimate {
     if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
         return SizeEstimate {
             logical_bytes: None,
             complete: false,
             last_modified: None,
-            warnings: vec![format!("size walk canceled at {}", path.display())],
+            warnings: vec![sizing_warning(
+                SizingWarningKind::Canceled,
+                format!("size walk canceled at {}", path.display()),
+            )],
         };
     }
     if *remaining == 0 {
@@ -89,7 +195,10 @@ fn estimate_tree_bounded(
             logical_bytes: None,
             complete: false,
             last_modified: None,
-            warnings: vec![format!("size entry budget exhausted at {}", path.display())],
+            warnings: vec![sizing_warning(
+                SizingWarningKind::EntryBudgetExhausted,
+                format!("size entry budget exhausted at {}", path.display()),
+            )],
         };
     }
     *remaining = remaining.saturating_sub(1);
@@ -101,12 +210,32 @@ fn estimate_tree_bounded(
                 logical_bytes: None,
                 complete: false,
                 last_modified: None,
-                warnings: vec![format!("failed to inspect {}: {error}", path.display())],
+                warnings: vec![sizing_warning(
+                    SizingWarningKind::MetadataUnavailable,
+                    format!("failed to inspect {}: {error}", path.display()),
+                )],
             };
         }
     };
-    if is_unsafe_link(&metadata) {
-        return SizeEstimate::trusted(0, metadata.modified().ok());
+    match inspect_path_no_follow(path, &metadata, probe) {
+        PathSafety::Safe => {}
+        PathSafety::ReparsePoint { .. } => {
+            return SizeEstimate::trusted(0, metadata.modified().ok());
+        }
+        PathSafety::Unverified { detail } => {
+            return SizeEstimate {
+                logical_bytes: None,
+                complete: false,
+                last_modified: metadata.modified().ok(),
+                warnings: vec![sizing_warning(
+                    SizingWarningKind::ReparseSafetyUnverified,
+                    format!(
+                        "could not verify reparse safety for {}: {detail}",
+                        path.display()
+                    ),
+                )],
+            };
+        }
     }
     if metadata.is_file() {
         return SizeEstimate::trusted(metadata.len(), metadata.modified().ok());
@@ -119,7 +248,10 @@ fn estimate_tree_bounded(
             logical_bytes: Some(0),
             complete: false,
             last_modified: metadata.modified().ok(),
-            warnings: vec![format!("max depth reached at {}", path.display())],
+            warnings: vec![sizing_warning(
+                SizingWarningKind::MaxDepthReached,
+                format!("max depth reached at {}", path.display()),
+            )],
         };
     }
 
@@ -131,7 +263,10 @@ fn estimate_tree_bounded(
                 logical_bytes: None,
                 complete: false,
                 last_modified: self_mtime,
-                warnings: vec![format!("failed to read {}: {error}", path.display())],
+                warnings: vec![sizing_warning(
+                    SizingWarningKind::DirectoryReadFailed,
+                    format!("failed to read {}: {error}", path.display()),
+                )],
             };
         }
     };
@@ -143,9 +278,9 @@ fn estimate_tree_bounded(
     for entry in entries {
         if *remaining == 0 {
             budget_hit = true;
-            warnings.push(format!(
-                "size entry budget exhausted under {}",
-                path.display()
+            warnings.push(sizing_warning(
+                SizingWarningKind::EntryBudgetExhausted,
+                format!("size entry budget exhausted under {}", path.display()),
             ));
             break;
         }
@@ -153,9 +288,12 @@ fn estimate_tree_bounded(
             Ok(entry) => children.push(entry.path()),
             Err(error) => {
                 entry_errors = true;
-                warnings.push(format!(
-                    "failed to read directory entry under {}: {error}",
-                    path.display()
+                warnings.push(sizing_warning(
+                    SizingWarningKind::DirectoryEntryReadFailed,
+                    format!(
+                        "failed to read directory entry under {}: {error}",
+                        path.display()
+                    ),
                 ));
             }
         }
@@ -168,7 +306,7 @@ fn estimate_tree_bounded(
             .par_iter()
             .map(|child| {
                 let mut local = (*remaining).min(DEFAULT_SIZE_ENTRY_BUDGET);
-                estimate_tree_bounded(child, &mut local, depth + 1, max_depth, cancel)
+                estimate_tree_bounded(child, &mut local, depth + 1, max_depth, cancel, probe)
             })
             .reduce(
                 || SizeEstimate::trusted(0, None),
@@ -179,8 +317,10 @@ fn estimate_tree_bounded(
         for child in &children {
             if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
                 acc.complete = false;
-                acc.warnings
-                    .push(format!("size walk canceled under {}", path.display()));
+                acc.warnings.push(sizing_warning(
+                    SizingWarningKind::Canceled,
+                    format!("size walk canceled under {}", path.display()),
+                ));
                 break;
             }
             acc = acc.merge(estimate_tree_bounded(
@@ -189,6 +329,7 @@ fn estimate_tree_bounded(
                 depth + 1,
                 max_depth,
                 cancel,
+                probe,
             ));
         }
         acc
@@ -220,8 +361,91 @@ fn max_mtime(left: Option<SystemTime>, right: Option<SystemTime>) -> Option<Syst
 fn has_windows_reparse_point(metadata: &fs::Metadata) -> bool {
     use std::os::windows::fs::MetadataExt;
 
-    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
     metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+}
+
+fn sizing_warning(kind: SizingWarningKind, detail: impl Into<String>) -> SizingWarning {
+    SizingWarning {
+        kind,
+        detail: detail.into(),
+    }
+}
+
+#[cfg(windows)]
+fn probe_windows_reparse_point(path: &Path) -> ReparseProbeResult {
+    use std::{
+        mem::{MaybeUninit, size_of},
+        os::windows::ffi::OsStrExt,
+    };
+
+    use windows_sys::Win32::{
+        Foundation::{CloseHandle, INVALID_HANDLE_VALUE},
+        Storage::FileSystem::{
+            CreateFileW, FILE_ATTRIBUTE_TAG_INFO, FILE_FLAG_BACKUP_SEMANTICS,
+            FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ,
+            FILE_SHARE_WRITE, FileAttributeTagInfo, GetFileInformationByHandleEx, OPEN_EXISTING,
+        },
+    };
+
+    let wide_path: Vec<u16> = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let handle = unsafe {
+        CreateFileW(
+            wide_path.as_ptr(),
+            FILE_READ_ATTRIBUTES,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            std::ptr::null_mut(),
+        )
+    };
+    if handle == INVALID_HANDLE_VALUE {
+        return classify_windows_probe_error("could not open path without following it");
+    }
+
+    let mut tag_info = MaybeUninit::<FILE_ATTRIBUTE_TAG_INFO>::zeroed();
+    let queried = unsafe {
+        GetFileInformationByHandleEx(
+            handle,
+            FileAttributeTagInfo,
+            tag_info.as_mut_ptr().cast(),
+            size_of::<FILE_ATTRIBUTE_TAG_INFO>() as u32,
+        )
+    };
+    let error = if queried == 0 {
+        Some(std::io::Error::last_os_error())
+    } else {
+        None
+    };
+    unsafe {
+        let _ = CloseHandle(handle);
+    }
+
+    if let Some(error) = error {
+        return classify_windows_probe_error_with("could not read path reparse tag", error);
+    }
+
+    let tag_info = unsafe { tag_info.assume_init() };
+    reparse_probe_result_from_tag_info(tag_info.FileAttributes, tag_info.ReparseTag)
+}
+
+#[cfg(windows)]
+fn classify_windows_probe_error(operation: &str) -> ReparseProbeResult {
+    classify_windows_probe_error_with(operation, std::io::Error::last_os_error())
+}
+
+#[cfg(windows)]
+fn classify_windows_probe_error_with(operation: &str, error: std::io::Error) -> ReparseProbeResult {
+    let detail = format!("{operation}: {error}");
+    match error.raw_os_error() {
+        // These indicate that the filesystem or OS cannot service the tag query.
+        Some(1 | 50 | 87) => ReparseProbeResult::Unsupported { detail },
+        _ => ReparseProbeResult::Error { detail },
+    }
 }
 
 #[cfg(not(windows))]
@@ -232,6 +456,7 @@ fn has_windows_reparse_point(_metadata: &fs::Metadata) -> bool {
 #[cfg(test)]
 mod tests {
     use std::{
+        collections::HashMap,
         fs,
         path::{Path, PathBuf},
         time::SystemTime,
@@ -240,6 +465,45 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
+
+    const CLOUD_FILES_REPARSE_TAG: u32 = 0x9000_701A;
+
+    struct FixtureReparseProbe {
+        results: HashMap<PathBuf, ReparseProbeResult>,
+    }
+
+    impl FixtureReparseProbe {
+        fn tagged(path: &Path) -> Self {
+            let mut results = HashMap::new();
+            results.insert(
+                path.to_path_buf(),
+                ReparseProbeResult::ReparsePoint {
+                    tag: CLOUD_FILES_REPARSE_TAG,
+                },
+            );
+            Self { results }
+        }
+
+        fn failing(path: &Path) -> Self {
+            let mut results = HashMap::new();
+            results.insert(
+                path.to_path_buf(),
+                ReparseProbeResult::Error {
+                    detail: "fixture probe failure".to_string(),
+                },
+            );
+            Self { results }
+        }
+    }
+
+    impl PathReparseProbe for FixtureReparseProbe {
+        fn probe(&self, path: &Path) -> ReparseProbeResult {
+            self.results
+                .get(path)
+                .cloned()
+                .unwrap_or(ReparseProbeResult::NotReparsePoint)
+        }
+    }
 
     #[test]
     fn estimate_tree_counts_file_bytes_and_latest_mtime() {
@@ -293,7 +557,10 @@ mod tests {
         let elapsed = started.elapsed();
         assert!(!estimate.complete);
         assert!(
-            estimate.warnings.iter().any(|w| w.contains("canceled")),
+            estimate
+                .warnings
+                .iter()
+                .any(|warning| warning.kind == SizingWarningKind::Canceled),
             "expected cancel warning: {:?}",
             estimate.warnings
         );
@@ -346,6 +613,62 @@ mod tests {
         assert_eq!(estimate.logical_bytes, Some(0));
         assert!(estimate.complete);
         assert_eq!(estimate.last_modified, max_mtime(root_mtime, link_mtime));
+    }
+
+    #[test]
+    fn path_probe_treats_a_nonzero_tag_as_reparse_without_the_attribute_bit() {
+        assert_eq!(
+            reparse_probe_result_from_tag_info(0x80030, CLOUD_FILES_REPARSE_TAG),
+            ReparseProbeResult::ReparsePoint {
+                tag: CLOUD_FILES_REPARSE_TAG,
+            }
+        );
+    }
+
+    #[test]
+    fn estimate_tree_excludes_injected_cloud_files_reparse_child() {
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        fixture.file("root/visible.txt", "hello");
+        fixture.file("root/cloud/hidden.txt", "not counted");
+        let cloud_child = root.join("cloud");
+        let probe = FixtureReparseProbe::tagged(&cloud_child);
+
+        let estimate = estimate_tree_with_budget_and_cancel_and_probe(
+            &root,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            None,
+            &probe,
+        );
+
+        assert_eq!(estimate.logical_bytes, Some(5));
+        assert!(estimate.complete);
+    }
+
+    #[test]
+    fn estimate_tree_fails_closed_when_reparse_probe_cannot_verify_root() {
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        fixture.file("root/visible.txt", "hello");
+        let probe = FixtureReparseProbe::failing(&root);
+
+        let estimate = estimate_tree_with_budget_and_cancel_and_probe(
+            &root,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            None,
+            &probe,
+        );
+
+        assert_eq!(estimate.logical_bytes, None);
+        assert!(!estimate.complete);
+        assert!(
+            estimate
+                .warnings
+                .iter()
+                .any(|warning| warning.kind == SizingWarningKind::ReparseSafetyUnverified),
+            "expected fail-closed warning: {:?}",
+            estimate.warnings
+        );
     }
 
     #[cfg(windows)]
@@ -401,7 +724,7 @@ mod tests {
             estimate
                 .warnings
                 .iter()
-                .any(|warning| warning.contains("denied")),
+                .any(|warning| warning.detail.contains("denied")),
             "warning names the failed path: {:?}",
             estimate.warnings
         );

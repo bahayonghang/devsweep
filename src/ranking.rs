@@ -326,6 +326,7 @@ mod tests {
             path: Some(PathBuf::from(format!("C:/workspace/app/{id}"))),
             estimated_bytes,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified,
             risk: RiskLevel::Low,
             reversible: true,

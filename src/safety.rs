@@ -11,11 +11,11 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    fs_size::is_unsafe_link,
-    model::{CleanAction, CleanTarget, Evidence, Scope},
+    fs_size::{PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_path_no_follow},
+    model::{CleanAction, CleanTarget, Evidence, ScanDiagnosticOutcome, ScanProcessProbe, Scope},
     path_identity::{
-        PathIdentity, capture_path_identity, normalize_path_for_compare, path_is_within,
-        paths_equal,
+        PathIdentity, capture_path_identity, normalize_absolute_path, normalize_path_for_compare,
+        path_is_within, paths_equal,
     },
     path_safety::path_contains_path,
     plan_validation::ValidatedTarget,
@@ -115,6 +115,7 @@ pub struct SafetyPolicy {
     current_exe: CurrentExeFn,
     home: Option<PathBuf>,
     process_runner: ProcessRunner,
+    reparse_probe: Arc<dyn PathReparseProbe>,
 }
 
 impl Default for SafetyPolicy {
@@ -124,6 +125,7 @@ impl Default for SafetyPolicy {
             current_exe: Arc::new(env::current_exe),
             home: resolve_home_dir(),
             process_runner: ProcessRunner::default(),
+            reparse_probe: Arc::new(SystemPathReparseProbe),
         })
     }
 }
@@ -138,6 +140,7 @@ impl SafetyPolicy {
             current_exe: Arc::new(env::current_exe),
             home: resolve_home_dir(),
             process_runner: ProcessRunner::default(),
+            reparse_probe: Arc::new(SystemPathReparseProbe),
         })
     }
 
@@ -147,6 +150,7 @@ impl SafetyPolicy {
             current_exe: Arc::new(env::current_exe),
             home: resolve_home_dir(),
             process_runner: ProcessRunner::default(),
+            reparse_probe: Arc::new(SystemPathReparseProbe),
         }
     }
 
@@ -160,6 +164,12 @@ impl SafetyPolicy {
 
     pub fn with_home(mut self, home: Option<PathBuf>) -> Self {
         self.home = home;
+        self
+    }
+
+    #[cfg(test)]
+    fn with_reparse_probe(mut self, reparse_probe: Arc<dyn PathReparseProbe>) -> Self {
+        self.reparse_probe = reparse_probe;
         self
     }
 
@@ -305,13 +315,7 @@ impl SafetyPolicy {
                 // redirected; those still require the project marker and rule id.
                 if rule_id == "rust.target" {
                     let manifest = root.join("Cargo.toml");
-                    if !manifest.is_file() {
-                        return Err(denial(
-                            ProtectionCategory::AuthorizedFootprint,
-                            path,
-                            "rust target is missing its Cargo.toml marker",
-                        ));
-                    }
+                    self.require_regular_marker(path, &manifest)?;
                     return Ok(());
                 }
 
@@ -409,11 +413,15 @@ impl SafetyPolicy {
                 format!("target path is not reachable: {error}; rescan required"),
             )
         })?;
-        if is_unsafe_link(&metadata) {
+        let path_safety = inspect_path_no_follow(path, &metadata, self.reparse_probe.as_ref());
+        if !matches!(path_safety, PathSafety::Safe) {
             return Err(denial(
                 ProtectionCategory::AuthorizedFootprint,
                 path,
-                "target path is a symlink/junction/reparse point; rescan required",
+                format!(
+                    "target path {}; rescan required",
+                    unsafe_path_detail(&path_safety)
+                ),
             ));
         }
 
@@ -426,26 +434,7 @@ impl SafetyPolicy {
 
         for evidence in &target.evidence {
             if let Evidence::MarkerFile { path: marker } = evidence {
-                let marker_meta = fs::symlink_metadata(marker).map_err(|error| {
-                    denial(
-                        ProtectionCategory::AuthorizedFootprint,
-                        path,
-                        format!(
-                            "marker {} is missing ({error}); rescan required",
-                            marker.display()
-                        ),
-                    )
-                })?;
-                if is_unsafe_link(&marker_meta) || !marker_meta.is_file() {
-                    return Err(denial(
-                        ProtectionCategory::AuthorizedFootprint,
-                        path,
-                        format!(
-                            "marker {} is not a regular file; rescan required",
-                            marker.display()
-                        ),
-                    ));
-                }
+                self.require_regular_marker(path, marker)?;
             }
         }
 
@@ -515,21 +504,54 @@ impl SafetyPolicy {
         Ok(identity)
     }
 
+    fn require_regular_marker(&self, target_path: &Path, marker: &Path) -> Result<(), Denial> {
+        let metadata = fs::symlink_metadata(marker).map_err(|error| {
+            denial(
+                ProtectionCategory::AuthorizedFootprint,
+                target_path,
+                format!(
+                    "marker {} is missing ({error}); rescan required",
+                    marker.display()
+                ),
+            )
+        })?;
+        if !metadata.is_file() {
+            return Err(denial(
+                ProtectionCategory::AuthorizedFootprint,
+                target_path,
+                format!(
+                    "marker {} is not a regular file; rescan required",
+                    marker.display()
+                ),
+            ));
+        }
+
+        let path_safety = inspect_path_no_follow(marker, &metadata, self.reparse_probe.as_ref());
+        if matches!(path_safety, PathSafety::Safe) {
+            Ok(())
+        } else {
+            Err(denial(
+                ProtectionCategory::AuthorizedFootprint,
+                target_path,
+                format!(
+                    "marker {} {}; rescan required",
+                    marker.display(),
+                    unsafe_path_detail(&path_safety)
+                ),
+            ))
+        }
+    }
+
     fn deny_new_link_ancestors(
         &self,
         path: &Path,
         authorized_root: Option<&Path>,
     ) -> Result<(), Denial> {
-        let mut current = normalize_path_for_compare(path);
-        let stop = authorized_root.map(normalize_path_for_compare);
+        let leaf = normalize_path_without_following(path);
+        let mut current = leaf.clone();
+        let stop = authorized_root.map(normalize_path_without_following);
 
         loop {
-            if let Some(stop) = &stop
-                && paths_equal(&current, stop)
-            {
-                break;
-            }
-
             let meta = fs::symlink_metadata(&current).map_err(|error| {
                 denial(
                     ProtectionCategory::AuthorizedFootprint,
@@ -542,15 +564,26 @@ impl SafetyPolicy {
             })?;
             // The leaf was already checked; ancestors must not be reparse/symlink
             // replacements introduced after scan.
-            if current != normalize_path_for_compare(path) && is_unsafe_link(&meta) {
-                return Err(denial(
-                    ProtectionCategory::AuthorizedFootprint,
-                    path,
-                    format!(
-                        "ancestor {} is a symlink/junction/reparse point; rescan required",
-                        current.display()
-                    ),
-                ));
+            if current != leaf {
+                let path_safety =
+                    inspect_path_no_follow(&current, &meta, self.reparse_probe.as_ref());
+                if !matches!(path_safety, PathSafety::Safe) {
+                    return Err(denial(
+                        ProtectionCategory::AuthorizedFootprint,
+                        path,
+                        format!(
+                            "ancestor {} {}; rescan required",
+                            current.display(),
+                            unsafe_path_detail(&path_safety)
+                        ),
+                    ));
+                }
+            }
+
+            if let Some(stop) = &stop
+                && current == *stop
+            {
+                break;
             }
 
             let Some(parent) = current.parent() else {
@@ -697,6 +730,27 @@ fn denial(
         path: path.as_ref().to_path_buf(),
         message: message.into(),
     }
+}
+
+fn unsafe_path_detail(path_safety: &PathSafety) -> String {
+    match path_safety {
+        PathSafety::Safe => "is safe".to_string(),
+        PathSafety::ReparsePoint { tag: Some(tag) } => {
+            format!("is a reparse point with tag 0x{tag:08x}")
+        }
+        PathSafety::ReparsePoint { tag: None } => {
+            "is a symlink, junction, or reparse point".to_string()
+        }
+        PathSafety::Unverified { detail } => {
+            format!("could not have reparse safety verified ({detail})")
+        }
+    }
+}
+
+fn normalize_path_without_following(path: &Path) -> PathBuf {
+    normalize_absolute_path(path)
+        .map(|normalized| PathBuf::from(normalized.replace('/', std::path::MAIN_SEPARATOR_STR)))
+        .unwrap_or_else(|_| path.to_path_buf())
 }
 
 fn overlaps_subtree(target: &Path, protected: &Path) -> bool {
@@ -1011,12 +1065,58 @@ fn app_data_dir() -> Result<PathBuf> {
 pub struct CargoMetadataScope {
     pub workspace_root: PathBuf,
     pub target_directory: PathBuf,
+    /// Manifest paths explicitly named by Cargo as workspace members. Scanner
+    /// cache entries may only reuse this scope for one of these manifests.
+    pub member_manifests: Vec<PathBuf>,
+}
+
+/// Typed, display-safe metadata probe failure for scan diagnostics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CargoMetadataFailure {
+    pub outcome: ScanDiagnosticOutcome,
+    pub detail: String,
+    pub process: Option<ScanProcessProbe>,
+}
+
+/// Result at the Cargo metadata probe boundary. This keeps scan diagnostics
+/// structured while [`query_cargo_metadata`] remains the uncached execution
+/// recheck wrapper.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum CargoMetadataProbeResult {
+    Resolved(CargoMetadataScope),
+    Failed(CargoMetadataFailure),
+}
+
+/// Injectable Cargo metadata probe used by the scanner's scan-lifetime cache.
+pub(crate) trait CargoMetadataProbe: Send + Sync {
+    fn probe(&self, manifest_dir: &Path) -> CargoMetadataProbeResult;
+}
+
+#[derive(Debug, Clone, Default)]
+pub(crate) struct SystemCargoMetadataProbe {
+    runner: ProcessRunner,
+}
+
+impl CargoMetadataProbe for SystemCargoMetadataProbe {
+    fn probe(&self, manifest_dir: &Path) -> CargoMetadataProbeResult {
+        probe_cargo_metadata(&self.runner, manifest_dir)
+    }
 }
 
 pub fn query_cargo_metadata(
     runner: &ProcessRunner,
     manifest_dir: &Path,
 ) -> Result<CargoMetadataScope> {
+    match probe_cargo_metadata(runner, manifest_dir) {
+        CargoMetadataProbeResult::Resolved(scope) => Ok(scope),
+        CargoMetadataProbeResult::Failed(failure) => Err(anyhow::anyhow!(failure.detail)),
+    }
+}
+
+pub(crate) fn probe_cargo_metadata(
+    runner: &ProcessRunner,
+    manifest_dir: &Path,
+) -> CargoMetadataProbeResult {
     let manifest = manifest_dir.join("Cargo.toml");
     let cancel = NoopCancelObserver;
     let request = ProcessRequest {
@@ -1037,13 +1137,43 @@ pub fn query_cargo_metadata(
         job_deadline: None,
         cancel: &cancel,
     };
-    let result = runner.run(&request);
+    classify_cargo_metadata_result(runner.run(&request))
+}
+
+fn classify_cargo_metadata_result(
+    result: crate::process_runner::ProcessResult,
+) -> CargoMetadataProbeResult {
+    let process = ScanProcessProbe::from(&result);
+    if result.output.stdout_truncated || result.output.stderr_truncated {
+        return CargoMetadataProbeResult::Failed(CargoMetadataFailure {
+            outcome: ScanDiagnosticOutcome::OutputTruncated,
+            detail: "cargo metadata output was truncated before JSON parsing".to_string(),
+            process: Some(process),
+        });
+    }
+
     match result.status {
         ProcessStatus::Success => {
             let stdout = String::from_utf8_lossy(&result.output.stdout);
-            parse_cargo_metadata_json(&stdout)
+            match parse_cargo_metadata_json(&stdout) {
+                Ok(scope) => CargoMetadataProbeResult::Resolved(scope),
+                Err(error) => CargoMetadataProbeResult::Failed(CargoMetadataFailure {
+                    outcome: ScanDiagnosticOutcome::Failed,
+                    detail: format!("cargo metadata returned invalid JSON: {error}"),
+                    process: Some(process),
+                }),
+            }
         }
-        status => bail!("cargo metadata failed with status {status:?}"),
+        ProcessStatus::Canceled => CargoMetadataProbeResult::Failed(CargoMetadataFailure {
+            outcome: ScanDiagnosticOutcome::Canceled,
+            detail: "cargo metadata probe was canceled".to_string(),
+            process: Some(process),
+        }),
+        status => CargoMetadataProbeResult::Failed(CargoMetadataFailure {
+            outcome: ScanDiagnosticOutcome::Failed,
+            detail: format!("cargo metadata failed with status {status:?}"),
+            process: Some(process),
+        }),
     }
 }
 
@@ -1058,24 +1188,90 @@ fn parse_cargo_metadata_json(stdout: &str) -> Result<CargoMetadataScope> {
         .get("target_directory")
         .and_then(|value| value.as_str())
         .ok_or_else(|| anyhow::anyhow!("cargo metadata missing target_directory"))?;
+    let mut manifests_by_package_id = std::collections::HashMap::new();
+    if let Some(packages) = value.get("packages").and_then(|value| value.as_array()) {
+        for package in packages {
+            let Some(package_id) = package.get("id").and_then(|value| value.as_str()) else {
+                continue;
+            };
+            let Some(manifest_path) = package
+                .get("manifest_path")
+                .and_then(|value| value.as_str())
+            else {
+                continue;
+            };
+            manifests_by_package_id.insert(package_id, PathBuf::from(manifest_path));
+        }
+    }
+
+    let member_manifests = value
+        .get("workspace_members")
+        .and_then(|value| value.as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(|member| member.as_str())
+        .filter_map(|member| manifests_by_package_id.get(member))
+        .cloned()
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+
     Ok(CargoMetadataScope {
         workspace_root: PathBuf::from(workspace_root),
         target_directory: PathBuf::from(target_directory),
+        member_manifests,
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{
+        collections::HashMap,
+        fs,
+        path::{Path, PathBuf},
+        sync::Arc,
+    };
 
     use tempfile::TempDir;
 
     use super::*;
+    use crate::fs_size::ReparseProbeResult;
     use crate::model::{
         CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
         TargetKind,
     };
     use crate::plan_validation::ValidatedPlan;
+    use crate::process_runner::{ProcessOutput, ProcessResult};
+
+    const CLOUD_FILES_REPARSE_TAG: u32 = 0x9000_701A;
+
+    struct FixtureReparseProbe {
+        results: HashMap<PathBuf, ReparseProbeResult>,
+    }
+
+    impl FixtureReparseProbe {
+        fn tagged(path: &Path) -> Self {
+            let mut results = HashMap::new();
+            let tagged = ReparseProbeResult::ReparsePoint {
+                tag: CLOUD_FILES_REPARSE_TAG,
+            };
+            results.insert(path.to_path_buf(), tagged.clone());
+            results.insert(normalize_path_without_following(path), tagged.clone());
+            if let Ok(canonical) = path.canonicalize() {
+                results.insert(canonical, tagged);
+            }
+            Self { results }
+        }
+    }
+
+    impl PathReparseProbe for FixtureReparseProbe {
+        fn probe(&self, path: &Path) -> ReparseProbeResult {
+            self.results
+                .get(path)
+                .cloned()
+                .unwrap_or(ReparseProbeResult::NotReparsePoint)
+        }
+    }
 
     fn policy_for(home: &Path) -> SafetyPolicy {
         SafetyPolicy::from_user_list(UserProtectionList::empty_in_memory_for_tests_only())
@@ -1106,6 +1302,7 @@ mod tests {
             path: Some(path.clone()),
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::Low,
             reversible: true,
@@ -1149,6 +1346,7 @@ mod tests {
             path: Some(gradle.clone()),
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::Medium,
             reversible: true,
@@ -1193,6 +1391,7 @@ mod tests {
             path: Some(home.clone()),
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::High,
             reversible: true,
@@ -1217,6 +1416,7 @@ mod tests {
             path: Some(home.join(".ssh")),
             estimated_bytes: 1,
             size_complete: true,
+            sizing_warnings: Vec::new(),
             last_modified: None,
             risk: RiskLevel::High,
             reversible: true,
@@ -1282,6 +1482,58 @@ mod tests {
             .authorize(&validated_target, &context)
             .expect_err("missing marker denied");
         assert!(denial.message.contains("marker"));
+    }
+
+    #[test]
+    fn cloud_files_reparse_tags_deny_target_marker_and_ancestor() {
+        let fixture = TempDir::new().expect("temp");
+        let root = fixture.path().join("app");
+        let target = root.join("node_modules");
+        let marker = root.join("package.json");
+        fs::create_dir_all(&target).expect("target");
+        fs::write(&marker, "{}").expect("marker");
+
+        let policy = policy_for(fixture.path())
+            .with_reparse_probe(Arc::new(FixtureReparseProbe::tagged(&target)));
+        let denial = policy
+            .authorize(
+                &validated(project_target(&root, "node_modules", "node.node_modules")),
+                &AuthorizationContext::default(),
+            )
+            .expect_err("tagged target denied");
+        assert_eq!(denial.category, ProtectionCategory::AuthorizedFootprint);
+        assert!(denial.message.contains("0x9000701a"));
+
+        let policy = policy_for(fixture.path())
+            .with_reparse_probe(Arc::new(FixtureReparseProbe::tagged(&marker)));
+        let denial = policy
+            .authorize(
+                &validated(project_target(&root, "node_modules", "node.node_modules")),
+                &AuthorizationContext::default(),
+            )
+            .expect_err("tagged marker denied");
+        assert_eq!(denial.category, ProtectionCategory::AuthorizedFootprint);
+        assert!(denial.message.contains("marker"));
+        assert!(denial.message.contains("0x9000701a"));
+
+        let ancestor = root.join("generated");
+        let nested_target = ancestor.join("node_modules");
+        fs::create_dir_all(&nested_target).expect("nested target");
+        let policy = policy_for(fixture.path())
+            .with_reparse_probe(Arc::new(FixtureReparseProbe::tagged(&ancestor)));
+        let denial = policy
+            .authorize(
+                &validated(project_target(
+                    &root,
+                    "generated/node_modules",
+                    "node.node_modules",
+                )),
+                &AuthorizationContext::default(),
+            )
+            .expect_err("tagged ancestor denied");
+        assert_eq!(denial.category, ProtectionCategory::AuthorizedFootprint);
+        assert!(denial.message.contains("ancestor"));
+        assert!(denial.message.contains("0x9000701a"));
     }
 
     #[test]
@@ -1404,5 +1656,57 @@ mod tests {
         let scope = parse_cargo_metadata_json(json).expect("parse");
         assert_eq!(scope.workspace_root, PathBuf::from("C:/code/app"));
         assert_eq!(scope.target_directory, PathBuf::from("C:/code/app/target"));
+        assert!(scope.member_manifests.is_empty());
+    }
+
+    #[test]
+    fn cargo_metadata_parser_collects_only_explicit_workspace_member_manifests() {
+        let json = r#"{
+            "workspace_root": "C:/code/workspace",
+            "target_directory": "C:/code/workspace/target",
+            "workspace_members": ["path+file:///C:/code/workspace/member-a#0.1.0"],
+            "packages": [
+                {
+                    "id": "path+file:///C:/code/workspace/member-a#0.1.0",
+                    "manifest_path": "C:/code/workspace/member-a/Cargo.toml"
+                },
+                {
+                    "id": "path+file:///C:/code/workspace/member-b#0.1.0",
+                    "manifest_path": "C:/code/workspace/member-b/Cargo.toml"
+                }
+            ]
+        }"#;
+
+        let scope = parse_cargo_metadata_json(json).expect("parse");
+
+        assert_eq!(
+            scope.member_manifests,
+            vec![PathBuf::from("C:/code/workspace/member-a/Cargo.toml")]
+        );
+    }
+
+    #[test]
+    fn truncated_cargo_metadata_is_classified_before_json_parsing() {
+        let result = ProcessResult {
+            status: ProcessStatus::Success,
+            output: ProcessOutput {
+                stdout: b"{".to_vec(),
+                stdout_truncated: true,
+                total_stdout_bytes: 2_048,
+                ..ProcessOutput::default()
+            },
+        };
+
+        let CargoMetadataProbeResult::Failed(failure) = classify_cargo_metadata_result(result)
+        else {
+            panic!("truncated output must not be parsed as successful metadata");
+        };
+
+        assert_eq!(failure.outcome, ScanDiagnosticOutcome::OutputTruncated);
+        assert!(failure.detail.contains("truncated"));
+        let process = failure.process.expect("process metadata is retained");
+        assert!(process.stdout.truncated);
+        assert_eq!(process.stdout.retained_bytes, 1);
+        assert_eq!(process.stdout.total_bytes, 2_048);
     }
 }
