@@ -1023,3 +1023,36 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Status
 
 [OK] **Completed**
+
+
+## Session 33: 归档扫描规则加固规划
+
+**Date**: 2026-08-01
+**Task**: 归档扫描规则加固规划
+**Branch**: `dev`
+
+### Summary
+
+完成 D 盘扫描审计后的规则加固规划，并按用户指令在实施前归档。
+
+### Main Changes
+
+- 记录 Cloud Files 重解析点、扫描健康、Cargo 元数据、容量展示和只读盘点的约束。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `db9ec4b6ed0709b282f0fae603c8b6edfb98ffee` | (see git log) |
+
+### Testing
+
+- [OK] python .trellis/scripts/task.py validate .trellis/tasks/08-01-scan-rule-hardening
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如需实施，基于归档规划重新创建或恢复任务并取得明确启动授权。
