@@ -1125,3 +1125,24 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Next Steps
 
 - scan-rule-hardening 保持 planning，等待明确启动与实施授权。
+
+
+## Session 36: 加固扫描安全与容量报告
+
+**Date**: 2026-08-01
+**Task**: 加固扫描安全与容量报告
+**Branch**: `dev`
+
+### Summary
+
+完成重解析点 fail-closed 扫描、结构化健康报告与拒绝审计、Cargo 元数据诊断/缓存、真实容量重扫、只读 inventory，以及对应 CLI/TUI 呈现；just ci 和 JSON 冒烟通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8d62ebf` | (see git log) |
+
+### Status
+
+[OK] **Completed**
