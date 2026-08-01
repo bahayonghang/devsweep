@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "targets": [
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\target",
+      "estimated_bytes": 76149679791,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785570034,
+        "nanos_since_epoch": 658823400
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    }
+  ]
+}

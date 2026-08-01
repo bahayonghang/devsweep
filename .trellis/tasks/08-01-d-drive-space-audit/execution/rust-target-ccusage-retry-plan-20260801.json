@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "targets": [
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\target",
+      "estimated_bytes": 1073424644,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1784130248,
+        "nanos_since_epoch": 55989300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    }
+  ]
+}

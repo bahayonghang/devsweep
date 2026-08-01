@@ -1,0 +1,1346 @@
+{
+  "version": 2,
+  "targets": [
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\target",
+      "estimated_bytes": 136347517678,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785461608,
+        "nanos_since_epoch": 90360800
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\target",
+      "estimated_bytes": 76149679791,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785570034,
+        "nanos_since_epoch": 658823400
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\ccr\\ccr-ui\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\ccr\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\ccr"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\target",
+      "estimated_bytes": 69427587733,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785569348,
+        "nanos_since_epoch": 19849300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\ccr\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\ccr\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\ccr\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\PromptHub\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\PromptHub\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\PromptHub\\src-tauri\\target",
+      "estimated_bytes": 61428980489,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1784102544,
+        "nanos_since_epoch": 293851600
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\PromptHub\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\PromptHub\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\PromptHub\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Tauri\\Reader\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Tauri\\Reader\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Tauri\\Reader\\src-tauri\\target",
+      "estimated_bytes": 48368745965,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1785246089,
+        "nanos_since_epoch": 163572400
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Tauri\\Reader\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Tauri\\Reader\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Tauri\\Reader\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "ranking.freshness_guard.7d"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\zotero-cli\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\zotero-cli"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\zotero-cli\\target",
+      "estimated_bytes": 45783020505,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785222332,
+        "nanos_since_epoch": 977471100
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\zotero-cli\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\zotero-cli\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\zotero-cli\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Agents\\skills-manage-windows\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Agents\\skills-manage-windows\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Agents\\skills-manage-windows\\src-tauri\\target",
+      "estimated_bytes": 35091834245,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785569933,
+        "nanos_since_epoch": 575284600
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Agents\\skills-manage-windows\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Agents\\skills-manage-windows\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Agents\\skills-manage-windows\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Tauri\\GithubStarsManager\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Tauri\\GithubStarsManager\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Tauri\\GithubStarsManager\\src-tauri\\target",
+      "estimated_bytes": 26814328338,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1780565875,
+        "nanos_since_epoch": 626951500
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Tauri\\GithubStarsManager\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Tauri\\GithubStarsManager\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Tauri\\GithubStarsManager\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\UniGetUI-Tauri\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\UniGetUI-Tauri\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\UniGetUI-Tauri\\src-tauri\\target",
+      "estimated_bytes": 25453167220,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1785509606,
+        "nanos_since_epoch": 5506300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\UniGetUI-Tauri\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\UniGetUI-Tauri\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\UniGetUI-Tauri\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "ranking.freshness_guard.7d"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\quanergy_client_rs\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\quanergy_client_rs"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\quanergy_client_rs\\target",
+      "estimated_bytes": 24113623094,
+      "size_complete": false,
+      "last_modified": {
+        "secs_since_epoch": 1785552657,
+        "nanos_since_epoch": 469433900
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\quanergy_client_rs\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\quanergy_client_rs\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\quanergy_client_rs\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\rt_db\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\rt_db"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\rt_db\\target",
+      "estimated_bytes": 24025902368,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1751425754,
+        "nanos_since_epoch": 472402500
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\rt_db\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\rt_db\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\rt_db\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Web\\Exp\\academic-color-manager\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Web\\Exp\\academic-color-manager\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Web\\Exp\\academic-color-manager\\src-tauri\\target",
+      "estimated_bytes": 22271114504,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1783326203,
+        "nanos_since_epoch": 832393300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Web\\Exp\\academic-color-manager\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Web\\Exp\\academic-color-manager\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Web\\Exp\\academic-color-manager\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\muxy-rs\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\muxy-rs"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\muxy-rs\\target",
+      "estimated_bytes": 11257016853,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1779528679,
+        "nanos_since_epoch": 548192300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\muxy-rs\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\muxy-rs\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\muxy-rs\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\lapce\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\lapce"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\lapce\\target",
+      "estimated_bytes": 10297724332,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1745724284,
+        "nanos_since_epoch": 593292600
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\lapce\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Reference\\lapce\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Reference\\lapce\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Web\\Exp\\browser_extensions\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Web\\Exp\\browser_extensions"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Web\\Exp\\browser_extensions\\target",
+      "estimated_bytes": 10222648448,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1785077829,
+        "nanos_since_epoch": 220895200
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Web\\Exp\\browser_extensions\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Web\\Exp\\browser_extensions\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Web\\Exp\\browser_extensions\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "ranking.freshness_guard.7d"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\desktop_app\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\desktop_app\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\desktop_app\\src-tauri\\target",
+      "estimated_bytes": 9891457292,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1777718808,
+        "nanos_since_epoch": 588810500
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\desktop_app\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\desktop_app\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\desktop_app\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target",
+      "estimated_bytes": 9528060945,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1785570214,
+        "nanos_since_epoch": 378608700
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "ranking.freshness_guard.7d"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Agents\\obsidian-notes-karpathy\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Agents\\obsidian-notes-karpathy"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Agents\\obsidian-notes-karpathy\\target",
+      "estimated_bytes": 6587157364,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1783565091,
+        "nanos_since_epoch": 495459900
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Agents\\obsidian-notes-karpathy\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Agents\\obsidian-notes-karpathy\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Agents\\obsidian-notes-karpathy\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\zed\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\zed"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\zed\\target",
+      "estimated_bytes": 6167431617,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1745758142,
+        "nanos_since_epoch": 329707500
+      },
+      "risk": "medium",
+      "reversible": true,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\zed\\Cargo.toml"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target.metadata_fallback_trash"
+        }
+      ],
+      "intent": {
+        "type": "trash_project_artifact",
+        "rule_id": "rust.target"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\herdr\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\herdr"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\herdr\\target",
+      "estimated_bytes": 5785504042,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1779455927,
+        "nanos_since_epoch": 700837800
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\herdr\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\herdr\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\herdr\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\llmtop\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\llmtop"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmtop\\target",
+      "estimated_bytes": 5195861727,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1780644773,
+        "nanos_since_epoch": 439180000
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmtop\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\llmtop\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\llmtop\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Agents\\skills-janitor\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Agents\\skills-janitor"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Agents\\skills-janitor\\target",
+      "estimated_bytes": 3966000015,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1778867004,
+        "nanos_since_epoch": 752288200
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Agents\\skills-janitor\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Agents\\skills-janitor\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Agents\\skills-janitor\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\target",
+      "estimated_bytes": 3524741279,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1777710964,
+        "nanos_since_epoch": 837436500
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Agents\\autoresearch_win\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\tokscale\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\tokscale"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\tokscale\\target",
+      "estimated_bytes": 2804784470,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1784130239,
+        "nanos_since_epoch": 95570300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\tokscale\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\tokscale\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\tokscale\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claudia\\src-tauri\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claudia\\src-tauri"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claudia\\src-tauri\\target",
+      "estimated_bytes": 1916677620,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1751334741,
+        "nanos_since_epoch": 354951900
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claudia\\src-tauri\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claudia\\src-tauri\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claudia\\src-tauri\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\mssql_query\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\mssql_query"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\mssql_query\\target",
+      "estimated_bytes": 1383657737,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1745801913,
+        "nanos_since_epoch": 232755900
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\mssql_query\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\mssql_query\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\mssql_query\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claude-code-rust\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claude-code-rust"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claude-code-rust\\target",
+      "estimated_bytes": 1222808280,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1775199089,
+        "nanos_since_epoch": 50443000
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claude-code-rust\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claude-code-rust\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Reference\\claude-code-rust\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\sql_history_query\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\sql_history_query"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\sql_history_query\\target",
+      "estimated_bytes": 1218125021,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1761890942,
+        "nanos_since_epoch": 942004700
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\sql_history_query\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\sql_history_query\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Rust\\Exp\\sql_history_query\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Web\\Reference\\vscode-dark-islands\\installer-tui\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Web\\Reference\\vscode-dark-islands\\installer-tui"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Web\\Reference\\vscode-dark-islands\\installer-tui\\target",
+      "estimated_bytes": 1158981943,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1773290672,
+        "nanos_since_epoch": 613417300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Web\\Reference\\vscode-dark-islands\\installer-tui\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Web\\Reference\\vscode-dark-islands\\installer-tui\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Web\\Reference\\vscode-dark-islands\\installer-tui\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\codex-threads\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\codex-threads"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\codex-threads\\target",
+      "estimated_bytes": 1096432157,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1776067432,
+        "nanos_since_epoch": 731747100
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\codex-threads\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\codex-threads\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\codex-threads\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\IndustryAI\\src\\gateway\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\IndustryAI\\src\\gateway"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\IndustryAI\\src\\gateway\\target",
+      "estimated_bytes": 1081891046,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1783259153,
+        "nanos_since_epoch": 754066500
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\IndustryAI\\src\\gateway\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\IndustryAI\\src\\gateway\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\IndustryAI\\src\\gateway\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\target",
+      "estimated_bytes": 1073424644,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1784130248,
+        "nanos_since_epoch": 55989300
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\CLI\\llmusage\\ref\\repo\\ccusage\\rust\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Code\\Github\\db-pool-rs\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Github\\db-pool-rs"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Code\\Github\\db-pool-rs\\target",
+      "estimated_bytes": 486624817,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1770867193,
+        "nanos_since_epoch": 137196600
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Github\\db-pool-rs\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Code\\Github\\db-pool-rs\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Code\\Github\\db-pool-rs\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    },
+    {
+      "id": "rust.target:\\\\?\\D:\\Documents\\Projects\\00Core\\sanyou_launcher\\target",
+      "rule_id": "rust.target",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Projects\\00Core\\sanyou_launcher"
+      },
+      "ecosystem": "rust",
+      "kind": "build_artifacts",
+      "path": "\\\\?\\D:\\Documents\\Projects\\00Core\\sanyou_launcher\\target",
+      "estimated_bytes": 12336079,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1744475116,
+        "nanos_since_epoch": 157095900
+      },
+      "risk": "low",
+      "reversible": false,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Projects\\00Core\\sanyou_launcher\\Cargo.toml"
+        },
+        {
+          "type": "official_command",
+          "command": "cargo clean --manifest-path \\\\?\\D:\\Documents\\Projects\\00Core\\sanyou_launcher\\Cargo.toml --target-dir \\\\?\\D:\\Documents\\Projects\\00Core\\sanyou_launcher\\target"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "rust.target"
+        }
+      ],
+      "intent": {
+        "type": "run_built_in_action",
+        "provider_id": "cargo",
+        "action_id": "clean_manifest"
+      }
+    }
+  ]
+}
