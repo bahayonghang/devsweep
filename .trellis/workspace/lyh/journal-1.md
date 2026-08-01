@@ -1092,3 +1092,36 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Next Steps
 
 - scan-rule-hardening 保持 planning，等待明确启动与实施授权。
+
+
+## Session 35: 修正扫描规则规划证据路径
+
+**Date**: 2026-08-01
+**Task**: 修正扫描规则规划证据路径
+**Branch**: `dev`
+
+### Summary
+
+将活动规划任务对 D 盘审计报告的引用更新为归档路径，恢复其结构校验。
+
+### Main Changes
+
+- 仅更新 implement.jsonl 与 check.jsonl 中的 D 盘审计证据路径。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e78ece9` | (see git log) |
+
+### Testing
+
+- [OK] python .trellis/scripts/task.py validate 08-01-scan-rule-hardening
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- scan-rule-hardening 保持 planning，等待明确启动与实施授权。
