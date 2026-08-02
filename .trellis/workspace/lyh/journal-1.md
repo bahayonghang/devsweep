@@ -1146,3 +1146,25 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Status
 
 [OK] **Completed**
+
+
+## Session 37: 完成 VitePress 双语文档站
+
+**Date**: 2026-08-02
+**Task**: 完成 VitePress 双语文档站
+**Branch**: `dev`
+
+### Summary
+
+新增中英文 VitePress 文档站和 just docs 命令；完成 npm ci、文档构建、just ci 与浏览器路由验收。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9c84388` | (see git log) |
+| `0745f97` | (see git log) |
+
+### Status
+
+[OK] **Completed**

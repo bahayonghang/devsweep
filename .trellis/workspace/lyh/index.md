@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 36
-- **Last Active**: 2026-08-01
+- **Total Sessions**: 37
+- **Last Active**: 2026-08-02
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1148 | Active |
+| `journal-1.md` | ~1170 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 37 | 2026-08-02 | 完成 VitePress 双语文档站 | `9c84388`, `0745f97` | `dev` |
 | 36 | 2026-08-01 | 加固扫描安全与容量报告 | `8d62ebf` | `dev` |
 | 35 | 2026-08-01 | 修正扫描规则规划证据路径 | `e78ece9` | `dev` |
 | 34 | 2026-08-01 | 纠正任务归档并归档 D 盘审计 | `2d546af`, `b13da4a` | `dev` |
