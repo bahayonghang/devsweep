@@ -8,7 +8,7 @@
 
 `devsweep` currently has no database, ORM, migrations, or durable application
 state. Persisted file contracts are the serializable cleanup plan emitted as
-JSON from `src/model.rs` and execution audit records emitted as JSONL from
+JSON from `src/model/plan.rs` and execution audit records emitted as JSONL from
 `src/executor.rs`.
 
 Treat this file as a guardrail: do not introduce a database abstraction for
@@ -18,7 +18,7 @@ scanner, CLI, or TUI work unless a task explicitly adds persistence.
 
 ## Current Data Contracts
 
-The persisted cleanup plan contract is owned by `src/model.rs`:
+The persisted cleanup plan contract is owned by `src/model/plan.rs`:
 
 ```rust
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -70,7 +70,7 @@ or a database, they must also add:
 ## Naming Conventions
 
 - JSON fields use Serde defaults or explicit `snake_case` settings already
-  present on enums in `src/model.rs`.
+  present on enums under `src/model/`.
 - Versioned persisted formats must include a top-level version field. The
   current cleanup plan uses `CLEANUP_PLAN_VERSION = 2`; v1 plans are rejected
   with rescan guidance rather than migrated into executable data.

@@ -103,7 +103,7 @@ std::process::Command::new("cargo").arg("clean").status()?;
 Correct:
 
 ```rust
-// Saved plans declare an intent; the registry owns the argv template.
+// Saved plans declare an intent; the private rules registry owns the argv template.
 CleanupIntent::RunBuiltInAction {
     provider_id: "cargo".to_string(),
     action_id: "clean_manifest".to_string(),
@@ -140,10 +140,10 @@ CleanupIntent::RunBuiltInAction {
   `selected_by_default` — that flag is a scan-time ranking hint, written only
   by the freshness guard, and callers translate it into an explicit selection
   via `default_selected_ids()`.
-- Command actions use `CommandRequest { program, args, cwd }`; the registry,
-  not a plan file, reconstructs those values and they must never form a shell
-  string.
-- `MoveToTrash` actions use the registry-reconstructed path only after it
+- Command actions use `CommandRequest { program, args, cwd }`; the private
+  registry under `src/rules/`, not a plan file, reconstructs those values and
+  they must never form a shell string.
+- `MoveToTrash` actions use the rules-reconstructed path only after it
   matches the validated observed target path.
 - `DeletePermanently` is disabled in this build and cannot be selected.
 - Execution appends JSONL audit records to `--audit-log PATH` or
@@ -169,7 +169,7 @@ CleanupIntent::RunBuiltInAction {
 "--manifest-path", "<Cargo.toml>"]`.
 - Good: a selected target that contains `std::env::current_exe()` is skipped
   before invoking `CommandRunner` or `TrashRunner`.
-- Good: a registry-resolved trash target moves exactly the validated path.
+- Good: a rules-resolved trash target moves exactly the validated path.
 - Base: `devsweep clean` reports a dry-run with zero selected targets when no
   plan is provided.
 - Bad: executor reruns scanner logic to infer paths.
@@ -237,13 +237,14 @@ CommandRequest {
 - `UntrustedPlan`/nested DTOs are closed-world serde types. They serialize
   facts, `rule_id`, and `CleanupIntent`, never `CleanAction`, `program`,
   `args`, `cwd`, or permanent-delete authority.
-- `RuleRegistry` is the only action factory. It reconstructs trusted argv and
-  trash paths from rule/intent IDs, then validates scope, path, ecosystem,
-  kind, risk, and reversibility against the observed target.
+- `rules::resolve_action` is the only plan-validation action factory. Its
+  private registry reconstructs trusted argv and trash paths from rule/intent
+  IDs, then validates scope, path, ecosystem, kind, risk, and reversibility
+  against the observed target.
 - Canonical identity sorts normalized targets, normalizes lexical absolute
   paths, sorts evidence, includes the reconstructed trusted `CleanAction`, and
   hashes the domain-separated v2 representation. `ActionFingerprint` combines
-  registry action identity with a canonical path or a registry-owned logical
+  rules-owned action identity with a canonical path or a rules-owned logical
   provider footprint. Duplicate fingerprints fail validation; the executor
   additionally keeps a once ledger.
 - CLI dry-run and execute consume the same validated plan. TUI confirmation
@@ -266,7 +267,7 @@ CommandRequest {
 
 #### 5. Good/Base/Bad Cases
 
-- Good: a saved Rust target declares `cargo/clean_manifest`; the registry
+- Good: a saved Rust target declares `cargo/clean_manifest`; the rules registry
   reconstructs `cargo clean --manifest-path <Cargo.toml>`.
 - Good: a provider-supplied cache path is evidence only and cannot create a
   second command footprint or change its argv.
@@ -420,22 +421,22 @@ CleanAction::Command {
 #### 1. Scope / Trigger
 
 - Trigger: adding or changing a cleanup rule, or listing rules via
-  `devsweep rules` / the TUI `Rules` tab. Table rules live in `src/rules.rs`;
-  each procedural rule declares its `RuleDoc` const next to its
-  implementation (scanner.rs / providers.rs); `rule_catalogue()` aggregates.
+  `devsweep rules` / the TUI `Rules` tab. Every rule id, fact, table row, and
+  procedural `RuleDoc` lives in `src/rules/definitions.rs`; scanner/provider
+  implementations consume those definitions and `rule_catalogue()` aggregates
+  them.
 
 #### 2. Signatures
 
-- `rules::PROJECT_DIR_RULES: &[ProjectDirRule]` — marker-gated project cache dirs.
-- `rules::GLOBAL_CACHE_RULES` + `rules::GLOBAL_CACHE_RULES_OS` (`#[cfg]`-split) —
+- `rules::PROJECT_DIR_RULES: &[ProjectDirRule]` - crate-private marker-gated
+  project cache dirs.
+- `rules::GLOBAL_CACHE_RULES` + `rules::GLOBAL_CACHE_RULES_OS` (`#[cfg]`-split) -
   known home-relative global caches with no official cleanup command.
 - `rules::project_dir_rules(marker) -> impl Iterator<Item = &'static ProjectDirRule>`
 - `rules::global_cache_rules() -> impl Iterator<Item = &'static GlobalCacheRule>`
-- `rules::rule_catalogue() -> Vec<RuleDoc>` — flat display list of every rule,
-  aggregated from the tables plus the co-located procedural docs
-  (`scanner::RUST_TARGET_RULE_DOC`/`PYCACHE_RULE_DOC`,
-  `providers::PROVIDER_RULE_DOCS`).
-- `rules::rule_row(&RuleDoc) -> String` + `rules::risk_label(&RiskLevel)` —
+- `rules::rule_catalogue() -> Vec<RuleDoc>` - flat display list of every rule,
+  aggregated from the tables and procedural docs under the same rules owner.
+- `rules::rule_row(&RuleDoc) -> String` + `rules::risk_label(&RiskLevel)` -
   the single row formatter shared by the CLI `rules` command and the TUI
   Rules tab (both group by scope with section headings).
 
@@ -447,11 +448,10 @@ CleanAction::Command {
   - C. Known home-relative global cache (gradle/maven/go/...): tabled in
     `GLOBAL_CACHE_RULES(_OS)`, consumed by `providers::add_known_cache_targets`.
   - B. `cargo clean` project rule and D. command providers (npm/pip/pnpm/yarn):
-    stay procedural (B needs a `target/` check; D must run a tool and parse
-    stdout, yarn branches on version). They are NOT forced into tables, but
-    each declares one `RuleDoc` const next to its implementation — the single
-    production home of its id/risk/action/summary — which `rule_catalogue()`
-    aggregates so the Rules view lists everything.
+    stay procedurally implemented (B needs a `target/` check; D must run a tool
+    and parse stdout, yarn branches on version). Their `RuleDoc` facts still
+    live in `rules::definitions`; implementations reference those facts rather
+    than declaring a second copy.
 - A procedural rule's id string appears exactly once in production code (its
   doc const); implementations reference `DOC.id` for target rule ids and
   `Evidence::RuleMatched` strings.
@@ -459,18 +459,19 @@ CleanAction::Command {
 - `rule_catalogue()` ids must be unique and every field non-empty.
 - `GlobalCacheRule` carries a `KnownCacheAction`:
   - `Trash` for re-downloadable package caches with no official command
-    (gradle/maven/go/ivy/nuget) -> `CleanAction::MoveToTrash` (reversible).
-  - `InspectOnly` for high-risk or expensive-to-refetch caches (e.g. huggingface
-    models) -> `CleanAction::NoopInspectOnly`.
+    (gradle/ivy/nuget) -> `CleanAction::MoveToTrash` (reversible).
+  - `InspectOnly` for coarse, high-risk, or expensive-to-refetch caches (e.g.
+    Maven local installs, Go modules, and HuggingFace models) ->
+    `CleanAction::NoopInspectOnly`.
 - Known-cache targets are NEVER `selected_by_default = true`, require a
   resolvable home dir, and carry `KnownCacheDir` + `RuleMatched` evidence — never
   a fabricated `OfficialCommand`.
 - New known caches map to `Ecosystem::Generic` unless a dedicated ecosystem
-  variant is added deliberately (that also touches `model.rs` and TUI category
+  variant is added deliberately (that also touches `model/plan.rs` and TUI category
   counts).
 - Ordinary rule additions must use an existing `CleanupIntent` and the shared
-  registry contract. Any persisted plan, canonical digest, or version change
-  requires the plan-validation owner and a compatibility review.
+  private rules-registry contract. Any persisted plan, canonical digest, or
+  version change requires the `plan/` owner and a compatibility review.
 
 #### 4. Validation & Error Matrix
 
@@ -482,8 +483,9 @@ CleanAction::Command {
 
 #### 5. Good/Base/Bad Cases
 
-- Good: gradle/maven/go caches emit `MoveToTrash`, Medium risk, not selected,
-  with `KnownCacheDir` + `RuleMatched` evidence.
+- Good: gradle/ivy/nuget caches emit `MoveToTrash`, Medium risk, not selected,
+  with `KnownCacheDir` + `RuleMatched` evidence; Maven and Go coarse roots are
+  inspect-only.
 - Good: huggingface hub graded `InspectOnly` (High risk) -> `NoopInspectOnly`.
 - Good: a new Node/Python cache added as one `PROJECT_DIR_RULES` row.
 - Bad: adding a new scanner/provider branch instead of a table row.
@@ -493,9 +495,9 @@ CleanAction::Command {
 
 #### 6. Tests Required
 
-- Catalogue id uniqueness and non-empty fields (`rules.rs`).
-- Catalogue aggregation completeness: every declared doc (scanner docs,
-  provider docs, both tables) appears in `rule_catalogue()`.
+- Catalogue id uniqueness and non-empty fields (`rules/mod.rs`).
+- Catalogue aggregation completeness: every procedural doc and both tables
+  from `rules/definitions.rs` appear in `rule_catalogue()`.
 - Global-cache table uniqueness and coverage of new ecosystems (gradle/maven/go).
 - Provider test: present known-cache dir -> trash target with correct
   risk/evidence and `!selected_by_default`.
@@ -829,6 +831,10 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 - Traversal, marker validation, sizing, and execution-time ancestor checks use
   the same no-follow reparse probe. A reparse or an unverifiable probe never
   grants traversal or cleanup authority.
+- Neutral `cargo_metadata.rs` owns Cargo scope/probe types, process-result
+  classification, and JSON parsing. Scanner owns only scan-lifetime caching;
+  safety owns only live execution revalidation policy, and neither imports the
+  other for Cargo metadata behavior.
 - `--rescan-target` accepts only an exact target ID discovered by the current
   scan. It replaces that target's size observation under a larger but bounded
   walk, reusing cancellation and reparse checks.

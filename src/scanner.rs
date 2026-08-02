@@ -8,6 +8,10 @@ use std::{
 use anyhow::{Context, Result, bail};
 use tracing::warn;
 
+use crate::cargo_metadata::{
+    CargoMetadataFailure, CargoMetadataProbe, CargoMetadataProbeResult, CargoMetadataScope,
+    SystemCargoMetadataProbe,
+};
 use crate::fs_size::{
     DEFAULT_SIZE_ENTRY_BUDGET, PathReparseProbe, PathSafety, SystemPathReparseProbe,
     estimate_tree_with_budget_and_cancel_and_probe, inspect_path_no_follow,
@@ -17,10 +21,9 @@ use crate::model::{
     Scope, TargetId, TargetKind,
 };
 use crate::process_runner::{CancelObserver, FlagCancelObserver};
-use crate::rules::{ProjectMarker, RuleDoc, RuleScope, project_dir_rules};
-use crate::safety::{
-    CargoMetadataFailure, CargoMetadataProbe, CargoMetadataProbeResult, CargoMetadataScope,
-    SystemCargoMetadataProbe,
+use crate::rules::{
+    PYCACHE_RULE_DOC, ProjectMarker, RUST_TARGET_METADATA_FALLBACK_RULE_ID, RUST_TARGET_RULE_DOC,
+    project_dir_rules,
 };
 
 pub use crate::model::{ScanCompleteness, ScanDiagnostic, ScanDiagnosticStage};
@@ -31,33 +34,6 @@ pub struct ScanOutcome {
     pub diagnostics: Vec<ScanDiagnostic>,
     pub completeness: ScanCompleteness,
 }
-
-/// Doc for the procedural `cargo clean` rule; the single source of its identity
-/// (id / risk / action / summary), consumed by [`crate::rules::rule_catalogue`].
-pub(crate) const RUST_TARGET_RULE_DOC: RuleDoc = RuleDoc {
-    id: "rust.target",
-    ecosystem: Ecosystem::Rust,
-    scope: RuleScope::Project,
-    risk: RiskLevel::Low,
-    action: "cargo clean",
-    summary: "Rust build directory (target/) via cargo clean",
-};
-
-/// Doc for the procedural `__pycache__` descent rule; single source of identity.
-pub(crate) const PYCACHE_RULE_DOC: RuleDoc = RuleDoc {
-    id: "python.__pycache__",
-    ecosystem: Ecosystem::Python,
-    scope: RuleScope::Project,
-    risk: RiskLevel::Low,
-    action: "trash",
-    summary: "Python __pycache__ directories",
-};
-
-/// All procedural rule docs declared by this scanner. Unlike the provider
-/// docs (extended wholesale into the catalogue), these are pushed one by one
-/// to keep the catalogue order, so the slice only feeds the aggregation test.
-#[cfg(test)]
-pub(crate) const SCANNER_RULE_DOCS: &[RuleDoc] = &[RUST_TARGET_RULE_DOC, PYCACHE_RULE_DOC];
 
 pub struct ProjectScanner {
     reparse_probe: Arc<dyn PathReparseProbe>,
@@ -214,7 +190,7 @@ impl ProjectScanner {
                 targets.push(build_path_target_with_probe(
                     PathTargetInput {
                         rule_id: PYCACHE_RULE_DOC.id,
-                        ecosystem: Ecosystem::Python,
+                        ecosystem: PYCACHE_RULE_DOC.ecosystem.clone(),
                         kind: TargetKind::TestCache,
                         project_root: context.project_root.clone(),
                         path: dir.to_path_buf(),
@@ -342,7 +318,7 @@ impl ProjectScanner {
                 let mut target = build_path_target_with_probe(
                     PathTargetInput {
                         rule_id: RUST_TARGET_RULE_DOC.id,
-                        ecosystem: Ecosystem::Rust,
+                        ecosystem: RUST_TARGET_RULE_DOC.ecosystem.clone(),
                         kind: TargetKind::BuildArtifacts,
                         project_root,
                         path: target_dir.clone(),
@@ -402,7 +378,7 @@ impl ProjectScanner {
                 let mut target = build_path_target_with_probe(
                     PathTargetInput {
                         rule_id: RUST_TARGET_RULE_DOC.id,
-                        ecosystem: Ecosystem::Rust,
+                        ecosystem: RUST_TARGET_RULE_DOC.ecosystem.clone(),
                         kind: TargetKind::BuildArtifacts,
                         project_root: dir.to_path_buf(),
                         path: local_target,
@@ -416,7 +392,7 @@ impl ProjectScanner {
                                 rule_id: RUST_TARGET_RULE_DOC.id.to_string(),
                             },
                             Evidence::RuleMatched {
-                                rule_id: "rust.target.metadata_fallback_trash".to_string(),
+                                rule_id: RUST_TARGET_METADATA_FALLBACK_RULE_ID.to_string(),
                             },
                         ],
                     },
@@ -1356,7 +1332,7 @@ mod tests {
         assert!(matches!(target.action, CleanAction::MoveToTrash { .. }));
 
         let json = serde_json::to_value(
-            crate::plan_validation::untrusted_plan_from_scan(&plan).expect("v2 plan converts"),
+            crate::plan::untrusted_plan_from_scan(&plan).expect("v2 plan converts"),
         )
         .expect("plan serializes");
         let first = &json["targets"][0];

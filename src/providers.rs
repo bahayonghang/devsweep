@@ -17,95 +17,12 @@ use crate::process_runner::{
     CancelObserver, CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT,
     FlagCancelObserver, NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus,
 };
-use crate::rules::{KnownCacheAction, RuleDoc, RuleScope, global_cache_rules};
-
-/// Docs for the procedural command providers below; each is the single source
-/// of its rule's identity (id / risk / action / summary), consumed by
-/// [`crate::rules::rule_catalogue`].
-pub(crate) const NPM_CACHE_RULE_DOC: RuleDoc = RuleDoc {
-    id: "npm.cache.clean",
-    ecosystem: Ecosystem::Node,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "npm cache via npm cache clean --force",
+use crate::rules::{
+    CARGO_HOME_RULE_DOC, GO_MODCACHE_DIRECTORY_RULE_ID, GO_MODCACHE_RULE_DOC,
+    GRADLE_CACHES_RULE_ID, GRADLE_WRAPPER_DISTS_RULE_ID, KnownCacheAction, NPM_CACHE_RULE_DOC,
+    NUGET_PACKAGES_RULE_ID, PIP_CACHE_RULE_DOC, PNPM_STORE_RULE_DOC, YARN_CACHE_CLASSIC_RULE_DOC,
+    YARN_CACHE_MODERN_RULE_DOC, global_cache_rules,
 };
-
-pub(crate) const PIP_CACHE_RULE_DOC: RuleDoc = RuleDoc {
-    id: "pip.cache.purge",
-    ecosystem: Ecosystem::Python,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "pip cache via pip cache purge",
-};
-
-pub(crate) const PNPM_STORE_RULE_DOC: RuleDoc = RuleDoc {
-    id: "pnpm.store.prune",
-    ecosystem: Ecosystem::Node,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "pnpm store via pnpm store prune",
-};
-
-/// Base yarn doc; catalogue also lists classic/modern variants explicitly.
-pub(crate) const YARN_CACHE_RULE_DOC: RuleDoc = RuleDoc {
-    id: "yarn.cache.clean",
-    ecosystem: Ecosystem::Node,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "yarn cache via yarn cache clean (see classic/modern variants)",
-};
-
-pub(crate) const YARN_CACHE_CLASSIC_RULE_DOC: RuleDoc = RuleDoc {
-    id: "yarn.cache.clean.classic",
-    ecosystem: Ecosystem::Node,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "yarn classic cache via yarn cache clean",
-};
-
-pub(crate) const YARN_CACHE_MODERN_RULE_DOC: RuleDoc = RuleDoc {
-    id: "yarn.cache.clean.modern",
-    ecosystem: Ecosystem::Node,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "yarn berry cache via yarn cache clean --mirror",
-};
-
-pub(crate) const CARGO_HOME_RULE_DOC: RuleDoc = RuleDoc {
-    id: "cargo.home.inspect",
-    ecosystem: Ecosystem::Rust,
-    scope: RuleScope::Global,
-    risk: RiskLevel::High,
-    action: "inspect only",
-    summary: "Cargo home (~/.cargo) — inspect only, never auto-deleted",
-};
-
-pub(crate) const GO_MODCACHE_RULE_DOC: RuleDoc = RuleDoc {
-    id: "go.mod_cache.clean",
-    ecosystem: Ecosystem::Generic,
-    scope: RuleScope::Global,
-    risk: RiskLevel::Medium,
-    action: "official command",
-    summary: "Go module cache via go clean -modcache",
-};
-
-/// All procedural rule docs declared by the global providers.
-pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
-    NPM_CACHE_RULE_DOC,
-    PIP_CACHE_RULE_DOC,
-    PNPM_STORE_RULE_DOC,
-    YARN_CACHE_RULE_DOC,
-    YARN_CACHE_CLASSIC_RULE_DOC,
-    YARN_CACHE_MODERN_RULE_DOC,
-    CARGO_HOME_RULE_DOC,
-    GO_MODCACHE_RULE_DOC,
-];
 
 pub struct GlobalProviderScanner;
 
@@ -274,7 +191,7 @@ fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
 
     targets.push(command_target(CommandTargetInput {
         rule_id: NPM_CACHE_RULE_DOC.id,
-        ecosystem: Ecosystem::Node,
+        ecosystem: NPM_CACHE_RULE_DOC.ecosystem.clone(),
         path: cache_path.clone(),
         estimated_bytes: cache_estimate.display_bytes(),
         size_complete: cache_estimate.complete,
@@ -314,7 +231,7 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
 
     targets.push(command_target(CommandTargetInput {
         rule_id: PIP_CACHE_RULE_DOC.id,
-        ecosystem: Ecosystem::Python,
+        ecosystem: PIP_CACHE_RULE_DOC.ecosystem.clone(),
         path: cache_path.clone(),
         estimated_bytes: cache_estimate.display_bytes(),
         size_complete: cache_estimate.complete,
@@ -342,7 +259,7 @@ fn add_pnpm_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
 
     targets.push(command_target(CommandTargetInput {
         rule_id: PNPM_STORE_RULE_DOC.id,
-        ecosystem: Ecosystem::Node,
+        ecosystem: PNPM_STORE_RULE_DOC.ecosystem.clone(),
         path: store_path.clone(),
         estimated_bytes: store_estimate.display_bytes(),
         size_complete: store_estimate.complete,
@@ -369,22 +286,22 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     let Some(major_version) = version.as_deref().and_then(parse_major_version) else {
         return;
     };
-    let (rule_suffix, path_command, clean_args, clean_command) = if major_version <= 1 {
+    let (rule_doc, path_command, clean_args, clean_command) = if major_version <= 1 {
         (
-            "classic",
+            YARN_CACHE_CLASSIC_RULE_DOC,
             vec!["cache", "dir"],
             vec!["cache", "clean"],
             "yarn cache clean",
         )
     } else {
         (
-            "modern",
+            YARN_CACHE_MODERN_RULE_DOC,
             vec!["config", "get", "cacheFolder"],
             vec!["cache", "clean", "--mirror"],
             "yarn cache clean --mirror",
         )
     };
-    let rule_id = format!("{}.{rule_suffix}", YARN_CACHE_RULE_DOC.id);
+    let rule_id = rule_doc.id;
     let cache_path = output_path(probe.command_output(&yarn, &path_command));
     let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let path_command_display = if major_version <= 1 {
@@ -394,19 +311,19 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
 
     targets.push(command_target(CommandTargetInput {
-        rule_id: &rule_id,
-        ecosystem: Ecosystem::Node,
+        rule_id,
+        ecosystem: rule_doc.ecosystem.clone(),
         path: cache_path.clone(),
         estimated_bytes: cache_estimate.display_bytes(),
         size_complete: cache_estimate.complete,
         sizing_warnings: cache_estimate.warnings,
         last_modified: cache_estimate.last_modified,
-        risk: YARN_CACHE_RULE_DOC.risk,
+        risk: rule_doc.risk,
         selected_by_default: false,
         program: yarn,
         args: clean_args,
         evidence: command_evidence(
-            &rule_id,
+            rule_id,
             cache_path,
             path_command_display,
             &["yarn --version", clean_command],
@@ -432,7 +349,7 @@ fn add_go_modcache_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTar
     let estimate = probe.estimate_path_size(&cache_path);
     targets.push(command_target(CommandTargetInput {
         rule_id: GO_MODCACHE_RULE_DOC.id,
-        ecosystem: Ecosystem::Generic,
+        ecosystem: GO_MODCACHE_RULE_DOC.ecosystem.clone(),
         path: Some(cache_path.clone()),
         estimated_bytes: estimate.display_bytes(),
         size_complete: estimate.complete,
@@ -468,7 +385,7 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
             cargo_home.display()
         )),
         scope: Scope::Global,
-        ecosystem: Ecosystem::Rust,
+        ecosystem: CARGO_HOME_RULE_DOC.ecosystem.clone(),
         kind: TargetKind::PackageCache,
         path: Some(cargo_home.clone()),
         estimated_bytes: estimate.display_bytes(),
@@ -501,7 +418,7 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
     for rule in global_cache_rules() {
         // Official go clean provider owns the executable action; skip the
         // inspect-only home-relative duplicate when go is available.
-        if rule.id == "go.mod_cache" && probe.resolve_executable("go").is_some() {
+        if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID && probe.resolve_executable("go").is_some() {
             continue;
         }
         let path = resolve_known_cache_path(probe, &home, rule);
@@ -671,18 +588,18 @@ fn resolve_known_cache_path(
     rule: &crate::rules::GlobalCacheRule,
 ) -> PathBuf {
     match rule.id {
-        "gradle.caches" | "gradle.wrapper_dists" => {
+        GRADLE_CACHES_RULE_ID | GRADLE_WRAPPER_DISTS_RULE_ID => {
             if let Some(gradle_home) = probe.env_path("GRADLE_USER_HOME") {
                 let rest = rule.relative.trim_start_matches(".gradle/");
                 return gradle_home.join(rest);
             }
         }
-        "nuget.packages" => {
+        NUGET_PACKAGES_RULE_ID => {
             if let Some(nuget) = probe.env_path("NUGET_PACKAGES") {
                 return nuget;
             }
         }
-        "go.mod_cache" => {
+        GO_MODCACHE_DIRECTORY_RULE_ID => {
             if let Some(gomod) = probe.env_path("GOMODCACHE") {
                 return gomod;
             }

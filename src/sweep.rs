@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::Result;
 
 use crate::model::{CleanupPlan, ScanHealth, ScanReport, TargetId};
-use crate::plan_validation::untrusted_plan_from_scan;
+use crate::plan::untrusted_plan_from_scan;
 use crate::process_runner::{CancelObserver, FlagCancelObserver};
 use crate::providers::GlobalProviderScanner;
 use crate::ranking::rank_cleanup_plan;

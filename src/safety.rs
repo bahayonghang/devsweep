@@ -11,19 +11,20 @@ use anyhow::{Context, Result, bail};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    cargo_metadata::query_cargo_metadata,
     fs_size::{PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_path_no_follow},
-    model::{CleanAction, CleanTarget, Evidence, ScanDiagnosticOutcome, ScanProcessProbe, Scope},
+    model::{CleanAction, CleanTarget, Evidence, Scope},
     path_identity::{
         PathIdentity, capture_path_identity, normalize_absolute_path, normalize_path_for_compare,
         path_is_within, paths_equal,
     },
     path_safety::path_contains_path,
-    plan_validation::ValidatedTarget,
-    process_runner::{
-        CwdPolicy, DEFAULT_PROVIDER_PROBE_TIMEOUT, NoopCancelObserver, ProcessRequest,
-        ProcessRunner, ProcessStatus,
+    plan::ValidatedTarget,
+    process_runner::ProcessRunner,
+    rules::{
+        GLOBAL_CACHE_RULES, GLOBAL_CACHE_RULES_OS, PROJECT_DIR_RULES, PYCACHE_RULE_DOC,
+        RUST_TARGET_RULE_DOC, is_known_global_command_rule,
     },
-    rules::{GLOBAL_CACHE_RULES, GLOBAL_CACHE_RULES_OS, PROJECT_DIR_RULES},
 };
 
 /// Shared skip message when a target contains the running executable.
@@ -216,7 +217,7 @@ impl SafetyPolicy {
                 }
             }
 
-            if validated.rule_id() == "rust.target"
+            if validated.rule_id() == RUST_TARGET_RULE_DOC.id
                 && matches!(&target.action, CleanAction::Command { program, .. } if program == "cargo")
             {
                 self.recheck_cargo_target_scope(path, target)?;
@@ -313,7 +314,7 @@ impl SafetyPolicy {
             Scope::Project { root } => {
                 // Cargo target directories may live outside the project root when
                 // redirected; those still require the project marker and rule id.
-                if rule_id == "rust.target" {
+                if rule_id == RUST_TARGET_RULE_DOC.id {
                     let manifest = root.join("Cargo.toml");
                     self.require_regular_marker(path, &manifest)?;
                     return Ok(());
@@ -328,11 +329,11 @@ impl SafetyPolicy {
                 }
 
                 if !is_known_project_rule_path(rule_id, root, path)
-                    && rule_id != "python.__pycache__"
+                    && rule_id != PYCACHE_RULE_DOC.id
                 {
                     // Allow any path under root that matched a known project rule
                     // id; __pycache__ is procedural and only requires the name.
-                    if rule_id == "python.__pycache__" {
+                    if rule_id == PYCACHE_RULE_DOC.id {
                         // handled below
                     } else if PROJECT_DIR_RULES.iter().any(|rule| rule.id == rule_id) {
                         // path shape already validated by registry for real plans;
@@ -340,7 +341,7 @@ impl SafetyPolicy {
                     }
                 }
 
-                if rule_id == "python.__pycache__"
+                if rule_id == PYCACHE_RULE_DOC.id
                     && path.file_name().and_then(|name| name.to_str()) != Some("__pycache__")
                 {
                     return Err(denial(
@@ -783,24 +784,11 @@ fn is_known_global_cache_path(rule_id: &str, path: &Path, home: Option<&Path>) -
         })
 }
 
-fn is_known_global_command_rule(rule_id: &str) -> bool {
-    matches!(
-        rule_id,
-        "npm.cache.clean"
-            | "pip.cache.purge"
-            | "pnpm.store.prune"
-            | "yarn.cache.clean.classic"
-            | "yarn.cache.clean.modern"
-            | "cargo.home.inspect"
-            | "rust.target"
-    )
-}
-
 fn rule_requires_project_containment(target: &CleanTarget) -> bool {
     !target
         .evidence
         .iter()
-        .any(|evidence| matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == "rust.target"))
+        .any(|evidence| matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == RUST_TARGET_RULE_DOC.id))
 }
 
 fn validated_rule_is_not_rust(target: &CleanTarget) -> bool {
@@ -1060,169 +1048,6 @@ fn app_data_dir() -> Result<PathBuf> {
     }
 }
 
-/// Resolved cargo metadata fields used by scan and live revalidation.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CargoMetadataScope {
-    pub workspace_root: PathBuf,
-    pub target_directory: PathBuf,
-    /// Manifest paths explicitly named by Cargo as workspace members. Scanner
-    /// cache entries may only reuse this scope for one of these manifests.
-    pub member_manifests: Vec<PathBuf>,
-}
-
-/// Typed, display-safe metadata probe failure for scan diagnostics.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct CargoMetadataFailure {
-    pub outcome: ScanDiagnosticOutcome,
-    pub detail: String,
-    pub process: Option<ScanProcessProbe>,
-}
-
-/// Result at the Cargo metadata probe boundary. This keeps scan diagnostics
-/// structured while [`query_cargo_metadata`] remains the uncached execution
-/// recheck wrapper.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum CargoMetadataProbeResult {
-    Resolved(CargoMetadataScope),
-    Failed(CargoMetadataFailure),
-}
-
-/// Injectable Cargo metadata probe used by the scanner's scan-lifetime cache.
-pub(crate) trait CargoMetadataProbe: Send + Sync {
-    fn probe(&self, manifest_dir: &Path) -> CargoMetadataProbeResult;
-}
-
-#[derive(Debug, Clone, Default)]
-pub(crate) struct SystemCargoMetadataProbe {
-    runner: ProcessRunner,
-}
-
-impl CargoMetadataProbe for SystemCargoMetadataProbe {
-    fn probe(&self, manifest_dir: &Path) -> CargoMetadataProbeResult {
-        probe_cargo_metadata(&self.runner, manifest_dir)
-    }
-}
-
-pub fn query_cargo_metadata(
-    runner: &ProcessRunner,
-    manifest_dir: &Path,
-) -> Result<CargoMetadataScope> {
-    match probe_cargo_metadata(runner, manifest_dir) {
-        CargoMetadataProbeResult::Resolved(scope) => Ok(scope),
-        CargoMetadataProbeResult::Failed(failure) => Err(anyhow::anyhow!(failure.detail)),
-    }
-}
-
-pub(crate) fn probe_cargo_metadata(
-    runner: &ProcessRunner,
-    manifest_dir: &Path,
-) -> CargoMetadataProbeResult {
-    let manifest = manifest_dir.join("Cargo.toml");
-    let cancel = NoopCancelObserver;
-    let request = ProcessRequest {
-        program: std::ffi::OsString::from("cargo"),
-        args: vec![
-            std::ffi::OsString::from("metadata"),
-            std::ffi::OsString::from("--format-version"),
-            std::ffi::OsString::from("1"),
-            std::ffi::OsString::from("--no-deps"),
-            std::ffi::OsString::from("--manifest-path"),
-            std::ffi::OsString::from(manifest.as_os_str()),
-        ],
-        cwd: CwdPolicy::Explicit {
-            path: manifest_dir.to_path_buf(),
-            reason: "cargo metadata for rust target scope".to_string(),
-        },
-        timeout: Some(DEFAULT_PROVIDER_PROBE_TIMEOUT),
-        job_deadline: None,
-        cancel: &cancel,
-    };
-    classify_cargo_metadata_result(runner.run(&request))
-}
-
-fn classify_cargo_metadata_result(
-    result: crate::process_runner::ProcessResult,
-) -> CargoMetadataProbeResult {
-    let process = ScanProcessProbe::from(&result);
-    if result.output.stdout_truncated || result.output.stderr_truncated {
-        return CargoMetadataProbeResult::Failed(CargoMetadataFailure {
-            outcome: ScanDiagnosticOutcome::OutputTruncated,
-            detail: "cargo metadata output was truncated before JSON parsing".to_string(),
-            process: Some(process),
-        });
-    }
-
-    match result.status {
-        ProcessStatus::Success => {
-            let stdout = String::from_utf8_lossy(&result.output.stdout);
-            match parse_cargo_metadata_json(&stdout) {
-                Ok(scope) => CargoMetadataProbeResult::Resolved(scope),
-                Err(error) => CargoMetadataProbeResult::Failed(CargoMetadataFailure {
-                    outcome: ScanDiagnosticOutcome::Failed,
-                    detail: format!("cargo metadata returned invalid JSON: {error}"),
-                    process: Some(process),
-                }),
-            }
-        }
-        ProcessStatus::Canceled => CargoMetadataProbeResult::Failed(CargoMetadataFailure {
-            outcome: ScanDiagnosticOutcome::Canceled,
-            detail: "cargo metadata probe was canceled".to_string(),
-            process: Some(process),
-        }),
-        status => CargoMetadataProbeResult::Failed(CargoMetadataFailure {
-            outcome: ScanDiagnosticOutcome::Failed,
-            detail: format!("cargo metadata failed with status {status:?}"),
-            process: Some(process),
-        }),
-    }
-}
-
-fn parse_cargo_metadata_json(stdout: &str) -> Result<CargoMetadataScope> {
-    let value: serde_json::Value =
-        serde_json::from_str(stdout).context("cargo metadata returned invalid JSON")?;
-    let workspace_root = value
-        .get("workspace_root")
-        .and_then(|value| value.as_str())
-        .ok_or_else(|| anyhow::anyhow!("cargo metadata missing workspace_root"))?;
-    let target_directory = value
-        .get("target_directory")
-        .and_then(|value| value.as_str())
-        .ok_or_else(|| anyhow::anyhow!("cargo metadata missing target_directory"))?;
-    let mut manifests_by_package_id = std::collections::HashMap::new();
-    if let Some(packages) = value.get("packages").and_then(|value| value.as_array()) {
-        for package in packages {
-            let Some(package_id) = package.get("id").and_then(|value| value.as_str()) else {
-                continue;
-            };
-            let Some(manifest_path) = package
-                .get("manifest_path")
-                .and_then(|value| value.as_str())
-            else {
-                continue;
-            };
-            manifests_by_package_id.insert(package_id, PathBuf::from(manifest_path));
-        }
-    }
-
-    let member_manifests = value
-        .get("workspace_members")
-        .and_then(|value| value.as_array())
-        .into_iter()
-        .flatten()
-        .filter_map(|member| member.as_str())
-        .filter_map(|member| manifests_by_package_id.get(member))
-        .cloned()
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect();
-
-    Ok(CargoMetadataScope {
-        workspace_root: PathBuf::from(workspace_root),
-        target_directory: PathBuf::from(target_directory),
-        member_manifests,
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use std::{
@@ -1240,8 +1065,7 @@ mod tests {
         CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
         TargetKind,
     };
-    use crate::plan_validation::ValidatedPlan;
-    use crate::process_runner::{ProcessOutput, ProcessResult};
+    use crate::plan::ValidatedPlan;
 
     const CLOUD_FILES_REPARSE_TAG: u32 = 0x9000_701A;
 
@@ -1645,68 +1469,5 @@ mod tests {
             io::ErrorKind::Unsupported,
             "symlink unsupported",
         ))
-    }
-
-    #[test]
-    fn cargo_metadata_parser_reads_workspace_and_target() {
-        let json = r#"{
-            "workspace_root": "C:/code/app",
-            "target_directory": "C:/code/app/target"
-        }"#;
-        let scope = parse_cargo_metadata_json(json).expect("parse");
-        assert_eq!(scope.workspace_root, PathBuf::from("C:/code/app"));
-        assert_eq!(scope.target_directory, PathBuf::from("C:/code/app/target"));
-        assert!(scope.member_manifests.is_empty());
-    }
-
-    #[test]
-    fn cargo_metadata_parser_collects_only_explicit_workspace_member_manifests() {
-        let json = r#"{
-            "workspace_root": "C:/code/workspace",
-            "target_directory": "C:/code/workspace/target",
-            "workspace_members": ["path+file:///C:/code/workspace/member-a#0.1.0"],
-            "packages": [
-                {
-                    "id": "path+file:///C:/code/workspace/member-a#0.1.0",
-                    "manifest_path": "C:/code/workspace/member-a/Cargo.toml"
-                },
-                {
-                    "id": "path+file:///C:/code/workspace/member-b#0.1.0",
-                    "manifest_path": "C:/code/workspace/member-b/Cargo.toml"
-                }
-            ]
-        }"#;
-
-        let scope = parse_cargo_metadata_json(json).expect("parse");
-
-        assert_eq!(
-            scope.member_manifests,
-            vec![PathBuf::from("C:/code/workspace/member-a/Cargo.toml")]
-        );
-    }
-
-    #[test]
-    fn truncated_cargo_metadata_is_classified_before_json_parsing() {
-        let result = ProcessResult {
-            status: ProcessStatus::Success,
-            output: ProcessOutput {
-                stdout: b"{".to_vec(),
-                stdout_truncated: true,
-                total_stdout_bytes: 2_048,
-                ..ProcessOutput::default()
-            },
-        };
-
-        let CargoMetadataProbeResult::Failed(failure) = classify_cargo_metadata_result(result)
-        else {
-            panic!("truncated output must not be parsed as successful metadata");
-        };
-
-        assert_eq!(failure.outcome, ScanDiagnosticOutcome::OutputTruncated);
-        assert!(failure.detail.contains("truncated"));
-        let process = failure.process.expect("process metadata is retained");
-        assert!(process.stdout.truncated);
-        assert_eq!(process.stdout.retained_bytes, 1);
-        assert_eq!(process.stdout.total_bytes, 2_048);
     }
 }

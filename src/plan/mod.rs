@@ -1,12 +1,10 @@
-use std::{
-    collections::HashSet,
-    path::Path,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::collections::HashSet;
 
 use anyhow::{Context, Result, bail};
-use serde::Serialize;
-use sha2::{Digest, Sha256};
+
+mod digest;
+
+use digest::digest_for_targets;
 
 use crate::{
     model::{
@@ -14,7 +12,7 @@ use crate::{
         LEGACY_CLEANUP_PLAN_VERSION, Scope, TargetId, UntrustedPlan, UntrustedTarget,
     },
     path_identity::{PathIdentity, capture_path_identity, normalize_absolute_path},
-    registry::{ActionSpec, RuleRegistry},
+    rules::{ActionSpec, intent_from_scan_action, resolve_action},
 };
 
 pub const V1_RESCAN_MESSAGE: &str =
@@ -154,7 +152,6 @@ pub fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
         )
     }
 
-    let registry = RuleRegistry;
     let mut ids = HashSet::new();
     let mut fingerprints = HashSet::new();
     let mut targets = Vec::with_capacity(plan.targets.len());
@@ -169,8 +166,7 @@ pub fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
         validate_intent_selection(untrusted)?;
         validate_observed_paths(untrusted)?;
 
-        let spec = registry
-            .resolve(untrusted)
+        let spec = resolve_action(untrusted)
             .with_context(|| format!("invalid target {}", untrusted.id.as_str()))?;
         validate_resolved_action(untrusted, &spec)?;
         let fingerprint = action_fingerprint(&spec)?;
@@ -245,7 +241,7 @@ fn untrusted_target_from_scan(target: &CleanTarget) -> Result<UntrustedTarget> {
         CleanAction::NoopInspectOnly => CleanupIntent::InspectOnly {
             rule_id: rule_id.clone(),
         },
-        CleanAction::Command { program, .. } => built_in_intent(&rule_id, program)?,
+        CleanAction::Command { program, .. } => intent_from_scan_action(&rule_id, program)?,
         CleanAction::DeletePermanently { .. } => {
             bail!(
                 "scan target {} uses disabled permanent delete",
@@ -271,35 +267,6 @@ fn untrusted_target_from_scan(target: &CleanTarget) -> Result<UntrustedTarget> {
         evidence: target.evidence.clone(),
         intent,
     })
-}
-
-fn built_in_intent(rule_id: &str, program: &str) -> Result<CleanupIntent> {
-    let (provider_id, action_id) = match rule_id {
-        "rust.target" => ("cargo".to_string(), "clean_manifest".to_string()),
-        "npm.cache.clean" => ("npm".to_string(), "cache_clean".to_string()),
-        "pip.cache.purge" => (provider_name(program)?, "cache_purge".to_string()),
-        "pnpm.store.prune" => ("pnpm".to_string(), "store_prune".to_string()),
-        "yarn.cache.clean.classic" => ("yarn".to_string(), "cache_clean_classic".to_string()),
-        "yarn.cache.clean.modern" => ("yarn".to_string(), "cache_clean_modern".to_string()),
-        _ => bail!("scan target uses an unregistered command rule: {rule_id}"),
-    };
-    Ok(CleanupIntent::RunBuiltInAction {
-        provider_id,
-        action_id,
-    })
-}
-
-fn provider_name(program: &str) -> Result<String> {
-    let name = Path::new(program)
-        .file_stem()
-        .and_then(|name| name.to_str())
-        .unwrap_or(program)
-        .to_ascii_lowercase();
-    if matches!(name.as_str(), "py" | "python" | "python3") {
-        Ok(name)
-    } else {
-        bail!("unregistered pip provider program: {program}")
-    }
 }
 
 fn validate_observed_paths(target: &UntrustedTarget) -> Result<()> {
@@ -362,158 +329,6 @@ fn resolved_target(target: &UntrustedTarget, action: CleanAction) -> CleanTarget
 fn action_fingerprint(spec: &ActionSpec) -> Result<ActionFingerprint> {
     let footprint = spec.canonical_footprint()?;
     Ok(ActionFingerprint(format!("{}|{footprint}", spec.identity)))
-}
-
-fn digest_for_targets(targets: &[ValidatedTarget]) -> Result<String> {
-    let mut entries = targets
-        .iter()
-        .map(canonical_target)
-        .collect::<Result<Vec<_>>>()?;
-    entries.sort_by(|left, right| {
-        left.fingerprint
-            .cmp(&right.fingerprint)
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    let bytes = serde_json::to_vec(&CanonicalManifest {
-        domain: "devsweep.validated-plan.v2",
-        version: CLEANUP_PLAN_VERSION,
-        targets: entries,
-    })
-    .context("failed to encode canonical validated plan")?;
-    Ok(format!("{:x}", Sha256::digest(bytes)))
-}
-
-#[derive(Serialize)]
-struct CanonicalManifest {
-    domain: &'static str,
-    version: u32,
-    targets: Vec<CanonicalTarget>,
-}
-
-#[derive(Serialize)]
-struct CanonicalTarget {
-    fingerprint: String,
-    id: String,
-    rule_id: String,
-    action_identity: String,
-    action: CanonicalAction,
-    scope: String,
-    ecosystem: String,
-    kind: String,
-    path: Option<String>,
-    estimated_bytes: u64,
-    size_complete: bool,
-    last_modified_ms: Option<u128>,
-    risk: String,
-    reversible: bool,
-    selected_by_default: bool,
-    evidence: Vec<String>,
-}
-
-#[derive(Serialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-enum CanonicalAction {
-    Command {
-        program: String,
-        args: Vec<String>,
-        cwd: Option<String>,
-        irreversible: bool,
-    },
-    MoveToTrash {
-        path: String,
-    },
-    DeletePermanently {
-        path: String,
-        requires_explicit_flag: bool,
-    },
-    NoopInspectOnly,
-}
-
-fn canonical_target(target: &ValidatedTarget) -> Result<CanonicalTarget> {
-    let target_path = target
-        .target
-        .path
-        .as_ref()
-        .map(|path| normalize_absolute_path(path))
-        .transpose()?;
-    let scope = match &target.target.scope {
-        Scope::Global => "global".to_string(),
-        Scope::Project { root } => format!("project:{}", normalize_absolute_path(root)?),
-    };
-    let mut evidence = target
-        .target
-        .evidence
-        .iter()
-        .map(canonical_evidence)
-        .collect::<Result<Vec<_>>>()?;
-    evidence.sort();
-    Ok(CanonicalTarget {
-        fingerprint: target.fingerprint.0.clone(),
-        id: target.target.id.as_str().to_string(),
-        rule_id: target.rule_id.clone(),
-        action_identity: target.action_identity.clone(),
-        action: canonical_action(&target.target.action)?,
-        scope,
-        ecosystem: format!("{:?}", target.target.ecosystem),
-        kind: format!("{:?}", target.target.kind),
-        path: target_path,
-        estimated_bytes: target.target.estimated_bytes,
-        size_complete: target.target.size_complete,
-        last_modified_ms: target.target.last_modified.and_then(system_time_ms),
-        risk: format!("{:?}", target.target.risk),
-        reversible: target.target.reversible,
-        selected_by_default: target.target.selected_by_default,
-        evidence,
-    })
-}
-
-fn canonical_action(action: &CleanAction) -> Result<CanonicalAction> {
-    match action {
-        CleanAction::Command {
-            program,
-            args,
-            cwd,
-            irreversible,
-        } => Ok(CanonicalAction::Command {
-            program: program.clone(),
-            args: args.clone(),
-            cwd: cwd
-                .as_ref()
-                .map(|path| normalize_absolute_path(path))
-                .transpose()?,
-            irreversible: *irreversible,
-        }),
-        CleanAction::MoveToTrash { path } => Ok(CanonicalAction::MoveToTrash {
-            path: normalize_absolute_path(path)?,
-        }),
-        CleanAction::DeletePermanently {
-            path,
-            requires_explicit_flag,
-        } => Ok(CanonicalAction::DeletePermanently {
-            path: normalize_absolute_path(path)?,
-            requires_explicit_flag: *requires_explicit_flag,
-        }),
-        CleanAction::NoopInspectOnly => Ok(CanonicalAction::NoopInspectOnly),
-    }
-}
-
-fn canonical_evidence(evidence: &Evidence) -> Result<String> {
-    match evidence {
-        Evidence::MarkerFile { path } => Ok(format!("marker:{}", normalize_absolute_path(path)?)),
-        Evidence::KnownCacheDir { source, path } => {
-            Ok(format!("known:{source}:{}", normalize_absolute_path(path)?))
-        }
-        Evidence::OfficialCommand { command } => Ok(format!("official:{command}")),
-        Evidence::RuleMatched { rule_id } => Ok(format!("rule:{rule_id}")),
-        Evidence::UserConfigured => Ok("user_configured".to_string()),
-    }
-}
-
-fn system_time_ms(value: SystemTime) -> Option<u128> {
-    value
-        .duration_since(UNIX_EPOCH)
-        .ok()
-        .map(|value| value.as_millis())
 }
 
 #[cfg(test)]

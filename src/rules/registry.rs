@@ -8,22 +8,22 @@ use anyhow::{Result, bail};
 use crate::{
     model::{CleanAction, CleanupIntent, Ecosystem, RiskLevel, Scope, TargetKind, UntrustedTarget},
     path_identity::normalize_absolute_path,
-    providers::{
-        CARGO_HOME_RULE_DOC, NPM_CACHE_RULE_DOC, PIP_CACHE_RULE_DOC, PNPM_STORE_RULE_DOC,
-        YARN_CACHE_RULE_DOC,
-    },
-    rules::{KnownCacheAction, ProjectMarker, global_cache_rules, project_dir_rules},
-    scanner::{PYCACHE_RULE_DOC, RUST_TARGET_RULE_DOC},
+};
+
+use super::{
+    CARGO_HOME_RULE_DOC, KnownCacheAction, NPM_CACHE_RULE_DOC, PIP_CACHE_RULE_DOC,
+    PNPM_STORE_RULE_DOC, PYCACHE_RULE_DOC, ProjectMarker, RUST_TARGET_RULE_DOC,
+    YARN_CACHE_CLASSIC_RULE_DOC, YARN_CACHE_MODERN_RULE_DOC, global_cache_rules, project_dir_rules,
 };
 
 /// Trusted action metadata reconstructed from one declared rule/intent pair.
 /// Callers must not construct this from plan JSON.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActionSpec {
-    pub action: CleanAction,
-    pub risk: RiskLevel,
-    pub reversible: bool,
-    pub identity: String,
+pub(crate) struct ActionSpec {
+    pub(crate) action: CleanAction,
+    pub(crate) risk: RiskLevel,
+    pub(crate) reversible: bool,
+    pub(crate) identity: String,
     footprint: ActionFootprint,
 }
 
@@ -45,10 +45,49 @@ impl ActionSpec {
 /// The stable minimum registry contract. Future provider work extends this
 /// resolver; it must not create a second action reconstruction path.
 #[derive(Debug, Default)]
-pub struct RuleRegistry;
+struct RuleRegistry;
+
+pub(crate) fn resolve_action(target: &UntrustedTarget) -> Result<ActionSpec> {
+    RuleRegistry.resolve(target)
+}
+
+pub(crate) fn intent_from_scan_action(rule_id: &str, program: &str) -> Result<CleanupIntent> {
+    let (provider_id, action_id) = if rule_id == RUST_TARGET_RULE_DOC.id {
+        ("cargo".to_string(), "clean_manifest".to_string())
+    } else if rule_id == NPM_CACHE_RULE_DOC.id {
+        ("npm".to_string(), "cache_clean".to_string())
+    } else if rule_id == PIP_CACHE_RULE_DOC.id {
+        (pip_provider_name(program)?, "cache_purge".to_string())
+    } else if rule_id == PNPM_STORE_RULE_DOC.id {
+        ("pnpm".to_string(), "store_prune".to_string())
+    } else if rule_id == YARN_CACHE_CLASSIC_RULE_DOC.id {
+        ("yarn".to_string(), "cache_clean_classic".to_string())
+    } else if rule_id == YARN_CACHE_MODERN_RULE_DOC.id {
+        ("yarn".to_string(), "cache_clean_modern".to_string())
+    } else {
+        bail!("scan target uses an unregistered command rule: {rule_id}")
+    };
+    Ok(CleanupIntent::RunBuiltInAction {
+        provider_id,
+        action_id,
+    })
+}
+
+fn pip_provider_name(program: &str) -> Result<String> {
+    let name = Path::new(program)
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or(program)
+        .to_ascii_lowercase();
+    if matches!(name.as_str(), "py" | "python" | "python3") {
+        Ok(name)
+    } else {
+        bail!("unregistered pip provider program: {program}")
+    }
+}
 
 impl RuleRegistry {
-    pub fn resolve(&self, target: &UntrustedTarget) -> Result<ActionSpec> {
+    fn resolve(&self, target: &UntrustedTarget) -> Result<ActionSpec> {
         match &target.intent {
             CleanupIntent::TrashProjectArtifact { rule_id } => {
                 if rule_id != &target.rule_id {
@@ -176,7 +215,7 @@ impl RuleRegistry {
                     "--target-dir".to_string(),
                     path.display().to_string(),
                 ],
-                "rust.target:cargo_clean_manifest",
+                &format!("{}:cargo_clean_manifest", RUST_TARGET_RULE_DOC.id),
                 &RUST_TARGET_RULE_DOC.risk,
                 ActionFootprint::Path(path),
             ));
@@ -188,7 +227,7 @@ impl RuleRegistry {
         }
 
         match (target.rule_id.as_str(), provider_id, action_id) {
-            ("npm.cache.clean", "npm", "cache_clean") => {
+            (rule_id, "npm", "cache_clean") if rule_id == NPM_CACHE_RULE_DOC.id => {
                 require_target_facts(
                     target,
                     &NPM_CACHE_RULE_DOC.ecosystem,
@@ -203,13 +242,14 @@ impl RuleRegistry {
                         "clean".to_string(),
                         "--force".to_string(),
                     ],
-                    "npm.cache.clean:npm_cache_clean",
+                    &format!("{}:npm_cache_clean", NPM_CACHE_RULE_DOC.id),
                     &NPM_CACHE_RULE_DOC.risk,
-                    ActionFootprint::Logical("npm.cache.clean".to_string()),
+                    ActionFootprint::Logical(NPM_CACHE_RULE_DOC.id.to_string()),
                 ))
             }
-            ("pip.cache.purge", provider, "cache_purge")
-                if matches!(provider, "py" | "python" | "python3") =>
+            (rule_id, provider, "cache_purge")
+                if rule_id == PIP_CACHE_RULE_DOC.id
+                    && matches!(provider, "py" | "python" | "python3") =>
             {
                 require_target_facts(
                     target,
@@ -226,12 +266,12 @@ impl RuleRegistry {
                         "cache".to_string(),
                         "purge".to_string(),
                     ],
-                    "pip.cache.purge:cache_purge",
+                    &format!("{}:cache_purge", PIP_CACHE_RULE_DOC.id),
                     &PIP_CACHE_RULE_DOC.risk,
-                    ActionFootprint::Logical("pip.cache.purge".to_string()),
+                    ActionFootprint::Logical(PIP_CACHE_RULE_DOC.id.to_string()),
                 ))
             }
-            ("pnpm.store.prune", "pnpm", "store_prune") => {
+            (rule_id, "pnpm", "store_prune") if rule_id == PNPM_STORE_RULE_DOC.id => {
                 require_target_facts(
                     target,
                     &PNPM_STORE_RULE_DOC.ecosystem,
@@ -242,33 +282,35 @@ impl RuleRegistry {
                 Ok(command_spec(
                     "pnpm",
                     vec!["store".to_string(), "prune".to_string()],
-                    "pnpm.store.prune:store_prune",
+                    &format!("{}:store_prune", PNPM_STORE_RULE_DOC.id),
                     &PNPM_STORE_RULE_DOC.risk,
-                    ActionFootprint::Logical("pnpm.store.prune".to_string()),
+                    ActionFootprint::Logical(PNPM_STORE_RULE_DOC.id.to_string()),
                 ))
             }
-            ("yarn.cache.clean.classic", "yarn", "cache_clean_classic") => {
+            (rule_id, "yarn", "cache_clean_classic")
+                if rule_id == YARN_CACHE_CLASSIC_RULE_DOC.id =>
+            {
                 require_target_facts(
                     target,
-                    &YARN_CACHE_RULE_DOC.ecosystem,
+                    &YARN_CACHE_CLASSIC_RULE_DOC.ecosystem,
                     &TargetKind::PackageCache,
-                    &YARN_CACHE_RULE_DOC.risk,
+                    &YARN_CACHE_CLASSIC_RULE_DOC.risk,
                     false,
                 )?;
                 Ok(command_spec(
                     "yarn",
                     vec!["cache".to_string(), "clean".to_string()],
-                    "yarn.cache.clean.classic:cache_clean",
-                    &YARN_CACHE_RULE_DOC.risk,
-                    ActionFootprint::Logical("yarn.cache.clean.classic".to_string()),
+                    &format!("{}:cache_clean", YARN_CACHE_CLASSIC_RULE_DOC.id),
+                    &YARN_CACHE_CLASSIC_RULE_DOC.risk,
+                    ActionFootprint::Logical(YARN_CACHE_CLASSIC_RULE_DOC.id.to_string()),
                 ))
             }
-            ("yarn.cache.clean.modern", "yarn", "cache_clean_modern") => {
+            (rule_id, "yarn", "cache_clean_modern") if rule_id == YARN_CACHE_MODERN_RULE_DOC.id => {
                 require_target_facts(
                     target,
-                    &YARN_CACHE_RULE_DOC.ecosystem,
+                    &YARN_CACHE_MODERN_RULE_DOC.ecosystem,
                     &TargetKind::PackageCache,
-                    &YARN_CACHE_RULE_DOC.risk,
+                    &YARN_CACHE_MODERN_RULE_DOC.risk,
                     false,
                 )?;
                 Ok(command_spec(
@@ -278,9 +320,9 @@ impl RuleRegistry {
                         "clean".to_string(),
                         "--mirror".to_string(),
                     ],
-                    "yarn.cache.clean.modern:cache_clean_mirror",
-                    &YARN_CACHE_RULE_DOC.risk,
-                    ActionFootprint::Logical("yarn.cache.clean.modern".to_string()),
+                    &format!("{}:cache_clean_mirror", YARN_CACHE_MODERN_RULE_DOC.id),
+                    &YARN_CACHE_MODERN_RULE_DOC.risk,
+                    ActionFootprint::Logical(YARN_CACHE_MODERN_RULE_DOC.id.to_string()),
                 ))
             }
             _ => bail!(

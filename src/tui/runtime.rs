@@ -17,7 +17,7 @@ use crate::{
     executor::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
     inventory::{InventoryReport, inventory_root_with_cancel},
     model::{CleanupPlan, ScanHealth, ScanReport, TargetId},
-    plan_validation::{ValidatedPlan, validate_plan, validate_scanned_plan},
+    plan::{ValidatedPlan, validate_plan, validate_scanned_plan},
     process_runner::{CancelObserver, FlagCancelObserver},
     sweep::{ScanOptions, ScanProgress, Sweeper},
 };

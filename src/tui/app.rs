@@ -12,7 +12,8 @@ use crate::{
         CleanAction, CleanTarget, CleanupPlan, Evidence, RiskLevel, ScanHealth, ScanTotals, Scope,
         TargetId,
     },
-    plan_validation::validate_scanned_plan,
+    plan::validate_scanned_plan,
+    rules::PYCACHE_RULE_DOC,
     sweep::ScanPhase,
 };
 
@@ -1585,7 +1586,7 @@ fn pycache_project_root(target: &CleanTarget) -> Option<&PathBuf> {
         return None;
     };
     target.evidence.iter().any(|evidence| {
-        matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == "python.__pycache__")
+        matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == PYCACHE_RULE_DOC.id)
     })
     .then_some(root)
 }
@@ -2353,7 +2354,7 @@ mod tests {
         assert_eq!(selected, &vec![app.targets[0].id.clone()]);
         assert_eq!(
             plan_digest,
-            crate::plan_validation::validate_scanned_plan(plan)
+            crate::plan::validate_scanned_plan(plan)
                 .expect("frozen plan validates")
                 .digest()
         );

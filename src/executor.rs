@@ -13,7 +13,7 @@ use serde::Serialize;
 
 use crate::{
     model::{CleanAction, CleanTarget, TargetId},
-    plan_validation::{ValidatedPlan, ValidatedTarget},
+    plan::{ValidatedPlan, ValidatedTarget},
     process_runner::{
         CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, FlagCancelObserver,
         NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus, sanitize_process_output,

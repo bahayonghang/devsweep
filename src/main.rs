@@ -10,7 +10,7 @@ use devsweep::{
     model::{
         LEGACY_CLEANUP_PLAN_VERSION, SCAN_REPORT_VERSION, ScanReport, TargetId, UntrustedPlan,
     },
-    plan_validation::{V1_RESCAN_MESSAGE, validate_plan},
+    plan::{V1_RESCAN_MESSAGE, validate_plan},
     rules::RuleScope,
     safety::UserProtectionList,
     sweep::{ScanOptions, Sweeper},

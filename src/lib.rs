@@ -1,3 +1,4 @@
+pub(crate) mod cargo_metadata;
 pub mod cli;
 pub mod config;
 pub mod executor;
@@ -6,11 +7,10 @@ pub mod inventory;
 pub mod model;
 pub mod path_identity;
 pub(crate) mod path_safety;
-pub mod plan_validation;
+pub mod plan;
 pub mod process_runner;
 pub mod providers;
 pub mod ranking;
-pub mod registry;
 pub mod rules;
 pub mod safety;
 pub mod scanner;

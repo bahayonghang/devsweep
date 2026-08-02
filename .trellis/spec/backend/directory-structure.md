@@ -6,10 +6,9 @@
 
 ## Overview
 
-`devsweep` is currently a single Rust crate with a flat `src/` layout. Keep the
-flat layout while modules are small. Split a module into a directory only when
-the module has multiple cohesive submodules and the split removes real
-complexity.
+`devsweep` is a single Rust crate. Keep small implementation modules flat;
+use a module directory when it hides multiple cohesive owners behind one
+interface, as `model/`, `plan/`, and `rules/` do.
 
 The backend boundary owns CLI parsing, cleanup-plan domain types, project
 scanning, configuration/logging setup, execution/audit code, and provider
@@ -23,30 +22,38 @@ code. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
 src/
 ├── main.rs        # Binary entrypoint and command dispatch
 ├── lib.rs         # Public module exports for tests and future consumers
+├── cargo_metadata.rs # neutral Cargo scope probing, parsing, and diagnostics
 ├── cli.rs         # clap command definitions only
 ├── config.rs      # process-wide initialization such as tracing
 ├── executor.rs    # dry-run, command/trash execution, and audit JSONL
 ├── fs_size.rs     # parallel tree sizing with symlink safety
 ├── inventory.rs   # read-only capacity observations and pnpm-store inspection
-├── model.rs       # v2 untrusted JSON DTOs and internal scan/action types
 ├── path_identity.rs # lexical canonical path identity + live file identity
 ├── path_safety.rs # current-exe containment guard helpers
-├── plan_validation.rs # UntrustedPlan -> opaque ValidatedPlan boundary + digest
 ├── process_runner.rs # bounded external command runner (timeout/caps/tree kill)
 ├── safety.rs      # SafetyPolicy authorize funnel, protections, user list
 ├── providers.rs   # global tool-cache discovery (npm/pip/pnpm/yarn/cargo/...)
 ├── ranking.rs     # cleanup-plan ordering and conservative default-selection pass
-├── registry.rs    # trusted rule/intent -> action reconstruction
-├── rules.rs       # declarative rule tables + catalogue aggregation & row formatting
 ├── scanner.rs     # marker-first project discovery, non-mutating
 ├── sweep.rs       # scan→merge→rank pipeline owner (sole ranking call site)
 ├── bin/
 │   └── process_fixture.rs # child/grandchild fixture for ProcessRunner tests
+├── model/
+│   ├── mod.rs     # model interface
+│   ├── plan.rs    # v2 plan DTOs and internal cleanup domain values
+│   └── scan.rs    # scan reports, health, diagnostics, totals, sizing warnings
+├── plan/
+│   ├── mod.rs     # UntrustedPlan -> opaque ValidatedPlan boundary
+│   └── digest.rs  # private canonical manifest and SHA-256 digest
+├── rules/
+│   ├── mod.rs     # catalogue, lookup, formatting, and trust interface
+│   ├── definitions.rs # sole owner of built-in rule facts and ids
+│   └── registry.rs # private trusted intent-to-action reconstruction
 └── tui/           # ratatui TUI module (see frontend spec)
 ```
 
 There is no standalone `tests/` directory yet. Current tests live next to the
-module that owns the behavior, such as `model::tests`, `scanner::tests`, and
+module that owns the behavior, such as `model::plan::tests`, `scanner::tests`, and
 `tui::tests`.
 
 ---
@@ -55,16 +62,25 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
 
 - Put CLI argument shape in `src/cli.rs`. Keep command parsing structs free of
   filesystem scanning or cleanup side effects.
-- Put JSON-facing cross-layer data in `src/model.rs`. `UntrustedPlan`,
-  `UntrustedTarget`, `ScanReport`, `ScanHealth`, and `CleanupIntent` are the
-  versioned report/plan contract; they describe observed facts and intent,
-  never executable argv or an authoritative cleanup path. `CleanupPlan`,
-  `CleanTarget`, and `CleanAction` are internal typed scan/execution values,
-  not serde input.
-- Put untrusted-plan validation, canonical digesting, and the opaque
-  `ValidatedPlan` in `src/plan_validation.rs`; put rule/intent action
-  reconstruction in `src/registry.rs`. Keep lexical identity normalization in
+- Put JSON-facing and internal domain values under `src/model/`. `plan.rs` owns
+  `UntrustedPlan`, `UntrustedTarget`, `CleanupIntent`, `CleanupPlan`,
+  `CleanTarget`, and `CleanAction`; `scan.rs` owns `ScanReport`, `ScanHealth`,
+  diagnostics, totals, and sizing warnings. Model code imports only standard
+  library and Serde concerns, never process, scan, execution, filesystem, or
+  TUI implementations.
+- Put untrusted-plan validation and the opaque `ValidatedPlan` in
+  `src/plan/mod.rs`; keep canonical digest implementation private in
+  `src/plan/digest.rs`. Keep lexical identity normalization in
   `src/path_identity.rs` so CLI and TUI consume one trust boundary.
+- Put every built-in rule id, catalogue fact, and declarative rule table in
+  `src/rules/definitions.rs`. `src/rules/mod.rs` exposes catalogue/lookup
+  operations, while private `src/rules/registry.rs` reconstructs trusted
+  actions for plan validation. Scanner and provider implementations consume
+  rule facts; rules must not import those implementations.
+- Put Cargo metadata scope/probe types, process-result classification, and JSON
+  parsing in neutral `src/cargo_metadata.rs`. Scanner owns scan-lifetime result
+  caching and safety owns live authorization policy; both use this module
+  without importing one another.
 - Put cleanup-plan post-processing in `src/ranking.rs`. Ranking may reorder
   targets, calculate size/age scores, and make auto-selection more conservative
   from existing `CleanTarget` fields; it must not inspect new filesystem state
@@ -77,7 +93,7 @@ module that owns the behavior, such as `model::tests`, `scanner::tests`, and
   reaches the executor.
 - Put execution behavior in `src/executor.rs`. It consumes only a
   `ValidatedPlan`, runs exactly the explicit `ExecutionRequest.selected` set,
-  keeps registry-reconstructed command program/argv separate, delegates trash
+  keeps rules-reconstructed command program/argv separate, delegates trash
   moves through a small runner boundary, and owns audit JSONL writes.
 - Put the central execution-time safety funnel in `src/safety.rs`. Command and
   trash side effects must receive an `AuthorizedAction` from
