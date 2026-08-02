@@ -1168,3 +1168,24 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Status
 
 [OK] **Completed**
+
+
+## Session 38: Untangle core contracts and rule ownership
+
+**Date**: 2026-08-03
+**Task**: Untangle core contracts and rule ownership
+**Branch**: `dev`
+
+### Summary
+
+Split model and plan ownership, centralized rule definitions and trusted action reconstruction, and extracted neutral Cargo metadata probing; targeted tests and just ci passed.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f726871` | (see git log) |
+
+### Status
+
+[OK] **Completed**
