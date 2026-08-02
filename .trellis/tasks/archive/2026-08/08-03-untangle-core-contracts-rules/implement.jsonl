@@ -1,0 +1,6 @@
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Source evidence for rule cycles, model/process reversal, Cargo metadata ownership, and compatibility constraints."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Current model, plan validation, rule, scanner, and safety ownership conventions."}
+{"file":".trellis/spec/backend/index.md","reason":"Routes implementation to the complete backend guideline set."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/backend-contract-routing.md","reason":"Routes full plan/rule/scanner quality scenarios without injection truncation."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Trace model and plan data through scan, validation, execution, and TUI callers during moves."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Keep rule facts and process-to-diagnostic mapping single-source."}
