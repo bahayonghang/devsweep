@@ -54,7 +54,10 @@ release-smoke:
     Write-Output 'release smoke ok'
 
 dev:
-    cargo run --locked -- tui
+    cargo run --locked --bin devsweep -- tui
+
+docs:
+    npm run docs:dev
 
 ci: fmt sync-lock check test clippy
     @echo "ci complete"
