@@ -1360,3 +1360,24 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 47: 修复桌面 CI 前端门禁
+
+**Date**: 2026-08-03
+**Task**: 修复桌面 CI 前端门禁
+**Branch**: `dev`
+
+### Summary
+
+修复 Desktop CI 对不存在 npm run check 的调用，改为 Node 22 类型生成、lint、typecheck 与 31 项前端测试门禁；同步 desktop-frontend 规范并完成独立检查。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `712884a` | (see git log) |
+
+### Status
+
+[OK] **Completed**

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 46
+- **Total Sessions**: 47
 - **Last Active**: 2026-08-03
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1362 | Active |
+| `journal-1.md` | ~1383 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 47 | 2026-08-03 | 修复桌面 CI 前端门禁 | `712884a` | `dev` |
 | 46 | 2026-08-03 | 完成桌面扫描审查执行界面 | `6408f65` | `dev` |
 | 45 | 2026-08-03 | 完成 Tauri 壳层与后端桥接 | `54b2ca6` | `dev` |
 | 44 | 2026-08-03 | 完成 core GUI 执行契约扩展 | `614a79eafa2ed59ce7f2c291df8964c5bdb426e3` | `dev` |
