@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/index.md","reason":"Routes implementation to the complete backend safety, validation, error, logging, and JSON-contract guidance."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Defines JSON stdout and recoverable diagnostic behavior for scanner and CLI failures."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Defines stderr-only tracing and sanitized diagnostic constraints."}
+{"file":".trellis/spec/frontend/index.md","reason":"Routes implementation to the complete TUI render, state, type-safety, and TestBackend guidance."}
+{"file":".trellis/tasks/archive/2026-08/08-01-d-drive-space-audit/research/devsweep-full-d-drive-comparison.md","reason":"Primary measured evidence for Cloud Files, Cargo metadata, partial size, pycache, and inventory requirements."}
+{"file":".trellis/tasks/08-01-scan-rule-hardening/research/scan-audit-findings.md","reason":"Condensed task-local evidence and scope boundaries from the D drive audit."}

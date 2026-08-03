@@ -1,0 +1,5 @@
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Evidence for hotspots, dependency reversals, safety contracts, and candidate deep-module seams."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Current Rust module ownership and visibility conventions that the redesign must replace deliberately."}
+{"file":".trellis/spec/frontend/directory-structure.md","reason":"Current TUI state/runtime/render seams and visibility discipline."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Cross-layer data-flow checklist for plan, scan, execution, and TUI moves."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Guard against duplicate helpers and shallow compatibility layers during reorganization."}

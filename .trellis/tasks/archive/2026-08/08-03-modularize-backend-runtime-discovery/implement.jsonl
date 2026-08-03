@@ -1,0 +1,7 @@
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Backend hotspot, ownership, platform, and safety evidence for the decomposition."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Current filesystem, process, scanner, inventory, execution, and safety ownership contracts."}
+{"file":".trellis/spec/backend/index.md","reason":"Routes implementation to the complete backend guideline set."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/backend-contract-routing.md","reason":"Routes full execution/provider/ranking/scanner/inventory scenarios without injection truncation."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Root versus nested failures, incomplete sizing, and command error propagation rules."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Preserve diagnostic filtering and JSON stdout separation through module moves."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Prevent duplicate path, cancellation, process, and formatting helpers during extraction."}

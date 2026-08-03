@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 32
-- **Last Active**: 2026-07-28
+- **Total Sessions**: 42
+- **Last Active**: 2026-08-03
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1025 | Active |
+| `journal-1.md` | ~1278 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,16 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 42 | 2026-08-03 | Complete Rust source architecture reorganization | `f726871`, `9ea6ffd`, `9a059ed`, `f62a872` | `dev` |
+| 41 | 2026-08-03 | Narrow application entrypoint and reconcile architecture | `f62a872` | `dev` |
+| 40 | 2026-08-03 | Decompose TUI internals | `9a059ed` | `dev` |
+| 39 | 2026-08-03 | Modularize backend runtime and discovery | `9ea6ffd` | `dev` |
+| 38 | 2026-08-03 | Untangle core contracts and rule ownership | `f726871` | `dev` |
+| 37 | 2026-08-02 | 完成 VitePress 双语文档站 | `9c84388`, `0745f97` | `dev` |
+| 36 | 2026-08-01 | 加固扫描安全与容量报告 | `8d62ebf` | `dev` |
+| 35 | 2026-08-01 | 修正扫描规则规划证据路径 | `e78ece9` | `dev` |
+| 34 | 2026-08-01 | 纠正任务归档并归档 D 盘审计 | `2d546af`, `b13da4a` | `dev` |
+| 33 | 2026-08-01 | 归档扫描规则加固规划 | `db9ec4b6ed0709b282f0fae603c8b6edfb98ffee` | `dev` |
 | 32 | 2026-07-28 | Skeptic gap closeout: cancel+registry | `9dc3535` | `dev` |
 | 31 | 2026-07-28 | Audit remediation parent complete 12/12 | `47f55c2`, `ee1415e`, `2ec5bba`, `859771a`, `d75613b`, `0388695`, `bc11170`, `736c237`, `5a1501f`, `16ddaba`, `124299a`, `2ab327a` | `dev` |
 | 30 | 2026-07-28 | Rule registry providers complete | `859771a` | `dev` |

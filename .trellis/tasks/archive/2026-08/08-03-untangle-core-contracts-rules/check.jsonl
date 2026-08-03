@@ -1,0 +1,4 @@
+{"file":".trellis/spec/backend/index.md","reason":"Routes the checker to all backend contracts."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/backend-contract-routing.md","reason":"Routes full plan/rule/scanner verification scenarios without injection truncation."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Verify version, parse, root, and Cargo metadata error semantics remain intact."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Confirm the evidenced dependency cycles/reversals are actually removed rather than hidden by re-exports."}

@@ -16,9 +16,12 @@ propagating context.
 ## Error Types
 
 - Binary entrypoint: `fn main() -> anyhow::Result<()>`
-- TUI entrypoint: `pub fn run() -> anyhow::Result<()>`
-- Scanner entrypoint:
-  `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+- External crate entrypoint: `devsweep::run() -> anyhow::Result<()>`
+- Crate-private TUI entrypoint: `tui::run() -> anyhow::Result<()>`
+- Application command handlers:
+  `application::commands::run_<command>(...) -> anyhow::Result<()>`
+- Scan report pipeline:
+  `scan::Sweeper::default().full_scan_report(...) -> anyhow::Result<ScanReport>`
 
 Use `anyhow::Context` when a filesystem operation needs path-specific context:
 
@@ -32,23 +35,31 @@ let root = root
 
 ## Error Handling Patterns
 
-- Use `?` to propagate command-level failures to `main`.
-- Use `anyhow::bail!` for explicit user-facing command failures. Current
-  example: `clean --execute` fails because execution is not implemented yet.
-- Scanner root access failures are hard errors. Inaccessible nested entries are
+- Use `?` to propagate command-level failures through `application::run` and
+  `devsweep::run` to `main`.
+- Use `anyhow::bail!` for explicit user-facing command failures. For example,
+  `clean --execute` without `--plan PATH` fails before the executor runs.
+- Saved plan/report decoding in `src/application/commands.rs` adds file and
+  JSON context, rejects inventory documents, and preserves version-specific
+  rescan guidance before validation.
+- Project scan root access failures are hard errors. Inaccessible nested entries are
   recorded as discovery diagnostics and skipped so one unreadable child does not
   abort the whole scan; the outcome is marked partial while sibling candidates
   remain.
-- Size walks never convert I/O failure into a trusted `0 B`. They return a
-  `SizeEstimate` that is either a complete total, a partial lower bound, or
-  unknown. Incomplete and unknown estimates are not selected by default.
+- Bounded walks under `src/filesystem/sizing.rs` never convert I/O failure into
+  a trusted `0 B`. They return a `SizeEstimate` that is either a complete total,
+  a partial lower bound, or unknown. Incomplete and unknown estimates are not
+  selected by default.
+- Execution authorization and started-audit failures are fail-closed. A
+  terminal audit failure after dispatch reports the result as unknown because
+  the side effect may already have run.
 - Tests may use `expect(...)` with a specific reason.
 
-Example from `src/main.rs`:
+Example from `src/application/commands.rs`:
 
 ```rust
-if command.execute {
-    anyhow::bail!("cleanup execution is not implemented in the foundation build");
+if command.execute && command.plan.is_none() {
+    anyhow::bail!("cleanup execution requires --plan PATH");
 }
 ```
 

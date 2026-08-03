@@ -1023,3 +1023,256 @@ Backfilled true-cancellation D9/scan/size/mid-command cancel and rule-registry p
 ### Status
 
 [OK] **Completed**
+
+
+## Session 33: 归档扫描规则加固规划
+
+**Date**: 2026-08-01
+**Task**: 归档扫描规则加固规划
+**Branch**: `dev`
+
+### Summary
+
+完成 D 盘扫描审计后的规则加固规划，并按用户指令在实施前归档。
+
+### Main Changes
+
+- 记录 Cloud Files 重解析点、扫描健康、Cargo 元数据、容量展示和只读盘点的约束。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `db9ec4b6ed0709b282f0fae603c8b6edfb98ffee` | (see git log) |
+
+### Testing
+
+- [OK] python .trellis/scripts/task.py validate .trellis/tasks/08-01-scan-rule-hardening
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如需实施，基于归档规划重新创建或恢复任务并取得明确启动授权。
+
+
+## Session 34: 纠正任务归档并归档 D 盘审计
+
+**Date**: 2026-08-01
+**Task**: 纠正任务归档并归档 D 盘审计
+**Branch**: `dev`
+
+### Summary
+
+恢复尚未实施的 scan-rule-hardening 为 planning，并归档已完成的 D 盘空间审计任务。
+
+### Main Changes
+
+- 纠正 scan-rule-hardening 的错误归档；其规划保留并等待明确实施授权。
+- 提交并归档 D 盘空间审计的原始扫描、对比报告及执行记录。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2d546af` | (see git log) |
+| `b13da4a` | (see git log) |
+
+### Testing
+
+- [OK] python .trellis/scripts/task.py validate 08-01-d-drive-space-audit
+- [OK] git diff --cached --check
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- scan-rule-hardening 保持 planning，等待明确启动与实施授权。
+
+
+## Session 35: 修正扫描规则规划证据路径
+
+**Date**: 2026-08-01
+**Task**: 修正扫描规则规划证据路径
+**Branch**: `dev`
+
+### Summary
+
+将活动规划任务对 D 盘审计报告的引用更新为归档路径，恢复其结构校验。
+
+### Main Changes
+
+- 仅更新 implement.jsonl 与 check.jsonl 中的 D 盘审计证据路径。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e78ece9` | (see git log) |
+
+### Testing
+
+- [OK] python .trellis/scripts/task.py validate 08-01-scan-rule-hardening
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- scan-rule-hardening 保持 planning，等待明确启动与实施授权。
+
+
+## Session 36: 加固扫描安全与容量报告
+
+**Date**: 2026-08-01
+**Task**: 加固扫描安全与容量报告
+**Branch**: `dev`
+
+### Summary
+
+完成重解析点 fail-closed 扫描、结构化健康报告与拒绝审计、Cargo 元数据诊断/缓存、真实容量重扫、只读 inventory，以及对应 CLI/TUI 呈现；just ci 和 JSON 冒烟通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8d62ebf` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 37: 完成 VitePress 双语文档站
+
+**Date**: 2026-08-02
+**Task**: 完成 VitePress 双语文档站
+**Branch**: `dev`
+
+### Summary
+
+新增中英文 VitePress 文档站和 just docs 命令；完成 npm ci、文档构建、just ci 与浏览器路由验收。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9c84388` | (see git log) |
+| `0745f97` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 38: Untangle core contracts and rule ownership
+
+**Date**: 2026-08-03
+**Task**: Untangle core contracts and rule ownership
+**Branch**: `dev`
+
+### Summary
+
+Split model and plan ownership, centralized rule definitions and trusted action reconstruction, and extracted neutral Cargo metadata probing; targeted tests and just ci passed.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f726871` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 39: Modularize backend runtime and discovery
+
+**Date**: 2026-08-03
+**Task**: Modularize backend runtime and discovery
+**Branch**: `dev`
+
+### Summary
+
+Reorganized filesystem, process, scan, inventory, and execution implementations into cohesive modules while preserving safety, audit, cancellation, and scan behavior; updated backend specs and passed just ci.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9ea6ffd` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 40: Decompose TUI internals
+
+**Date**: 2026-08-03
+**Task**: Decompose TUI internals
+**Branch**: `dev`
+
+### Summary
+
+Split TUI app state transitions, runtime services and workers, rendering views, and shared display formatting into cohesive private modules; reconciled frontend specs and passed focused and full quality gates.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9a059ed` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 41: Narrow application entrypoint and reconcile architecture
+
+**Date**: 2026-08-03
+**Task**: Narrow application entrypoint and reconcile architecture
+**Branch**: `dev`
+
+### Summary
+
+Moved command composition into a private application module, reduced the public Rust interface to devsweep::run, enforced unreachable_pub visibility discipline, reconciled code_map and current specs, and passed public-surface, CLI, JSON, safety, TUI, and full CI validation.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f62a872` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 42: Complete Rust source architecture reorganization
+
+**Date**: 2026-08-03
+**Task**: Complete Rust source architecture reorganization
+**Branch**: `dev`
+
+### Summary
+
+Completed the four-child Rust architecture migration: untangled core contracts, modularized backend runtime and discovery, decomposed TUI internals, narrowed the application interface to devsweep::run, reconciled maintained architecture docs, and passed final cross-child safety and compatibility validation.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f726871` | (see git log) |
+| `9ea6ffd` | (see git log) |
+| `9a059ed` | (see git log) |
+| `f62a872` | (see git log) |
+
+### Status
+
+[OK] **Completed**

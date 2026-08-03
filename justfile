@@ -5,6 +5,9 @@ default: ci
 fmt:
     cargo fmt --all -- --check
 
+sync-lock:
+    cargo update --offline --package devsweep
+
 check:
     cargo check --locked --all-targets
 
@@ -51,7 +54,10 @@ release-smoke:
     Write-Output 'release smoke ok'
 
 dev:
-    cargo run --locked -- tui
+    cargo run --locked --bin devsweep -- tui
 
-ci: fmt check test clippy
+docs:
+    npm run docs:dev
+
+ci: fmt sync-lock check test clippy
     @echo "ci complete"

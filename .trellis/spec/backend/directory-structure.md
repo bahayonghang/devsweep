@@ -6,14 +6,16 @@
 
 ## Overview
 
-`devsweep` is currently a single Rust crate with a flat `src/` layout. Keep the
-flat layout while modules are small. Split a module into a directory only when
-the module has multiple cohesive submodules and the split removes real
-complexity.
+`devsweep` is a single, binary-oriented Rust crate. Its only external Rust
+interface is `devsweep::run()`. Keep implementation modules private by default;
+use a module directory when it hides multiple cohesive owners behind one
+crate-internal interface, as `application/`, `model/`, `plan/`, and `rules/`
+do.
 
-The backend boundary owns CLI parsing, cleanup-plan domain types, project
-scanning, configuration/logging setup, execution/audit code, and provider
-code. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
+The application boundary owns CLI parsing, process-wide tracing setup, command
+dispatch, saved-input decoding, and user-facing output. Backend modules own the
+cleanup domain, scanning, inventory, process execution, safety, and audit
+behavior. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
 
 ---
 
@@ -21,84 +23,140 @@ code. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
 
 ```text
 src/
-├── main.rs        # Binary entrypoint and command dispatch
-├── lib.rs         # Public module exports for tests and future consumers
-├── cli.rs         # clap command definitions only
-├── config.rs      # process-wide initialization such as tracing
-├── executor.rs    # dry-run, command/trash execution, and audit JSONL
-├── fs_size.rs     # parallel tree sizing with symlink safety
-├── model.rs       # v2 untrusted JSON DTOs and internal scan/action types
-├── path_identity.rs # lexical canonical path identity + live file identity
-├── path_safety.rs # current-exe containment guard helpers
-├── plan_validation.rs # UntrustedPlan -> opaque ValidatedPlan boundary + digest
-├── process_runner.rs # bounded external command runner (timeout/caps/tree kill)
-├── safety.rs      # SafetyPolicy authorize funnel, protections, user list
-├── providers.rs   # global tool-cache discovery (npm/pip/pnpm/yarn/cargo/...)
-├── ranking.rs     # cleanup-plan ordering and conservative default-selection pass
-├── registry.rs    # trusted rule/intent -> action reconstruction
-├── rules.rs       # declarative rule tables + catalogue aggregation & row formatting
-├── scanner.rs     # marker-first project discovery, non-mutating
-├── sweep.rs       # scan→merge→rank pipeline owner (sole ranking call site)
+├── main.rs        # Minimal binary delegation to devsweep::run
+├── lib.rs         # Public run function; all implementation modules private
+├── cargo_metadata.rs # neutral Cargo scope probing, parsing, and diagnostics
+├── application/
+│   ├── mod.rs     # tracing initialization, Clap parse, typed dispatch
+│   ├── cli.rs     # private Clap command definitions and parser tests
+│   └── commands.rs # command handlers, input decoding, output, boundary tests
 ├── bin/
 │   └── process_fixture.rs # child/grandchild fixture for ProcessRunner tests
+├── execution/
+│   ├── mod.rs     # Executor interface and authorize/audit/dispatch orchestration
+│   ├── audit.rs   # durable JSONL journal and unconfirmed-start replay
+│   ├── command.rs # ProcessRunner command adapter and trash adapter
+│   └── safety/
+│       ├── mod.rs # SafetyPolicy authorize funnel and live revalidation
+│       └── protections.rs # versioned atomic user-protection persistence
+├── filesystem/
+│   ├── mod.rs     # shared identity, containment, reparse, and sizing interface
+│   ├── identity.rs # lexical normalization and live file identity
+│   ├── containment.rs # containment and current-executable checks
+│   ├── reparse.rs # no-follow platform reparse/symlink probing
+│   └── sizing.rs  # bounded cancelable tree sizing
+├── inventory/
+│   ├── mod.rs     # read-only capacity observation orchestration
+│   └── pnpm.rs    # bounded pnpm reference and orphan evidence inspection
+├── model/
+│   ├── mod.rs     # model interface
+│   ├── plan.rs    # v2 plan DTOs and internal cleanup domain values
+│   └── scan.rs    # scan reports, health, diagnostics, totals, sizing warnings
+├── plan/
+│   ├── mod.rs     # UntrustedPlan -> opaque ValidatedPlan boundary
+│   └── digest.rs  # private canonical manifest and SHA-256 digest
+├── process/
+│   ├── mod.rs     # ProcessRunner request/result and execution policy interface
+│   ├── cancel.rs  # cooperative cancellation observers
+│   ├── capture.rs # bounded stream capture and output sanitization
+│   └── tree.rs    # Windows Job Object / Unix process-group lifecycle
+├── rules/
+│   ├── mod.rs     # catalogue, lookup, formatting, and trust interface
+│   ├── definitions.rs # sole owner of built-in rule facts and ids
+│   └── registry.rs # private trusted intent-to-action reconstruction
+├── scan/
+│   ├── mod.rs     # Sweeper merge/progress interface and sole ranking call site
+│   ├── ranking.rs # pure ordering and conservative default-selection policy
+│   ├── project/
+│   │   ├── mod.rs # marker-first traversal and reviewed rescan
+│   │   ├── cargo.rs # scan-lifetime Cargo workspace cache
+│   │   └── dedupe.rs # root and target footprint dedupe
+│   └── global/
+│       ├── mod.rs # global provider target construction
+│       └── probe.rs # bounded read-only provider command probing
 └── tui/           # ratatui TUI module (see frontend spec)
 ```
 
-There is no standalone `tests/` directory yet. Current tests live next to the
-module that owns the behavior, such as `model::tests`, `scanner::tests`, and
-`tui::tests`.
+There is no standalone `tests/` directory. Tests live with the owner, including
+`application::cli::tests`, `application::commands::tests`,
+`model::plan::tests`, `scan::project::tests`, `execution::tests`, and the
+dedicated `tui/app/tests.rs`, `tui/runtime/tests.rs`, and
+`tui/render/tests.rs` modules.
 
 ---
 
 ## Module Organization
 
-- Put CLI argument shape in `src/cli.rs`. Keep command parsing structs free of
-  filesystem scanning or cleanup side effects.
-- Put JSON-facing cross-layer data in `src/model.rs`. `UntrustedPlan`,
-  `UntrustedTarget`, and `CleanupIntent` are the versioned persisted contract;
-  they describe observed facts and intent, never executable argv or an
-  authoritative cleanup path. `CleanupPlan`, `CleanTarget`, and `CleanAction`
-  are internal typed scan/execution values, not serde input.
-- Put untrusted-plan validation, canonical digesting, and the opaque
-  `ValidatedPlan` in `src/plan_validation.rs`; put rule/intent action
-  reconstruction in `src/registry.rs`. Keep lexical identity normalization in
-  `src/path_identity.rs` so CLI and TUI consume one trust boundary.
-- Put cleanup-plan post-processing in `src/ranking.rs`. Ranking may reorder
-  targets, calculate size/age scores, and make auto-selection more conservative
-  from existing `CleanTarget` fields; it must not inspect new filesystem state
-  or execute cleanup behavior.
-- Put project discovery in `src/scanner.rs`. Scanner code creates
-  `CleanTarget` values only; it must not delete files, move to trash, or run
-  cleanup commands.
-- Put execution behavior in `src/executor.rs`. It consumes only a
+- Put application composition under `src/application/`. `cli.rs` owns only
+  private Clap types. `commands.rs` owns command handlers, saved plan/report
+  decoding, and CLI formatting. `mod.rs` initializes tracing, retains
+  `Cli::parse()` process-exit semantics, and performs typed dispatch. Backend
+  and TUI modules must not import `application`.
+- Put JSON-facing and internal domain values under `src/model/`. `plan.rs` owns
+  `UntrustedPlan`, `UntrustedTarget`, `CleanupIntent`, `CleanupPlan`,
+  `CleanTarget`, and `CleanAction`; `scan.rs` owns `ScanReport`, `ScanHealth`,
+  diagnostics, totals, and sizing warnings. Model code imports only standard
+  library and Serde concerns, never process, scan, execution, filesystem, or
+  TUI implementations.
+- Put untrusted-plan validation and the opaque `ValidatedPlan` in
+  `src/plan/mod.rs`; keep canonical digest implementation private in
+  `src/plan/digest.rs`. Keep lexical identity normalization, live identity,
+  containment, no-follow reparse probing, and bounded sizing under
+  `src/filesystem/` so every caller consumes one filesystem safety boundary.
+- Put every built-in rule id, catalogue fact, and declarative rule table in
+  `src/rules/definitions.rs`. `src/rules/mod.rs` exposes catalogue/lookup
+  operations, while private `src/rules/registry.rs` reconstructs trusted
+  actions for plan validation. Scanner and provider implementations consume
+  rule facts; rules must not import those implementations.
+- Put Cargo metadata scope/probe types, process-result classification, and JSON
+  parsing in neutral `src/cargo_metadata.rs`. `src/scan/project/cargo.rs` owns
+  scan-lifetime result caching and `src/execution/safety/mod.rs` owns live
+  authorization policy; both use this module without importing one another.
+- Put the complete discovery pipeline under `src/scan/`. Project traversal,
+  Cargo caching, dedupe, and reviewed rescan live in `scan/project/`; global
+  provider probing and target construction live in `scan/global/`. Both return
+  unranked observations. `Sweeper` in `scan/mod.rs` owns merge, cumulative
+  progress, and the sole production call to private `scan/ranking.rs`.
+- Put storage-only inspection under `src/inventory/`. `inventory/mod.rs`
+  produces typed observations; private `inventory/pnpm.rs` owns bounded pnpm
+  reference inspection. Inventory never creates a `CleanupPlan` or reaches
+  execution.
+- Put execution behavior under `src/execution/`. `Executor` consumes only a
   `ValidatedPlan`, runs exactly the explicit `ExecutionRequest.selected` set,
-  keeps registry-reconstructed command program/argv separate, delegates trash
-  moves through a small runner boundary, and owns audit JSONL writes.
-- Put the central execution-time safety funnel in `src/safety.rs`. Command and
-  trash side effects must receive an `AuthorizedAction` from
-  `SafetyPolicy::authorize`; do not reintroduce a bypass path.
-- Put all external-process spawning in `src/process_runner.rs`. Providers and
-  the executor command runner must call this port rather than
+  keeps rules-reconstructed command program/argv separate, delegates trash
+  moves through a small runner boundary, and orders authorization, durable
+  started audit, dispatch, and terminal audit. `execution/audit.rs` is the sole
+  owner of audit JSONL and replay; `execution/safety/` owns live authorization
+  and user protections. Every side effect must receive an `AuthorizedAction`
+  from `SafetyPolicy::authorize`; do not reintroduce a bypass path.
+- Put all external-process spawning under `src/process/`. Global provider probes,
+  Cargo metadata, inventory, and the execution command runner must call
+  `ProcessRunner` rather than
   `Command::output()`. The runner owns timeout, output caps with tail capture,
   neutral cwd by default, process-tree termination (Windows Job Object / Unix
   process group), typed status, and `sanitize_process_output` for display and
   audit. Keep program and argv separate; never shell-compose or shell out to
   `kill` / `taskkill`. Cancellation is observed through `CancelObserver`; the
   shared token type is owned by the true-cancellation task.
-- Put binary orchestration in `src/main.rs`. It wires `clap` input to module
-  entrypoints and handles user-facing command output.
-- Export a module from `src/lib.rs` only when integration tests, the binary, or
-  a future crate boundary need it.
+- Keep `src/main.rs` to `devsweep::run()` delegation only. It must not parse
+  arguments, initialize tracing, decode files, format output, or dispatch
+  individual commands.
+- Keep `src/lib.rs` binary-oriented: `run` is the deliberate external Rust
+  interface and implementation modules remain private. Cross-top-level-module
+  collaboration uses `pub(crate)` only where needed; directory children prefer
+  `pub(super)` or private items. Keep the crate-level `unreachable_pub` lint
+  enabled so the canonical Clippy gate rejects accidental public implementation
+  items. Do not add compatibility re-exports for old implementation paths.
 
-Example from `src/main.rs`:
+Example from `src/application/commands.rs`:
 
 ```rust
-let include_projects = command.projects || !command.global;
-let plan = if include_projects {
-    ProjectScanner::new().scan_roots(&command.roots)?
-} else {
-    CleanupPlan::empty()
+let options = ScanOptions {
+    include_projects: command.projects || !command.global,
+    include_global: command.global || !command.projects,
+    roots: command.roots.clone(),
 };
+let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
 ```
 
 ---
@@ -122,6 +180,6 @@ let plan = if include_projects {
   second backend consumer.
 - Do not duplicate cleanup-plan fields in CLI or TUI code. Import the model
   types instead.
-- Do not put execution behavior into scanner modules. Scanner produces action
-  data; executor is the only module that may run commands or move targets to
-  trash.
+- Do not put execution behavior under `src/scan/`. Scan code produces action
+  data; `src/execution/` is the only module that may run cleanup commands or
+  move targets to trash.

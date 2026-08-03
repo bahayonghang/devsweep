@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/index.md","reason":"Review the complete backend safety, plan validation, JSON-contract, and full CI guidance."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Review clean JSON stdout and durable diagnostic/audit presentation."}
+{"file":".trellis/spec/frontend/index.md","reason":"Review the complete TUI state/render boundary and TestBackend guidance."}
+{"file":".trellis/tasks/archive/2026-08/08-01-d-drive-space-audit/research/devsweep-full-d-drive-comparison.md","reason":"Validate that implementation closes the measured defects without widening cleanup authority."}
+{"file":".trellis/tasks/08-01-scan-rule-hardening/research/scan-audit-findings.md","reason":"Validate reparse, Cargo, size, and post-action evidence against the observed audit cases."}

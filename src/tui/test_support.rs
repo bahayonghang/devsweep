@@ -10,7 +10,8 @@ use crate::model::{
 
 use super::{
     app::{App, UiEvent},
-    render::{action_summary, render_app},
+    display::action_summary,
+    render::render_app,
 };
 
 pub(super) fn key(code: KeyCode) -> UiEvent {
@@ -122,6 +123,7 @@ pub(super) fn target(
         path: path.clone(),
         estimated_bytes,
         size_complete: true,
+        sizing_warnings: Vec::new(),
         last_modified: None,
         risk,
         reversible,

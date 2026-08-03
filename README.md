@@ -25,27 +25,33 @@ The scanner does not follow symlinked cleanup directories. On Windows, reparse-p
 Open the TUI:
 
 ```powershell
-cargo run -- tui
+cargo run --bin devsweep -- tui
 ```
 
 Scan the current directory and global providers as JSON:
 
 ```powershell
-cargo run -- scan --json
+cargo run --bin devsweep -- scan --json
 ```
 
 Save a plan, then dry-run cleanup:
 
 ```powershell
-cargo run -- scan . --json > plan.json
-cargo run -- clean --plan plan.json
+cargo run --bin devsweep -- scan . --json > plan.json
+cargo run --bin devsweep -- clean --plan plan.json
 ```
 
 Execute selected targets from a plan:
 
 ```powershell
-cargo run -- clean --plan plan.json --execute --audit-log devsweep-audit.jsonl
+cargo run --bin devsweep -- clean --plan plan.json --execute --audit-log devsweep-audit.jsonl
 ```
+
+## Documentation
+
+The complete English and Simplified Chinese documentation site lives in
+[`docs/`](docs/index.md). Install its locked dependencies with `npm ci`, then run
+`just docs` to start the local site.
 
 ## Validation
 

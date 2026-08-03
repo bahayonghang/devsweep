@@ -41,7 +41,8 @@ explicitly adds cleanup support.
   - `just test`
 - CLI entrypoints:
   - `devsweep tui`
-  - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
+  - `devsweep scan [ROOT]... [--json] [--global] [--projects] [--rescan-target TARGET_ID]`
+  - `devsweep inventory [ROOT] [--json]`
   - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
   - `devsweep rules`
 
@@ -49,10 +50,10 @@ explicitly adds cleanup support.
 
 - `just ci` is the canonical local quality gate and must include formatting,
   type-checking, tests, and clippy.
-- `devsweep scan --json` must emit the current JSON cleanup plan contract. It
-  is a declarative v2 `UntrustedPlan`; a saved target carries typed intent and
-  observed facts, never executable argv, cwd, or an authoritative action path.
-  An empty plan is:
+- `devsweep scan --json` emits a versioned `ScanReport` with an embedded
+  declarative v2 `UntrustedPlan` and non-authoritative health observations. A
+  saved target carries typed intent and observed facts, never executable argv,
+  cwd, or an authoritative action path. An empty embedded plan is:
   ```json
   {
     "version": 2,
@@ -60,12 +61,13 @@ explicitly adds cleanup support.
   }
   ```
 - `devsweep clean` defaults to dry-run behavior.
-- `devsweep clean --execute` is owned by `src/executor.rs` after the execution
+- `devsweep clean --execute` is owned by `src/execution/mod.rs` after the execution
   engine task.
 
 #### 4. Validation & Error Matrix
 
-- `scan --json` succeeds -> valid JSON plan with `version` and `targets`.
+- `scan --json` succeeds -> valid JSON report with `version`, `plan`, and
+  `health`; `plan` remains a valid v2 cleanup plan.
 - `clean --plan PATH` without `--execute` succeeds -> reports dry-run and
   performs no action.
 - `clean --execute` without `--plan PATH` -> returns an error before execution
@@ -78,13 +80,13 @@ explicitly adds cleanup support.
 - Good: `just ci` passes before a task is reported complete.
 - Base: `cargo check --all-targets` passes when run directly.
 - Bad: `scan` discovers or deletes directories before the scanner task exists.
-- Bad: `clean --execute` invokes `std::process::Command` outside
-  `src/executor.rs`.
+- Bad: `clean --execute` invokes `std::process::Command` outside the bounded
+  `src/process/` owner.
 
 #### 6. Tests Required
 
 - CLI definition test for subcommand shape.
-- Cleanup plan JSON serialization/round-trip tests for representative targets.
+- Scan-report JSON serialization/round-trip tests for representative targets.
 - TUI placeholder render test through ratatui `TestBackend`.
 - Source scan or review confirming no deletion/trash/process execution code is
   present in foundation.
@@ -101,7 +103,7 @@ std::process::Command::new("cargo").arg("clean").status()?;
 Correct:
 
 ```rust
-// Saved plans declare an intent; the registry owns the argv template.
+// Saved plans declare an intent; the private rules registry owns the argv template.
 CleanupIntent::RunBuiltInAction {
     provider_id: "cargo".to_string(),
     action_id: "clean_manifest".to_string(),
@@ -120,7 +122,7 @@ CleanupIntent::RunBuiltInAction {
 
 - CLI entrypoint:
   - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
-- Library entrypoint:
+- Internal execution boundary:
   - `Executor::default().run_plan(&ValidatedPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
   - `ExecutionRequest.selected: Vec<TargetId>` names the execution set
     explicitly; `ValidatedPlan::default_selected_ids()` provides the default
@@ -138,10 +140,10 @@ CleanupIntent::RunBuiltInAction {
   `selected_by_default` — that flag is a scan-time ranking hint, written only
   by the freshness guard, and callers translate it into an explicit selection
   via `default_selected_ids()`.
-- Command actions use `CommandRequest { program, args, cwd }`; the registry,
-  not a plan file, reconstructs those values and they must never form a shell
-  string.
-- `MoveToTrash` actions use the registry-reconstructed path only after it
+- Command actions use `CommandRequest { program, args, cwd }`; the private
+  registry under `src/rules/`, not a plan file, reconstructs those values and
+  they must never form a shell string.
+- `MoveToTrash` actions use the rules-reconstructed path only after it
   matches the validated observed target path.
 - `DeletePermanently` is disabled in this build and cannot be selected.
 - Execution appends JSONL audit records to `--audit-log PATH` or
@@ -167,7 +169,7 @@ CleanupIntent::RunBuiltInAction {
 "--manifest-path", "<Cargo.toml>"]`.
 - Good: a selected target that contains `std::env::current_exe()` is skipped
   before invoking `CommandRunner` or `TrashRunner`.
-- Good: a registry-resolved trash target moves exactly the validated path.
+- Good: a rules-resolved trash target moves exactly the validated path.
 - Base: `devsweep clean` reports a dry-run with zero selected targets when no
   plan is provided.
 - Bad: executor reruns scanner logic to infer paths.
@@ -235,13 +237,14 @@ CommandRequest {
 - `UntrustedPlan`/nested DTOs are closed-world serde types. They serialize
   facts, `rule_id`, and `CleanupIntent`, never `CleanAction`, `program`,
   `args`, `cwd`, or permanent-delete authority.
-- `RuleRegistry` is the only action factory. It reconstructs trusted argv and
-  trash paths from rule/intent IDs, then validates scope, path, ecosystem,
-  kind, risk, and reversibility against the observed target.
+- `rules::resolve_action` is the only plan-validation action factory. Its
+  private registry reconstructs trusted argv and trash paths from rule/intent
+  IDs, then validates scope, path, ecosystem, kind, risk, and reversibility
+  against the observed target.
 - Canonical identity sorts normalized targets, normalizes lexical absolute
   paths, sorts evidence, includes the reconstructed trusted `CleanAction`, and
   hashes the domain-separated v2 representation. `ActionFingerprint` combines
-  registry action identity with a canonical path or a registry-owned logical
+  rules-owned action identity with a canonical path or a rules-owned logical
   provider footprint. Duplicate fingerprints fail validation; the executor
   additionally keeps a once ledger.
 - CLI dry-run and execute consume the same validated plan. TUI confirmation
@@ -264,7 +267,7 @@ CommandRequest {
 
 #### 5. Good/Base/Bad Cases
 
-- Good: a saved Rust target declares `cargo/clean_manifest`; the registry
+- Good: a saved Rust target declares `cargo/clean_manifest`; the rules registry
   reconstructs `cargo clean --manifest-path <Cargo.toml>`.
 - Good: a provider-supplied cache path is evidence only and cannot create a
   second command footprint or change its argv.
@@ -320,8 +323,8 @@ Executor::default().run_plan(&validated, request)?;
 
 - CLI entrypoint:
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-- Library entrypoint:
-  - `GlobalProviderScanner::new().scan() -> CleanupPlan`
+- Internal provider boundary:
+  - `GlobalProviderScanner::new().scan_with_cancel(None) -> CleanupPlan`
 - Provider discovery boundary:
   - executable lookup by program name
   - command output probes for official inspect commands only
@@ -418,22 +421,22 @@ CleanAction::Command {
 #### 1. Scope / Trigger
 
 - Trigger: adding or changing a cleanup rule, or listing rules via
-  `devsweep rules` / the TUI `Rules` tab. Table rules live in `src/rules.rs`;
-  each procedural rule declares its `RuleDoc` const next to its
-  implementation (scanner.rs / providers.rs); `rule_catalogue()` aggregates.
+  `devsweep rules` / the TUI `Rules` tab. Every rule id, fact, table row, and
+  procedural `RuleDoc` lives in `src/rules/definitions.rs`; scanner/provider
+  implementations consume those definitions and `rule_catalogue()` aggregates
+  them.
 
 #### 2. Signatures
 
-- `rules::PROJECT_DIR_RULES: &[ProjectDirRule]` — marker-gated project cache dirs.
-- `rules::GLOBAL_CACHE_RULES` + `rules::GLOBAL_CACHE_RULES_OS` (`#[cfg]`-split) —
+- `rules::PROJECT_DIR_RULES: &[ProjectDirRule]` - crate-private marker-gated
+  project cache dirs.
+- `rules::GLOBAL_CACHE_RULES` + `rules::GLOBAL_CACHE_RULES_OS` (`#[cfg]`-split) -
   known home-relative global caches with no official cleanup command.
 - `rules::project_dir_rules(marker) -> impl Iterator<Item = &'static ProjectDirRule>`
 - `rules::global_cache_rules() -> impl Iterator<Item = &'static GlobalCacheRule>`
-- `rules::rule_catalogue() -> Vec<RuleDoc>` — flat display list of every rule,
-  aggregated from the tables plus the co-located procedural docs
-  (`scanner::RUST_TARGET_RULE_DOC`/`PYCACHE_RULE_DOC`,
-  `providers::PROVIDER_RULE_DOCS`).
-- `rules::rule_row(&RuleDoc) -> String` + `rules::risk_label(&RiskLevel)` —
+- `rules::rule_catalogue() -> Vec<RuleDoc>` - flat display list of every rule,
+  aggregated from the tables and procedural docs under the same rules owner.
+- `rules::rule_row(&RuleDoc) -> String` + `rules::risk_label(&RiskLevel)` -
   the single row formatter shared by the CLI `rules` command and the TUI
   Rules tab (both group by scope with section headings).
 
@@ -443,13 +446,12 @@ CleanAction::Command {
   - A. Project marker -> relative dir (Node/Python): tabled in
     `PROJECT_DIR_RULES`, consumed by `ProjectScanner::scan_*`.
   - C. Known home-relative global cache (gradle/maven/go/...): tabled in
-    `GLOBAL_CACHE_RULES(_OS)`, consumed by `providers::add_known_cache_targets`.
+    `GLOBAL_CACHE_RULES(_OS)`, consumed by `scan::global` target construction.
   - B. `cargo clean` project rule and D. command providers (npm/pip/pnpm/yarn):
-    stay procedural (B needs a `target/` check; D must run a tool and parse
-    stdout, yarn branches on version). They are NOT forced into tables, but
-    each declares one `RuleDoc` const next to its implementation — the single
-    production home of its id/risk/action/summary — which `rule_catalogue()`
-    aggregates so the Rules view lists everything.
+    stay procedurally implemented (B needs a `target/` check; D must run a tool
+    and parse stdout, yarn branches on version). Their `RuleDoc` facts still
+    live in `rules::definitions`; implementations reference those facts rather
+    than declaring a second copy.
 - A procedural rule's id string appears exactly once in production code (its
   doc const); implementations reference `DOC.id` for target rule ids and
   `Evidence::RuleMatched` strings.
@@ -457,18 +459,19 @@ CleanAction::Command {
 - `rule_catalogue()` ids must be unique and every field non-empty.
 - `GlobalCacheRule` carries a `KnownCacheAction`:
   - `Trash` for re-downloadable package caches with no official command
-    (gradle/maven/go/ivy/nuget) -> `CleanAction::MoveToTrash` (reversible).
-  - `InspectOnly` for high-risk or expensive-to-refetch caches (e.g. huggingface
-    models) -> `CleanAction::NoopInspectOnly`.
+    (gradle/ivy/nuget) -> `CleanAction::MoveToTrash` (reversible).
+  - `InspectOnly` for coarse, high-risk, or expensive-to-refetch caches (e.g.
+    Maven local installs, Go modules, and HuggingFace models) ->
+    `CleanAction::NoopInspectOnly`.
 - Known-cache targets are NEVER `selected_by_default = true`, require a
   resolvable home dir, and carry `KnownCacheDir` + `RuleMatched` evidence — never
   a fabricated `OfficialCommand`.
 - New known caches map to `Ecosystem::Generic` unless a dedicated ecosystem
-  variant is added deliberately (that also touches `model.rs` and TUI category
+  variant is added deliberately (that also touches `model/plan.rs` and TUI category
   counts).
 - Ordinary rule additions must use an existing `CleanupIntent` and the shared
-  registry contract. Any persisted plan, canonical digest, or version change
-  requires the plan-validation owner and a compatibility review.
+  private rules-registry contract. Any persisted plan, canonical digest, or
+  version change requires the `plan/` owner and a compatibility review.
 
 #### 4. Validation & Error Matrix
 
@@ -480,8 +483,9 @@ CleanAction::Command {
 
 #### 5. Good/Base/Bad Cases
 
-- Good: gradle/maven/go caches emit `MoveToTrash`, Medium risk, not selected,
-  with `KnownCacheDir` + `RuleMatched` evidence.
+- Good: gradle/ivy/nuget caches emit `MoveToTrash`, Medium risk, not selected,
+  with `KnownCacheDir` + `RuleMatched` evidence; Maven and Go coarse roots are
+  inspect-only.
 - Good: huggingface hub graded `InspectOnly` (High risk) -> `NoopInspectOnly`.
 - Good: a new Node/Python cache added as one `PROJECT_DIR_RULES` row.
 - Bad: adding a new scanner/provider branch instead of a table row.
@@ -491,9 +495,9 @@ CleanAction::Command {
 
 #### 6. Tests Required
 
-- Catalogue id uniqueness and non-empty fields (`rules.rs`).
-- Catalogue aggregation completeness: every declared doc (scanner docs,
-  provider docs, both tables) appears in `rule_catalogue()`.
+- Catalogue id uniqueness and non-empty fields (`rules/mod.rs`).
+- Catalogue aggregation completeness: every procedural doc and both tables
+  from `rules/definitions.rs` appear in `rule_catalogue()`.
 - Global-cache table uniqueness and coverage of new ecosystems (gradle/maven/go).
 - Provider test: present known-cache dir -> trash target with correct
   risk/evidence and `!selected_by_default`.
@@ -606,25 +610,30 @@ ignored by git.
 
 #### 2. Signatures
 
-- Library entrypoint:
-  - `ranking::rank_cleanup_plan(&mut CleanupPlan)`
+- Private ranking owner:
+  - `scan::ranking::rank_cleanup_plan(&mut CleanupPlan)`
 - Score helper:
-  - `ranking::target_score(&CleanTarget, SystemTime) -> f64`
-- Pipeline owner:
-  - `sweep::Sweeper::default().full_scan(&ScanOptions, &mut dyn FnMut(ScanProgress)) -> anyhow::Result<CleanupPlan>`
+  - `scan::ranking::freshness_tiebreaker(&CleanTarget, SystemTime) -> f64`
+- Production report boundaries:
+  - `scan::Sweeper::default().full_scan_report(...) -> anyhow::Result<ScanReport>`
+  - `scan::Sweeper::default().full_scan_report_with_cancel(...) -> anyhow::Result<ScanReport>`
+- Private merge/ranking owner:
+  - `scan::Sweeper::full_scan_outcome(...) -> anyhow::Result<ScanPipelineOutcome>`
 - Assembly boundaries:
-  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>` (returns unranked)
-  - `GlobalProviderScanner::new().scan() -> CleanupPlan` (returns unranked)
+  - `ProjectScanner::scan_roots_with_diagnostics_and_cancel(...)` returns
+    unranked project observations.
+  - `GlobalProviderScanner::scan_with_cancel(...)` returns an unranked global
+    plan.
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-  - TUI scan worker driving `sweep::full_scan`
+  - TUI scan worker driving `scan::Sweeper::full_scan_report_with_cancel`
 
 #### 3. Contracts
 
-- Ranking ownership lives in `sweep::full_scan`: it merges scanner and provider
-  results and calls the ranking helper exactly once per cumulative set. Scanner
-  and provider modules return unranked plans and must not call ranking
-  themselves; callers of `full_scan` receive a ranked plan and must not
-  re-rank.
+- Ranking ownership lives in private `scan::Sweeper::full_scan_outcome`: it
+  merges project and global results and calls the ranking helper exactly once
+  per cumulative set. Scanner and provider modules return unranked plans and
+  must not call ranking themselves; report methods project the ranked result
+  without re-ranking it.
 - Plan targets are ordered by descending `estimated_bytes`; ties use the shared
   size/age score, older `last_modified`, then `TargetId` for deterministic
   output.
@@ -652,8 +661,8 @@ ignored by git.
 
 #### 5. Good/Base/Bad Cases
 
-- Good: CLI and TUI both obtain plans through `sweep::full_scan`, so ranking
-  runs in exactly one production call site instead of each entry point
+- Good: CLI and TUI both obtain reports through `scan::Sweeper` report methods,
+  so ranking runs in one private pipeline owner instead of each entry point
   implementing local ordering.
 - Good: a 2 GiB global target appears before a 1 GiB project target in both
   `scan --json` and TUI results.
@@ -662,7 +671,7 @@ ignored by git.
 - Bad: sorting only in render code while `scan --json` uses discovery order.
 - Bad: selecting a large target by default only because it is large.
 - Bad: scanning the filesystem again from ranking to calculate missing data.
-- Bad: a caller of `full_scan` defensively re-ranking the returned plan.
+- Bad: a report or progress consumer defensively re-ranking the projected plan.
 
 #### 6. Tests Required
 
@@ -687,24 +696,25 @@ targets.sort_by_key(|target| std::cmp::Reverse(target.estimated_bytes));
 Correct:
 
 ```rust
-let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
-// plan is merged and ranked by contract; do not re-rank.
+let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
+// report.plan is projected from the merged, ranked result; do not re-rank.
 ```
 
-### Scenario: Project scanner and JSON cleanup plan
+### Scenario: Project scanner and JSON cleanup report
 
 #### 1. Scope / Trigger
 
-- Trigger: scanner code discovers project cleanup candidates and changes the
-  `devsweep scan --json` output contract from an empty placeholder plan to real
-  `CleanTarget` values.
+- Trigger: scanner code discovers project cleanup candidates or changes the
+  `devsweep scan --json` report projection from an empty placeholder to real
+  `CleanTarget` values and scan-health observations.
 
 #### 2. Signatures
 
-- Library entrypoint:
-  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+- Internal project-discovery boundary:
+  - `ProjectScanner::scan_roots_with_diagnostics_and_cancel(...) ->
+    anyhow::Result<ScanOutcome>`
 - CLI entrypoint:
-  - `devsweep scan [ROOT]... [--json] [--projects]`
+  - `devsweep scan [ROOT]... [--json] [--projects] [--rescan-target TARGET_ID]`
 
 #### 3. Contracts
 
@@ -716,10 +726,12 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
   - Python cleanup targets require project markers or local virtualenv evidence.
 - `.gitignore` filtering must not hide cleanup candidates. The current scanner
   uses `std::fs` traversal and therefore does not apply ignore files.
-- Symlinks, Windows junctions, and reparse points are not followed by default.
-- JSON plan targets must include `rule_id`, `risk`, `evidence`,
-  `selected_by_default`, `intent`, and `estimated_bytes`; they must not expose
-  an executable `action`.
+- Symlinks, Windows junctions, and reparse points are not followed by default;
+  Windows decisions use a no-follow path-level tag probe and fail closed when
+  the probe cannot verify safety.
+- JSON reports embed plan targets with `rule_id`, `risk`, `evidence`,
+  `selected_by_default`, `intent`, `estimated_bytes`, and size-completeness
+  observations; they must not expose an executable `action`.
 - Normalize scan roots before traversal and reduce them to the smallest covering
   set. Parent/child cleanup paths are deduplicated by canonical footprint plus
   action identity so one scan does not double-count or emit duplicate actions.
@@ -733,7 +745,9 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 - Missing scan root -> return an error to the CLI.
 - Markerless `target`, `build`, `dist`, or `node_modules` -> no target emitted.
 - Inaccessible nested entry -> skip that entry, continue scanning the rest of
-  the root.
+  the root, and mark report health partial.
+- Reparse root, target, or marker -> skip it without descending or counting
+  descendant capacity.
 - Equivalent duplicate roots, including Windows case/separator variants -> scan
   once after canonicalization.
 - Exact footprint with the same action -> keep one target and merge evidence.
@@ -753,7 +767,8 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
   footprint/action pair.
 - Good: two rules with the same footprint but distinct command/trash actions
   remain independently visible.
-- Base: `devsweep scan . --json` emits valid plan JSON.
+- Base: `devsweep scan . --json` emits a valid report whose embedded plan
+  validates through the normal cleanup-plan boundary.
 - Bad: matching a markerless directory because its name is `target`, `build`,
   or `dist`.
 - Bad: scanner code importing `std::process::Command`, `trash`, or file removal
@@ -763,8 +778,9 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 
 - Fixture tests for Rust, Node, and Python discovery.
 - Fixture tests proving markerless cleanup names are ignored.
-- Tests that serialized plan targets contain rule, risk, evidence, selection,
-  intent, and size fields, and omit executable action fields.
+- Tests that serialized report targets contain rule, risk, evidence, selection,
+  intent, and size fields, omit executable action fields, and preserve partial
+  health diagnostics.
 - Dedupe tests for duplicate roots, exact evidence merging, nested paths with
   the same action, and equal paths with distinct actions.
 - On Windows, fixture coverage for case and separator-equivalent roots.
@@ -789,6 +805,106 @@ let manifest = project_root.join("Cargo.toml");
 if manifest.is_file() && project_root.join("target").is_dir() {
     targets.push(clean_target_with_marker(manifest));
 }
+```
+
+### Scenario: Scan safety, review reports, and capacity inventory
+
+#### 1. Scope / Trigger
+
+- Trigger: changing scan diagnostics, size estimates, reparse-point checks,
+  scan JSON, reviewed target rescan, or read-only capacity inventory.
+
+#### 2. Signatures
+
+- Report boundary: `ScanReport { version, plan, health }` and
+  `ScanHealth { completeness, diagnostics, totals }`.
+- CLI boundaries:
+  - `devsweep scan [ROOT]... --json [--rescan-target TARGET_ID]`
+  - `devsweep inventory [ROOT] [--json]`
+  - `devsweep clean --plan PATH [--execute]`
+- TUI inventory boundary:
+  `inventory_root_with_cancel(&Path, Option<&Arc<FlagCancelObserver>>) -> Result<InventoryReport>`.
+- Review boundary:
+  `rescan_target_size(&mut CleanupPlan, &TargetId, cancel) -> Result<()>`.
+
+#### 3. Contracts
+
+- Scan JSON is a report document. Only its embedded v2 `UntrustedPlan` can
+  cross into `validate_plan`; diagnostics, totals, and sizing warnings are
+  observations and cannot reconstruct actions or affect a validated digest.
+- Size totals keep verified bytes, partial lower bounds, and unknown-target
+  counts distinct. Incomplete size observations are not default-selected.
+- Traversal, marker validation, sizing, and execution-time ancestor checks use
+  the same no-follow reparse probe. A reparse or an unverifiable probe never
+  grants traversal or cleanup authority.
+- Neutral `cargo_metadata.rs` owns Cargo scope/probe types, process-result
+  classification, and JSON parsing. Scanner owns only scan-lifetime caching;
+  safety owns only live execution revalidation policy, and neither imports the
+  other for Cargo metadata behavior.
+- `--rescan-target` accepts only an exact target ID discovered by the current
+  scan. It replaces that target's size observation under a larger but bounded
+  walk, reusing cancellation and reparse checks.
+- `inventory` returns read-only `InventoryReport` observations and optional
+  inspect-only pnpm evidence. It has no cleanup intent/action and the plan
+  decoder must reject it explicitly.
+- A canceled inventory walk returns a partial read-only report with a typed
+  canceled diagnostic; the TUI may discard that unfinished snapshot, but it
+  must not turn cancellation into an executable action or resume traversal.
+
+#### 4. Validation & Error Matrix
+
+- Reparse point at root, child, marker, target, or execution ancestor -> skip
+  or deny, with no descendant candidate/capacity contribution.
+- Reparse probe failure -> partial health or execution denial; never fall back
+  to metadata-only approval.
+- Truncated Cargo metadata -> `output_truncated` diagnostic before JSON parse.
+- Unknown review target ID or pathless target -> rescan fails without walking
+  an arbitrary caller path.
+- Inventory report supplied to `clean --plan` -> reject before validation,
+  audit, or cleanup side effect.
+- Inventory cancellation before or during traversal -> no later top-level
+  observation or pnpm-reference probe runs after the cancellation check.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: a partial size appears as a lower bound with typed warnings, while a
+  successful reviewed rescan replaces those warnings with a complete estimate.
+- Good: `clean --plan` accepts either a plan-only v2 document or the
+  embedded plan from a supported scan report.
+- Good: a canceled TUI inventory worker receives a partial report containing a
+  `canceled` diagnostic and remains outside the cleanup-plan flow.
+- Base: a complete report with no diagnostics has zero partial/unknown totals.
+- Bad: serializing diagnostic process output as executable argv or using an
+  inventory observation as a cleanup target.
+- Bad: accepting a raw path for a high-budget rescan.
+
+#### 6. Tests Required
+
+- Probe-seam tests cover Cloud Files-style root, child, marker, target, and
+  execution-ancestor tags plus an unverifiable probe.
+- Report tests assert typed truncation process metadata, total separation, and
+  that warnings do not change validation or digest authority.
+- Rescan tests assert exact-ID replacement, cancellation, and reparse denial.
+- CLI tests assert report decoding, inventory rejection by `clean --plan`, and
+  valid `--rescan-target` parsing.
+- Inventory tests assert observations are read-only and an orphan-pnpm finding
+  requires complete non-candidate reference evidence; cancellation tests assert
+  a typed partial report without observations.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+// An arbitrary caller path could make the high-budget walker inspect anything.
+estimate_tree_with_budget(Path::new(user_path), REVIEW_SIZE_ENTRY_BUDGET);
+```
+
+Correct:
+
+```rust
+// Locate the reviewed object in the current scan before replacing its estimate.
+rescan_target_size(&mut plan, &target_id, None)?;
 ```
 
 ---

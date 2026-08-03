@@ -2,36 +2,35 @@
 
 ## Scope
 
-This note records how `devsweep` relates to other public cleanup tools,
+This note records how DevSweep relates to other public cleanup tools,
 especially Mole (GPL-3.0). It is not legal advice.
 
 ## Position
 
-`devsweep` is an independent implementation under the MIT License.
+DevSweep is an independent implementation under the MIT License.
 
-Public tools such as Mole informed the problem framing and acceptance
-pressure for developer cleanup work: discover high-value cache and build
-artifacts, keep irreversible actions explicit, and prefer inspectable plans
-over silent mutation. Those are shared product concerns, not shared code.
+Public tools such as Mole informed the product problem: identify high-value
+developer caches and build artifacts, make irreversible work explicit, and
+prefer inspectable plans to silent mutation. Those are shared concerns, not
+shared implementation material.
 
 ## What was not copied
 
-The following were not copied or lightly rewritten from Mole or any other
-third-party cleanup tool:
+DevSweep did not copy or lightly rewrite any of the following from Mole or
+another third-party cleanup tool:
 
-- source code
-- fixtures and golden files
-- rule tables and provider command catalogs
-- user-facing copy or UI text
-- license text or copyright notices from those projects
+- source code;
+- fixtures or golden files;
+- rule tables or provider command catalogs;
+- user-facing copy or UI text;
+- license text or copyright notices.
 
-Audit remediation work under `.trellis/tasks/` is derived from DevSweep's own
-audit report and invariant descriptions, not from another project's
-implementation.
+Audit-remediation work under `.trellis/tasks/` is derived from DevSweep's own
+audit reports and invariant descriptions.
 
 ## Future review
 
-If any future change introduces content that is derived from a GPL-licensed
-work, stop and re-evaluate license obligations before merging. Ordinary
-independent reimplementation of ideas and safety requirements does not, by
-itself, require changing the MIT baseline chosen for this repository.
+If a future change introduces material derived from a GPL-licensed work, stop
+and reevaluate the licensing obligations before merging. Independent
+reimplementation of ideas and safety requirements does not by itself change the
+MIT license baseline.

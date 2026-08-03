@@ -7,8 +7,10 @@
 ## Overview
 
 This Rust TUI project does not use React hooks. The equivalent boundary is the
-event/update layer in `src/tui/app.rs`: keyboard events and worker messages enter
-`App::update`, which mutates state and returns side-effect requests.
+event/update layer in `src/tui/app/`: keyboard events and worker messages enter
+`App::update`, which mutates the single `App` owner and returns typed
+side-effect requests. `app/input.rs`, `selection.rs`, `worker.rs`, and `jobs.rs`
+contain cohesive transitions; `app/mod.rs` remains the exhaustive root router.
 
 ---
 
@@ -28,8 +30,10 @@ Interactive code follows a simple state/update/render split:
 - staged worker updates must include a job id and the app must ignore stale
   updates from older jobs after a newer job starts
 
-The terminal event loop is responsible for interpreting effects such as start
-scan, start clean, cancel job, and quit.
+`runtime/mod.rs` is responsible for interpreting effects such as start scan,
+start inventory, start clean, cancel job, and quit. It alone owns channels,
+threads, cancellation tokens, and cleanup single-flight; `runtime/workers.rs`
+translates service results into explicit `WorkerEvent` values.
 
 ---
 
@@ -47,20 +51,21 @@ scan, start clean, cancel job, and quit.
   - `WorkerEvent::ScanProgress { job_id, phase, message, plan }`
 - App-owned staging shape:
   - current scan job id
-  - latest project-phase targets
-  - latest global-phase targets
+  - latest cumulative ranked target snapshot
 
 #### 3. Contracts
 
 - `job_id` identifies the worker that produced the update.
-- `phase` identifies which staged target slice the update owns.
+- `phase` identifies the backend phase that produced the progress update.
 - `message` is user-visible job/log progress text.
-- `plan` is optional; progress-only updates may carry no targets.
+- `plan` is optional; when present it is the cumulative, already-ranked partial
+  plan emitted by `scan::Sweeper`.
 - Render functions must consume staged state after `App::update` applies it;
   render functions must not call scanner/provider APIs.
-- Project/global target slices must merge through the shared cleanup-plan
-  ranking helper so staged TUI output matches `scan --json` ordering and
-  freshness default-selection behavior.
+- The runtime forwards the `scan::Sweeper` snapshot without locally merging or
+  ranking project/global slices. The app replaces its staged snapshot rather
+  than appending targets, so TUI ordering and freshness defaults match
+  `scan --json`.
 - A newer scan job invalidates older staged scan updates for visible target
   replacement.
 
@@ -68,12 +73,13 @@ scan, start clean, cancel job, and quit.
 
 - Project phase succeeds, global phase still running -> visible targets may show
   project results and job remains running.
-- Global phase succeeds -> project and global targets merge in stable order.
+- Global phase succeeds -> the cumulative snapshot contains project and global
+  targets in stable ranked order.
 - Global phase includes larger targets than project phase -> larger global
   targets may move ahead of smaller project targets after the shared ranking
   pass.
-- Same phase reports again -> replace that phase slice, do not append duplicate
-  rows.
+- Same phase reports again -> replace the cumulative snapshot, do not append
+  duplicate rows.
 - Older job reports after a newer scan starts -> do not overwrite the newer
   visible target snapshot.
 
@@ -92,8 +98,8 @@ scan, start clean, cancel job, and quit.
 
 - State-level test proving project-phase results populate `App.targets` before
   global completion.
-- State-level test proving project/global phase updates merge without
-  duplicates.
+- State-level test proving cumulative project/global updates replace the prior
+  snapshot without duplicates.
 - State-level test proving stale scan job updates do not overwrite a newer scan.
 
 #### 7. Wrong vs Correct
@@ -157,9 +163,9 @@ send(WorkerEvent::ScanProgress {
 - Legal job transitions are `Running -> Cancelling`, `Running ->
   Succeeded|Failed`, and `Cancelling -> Canceled|Succeeded|Failed`. Terminal
   jobs ignore delayed progress, finish, and cancel events after logging them.
-- Before real cancellation is wired, `Effect::CancelJob` must not fabricate a
-  `JobCanceled` event. Show that the request waits for an action boundary and
-  let the worker report its actual terminal result.
+- `Effect::CancelJob` only requests the runtime-owned cancellation token; effect
+  dispatch must not fabricate a `JobCanceled` event. The worker observes the
+  token and reports its actual terminal result at an action boundary.
 
 #### 4. Validation & Error Matrix
 
@@ -169,9 +175,9 @@ send(WorkerEvent::ScanProgress {
   visible log message.
 - Second runtime `StartClean` while the permit is held -> no worker is spawned;
   the rejected job receives `JobFailed`.
-- Delayed progress after `Cancelling` is ignored; a real worker finish may still
-  land as `Succeeded` or `Failed` until true cancellation is wired. Terminal
-  states ignore delayed progress, finish, and cancel events.
+- Delayed progress after `Cancelling` is ignored. A worker may still finish as
+  `Succeeded` or `Failed` when an action completed before cancellation was
+  observed; terminal states ignore delayed progress, finish, and cancel events.
 
 #### 5. Good/Base/Bad Cases
 

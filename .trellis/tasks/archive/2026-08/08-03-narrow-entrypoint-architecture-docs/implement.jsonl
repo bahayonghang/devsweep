@@ -1,0 +1,8 @@
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Evidence for broad main/lib interfaces, final safety contracts, and maintained documentation drift."}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"Final backend source ownership, binary orchestration, and visibility guidance to reconcile."}
+{"file":".trellis/spec/backend/index.md","reason":"Routes implementation to the complete backend guideline set."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/backend-contract-routing.md","reason":"Routes full CLI/execution/CI integration scenarios without injection truncation."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Application parsing, context, partial scan, and non-zero exit behavior."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Tracing initialization and stdout/stderr separation after application move."}
+{"file":".trellis/spec/frontend/directory-structure.md","reason":"Final TUI layout and visibility guidance to audit."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Final TUI integration and TestBackend behavior contract."}
