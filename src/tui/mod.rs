@@ -1,4 +1,5 @@
 mod app;
+mod display;
 mod render;
 mod runtime;
 mod terminal;

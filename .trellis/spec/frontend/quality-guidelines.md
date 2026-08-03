@@ -20,6 +20,8 @@ from scanner/executor side effects.
 - Do not print diagnostics to `stdout` from paths that can also emit JSON.
 - Do not duplicate domain model fields in UI-only structs without a clear
   projection reason.
+- Do not import render modules from app/reducer modules or runtime services from
+  render modules. Shared presentation belongs in `tui/display.rs`.
 
 ---
 
@@ -30,6 +32,8 @@ from scanner/executor side effects.
 - Display risk and action semantics from typed model fields, not from path-name
   guesses.
 - Keep cleanup confirmation explicit once execution support is added.
+- Keep `render_app` as the root render seam and pass immutable typed state to
+  view modules. Rendering must not call `App::update` or worker/service APIs.
 
 Current render test example:
 
@@ -55,9 +59,9 @@ terminal
 #### 2. Signatures
 
 - Shared inputs: `ScanHealth`, `ScanTotals`, `ScanDiagnostic`, and
-  `CleanTarget.sizing_warnings` from `src/model.rs`.
+  `CleanTarget.sizing_warnings` from `src/model/`.
 - Inventory input: `InventoryReport { observations, health, orphan_pnpm_store }`
-  from `src/inventory.rs`.
+  from `src/inventory/`.
 - TUI boundary: scan and inventory workers deliver typed results to
   `App::update`; render helpers consume the resulting `App` state only.
 
@@ -154,6 +158,10 @@ app.inventory_report = Some(report);
   execution is connected.
 - Confirmation behavior must have tests for both trash-backed and irreversible
   command-backed selections.
+- Cross-module reducer tests live in `app/tests.rs`, fake-service runtime tests
+  in `runtime/tests.rs`, and observable full/degraded/narrow/modal render tests
+  in `render/tests.rs`. Moving code must preserve named behavior coverage and a
+  nonzero focused test count.
 
 ---
 

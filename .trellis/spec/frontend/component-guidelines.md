@@ -21,12 +21,18 @@ Current component shape:
 fn render_app(frame: &mut Frame<'_>, app: &App) {
     render_header(frame, header_area, app);
     render_body(frame, body_area, app);
+    render_footer(frame, footer_area, app);
     render_overlay(frame, app);
 }
 ```
 
 Components should take `&App` or a smaller view-state reference instead of
 owning application data.
+
+`render/mod.rs` owns root layout and routing. Cohesive view functions live in
+`targets.rs`, `inventory.rs`, `jobs.rs`, and `overlays.rs`; they must not call
+one another to coordinate state transitions. Shared semantic styles live in
+`theme.rs`, and render-only typed value formatting lives in `format.rs`.
 
 ---
 
@@ -49,14 +55,14 @@ types before rendering.
 ## Styling Patterns
 
 - Use ratatui widgets and style APIs directly.
-- Prefer simple, readable layout first. The current placeholder uses
-  `Paragraph`, `Block::bordered()`, and `Alignment::Center`.
-- Keep styling local to view code until repeated style decisions justify a small
-  helper.
-- Keep display-only path cleanup in render helpers. Windows verbatim prefixes
-  such as `\\?\D:\...` and `\\?\UNC\server\share\...` may surface from typed
-  model paths or path-like target IDs, so normalize those strings only when
-  drawing them. Do not write normalized strings back into `CleanupPlan`,
+- Prefer simple, readable layouts and keep view-specific composition in the
+  owning view module.
+- Route repeated semantic styles through `render/theme.rs`; do not turn it into
+  a configurable design system.
+- Keep shared display-only path cleanup in `tui/display.rs`. Windows verbatim
+  prefixes such as `\\?\D:\...` and `\\?\UNC\server\share\...` may surface from
+  typed model paths or path-like target IDs, so normalize those strings only
+  when drawing them. Do not write normalized strings back into `CleanupPlan`,
   `CleanTarget`, executor requests, or audit data.
 
 ---
@@ -83,3 +89,4 @@ types before rendering.
   stay consistent.
 - Do not call `App::update`, scanner/provider APIs, or `Executor` from
   `render_*` helpers.
+- Do not import runtime services or worker functions from render modules.

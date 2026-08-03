@@ -19,17 +19,33 @@ Current layout:
 
 ```text
 src/tui/
-├── mod.rs          # module wiring, pub fn run(), default service construction
-├── terminal.rs     # raw-mode/alt-screen lifecycle
-├── runtime.rs      # event loop, mpsc channels, scan/clean workers,
-│                   # ScanService/CleanService injection seam + real adapters
-├── app.rs          # App state, pure reducer (update/handle_key), TUI domain types
-├── render.rs       # render_* functions, styles, formatting helpers
-└── test_support.rs # cfg(test)-only shared fixtures (key, render_text, plans)
+├── mod.rs             # pub fn run() composition and default services
+├── terminal.rs        # raw-mode/alt-screen lifecycle
+├── display.rs         # pure shared path/text/action/command presentation
+├── app/
+│   ├── mod.rs         # App owner, constructor, root update routing
+│   ├── events.rs      # JobId, UiEvent, Effect, WorkerEvent protocol
+│   ├── input.rs       # normal/filter/overlay/confirm/quit input
+│   ├── selection.rs   # rows, filters, groups, cursor, selection projections
+│   ├── worker.rs      # scan/inventory/clean worker-result transitions
+│   ├── jobs.rs        # jobs, logs, progress, frozen confirmation
+│   └── tests.rs       # reducer and state-machine coverage
+├── runtime/
+│   ├── mod.rs         # event loop, effect dispatch, channels, cancellation
+│   ├── services.rs    # injected service traits and production adapters
+│   ├── workers.rs     # worker execution and WorkerEvent translation
+│   └── tests.rs       # fake-service and single-flight coverage
+├── render/
+│   ├── mod.rs         # render_app, root layout, header/tabs/footer routing
+│   ├── theme.rs       # shared semantic colors and styles
+│   ├── format.rs      # render-only typed value formatting
+│   ├── targets.rs     # categories, targets, details, rules
+│   ├── inventory.rs   # read-only capacity observations and details
+│   ├── jobs.rs        # jobs, logs, typed scan diagnostics
+│   ├── overlays.rs    # confirmation, progress, help/error/quit modals
+│   └── tests.rs       # TestBackend behavior coverage
+└── test_support.rs    # cfg(test)-only keys, plans, and render helpers
 ```
-
-Do not split `render.rs` further while the `render_*` prefix keeps it
-navigable; create per-view files only when a view accumulates real complexity.
 
 ---
 
@@ -37,19 +53,22 @@ navigable; create per-view files only when a view accumulates real complexity.
 
 - `mod.rs::run()` composes terminal setup with the runtime event loop and
   constructs the default services; it holds no other logic.
-- `runtime.rs` owns threads and channels. Workers receive their dependencies
-  through the `ScanService`/`CleanService` traits; `Sweeper::default()` and
-  `Executor::default()` are constructed only inside the real adapters
-  (`SweepScanService`, `ExecutorCleanService`). Tests drive workers with fake
-  services and assert the `WorkerEvent` translation.
-- `App` (app.rs) owns active tab, target selection, filters, overlays, jobs,
-  logs, and the quit flag.
-- `App::update` consumes key/worker events and returns side-effect requests.
-- `render_*` functions (render.rs) own pure drawing from already-computed
-  state.
+- `app/mod.rs::App` is the only mutable UI state owner. Child modules contain
+  cohesive implementation blocks; `App::update(UiEvent) -> Vec<Effect>` remains
+  the single reducer routing interface.
+- `runtime/mod.rs` is the only owner of threads, channels, cancellation tokens,
+  clean-worker single-flight, and effect dispatch. Service construction and
+  backend validation live in `services.rs`; worker translation lives in
+  `workers.rs`.
+- `render/mod.rs::render_app` is the only root render interface. View modules
+  consume immutable typed state; `theme.rs` and `format.rs` contain shared
+  rendering concerns without becoming configurable frameworks.
+- `display.rs` is neutral, pure presentation shared by app and render. App
+  modules must not import render modules.
 - Scanner, cleanup execution, and size calculation do not belong in TUI
-  modules; scanning goes through `sweep::full_scan` via the runtime services.
-- Shared cleanup data comes from `src/model.rs`; TUI code should not define a
+  modules; scanning goes through `scan::Sweeper` via
+  `runtime/services.rs::SweepScanService`.
+- Shared cleanup data comes from `src/model/`; TUI code should not define a
   second target schema.
 - Visibility discipline: submodule items are `pub(super)` or private; nothing
   is `pub` beyond `run()`.
@@ -67,8 +86,8 @@ navigable; create per-view files only when a view accumulates real complexity.
 
 ## Examples
 
-- `src/tui/render.rs::render_app` shows the pure root render function.
-- `src/tui/render.rs::tests::representative_state_renders_with_targets_details_and_jobs`
+- `src/tui/render/mod.rs::render_app` shows the pure root render function.
+- `src/tui/render/tests.rs::representative_state_renders_with_targets_details_and_jobs`
   shows the `TestBackend` render pattern.
-- `src/tui/runtime.rs::tests::scan_worker_emits_started_progress_finished`
+- `src/tui/runtime/tests.rs::scan_worker_emits_started_progress_finished`
   shows the fake-service worker translation pattern.
