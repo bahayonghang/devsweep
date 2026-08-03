@@ -1,0 +1,31 @@
+{
+  "id": "reorganize-rust-source-architecture",
+  "name": "reorganize-rust-source-architecture",
+  "title": "Reorganize Rust source architecture",
+  "description": "Reorganize the binary-oriented Rust crate into cohesive deep modules, preserve CLI/TUI/JSON/safety behavior, and narrow the external Rust interface to devsweep::run().",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-02",
+  "completedAt": "2026-08-03",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-03-untangle-core-contracts-rules",
+    "08-03-modularize-backend-runtime-discovery",
+    "08-03-decompose-tui-internals",
+    "08-03-narrow-entrypoint-architecture-docs"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
