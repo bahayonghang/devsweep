@@ -1297,3 +1297,24 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 44: 完成 core GUI 执行契约扩展
+
+**Date**: 2026-08-03
+**Task**: 完成 core GUI 执行契约扩展
+**Branch**: `dev`
+
+### Summary
+
+新增可序列化 core 边界、选择感知确认 digest、逐目标结果与预计可回收容量，统一 selected_ids 结构化校验，并补强审计失败的 fail-closed 行为。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `614a79eafa2ed59ce7f2c291df8964c5bdb426e3` | (see git log) |
+
+### Status
+
+[OK] **Completed**
