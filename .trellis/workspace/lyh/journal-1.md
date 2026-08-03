@@ -1210,3 +1210,24 @@ Reorganized filesystem, process, scan, inventory, and execution implementations 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 40: Decompose TUI internals
+
+**Date**: 2026-08-03
+**Task**: Decompose TUI internals
+**Branch**: `dev`
+
+### Summary
+
+Split TUI app state transitions, runtime services and workers, rendering views, and shared display formatting into cohesive private modules; reconciled frontend specs and passed focused and full quality gates.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9a059ed` | (see git log) |
+
+### Status
+
+[OK] **Completed**
