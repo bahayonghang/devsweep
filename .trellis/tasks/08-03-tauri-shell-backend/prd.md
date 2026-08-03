@@ -31,19 +31,19 @@
 
 ## Acceptance Criteria
 
-- [ ] `cargo tauri dev` 可启动应用窗口(占位前端,本任务不做 UI)。
-- [ ] devtools 调用 `scan_start` 收到 `scan://progress` 事件流并返回完整
+- [x] `cargo tauri dev` 可启动应用窗口(占位前端,本任务不做 UI)。
+- [x] devtools 调用 `scan_start` 收到 `scan://progress` 事件流并返回完整
       `ScanReport`;并发第二次调用得到 `scan_already_running` 错误(有自动化
       测试或留档的手工验证脚本)。
-- [ ] 合成 fixture(复用子任务 1 的 fixture)上:扫描中调用 `scan_cancel`,
+- [x] 合成 fixture(复用子任务 1 的 fixture)上:扫描中调用 `scan_cancel`,
       最迟在下一次进度回调边界停止且不超过 5 秒,返回取消状态或部分结果。
-- [ ] `plan_dry_run` → `plan_execute` 闭环:正确 digest 放行;修改选择集后旧
+- [x] `plan_dry_run` → `plan_execute` 闭环:正确 digest 放行;修改选择集后旧
       digest 得到 `stale_confirmation`;未知 id / inspect-only 选中得到对应
       结构化错误(各有测试)。
-- [ ] dry-run 与 execute 的 `ExecutionReport` 与 CLI 对同一计划的行为语义一致
+- [x] dry-run 与 execute 的 `ExecutionReport` 与 CLI 对同一计划的行为语义一致
       (fixture 对照,留档)。
-- [ ] 未签名 Windows bundle 构建成功且能安装启动(留档产物路径与验证记录)。
-- [ ] `just ci` 全绿;command 层有最小单元测试;CI 决策已落地并回写父任务。
+- [x] 未签名 Windows bundle 构建成功且能安装启动(留档产物路径与验证记录)。
+- [x] `just ci` 全绿;command 层有最小单元测试;CI 决策已落地并回写父任务。
 
 ## Notes
 

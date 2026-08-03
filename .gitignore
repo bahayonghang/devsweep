@@ -4,6 +4,10 @@
 /target/
 /dist/
 /node_modules/
+/desktop/node_modules/
+/desktop/dist/
+/desktop/src-tauri/target/
+/desktop/src-tauri/gen/
 /docs/.vitepress/cache/
 /docs/.vitepress/dist/
 

@@ -149,6 +149,34 @@ impl UserProtectionList {
         Ok(removed)
     }
 
+    /// Replaces all entries with one validated, atomically persisted snapshot.
+    pub fn replace(&mut self, paths: Vec<PathBuf>) -> Result<()> {
+        let mut entries: Vec<PathBuf> = Vec::with_capacity(paths.len());
+        for path in paths {
+            if !path.exists() {
+                bail!("protect set requires an existing path: {}", path.display());
+            }
+            let canonical = normalize_path_for_compare(
+                &path
+                    .canonicalize()
+                    .with_context(|| format!("failed to canonicalize {}", path.display()))?,
+            );
+            if !entries
+                .iter()
+                .any(|existing| paths_equal(existing, &canonical))
+            {
+                entries.push(canonical);
+            }
+        }
+
+        let previous = std::mem::replace(&mut self.entries, entries);
+        if let Err(error) = self.persist() {
+            self.entries = previous;
+            return Err(error);
+        }
+        Ok(())
+    }
+
     /// Returns all normalized protected paths for display.
     pub fn list(&self) -> &[PathBuf] {
         &self.entries

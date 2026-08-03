@@ -26,6 +26,11 @@ need typed categories instead of display-only context.
 - Execution request errors carried by `anyhow::Result` and available through
   downcast: `ExecutionError::{UnknownTarget, InspectOnlyTarget,
   StaleConfirmation}`
+- Tauri commands return the tagged, serializable
+  `desktop/src-tauri/src/error.rs::CommandError`. Conversion from typed core
+  execution errors is centralized there; plan validation becomes
+  `invalid_plan`, scan failures become `scan_failed`, and other boundary I/O
+  failures remain structured `io` responses.
 
 Use `anyhow::Context` when a filesystem operation needs path-specific context:
 
@@ -76,7 +81,8 @@ if command.execute && command.plan.is_none() {
 
 There is no HTTP API. CLI commands should return non-zero through propagated
 errors and keep machine-readable JSON output clean. Do not mix diagnostics into
-`stdout` when `--json` is active.
+`stdout` when `--json` is active. Tauri commands must return tagged errors with
+stable snake-case codes; frontend callers must not parse display strings.
 
 ---
 

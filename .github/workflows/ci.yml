@@ -23,10 +23,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows-latest
-          - ubuntu-latest
-          - macos-latest
+        include:
+          - os: windows-latest
+            workspace_args: --workspace
+          - os: ubuntu-latest
+            workspace_args: --workspace --exclude devsweep-desktop
+          - os: macos-latest
+            workspace_args: --workspace --exclude devsweep-desktop
 
     steps:
       - name: Checkout
@@ -43,13 +46,43 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check
-        run: cargo check --workspace --locked --all-targets
+        run: cargo check ${{ matrix.workspace_args }} --locked --all-targets
 
       - name: Test
-        run: cargo test --workspace --locked --all-targets
+        run: cargo test ${{ matrix.workspace_args }} --locked --all-targets
 
       - name: Clippy
-        run: cargo clippy --workspace --locked --all-targets -- -D warnings
+        run: cargo clippy ${{ matrix.workspace_args }} --locked --all-targets -- -D warnings
+
+  desktop:
+    name: Desktop (Windows, Node 22)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Check desktop frontend
+        working-directory: desktop
+        run: npm run check
+
+      - name: Compile Tauri application
+        working-directory: desktop
+        run: npm run tauri -- build --no-bundle
 
   msrv:
     name: MSRV (${{ matrix.os }})
@@ -79,10 +112,10 @@ jobs:
           toolchain: ${{ steps.msrv.outputs.version }}
 
       - name: Check on MSRV
-        run: cargo check --workspace --locked --all-targets
+        run: cargo check --workspace --exclude devsweep-desktop --locked --all-targets
 
       - name: Test on MSRV
-        run: cargo test --workspace --locked --all-targets
+        run: cargo test --workspace --exclude devsweep-desktop --locked --all-targets
 
   audit:
     name: cargo-audit

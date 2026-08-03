@@ -145,6 +145,20 @@ selected_ids 边界(dry-run 与 execute 同规则,Rust 侧实现):
     前端 lockfile 布局 —— 子任务 3 决策并落地,决策结果回写本节;
   - 未签名 Windows bundle(`cargo tauri build`)作为子任务 3 的验收项,签名留待发布。
 
+子任务 3 决策(2026-08-03):
+
+- Tauri 后端以独立 Windows CI 作业执行 `npm run tauri -- build --no-bundle`,
+  同时保留 Windows Rust workspace 的 check/test/clippy 门禁;
+- Node 固定为 22.x,`desktop/package.json` engines 同时约束 Node `>=22 <23`
+  与 npm `>=10 <12`;CI 使用 immutable SHA 固定的 `actions/setup-node`;
+- 前端依赖由 `desktop/package-lock.json` 独立锁定,CI 只使用 `npm ci`;
+- Ubuntu/macOS 的既有 Rust 作业排除 `devsweep-desktop`,继续守护 core/CLI;
+  前端 TypeScript 门在 Windows 桌面作业执行。MVP 平台仅 Windows,因此不在
+  Ubuntu runner 安装 WebKitGTK 系统包,避免把尚未承诺的 Linux 桌面构建引入
+  跨平台核心门禁;正式支持 Linux 桌面时再新增带版本化 WebKitGTK 依赖的作业;
+- MSRV 作业排除桌面 crate,MSRV 继续表示 core/CLI 契约;Tauri/Node 工具链由
+  Windows stable 作业单独守护。
+
 ## 6. 平台范围
 
 - MVP 目标平台:Windows(与当前开发环境一致,devsweep 对 Win32 有专门支持)。

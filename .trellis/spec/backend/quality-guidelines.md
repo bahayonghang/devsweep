@@ -160,6 +160,10 @@ CleanupIntent::RunBuiltInAction {
 - `DeletePermanently` is disabled in this build and cannot be selected.
 - Execution appends JSONL audit records to `--audit-log PATH` or
   `devsweep-audit.jsonl`.
+- Whole-list protection updates validate and normalize every requested path
+  before replacing the persisted snapshot. Callers use
+  `UserProtectionList::replace`; they must not emulate set semantics with a
+  sequence of independently persisted `add` and `remove` calls.
 
 #### 4. Validation & Error Matrix
 
@@ -211,6 +215,8 @@ CleanupIntent::RunBuiltInAction {
 - Audit JSONL test covering both success and failure records in one job.
 - Permanent-delete test proving the action is rejected before runner or audit
   calls.
+- Protection-list replacement test proving duplicate normalization and that an
+  invalid requested path leaves the prior persisted snapshot unchanged.
 - Scanner regression proving Rust target plans keep `--manifest-path`.
 
 #### 7. Wrong vs Correct

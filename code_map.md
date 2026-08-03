@@ -83,6 +83,14 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-cli/src/tui/render/` - pure layouts, views, overlays, themes, and render tests.
 - `crates/devsweep-cli/src/tui/test_support.rs` - test-only keys, plans, and render helpers.
 
+### Desktop Shell
+
+- `desktop/src-tauri/src/lib.rs` - Tauri application composition and command registration.
+- `desktop/src-tauri/src/commands.rs` - async scan, plan execution, and protection-list IPC commands.
+- `desktop/src-tauri/src/scan.rs` - single-flight scan state, cancellation, and progress forwarding.
+- `desktop/src-tauri/src/error.rs` - centralized structured command-error mapping.
+- `desktop/src/` - React and TypeScript placeholder frontend for the desktop shell.
+
 The dependency direction starts at `main -> devsweep::run -> application ->
 devsweep-core`. Core modules never import CLI or TUI code. TUI render code
 remains read-only and backend discovery layers remain non-mutating.
@@ -103,5 +111,6 @@ remains read-only and backend discovery layers remain non-mutating.
 
 - `target/` - Cargo build output.
 - `dist/` - release archive output from `just release-archive`.
+- `desktop/node_modules/` and `desktop/dist/` - desktop dependency and web build output.
 - Do not add nested guidance for generated, vendored, dependency, cache, or
   build-output directories.

@@ -1161,10 +1161,25 @@ mod tests {
         let reloaded = UserProtectionList::load_from_path(config.clone()).expect("reload");
         assert_eq!(reloaded.list().len(), 1);
 
-        // remove by normalized absolute form after deleting the path
-        fs::remove_dir_all(&keep).expect("delete keep");
+        let replacement = fixture.path().join("replace-me");
+        fs::create_dir_all(&replacement).expect("replacement");
         let mut reloaded = UserProtectionList::load_from_path(config.clone()).expect("reload");
-        assert!(reloaded.remove(&keep).expect("remove"));
+        reloaded
+            .replace(vec![replacement.clone(), replacement.clone()])
+            .expect("replace atomically");
+        assert_eq!(reloaded.list().len(), 1);
+
+        let missing = fixture.path().join("missing");
+        reloaded
+            .replace(vec![keep, missing])
+            .expect_err("invalid replacement is rejected before persistence");
+        let unchanged = UserProtectionList::load_from_path(config.clone()).expect("reload");
+        assert_eq!(unchanged.list(), reloaded.list());
+
+        // remove by normalized absolute form after deleting the path
+        fs::remove_dir_all(&replacement).expect("delete replacement");
+        let mut reloaded = UserProtectionList::load_from_path(config.clone()).expect("reload");
+        assert!(reloaded.remove(&replacement).expect("remove"));
         assert!(reloaded.list().is_empty());
 
         fs::write(&config, "{not-json").expect("corrupt");

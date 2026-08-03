@@ -3,7 +3,7 @@
   "name": "tauri-shell-backend",
   "title": "Tauri 应用骨架与后端命令桥接",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

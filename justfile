@@ -81,5 +81,14 @@ dev:
 docs:
     npm run docs:dev
 
+desktop-web-check:
+    cd desktop; npm run check; npm run build
+
+desktop-test:
+    cargo test --locked -p devsweep-desktop
+
+desktop-build:
+    cd desktop; cargo tauri build
+
 ci: fmt sync-lock check test clippy
     @echo "ci complete"
