@@ -3,7 +3,7 @@
   "name": "tauri-desktop-app",
   "title": "Tauri 桌面应用(参考 Mole)",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -22,7 +22,8 @@
     "08-03-core-api-extraction",
     "08-03-tauri-shell-backend",
     "08-03-desktop-frontend-ui",
-    "08-03-core-contract-extension"
+    "08-03-core-contract-extension",
+    "08-03-desktop-ci-frontend-gate-fix"
   ],
   "parent": null,
   "relatedFiles": [],

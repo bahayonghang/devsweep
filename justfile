@@ -82,7 +82,7 @@ docs:
     npm run docs:dev
 
 desktop-web-check:
-    cd desktop; npm run check; npm run build
+    cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
 
 desktop-test:
     cargo test --locked -p devsweep-desktop

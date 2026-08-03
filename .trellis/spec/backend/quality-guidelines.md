@@ -591,6 +591,10 @@ GlobalCacheRule {
   binary. The shared test helper must build a missing fixture into the target
   root derived from the current test executable, including when Cargo uses a
   custom `--target-dir`; timeout measurements start only after fixture setup.
+- Isolate validation build output with Cargo's `--target-dir` argument, not an
+  exported `CARGO_TARGET_DIR`. The project scanner intentionally reads that
+  environment variable as Cargo cleanup authority; exporting it into a test
+  process changes the target discovered for Rust fixtures.
 - `just release-archive` builds the release binary and writes a Windows archive
   to `dist/devsweep-x86_64-pc-windows-msvc.zip`.
 - `dist/` is a generated artifact directory and must stay ignored by git.
@@ -603,6 +607,9 @@ GlobalCacheRule {
 - Clean or custom Cargo target without `process_fixture` -> the core test helper
   builds that exact target before running process assertions; it must not rely
   on a stale binary under the default `target/` directory.
+- Exported `CARGO_TARGET_DIR` during scanner tests -> Rust fixtures correctly
+  discover the override instead of their local `target/`; a harness that expects
+  the local path is invalid, not evidence of a scanner regression.
 - Release build failure -> `just release-archive` fails before creating or
   replacing the archive.
 - Missing `target/release/devsweep.exe` after build -> archive command fails.
@@ -614,12 +621,16 @@ GlobalCacheRule {
   matrix.
 - Good: a clean `cargo test --target-dir <isolated> --workspace --locked
   --all-targets` passes without a pre-existing fixture binary.
+- Good: cross-platform validation passes `--target-dir /tmp/devsweep-check`
+  directly to Cargo and leaves `CARGO_TARGET_DIR` unset for test processes.
 - Good: release recipe uses the already built single binary.
 - Base: local `cargo build --release` succeeds without packaging.
 - Bad: committing generated `dist/*.zip` archives.
 - Bad: locating `process_fixture` in the default target directory when the
   current test executable came from a custom target directory.
 - Bad: starting a process timeout clock before an on-demand test fixture build.
+- Bad: exporting `CARGO_TARGET_DIR=/tmp/devsweep-check` and then asserting that
+  a scanner fixture resolves `<fixture>/target`.
 - Bad: documenting Docker cleanup, permanent delete, or package-manager
   distribution as released MVP behavior.
 
@@ -628,6 +639,9 @@ GlobalCacheRule {
 - Run `just ci` after workflow or validation command changes.
 - Run the workspace tests once with a clean/custom target directory so cached
   `process_fixture` output cannot mask a broken cross-crate test dependency.
+- When using a custom target for scanner tests, pass Cargo `--target-dir` and
+  confirm `CARGO_TARGET_DIR` is not inherited by the test process unless the
+  test explicitly covers Cargo's override behavior.
 - Run the process-runner tests on Windows and one Unix host; the Unix run must
   exercise the process-group tree-termination test dynamically.
 - Run `just release-archive` after release recipe changes on Windows.
@@ -646,6 +660,20 @@ Correct:
 ```text
 Generate dist/devsweep-x86_64-pc-windows-msvc.zip locally and keep dist/
 ignored by git.
+```
+
+Wrong:
+
+```bash
+export CARGO_TARGET_DIR=/tmp/devsweep-check
+cargo test --workspace --locked --all-targets
+```
+
+Correct:
+
+```bash
+unset CARGO_TARGET_DIR
+cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
 ```
 
 ### Scenario: Cleanup plan ranking and freshness guard

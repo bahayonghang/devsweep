@@ -5,9 +5,9 @@
 
 ## 前置条件
 
-- [ ] 四个子任务(core-api-extraction / core-contract-extension /
+- [x] 四个子任务(core-api-extraction / core-contract-extension /
       tauri-shell-backend / desktop-frontend-ui)均已 archive。
-- [ ] 各子任务遗留的设计偏差已回写父任务 `design.md`。
+- [x] 各子任务遗留的设计偏差已回写父任务 `design.md`。
 
 ## 审查步骤(按序)
 

@@ -47,6 +47,31 @@ Execute selected targets from a plan:
 cargo run --bin devsweep -- clean --plan plan.json --execute --audit-log devsweep-audit.jsonl
 ```
 
+## Desktop Development
+
+The Tauri 2 desktop MVP targets Windows and requires Node.js 22. Install its
+locked frontend dependencies, then start the native development window:
+
+```powershell
+cd desktop
+npm ci
+npm run tauri -- dev
+```
+
+From the repository root, run the desktop frontend and Rust checks or build an
+unsigned NSIS installer:
+
+```powershell
+just desktop-web-check
+just desktop-test
+just desktop-build
+```
+
+The desktop app uses the same core validation, confirmation digest, and
+trash-backed execution path as the CLI. Cleanup remains review-first; moving a
+path to the trash does not make its capacity available until the trash is
+emptied.
+
 ## Documentation
 
 The complete English and Simplified Chinese documentation site lives in

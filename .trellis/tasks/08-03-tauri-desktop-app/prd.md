@@ -56,10 +56,10 @@ Mole 分析见 `research/mole-analysis.md`。
 
 ## 验收标准(父任务最终集成审查)
 
-- [ ] `just ci` 全绿(fmt/check/test/clippy,三平台 CI 通过);现有 CLI 测试无一修改语义。
-- [ ] 拆分前后 `devsweep scan --json` 在固定 fixture 上等价(比较方法由子任务 1 定义并留档)。
-- [ ] 端到端流程(由子任务 4 交付)复核通过:扫描 → 勾选 → dry-run(获得 digest)
+- [x] `just ci` 全绿(fmt/check/test/clippy,三平台 CI 通过);现有 CLI 测试无一修改语义。
+- [x] 拆分前后 `devsweep scan --json` 在固定 fixture 上等价(比较方法由子任务 1 定义并留档)。
+- [x] 端到端流程(由子任务 4 交付)复核通过:扫描 → 勾选 → dry-run(获得 digest)
       → 执行 → 报告;执行动作与同一计划下 CLI `clean --execute` 语义一致。
-- [ ] GUI 无任何路径可触发核心层之外的删除逻辑;执行必经 digest 校验(代码审查确认)。
-- [ ] 全部结果文案符合回收站口径,无"已释放"误导表述。
-- [ ] 四个子任务全部 archive 后,父任务完成本清单再 archive。
+- [x] GUI 无任何路径可触发核心层之外的删除逻辑;执行必经 digest 校验(代码审查确认)。
+- [x] 全部结果文案符合回收站口径,无"已释放"误导表述。
+- [x] 四个子任务全部 archive 后,父任务完成本清单再 archive。
