@@ -43,13 +43,13 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check
-        run: cargo check --locked --all-targets
+        run: cargo check --workspace --locked --all-targets
 
       - name: Test
-        run: cargo test --locked --all-targets
+        run: cargo test --workspace --locked --all-targets
 
       - name: Clippy
-        run: cargo clippy --locked --all-targets -- -D warnings
+        run: cargo clippy --workspace --locked --all-targets -- -D warnings
 
   msrv:
     name: MSRV (${{ matrix.os }})
@@ -65,7 +65,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Read package rust-version
+      - name: Read workspace rust-version
         id: msrv
         shell: bash
         run: |
@@ -79,10 +79,10 @@ jobs:
           toolchain: ${{ steps.msrv.outputs.version }}
 
       - name: Check on MSRV
-        run: cargo check --locked --all-targets
+        run: cargo check --workspace --locked --all-targets
 
       - name: Test on MSRV
-        run: cargo test --locked --all-targets
+        run: cargo test --workspace --locked --all-targets
 
   audit:
     name: cargo-audit

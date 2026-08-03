@@ -440,23 +440,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "devsweep"
+name = "devsweep-cli"
 version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
  "crossterm",
- "libc",
+ "devsweep-core",
  "ratatui",
+ "serde_json",
+ "tempfile",
+ "tracing-subscriber",
+ "unicode-width",
+]
+
+[[package]]
+name = "devsweep-core"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "libc",
  "rayon",
  "serde",
  "serde_json",
  "sha2",
  "tempfile",
  "tracing",
- "tracing-subscriber",
  "trash",
- "unicode-width",
  "windows-sys 0.59.0",
 ]
 

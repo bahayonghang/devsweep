@@ -39,14 +39,14 @@ let root = root
   `devsweep::run` to `main`.
 - Use `anyhow::bail!` for explicit user-facing command failures. For example,
   `clean --execute` without `--plan PATH` fails before the executor runs.
-- Saved plan/report decoding in `src/application/commands.rs` adds file and
+- Saved plan/report decoding in `crates/devsweep-cli/src/application/commands.rs` adds file and
   JSON context, rejects inventory documents, and preserves version-specific
   rescan guidance before validation.
 - Project scan root access failures are hard errors. Inaccessible nested entries are
   recorded as discovery diagnostics and skipped so one unreadable child does not
   abort the whole scan; the outcome is marked partial while sibling candidates
   remain.
-- Bounded walks under `src/filesystem/sizing.rs` never convert I/O failure into
+- Bounded walks under `crates/devsweep-core/src/filesystem/sizing.rs` never convert I/O failure into
   a trusted `0 B`. They return a `SizeEstimate` that is either a complete total,
   a partial lower bound, or unknown. Incomplete and unknown estimates are not
   selected by default.
@@ -55,7 +55,7 @@ let root = root
   the side effect may already have run.
 - Tests may use `expect(...)` with a specific reason.
 
-Example from `src/application/commands.rs`:
+Example from `crates/devsweep-cli/src/application/commands.rs`:
 
 ```rust
 if command.execute && command.plan.is_none() {

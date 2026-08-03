@@ -8,8 +8,8 @@
 
 `devsweep` currently has no database, ORM, migrations, or durable application
 state. Persisted file contracts are the serializable cleanup plan emitted as
-JSON from `src/model/plan.rs` and execution audit records emitted as JSONL from
-`src/execution/audit.rs`.
+JSON from `crates/devsweep-core/src/model/plan.rs` and execution audit records
+emitted as JSONL from `crates/devsweep-core/src/execution/audit.rs`.
 
 Treat this file as a guardrail: do not introduce a database abstraction for
 scanner, CLI, or TUI work unless a task explicitly adds persistence.
@@ -18,7 +18,7 @@ scanner, CLI, or TUI work unless a task explicitly adds persistence.
 
 ## Current Data Contracts
 
-The persisted cleanup plan contract is owned by `src/model/plan.rs`:
+The persisted cleanup plan contract is owned by `crates/devsweep-core/src/model/plan.rs`:
 
 ```rust
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -37,7 +37,7 @@ canonical-digest, and compatibility changes need round-trip and fail-closed
 validation tests.
 
 The audit JSONL contract and unconfirmed-start replay are owned by
-`src/execution/audit.rs`. Each line is one
+`crates/devsweep-core/src/execution/audit.rs`. Each line is one
 append-only action record and must include at least:
 
 - `timestamp_epoch_ms`
@@ -71,7 +71,7 @@ or a database, they must also add:
 ## Naming Conventions
 
 - JSON fields use Serde defaults or explicit `snake_case` settings already
-  present on enums under `src/model/`.
+  present on enums under `crates/devsweep-core/src/model/`.
 - Versioned persisted formats must include a top-level version field. The
   current cleanup plan uses `CLEANUP_PLAN_VERSION = 2`; v1 plans are rejected
   with rescan guidance rather than migrated into executable data.

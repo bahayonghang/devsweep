@@ -32,17 +32,17 @@
 
 ## Acceptance Criteria
 
-- [ ] `just ci` 全绿(justfile 已适配 workspace;等价覆盖 fmt/check/test/clippy,
+- [x] `just ci` 全绿(justfile 已适配 workspace;等价覆盖 fmt/check/test/clippy,
       --locked -D warnings)。
-- [ ] 三平台 CI 与 MSRV 作业在 workspace 布局下通过(推送分支验证或本地等价复现,
+- [x] 三平台 CI 与 MSRV 作业在 workspace 布局下通过(推送分支验证或本地等价复现,
       方式留档)。
-- [ ] `cargo tree -p devsweep-core` 中不出现 clap / ratatui / crossterm。
-- [ ] JSON 等价门:对 `tests` 侧构造的固定合成 fixture(构造脚本随本任务提交,
+- [x] `cargo tree -p devsweep-core` 中不出现 clap / ratatui / crossterm。
+- [x] JSON 等价门:对 `tests` 侧构造的固定合成 fixture(构造脚本随本任务提交,
       见 implement.md),拆分前后各跑
       `devsweep scan --json --roots <fixture>`,经 `jq -S .` 规范化并剔除
       implement.md 中列明的易变字段(如耗时/时间戳)后 `diff` 为空;
       比较命令与输出留档在本任务目录。
-- [ ] `devsweep-core` 可被外部 crate 以 `use devsweep_core::...` 使用
+- [x] `devsweep-core` 可被外部 crate 以 `use devsweep_core::...` 使用
       (doc-test 或最小示例验证)。
 
 ## Notes

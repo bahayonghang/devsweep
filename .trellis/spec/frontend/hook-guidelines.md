@@ -7,7 +7,7 @@
 ## Overview
 
 This Rust TUI project does not use React hooks. The equivalent boundary is the
-event/update layer in `src/tui/app/`: keyboard events and worker messages enter
+event/update layer in `crates/devsweep-cli/src/tui/app/`: keyboard events and worker messages enter
 `App::update`, which mutates the single `App` owner and returns typed
 side-effect requests. `app/input.rs`, `selection.rs`, `worker.rs`, and `jobs.rs`
 contain cohesive transitions; `app/mod.rs` remains the exhaustive root router.

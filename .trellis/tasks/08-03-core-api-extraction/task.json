@@ -3,7 +3,7 @@
   "name": "core-api-extraction",
   "title": "拆分 devsweep 核心库公共 API",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

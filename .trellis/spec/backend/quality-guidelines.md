@@ -61,7 +61,7 @@ explicitly adds cleanup support.
   }
   ```
 - `devsweep clean` defaults to dry-run behavior.
-- `devsweep clean --execute` is owned by `src/execution/mod.rs` after the execution
+- `devsweep clean --execute` is owned by `crates/devsweep-core/src/execution/mod.rs` after the execution
   engine task.
 
 #### 4. Validation & Error Matrix
@@ -81,7 +81,7 @@ explicitly adds cleanup support.
 - Base: `cargo check --all-targets` passes when run directly.
 - Bad: `scan` discovers or deletes directories before the scanner task exists.
 - Bad: `clean --execute` invokes `std::process::Command` outside the bounded
-  `src/process/` owner.
+  `crates/devsweep-core/src/process/` owner.
 
 #### 6. Tests Required
 
@@ -141,7 +141,7 @@ CleanupIntent::RunBuiltInAction {
   by the freshness guard, and callers translate it into an explicit selection
   via `default_selected_ids()`.
 - Command actions use `CommandRequest { program, args, cwd }`; the private
-  registry under `src/rules/`, not a plan file, reconstructs those values and
+  registry under `crates/devsweep-core/src/rules/`, not a plan file, reconstructs those values and
   they must never form a shell string.
 - `MoveToTrash` actions use the rules-reconstructed path only after it
   matches the validated observed target path.
@@ -422,7 +422,7 @@ CleanAction::Command {
 
 - Trigger: adding or changing a cleanup rule, or listing rules via
   `devsweep rules` / the TUI `Rules` tab. Every rule id, fact, table row, and
-  procedural `RuleDoc` lives in `src/rules/definitions.rs`; scanner/provider
+  procedural `RuleDoc` lives in `crates/devsweep-core/src/rules/definitions.rs`; scanner/provider
   implementations consume those definitions and `rule_catalogue()` aggregates
   them.
 
@@ -547,15 +547,19 @@ GlobalCacheRule {
   - `just release-archive`
 - CI validation:
   - `cargo fmt --all -- --check`
-  - `cargo check --all-targets`
-  - `cargo test --all-targets`
-  - `cargo clippy --all-targets -- -D warnings`
+  - `cargo check --workspace --locked --all-targets`
+  - `cargo test --workspace --locked --all-targets`
+  - `cargo clippy --workspace --locked --all-targets -- -D warnings`
 
 #### 3. Contracts
 
 - `just ci` remains the canonical local quality gate.
 - CI must run the same four validation classes as `just ci`: format, check,
   tests, and clippy.
+- Process-runner tests in `devsweep-core` use the CLI-owned `process_fixture`
+  binary. The shared test helper must build a missing fixture into the target
+  root derived from the current test executable, including when Cargo uses a
+  custom `--target-dir`; timeout measurements start only after fixture setup.
 - `just release-archive` builds the release binary and writes a Windows archive
   to `dist/devsweep-x86_64-pc-windows-msvc.zip`.
 - `dist/` is a generated artifact directory and must stay ignored by git.
@@ -565,6 +569,9 @@ GlobalCacheRule {
 #### 4. Validation & Error Matrix
 
 - Format/check/test/clippy failure -> CI fails and local `just ci` fails.
+- Clean or custom Cargo target without `process_fixture` -> the core test helper
+  builds that exact target before running process assertions; it must not rely
+  on a stale binary under the default `target/` directory.
 - Release build failure -> `just release-archive` fails before creating or
   replacing the archive.
 - Missing `target/release/devsweep.exe` after build -> archive command fails.
@@ -574,15 +581,24 @@ GlobalCacheRule {
 
 - Good: CI includes Windows and a non-Windows runner for the Rust validation
   matrix.
+- Good: a clean `cargo test --target-dir <isolated> --workspace --locked
+  --all-targets` passes without a pre-existing fixture binary.
 - Good: release recipe uses the already built single binary.
 - Base: local `cargo build --release` succeeds without packaging.
 - Bad: committing generated `dist/*.zip` archives.
+- Bad: locating `process_fixture` in the default target directory when the
+  current test executable came from a custom target directory.
+- Bad: starting a process timeout clock before an on-demand test fixture build.
 - Bad: documenting Docker cleanup, permanent delete, or package-manager
   distribution as released MVP behavior.
 
 #### 6. Tests Required
 
 - Run `just ci` after workflow or validation command changes.
+- Run the workspace tests once with a clean/custom target directory so cached
+  `process_fixture` output cannot mask a broken cross-crate test dependency.
+- Run the process-runner tests on Windows and one Unix host; the Unix run must
+  exercise the process-group tree-termination test dynamically.
 - Run `just release-archive` after release recipe changes on Windows.
 - Check `git status --short --ignored` to confirm `dist/` is ignored.
 
