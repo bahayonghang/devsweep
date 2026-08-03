@@ -1252,3 +1252,27 @@ Moved command composition into a private application module, reduced the public 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 42: Complete Rust source architecture reorganization
+
+**Date**: 2026-08-03
+**Task**: Complete Rust source architecture reorganization
+**Branch**: `dev`
+
+### Summary
+
+Completed the four-child Rust architecture migration: untangled core contracts, modularized backend runtime and discovery, decomposed TUI internals, narrowed the application interface to devsweep::run, reconciled maintained architecture docs, and passed final cross-child safety and compatibility validation.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f726871` | (see git log) |
+| `9ea6ffd` | (see git log) |
+| `9a059ed` | (see git log) |
+| `f62a872` | (see git log) |
+
+### Status
+
+[OK] **Completed**

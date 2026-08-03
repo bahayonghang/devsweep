@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 41
+- **Total Sessions**: 42
 - **Last Active**: 2026-08-03
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1254 | Active |
+| `journal-1.md` | ~1278 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 42 | 2026-08-03 | Complete Rust source architecture reorganization | `f726871`, `9ea6ffd`, `9a059ed`, `f62a872` | `dev` |
 | 41 | 2026-08-03 | Narrow application entrypoint and reconcile architecture | `f62a872` | `dev` |
 | 40 | 2026-08-03 | Decompose TUI internals | `9a059ed` | `dev` |
 | 39 | 2026-08-03 | Modularize backend runtime and discovery | `9ea6ffd` | `dev` |
