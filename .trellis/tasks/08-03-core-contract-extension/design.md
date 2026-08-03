@@ -7,7 +7,10 @@
 - 派生加在 core 类型本体上,不建平行 DTO(父任务决策)。
 - 字段命名保持 Rust snake_case 序列化(与现有 `ScanReport` JSON 一致);
   前端侧统一适配,不在 core 混用 rename_all = camelCase(避免与既有
-  `--json` 输出风格分裂)。实现时核对 `ScanReport` 现状后对齐,结论留档。
+  `--json` 输出风格分裂)。现状核对结论:`ScanReport` 的结构体字段使用
+  serde 默认 snake_case,枚举使用 `rename_all = "snake_case"`,带数据的枚举
+  使用 `tag = "type"`,边界结构体/枚举使用 `deny_unknown_fields`;本任务新增
+  类型与派生沿用这一组合,不改变 `scan --json` 文档形状。
 
 ## 2. ExecutionReport 扩展(草案,实施时以代码核对为准)
 

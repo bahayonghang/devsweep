@@ -565,6 +565,10 @@ fn cleanup_progress_renders_mixed_target_results() {
                 target_id: failed_id,
                 message: "Access denied: file is locked".to_string(),
             }],
+            outcomes: Vec::new(),
+            notes: Vec::new(),
+            estimated_recoverable: Default::default(),
+            confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
             audit_log: Some(PathBuf::from("audit.jsonl")),
         },
     }));

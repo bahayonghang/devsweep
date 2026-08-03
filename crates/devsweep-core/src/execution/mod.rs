@@ -1,9 +1,10 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Instant};
+use std::{collections::HashSet, fmt, path::PathBuf, sync::Arc, time::Instant};
 
 #[cfg(test)]
 use std::cell::RefCell;
 
 use anyhow::{Result, anyhow, bail};
+use serde::{Deserialize, Serialize};
 
 mod audit;
 mod command;
@@ -28,7 +29,7 @@ use audit::{AuditJournal, JournalEvent, action_path_from_authorized, command_fro
 use command::command_argv;
 
 use crate::{
-    model::{CleanAction, CleanTarget, TargetId},
+    model::{CleanAction, CleanTarget, ScanTotals, TargetId},
     plan::{ValidatedPlan, ValidatedTarget},
     process::{CancelObserver, FlagCancelObserver, NoopCancelObserver, sanitize_process_output},
 };
@@ -44,18 +45,198 @@ pub struct ExecutionRequest {
     pub audit_log: Option<PathBuf>,
     /// Exact target identifiers selected by the caller.
     pub selected: Vec<TargetId>,
+    /// Confirmation digest to verify before execution. Legacy CLI/TUI callers may omit it.
+    pub expected_digest: Option<ConfirmationDigest>,
     /// Cooperative cancel flag shared with the UI/runtime.
     pub cancel: Option<Arc<crate::process::FlagCancelObserver>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+/// Stable SHA-256 identity of a validated manifest and canonical target selection.
+pub struct ConfirmationDigest(String);
+
+impl ConfirmationDigest {
+    /// Wraps a digest received from a serialized boundary for later comparison.
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    fn from_canonical(value: String) -> Self {
+        Self(value)
+    }
+
+    /// Returns the lowercase hexadecimal digest.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for ConfirmationDigest {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(formatter)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "code", rename_all = "snake_case", deny_unknown_fields)]
+/// Caller-correctable execution request error.
+pub enum ExecutionError {
+    /// A selected target is not present in the validated manifest.
+    UnknownTarget {
+        /// Unknown target identifier.
+        target_id: TargetId,
+    },
+    /// An inspect-only target was selected for cleanup.
+    InspectOnlyTarget {
+        /// Inspect-only target identifier.
+        target_id: TargetId,
+    },
+    /// The supplied confirmation no longer matches the manifest and selection.
+    StaleConfirmation {
+        /// Digest supplied by the caller.
+        expected_digest: ConfirmationDigest,
+        /// Digest calculated from the current validated request.
+        actual_digest: ConfirmationDigest,
+    },
+}
+
+impl fmt::Display for ExecutionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnknownTarget { target_id } => {
+                write!(formatter, "unknown cleanup target: {}", target_id.as_str())
+            }
+            Self::InspectOnlyTarget { target_id } => write!(
+                formatter,
+                "target {} is inspect-only and cannot be executed",
+                target_id.as_str()
+            ),
+            Self::StaleConfirmation { .. } => {
+                formatter.write_str("cleanup confirmation digest is stale")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ExecutionError {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+/// Public projection of a trusted cleanup action without command or path details.
+pub enum ActionKind {
+    /// Bounded command action.
+    Command {
+        /// Whether the command cannot be reversed.
+        irreversible: bool,
+    },
+    /// Move an exact validated path to the operating-system trash.
+    MoveToTrash,
+    /// Inspect-only target with no cleanup authority.
+    InspectOnly,
+    /// Disabled permanent-delete deny case.
+    PermanentDelete,
+}
+
+impl ActionKind {
+    fn from_action(action: &CleanAction) -> Self {
+        match action {
+            CleanAction::Command { irreversible, .. } => Self::Command {
+                irreversible: *irreversible,
+            },
+            CleanAction::MoveToTrash { .. } => Self::MoveToTrash,
+            CleanAction::NoopInspectOnly => Self::InspectOnly,
+            CleanAction::DeletePermanently { .. } => Self::PermanentDelete,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+/// Confidence-preserving recoverable-capacity estimate for one target.
+pub enum CapacityEstimate {
+    /// Complete byte estimate.
+    Verified {
+        /// Estimated bytes.
+        bytes: u64,
+    },
+    /// Incomplete lower-bound estimate.
+    Partial {
+        /// Observed lower-bound bytes.
+        lower_bound_bytes: u64,
+    },
+    /// No trustworthy byte estimate is available.
+    Unknown,
+}
+
+impl CapacityEstimate {
+    fn from_target(target: &CleanTarget) -> Self {
+        if target.size_complete {
+            Self::Verified {
+                bytes: target.estimated_bytes,
+            }
+        } else if target.estimated_bytes == 0 {
+            Self::Unknown
+        } else {
+            Self::Partial {
+                lower_bound_bytes: target.estimated_bytes,
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+/// Terminal result for one selected target.
+pub enum OutcomeStatus {
+    /// The action completed successfully.
+    Succeeded,
+    /// The target failed or its result became unknown.
+    Failed {
+        /// Sanitized failure detail.
+        message: String,
+    },
+    /// The target was not dispatched.
+    Skipped {
+        /// Sanitized skip reason.
+        reason: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+/// Detailed result for one selected cleanup target.
+pub struct TargetOutcome {
+    /// Selected target identifier.
+    pub target_id: TargetId,
+    /// Public action classification.
+    pub action: ActionKind,
+    /// Terminal target status.
+    pub status: OutcomeStatus,
+    /// Confidence-preserving estimated recoverable capacity.
+    pub estimated_recoverable: CapacityEstimate,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+/// Non-fatal normalization note for an execution request.
+pub enum ExecutionNote {
+    /// A repeated selected target identifier was removed.
+    DuplicateSelectionRemoved {
+        /// Deduplicated target identifier.
+        target_id: TargetId,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Aggregate outcome of a dry run or cleanup execution.
 pub struct ExecutionReport {
     /// Whether the run performed no side effects.
     pub dry_run: bool,
     /// Number of validated targets selected by the request.
     pub selected: usize,
-    /// Number of target actions attempted.
+    /// Number of selected targets represented by terminal outcomes.
     pub attempted: usize,
     /// Number of successful target actions.
     pub succeeded: usize,
@@ -65,6 +246,14 @@ pub struct ExecutionReport {
     pub skipped: usize,
     /// Per-target failure summaries.
     pub failures: Vec<ActionFailure>,
+    /// One terminal outcome for every deduplicated selected target.
+    pub outcomes: Vec<TargetOutcome>,
+    /// Non-fatal request-normalization notes.
+    pub notes: Vec<ExecutionNote>,
+    /// Estimated recoverable capacity across all selected target outcomes.
+    pub estimated_recoverable: ScanTotals,
+    /// Confirmation identity for the validated manifest and canonical selection.
+    pub confirmation_digest: ConfirmationDigest,
     /// Audit JSONL path used by an executing run.
     pub audit_log: Option<PathBuf>,
 }
@@ -74,15 +263,159 @@ impl ExecutionReport {
     pub fn has_failures(&self) -> bool {
         self.failed > 0
     }
+
+    fn new(
+        selected_targets: &[&ValidatedTarget],
+        notes: Vec<ExecutionNote>,
+        confirmation_digest: ConfirmationDigest,
+        dry_run: bool,
+        audit_log: Option<PathBuf>,
+    ) -> Self {
+        Self {
+            dry_run,
+            selected: selected_targets.len(),
+            attempted: 0,
+            succeeded: 0,
+            failed: 0,
+            skipped: 0,
+            failures: Vec::new(),
+            outcomes: Vec::with_capacity(selected_targets.len()),
+            notes,
+            estimated_recoverable: ScanTotals::from_sizes(selected_targets.iter().map(|target| {
+                let target = target.target();
+                (target.estimated_bytes, target.size_complete)
+            })),
+            confirmation_digest,
+            audit_log,
+        }
+    }
+
+    fn record_outcome(&mut self, target: &CleanTarget, status: OutcomeStatus) {
+        self.attempted += 1;
+        match &status {
+            OutcomeStatus::Succeeded => self.succeeded += 1,
+            OutcomeStatus::Failed { message } => {
+                self.failed += 1;
+                self.failures.push(ActionFailure {
+                    target_id: target.id.clone(),
+                    message: message.clone(),
+                });
+            }
+            OutcomeStatus::Skipped { .. } => self.skipped += 1,
+        }
+        self.outcomes.push(TargetOutcome {
+            target_id: target.id.clone(),
+            action: ActionKind::from_action(&target.action),
+            status,
+            estimated_recoverable: CapacityEstimate::from_target(target),
+        });
+    }
+
+    fn record_remaining_skipped(&mut self, selected_targets: &[&ValidatedTarget], reason: &str) {
+        for validated in selected_targets.iter().skip(self.outcomes.len()) {
+            self.record_outcome(
+                validated.target(),
+                OutcomeStatus::Skipped {
+                    reason: reason.to_string(),
+                },
+            );
+        }
+    }
+
+    fn assert_consistent(&self) {
+        debug_assert_eq!(self.selected, self.outcomes.len());
+        debug_assert_eq!(self.attempted, self.outcomes.len());
+        debug_assert_eq!(self.attempted, self.succeeded + self.failed + self.skipped);
+        debug_assert_eq!(self.failed, self.failures.len());
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Failure summary for one cleanup target.
 pub struct ActionFailure {
     /// Target that failed or reached an unknown result.
     pub target_id: TargetId,
     /// Sanitized failure detail.
     pub message: String,
+}
+
+struct PreparedSelection<'a> {
+    targets: Vec<&'a ValidatedTarget>,
+    notes: Vec<ExecutionNote>,
+}
+
+/// Computes the confirmation identity for a validated manifest and target selection.
+///
+/// Unknown and inspect-only target identifiers are rejected using [`ExecutionError`].
+/// Repeated identifiers are treated as one canonical selection.
+pub fn confirmation_digest(
+    plan: &ValidatedPlan,
+    selected: &[TargetId],
+) -> Result<ConfirmationDigest> {
+    let prepared = prepare_selection(plan, selected)?;
+    confirmation_digest_for_targets(plan, &prepared.targets)
+}
+
+fn confirmation_digest_for_targets(
+    plan: &ValidatedPlan,
+    selected_targets: &[&ValidatedTarget],
+) -> Result<ConfirmationDigest> {
+    let selected = selected_targets
+        .iter()
+        .map(|target| target.target().id.clone())
+        .collect::<Vec<_>>();
+    plan.confirmation_digest(&selected)
+        .map(ConfirmationDigest::from_canonical)
+}
+
+fn prepare_selection<'a>(
+    plan: &'a ValidatedPlan,
+    requested: &[TargetId],
+) -> Result<PreparedSelection<'a>> {
+    let plan_ids = plan
+        .targets()
+        .iter()
+        .map(|target| &target.target().id)
+        .collect::<HashSet<_>>();
+    let mut selected_ids = HashSet::new();
+    let mut noted_duplicates = HashSet::new();
+    let mut notes = Vec::new();
+
+    for target_id in requested {
+        if !plan_ids.contains(target_id) {
+            bail!(ExecutionError::UnknownTarget {
+                target_id: target_id.clone(),
+            });
+        }
+        if !selected_ids.insert(target_id.clone()) && noted_duplicates.insert(target_id.clone()) {
+            notes.push(ExecutionNote::DuplicateSelectionRemoved {
+                target_id: target_id.clone(),
+            });
+        }
+    }
+
+    let targets = plan
+        .targets()
+        .iter()
+        .filter(|target| selected_ids.contains(&target.target().id))
+        .collect::<Vec<_>>();
+
+    for target in &targets {
+        match &target.target().action {
+            CleanAction::NoopInspectOnly => {
+                bail!(ExecutionError::InspectOnlyTarget {
+                    target_id: target.target().id.clone(),
+                });
+            }
+            CleanAction::DeletePermanently { .. } => {
+                bail!("permanent delete is disabled in this build");
+            }
+            CleanAction::Command { .. } | CleanAction::MoveToTrash { .. } => {}
+        }
+    }
+
+    Ok(PreparedSelection { targets, notes })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -180,34 +513,37 @@ where
     where
         F: FnMut(ExecutionProgress),
     {
-        let selected_ids: HashSet<&TargetId> = request.selected.iter().collect();
-        let selected_targets: Vec<_> = plan
-            .targets()
-            .iter()
-            .filter(|target| selected_ids.contains(&target.target().id))
-            .collect();
-
-        if let Some(target) = selected_targets
-            .iter()
-            .find(|target| !target.target().action.is_executable())
+        let prepared = prepare_selection(plan, &request.selected)?;
+        let confirmation_digest = confirmation_digest_for_targets(plan, &prepared.targets)?;
+        if request.execute
+            && let Some(expected_digest) = request.expected_digest.as_ref()
+            && expected_digest != &confirmation_digest
         {
-            bail!(
-                "target {} has no executable cleanup action",
-                target.target().id.as_str()
-            )
+            bail!(ExecutionError::StaleConfirmation {
+                expected_digest: expected_digest.clone(),
+                actual_digest: confirmation_digest,
+            });
         }
+        let selected_targets = prepared.targets;
 
         if !request.execute {
-            return Ok(ExecutionReport {
-                dry_run: true,
-                selected: selected_targets.len(),
-                attempted: 0,
-                succeeded: 0,
-                failed: 0,
-                skipped: selected_targets.len(),
-                failures: Vec::new(),
-                audit_log: None,
-            });
+            let mut report = ExecutionReport::new(
+                &selected_targets,
+                prepared.notes,
+                confirmation_digest,
+                true,
+                None,
+            );
+            for validated in &selected_targets {
+                report.record_outcome(
+                    validated.target(),
+                    OutcomeStatus::Skipped {
+                        reason: "dry run; no cleanup action executed".to_string(),
+                    },
+                );
+            }
+            report.assert_consistent();
+            return Ok(report);
         }
 
         let audit_path = match request.audit_log {
@@ -221,16 +557,13 @@ where
         };
         #[cfg(not(test))]
         let mut journal = AuditJournal::open(&audit_path, plan.digest().to_string())?;
-        let mut report = ExecutionReport {
-            dry_run: false,
-            selected: selected_targets.len(),
-            attempted: 0,
-            succeeded: 0,
-            failed: 0,
-            skipped: 0,
-            failures: Vec::new(),
-            audit_log: Some(audit_path.clone()),
-        };
+        let mut report = ExecutionReport::new(
+            &selected_targets,
+            prepared.notes,
+            confirmation_digest,
+            false,
+            Some(audit_path.clone()),
+        );
 
         let total = selected_targets.len();
         let mut executed_fingerprints = HashSet::new();
@@ -240,16 +573,17 @@ where
             expected_identity: None,
         };
         let cancel = request.cancel.clone();
-        for validated_target in selected_targets {
+        let mut halt_reason = None;
+        for validated_target in &selected_targets {
             if cancel
                 .as_ref()
                 .is_some_and(|flag| flag.is_cancel_requested())
             {
-                report.skipped += 1;
-                report.failures.push(ActionFailure {
-                    target_id: validated_target.target().id.clone(),
-                    message: "canceled before action started".to_string(),
-                });
+                let message = "canceled before action started".to_string();
+                report.record_outcome(
+                    validated_target.target(),
+                    OutcomeStatus::Skipped { reason: message },
+                );
                 on_progress(ExecutionProgress {
                     completed: report.succeeded + report.failed + report.skipped,
                     total,
@@ -258,6 +592,7 @@ where
                     message: "canceled".to_string(),
                 });
                 // Remaining targets are not started once cancel is observed.
+                halt_reason = Some("canceled before action started");
                 break;
             }
 
@@ -267,15 +602,16 @@ where
                 executed_fingerprints.insert(validated_target.fingerprint().clone());
 
             if !dispatch_attempted {
-                report.failed += 1;
                 let message = format!(
                     "duplicate action fingerprint rejected before execution: {}",
                     validated_target.fingerprint().as_str()
                 );
-                report.failures.push(ActionFailure {
-                    target_id: target.id.clone(),
-                    message: message.clone(),
-                });
+                report.record_outcome(
+                    target,
+                    OutcomeStatus::Failed {
+                        message: message.clone(),
+                    },
+                );
                 on_progress(ExecutionProgress {
                     completed: report.succeeded + report.failed + report.skipped,
                     total,
@@ -288,16 +624,46 @@ where
 
             let authorized = match self.authorize_target(validated_target, &auth_context) {
                 Ok(ActionPrep::Skipped { message }) => {
-                    report.skipped += 1;
                     let seq = journal.next_sequence();
-                    let _ = journal.write_terminal(JournalEvent::skipped(
+                    let terminal = JournalEvent::skipped(
                         journal.run_id(),
                         seq,
                         plan.digest(),
                         target,
                         message.clone(),
                         started_at.elapsed().as_millis(),
-                    ));
+                    );
+                    if let Err(audit_error) = journal.write_terminal(terminal) {
+                        let audit_message = format!(
+                            "safety skip ({message}); audit persistence failed: {audit_error}"
+                        );
+                        let message = sanitize_process_output(
+                            audit_message.as_bytes(),
+                            EXECUTOR_DIAGNOSTIC_CAP,
+                        );
+                        report.record_outcome(
+                            target,
+                            OutcomeStatus::Failed {
+                                message: message.clone(),
+                            },
+                        );
+                        on_progress(ExecutionProgress {
+                            completed: report.succeeded + report.failed + report.skipped,
+                            total,
+                            target_id: target.id.clone(),
+                            status: ExecutionTargetStatus::Failed,
+                            message,
+                        });
+                        // Do not dispatch another target after the journal has failed.
+                        halt_reason = Some("execution halted after audit persistence failure");
+                        break;
+                    }
+                    report.record_outcome(
+                        target,
+                        OutcomeStatus::Skipped {
+                            reason: message.clone(),
+                        },
+                    );
                     on_progress(ExecutionProgress {
                         completed: report.succeeded + report.failed + report.skipped,
                         total,
@@ -309,8 +675,6 @@ where
                 }
                 Ok(ActionPrep::Ready(authorized)) => authorized,
                 Err(error) => {
-                    report.attempted += 1;
-                    report.failed += 1;
                     let message = sanitize_process_output(
                         error.to_string().as_bytes(),
                         EXECUTOR_DIAGNOSTIC_CAP,
@@ -337,10 +701,12 @@ where
                             audit_message.as_bytes(),
                             EXECUTOR_DIAGNOSTIC_CAP,
                         );
-                        report.failures.push(ActionFailure {
-                            target_id: target.id.clone(),
-                            message: message.clone(),
-                        });
+                        report.record_outcome(
+                            target,
+                            OutcomeStatus::Failed {
+                                message: message.clone(),
+                            },
+                        );
                         on_progress(ExecutionProgress {
                             completed: report.succeeded + report.failed + report.skipped,
                             total,
@@ -349,12 +715,15 @@ where
                             message,
                         });
                         // Do not dispatch another target without recording this denial.
+                        halt_reason = Some("execution halted after audit persistence failure");
                         break;
                     }
-                    report.failures.push(ActionFailure {
-                        target_id: target.id.clone(),
-                        message: message.clone(),
-                    });
+                    report.record_outcome(
+                        target,
+                        OutcomeStatus::Failed {
+                            message: message.clone(),
+                        },
+                    );
                     on_progress(ExecutionProgress {
                         completed: report.succeeded + report.failed + report.skipped,
                         total,
@@ -371,12 +740,13 @@ where
             let started_event =
                 JournalEvent::started(&run_id, seq, plan.digest(), target, &authorized);
             if let Err(error) = journal.write_started_durable(&started_event) {
-                report.failed += 1;
                 let message = format!("audit-blocked before side effect: {error}");
-                report.failures.push(ActionFailure {
-                    target_id: target.id.clone(),
-                    message: message.clone(),
-                });
+                report.record_outcome(
+                    target,
+                    OutcomeStatus::Failed {
+                        message: message.clone(),
+                    },
+                );
                 on_progress(ExecutionProgress {
                     completed: report.succeeded + report.failed + report.skipped,
                     total,
@@ -385,6 +755,7 @@ where
                     message,
                 });
                 // Halt further actions after audit-start failure.
+                halt_reason = Some("execution halted after audit persistence failure");
                 break;
             }
 
@@ -392,61 +763,55 @@ where
             let duration_ms = started_at.elapsed().as_millis();
             let finish_seq = journal.next_sequence();
             let run_id = journal.run_id().to_string();
-            let (progress_status, progress_message, terminal) = match outcome {
+            let (progress_status, progress_message, outcome_status, terminal) = match outcome {
                 Ok(ActionStatus::Success {
                     command,
                     exit_code,
                     action_path,
-                }) => {
-                    report.attempted += 1;
-                    report.succeeded += 1;
-                    (
-                        ExecutionTargetStatus::Succeeded,
-                        "completed".to_string(),
-                        JournalEvent::finished(
-                            &run_id,
-                            finish_seq,
-                            plan.digest(),
-                            target,
-                            "success",
-                            command,
-                            exit_code,
-                            action_path,
-                            duration_ms,
-                            None,
-                        ),
-                    )
-                }
-                Ok(ActionStatus::Skipped { message }) => {
-                    report.skipped += 1;
-                    (
-                        ExecutionTargetStatus::Skipped,
-                        format!("skipped: {message}"),
-                        JournalEvent::finished(
-                            &run_id,
-                            finish_seq,
-                            plan.digest(),
-                            target,
-                            "skipped",
-                            None,
-                            None,
-                            action_path_from_authorized(&authorized),
-                            duration_ms,
-                            Some(message),
-                        ),
-                    )
-                }
+                }) => (
+                    ExecutionTargetStatus::Succeeded,
+                    "completed".to_string(),
+                    OutcomeStatus::Succeeded,
+                    JournalEvent::finished(
+                        &run_id,
+                        finish_seq,
+                        plan.digest(),
+                        target,
+                        "success",
+                        command,
+                        exit_code,
+                        action_path,
+                        duration_ms,
+                        None,
+                    ),
+                ),
+                Ok(ActionStatus::Skipped { message }) => (
+                    ExecutionTargetStatus::Skipped,
+                    format!("skipped: {message}"),
+                    OutcomeStatus::Skipped {
+                        reason: message.clone(),
+                    },
+                    JournalEvent::finished(
+                        &run_id,
+                        finish_seq,
+                        plan.digest(),
+                        target,
+                        "skipped",
+                        None,
+                        None,
+                        action_path_from_authorized(&authorized),
+                        duration_ms,
+                        Some(message),
+                    ),
+                ),
                 Err(error) => {
-                    report.attempted += 1;
-                    report.failed += 1;
                     let message = error.to_string();
-                    report.failures.push(ActionFailure {
-                        target_id: target.id.clone(),
-                        message: message.clone(),
-                    });
                     (
                         ExecutionTargetStatus::Failed,
                         message.clone(),
+                        OutcomeStatus::Failed {
+                            message: message.clone(),
+                        },
                         JournalEvent::finished(
                             &run_id,
                             finish_seq,
@@ -465,17 +830,15 @@ where
 
             if let Err(error) = journal.write_terminal(terminal) {
                 // Side effect already ran; durable terminal record failed.
-                if progress_status == ExecutionTargetStatus::Succeeded {
-                    report.succeeded = report.succeeded.saturating_sub(1);
-                }
-                report.failed += 1;
                 let message = format!(
                     "action result known ({progress_message}); audit persistence failed: {error}"
                 );
-                report.failures.push(ActionFailure {
-                    target_id: target.id.clone(),
-                    message: message.clone(),
-                });
+                report.record_outcome(
+                    target,
+                    OutcomeStatus::Failed {
+                        message: message.clone(),
+                    },
+                );
                 on_progress(ExecutionProgress {
                     completed: report.succeeded + report.failed + report.skipped,
                     total,
@@ -483,9 +846,11 @@ where
                     status: ExecutionTargetStatus::Unknown,
                     message,
                 });
+                halt_reason = Some("execution halted after audit persistence failure");
                 break;
             }
 
+            report.record_outcome(target, outcome_status);
             on_progress(ExecutionProgress {
                 completed: report.succeeded + report.failed + report.skipped,
                 total,
@@ -495,7 +860,11 @@ where
             });
         }
 
+        if let Some(reason) = halt_reason {
+            report.record_remaining_skipped(&selected_targets, reason);
+        }
         let _ = journal.flush();
+        report.assert_consistent();
         Ok(report)
     }
 
@@ -646,6 +1015,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: false,
                     audit_log: None,
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -653,10 +1023,264 @@ mod tests {
 
         assert!(report.dry_run);
         assert_eq!(report.selected, 1);
-        assert_eq!(report.attempted, 0);
+        assert_eq!(report.attempted, 1);
+        assert_eq!(report.skipped, 1);
+        assert_eq!(report.outcomes.len(), 1);
+        assert_eq!(
+            report.confirmation_digest,
+            confirmation_digest(&test_validated_plan(&plan), &plan.default_selected_ids())
+                .expect("confirmation digest")
+        );
         assert!(cleanup_path.exists(), "dry-run must not move fixture");
         assert!(command_runner.requests().is_empty());
         assert!(trash_runner.paths().is_empty());
+    }
+
+    #[test]
+    fn execution_report_round_trips_with_outcomes_and_capacity_confidence() {
+        let fixture = TempDir::new().expect("temp dir");
+        let mut verified = target(
+            "verified",
+            CleanAction::MoveToTrash {
+                path: fixture.path().join("verified"),
+            },
+            Some(fixture.path().join("verified")),
+        );
+        verified.estimated_bytes = 100;
+        let mut partial = target(
+            "partial",
+            CleanAction::MoveToTrash {
+                path: fixture.path().join("partial"),
+            },
+            Some(fixture.path().join("partial")),
+        );
+        partial.estimated_bytes = 50;
+        partial.size_complete = false;
+        let mut unknown = target(
+            "unknown",
+            CleanAction::MoveToTrash {
+                path: fixture.path().join("unknown"),
+            },
+            Some(fixture.path().join("unknown")),
+        );
+        unknown.estimated_bytes = 0;
+        unknown.size_complete = false;
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![verified, partial, unknown],
+        };
+        let validated = test_validated_plan(&plan);
+
+        let report = test_executor(
+            RecordingCommandRunner::default(),
+            RecordingTrashRunner::default(),
+        )
+        .run_plan(
+            &validated,
+            ExecutionRequest {
+                selected: validated.default_selected_ids(),
+                execute: false,
+                audit_log: None,
+                expected_digest: None,
+                cancel: None,
+            },
+        )
+        .expect("dry-run report");
+
+        assert_eq!(report.selected, 3);
+        assert_eq!(report.attempted, 3);
+        assert_eq!(report.succeeded + report.failed + report.skipped, 3);
+        assert_eq!(report.outcomes.len(), 3);
+        assert_eq!(report.estimated_recoverable.verified_bytes, 100);
+        assert_eq!(report.estimated_recoverable.partial_lower_bound_bytes, 50);
+        assert_eq!(report.estimated_recoverable.unknown_target_count, 1);
+        assert_eq!(
+            report.outcomes[0].estimated_recoverable,
+            CapacityEstimate::Verified { bytes: 100 }
+        );
+        assert_eq!(
+            report.outcomes[1].estimated_recoverable,
+            CapacityEstimate::Partial {
+                lower_bound_bytes: 50
+            }
+        );
+        assert_eq!(
+            report.outcomes[2].estimated_recoverable,
+            CapacityEstimate::Unknown
+        );
+
+        let json = serde_json::to_value(&report).expect("execution report serializes");
+        assert_eq!(json["outcomes"][0]["action"]["type"], "move_to_trash");
+        assert_eq!(json["outcomes"][0]["status"]["type"], "skipped");
+        assert_eq!(
+            serde_json::from_value::<ExecutionReport>(json).expect("execution report deserializes"),
+            report
+        );
+
+        let failure = ActionFailure {
+            target_id: TargetId::new("failed.target"),
+            message: "sanitized failure".to_string(),
+        };
+        let failure_json = serde_json::to_string(&failure).expect("failure serializes");
+        assert_eq!(
+            serde_json::from_str::<ActionFailure>(&failure_json).expect("failure deserializes"),
+            failure
+        );
+    }
+
+    #[test]
+    fn confirmation_digest_is_stable_and_sensitive_to_manifest_and_selection() {
+        let fixture = TempDir::new().expect("temp dir");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "first",
+                    CleanAction::MoveToTrash {
+                        path: fixture.path().join("first"),
+                    },
+                    Some(fixture.path().join("first")),
+                ),
+                target(
+                    "second",
+                    CleanAction::MoveToTrash {
+                        path: fixture.path().join("second"),
+                    },
+                    Some(fixture.path().join("second")),
+                ),
+            ],
+        };
+        let validated = test_validated_plan(&plan);
+        let first_id = plan.targets[0].id.clone();
+        let second_id = plan.targets[1].id.clone();
+
+        let digest = confirmation_digest(&validated, &[first_id.clone(), second_id.clone()])
+            .expect("confirmation digest");
+        let reordered = confirmation_digest(
+            &validated,
+            &[second_id.clone(), first_id.clone(), first_id.clone()],
+        )
+        .expect("reordered confirmation digest");
+        let different_selection =
+            confirmation_digest(&validated, &[first_id]).expect("selection digest");
+        let mut changed_plan = plan.clone();
+        changed_plan.targets[0].estimated_bytes += 1;
+        let changed_manifest = confirmation_digest(
+            &test_validated_plan(&changed_plan),
+            &changed_plan.default_selected_ids(),
+        )
+        .expect("changed manifest digest");
+
+        assert_eq!(digest, reordered);
+        assert_ne!(digest, different_selection);
+        assert_ne!(digest, changed_manifest);
+        assert_eq!(digest.as_str().len(), 64);
+    }
+
+    #[test]
+    fn stale_confirmation_rejects_before_audit_or_side_effects() {
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let first_path = fixture.path().join("first");
+        let second_path = fixture.path().join("second");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "first",
+                    CleanAction::MoveToTrash {
+                        path: first_path.clone(),
+                    },
+                    Some(first_path.clone()),
+                ),
+                target(
+                    "second",
+                    CleanAction::MoveToTrash {
+                        path: second_path.clone(),
+                    },
+                    Some(second_path.clone()),
+                ),
+            ],
+        };
+        let validated = test_validated_plan(&plan);
+        let stale = confirmation_digest(&validated, &[plan.targets[0].id.clone()])
+            .expect("stale selection digest");
+        let actual = confirmation_digest(&validated, &validated.default_selected_ids())
+            .expect("current selection digest");
+        let trash = RecordingTrashRunner::default();
+
+        let error = test_executor(RecordingCommandRunner::default(), trash.clone())
+            .run_plan(
+                &validated,
+                ExecutionRequest {
+                    selected: validated.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path.clone()),
+                    expected_digest: Some(stale.clone()),
+                    cancel: None,
+                },
+            )
+            .expect_err("stale confirmation rejects");
+
+        assert!(matches!(
+            error.downcast_ref::<ExecutionError>(),
+            Some(ExecutionError::StaleConfirmation {
+                expected_digest,
+                actual_digest,
+            }) if expected_digest == &stale && actual_digest == &actual
+        ));
+        assert!(trash.paths().is_empty());
+        assert!(!audit_path.exists());
+        assert!(first_path.exists());
+        assert!(second_path.exists());
+    }
+
+    #[test]
+    fn duplicate_selection_is_deduplicated_and_noted() {
+        let fixture = TempDir::new().expect("temp dir");
+        let cleanup_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "node.node_modules",
+                CleanAction::MoveToTrash {
+                    path: cleanup_path.clone(),
+                },
+                Some(cleanup_path),
+            )],
+        };
+        let validated = test_validated_plan(&plan);
+        let selected_id = plan.targets[0].id.clone();
+
+        let report = test_executor(
+            RecordingCommandRunner::default(),
+            RecordingTrashRunner::default(),
+        )
+        .run_plan(
+            &validated,
+            ExecutionRequest {
+                selected: vec![
+                    selected_id.clone(),
+                    selected_id.clone(),
+                    selected_id.clone(),
+                ],
+                execute: false,
+                audit_log: None,
+                expected_digest: None,
+                cancel: None,
+            },
+        )
+        .expect("duplicate selection is normalized");
+
+        assert_eq!(report.selected, 1);
+        assert_eq!(report.attempted, 1);
+        assert_eq!(report.outcomes.len(), 1);
+        assert_eq!(
+            report.notes,
+            vec![ExecutionNote::DuplicateSelectionRemoved {
+                target_id: selected_id
+            }]
+        );
     }
 
     #[test]
@@ -691,12 +1315,17 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
             .expect("execute succeeds");
 
         assert_eq!(report.succeeded, 1);
+        assert_eq!(
+            report.outcomes[0].action,
+            ActionKind::Command { irreversible: true }
+        );
         assert_eq!(
             command_runner.requests(),
             vec![CommandRequest {
@@ -748,7 +1377,8 @@ mod tests {
                 ExecutionRequest {
                     selected: plan.default_selected_ids(),
                     execute: true,
-                    audit_log: Some(audit_path),
+                    audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -795,6 +1425,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -860,6 +1491,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -915,16 +1547,13 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
             .expect_err("disabled permanent delete cannot be selected");
 
-        assert!(
-            error
-                .to_string()
-                .contains("has no executable cleanup action")
-        );
+        assert!(error.to_string().contains("permanent delete is disabled"));
         assert!(doomed.exists(), "permanent delete must remain disabled");
     }
 
@@ -966,6 +1595,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
                 |event| progress.push(event),
@@ -1024,6 +1654,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
                 |event| progress.push(event),
@@ -1063,16 +1694,17 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
             .expect_err("inspect-only target cannot be selected");
 
-        assert!(
-            error
-                .to_string()
-                .contains("has no executable cleanup action")
-        );
+        assert!(matches!(
+            error.downcast_ref::<ExecutionError>(),
+            Some(ExecutionError::InspectOnlyTarget { target_id })
+                if target_id == &plan.targets[0].id
+        ));
         assert!(command_runner.requests().is_empty());
         assert!(trash_runner.paths().is_empty());
         assert!(!audit_path.exists());
@@ -1108,6 +1740,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
                 |event| progress.push(event),
@@ -1134,6 +1767,92 @@ mod tests {
                 .expect("skip reason")
                 .contains(SELF_CLEAN_SKIP_MESSAGE)
         );
+    }
+
+    #[test]
+    fn safety_skip_audit_failure_halts_before_later_side_effects() {
+        struct FailFirstWriteIo {
+            writes: usize,
+        }
+        impl JournalIo for FailFirstWriteIo {
+            fn write_line(&mut self, _line: &str) -> Result<()> {
+                self.writes += 1;
+                if self.writes == 1 {
+                    bail!("injected safety-skip audit failure");
+                }
+                Ok(())
+            }
+            fn flush(&mut self) -> Result<()> {
+                Ok(())
+            }
+            fn sync_data(&mut self) -> Result<()> {
+                Ok(())
+            }
+        }
+
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let current_exe = std::env::current_exe().expect("current executable path");
+        let self_clean_path = current_exe
+            .parent()
+            .expect("current executable has parent")
+            .to_path_buf();
+        let later_path = fixture.path().join("later").join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![
+                target(
+                    "test.self_clean",
+                    CleanAction::Command {
+                        program: "cargo".to_string(),
+                        args: vec!["clean".to_string()],
+                        cwd: None,
+                        irreversible: true,
+                    },
+                    Some(self_clean_path),
+                ),
+                target(
+                    "node.node_modules",
+                    CleanAction::MoveToTrash {
+                        path: later_path.clone(),
+                    },
+                    Some(later_path),
+                ),
+            ],
+        };
+        let trash = RecordingTrashRunner::default();
+        let executor = test_executor(RecordingCommandRunner::default(), trash.clone())
+            .with_journal_io(Box::new(FailFirstWriteIo { writes: 0 }));
+
+        let report = executor
+            .run_plan(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path),
+                    expected_digest: None,
+                    cancel: None,
+                },
+            )
+            .expect("audit failure is represented in the report");
+
+        assert!(trash.paths().is_empty(), "later target must not dispatch");
+        assert_eq!(report.selected, 2);
+        assert_eq!(report.attempted, 2);
+        assert_eq!(report.failed, 1);
+        assert_eq!(report.skipped, 1);
+        assert_eq!(report.outcomes.len(), 2);
+        assert!(matches!(
+            &report.outcomes[0].status,
+            OutcomeStatus::Failed { message }
+                if message.contains("injected safety-skip audit failure")
+        ));
+        assert!(matches!(
+            &report.outcomes[1].status,
+            OutcomeStatus::Skipped { reason }
+                if reason.contains("audit persistence failure")
+        ));
     }
 
     #[test]
@@ -1187,6 +1906,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -1254,6 +1974,7 @@ mod tests {
                     selected: vec![plan.targets[0].id.clone()],
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -1289,6 +2010,7 @@ mod tests {
                     selected: Vec::new(),
                     execute: false,
                     audit_log: None,
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -1302,6 +2024,7 @@ mod tests {
                     selected: Vec::new(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -1347,6 +2070,7 @@ mod tests {
                     selected: validated.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
@@ -1354,7 +2078,8 @@ mod tests {
 
         assert_eq!(report.succeeded, 1);
         assert_eq!(report.failed, 1);
-        assert_eq!(report.attempted, 1);
+        assert_eq!(report.attempted, 2);
+        assert_eq!(report.outcomes.len(), 2);
         assert_eq!(trash_runner.paths(), vec![cleanup_path]);
         assert!(
             report.failures[0]
@@ -1473,6 +2198,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: Some(cancel),
                 },
             )
@@ -1522,12 +2248,16 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: Some(cancel),
                 },
             )
             .expect("cancel produces report");
         assert_eq!(trash.paths().len(), 0, "no side effects after cancel");
-        assert!(report.skipped >= 1 || report.failed >= 1);
+        assert_eq!(report.selected, 2);
+        assert_eq!(report.attempted, 2);
+        assert_eq!(report.skipped, 2);
+        assert_eq!(report.outcomes.len(), 2);
     }
 
     #[test]
@@ -1570,6 +2300,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
                 |event| progress.push(event),
@@ -1580,7 +2311,7 @@ mod tests {
             trash.paths().is_empty(),
             "started audit must precede dispatch"
         );
-        assert_eq!(report.attempted, 0);
+        assert_eq!(report.attempted, 1);
         assert_eq!(report.failed, 1);
         assert_eq!(progress.len(), 1);
         assert_eq!(progress[0].status, ExecutionTargetStatus::Failed);
@@ -1637,6 +2368,7 @@ mod tests {
                     selected: plan.default_selected_ids(),
                     execute: true,
                     audit_log: Some(audit_path),
+                    expected_digest: None,
                     cancel: None,
                 },
                 |event| progress.push(event),
@@ -1673,7 +2405,7 @@ mod tests {
     }
 
     #[test]
-    fn unknown_ids_in_selection_are_ignored() {
+    fn unknown_ids_in_selection_are_rejected_atomically() {
         let fixture = TempDir::new().expect("temp dir");
         let audit_path = fixture.path().join("audit.jsonl");
         let cleanup_path = fixture.path().join("node_modules");
@@ -1690,24 +2422,27 @@ mod tests {
         let trash_runner = RecordingTrashRunner::default();
         let executor = test_executor(RecordingCommandRunner::default(), trash_runner.clone());
 
-        let report = executor
+        let unknown_id = TargetId::new("ghost.target:none");
+        let error = executor
             .run_plan(
                 &test_validated_plan(&plan),
                 ExecutionRequest {
-                    selected: vec![
-                        TargetId::new("ghost.target:none"),
-                        plan.targets[0].id.clone(),
-                    ],
+                    selected: vec![unknown_id.clone(), plan.targets[0].id.clone()],
                     execute: true,
-                    audit_log: Some(audit_path),
+                    audit_log: Some(audit_path.clone()),
+                    expected_digest: None,
                     cancel: None,
                 },
             )
-            .expect("execute succeeds");
+            .expect_err("unknown selection rejects before execution");
 
-        assert_eq!(report.selected, 1);
-        assert_eq!(report.succeeded, 1);
-        assert_eq!(trash_runner.paths(), vec![cleanup_path]);
+        assert!(matches!(
+            error.downcast_ref::<ExecutionError>(),
+            Some(ExecutionError::UnknownTarget { target_id }) if target_id == &unknown_id
+        ));
+        assert!(trash_runner.paths().is_empty());
+        assert!(cleanup_path.exists());
+        assert!(!audit_path.exists());
     }
 
     #[derive(Clone, Default)]

@@ -119,6 +119,10 @@ fn successful_report() -> ExecutionReport {
         failed: 0,
         skipped: 0,
         failures: Vec::new(),
+        outcomes: Vec::new(),
+        notes: Vec::new(),
+        estimated_recoverable: Default::default(),
+        confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
         audit_log: None,
     }
 }
@@ -153,6 +157,7 @@ fn confirmed_digest_must_match_the_revalidated_snapshot() {
         execute: false,
         audit_log: None,
         selected: plan.default_selected_ids(),
+        expected_digest: None,
         cancel: None,
     };
     let report = ExecutorCleanService

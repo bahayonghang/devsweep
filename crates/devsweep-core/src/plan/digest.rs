@@ -6,12 +6,39 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     filesystem::normalize_absolute_path,
-    model::{CLEANUP_PLAN_VERSION, CleanAction, Evidence, Scope},
+    model::{CLEANUP_PLAN_VERSION, CleanAction, Evidence, Scope, TargetId},
 };
 
 use super::ValidatedTarget;
 
 pub(super) fn digest_for_targets(targets: &[ValidatedTarget]) -> Result<String> {
+    hash_serializable(
+        &canonical_manifest(targets)?,
+        "failed to encode canonical validated plan",
+    )
+}
+
+pub(super) fn confirmation_digest_for_targets(
+    targets: &[ValidatedTarget],
+    selected: &[TargetId],
+) -> Result<String> {
+    let mut selected = selected
+        .iter()
+        .map(|target_id| target_id.as_str().to_string())
+        .collect::<Vec<_>>();
+    selected.sort();
+    selected.dedup();
+    hash_serializable(
+        &CanonicalConfirmation {
+            domain: "devsweep.confirmation.v1",
+            manifest: canonical_manifest(targets)?,
+            selected,
+        },
+        "failed to encode canonical cleanup confirmation",
+    )
+}
+
+fn canonical_manifest(targets: &[ValidatedTarget]) -> Result<CanonicalManifest> {
     let mut entries = targets
         .iter()
         .map(canonical_target)
@@ -21,13 +48,23 @@ pub(super) fn digest_for_targets(targets: &[ValidatedTarget]) -> Result<String> 
             .cmp(&right.fingerprint)
             .then_with(|| left.id.cmp(&right.id))
     });
-    let bytes = serde_json::to_vec(&CanonicalManifest {
+    Ok(CanonicalManifest {
         domain: "devsweep.validated-plan.v2",
         version: CLEANUP_PLAN_VERSION,
         targets: entries,
     })
-    .context("failed to encode canonical validated plan")?;
+}
+
+fn hash_serializable(value: &impl Serialize, context: &'static str) -> Result<String> {
+    let bytes = serde_json::to_vec(value).context(context)?;
     Ok(format!("{:x}", Sha256::digest(bytes)))
+}
+
+#[derive(Serialize)]
+struct CanonicalConfirmation {
+    domain: &'static str,
+    manifest: CanonicalManifest,
+    selected: Vec<String>,
 }
 
 #[derive(Serialize)]

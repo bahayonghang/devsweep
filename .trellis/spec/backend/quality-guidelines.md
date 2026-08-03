@@ -135,11 +135,23 @@ CleanupIntent::RunBuiltInAction {
 - `clean --execute` requires `--plan PATH`; execution must never discover new
   targets.
 - The CLI/TUI validates a v2 `UntrustedPlan` once before the executor sees it.
-  The executor runs exactly the intersection of `request.selected` with the
-  validated plan's targets, in plan order; unknown ids are ignored. It does not read
+  The executor validates and deduplicates `request.selected` before opening an
+  audit journal or dispatching a side effect. Unknown ids reject the whole
+  request, duplicate ids produce one target outcome plus a normalization note,
+  and selected targets still run in validated plan order. It does not read
   `selected_by_default` — that flag is a scan-time ranking hint, written only
   by the freshness guard, and callers translate it into an explicit selection
   via `default_selected_ids()`.
+- `ExecutionReport` contains one terminal outcome for every deduplicated
+  selected target, including dry-run and unprocessed targets after cancellation
+  or fail-closed audit termination. `selected == attempted == outcomes.len()`
+  and `succeeded + failed + skipped == attempted`; the retained `failures`
+  compatibility field is derived only from failed outcomes.
+- A dry run returns a `ConfirmationDigest` over the canonical validated
+  manifest and sorted selected-id set. Execution requests that supply
+  `expected_digest` fail with structured `ExecutionError::StaleConfirmation`
+  before audit or side effects when it does not match. Current CLI/TUI callers
+  may omit the compatibility field; GUI execution must supply it.
 - Command actions use `CommandRequest { program, args, cwd }`; the private
   registry under `crates/devsweep-core/src/rules/`, not a plan file, reconstructs those values and
   they must never form a shell string.
@@ -153,10 +165,16 @@ CleanupIntent::RunBuiltInAction {
 
 - Dry-run with or without plan -> returns selected target count, no side
   effects, no audit file.
+- Unknown selected target or selected inspect-only target -> structured request
+  error before audit or cleanup side effects.
+- Stale supplied confirmation digest -> structured request error before audit
+  or cleanup side effects.
 - `--execute` without `--plan` -> error before executor runs.
 - Audit file cannot be opened -> error before any target action runs.
 - Individual target failure -> record failed audit entry, continue remaining
   targets, return a report with failures.
+- Failure to persist an authorization denial or safety skip -> report that
+  target as failed and mark all remaining targets skipped without dispatch.
 - Inspect-only target selected for cleanup -> error before audit or side effect.
 - Target path contains the running `devsweep` executable -> skipped audit entry,
   no command/trash side effect. Use the shared path-safety helper rather than
@@ -179,6 +197,13 @@ CleanupIntent::RunBuiltInAction {
 #### 6. Tests Required
 
 - Dry-run test proving command and trash runners are not called.
+- Selection-boundary tests for atomic unknown-id rejection, duplicate
+  deduplication notes, inspect-only rejection, and irreversible command
+  projection.
+- Confirmation tests proving stability, plan and selection sensitivity, and
+  stale execute rejection before side effects.
+- Report tests proving serde round-trip, capacity-confidence aggregation, and
+  count/detail consistency across dry-run and early termination.
 - Command-runner test asserting program and argv are separate.
 - Self-clean guard test asserting the command runner is not called and the audit
   record status is `skipped`.

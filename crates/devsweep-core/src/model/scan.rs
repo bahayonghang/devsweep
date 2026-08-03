@@ -240,7 +240,7 @@ impl ScanTotals {
         )
     }
 
-    fn from_sizes(sizes: impl IntoIterator<Item = (u64, bool)>) -> Self {
+    pub(crate) fn from_sizes(sizes: impl IntoIterator<Item = (u64, bool)>) -> Self {
         let mut totals = Self::default();
         for (estimated_bytes, size_complete) in sizes {
             if size_complete {

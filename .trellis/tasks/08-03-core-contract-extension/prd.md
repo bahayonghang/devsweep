@@ -29,13 +29,13 @@
 
 ## Acceptance Criteria
 
-- [ ] `just ci` 全绿;新增字段与派生均有单元测试(含 serde 往返测试)。
-- [ ] 子任务 1 留档的 JSON 等价门在本任务完成后复跑仍通过
+- [x] `just ci` 全绿;新增字段与派生均有单元测试(含 serde 往返测试)。
+- [x] 子任务 1 留档的 JSON 等价门在本任务完成后复跑仍通过
       (`scan --json` 输出不因本任务改变;若确需新增字段,记录差异并说明)。
-- [ ] 逐目标明细与计数一致性有测试覆盖(succeeded+failed+skipped == attempted 等)。
-- [ ] digest 性质有测试:同输入稳定;计划内容或选择集任一变化 → digest 变化;
+- [x] 逐目标明细与计数一致性有测试覆盖(succeeded+failed+skipped == attempted 等)。
+- [x] digest 性质有测试:同输入稳定;计划内容或选择集任一变化 → digest 变化;
       execute 带过期 digest → 结构化错误。
-- [ ] 边界行为四条(未知/重复/inspect-only/irreversible)各有测试。
+- [x] 边界行为四条(未知/重复/inspect-only/irreversible)各有测试。
 
 ## Notes
 

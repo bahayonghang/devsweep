@@ -3,7 +3,7 @@
   "name": "core-contract-extension",
   "title": "core GUI 支撑契约扩展(serde/执行明细/确认 digest)",
   "description": "",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

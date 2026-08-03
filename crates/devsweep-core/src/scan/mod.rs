@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 mod global;
 mod project;
@@ -92,7 +93,8 @@ impl GlobalScan for GlobalProviderScanner {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Scope and roots for one scan request.
 pub struct ScanOptions {
     /// Whether to discover project-level targets.
@@ -103,7 +105,8 @@ pub struct ScanOptions {
     pub roots: Vec<PathBuf>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 /// Major phase of the scan pipeline.
 pub enum ScanPhase {
     /// Project discovery and sizing phase.
@@ -112,7 +115,8 @@ pub enum ScanPhase {
     Global,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 /// Cumulative progress snapshot emitted by the scan pipeline.
 pub struct ScanProgress {
     /// Phase that emitted the update.
@@ -290,6 +294,39 @@ mod tests {
         ScanCompleteness, ScanDiagnostic, ScanDiagnosticOutcome, ScanDiagnosticStage, Scope,
         TargetId, TargetKind,
     };
+
+    #[test]
+    fn scan_request_and_progress_types_round_trip_with_snake_case_json() {
+        let options = ScanOptions {
+            include_projects: true,
+            include_global: false,
+            roots: vec![PathBuf::from("C:/workspace/app")],
+        };
+        let progress = ScanProgress {
+            phase: ScanPhase::Projects,
+            message: "project scan complete".to_string(),
+            partial: Some(plan_with(vec![target("cache", 42, None, true)])),
+        };
+
+        let options_json = serde_json::to_value(&options).expect("scan options serialize");
+        let progress_json = serde_json::to_value(&progress).expect("scan progress serializes");
+
+        assert_eq!(options_json["include_projects"], true);
+        assert_eq!(progress_json["phase"], "projects");
+        assert_eq!(
+            progress_json["partial"]["targets"][0]["action"]["type"],
+            "move_to_trash"
+        );
+        assert_eq!(
+            serde_json::from_value::<ScanOptions>(options_json).expect("scan options deserialize"),
+            options
+        );
+        assert_eq!(
+            serde_json::from_value::<ScanProgress>(progress_json)
+                .expect("scan progress deserializes"),
+            progress
+        );
+    }
 
     #[test]
     fn full_scan_merges_and_ranks_once() {

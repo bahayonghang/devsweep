@@ -136,6 +136,7 @@ pub(super) fn run_clean_worker<C: CleanService>(
             execute: true,
             audit_log: None,
             selected,
+            expected_digest: None,
             cancel: Some(Arc::clone(&cancel)),
         },
         &mut |progress| {

@@ -122,6 +122,7 @@ pub(super) fn run_clean(command: CleanCommand) -> Result<()> {
             execute: command.execute,
             audit_log: command.audit_log,
             selected: plan.default_selected_ids(),
+            expected_digest: None,
             cancel: None,
         },
     )?;
@@ -285,6 +286,10 @@ mod tests {
                     message: "target path is a reparse point".to_string(),
                 },
             ],
+            outcomes: Vec::new(),
+            notes: Vec::new(),
+            estimated_recoverable: Default::default(),
+            confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
         };
 
         let message = execution_failure_message(&report);

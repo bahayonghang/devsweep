@@ -4,7 +4,7 @@ use anyhow::{Context, Result, bail};
 
 mod digest;
 
-use digest::digest_for_targets;
+use digest::{confirmation_digest_for_targets, digest_for_targets};
 
 use crate::{
     filesystem::{PathIdentity, capture_path_identity, normalize_absolute_path},
@@ -88,6 +88,10 @@ impl ValidatedPlan {
     /// Returns the canonical digest of the validated manifest.
     pub fn digest(&self) -> &str {
         &self.digest
+    }
+
+    pub(crate) fn confirmation_digest(&self, selected: &[TargetId]) -> Result<String> {
+        confirmation_digest_for_targets(&self.targets, selected)
     }
 
     #[cfg(test)]

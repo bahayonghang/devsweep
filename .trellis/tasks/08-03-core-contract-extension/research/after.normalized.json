@@ -1,0 +1,158 @@
+{
+  "health": {
+    "completeness": "complete",
+    "diagnostics": [],
+    "totals": {
+      "partial_lower_bound_bytes": 0,
+      "unknown_target_count": 0,
+      "verified_bytes": 76
+    }
+  },
+  "plan": {
+    "targets": [
+      {
+        "ecosystem": "node",
+        "estimated_bytes": 28,
+        "evidence": [
+          {
+            "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\node-app\\package.json",
+            "type": "marker_file"
+          },
+          {
+            "rule_id": "node.node_modules",
+            "type": "rule_matched"
+          }
+        ],
+        "id": "node.node_modules:\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\node-app\\node_modules",
+        "intent": {
+          "rule_id": "node.node_modules",
+          "type": "trash_project_artifact"
+        },
+        "kind": "dependency_directory",
+        "last_modified": {
+          "nanos_since_epoch": 0,
+          "secs_since_epoch": 1704067200
+        },
+        "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\node-app\\node_modules",
+        "reversible": true,
+        "risk": "medium",
+        "rule_id": "node.node_modules",
+        "scope": {
+          "root": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\node-app",
+          "type": "project"
+        },
+        "selected_by_default": false,
+        "size_complete": true
+      },
+      {
+        "ecosystem": "python",
+        "estimated_bytes": 22,
+        "evidence": [
+          {
+            "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app\\pyproject.toml",
+            "type": "marker_file"
+          },
+          {
+            "rule_id": "python.venv_dot",
+            "type": "rule_matched"
+          }
+        ],
+        "id": "python.venv_dot:\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app\\.venv",
+        "intent": {
+          "rule_id": "python.venv_dot",
+          "type": "trash_project_artifact"
+        },
+        "kind": "virtual_env",
+        "last_modified": {
+          "nanos_since_epoch": 0,
+          "secs_since_epoch": 1704067200
+        },
+        "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app\\.venv",
+        "reversible": true,
+        "risk": "medium",
+        "rule_id": "python.venv_dot",
+        "scope": {
+          "root": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app",
+          "type": "project"
+        },
+        "selected_by_default": false,
+        "size_complete": true
+      },
+      {
+        "ecosystem": "python",
+        "estimated_bytes": 15,
+        "evidence": [
+          {
+            "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app\\pyproject.toml",
+            "type": "marker_file"
+          },
+          {
+            "rule_id": "python.__pycache__",
+            "type": "rule_matched"
+          }
+        ],
+        "id": "python.__pycache__:\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app\\package\\__pycache__",
+        "intent": {
+          "rule_id": "python.__pycache__",
+          "type": "trash_project_artifact"
+        },
+        "kind": "test_cache",
+        "last_modified": {
+          "nanos_since_epoch": 0,
+          "secs_since_epoch": 1704067200
+        },
+        "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app\\package\\__pycache__",
+        "reversible": true,
+        "risk": "low",
+        "rule_id": "python.__pycache__",
+        "scope": {
+          "root": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\python-app",
+          "type": "project"
+        },
+        "selected_by_default": true,
+        "size_complete": true
+      },
+      {
+        "ecosystem": "rust",
+        "estimated_bytes": 11,
+        "evidence": [
+          {
+            "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\rust-app\\Cargo.toml",
+            "type": "marker_file"
+          },
+          {
+            "command": "cargo clean --manifest-path \\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\rust-app\\Cargo.toml --target-dir \\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\rust-app\\target",
+            "type": "official_command"
+          },
+          {
+            "rule_id": "rust.target",
+            "type": "rule_matched"
+          }
+        ],
+        "id": "rust.target:\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\rust-app\\target",
+        "intent": {
+          "action_id": "clean_manifest",
+          "provider_id": "cargo",
+          "type": "run_built_in_action"
+        },
+        "kind": "build_artifacts",
+        "last_modified": {
+          "nanos_since_epoch": 0,
+          "secs_since_epoch": 1704067200
+        },
+        "path": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\rust-app\\target",
+        "reversible": false,
+        "risk": "low",
+        "rule_id": "rust.target",
+        "scope": {
+          "root": "\\\\?\\C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-core-api-extraction-fixture\\rust-app",
+          "type": "project"
+        },
+        "selected_by_default": true,
+        "size_complete": true
+      }
+    ],
+    "version": 2
+  },
+  "version": 1
+}

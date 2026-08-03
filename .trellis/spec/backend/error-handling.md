@@ -7,9 +7,10 @@
 ## Overview
 
 The current crate uses `anyhow::Result` for application-level command flow and
-scanner filesystem failures. There are no custom error enums yet. Add one only
-when callers need to branch on error categories instead of showing or
-propagating context.
+scanner filesystem failures. `execution::ExecutionError` is the narrow custom
+error enum for caller-correctable selection and confirmation failures that GUI
+wrappers need to branch on. Add other custom enums only when callers likewise
+need typed categories instead of display-only context.
 
 ---
 
@@ -22,6 +23,9 @@ propagating context.
   `application::commands::run_<command>(...) -> anyhow::Result<()>`
 - Scan report pipeline:
   `scan::Sweeper::default().full_scan_report(...) -> anyhow::Result<ScanReport>`
+- Execution request errors carried by `anyhow::Result` and available through
+  downcast: `ExecutionError::{UnknownTarget, InspectOnlyTarget,
+  StaleConfirmation}`
 
 Use `anyhow::Context` when a filesystem operation needs path-specific context:
 
@@ -50,9 +54,12 @@ let root = root
   a trusted `0 B`. They return a `SizeEstimate` that is either a complete total,
   a partial lower bound, or unknown. Incomplete and unknown estimates are not
   selected by default.
-- Execution authorization and started-audit failures are fail-closed. A
+- Execution authorization and started-audit failures are fail-closed. Failure
+  to persist an authorization denial or safety skip halts later dispatch. A
   terminal audit failure after dispatch reports the result as unknown because
   the side effect may already have run.
+- Unknown selections, inspect-only selections, and stale supplied confirmation
+  digests fail before opening the audit journal or dispatching side effects.
 - Tests may use `expect(...)` with a specific reason.
 
 Example from `crates/devsweep-cli/src/application/commands.rs`:

@@ -451,6 +451,10 @@ fn finished_cleanup_progress_stays_visible_until_dismissed() {
             failed: 0,
             skipped: 0,
             failures: Vec::new(),
+            outcomes: Vec::new(),
+            notes: Vec::new(),
+            estimated_recoverable: Default::default(),
+            confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
             audit_log: Some(PathBuf::from("audit.jsonl")),
         },
     }));
@@ -505,6 +509,10 @@ fn worker_events_update_jobs_and_targets() {
         failed: 0,
         skipped: 0,
         failures: Vec::new(),
+        outcomes: Vec::new(),
+        notes: Vec::new(),
+        estimated_recoverable: Default::default(),
+        confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
         audit_log: Some(PathBuf::from("audit.jsonl")),
     };
     let clean_job_id = app.start_job(JobKind::Clean, "Clean fixture");
@@ -890,6 +898,10 @@ fn terminal_jobs_ignore_late_worker_events() {
             failed: 0,
             skipped: 0,
             failures: Vec::new(),
+            outcomes: Vec::new(),
+            notes: Vec::new(),
+            estimated_recoverable: Default::default(),
+            confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
             audit_log: None,
         },
     }));
@@ -1108,6 +1120,10 @@ fn assert_terminal_job_ignores_late_events(
             failed: 0,
             skipped: 0,
             failures: Vec::new(),
+            outcomes: Vec::new(),
+            notes: Vec::new(),
+            estimated_recoverable: Default::default(),
+            confirmation_digest: crate::execution::ConfirmationDigest::new("test-digest"),
             audit_log: None,
         },
     }));
