@@ -89,7 +89,9 @@ selected_ids 边界(dry-run 与 execute 同规则,Rust 侧实现):
 
 ### Events
 
-- `scan://progress`:阶段(projects/global)、message、可选 partial 计数。
+- `scan://progress`:阶段(projects/global)与 message。core 的 `partial` 是受信任
+  `CleanupPlan`,可能包含 program / argv / cwd / path;desktop shell 在 emit 前
+  固定清空为 `None`,webview 契约只接受 `partial: null`,不得获得执行 authority。
   **`ScanProgress` 无总量字段,前端必须使用不定进度指示(indeterminate),
   不得伪造百分比**;如需真实百分比,由子任务 2 之后单独立项扩展进度契约,
   MVP 不做。

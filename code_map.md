@@ -89,7 +89,14 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop/src-tauri/src/commands.rs` - async scan, plan execution, and protection-list IPC commands.
 - `desktop/src-tauri/src/scan.rs` - single-flight scan state, cancellation, and progress forwarding.
 - `desktop/src-tauri/src/error.rs` - centralized structured command-error mapping.
-- `desktop/src/` - React and TypeScript placeholder frontend for the desktop shell.
+- `desktop/src/App.tsx` - React workflow composition for scan, review, dry-run,
+  confirmation, execution, and reporting.
+- `desktop/src/api/` - generated IPC types, closed-world runtime decoders, the
+  production Tauri bridge, and controlled fixture replay.
+- `desktop/src/state/` - reducer-owned workflow state, digest invalidation, and
+  derived selection/capacity rules.
+- `desktop/src/pages/` and `desktop/src/components/` - accessible workflow views,
+  target table, evidence, errors, confirmation, and result presentation.
 
 The dependency direction starts at `main -> devsweep::run -> application ->
 devsweep-core`. Core modules never import CLI or TUI code. TUI render code
@@ -101,6 +108,8 @@ remains read-only and backend discovery layers remain non-mutating.
   links for scanner, executor, CLI, logging, and data-contract work.
 - `.trellis/spec/frontend/index.md` - ratatui/TUI pre-development checklist and
   links for render, state, event, and type-safety work.
+- `.trellis/spec/desktop-frontend/index.md` - React/Tauri webview structure,
+  state, IPC type-safety, accessibility, and quality checklist.
 - `.trellis/workflow.md` and `.trellis/scripts/` - Trellis task lifecycle and
   context helpers.
 - `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, and `.claude/` -

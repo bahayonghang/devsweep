@@ -36,15 +36,15 @@
 
 ## Acceptance Criteria
 
-- [ ] `.trellis/spec/desktop-frontend/` 规范层存在且本任务实现符合其检查清单。
-- [ ] 合成 fixture 上完整 E2E 通过并留档:扫描 → 取消一次 → 重扫 → 勾选 →
+- [x] `.trellis/spec/desktop-frontend/` 规范层存在且本任务实现符合其检查清单。
+- [x] 合成 fixture 上完整 E2E 通过并留档:扫描 → 取消一次 → 重扫 → 勾选 →
       dry-run → 改选触发 digest 失效 → 重新 dry-run → 执行 → 报告。
-- [ ] 扫描期间 UI 不冻结,不定进度指示实时刷新;扫描失败与各结构化错误
+- [x] 扫描期间 UI 不冻结,不定进度指示实时刷新;扫描失败与各结构化错误
       (`scan_already_running`/`stale_confirmation`/未知 id)均有明确展示。
-- [ ] 风险、证据、容量口径、irreversible 标记与后端 JSON 数据一致(抽查留档)。
-- [ ] 未勾选目标时执行入口不可用;dry-run 与 execute 结果可区分;全部文案
+- [x] 风险、证据、容量口径、irreversible 标记与后端 JSON 数据一致(抽查留档)。
+- [x] 未勾选目标时执行入口不可用;dry-run 与 execute 结果可区分;全部文案
       为回收站口径。
-- [ ] 前端 lint / type-check 全绿(工具链在新 spec 层中定义)。
+- [x] 前端 lint / type-check 全绿(工具链在新 spec 层中定义)。
 
 ## Notes
 

@@ -11,6 +11,13 @@ use crate::error::CommandError;
 
 pub(crate) const SCAN_PROGRESS_EVENT: &str = "scan://progress";
 
+pub(crate) fn progress_for_ipc(mut progress: ScanProgress) -> ScanProgress {
+    // The core partial contains trusted CleanAction details. The webview only
+    // needs phase/message progress and must never receive execution authority.
+    progress.partial = None;
+    progress
+}
+
 pub(crate) trait ScanRunner: Send + Sync + 'static {
     fn run(
         &self,
@@ -85,13 +92,17 @@ where
 #[cfg(test)]
 mod tests {
     use std::{
+        path::PathBuf,
         sync::mpsc,
         thread,
         time::{Duration, Instant},
     };
 
     use devsweep_core::{
-        model::{ScanHealth, UntrustedPlan},
+        model::{
+            CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence,
+            RiskLevel, ScanHealth, Scope, TargetId, TargetKind, UntrustedPlan,
+        },
         process::CancelObserver,
         scan::ScanPhase,
     };
@@ -222,5 +233,47 @@ mod tests {
                 .collect::<Vec<_>>(),
             ["first", "second"]
         );
+    }
+
+    #[test]
+    fn ipc_progress_redacts_trusted_partial_plan() {
+        let progress = ScanProgress {
+            phase: ScanPhase::Projects,
+            message: "partial".to_string(),
+            partial: Some(CleanupPlan {
+                version: CLEANUP_PLAN_VERSION,
+                targets: vec![CleanTarget {
+                    id: TargetId::new("fixture.command"),
+                    scope: Scope::Global,
+                    ecosystem: Ecosystem::Node,
+                    kind: TargetKind::PackageCache,
+                    path: None,
+                    estimated_bytes: 1,
+                    size_complete: true,
+                    sizing_warnings: Vec::new(),
+                    last_modified: None,
+                    risk: RiskLevel::Medium,
+                    reversible: false,
+                    selected_by_default: false,
+                    evidence: vec![Evidence::UserConfigured],
+                    action: CleanAction::Command {
+                        program: "authority-fixture.exe".to_string(),
+                        args: vec!["--dangerous-fixture".to_string()],
+                        cwd: Some(PathBuf::from("C:/authority-fixture")),
+                        irreversible: true,
+                    },
+                }],
+            }),
+        };
+        let internal_json = serde_json::to_string(&progress).expect("internal progress serializes");
+
+        let projected = progress_for_ipc(progress);
+        let ipc_json = serde_json::to_string(&projected).expect("IPC progress serializes");
+
+        assert!(internal_json.contains("authority-fixture.exe"));
+        assert!(projected.partial.is_none());
+        assert!(!ipc_json.contains("authority-fixture.exe"));
+        assert!(!ipc_json.contains("--dangerous-fixture"));
+        assert_eq!(projected.message, "partial");
     }
 }

@@ -1,18 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { App } from "./App";
 import "./styles.css";
 
-function App() {
-  return (
-    <main>
-      <h1>devsweep</h1>
-      <p>Desktop backend ready.</p>
-    </main>
+async function render() {
+  const bridge = import.meta.env.DEV && import.meta.env.VITE_FIXTURE_BRIDGE === "1"
+    ? (await import("./api/fixture-bridge")).fixtureBridge
+    : undefined;
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode><App bridge={bridge} /></React.StrictMode>,
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+void render();

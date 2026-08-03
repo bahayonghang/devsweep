@@ -14,7 +14,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::{
     error::CommandError,
-    scan::{CoreScanRunner, SCAN_PROGRESS_EVENT, ScanCoordinator, run_scan_job},
+    scan::{CoreScanRunner, SCAN_PROGRESS_EVENT, ScanCoordinator, progress_for_ipc, run_scan_job},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -55,7 +55,7 @@ pub(crate) async fn scan_start(
     let worker_app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let result = run_scan_job(&CoreScanRunner, &options, &worker_cancel, |progress| {
-            let _ = worker_app.emit(SCAN_PROGRESS_EVENT, progress);
+            let _ = worker_app.emit(SCAN_PROGRESS_EVENT, progress_for_ipc(progress));
         })
         .map_err(CommandError::scan_failed);
         worker_state.finish(&worker_cancel)?;

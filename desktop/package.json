@@ -9,8 +9,12 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "check": "tsc --noEmit",
+    "dev:fixture": "vite --mode fixture",
+    "build": "tsc --noEmit && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "types:generate": "node scripts/generate-types.mjs",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -20,10 +24,23 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.11.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "22.19.11",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
     "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^9.37.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.4.0",
+    "jsdom": "^27.0.0",
+    "quicktype-core": "23.2.6",
     "typescript": "~5.9.3",
-    "vite": "^7.1.7"
+    "typescript-eslint": "^8.46.1",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
   }
 }
