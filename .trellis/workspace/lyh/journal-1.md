@@ -1381,3 +1381,24 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 48: 完成 Tauri 桌面应用任务树
+
+**Date**: 2026-08-03
+**Task**: 完成 Tauri 桌面应用任务树
+**Branch**: `dev`
+
+### Summary
+
+完成 Tauri 2 桌面任务树最终集成审查：复核 CLI 等价、digest 安全链路、受控前端流程、原生 Tauri/NSIS 证据和跨平台门禁；修复并独立归档 Desktop CI 前端门禁漂移，最终 just ci 全绿。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a63c39` | (see git log) |
+
+### Status
+
+[OK] **Completed**
