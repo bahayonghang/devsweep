@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/index.md","reason":"Routes the checker to all backend contracts."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/backend-contract-routing.md","reason":"Routes full backend verification scenarios without injection truncation."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Verify hard, partial, unknown, canceled, and execution failure behavior."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Verify moved modules do not pollute JSON stdout or expose sensitive process output."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Confirm hotspots became cohesive private implementations and dependency reversals did not return."}
