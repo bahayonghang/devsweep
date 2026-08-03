@@ -7,13 +7,13 @@ use crate::{
     process::{CancelObserver, FlagCancelObserver},
 };
 
+#[cfg(all(test, windows))]
+use super::reparse::has_windows_reparse_point;
 use super::reparse::{
     PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_path_no_follow,
 };
 #[cfg(test)]
-use super::reparse::{
-    ReparseProbeResult, has_windows_reparse_point, reparse_probe_result_from_tag_info,
-};
+use super::reparse::{ReparseProbeResult, reparse_probe_result_from_tag_info};
 
 /// Size walk result that distinguishes a verified empty tree from a failed walk.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -323,6 +323,17 @@ mod tests {
             );
             Self { results }
         }
+
+        fn unsupported(path: &Path) -> Self {
+            let mut results = HashMap::new();
+            results.insert(
+                path.to_path_buf(),
+                ReparseProbeResult::Unsupported {
+                    detail: "fixture probe unsupported".to_string(),
+                },
+            );
+            Self { results }
+        }
     }
 
     impl PathReparseProbe for FixtureReparseProbe {
@@ -480,6 +491,32 @@ mod tests {
         let root = fixture.path("root");
         fixture.file("root/visible.txt", "hello");
         let probe = FixtureReparseProbe::failing(&root);
+
+        let estimate = estimate_tree_with_budget_and_cancel_and_probe(
+            &root,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            None,
+            &probe,
+        );
+
+        assert_eq!(estimate.logical_bytes, None);
+        assert!(!estimate.complete);
+        assert!(
+            estimate
+                .warnings
+                .iter()
+                .any(|warning| warning.kind == SizingWarningKind::ReparseSafetyUnverified),
+            "expected fail-closed warning: {:?}",
+            estimate.warnings
+        );
+    }
+
+    #[test]
+    fn estimate_tree_fails_closed_when_reparse_probe_is_unsupported() {
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        fixture.file("root/visible.txt", "hello");
+        let probe = FixtureReparseProbe::unsupported(&root);
 
         let estimate = estimate_tree_with_budget_and_cancel_and_probe(
             &root,

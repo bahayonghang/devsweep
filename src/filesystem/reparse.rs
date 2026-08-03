@@ -1,14 +1,24 @@
 use std::{fs, path::Path};
 
+#[cfg(any(windows, test))]
 const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
 
 /// Result of a no-follow reparse-point probe for one path.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ReparseProbeResult {
     NotReparsePoint,
-    ReparsePoint { tag: u32 },
-    Unsupported { detail: String },
-    Error { detail: String },
+    #[cfg(any(windows, test))]
+    ReparsePoint {
+        tag: u32,
+    },
+    #[cfg(any(windows, test))]
+    Unsupported {
+        detail: String,
+    },
+    #[cfg(any(windows, test))]
+    Error {
+        detail: String,
+    },
 }
 
 /// Platform boundary for path-level reparse checks.
@@ -24,8 +34,16 @@ pub(crate) trait PathReparseProbe: Send + Sync {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PathSafety {
     Safe,
-    ReparsePoint { tag: Option<u32> },
-    Unverified { detail: String },
+    ReparsePoint {
+        tag: Option<u32>,
+    },
+    #[cfg_attr(
+        all(not(windows), not(test)),
+        expect(dead_code, reason = "native non-Windows probes cannot be unverified")
+    )]
+    Unverified {
+        detail: String,
+    },
 }
 
 /// Native platform probe used outside tests.
@@ -62,15 +80,19 @@ pub(crate) fn inspect_path_no_follow(
             PathSafety::ReparsePoint { tag: None }
         }
         ReparseProbeResult::NotReparsePoint => PathSafety::Safe,
+        #[cfg(any(windows, test))]
         ReparseProbeResult::ReparsePoint { tag } => PathSafety::ReparsePoint { tag: Some(tag) },
+        #[cfg(any(windows, test))]
         ReparseProbeResult::Unsupported { .. } | ReparseProbeResult::Error { .. }
             if metadata_reports_link =>
         {
             PathSafety::ReparsePoint { tag: None }
         }
+        #[cfg(any(windows, test))]
         ReparseProbeResult::Unsupported { detail } => PathSafety::Unverified {
             detail: format!("reparse probe unsupported: {detail}"),
         },
+        #[cfg(any(windows, test))]
         ReparseProbeResult::Error { detail } => PathSafety::Unverified {
             detail: format!("reparse probe failed: {detail}"),
         },
@@ -81,6 +103,7 @@ pub(crate) fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
     metadata.file_type().is_symlink() || has_windows_reparse_point(metadata)
 }
 
+#[cfg(any(windows, test))]
 pub(super) fn reparse_probe_result_from_tag_info(
     file_attributes: u32,
     reparse_tag: u32,
