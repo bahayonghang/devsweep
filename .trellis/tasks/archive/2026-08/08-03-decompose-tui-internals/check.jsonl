@@ -1,0 +1,5 @@
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Verify render purity, typed health/inventory views, state behavior, and TestBackend coverage."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify single state ownership, stable TargetId selection, and derived-state rules."}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"Verify event/effect, frozen confirmation, worker lifecycle, cancellation, and stale-event behavior."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Verify view inputs, display normalization, and absence of side effects in render modules."}
+{"file":".trellis/spec/frontend/type-safety.md","reason":"Verify no stringly typed action/event schema or raw JSON entered TUI state."}
