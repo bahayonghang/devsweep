@@ -1318,3 +1318,24 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 45: 完成 Tauri 壳层与后端桥接
+
+**Date**: 2026-08-03
+**Task**: 完成 Tauri 壳层与后端桥接
+**Branch**: `dev`
+
+### Summary
+
+新增 Tauri 2 桌面壳层与 core 命令桥接，补齐单飞扫描、协作取消、digest 强制执行、原子保护列表、Job Object 进程树验证、Node 22 CI、NSIS 构建安装启动证据，并通过独立审查与全量 just ci。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `54b2ca6` | (see git log) |
+
+### Status
+
+[OK] **Completed**

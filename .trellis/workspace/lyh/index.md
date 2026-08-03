@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 44
+- **Total Sessions**: 45
 - **Last Active**: 2026-08-03
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1320 | Active |
+| `journal-1.md` | ~1341 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 45 | 2026-08-03 | 完成 Tauri 壳层与后端桥接 | `54b2ca6` | `dev` |
 | 44 | 2026-08-03 | 完成 core GUI 执行契约扩展 | `614a79eafa2ed59ce7f2c291df8964c5bdb426e3` | `dev` |
 | 43 | 2026-08-03 | 完成核心 API 拆分 | `e4b8386e40a28e2ef4e5436bf7b7d0f59e573be8` | `dev` |
 | 42 | 2026-08-03 | Complete Rust source architecture reorganization | `f726871`, `9ea6ffd`, `9a059ed`, `f62a872` | `dev` |
