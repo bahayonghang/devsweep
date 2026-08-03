@@ -1231,3 +1231,24 @@ Split TUI app state transitions, runtime services and workers, rendering views, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 41: Narrow application entrypoint and reconcile architecture
+
+**Date**: 2026-08-03
+**Task**: Narrow application entrypoint and reconcile architecture
+**Branch**: `dev`
+
+### Summary
+
+Moved command composition into a private application module, reduced the public Rust interface to devsweep::run, enforced unreachable_pub visibility discipline, reconciled code_map and current specs, and passed public-surface, CLI, JSON, safety, TUI, and full CI validation.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f62a872` | (see git log) |
+
+### Status
+
+[OK] **Completed**
