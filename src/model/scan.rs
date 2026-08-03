@@ -4,20 +4,20 @@ use serde::{Deserialize, Serialize};
 
 use super::plan::{CleanupPlan, UntrustedPlan};
 
-pub const SCAN_REPORT_VERSION: u32 = 1;
+pub(crate) const SCAN_REPORT_VERSION: u32 = 1;
 
 /// JSON-facing scan document. Its health observations are informational only;
 /// cleanup authority remains the embedded [`UntrustedPlan`] after validation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ScanReport {
+pub(crate) struct ScanReport {
     pub version: u32,
     pub plan: UntrustedPlan,
     pub health: ScanHealth,
 }
 
 impl ScanReport {
-    pub fn new(plan: UntrustedPlan, mut health: ScanHealth) -> Self {
+    pub(crate) fn new(plan: UntrustedPlan, mut health: ScanHealth) -> Self {
         health.totals = ScanTotals::from_untrusted_plan(&plan);
         if plan.targets.iter().any(|target| !target.size_complete) {
             health.mark_partial();
@@ -29,25 +29,25 @@ impl ScanReport {
         }
     }
 
-    pub fn has_supported_version(&self) -> bool {
+    pub(crate) fn has_supported_version(&self) -> bool {
         self.version == SCAN_REPORT_VERSION
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ScanHealth {
+pub(crate) struct ScanHealth {
     pub completeness: ScanCompleteness,
     pub diagnostics: Vec<ScanDiagnostic>,
     pub totals: ScanTotals,
 }
 
 impl ScanHealth {
-    pub fn complete() -> Self {
+    pub(crate) fn complete() -> Self {
         Self::new(ScanCompleteness::Complete, Vec::new())
     }
 
-    pub fn new(completeness: ScanCompleteness, diagnostics: Vec<ScanDiagnostic>) -> Self {
+    pub(crate) fn new(completeness: ScanCompleteness, diagnostics: Vec<ScanDiagnostic>) -> Self {
         Self {
             completeness: if diagnostics.is_empty() {
                 completeness
@@ -59,35 +59,35 @@ impl ScanHealth {
         }
     }
 
-    pub fn is_complete(&self) -> bool {
+    pub(crate) fn is_complete(&self) -> bool {
         self.completeness.is_complete()
     }
 
-    pub fn merge(&mut self, other: Self) {
+    pub(crate) fn merge(&mut self, other: Self) {
         if !other.is_complete() {
             self.completeness = ScanCompleteness::Partial;
         }
         self.diagnostics.extend(other.diagnostics);
     }
 
-    pub fn mark_partial(&mut self) {
+    pub(crate) fn mark_partial(&mut self) {
         self.completeness = ScanCompleteness::Partial;
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ScanCompleteness {
+pub(crate) enum ScanCompleteness {
     Complete,
     Partial,
 }
 
 impl ScanCompleteness {
-    pub fn is_complete(self) -> bool {
+    pub(crate) fn is_complete(self) -> bool {
         matches!(self, Self::Complete)
     }
 
-    pub fn label(self) -> &'static str {
+    pub(crate) fn label(self) -> &'static str {
         match self {
             Self::Complete => "complete",
             Self::Partial => "partial",
@@ -100,7 +100,7 @@ impl ScanCompleteness {
 /// for programmatic handling.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ScanDiagnostic {
+pub(crate) struct ScanDiagnostic {
     pub stage: ScanDiagnosticStage,
     pub path: PathBuf,
     pub outcome: ScanDiagnosticOutcome,
@@ -111,7 +111,7 @@ pub struct ScanDiagnostic {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ScanDiagnosticStage {
+pub(crate) enum ScanDiagnosticStage {
     Discovery,
     Sizing,
     CargoMetadata,
@@ -120,7 +120,7 @@ pub enum ScanDiagnosticStage {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ScanDiagnosticOutcome {
+pub(crate) enum ScanDiagnosticOutcome {
     Skipped,
     Failed,
     Canceled,
@@ -132,7 +132,7 @@ pub enum ScanDiagnosticOutcome {
 /// export.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ScanProcessProbe {
+pub(crate) struct ScanProcessProbe {
     pub status: ScanProcessStatus,
     pub stdout: ScanProcessOutput,
     pub stderr: ScanProcessOutput,
@@ -140,7 +140,7 @@ pub struct ScanProcessProbe {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-pub enum ScanProcessStatus {
+pub(crate) enum ScanProcessStatus {
     Success,
     NotFound,
     Timeout,
@@ -151,7 +151,7 @@ pub enum ScanProcessStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ScanProcessOutput {
+pub(crate) struct ScanProcessOutput {
     pub truncated: bool,
     pub retained_bytes: u64,
     pub total_bytes: u64,
@@ -159,14 +159,14 @@ pub struct ScanProcessOutput {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ScanTotals {
+pub(crate) struct ScanTotals {
     pub verified_bytes: u64,
     pub partial_lower_bound_bytes: u64,
     pub unknown_target_count: u64,
 }
 
 impl ScanTotals {
-    pub fn from_untrusted_plan(plan: &UntrustedPlan) -> Self {
+    pub(crate) fn from_untrusted_plan(plan: &UntrustedPlan) -> Self {
         Self::from_sizes(
             plan.targets
                 .iter()
@@ -174,7 +174,7 @@ impl ScanTotals {
         )
     }
 
-    pub fn from_cleanup_plan(plan: &CleanupPlan) -> Self {
+    pub(crate) fn from_cleanup_plan(plan: &CleanupPlan) -> Self {
         Self::from_sizes(
             plan.targets
                 .iter()
@@ -204,14 +204,14 @@ impl ScanTotals {
 /// reconstruct or authorize a cleanup action.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct SizingWarning {
+pub(crate) struct SizingWarning {
     pub kind: SizingWarningKind,
     pub detail: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum SizingWarningKind {
+pub(crate) enum SizingWarningKind {
     Canceled,
     EntryBudgetExhausted,
     MetadataUnavailable,

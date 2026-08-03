@@ -64,14 +64,14 @@ pub(crate) struct GlobalCacheRule {
 
 /// Scope of a catalogued rule, for display grouping.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RuleScope {
+pub(crate) enum RuleScope {
     Project,
     Global,
 }
 
 /// A flattened, display-facing description of one rule.
 #[derive(Debug, Clone)]
-pub struct RuleDoc {
+pub(crate) struct RuleDoc {
     pub id: &'static str,
     pub ecosystem: Ecosystem,
     pub scope: RuleScope,
@@ -104,7 +104,7 @@ pub(crate) fn is_known_global_command_rule(rule_id: &str) -> bool {
 }
 
 /// One flat, display-facing list of every cleanup rule.
-pub fn rule_catalogue() -> Vec<RuleDoc> {
+pub(crate) fn rule_catalogue() -> Vec<RuleDoc> {
     let mut docs = Vec::new();
 
     docs.push(RUST_TARGET_RULE_DOC);
@@ -143,7 +143,7 @@ pub fn rule_catalogue() -> Vec<RuleDoc> {
 }
 
 /// One display row shared by the CLI and TUI rule views.
-pub fn rule_row(doc: &RuleDoc) -> String {
+pub(crate) fn rule_row(doc: &RuleDoc) -> String {
     format!(
         "{:<22} {:<9} {:<16} {}",
         doc.id,

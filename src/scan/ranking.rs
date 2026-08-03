@@ -5,16 +5,16 @@ use std::{
 
 use crate::model::{CleanTarget, CleanupPlan, Evidence};
 
-pub const DEFAULT_FRESHNESS_FLOOR: Duration = Duration::from_secs(7 * 86_400);
-pub const FRESHNESS_GUARD_RULE_ID: &str = "ranking.freshness_guard.7d";
+pub(super) const DEFAULT_FRESHNESS_FLOOR: Duration = Duration::from_secs(7 * 86_400);
+pub(crate) const FRESHNESS_GUARD_RULE_ID: &str = "ranking.freshness_guard.7d";
 
-pub fn rank_cleanup_plan(plan: &mut CleanupPlan) {
+pub(super) fn rank_cleanup_plan(plan: &mut CleanupPlan) {
     rank_cleanup_plan_at(plan, SystemTime::now(), DEFAULT_FRESHNESS_FLOOR);
 }
 
 /// Freshness tie-breaker used only when two targets share the same size.
 /// Primary sort order is always estimated_bytes descending (decision D3).
-pub fn freshness_tiebreaker(target: &CleanTarget, now: SystemTime) -> f64 {
+pub(super) fn freshness_tiebreaker(target: &CleanTarget, now: SystemTime) -> f64 {
     let Some(age) = target_age(target, now) else {
         return 0.0;
     };
@@ -30,7 +30,7 @@ pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floo
     sort_targets(&mut plan.targets, now);
 }
 
-pub const SIZE_COMPLETENESS_GUARD_RULE_ID: &str = "ranking.size_completeness_guard";
+pub(super) const SIZE_COMPLETENESS_GUARD_RULE_ID: &str = "ranking.size_completeness_guard";
 
 fn apply_freshness_guard(target: &mut CleanTarget, now: SystemTime, floor: Duration) {
     if !target.selected_by_default {

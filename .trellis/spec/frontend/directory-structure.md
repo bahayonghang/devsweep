@@ -9,7 +9,8 @@
 The frontend for `devsweep` is a Rust terminal UI built with `ratatui`, not a
 web frontend. TUI code lives in the `src/tui/` module directory, split along
 its natural seams: terminal lifecycle, threaded runtime, app state/reducer,
-and rendering. The module's only public symbol is `tui::run()`.
+and rendering. Its crate-private composition seam is `tui::run()`; the only
+external Rust interface is `devsweep::run()`.
 
 ---
 
@@ -19,7 +20,7 @@ Current layout:
 
 ```text
 src/tui/
-├── mod.rs             # pub fn run() composition and default services
+├── mod.rs             # pub(crate) fn run() composition and default services
 ├── terminal.rs        # raw-mode/alt-screen lifecycle
 ├── display.rs         # pure shared path/text/action/command presentation
 ├── app/
@@ -70,8 +71,9 @@ src/tui/
   `runtime/services.rs::SweepScanService`.
 - Shared cleanup data comes from `src/model/`; TUI code should not define a
   second target schema.
-- Visibility discipline: submodule items are `pub(super)` or private; nothing
-  is `pub` beyond `run()`.
+- Visibility discipline: `run()` is `pub(crate)` for application dispatch;
+  child-module collaboration uses `pub(super)` or private items. The private
+  `tui` module exposes no external Rust API.
 
 ---
 

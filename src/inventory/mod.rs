@@ -21,16 +21,18 @@ use crate::{
 
 mod pnpm;
 
-pub use pnpm::{OrphanPnpmStoreFinding, PnpmProjectReference};
+pub(crate) use pnpm::OrphanPnpmStoreFinding;
+#[cfg(test)]
+pub(crate) use pnpm::PnpmProjectReference;
 
 use pnpm::inspect_orphan_pnpm_store;
 
-pub const INVENTORY_REPORT_VERSION: u32 = 1;
-pub const DEFAULT_INVENTORY_ENTRY_BUDGET: usize = DEFAULT_SIZE_ENTRY_BUDGET * 2;
+pub(crate) const INVENTORY_REPORT_VERSION: u32 = 1;
+pub(crate) const DEFAULT_INVENTORY_ENTRY_BUDGET: usize = DEFAULT_SIZE_ENTRY_BUDGET * 2;
 
 /// Read-only capacity observations. These values never enter a cleanup plan.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct InventoryReport {
+pub(crate) struct InventoryReport {
     pub version: u32,
     pub root: PathBuf,
     pub observations: Vec<CapacityObservation>,
@@ -40,7 +42,7 @@ pub struct InventoryReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct CapacityObservation {
+pub(crate) struct CapacityObservation {
     pub path: PathBuf,
     pub classification: InventoryClassification,
     pub estimated_bytes: u64,
@@ -50,17 +52,17 @@ pub struct CapacityObservation {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum InventoryClassification {
+pub(crate) enum InventoryClassification {
     InventoryOnly,
     InspectOnly,
 }
 
-pub fn inventory_root(root: &Path) -> Result<InventoryReport> {
+pub(crate) fn inventory_root(root: &Path) -> Result<InventoryReport> {
     inventory_root_with_cancel(root, None)
 }
 
 /// Produces read-only observations while honoring a TUI cancellation request.
-pub fn inventory_root_with_cancel(
+pub(crate) fn inventory_root_with_cancel(
     root: &Path,
     cancel: Option<&Arc<FlagCancelObserver>>,
 ) -> Result<InventoryReport> {

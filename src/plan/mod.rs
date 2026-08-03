@@ -15,20 +15,20 @@ use crate::{
     rules::{ActionSpec, intent_from_scan_action, resolve_action},
 };
 
-pub const V1_RESCAN_MESSAGE: &str =
+pub(crate) const V1_RESCAN_MESSAGE: &str =
     "plan format v1 is no longer accepted; re-run `devsweep scan --json`";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ActionFingerprint(String);
+pub(crate) struct ActionFingerprint(String);
 
 impl ActionFingerprint {
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ValidatedTarget {
+pub(crate) struct ValidatedTarget {
     target: CleanTarget,
     rule_id: String,
     action_identity: String,
@@ -38,19 +38,19 @@ pub struct ValidatedTarget {
 }
 
 impl ValidatedTarget {
-    pub fn target(&self) -> &CleanTarget {
+    pub(crate) fn target(&self) -> &CleanTarget {
         &self.target
     }
 
-    pub fn rule_id(&self) -> &str {
+    pub(crate) fn rule_id(&self) -> &str {
         &self.rule_id
     }
 
-    pub fn fingerprint(&self) -> &ActionFingerprint {
+    pub(crate) fn fingerprint(&self) -> &ActionFingerprint {
         &self.fingerprint
     }
 
-    pub fn path_identity(&self) -> Option<&PathIdentity> {
+    pub(crate) fn path_identity(&self) -> Option<&PathIdentity> {
         self.path_identity.as_ref()
     }
 }
@@ -58,17 +58,17 @@ impl ValidatedTarget {
 /// Opaque execution input. Its fields are private so only `validate_plan` can
 /// create normal values, and the executor never accepts untrusted DTOs.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ValidatedPlan {
+pub(crate) struct ValidatedPlan {
     targets: Vec<ValidatedTarget>,
     digest: String,
 }
 
 impl ValidatedPlan {
-    pub fn targets(&self) -> &[ValidatedTarget] {
+    pub(crate) fn targets(&self) -> &[ValidatedTarget] {
         &self.targets
     }
 
-    pub fn default_selected_ids(&self) -> Vec<TargetId> {
+    pub(crate) fn default_selected_ids(&self) -> Vec<TargetId> {
         self.targets
             .iter()
             .filter(|target| target.target.selected_by_default)
@@ -76,12 +76,8 @@ impl ValidatedPlan {
             .collect()
     }
 
-    pub fn digest(&self) -> &str {
+    pub(crate) fn digest(&self) -> &str {
         &self.digest
-    }
-
-    pub fn digest_prefix(&self) -> &str {
-        &self.digest[..12]
     }
 
     #[cfg(test)]
@@ -140,7 +136,7 @@ fn test_action_identity(action: &CleanAction) -> String {
     }
 }
 
-pub fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
+pub(crate) fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
     if plan.version == LEGACY_CLEANUP_PLAN_VERSION {
         bail!(V1_RESCAN_MESSAGE)
     }
@@ -198,7 +194,7 @@ pub fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
 /// Converts an in-memory scan result into the only JSON-facing v2 DTO. This
 /// boundary is intentionally strict: a scanner bug must not serialize a direct
 /// executable action as a saved plan.
-pub fn untrusted_plan_from_scan(plan: &CleanupPlan) -> Result<UntrustedPlan> {
+pub(crate) fn untrusted_plan_from_scan(plan: &CleanupPlan) -> Result<UntrustedPlan> {
     let targets = plan
         .targets
         .iter()
@@ -210,7 +206,7 @@ pub fn untrusted_plan_from_scan(plan: &CleanupPlan) -> Result<UntrustedPlan> {
     })
 }
 
-pub fn validate_scanned_plan(plan: &CleanupPlan) -> Result<ValidatedPlan> {
+pub(crate) fn validate_scanned_plan(plan: &CleanupPlan) -> Result<ValidatedPlan> {
     validate_plan(&untrusted_plan_from_scan(plan)?)
 }
 

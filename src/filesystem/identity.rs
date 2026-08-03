@@ -54,21 +54,21 @@ pub(crate) fn normalize_absolute_path(path: &Path) -> Result<String> {
 
 /// Stable live filesystem object identity for TOCTOU revalidation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PathIdentity {
+pub(crate) struct PathIdentity {
     pub kind: PathIdentityKind,
     pub value: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum PathIdentityKind {
+pub(crate) enum PathIdentityKind {
     WindowsFileId,
     UnixDevIno,
 }
 
 /// Captures a live object identity for `path`. Failures are returned so callers
 /// can fail closed rather than treating a missing identity as authorization.
-pub fn capture_path_identity(path: &Path) -> io::Result<PathIdentity> {
+pub(crate) fn capture_path_identity(path: &Path) -> io::Result<PathIdentity> {
     #[cfg(windows)]
     {
         capture_windows_file_id(path)

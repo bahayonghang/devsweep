@@ -16,7 +16,7 @@ evidence.
 
 - Shared cleanup types live in `src/model/`; JSON-facing `UntrustedPlan` and
   `CleanupIntent` are distinct from internal `CleanupPlan`/`CleanAction`.
-- CLI argument types live in `src/cli.rs`.
+- CLI argument types are private to `src/application/cli.rs`.
 - TUI-only state types live under `src/tui/app/`; the event protocol is owned by
   `app/events.rs`, while `App` remains in `app/mod.rs` and is shared read-only
   with render code.

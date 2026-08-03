@@ -6,13 +6,16 @@
 
 ## Overview
 
-`devsweep` is a single Rust crate. Keep small implementation modules flat;
+`devsweep` is a single, binary-oriented Rust crate. Its only external Rust
+interface is `devsweep::run()`. Keep implementation modules private by default;
 use a module directory when it hides multiple cohesive owners behind one
-interface, as `model/`, `plan/`, and `rules/` do.
+crate-internal interface, as `application/`, `model/`, `plan/`, and `rules/`
+do.
 
-The backend boundary owns CLI parsing, cleanup-plan domain types, project
-scanning, configuration/logging setup, execution/audit code, and provider
-code. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
+The application boundary owns CLI parsing, process-wide tracing setup, command
+dispatch, saved-input decoding, and user-facing output. Backend modules own the
+cleanup domain, scanning, inventory, process execution, safety, and audit
+behavior. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
 
 ---
 
@@ -20,11 +23,13 @@ code. The TUI rendering boundary lives in `src/tui/` and the frontend spec.
 
 ```text
 src/
-├── main.rs        # Binary entrypoint and command dispatch
-├── lib.rs         # Public module exports for tests and future consumers
+├── main.rs        # Minimal binary delegation to devsweep::run
+├── lib.rs         # Public run function; all implementation modules private
 ├── cargo_metadata.rs # neutral Cargo scope probing, parsing, and diagnostics
-├── cli.rs         # clap command definitions only
-├── config.rs      # process-wide initialization such as tracing
+├── application/
+│   ├── mod.rs     # tracing initialization, Clap parse, typed dispatch
+│   ├── cli.rs     # private Clap command definitions and parser tests
+│   └── commands.rs # command handlers, input decoding, output, boundary tests
 ├── bin/
 │   └── process_fixture.rs # child/grandchild fixture for ProcessRunner tests
 ├── execution/
@@ -72,16 +77,21 @@ src/
 └── tui/           # ratatui TUI module (see frontend spec)
 ```
 
-There is no standalone `tests/` directory yet. Current tests live next to the
-module that owns the behavior, such as `model::plan::tests`,
-`scan::project::tests`, `execution::tests`, and `tui::tests`.
+There is no standalone `tests/` directory. Tests live with the owner, including
+`application::cli::tests`, `application::commands::tests`,
+`model::plan::tests`, `scan::project::tests`, `execution::tests`, and the
+dedicated `tui/app/tests.rs`, `tui/runtime/tests.rs`, and
+`tui/render/tests.rs` modules.
 
 ---
 
 ## Module Organization
 
-- Put CLI argument shape in `src/cli.rs`. Keep command parsing structs free of
-  filesystem scanning or cleanup side effects.
+- Put application composition under `src/application/`. `cli.rs` owns only
+  private Clap types. `commands.rs` owns command handlers, saved plan/report
+  decoding, and CLI formatting. `mod.rs` initializes tracing, retains
+  `Cli::parse()` process-exit semantics, and performs typed dispatch. Backend
+  and TUI modules must not import `application`.
 - Put JSON-facing and internal domain values under `src/model/`. `plan.rs` owns
   `UntrustedPlan`, `UntrustedTarget`, `CleanupIntent`, `CleanupPlan`,
   `CleanTarget`, and `CleanAction`; `scan.rs` owns `ScanReport`, `ScanHealth`,
@@ -128,20 +138,25 @@ module that owns the behavior, such as `model::plan::tests`,
   audit. Keep program and argv separate; never shell-compose or shell out to
   `kill` / `taskkill`. Cancellation is observed through `CancelObserver`; the
   shared token type is owned by the true-cancellation task.
-- Put binary orchestration in `src/main.rs`. It wires `clap` input to module
-  entrypoints and handles user-facing command output.
-- Export a module from `src/lib.rs` only when integration tests, the binary, or
-  a future crate boundary need it.
+- Keep `src/main.rs` to `devsweep::run()` delegation only. It must not parse
+  arguments, initialize tracing, decode files, format output, or dispatch
+  individual commands.
+- Keep `src/lib.rs` binary-oriented: `run` is the deliberate external Rust
+  interface and implementation modules remain private. Cross-top-level-module
+  collaboration uses `pub(crate)` only where needed; directory children prefer
+  `pub(super)` or private items. Keep the crate-level `unreachable_pub` lint
+  enabled so the canonical Clippy gate rejects accidental public implementation
+  items. Do not add compatibility re-exports for old implementation paths.
 
-Example from `src/main.rs`:
+Example from `src/application/commands.rs`:
 
 ```rust
-let include_projects = command.projects || !command.global;
-let plan = if include_projects {
-    ProjectScanner::new().scan_roots(&command.roots)?
-} else {
-    CleanupPlan::empty()
+let options = ScanOptions {
+    include_projects: command.projects || !command.global,
+    include_global: command.global || !command.projects,
+    roots: command.roots.clone(),
 };
+let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
 ```
 
 ---

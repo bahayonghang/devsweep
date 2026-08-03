@@ -13,20 +13,20 @@ use crate::process::{
 use super::EXECUTOR_DIAGNOSTIC_CAP;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandRequest {
+pub(crate) struct CommandRequest {
     pub program: String,
     pub args: Vec<String>,
     pub cwd: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandOutcome {
+pub(crate) struct CommandOutcome {
     pub code: Option<i32>,
     pub stdout: String,
     pub stderr: String,
 }
 
-pub trait CommandRunner {
+pub(crate) trait CommandRunner {
     /// Run a command while observing cooperative cancellation.
     fn run_with_cancel(
         &self,
@@ -35,12 +35,12 @@ pub trait CommandRunner {
     ) -> Result<CommandOutcome>;
 }
 
-pub trait TrashRunner {
+pub(crate) trait TrashRunner {
     fn move_to_trash(&self, path: &Path) -> Result<()>;
 }
 
 #[derive(Debug)]
-pub struct ProcessCommandRunner {
+pub(crate) struct ProcessCommandRunner {
     runner: ProcessRunner,
 }
 
@@ -51,7 +51,7 @@ impl Default for ProcessCommandRunner {
 }
 
 impl ProcessCommandRunner {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             runner: ProcessRunner::default(),
         }
@@ -112,7 +112,7 @@ impl CommandRunner for ProcessCommandRunner {
 }
 
 #[derive(Debug, Default)]
-pub struct SystemTrashRunner;
+pub(crate) struct SystemTrashRunner;
 
 impl TrashRunner for SystemTrashRunner {
     fn move_to_trash(&self, path: &Path) -> Result<()> {

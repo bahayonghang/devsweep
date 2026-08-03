@@ -24,7 +24,7 @@ const MAX_REFERENCE_FILE_BYTES: u64 = 64 * 1024;
 
 /// An inspect-only finding. It has no cleanup intent or action.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct OrphanPnpmStoreFinding {
+pub(crate) struct OrphanPnpmStoreFinding {
     pub classification: InventoryClassification,
     pub candidate_path: PathBuf,
     pub configured_store: PathBuf,
@@ -32,7 +32,7 @@ pub struct OrphanPnpmStoreFinding {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct PnpmProjectReference {
+pub(crate) struct PnpmProjectReference {
     pub path: PathBuf,
     pub references_candidate: bool,
     pub references_configured_store: bool,

@@ -23,18 +23,14 @@ pub(crate) use probe::resolve_executable;
 
 use probe::{ProviderProbe, SystemProviderProbe};
 
-pub struct GlobalProviderScanner;
+pub(crate) struct GlobalProviderScanner;
 
 impl GlobalProviderScanner {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self
     }
 
-    pub fn scan(&self) -> CleanupPlan {
-        self.scan_with_cancel(None)
-    }
-
-    pub fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
+    pub(crate) fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
         scan_with_probe(&SystemProviderProbe::with_cancel(cancel.cloned()))
     }
 }

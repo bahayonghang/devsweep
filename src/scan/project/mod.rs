@@ -30,22 +30,22 @@ use crate::rules::{
     project_dir_rules,
 };
 
-pub use crate::model::{ScanCompleteness, ScanDiagnostic, ScanDiagnosticStage};
+use crate::model::{ScanCompleteness, ScanDiagnostic, ScanDiagnosticStage};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ScanOutcome {
+pub(crate) struct ScanOutcome {
     pub plan: CleanupPlan,
     pub diagnostics: Vec<ScanDiagnostic>,
     pub completeness: ScanCompleteness,
 }
 
-pub struct ProjectScanner {
+pub(crate) struct ProjectScanner {
     reparse_probe: Arc<dyn PathReparseProbe>,
     cargo_metadata_probe: Arc<dyn CargoMetadataProbe>,
 }
 
 impl ProjectScanner {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             reparse_probe: Arc::new(SystemPathReparseProbe),
             cargo_metadata_probe: Arc::new(SystemCargoMetadataProbe::default()),
@@ -71,15 +71,17 @@ impl ProjectScanner {
         }
     }
 
-    pub fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
+    #[cfg(test)]
+    pub(crate) fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
         Ok(self.scan_roots_with_diagnostics(roots)?.plan)
     }
 
-    pub fn scan_roots_with_diagnostics(&self, roots: &[PathBuf]) -> Result<ScanOutcome> {
+    #[cfg(test)]
+    pub(crate) fn scan_roots_with_diagnostics(&self, roots: &[PathBuf]) -> Result<ScanOutcome> {
         self.scan_roots_with_diagnostics_and_cancel(roots, None)
     }
 
-    pub fn scan_roots_with_diagnostics_and_cancel(
+    pub(crate) fn scan_roots_with_diagnostics_and_cancel(
         &self,
         roots: &[PathBuf],
         cancel: Option<&Arc<FlagCancelObserver>>,
@@ -617,9 +619,9 @@ fn build_path_target_with_probe(
 
 /// A reviewed target-size rescan gets a bounded, larger entry budget but never
 /// accepts an arbitrary path: the target must come from the current plan.
-pub const REVIEW_SIZE_ENTRY_BUDGET: usize = DEFAULT_SIZE_ENTRY_BUDGET * 10;
+pub(super) const REVIEW_SIZE_ENTRY_BUDGET: usize = DEFAULT_SIZE_ENTRY_BUDGET * 10;
 
-pub fn rescan_target_size(
+pub(super) fn rescan_target_size(
     plan: &mut CleanupPlan,
     target_id: &TargetId,
     cancel: Option<&Arc<FlagCancelObserver>>,

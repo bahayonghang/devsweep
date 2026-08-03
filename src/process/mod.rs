@@ -15,8 +15,8 @@ mod cancel;
 mod capture;
 mod tree;
 
-pub use cancel::{ArcCancelObserver, CancelObserver, FlagCancelObserver, NoopCancelObserver};
-pub use capture::sanitize_process_output;
+pub(crate) use cancel::{CancelObserver, FlagCancelObserver, NoopCancelObserver};
+pub(crate) use capture::sanitize_process_output;
 
 use capture::{collect_capture, read_bounded};
 #[cfg(test)]
@@ -25,7 +25,7 @@ use tree::{ProcessTreeBackend, wait_for_exit};
 
 /// Working-directory policy for a process request.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CwdPolicy {
+pub(crate) enum CwdPolicy {
     /// Create and use a unique directory under the system temp dir.
     Neutral,
     /// Caller-selected directory with an explicit reason for auditability.
@@ -34,7 +34,7 @@ pub enum CwdPolicy {
 
 /// Per-run capture and termination policy.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProcessPolicy {
+pub(crate) struct ProcessPolicy {
     pub max_stdout_bytes: usize,
     pub max_stderr_bytes: usize,
     pub termination_grace: Duration,
@@ -53,19 +53,19 @@ impl Default for ProcessPolicy {
 }
 
 /// Default per-stream retained tail (1 MiB).
-pub const DEFAULT_STREAM_CAP_BYTES: usize = 1024 * 1024;
+pub(crate) const DEFAULT_STREAM_CAP_BYTES: usize = 1024 * 1024;
 
 /// Default provider probe timeout (within the 3–10s SLO band).
-pub const DEFAULT_PROVIDER_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+pub(crate) const DEFAULT_PROVIDER_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Hard cap for the global provider probe phase.
-pub const DEFAULT_PROVIDER_PHASE_DEADLINE: Duration = Duration::from_secs(30);
+pub(crate) const DEFAULT_PROVIDER_PHASE_DEADLINE: Duration = Duration::from_secs(30);
 
 /// Hard cap for executor-backed cleanup commands.
-pub const DEFAULT_EXECUTOR_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);
+pub(crate) const DEFAULT_EXECUTOR_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// Request describing one external command invocation.
-pub struct ProcessRequest<'a> {
+pub(crate) struct ProcessRequest<'a> {
     pub program: OsString,
     pub args: Vec<OsString>,
     pub cwd: CwdPolicy,
@@ -76,7 +76,7 @@ pub struct ProcessRequest<'a> {
 
 /// Typed process completion status.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ProcessStatus {
+pub(crate) enum ProcessStatus {
     Success,
     NotFound,
     Timeout,
@@ -87,7 +87,7 @@ pub enum ProcessStatus {
 
 /// Bounded stdout/stderr capture with truncation metadata.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct ProcessOutput {
+pub(crate) struct ProcessOutput {
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
     pub stdout_truncated: bool,
@@ -98,7 +98,7 @@ pub struct ProcessOutput {
 
 /// Full runner result.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProcessResult {
+pub(crate) struct ProcessResult {
     pub status: ProcessStatus,
     pub output: ProcessOutput,
 }
@@ -114,7 +114,7 @@ impl ProcessResult {
 
 /// Portable process runner interface used by discovery and execution.
 #[derive(Debug, Clone)]
-pub struct ProcessRunner {
+pub(crate) struct ProcessRunner {
     policy: ProcessPolicy,
 }
 
@@ -125,15 +125,11 @@ impl Default for ProcessRunner {
 }
 
 impl ProcessRunner {
-    pub fn new(policy: ProcessPolicy) -> Self {
+    pub(crate) fn new(policy: ProcessPolicy) -> Self {
         Self { policy }
     }
 
-    pub fn policy(&self) -> &ProcessPolicy {
-        &self.policy
-    }
-
-    pub fn run(&self, request: &ProcessRequest<'_>) -> ProcessResult {
+    pub(crate) fn run(&self, request: &ProcessRequest<'_>) -> ProcessResult {
         if request.cancel.is_cancel_requested() {
             return ProcessResult::empty(ProcessStatus::Canceled);
         }
@@ -309,12 +305,12 @@ fn cleanup_neutral_dir(dir: Option<&PathBuf>) {
 
 /// Shared test helpers for locating the process_fixture binary.
 #[cfg(test)]
-pub mod test_support {
+pub(crate) mod test_support {
     use std::{env, ffi::OsString, path::PathBuf, process::Command, sync::Once};
 
     static ENSURE_FIXTURE: Once = Once::new();
 
-    pub fn process_fixture_exe() -> PathBuf {
+    pub(crate) fn process_fixture_exe() -> PathBuf {
         ENSURE_FIXTURE.call_once(|| {
             let path = fixture_path();
             if path.is_file() {

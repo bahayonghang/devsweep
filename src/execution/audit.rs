@@ -1,10 +1,12 @@
 use std::{
-    collections::HashSet,
     fs::{File, OpenOptions},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
+
+#[cfg(test)]
+use std::collections::HashSet;
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -259,7 +261,8 @@ impl JournalEvent {
 }
 
 /// Replay API: find started events that never received a terminal record.
-pub fn replay_unconfirmed_starts(path: &Path) -> Result<Vec<String>> {
+#[cfg(test)]
+pub(super) fn replay_unconfirmed_starts(path: &Path) -> Result<Vec<String>> {
     let text = std::fs::read_to_string(path)
         .with_context(|| format!("failed to read audit log {}", path.display()))?;
     let mut started = HashSet::new();
@@ -318,7 +321,7 @@ pub fn replay_unconfirmed_starts(path: &Path) -> Result<Vec<String>> {
     Ok(unconfirmed)
 }
 
-pub fn default_audit_log_path() -> Result<PathBuf> {
+pub(super) fn default_audit_log_path() -> Result<PathBuf> {
     let dir = UserProtectionList::config_path()
         .ok()
         .and_then(|path| path.parent().map(|parent| parent.to_path_buf()))

@@ -9,14 +9,18 @@ mod audit;
 mod command;
 mod safety;
 
-pub use audit::{default_audit_log_path, replay_unconfirmed_starts};
-pub use command::{
-    CommandOutcome, CommandRequest, CommandRunner, ProcessCommandRunner, SystemTrashRunner,
-    TrashRunner,
+use audit::default_audit_log_path;
+#[cfg(test)]
+use audit::replay_unconfirmed_starts;
+#[cfg(test)]
+use command::CommandOutcome;
+use command::{
+    CommandRequest, CommandRunner, ProcessCommandRunner, SystemTrashRunner, TrashRunner,
 };
-pub use safety::{
+pub(crate) use safety::UserProtectionList;
+use safety::{
     AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
-    SafetyPolicy, UserProtectionList,
+    SafetyPolicy,
 };
 
 #[cfg(test)]
@@ -33,7 +37,7 @@ use crate::{
 const EXECUTOR_DIAGNOSTIC_CAP: usize = 4 * 1024;
 
 #[derive(Debug, Clone)]
-pub struct ExecutionRequest {
+pub(crate) struct ExecutionRequest {
     pub execute: bool,
     pub audit_log: Option<PathBuf>,
     pub selected: Vec<TargetId>,
@@ -42,7 +46,7 @@ pub struct ExecutionRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutionReport {
+pub(crate) struct ExecutionReport {
     pub dry_run: bool,
     pub selected: usize,
     pub attempted: usize,
@@ -54,19 +58,19 @@ pub struct ExecutionReport {
 }
 
 impl ExecutionReport {
-    pub fn has_failures(&self) -> bool {
+    pub(crate) fn has_failures(&self) -> bool {
         self.failed > 0
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActionFailure {
+pub(crate) struct ActionFailure {
     pub target_id: TargetId,
     pub message: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExecutionTargetStatus {
+pub(crate) enum ExecutionTargetStatus {
     Succeeded,
     Failed,
     Skipped,
@@ -75,7 +79,7 @@ pub enum ExecutionTargetStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutionProgress {
+pub(crate) struct ExecutionProgress {
     pub completed: usize,
     pub total: usize,
     pub target_id: TargetId,
@@ -83,7 +87,7 @@ pub struct ExecutionProgress {
     pub message: String,
 }
 
-pub struct Executor<C = ProcessCommandRunner, T = SystemTrashRunner> {
+pub(crate) struct Executor<C = ProcessCommandRunner, T = SystemTrashRunner> {
     command_runner: C,
     trash_runner: T,
     safety: SafetyPolicy,
@@ -98,7 +102,7 @@ impl Default for Executor<ProcessCommandRunner, SystemTrashRunner> {
 }
 
 impl<C, T> Executor<C, T> {
-    pub fn new(command_runner: C, trash_runner: T) -> Self {
+    pub(crate) fn new(command_runner: C, trash_runner: T) -> Self {
         Self {
             command_runner,
             trash_runner,
@@ -111,7 +115,8 @@ impl<C, T> Executor<C, T> {
         }
     }
 
-    pub fn with_safety_policy(mut self, safety: SafetyPolicy) -> Self {
+    #[cfg(test)]
+    fn with_safety_policy(mut self, safety: SafetyPolicy) -> Self {
         self.safety = safety;
         self
     }
@@ -128,7 +133,7 @@ where
     C: CommandRunner,
     T: TrashRunner,
 {
-    pub fn run_plan(
+    pub(crate) fn run_plan(
         &self,
         plan: &ValidatedPlan,
         request: ExecutionRequest,
@@ -136,7 +141,7 @@ where
         self.run_plan_with_progress(plan, request, |_| {})
     }
 
-    pub fn run_plan_with_progress<F>(
+    pub(crate) fn run_plan_with_progress<F>(
         &self,
         plan: &ValidatedPlan,
         request: ExecutionRequest,

@@ -10,7 +10,7 @@ use std::{
 ///
 /// Strips executable terminal control sequences, keeps a bounded tail, and
 /// marks truncation. Non-UTF-8 bytes are lossy-decoded only here.
-pub fn sanitize_process_output(bytes: &[u8], cap: usize) -> String {
+pub(crate) fn sanitize_process_output(bytes: &[u8], cap: usize) -> String {
     let lossy = String::from_utf8_lossy(bytes);
     let mut sanitized = String::with_capacity(lossy.len().min(cap.saturating_add(32)));
     let mut truncated = false;

@@ -17,7 +17,7 @@ use super::reparse::{
 
 /// Size walk result that distinguishes a verified empty tree from a failed walk.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SizeEstimate {
+pub(crate) struct SizeEstimate {
     /// Lower bound of observed logical bytes. `None` means no trustworthy total.
     pub logical_bytes: Option<u64>,
     pub complete: bool,
@@ -26,7 +26,7 @@ pub struct SizeEstimate {
 }
 
 impl SizeEstimate {
-    pub fn trusted(bytes: u64, last_modified: Option<SystemTime>) -> Self {
+    pub(crate) fn trusted(bytes: u64, last_modified: Option<SystemTime>) -> Self {
         Self {
             logical_bytes: Some(bytes),
             complete: true,
@@ -35,11 +35,11 @@ impl SizeEstimate {
         }
     }
 
-    pub fn display_bytes(&self) -> u64 {
+    pub(crate) fn display_bytes(&self) -> u64 {
         self.logical_bytes.unwrap_or(0)
     }
 
-    pub fn merge(mut self, other: Self) -> Self {
+    pub(crate) fn merge(mut self, other: Self) -> Self {
         let bytes = match (self.logical_bytes, other.logical_bytes) {
             (Some(left), Some(right)) => Some(left + right),
             (Some(left), None) => Some(left),
@@ -55,17 +55,19 @@ impl SizeEstimate {
 }
 
 /// Default entry budget for a single size walk root.
-pub const DEFAULT_SIZE_ENTRY_BUDGET: usize = 50_000;
+pub(crate) const DEFAULT_SIZE_ENTRY_BUDGET: usize = 50_000;
 
-pub fn estimate_tree(path: &Path) -> SizeEstimate {
+#[cfg(test)]
+fn estimate_tree(path: &Path) -> SizeEstimate {
     estimate_tree_with_budget(path, DEFAULT_SIZE_ENTRY_BUDGET)
 }
 
-pub fn estimate_tree_with_budget(path: &Path, entry_budget: usize) -> SizeEstimate {
+#[cfg(test)]
+fn estimate_tree_with_budget(path: &Path, entry_budget: usize) -> SizeEstimate {
     estimate_tree_with_budget_and_cancel(path, entry_budget, None)
 }
 
-pub fn estimate_tree_with_budget_and_cancel(
+pub(crate) fn estimate_tree_with_budget_and_cancel(
     path: &Path,
     entry_budget: usize,
     cancel: Option<&Arc<FlagCancelObserver>>,

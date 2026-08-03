@@ -6,8 +6,8 @@ mod global;
 mod project;
 mod ranking;
 
-pub use global::GlobalProviderScanner;
-pub use project::{ProjectScanner, ScanOutcome};
+use global::GlobalProviderScanner;
+use project::ProjectScanner;
 
 pub(crate) use global::resolve_executable;
 #[cfg(test)]
@@ -21,7 +21,7 @@ use project::rescan_target_size;
 use ranking::rank_cleanup_plan;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProjectScanOutcome {
+pub(crate) struct ProjectScanOutcome {
     pub plan: CleanupPlan,
     pub health: ScanHealth,
 }
@@ -32,11 +32,7 @@ struct ScanPipelineOutcome {
     health: ScanHealth,
 }
 
-pub trait ProjectScan {
-    fn scan_roots(&self, roots: &[PathBuf]) -> Result<CleanupPlan> {
-        self.scan_roots_with_cancel(roots, None)
-    }
-
+pub(crate) trait ProjectScan {
     fn scan_roots_with_cancel(
         &self,
         roots: &[PathBuf],
@@ -55,11 +51,7 @@ pub trait ProjectScan {
     }
 }
 
-pub trait GlobalScan {
-    fn scan(&self) -> CleanupPlan {
-        self.scan_with_cancel(None)
-    }
-
+pub(crate) trait GlobalScan {
     fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan;
 }
 
@@ -93,27 +85,27 @@ impl GlobalScan for GlobalProviderScanner {
 }
 
 #[derive(Debug, Clone)]
-pub struct ScanOptions {
+pub(crate) struct ScanOptions {
     pub include_projects: bool,
     pub include_global: bool,
     pub roots: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScanPhase {
+pub(crate) enum ScanPhase {
     Projects,
     Global,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ScanProgress {
+pub(crate) struct ScanProgress {
     pub phase: ScanPhase,
     pub message: String,
     /// Cumulative, already-ranked partial plan for the phases finished so far.
     pub partial: Option<CleanupPlan>,
 }
 
-pub struct Sweeper<P = ProjectScanner, G = GlobalProviderScanner> {
+pub(crate) struct Sweeper<P = ProjectScanner, G = GlobalProviderScanner> {
     projects: P,
     global: G,
 }
@@ -125,7 +117,7 @@ impl Default for Sweeper<ProjectScanner, GlobalProviderScanner> {
 }
 
 impl<P, G> Sweeper<P, G> {
-    pub fn new(projects: P, global: G) -> Self {
+    pub(crate) fn new(projects: P, global: G) -> Self {
         Self { projects, global }
     }
 }
@@ -133,7 +125,8 @@ impl<P, G> Sweeper<P, G> {
 impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
     /// Runs the scan pipeline and returns the merged plan. The returned plan is
     /// ranked with the freshness guard applied; callers must not rank again.
-    pub fn full_scan(
+    #[cfg(test)]
+    pub(crate) fn full_scan(
         &self,
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
@@ -141,7 +134,8 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
         self.full_scan_with_cancel(options, progress, None)
     }
 
-    pub fn full_scan_with_cancel(
+    #[cfg(test)]
+    pub(crate) fn full_scan_with_cancel(
         &self,
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
@@ -152,7 +146,7 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
 
     /// Runs the pipeline and returns a non-authoritative report suitable for
     /// JSON export. Existing plan consumers should keep using [`Self::full_scan`].
-    pub fn full_scan_report(
+    pub(crate) fn full_scan_report(
         &self,
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
@@ -160,7 +154,7 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
         self.full_scan_report_with_cancel(options, progress, None)
     }
 
-    pub fn full_scan_report_with_cancel(
+    pub(crate) fn full_scan_report_with_cancel(
         &self,
         options: &ScanOptions,
         progress: &mut dyn FnMut(ScanProgress),
@@ -175,7 +169,7 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
     /// Runs a normal scan, then re-estimates exactly one discovered target with
     /// the reviewed higher budget. The target ID must be present in this live
     /// scan; callers cannot provide an arbitrary path to the size walker.
-    pub fn full_scan_report_rescanning_target(
+    pub(crate) fn full_scan_report_rescanning_target(
         &self,
         options: &ScanOptions,
         target_id: &TargetId,
@@ -184,7 +178,7 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
         self.full_scan_report_rescanning_target_with_cancel(options, target_id, progress, None)
     }
 
-    pub fn full_scan_report_rescanning_target_with_cancel(
+    pub(crate) fn full_scan_report_rescanning_target_with_cancel(
         &self,
         options: &ScanOptions,
         target_id: &TargetId,

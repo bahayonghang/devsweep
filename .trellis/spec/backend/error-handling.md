@@ -16,11 +16,12 @@ propagating context.
 ## Error Types
 
 - Binary entrypoint: `fn main() -> anyhow::Result<()>`
-- TUI entrypoint: `pub fn run() -> anyhow::Result<()>`
-- Project scan entrypoint:
-  `scan::ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
-- Scan pipeline entrypoint:
-  `scan::Sweeper::default().full_scan(...) -> anyhow::Result<CleanupPlan>`
+- External crate entrypoint: `devsweep::run() -> anyhow::Result<()>`
+- Crate-private TUI entrypoint: `tui::run() -> anyhow::Result<()>`
+- Application command handlers:
+  `application::commands::run_<command>(...) -> anyhow::Result<()>`
+- Scan report pipeline:
+  `scan::Sweeper::default().full_scan_report(...) -> anyhow::Result<ScanReport>`
 
 Use `anyhow::Context` when a filesystem operation needs path-specific context:
 
@@ -34,9 +35,13 @@ let root = root
 
 ## Error Handling Patterns
 
-- Use `?` to propagate command-level failures to `main`.
+- Use `?` to propagate command-level failures through `application::run` and
+  `devsweep::run` to `main`.
 - Use `anyhow::bail!` for explicit user-facing command failures. For example,
   `clean --execute` without `--plan PATH` fails before the executor runs.
+- Saved plan/report decoding in `src/application/commands.rs` adds file and
+  JSON context, rejects inventory documents, and preserves version-specific
+  rescan guidance before validation.
 - Project scan root access failures are hard errors. Inaccessible nested entries are
   recorded as discovery diagnostics and skipped so one unreadable child does not
   abort the whole scan; the outcome is marked partial while sibling candidates
@@ -50,7 +55,7 @@ let root = root
   the side effect may already have run.
 - Tests may use `expect(...)` with a specific reason.
 
-Example from `src/main.rs`:
+Example from `src/application/commands.rs`:
 
 ```rust
 if command.execute && command.plan.is_none() {

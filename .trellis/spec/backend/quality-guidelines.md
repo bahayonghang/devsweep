@@ -122,7 +122,7 @@ CleanupIntent::RunBuiltInAction {
 
 - CLI entrypoint:
   - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
-- Library entrypoint:
+- Internal execution boundary:
   - `Executor::default().run_plan(&ValidatedPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
   - `ExecutionRequest.selected: Vec<TargetId>` names the execution set
     explicitly; `ValidatedPlan::default_selected_ids()` provides the default
@@ -323,8 +323,8 @@ Executor::default().run_plan(&validated, request)?;
 
 - CLI entrypoint:
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-- Library entrypoint:
-  - `GlobalProviderScanner::new().scan() -> CleanupPlan`
+- Internal provider boundary:
+  - `GlobalProviderScanner::new().scan_with_cancel(None) -> CleanupPlan`
 - Provider discovery boundary:
   - executable lookup by program name
   - command output probes for official inspect commands only
@@ -614,21 +614,26 @@ ignored by git.
   - `scan::ranking::rank_cleanup_plan(&mut CleanupPlan)`
 - Score helper:
   - `scan::ranking::freshness_tiebreaker(&CleanTarget, SystemTime) -> f64`
-- Pipeline owner:
-  - `scan::Sweeper::default().full_scan(&ScanOptions, &mut dyn FnMut(ScanProgress)) -> anyhow::Result<CleanupPlan>`
+- Production report boundaries:
+  - `scan::Sweeper::default().full_scan_report(...) -> anyhow::Result<ScanReport>`
+  - `scan::Sweeper::default().full_scan_report_with_cancel(...) -> anyhow::Result<ScanReport>`
+- Private merge/ranking owner:
+  - `scan::Sweeper::full_scan_outcome(...) -> anyhow::Result<ScanPipelineOutcome>`
 - Assembly boundaries:
-  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>` (returns unranked)
-  - `GlobalProviderScanner::new().scan() -> CleanupPlan` (returns unranked)
+  - `ProjectScanner::scan_roots_with_diagnostics_and_cancel(...)` returns
+    unranked project observations.
+  - `GlobalProviderScanner::scan_with_cancel(...)` returns an unranked global
+    plan.
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-  - TUI scan worker driving `scan::Sweeper::full_scan`
+  - TUI scan worker driving `scan::Sweeper::full_scan_report_with_cancel`
 
 #### 3. Contracts
 
-- Ranking ownership lives in `scan::Sweeper::full_scan`: it merges project and global
-  results and calls the ranking helper exactly once per cumulative set. Scanner
-  and provider modules return unranked plans and must not call ranking
-  themselves; callers of `full_scan` receive a ranked plan and must not
-  re-rank.
+- Ranking ownership lives in private `scan::Sweeper::full_scan_outcome`: it
+  merges project and global results and calls the ranking helper exactly once
+  per cumulative set. Scanner and provider modules return unranked plans and
+  must not call ranking themselves; report methods project the ranked result
+  without re-ranking it.
 - Plan targets are ordered by descending `estimated_bytes`; ties use the shared
   size/age score, older `last_modified`, then `TargetId` for deterministic
   output.
@@ -656,8 +661,8 @@ ignored by git.
 
 #### 5. Good/Base/Bad Cases
 
-- Good: CLI and TUI both obtain plans through `scan::Sweeper::full_scan`, so ranking
-  runs in exactly one production call site instead of each entry point
+- Good: CLI and TUI both obtain reports through `scan::Sweeper` report methods,
+  so ranking runs in one private pipeline owner instead of each entry point
   implementing local ordering.
 - Good: a 2 GiB global target appears before a 1 GiB project target in both
   `scan --json` and TUI results.
@@ -666,7 +671,7 @@ ignored by git.
 - Bad: sorting only in render code while `scan --json` uses discovery order.
 - Bad: selecting a large target by default only because it is large.
 - Bad: scanning the filesystem again from ranking to calculate missing data.
-- Bad: a caller of `full_scan` defensively re-ranking the returned plan.
+- Bad: a report or progress consumer defensively re-ranking the projected plan.
 
 #### 6. Tests Required
 
@@ -691,8 +696,8 @@ targets.sort_by_key(|target| std::cmp::Reverse(target.estimated_bytes));
 Correct:
 
 ```rust
-let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
-// plan is merged and ranked by contract; do not re-rank.
+let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
+// report.plan is projected from the merged, ranked result; do not re-rank.
 ```
 
 ### Scenario: Project scanner and JSON cleanup report
@@ -705,8 +710,9 @@ let plan = Sweeper::default().full_scan(&options, &mut |_| {})?;
 
 #### 2. Signatures
 
-- Library entrypoint:
-  - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+- Internal project-discovery boundary:
+  - `ProjectScanner::scan_roots_with_diagnostics_and_cancel(...) ->
+    anyhow::Result<ScanOutcome>`
 - CLI entrypoint:
   - `devsweep scan [ROOT]... [--json] [--projects] [--rescan-target TARGET_ID]`
 

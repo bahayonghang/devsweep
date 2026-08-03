@@ -7,8 +7,8 @@
 ## Overview
 
 Logging uses `tracing` and `tracing-subscriber`. Initialization is centralized
-in `src/config.rs` and writes to `stderr` so JSON plans can remain clean on
-`stdout`.
+in `src/application/mod.rs` and writes to `stderr` so JSON plans can remain
+clean on `stdout`.
 
 Current code has minimal logging. Prefer explicit CLI output for user-visible
 command summaries and reserve tracing for diagnostics that should not pollute
@@ -18,10 +18,10 @@ machine-readable output.
 
 ## Initialization
 
-`src/config.rs` owns process-wide tracing setup:
+The private `application::init_tracing` function owns process-wide setup:
 
 ```rust
-pub fn init_tracing() {
+fn init_tracing() {
     let _ = tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_target(false)
@@ -29,7 +29,8 @@ pub fn init_tracing() {
 }
 ```
 
-Call initialization once from `main` before command dispatch.
+Call initialization once from `application::run` before Clap parsing and typed
+command dispatch. Do not expose a second initialization entrypoint.
 
 ---
 
@@ -68,5 +69,7 @@ Call initialization once from `main` before command dispatch.
 ## Common Mistakes
 
 - Do not add `println!` diagnostics to code paths that also support `--json`.
-- Do not call `tracing_subscriber::fmt().init()` directly from modules. Use
-  `config::init_tracing()` so repeated initialization stays harmless.
+- Do not call `tracing_subscriber::fmt().init()` directly from implementation
+  modules. Process-wide initialization belongs only in
+  `application::init_tracing`; `try_init()` keeps repeated library calls
+  harmless.

@@ -6,13 +6,13 @@ use clap::{Args, Parser, Subcommand};
 #[command(name = "devsweep")]
 #[command(about = "Plan and execute safety-first developer disk cleanup.")]
 #[command(version)]
-pub struct Cli {
+pub(super) struct Cli {
     #[command(subcommand)]
-    pub command: Command,
+    pub(super) command: Command,
 }
 
 #[derive(Debug, Subcommand)]
-pub enum Command {
+pub(super) enum Command {
     /// Open the interactive terminal UI.
     Tui,
     /// Scan roots and emit a cleanup report.
@@ -29,7 +29,7 @@ pub enum Command {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum ProtectCommand {
+pub(super) enum ProtectCommand {
     /// Add an existing path that must never be cleaned.
     Add {
         /// Existing path to protect.
@@ -45,26 +45,26 @@ pub enum ProtectCommand {
 }
 
 #[derive(Debug, Args)]
-pub struct ScanCommand {
+pub(super) struct ScanCommand {
     /// Roots to scan.
     #[arg(value_name = "ROOT", default_value = ".")]
-    pub roots: Vec<PathBuf>,
+    pub(super) roots: Vec<PathBuf>,
     /// Emit the scan report as JSON.
     #[arg(long)]
-    pub json: bool,
+    pub(super) json: bool,
     /// Include global cache providers.
     #[arg(long)]
-    pub global: bool,
+    pub(super) global: bool,
     /// Include project-level cleanup targets.
     #[arg(long)]
-    pub projects: bool,
+    pub(super) projects: bool,
     /// Re-estimate one target ID from this scan with a higher bounded budget.
     #[arg(long, value_name = "TARGET_ID")]
-    pub rescan_target: Option<String>,
+    pub(super) rescan_target: Option<String>,
 }
 
 impl ScanCommand {
-    pub fn scope_label(&self) -> &'static str {
+    pub(super) fn scope_label(&self) -> &'static str {
         match (self.global, self.projects) {
             (true, true) | (false, false) => "global+projects",
             (true, false) => "global",
@@ -74,26 +74,26 @@ impl ScanCommand {
 }
 
 #[derive(Debug, Args)]
-pub struct InventoryCommand {
+pub(super) struct InventoryCommand {
     /// Root whose immediate contents should be inventoried.
     #[arg(value_name = "ROOT", default_value = ".")]
-    pub root: PathBuf,
+    pub(super) root: PathBuf,
     /// Emit the read-only inventory report as JSON.
     #[arg(long)]
-    pub json: bool,
+    pub(super) json: bool,
 }
 
 #[derive(Debug, Args)]
-pub struct CleanCommand {
+pub(super) struct CleanCommand {
     /// Cleanup plan or scan report to dry-run or execute.
     #[arg(long, value_name = "PATH")]
-    pub plan: Option<PathBuf>,
+    pub(super) plan: Option<PathBuf>,
     /// Execute the plan. Omit this flag for dry-run behavior.
     #[arg(long)]
-    pub execute: bool,
+    pub(super) execute: bool,
     /// Append execution audit records to this JSONL file. Defaults to devsweep-audit.jsonl when executing.
     #[arg(long, value_name = "PATH")]
-    pub audit_log: Option<PathBuf>,
+    pub(super) audit_log: Option<PathBuf>,
 }
 
 #[cfg(test)]

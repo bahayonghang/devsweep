@@ -4,39 +4,31 @@ use serde::{Deserialize, Serialize};
 
 use super::scan::SizingWarning;
 
-pub const CLEANUP_PLAN_VERSION: u32 = 2;
-pub const LEGACY_CLEANUP_PLAN_VERSION: u32 = 1;
+pub(crate) const CLEANUP_PLAN_VERSION: u32 = 2;
+pub(crate) const LEGACY_CLEANUP_PLAN_VERSION: u32 = 1;
 
 /// JSON-facing cleanup-plan DTO. It contains observed scan facts and typed
 /// intent, but never an executable program, argv, cwd, or authoritative
 /// cleanup action. Convert it through `crate::plan` before execution.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct UntrustedPlan {
+pub(crate) struct UntrustedPlan {
     pub version: u32,
     pub targets: Vec<UntrustedTarget>,
 }
 
 impl UntrustedPlan {
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self {
             version: CLEANUP_PLAN_VERSION,
             targets: Vec::new(),
         }
     }
-
-    pub fn default_selected_ids(&self) -> Vec<TargetId> {
-        self.targets
-            .iter()
-            .filter(|target| target.selected_by_default)
-            .map(|target| target.id.clone())
-            .collect()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct UntrustedTarget {
+pub(crate) struct UntrustedTarget {
     pub id: TargetId,
     pub rule_id: String,
     pub scope: Scope,
@@ -63,7 +55,7 @@ fn default_size_complete() -> bool {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-pub enum CleanupIntent {
+pub(crate) enum CleanupIntent {
     TrashProjectArtifact {
         rule_id: String,
     },
@@ -77,20 +69,21 @@ pub enum CleanupIntent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CleanupPlan {
+pub(crate) struct CleanupPlan {
     pub version: u32,
     pub targets: Vec<CleanTarget>,
 }
 
 impl CleanupPlan {
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self {
             version: CLEANUP_PLAN_VERSION,
             targets: Vec::new(),
         }
     }
 
-    pub fn default_selected_ids(&self) -> Vec<TargetId> {
+    #[cfg(test)]
+    pub(crate) fn default_selected_ids(&self) -> Vec<TargetId> {
         self.targets
             .iter()
             .filter(|target| target.selected_by_default)
@@ -101,20 +94,20 @@ impl CleanupPlan {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct TargetId(String);
+pub(crate) struct TargetId(String);
 
 impl TargetId {
-    pub fn new(value: impl Into<String>) -> Self {
+    pub(crate) fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
 
-    pub fn as_str(&self) -> &str {
+    pub(crate) fn as_str(&self) -> &str {
         &self.0
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CleanTarget {
+pub(crate) struct CleanTarget {
     pub id: TargetId,
     pub scope: Scope,
     pub ecosystem: Ecosystem,
@@ -134,14 +127,14 @@ pub struct CleanTarget {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-pub enum Scope {
+pub(crate) enum Scope {
     Global,
     Project { root: PathBuf },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Ecosystem {
+pub(crate) enum Ecosystem {
     Rust,
     Node,
     Python,
@@ -151,7 +144,7 @@ pub enum Ecosystem {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum TargetKind {
+pub(crate) enum TargetKind {
     PackageCache,
     BuildArtifacts,
     DependencyDirectory,
@@ -162,7 +155,7 @@ pub enum TargetKind {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum RiskLevel {
+pub(crate) enum RiskLevel {
     Low,
     Medium,
     High,
@@ -170,7 +163,7 @@ pub enum RiskLevel {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CleanAction {
+pub(crate) enum CleanAction {
     Command {
         program: String,
         args: Vec<String>,
@@ -180,6 +173,8 @@ pub enum CleanAction {
     MoveToTrash {
         path: PathBuf,
     },
+    // Kept as an explicit deny case at the validation, safety, and execution boundaries.
+    #[allow(dead_code)]
     DeletePermanently {
         path: PathBuf,
         requires_explicit_flag: bool,
@@ -195,7 +190,7 @@ impl CleanAction {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-pub enum Evidence {
+pub(crate) enum Evidence {
     MarkerFile { path: PathBuf },
     KnownCacheDir { source: String, path: PathBuf },
     OfficialCommand { command: String },

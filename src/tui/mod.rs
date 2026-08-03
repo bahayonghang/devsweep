@@ -10,7 +10,7 @@ use anyhow::Result;
 
 use self::runtime::{ExecutorCleanService, LocalInventoryService, SweepScanService};
 
-pub fn run() -> Result<()> {
+pub(crate) fn run() -> Result<()> {
     terminal::install_panic_hook();
     let mut session = terminal::TerminalSession::enter()?;
     let terminal = session

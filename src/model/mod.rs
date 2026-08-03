@@ -1,5 +1,5 @@
 mod plan;
 mod scan;
 
-pub use plan::*;
-pub use scan::*;
+pub(crate) use plan::*;
+pub(crate) use scan::*;

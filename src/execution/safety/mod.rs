@@ -11,7 +11,7 @@ use serde::Serialize;
 
 mod protections;
 
-pub use protections::UserProtectionList;
+pub(crate) use protections::UserProtectionList;
 
 use crate::{
     cargo_metadata::query_cargo_metadata,
@@ -30,12 +30,12 @@ use crate::{
 };
 
 /// Shared skip message when a target contains the running executable.
-pub const SELF_CLEAN_SKIP_MESSAGE: &str = "target contains the running devsweep executable";
+pub(super) const SELF_CLEAN_SKIP_MESSAGE: &str = "target contains the running devsweep executable";
 
 /// Classification of a denied cleanup target for UI/audit explanation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ProtectionCategory {
+pub(super) enum ProtectionCategory {
     ExactNode,
     ProtectedSubtree,
     OwnVcsMetadata,
@@ -45,7 +45,7 @@ pub enum ProtectionCategory {
 
 /// Structured authorization refusal.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Denial {
+pub(super) struct Denial {
     pub category: ProtectionCategory,
     pub path: PathBuf,
     pub message: String,
@@ -68,7 +68,7 @@ impl std::error::Error for Denial {}
 /// Opaque proof that an action passed live revalidation. Only
 /// [`SafetyPolicy::authorize`] can construct this value.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorizedAction {
+pub(super) struct AuthorizedAction {
     action: CleanAction,
     target_id: String,
     path: Option<PathBuf>,
@@ -76,24 +76,12 @@ pub struct AuthorizedAction {
 }
 
 impl AuthorizedAction {
-    pub fn action(&self) -> &CleanAction {
+    pub(super) fn action(&self) -> &CleanAction {
         &self.action
     }
 
-    pub fn target_id(&self) -> &str {
-        &self.target_id
-    }
-
-    pub fn path(&self) -> Option<&Path> {
-        self.path.as_deref()
-    }
-
-    pub fn live_identity(&self) -> Option<&PathIdentity> {
-        self.live_identity.as_ref()
-    }
-
     /// Reconstruct the trash path only after authorization.
-    pub fn trash_path(&self) -> Option<&Path> {
+    pub(super) fn trash_path(&self) -> Option<&Path> {
         match &self.action {
             CleanAction::MoveToTrash { path } => Some(path.as_path()),
             _ => None,
@@ -103,7 +91,7 @@ impl AuthorizedAction {
 
 /// Live inputs that vary per execution request.
 #[derive(Debug, Clone, Default)]
-pub struct AuthorizationContext {
+pub(super) struct AuthorizationContext {
     pub scan_roots: Vec<PathBuf>,
     pub audit_log: Option<PathBuf>,
     /// When set, authorize compares the live object id against this expected value.
@@ -113,7 +101,7 @@ pub struct AuthorizationContext {
 type CurrentExeFn = Arc<dyn Fn() -> io::Result<PathBuf> + Send + Sync>;
 
 /// Default-deny safety policy evaluated immediately before side effects.
-pub struct SafetyPolicy {
+pub(super) struct SafetyPolicy {
     user_protections: UserProtectionList,
     current_exe: CurrentExeFn,
     home: Option<PathBuf>,
@@ -136,7 +124,7 @@ impl Default for SafetyPolicy {
 impl SafetyPolicy {
     /// Load policy from the OS app-data protection list. Load failures are
     /// returned so callers can fail closed instead of using an empty list.
-    pub fn load_default() -> Result<Self> {
+    pub(super) fn load_default() -> Result<Self> {
         let user_protections = UserProtectionList::load()?;
         Ok(Self {
             user_protections,
@@ -147,7 +135,7 @@ impl SafetyPolicy {
         })
     }
 
-    pub fn from_user_list(user_protections: UserProtectionList) -> Self {
+    pub(super) fn from_user_list(user_protections: UserProtectionList) -> Self {
         Self {
             user_protections,
             current_exe: Arc::new(env::current_exe),
@@ -157,7 +145,8 @@ impl SafetyPolicy {
         }
     }
 
-    pub fn with_current_exe_fn<F>(mut self, current_exe: F) -> Self
+    #[cfg(test)]
+    pub(super) fn with_current_exe_fn<F>(mut self, current_exe: F) -> Self
     where
         F: Fn() -> io::Result<PathBuf> + Send + Sync + 'static,
     {
@@ -165,7 +154,8 @@ impl SafetyPolicy {
         self
     }
 
-    pub fn with_home(mut self, home: Option<PathBuf>) -> Self {
+    #[cfg(test)]
+    pub(super) fn with_home(mut self, home: Option<PathBuf>) -> Self {
         self.home = home;
         self
     }
@@ -176,12 +166,8 @@ impl SafetyPolicy {
         self
     }
 
-    pub fn user_protections(&self) -> &UserProtectionList {
-        &self.user_protections
-    }
-
     /// Sole authorization entry point for cleanup side effects.
-    pub fn authorize(
+    pub(super) fn authorize(
         &self,
         validated: &ValidatedTarget,
         context: &AuthorizationContext,

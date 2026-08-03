@@ -14,7 +14,7 @@ use super::resolve_home_dir;
 
 /// Versioned user protection list stored in OS app-data.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserProtectionList {
+pub(crate) struct UserProtectionList {
     path: PathBuf,
     entries: Vec<PathBuf>,
     /// Test-only in-memory mode never touches the real config path.
@@ -30,11 +30,11 @@ struct UserProtectionDocument {
 const USER_PROTECTION_VERSION: u32 = 1;
 
 impl UserProtectionList {
-    pub fn config_path() -> Result<PathBuf> {
+    pub(crate) fn config_path() -> Result<PathBuf> {
         Ok(app_data_dir()?.join("protected-paths.json"))
     }
 
-    pub fn load() -> Result<Self> {
+    pub(crate) fn load() -> Result<Self> {
         let path = Self::config_path()?;
         if !path.exists() {
             return Ok(Self {
@@ -62,7 +62,8 @@ impl UserProtectionList {
         })
     }
 
-    pub fn load_from_path(path: PathBuf) -> Result<Self> {
+    #[cfg(test)]
+    pub(super) fn load_from_path(path: PathBuf) -> Result<Self> {
         if !path.exists() {
             return Ok(Self {
                 path,
@@ -89,7 +90,7 @@ impl UserProtectionList {
     }
 
     /// In-memory empty list for unit tests that must not touch app-data.
-    pub fn empty_in_memory_for_tests_only() -> Self {
+    pub(crate) fn empty_in_memory_for_tests_only() -> Self {
         Self {
             path: PathBuf::from("memory://protected-paths.json"),
             entries: Vec::new(),
@@ -97,11 +98,11 @@ impl UserProtectionList {
         }
     }
 
-    pub fn paths(&self) -> &[PathBuf] {
+    pub(crate) fn paths(&self) -> &[PathBuf] {
         &self.entries
     }
 
-    pub fn add(&mut self, path: &Path) -> Result<()> {
+    pub(crate) fn add(&mut self, path: &Path) -> Result<()> {
         if !path.exists() {
             bail!("protect add requires an existing path: {}", path.display());
         }
@@ -120,7 +121,7 @@ impl UserProtectionList {
         self.persist()
     }
 
-    pub fn remove(&mut self, path: &Path) -> Result<bool> {
+    pub(crate) fn remove(&mut self, path: &Path) -> Result<bool> {
         let candidate = if path.exists() {
             normalize_path_for_compare(
                 &path
@@ -143,7 +144,7 @@ impl UserProtectionList {
         Ok(removed)
     }
 
-    pub fn list(&self) -> &[PathBuf] {
+    pub(crate) fn list(&self) -> &[PathBuf] {
         &self.entries
     }
 
