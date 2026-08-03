@@ -1276,3 +1276,24 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 43: 完成核心 API 拆分
+
+**Date**: 2026-08-03
+**Task**: 完成核心 API 拆分
+**Branch**: `dev`
+
+### Summary
+
+建立 devsweep-core 与 devsweep-cli workspace，公开前端中立服务边界，保持 CLI/TUI 与 JSON 契约等价，并完成跨平台本地等价验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e4b8386e40a28e2ef4e5436bf7b7d0f59e573be8` | (see git log) |
+
+### Status
+
+[OK] **Completed**
