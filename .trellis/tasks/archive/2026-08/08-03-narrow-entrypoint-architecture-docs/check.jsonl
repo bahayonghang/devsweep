@@ -1,0 +1,7 @@
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/architecture-audit.md","reason":"Verify every evidenced defect and safety contract against the integrated final tree."}
+{"file":".trellis/spec/backend/index.md","reason":"Routes the checker to all backend contracts."}
+{"file":".trellis/tasks/08-02-reorganize-rust-source-architecture/research/backend-contract-routing.md","reason":"Routes full CLI/backend integration verification without injection truncation."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Application error and input-decoding behavior after main/lib narrowing."}
+{"file":".trellis/spec/backend/logging-guidelines.md","reason":"Machine-readable output and tracing channel verification."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Full TUI behavior and render-purity acceptance after integration."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Final App state and event/effect ownership consistency."}
