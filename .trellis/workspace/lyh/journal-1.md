@@ -1189,3 +1189,24 @@ Split model and plan ownership, centralized rule definitions and trusted action 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 39: Modularize backend runtime and discovery
+
+**Date**: 2026-08-03
+**Task**: Modularize backend runtime and discovery
+**Branch**: `dev`
+
+### Summary
+
+Reorganized filesystem, process, scan, inventory, and execution implementations into cohesive modules while preserving safety, audit, cancellation, and scan behavior; updated backend specs and passed just ci.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9ea6ffd` | (see git log) |
+
+### Status
+
+[OK] **Completed**

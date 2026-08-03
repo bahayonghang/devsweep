@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 38
+- **Total Sessions**: 39
 - **Last Active**: 2026-08-03
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1191 | Active |
+| `journal-1.md` | ~1212 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 39 | 2026-08-03 | Modularize backend runtime and discovery | `9ea6ffd` | `dev` |
 | 38 | 2026-08-03 | Untangle core contracts and rule ownership | `f726871` | `dev` |
 | 37 | 2026-08-02 | 完成 VitePress 双语文档站 | `9c84388`, `0745f97` | `dev` |
 | 36 | 2026-08-01 | 加固扫描安全与容量报告 | `8d62ebf` | `dev` |
