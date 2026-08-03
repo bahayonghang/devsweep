@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Quality Check 入口(大文件按索引按需加载)"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "对照 IPC 契约、digest 强制校验与安全边界验收"}

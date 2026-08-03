@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Rust 后端规范入口与检查清单"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "workspace 拆分需遵循的目录结构约定"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "父任务总体架构:workspace 结构、core 公开面、CI 适配(§1-§2、§5)"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/research/devsweep-current-state.md", "reason": "现状盘点:services trait 位置、可见性阻碍、just ci 验证入口"}

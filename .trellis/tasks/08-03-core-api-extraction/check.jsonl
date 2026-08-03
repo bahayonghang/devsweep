@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Quality Check 入口(quality-guidelines.md 过大易被注入截断,按索引指引按需加载)"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "对照总体设计验证拆分边界与 CI 适配"}

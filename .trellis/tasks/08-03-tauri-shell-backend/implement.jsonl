@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Rust 后端规范入口"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "command 层错误结构化返回约定"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "Tauri command/event 契约、digest 流程、安全边界与 CI 决策(§3、§5)"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/research/devsweep-current-state.md", "reason": "进度回调/协作式取消能力与复用结论"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/research/feasibility.md", "reason": "Job Objects 进程内行为风险与缓解"}
