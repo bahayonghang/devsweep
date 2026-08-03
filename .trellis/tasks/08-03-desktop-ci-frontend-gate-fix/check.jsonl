@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Verify the repaired workflow matches the current Node 22 frontend gate"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "Verify the repair preserves the approved Windows desktop CI and Tauri build contract"}

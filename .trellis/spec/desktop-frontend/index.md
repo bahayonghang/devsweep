@@ -35,6 +35,7 @@ Before changing `desktop/src/`:
 Run with the Node version required by `desktop/package.json`:
 
 ```powershell
+mise exec node@22 -- npm run types:generate
 mise exec node@22 -- npm run lint
 mise exec node@22 -- npm run typecheck
 mise exec node@22 -- npm run test
@@ -60,4 +61,3 @@ capacity and, for trash outcomes, moved to trash pending emptying.
 - [ ] Capacity confidence remains verified, partial lower bound, or unknown.
 - [ ] No visible copy says space was freed or released.
 - [ ] Lint, typecheck, tests, build, and relevant Rust gates pass.
-

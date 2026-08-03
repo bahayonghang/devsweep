@@ -78,7 +78,11 @@ jobs:
 
       - name: Check desktop frontend
         working-directory: desktop
-        run: npm run check
+        run: |
+          npm run types:generate
+          npm run lint
+          npm run typecheck
+          npm test
 
       - name: Compile Tauri application
         working-directory: desktop
