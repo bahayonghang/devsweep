@@ -47,7 +47,9 @@ Call initialization once from `main` before command dispatch.
 
 - Future long-running scan or execution job boundaries.
 - Recoverable filesystem failures when they explain missing targets.
-- Future audit-log write failures.
+- Audit-log write failures from `src/execution/audit.rs`. Started-record
+  durability failures block dispatch; terminal-record failures surface an
+  unknown execution result.
 
 ---
 
@@ -58,6 +60,8 @@ Call initialization once from `main` before command dispatch.
   command output from package managers without filtering.
 - Do not log every visited path at `info`; cleanup scans can traverse large and
   private directory trees.
+- Do not duplicate audit events through tracing. Append-only action records and
+  replay belong exclusively to `src/execution/audit.rs`.
 
 ---
 

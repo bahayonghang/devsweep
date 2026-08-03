@@ -1,28 +1,36 @@
-use std::{
-    collections::HashSet,
-    ffi::OsString,
-    fs::{File, OpenOptions},
-    io::{BufWriter, Write},
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::{Instant, SystemTime, UNIX_EPOCH},
+use std::{collections::HashSet, path::PathBuf, sync::Arc, time::Instant};
+
+#[cfg(test)]
+use std::cell::RefCell;
+
+use anyhow::{Result, anyhow, bail};
+
+mod audit;
+mod command;
+mod safety;
+
+pub use audit::{default_audit_log_path, replay_unconfirmed_starts};
+pub use command::{
+    CommandOutcome, CommandRequest, CommandRunner, ProcessCommandRunner, SystemTrashRunner,
+    TrashRunner,
+};
+pub use safety::{
+    AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
+    SafetyPolicy, UserProtectionList,
 };
 
-use anyhow::{Context, Result, anyhow, bail};
-use serde::Serialize;
+#[cfg(test)]
+use audit::JournalIo;
+use audit::{AuditJournal, JournalEvent, action_path_from_authorized, command_from_action};
+use command::command_argv;
 
 use crate::{
     model::{CleanAction, CleanTarget, TargetId},
     plan::{ValidatedPlan, ValidatedTarget},
-    process_runner::{
-        CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, FlagCancelObserver,
-        NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus, sanitize_process_output,
-    },
-    safety::{
-        AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
-        SafetyPolicy,
-    },
+    process::{CancelObserver, FlagCancelObserver, NoopCancelObserver, sanitize_process_output},
 };
+
+const EXECUTOR_DIAGNOSTIC_CAP: usize = 4 * 1024;
 
 #[derive(Debug, Clone)]
 pub struct ExecutionRequest {
@@ -30,7 +38,7 @@ pub struct ExecutionRequest {
     pub audit_log: Option<PathBuf>,
     pub selected: Vec<TargetId>,
     /// Cooperative cancel flag shared with the UI/runtime.
-    pub cancel: Option<Arc<crate::process_runner::FlagCancelObserver>>,
+    pub cancel: Option<Arc<crate::process::FlagCancelObserver>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,120 +83,12 @@ pub struct ExecutionProgress {
     pub message: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandRequest {
-    pub program: String,
-    pub args: Vec<String>,
-    pub cwd: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CommandOutcome {
-    pub code: Option<i32>,
-    pub stdout: String,
-    pub stderr: String,
-}
-
-pub trait CommandRunner {
-    /// Run a command while observing cooperative cancellation.
-    fn run_with_cancel(
-        &self,
-        request: &CommandRequest,
-        cancel: &dyn CancelObserver,
-    ) -> Result<CommandOutcome>;
-}
-
-pub trait TrashRunner {
-    fn move_to_trash(&self, path: &Path) -> Result<()>;
-}
-
-#[derive(Debug)]
-pub struct ProcessCommandRunner {
-    runner: ProcessRunner,
-}
-
-impl Default for ProcessCommandRunner {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ProcessCommandRunner {
-    pub fn new() -> Self {
-        Self {
-            runner: ProcessRunner::default(),
-        }
-    }
-}
-
-impl CommandRunner for ProcessCommandRunner {
-    fn run_with_cancel(
-        &self,
-        request: &CommandRequest,
-        cancel: &dyn CancelObserver,
-    ) -> Result<CommandOutcome> {
-        let cwd = match &request.cwd {
-            Some(path) => CwdPolicy::Explicit {
-                path: path.clone(),
-                reason: "executor command cwd from validated plan".to_string(),
-            },
-            None => CwdPolicy::Neutral,
-        };
-
-        let process_request = ProcessRequest {
-            program: OsString::from(&request.program),
-            args: request.args.iter().map(OsString::from).collect(),
-            cwd,
-            timeout: Some(DEFAULT_EXECUTOR_COMMAND_TIMEOUT),
-            job_deadline: None,
-            cancel,
-        };
-
-        let result = self.runner.run(&process_request);
-        let stdout = String::from_utf8_lossy(&result.output.stdout).into_owned();
-        let stderr = String::from_utf8_lossy(&result.output.stderr).into_owned();
-        let diagnostic = sanitize_process_output(&result.output.stderr, EXECUTOR_DIAGNOSTIC_CAP);
-        let display = command_display(request);
-
-        match result.status {
-            ProcessStatus::Success => Ok(CommandOutcome {
-                code: Some(0),
-                stdout,
-                stderr,
-            }),
-            ProcessStatus::NotFound => Err(anyhow!("failed to run {display}: program not found")),
-            ProcessStatus::Timeout => Err(anyhow!(
-                "{display} timed out after {:?}: {}",
-                DEFAULT_EXECUTOR_COMMAND_TIMEOUT,
-                diagnostic.trim()
-            )),
-            ProcessStatus::Canceled => Err(anyhow!("{display} canceled")),
-            ProcessStatus::InvalidOutput => Err(anyhow!(
-                "failed to run {display}: invalid process output or spawn failure"
-            )),
-            ProcessStatus::Exit { code } => Err(anyhow!(
-                "{display} exited with status {code:?}: {}",
-                diagnostic.trim()
-            )),
-        }
-    }
-}
-
-const EXECUTOR_DIAGNOSTIC_CAP: usize = 4 * 1024;
-
-#[derive(Debug, Default)]
-pub struct SystemTrashRunner;
-
-impl TrashRunner for SystemTrashRunner {
-    fn move_to_trash(&self, path: &Path) -> Result<()> {
-        trash::delete(path).with_context(|| format!("failed to move {} to trash", path.display()))
-    }
-}
-
 pub struct Executor<C = ProcessCommandRunner, T = SystemTrashRunner> {
     command_runner: C,
     trash_runner: T,
     safety: SafetyPolicy,
+    #[cfg(test)]
+    journal_io: RefCell<Option<Box<dyn JournalIo>>>,
 }
 
 impl Default for Executor<ProcessCommandRunner, SystemTrashRunner> {
@@ -203,15 +103,22 @@ impl<C, T> Executor<C, T> {
             command_runner,
             trash_runner,
             safety: SafetyPolicy::from_user_list(
-                crate::safety::UserProtectionList::load().unwrap_or_else(|_| {
-                    crate::safety::UserProtectionList::empty_in_memory_for_tests_only()
-                }),
+                UserProtectionList::load()
+                    .unwrap_or_else(|_| UserProtectionList::empty_in_memory_for_tests_only()),
             ),
+            #[cfg(test)]
+            journal_io: RefCell::new(None),
         }
     }
 
     pub fn with_safety_policy(mut self, safety: SafetyPolicy) -> Self {
         self.safety = safety;
+        self
+    }
+
+    #[cfg(test)]
+    fn with_journal_io(self, io: Box<dyn JournalIo>) -> Self {
+        *self.journal_io.borrow_mut() = Some(io);
         self
     }
 }
@@ -272,6 +179,12 @@ where
             Some(path) => path,
             None => default_audit_log_path()?,
         };
+        #[cfg(test)]
+        let mut journal = match self.journal_io.borrow_mut().take() {
+            Some(io) => AuditJournal::with_io(audit_path.clone(), io),
+            None => AuditJournal::open(&audit_path, plan.digest().to_string())?,
+        };
+        #[cfg(not(test))]
         let mut journal = AuditJournal::open(&audit_path, plan.digest().to_string())?;
         let mut report = ExecutionReport {
             dry_run: false,
@@ -644,373 +557,6 @@ enum ActionStatus {
     Skipped {
         message: String,
     },
-}
-
-/// Fault-injectable durable journal backend.
-trait JournalIo {
-    fn write_line(&mut self, line: &str) -> Result<()>;
-    fn flush(&mut self) -> Result<()>;
-    fn sync_data(&mut self) -> Result<()>;
-}
-
-struct FileJournalIo {
-    path: PathBuf,
-    file: File,
-    writer: BufWriter<File>,
-}
-
-impl FileJournalIo {
-    fn open(path: &Path) -> Result<Self> {
-        if let Some(parent) = path.parent()
-            && !parent.as_os_str().is_empty()
-        {
-            std::fs::create_dir_all(parent).with_context(|| {
-                format!("failed to create audit log directory {}", parent.display())
-            })?;
-        }
-
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .read(true)
-            .open(path)
-            .with_context(|| format!("failed to open audit log {}", path.display()))?;
-        // Separate handle for sync_data after buffered writes.
-        let sync_file = OpenOptions::new()
-            .append(true)
-            .open(path)
-            .with_context(|| format!("failed to reopen audit log {}", path.display()))?;
-        Ok(Self {
-            path: path.to_path_buf(),
-            file: sync_file,
-            writer: BufWriter::new(file),
-        })
-    }
-}
-
-impl JournalIo for FileJournalIo {
-    fn write_line(&mut self, line: &str) -> Result<()> {
-        self.writer
-            .write_all(line.as_bytes())
-            .and_then(|_| self.writer.write_all(b"\n"))
-            .with_context(|| format!("failed to write audit log {}", self.path.display()))
-    }
-
-    fn flush(&mut self) -> Result<()> {
-        self.writer
-            .flush()
-            .with_context(|| format!("failed to flush audit log {}", self.path.display()))
-    }
-
-    fn sync_data(&mut self) -> Result<()> {
-        self.file
-            .sync_data()
-            .with_context(|| format!("failed to sync audit log {}", self.path.display()))
-    }
-}
-
-struct AuditJournal {
-    path: PathBuf,
-    run_id: String,
-    sequence: u64,
-    io: Box<dyn JournalIo>,
-}
-
-impl AuditJournal {
-    fn open(path: &Path, _plan_digest: String) -> Result<Self> {
-        Ok(Self {
-            path: path.to_path_buf(),
-            run_id: format!("run-{}", unix_epoch_ms()),
-            sequence: 0,
-            io: Box::new(FileJournalIo::open(path)?),
-        })
-    }
-
-    #[cfg(test)]
-    fn with_io(path: PathBuf, io: Box<dyn JournalIo>) -> Self {
-        Self {
-            path,
-            run_id: "run-test".to_string(),
-            sequence: 0,
-            io,
-        }
-    }
-
-    fn run_id(&self) -> &str {
-        &self.run_id
-    }
-
-    fn next_sequence(&mut self) -> u64 {
-        self.sequence += 1;
-        self.sequence
-    }
-
-    fn write_started_durable(&mut self, event: &JournalEvent) -> Result<()> {
-        self.write_event(event)?;
-        self.io.flush()?;
-        self.io.sync_data()?;
-        Ok(())
-    }
-
-    fn write_terminal(&mut self, event: JournalEvent) -> Result<()> {
-        self.write_event(&event)?;
-        self.io.flush()?;
-        // Terminal sync is best-effort; write+flush success is enough to avoid
-        // Unknown, but callers may still observe degraded sync separately.
-        let _ = self.io.sync_data();
-        Ok(())
-    }
-
-    fn write_event(&mut self, event: &JournalEvent) -> Result<()> {
-        let line = serde_json::to_string(event).with_context(|| {
-            format!(
-                "failed to serialize audit event for {}",
-                self.path.display()
-            )
-        })?;
-        self.io.write_line(&line)
-    }
-
-    fn flush(&mut self) -> Result<()> {
-        self.io.flush()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-#[serde(tag = "event", rename_all = "snake_case")]
-enum JournalEvent {
-    ActionStarted {
-        timestamp_epoch_ms: u128,
-        run_id: String,
-        sequence: u64,
-        plan_digest: String,
-        target_id: String,
-        action: String,
-        command: Option<Vec<String>>,
-        action_path: Option<String>,
-        estimated_bytes: u64,
-    },
-    ActionFinished {
-        timestamp_epoch_ms: u128,
-        run_id: String,
-        sequence: u64,
-        plan_digest: String,
-        target_id: String,
-        action: String,
-        status: String,
-        command: Option<Vec<String>>,
-        action_path: Option<String>,
-        exit_code: Option<i32>,
-        estimated_bytes: u64,
-        duration_ms: u128,
-        error: Option<String>,
-    },
-}
-
-impl JournalEvent {
-    fn started(
-        run_id: &str,
-        sequence: u64,
-        plan_digest: &str,
-        target: &CleanTarget,
-        authorized: &AuthorizedAction,
-    ) -> Self {
-        Self::ActionStarted {
-            timestamp_epoch_ms: unix_epoch_ms(),
-            run_id: run_id.to_string(),
-            sequence,
-            plan_digest: plan_digest.to_string(),
-            target_id: target.id.as_str().to_string(),
-            action: action_name(&target.action).to_string(),
-            command: command_from_action(&target.action),
-            action_path: action_path_from_authorized(authorized)
-                .map(|path| path.display().to_string()),
-            estimated_bytes: target.estimated_bytes,
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn finished(
-        run_id: &str,
-        sequence: u64,
-        plan_digest: &str,
-        target: &CleanTarget,
-        status: &str,
-        command: Option<Vec<String>>,
-        exit_code: Option<i32>,
-        action_path: Option<PathBuf>,
-        duration_ms: u128,
-        error: Option<String>,
-    ) -> Self {
-        Self::ActionFinished {
-            timestamp_epoch_ms: unix_epoch_ms(),
-            run_id: run_id.to_string(),
-            sequence,
-            plan_digest: plan_digest.to_string(),
-            target_id: target.id.as_str().to_string(),
-            action: action_name(&target.action).to_string(),
-            status: status.to_string(),
-            command,
-            action_path: action_path.map(|path| path.display().to_string()),
-            exit_code,
-            estimated_bytes: target.estimated_bytes,
-            duration_ms,
-            error: error.map(|message| sanitize_process_output(message.as_bytes(), 4_096)),
-        }
-    }
-
-    fn skipped(
-        run_id: &str,
-        sequence: u64,
-        plan_digest: &str,
-        target: &CleanTarget,
-        message: String,
-        duration_ms: u128,
-    ) -> Self {
-        Self::finished(
-            run_id,
-            sequence,
-            plan_digest,
-            target,
-            "skipped",
-            None,
-            None,
-            target.path.clone(),
-            duration_ms,
-            Some(message),
-        )
-    }
-}
-
-/// Replay API: find started events that never received a terminal record.
-pub fn replay_unconfirmed_starts(path: &Path) -> Result<Vec<String>> {
-    let text = std::fs::read_to_string(path)
-        .with_context(|| format!("failed to read audit log {}", path.display()))?;
-    let mut started = HashSet::new();
-    let mut finished = HashSet::new();
-    for line in text.lines() {
-        if line.trim().is_empty() {
-            continue;
-        }
-        let value: serde_json::Value = match serde_json::from_str(line) {
-            Ok(value) => value,
-            Err(_) => continue,
-        };
-        let event = value.get("event").and_then(|v| v.as_str()).unwrap_or("");
-        let key = format!(
-            "{}:{}",
-            value.get("run_id").and_then(|v| v.as_str()).unwrap_or(""),
-            value.get("sequence").and_then(|v| v.as_u64()).unwrap_or(0)
-        );
-        match event {
-            "action_started" => {
-                started.insert(key);
-            }
-            "action_finished" => {
-                // finished sequences are distinct; pair by prior started target+run
-                if let Some(target) = value.get("target_id").and_then(|v| v.as_str()) {
-                    finished.insert(format!(
-                        "{}:{}",
-                        value.get("run_id").and_then(|v| v.as_str()).unwrap_or(""),
-                        target
-                    ));
-                }
-            }
-            _ => {}
-        }
-    }
-
-    let mut unconfirmed = Vec::new();
-    for line in text.lines() {
-        let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
-            continue;
-        };
-        if value.get("event").and_then(|v| v.as_str()) != Some("action_started") {
-            continue;
-        }
-        let run_id = value.get("run_id").and_then(|v| v.as_str()).unwrap_or("");
-        let target = value
-            .get("target_id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
-        let key = format!("{run_id}:{target}");
-        if !finished.contains(&key) {
-            unconfirmed.push(format!("started_unconfirmed:{target}"));
-        }
-    }
-    let _ = started;
-    Ok(unconfirmed)
-}
-
-pub fn default_audit_log_path() -> Result<PathBuf> {
-    let dir = crate::safety::UserProtectionList::config_path()
-        .ok()
-        .and_then(|path| path.parent().map(|parent| parent.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("."));
-    std::fs::create_dir_all(&dir)
-        .with_context(|| format!("failed to create audit directory {}", dir.display()))?;
-    Ok(dir.join("audit.jsonl"))
-}
-
-fn action_path_from_authorized(authorized: &AuthorizedAction) -> Option<PathBuf> {
-    authorized
-        .trash_path()
-        .map(|path| path.to_path_buf())
-        .or_else(|| match authorized.action() {
-            CleanAction::Command { program, cwd, .. } => {
-                cwd.clone().or_else(|| Some(PathBuf::from(program)))
-            }
-            CleanAction::MoveToTrash { path } => Some(path.clone()),
-            _ => None,
-        })
-}
-
-fn command_from_action(action: &CleanAction) -> Option<Vec<String>> {
-    match action {
-        CleanAction::Command {
-            program,
-            args,
-            cwd: _,
-            irreversible: _,
-        } => {
-            let request = CommandRequest {
-                program: program.clone(),
-                args: args.clone(),
-                cwd: None,
-            };
-            Some(command_argv(&request))
-        }
-        CleanAction::MoveToTrash { .. }
-        | CleanAction::DeletePermanently { .. }
-        | CleanAction::NoopInspectOnly => None,
-    }
-}
-
-fn action_name(action: &CleanAction) -> &'static str {
-    match action {
-        CleanAction::Command { .. } => "command",
-        CleanAction::MoveToTrash { .. } => "move_to_trash",
-        CleanAction::DeletePermanently { .. } => "delete_permanently",
-        CleanAction::NoopInspectOnly => "noop_inspect_only",
-    }
-}
-
-fn command_argv(request: &CommandRequest) -> Vec<String> {
-    let mut argv = Vec::with_capacity(request.args.len() + 1);
-    argv.push(request.program.clone());
-    argv.extend(request.args.clone());
-    argv
-}
-
-fn command_display(request: &CommandRequest) -> String {
-    command_argv(request).join(" ")
-}
-
-fn unix_epoch_ms() -> u128 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_millis())
-        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -1585,20 +1131,18 @@ mod tests {
         let authorization_calls = Arc::new(AtomicUsize::new(0));
         let executor = test_executor(command_runner.clone(), trash_runner.clone())
             .with_safety_policy(
-                SafetyPolicy::from_user_list(
-                    crate::safety::UserProtectionList::empty_in_memory_for_tests_only(),
-                )
-                .with_home(None)
-                .with_current_exe_fn({
-                    let authorization_calls = Arc::clone(&authorization_calls);
-                    move || {
-                        if authorization_calls.fetch_add(1, Ordering::SeqCst) == 0 {
-                            Err(std::io::Error::other("\x1b[31mauthorization denied\x07"))
-                        } else {
-                            std::env::current_exe()
+                SafetyPolicy::from_user_list(UserProtectionList::empty_in_memory_for_tests_only())
+                    .with_home(None)
+                    .with_current_exe_fn({
+                        let authorization_calls = Arc::clone(&authorization_calls);
+                        move || {
+                            if authorization_calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                                Err(std::io::Error::other("\x1b[31mauthorization denied\x07"))
+                            } else {
+                                std::env::current_exe()
+                            }
                         }
-                    }
-                }),
+                    }),
             );
 
         let report = executor
@@ -1802,7 +1346,7 @@ mod tests {
 
     #[test]
     fn process_command_runner_sanitizes_control_chars_on_failure() {
-        use crate::process_runner::{sanitize_process_output, test_support::process_fixture_exe};
+        use crate::process::{sanitize_process_output, test_support::process_fixture_exe};
 
         let fixture = process_fixture_exe();
 
@@ -1932,7 +1476,7 @@ mod tests {
                 ),
             ],
         };
-        let cancel = Arc::new(crate::process_runner::FlagCancelObserver::new());
+        let cancel = Arc::new(crate::process::FlagCancelObserver::new());
         cancel.request_cancel();
         let trash = RecordingTrashRunner::default();
         let executor = test_executor(RecordingCommandRunner::default(), trash.clone());
@@ -1953,12 +1497,9 @@ mod tests {
 
     #[test]
     fn started_sync_failure_blocks_side_effect() {
-        struct FailSyncIo {
-            writes: usize,
-        }
+        struct FailSyncIo;
         impl JournalIo for FailSyncIo {
             fn write_line(&mut self, _line: &str) -> Result<()> {
-                self.writes += 1;
                 Ok(())
             }
             fn flush(&mut self) -> Result<()> {
@@ -1970,11 +1511,8 @@ mod tests {
         }
 
         let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
         let cleanup_path = fixture.path().join("node_modules");
-        let mut journal = AuditJournal::with_io(
-            PathBuf::from("memory-audit.jsonl"),
-            Box::new(FailSyncIo { writes: 0 }),
-        );
         let plan = CleanupPlan {
             version: crate::model::CLEANUP_PLAN_VERSION,
             targets: vec![target(
@@ -1985,23 +1523,102 @@ mod tests {
                 Some(cleanup_path.clone()),
             )],
         };
-        let target = &plan.targets[0];
-        // Build a minimal started event without full authorize.
-        let event = JournalEvent::ActionStarted {
-            timestamp_epoch_ms: 1,
-            run_id: "run-test".into(),
-            sequence: 1,
-            plan_digest: "digest".into(),
-            target_id: target.id.as_str().into(),
-            action: "move_to_trash".into(),
-            command: None,
-            action_path: Some(cleanup_path.display().to_string()),
-            estimated_bytes: 1,
+        let trash = RecordingTrashRunner::default();
+        let executor = test_executor(RecordingCommandRunner::default(), trash.clone())
+            .with_journal_io(Box::new(FailSyncIo));
+        let mut progress = Vec::new();
+
+        let report = executor
+            .run_plan_with_progress(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path),
+                    cancel: None,
+                },
+                |event| progress.push(event),
+            )
+            .expect("audit failure is reported per target");
+
+        assert!(
+            trash.paths().is_empty(),
+            "started audit must precede dispatch"
+        );
+        assert_eq!(report.attempted, 0);
+        assert_eq!(report.failed, 1);
+        assert_eq!(progress.len(), 1);
+        assert_eq!(progress[0].status, ExecutionTargetStatus::Failed);
+        assert!(
+            progress[0]
+                .message
+                .contains("audit-blocked before side effect")
+        );
+    }
+
+    #[test]
+    fn terminal_audit_failure_reports_unknown_after_side_effect() {
+        struct FailTerminalIo {
+            writes: usize,
+        }
+        impl JournalIo for FailTerminalIo {
+            fn write_line(&mut self, _line: &str) -> Result<()> {
+                self.writes += 1;
+                if self.writes == 2 {
+                    bail!("injected terminal write failure");
+                }
+                Ok(())
+            }
+            fn flush(&mut self) -> Result<()> {
+                Ok(())
+            }
+            fn sync_data(&mut self) -> Result<()> {
+                Ok(())
+            }
+        }
+
+        let fixture = TempDir::new().expect("temp dir");
+        let audit_path = fixture.path().join("audit.jsonl");
+        let cleanup_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "node.node_modules",
+                CleanAction::MoveToTrash {
+                    path: cleanup_path.clone(),
+                },
+                Some(cleanup_path.clone()),
+            )],
         };
-        let err = journal
-            .write_started_durable(&event)
-            .expect_err("sync failure blocks");
-        assert!(err.to_string().contains("injected sync failure"));
+        let trash = RecordingTrashRunner::default();
+        let executor = test_executor(RecordingCommandRunner::default(), trash.clone())
+            .with_journal_io(Box::new(FailTerminalIo { writes: 0 }));
+        let mut progress = Vec::new();
+
+        let report = executor
+            .run_plan_with_progress(
+                &test_validated_plan(&plan),
+                ExecutionRequest {
+                    selected: plan.default_selected_ids(),
+                    execute: true,
+                    audit_log: Some(audit_path),
+                    cancel: None,
+                },
+                |event| progress.push(event),
+            )
+            .expect("terminal audit failure is reported per target");
+
+        assert_eq!(trash.paths(), vec![cleanup_path]);
+        assert_eq!(report.attempted, 1);
+        assert_eq!(report.succeeded, 0);
+        assert_eq!(report.failed, 1);
+        assert_eq!(progress.len(), 1);
+        assert_eq!(progress[0].status, ExecutionTargetStatus::Unknown);
+        assert!(
+            progress[0]
+                .message
+                .contains("injected terminal write failure")
+        );
     }
 
     #[test]
@@ -2181,10 +1798,8 @@ mod tests {
         let home = std::env::temp_dir().join("devsweep-test-home");
         let _ = fs::create_dir_all(&home);
         Executor::new(command_runner, trash_runner).with_safety_policy(
-            SafetyPolicy::from_user_list(
-                crate::safety::UserProtectionList::empty_in_memory_for_tests_only(),
-            )
-            .with_home(Some(home)),
+            SafetyPolicy::from_user_list(UserProtectionList::empty_in_memory_for_tests_only())
+                .with_home(Some(home)),
         )
     }
 

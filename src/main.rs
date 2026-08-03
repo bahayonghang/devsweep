@@ -5,15 +5,14 @@ use clap::Parser;
 use devsweep::{
     cli::{CleanCommand, Cli, Command, InventoryCommand, ProtectCommand, ScanCommand},
     config,
-    executor::{ExecutionReport, ExecutionRequest, Executor},
+    execution::{ExecutionReport, ExecutionRequest, Executor, UserProtectionList},
     inventory::inventory_root,
     model::{
         LEGACY_CLEANUP_PLAN_VERSION, SCAN_REPORT_VERSION, ScanReport, TargetId, UntrustedPlan,
     },
     plan::{V1_RESCAN_MESSAGE, validate_plan},
     rules::RuleScope,
-    safety::UserProtectionList,
-    sweep::{ScanOptions, Sweeper},
+    scan::{ScanOptions, Sweeper},
 };
 
 fn main() -> Result<()> {
@@ -291,11 +290,11 @@ mod tests {
             dry_run: false,
             audit_log: None,
             failures: vec![
-                devsweep::executor::ActionFailure {
+                devsweep::execution::ActionFailure {
                     target_id: TargetId::new("rust.target:C:/repo/target"),
                     message: "marker CACHEDIR.TAG is missing".to_string(),
                 },
-                devsweep::executor::ActionFailure {
+                devsweep::execution::ActionFailure {
                     target_id: TargetId::new("node.node_modules:C:/repo/node_modules"),
                     message: "target path is a reparse point".to_string(),
                 },

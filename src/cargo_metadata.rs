@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 
 use crate::{
     model::{ScanDiagnosticOutcome, ScanProcessOutput, ScanProcessProbe, ScanProcessStatus},
-    process_runner::{
+    process::{
         CwdPolicy, DEFAULT_PROVIDER_PROBE_TIMEOUT, NoopCancelObserver, ProcessRequest,
         ProcessResult, ProcessRunner, ProcessStatus,
     },
@@ -202,7 +202,7 @@ fn parse_cargo_metadata_json(stdout: &str) -> Result<CargoMetadataScope> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::process_runner::ProcessOutput;
+    use crate::process::ProcessOutput;
 
     #[test]
     fn cargo_metadata_parser_reads_workspace_and_target() {

@@ -1934,7 +1934,7 @@ mod tests {
     use ratatui::{Terminal, backend::TestBackend};
 
     use super::*;
-    use crate::executor::{ExecutionReport, ExecutionTargetStatus};
+    use crate::execution::{ExecutionReport, ExecutionTargetStatus};
     use crate::inventory::{
         CapacityObservation, INVENTORY_REPORT_VERSION, InventoryClassification, InventoryReport,
         OrphanPnpmStoreFinding, PnpmProjectReference,
@@ -2185,7 +2185,7 @@ mod tests {
     fn target_details_show_freshness_guard_evidence() {
         let mut target = representative_plan().targets[0].clone();
         target.evidence.push(Evidence::RuleMatched {
-            rule_id: crate::ranking::FRESHNESS_GUARD_RULE_ID.to_string(),
+            rule_id: crate::scan::FRESHNESS_GUARD_RULE_ID.to_string(),
         });
 
         let lines = target_details_lines(&target);
@@ -2297,7 +2297,7 @@ mod tests {
 
         app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
             job_id: *job_id,
-            phase: crate::sweep::ScanPhase::Projects,
+            phase: crate::scan::ScanPhase::Projects,
             message: "Scan state changed".to_string(),
             plan: None,
         }));
@@ -2486,7 +2486,7 @@ mod tests {
                 succeeded: 1,
                 failed: 1,
                 skipped: 1,
-                failures: vec![crate::executor::ActionFailure {
+                failures: vec![crate::execution::ActionFailure {
                     target_id: failed_id,
                     message: "Access denied: file is locked".to_string(),
                 }],

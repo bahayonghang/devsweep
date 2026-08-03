@@ -9,7 +9,7 @@
 `devsweep` currently has no database, ORM, migrations, or durable application
 state. Persisted file contracts are the serializable cleanup plan emitted as
 JSON from `src/model/plan.rs` and execution audit records emitted as JSONL from
-`src/executor.rs`.
+`src/execution/audit.rs`.
 
 Treat this file as a guardrail: do not introduce a database abstraction for
 scanner, CLI, or TUI work unless a task explicitly adds persistence.
@@ -36,7 +36,8 @@ v2: targets carry observed facts and a typed `CleanupIntent`, never
 canonical-digest, and compatibility changes need round-trip and fail-closed
 validation tests.
 
-The audit JSONL contract is owned by `src/executor.rs`. Each line is one
+The audit JSONL contract and unconfirmed-start replay are owned by
+`src/execution/audit.rs`. Each line is one
 append-only action record and must include at least:
 
 - `timestamp_epoch_ms`

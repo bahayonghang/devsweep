@@ -6,8 +6,8 @@ use std::{
 use anyhow::{Result, bail};
 
 use crate::{
+    filesystem::normalize_absolute_path,
     model::{CleanAction, CleanupIntent, Ecosystem, RiskLevel, Scope, TargetKind, UntrustedTarget},
-    path_identity::normalize_absolute_path,
 };
 
 use super::{

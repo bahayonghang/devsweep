@@ -17,8 +17,10 @@ propagating context.
 
 - Binary entrypoint: `fn main() -> anyhow::Result<()>`
 - TUI entrypoint: `pub fn run() -> anyhow::Result<()>`
-- Scanner entrypoint:
-  `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+- Project scan entrypoint:
+  `scan::ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>`
+- Scan pipeline entrypoint:
+  `scan::Sweeper::default().full_scan(...) -> anyhow::Result<CleanupPlan>`
 
 Use `anyhow::Context` when a filesystem operation needs path-specific context:
 
@@ -33,22 +35,26 @@ let root = root
 ## Error Handling Patterns
 
 - Use `?` to propagate command-level failures to `main`.
-- Use `anyhow::bail!` for explicit user-facing command failures. Current
-  example: `clean --execute` fails because execution is not implemented yet.
-- Scanner root access failures are hard errors. Inaccessible nested entries are
+- Use `anyhow::bail!` for explicit user-facing command failures. For example,
+  `clean --execute` without `--plan PATH` fails before the executor runs.
+- Project scan root access failures are hard errors. Inaccessible nested entries are
   recorded as discovery diagnostics and skipped so one unreadable child does not
   abort the whole scan; the outcome is marked partial while sibling candidates
   remain.
-- Size walks never convert I/O failure into a trusted `0 B`. They return a
-  `SizeEstimate` that is either a complete total, a partial lower bound, or
-  unknown. Incomplete and unknown estimates are not selected by default.
+- Bounded walks under `src/filesystem/sizing.rs` never convert I/O failure into
+  a trusted `0 B`. They return a `SizeEstimate` that is either a complete total,
+  a partial lower bound, or unknown. Incomplete and unknown estimates are not
+  selected by default.
+- Execution authorization and started-audit failures are fail-closed. A
+  terminal audit failure after dispatch reports the result as unknown because
+  the side effect may already have run.
 - Tests may use `expect(...)` with a specific reason.
 
 Example from `src/main.rs`:
 
 ```rust
-if command.execute {
-    anyhow::bail!("cleanup execution is not implemented in the foundation build");
+if command.execute && command.plan.is_none() {
+    anyhow::bail!("cleanup execution requires --plan PATH");
 }
 ```
 

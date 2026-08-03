@@ -14,12 +14,12 @@ use anyhow::{Context, Result, bail};
 use crossterm::event::{self, Event as CrosstermEvent};
 
 use crate::{
-    executor::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
+    execution::{ExecutionProgress, ExecutionReport, ExecutionRequest, Executor},
     inventory::{InventoryReport, inventory_root_with_cancel},
     model::{CleanupPlan, ScanHealth, ScanReport, TargetId},
     plan::{ValidatedPlan, validate_plan, validate_scanned_plan},
-    process_runner::{CancelObserver, FlagCancelObserver},
-    sweep::{ScanOptions, ScanProgress, Sweeper},
+    process::{CancelObserver, FlagCancelObserver},
+    scan::{ScanOptions, ScanProgress, Sweeper},
 };
 
 type CancelRegistry = Arc<Mutex<HashMap<JobId, Arc<FlagCancelObserver>>>>;
@@ -484,7 +484,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        executor::ExecutionTargetStatus, sweep::ScanPhase, tui::test_support::representative_plan,
+        execution::ExecutionTargetStatus, scan::ScanPhase, tui::test_support::representative_plan,
     };
 
     #[derive(Clone)]

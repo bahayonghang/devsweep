@@ -4,96 +4,16 @@ use rayon::prelude::*;
 
 use crate::{
     model::{SizingWarning, SizingWarningKind},
-    process_runner::{CancelObserver, FlagCancelObserver},
+    process::{CancelObserver, FlagCancelObserver},
 };
 
-const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-
-/// Result of a no-follow reparse-point probe for one path.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum ReparseProbeResult {
-    NotReparsePoint,
-    ReparsePoint { tag: u32 },
-    Unsupported { detail: String },
-    Error { detail: String },
-}
-
-/// Platform boundary for path-level reparse checks.
-///
-/// Windows callers must not infer reparse safety from `Metadata` alone: some
-/// Cloud Files providers do not report the reparse attribute through Rust's
-/// metadata view. Implementations inspect the path without following it.
-pub(crate) trait PathReparseProbe: Send + Sync {
-    fn probe(&self, path: &Path) -> ReparseProbeResult;
-}
-
-/// Path-level result used by traversal and live authorization callers.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum PathSafety {
-    Safe,
-    ReparsePoint { tag: Option<u32> },
-    Unverified { detail: String },
-}
-
-/// Native platform probe used outside tests.
-#[derive(Debug, Default)]
-pub(crate) struct SystemPathReparseProbe;
-
-impl PathReparseProbe for SystemPathReparseProbe {
-    fn probe(&self, path: &Path) -> ReparseProbeResult {
-        #[cfg(windows)]
-        {
-            probe_windows_reparse_point(path)
-        }
-
-        #[cfg(not(windows))]
-        {
-            let _ = path;
-            ReparseProbeResult::NotReparsePoint
-        }
-    }
-}
-
-/// Combines portable symlink detection with the path-level reparse probe.
-///
-/// A probe failure is deliberately not treated as a normal path. Callers must
-/// skip traversal or deny authority for [`PathSafety::Unverified`].
-pub(crate) fn inspect_path_no_follow(
-    path: &Path,
-    metadata: &fs::Metadata,
-    probe: &dyn PathReparseProbe,
-) -> PathSafety {
-    let metadata_reports_link = is_unsafe_link(metadata);
-    match probe.probe(path) {
-        ReparseProbeResult::NotReparsePoint if metadata_reports_link => {
-            PathSafety::ReparsePoint { tag: None }
-        }
-        ReparseProbeResult::NotReparsePoint => PathSafety::Safe,
-        ReparseProbeResult::ReparsePoint { tag } => PathSafety::ReparsePoint { tag: Some(tag) },
-        ReparseProbeResult::Unsupported { .. } | ReparseProbeResult::Error { .. }
-            if metadata_reports_link =>
-        {
-            PathSafety::ReparsePoint { tag: None }
-        }
-        ReparseProbeResult::Unsupported { detail } => PathSafety::Unverified {
-            detail: format!("reparse probe unsupported: {detail}"),
-        },
-        ReparseProbeResult::Error { detail } => PathSafety::Unverified {
-            detail: format!("reparse probe failed: {detail}"),
-        },
-    }
-}
-
-fn reparse_probe_result_from_tag_info(
-    file_attributes: u32,
-    reparse_tag: u32,
-) -> ReparseProbeResult {
-    if reparse_tag != 0 || file_attributes & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-        ReparseProbeResult::ReparsePoint { tag: reparse_tag }
-    } else {
-        ReparseProbeResult::NotReparsePoint
-    }
-}
+use super::reparse::{
+    PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_path_no_follow,
+};
+#[cfg(test)]
+use super::reparse::{
+    ReparseProbeResult, has_windows_reparse_point, reparse_probe_result_from_tag_info,
+};
 
 /// Size walk result that distinguishes a verified empty tree from a failed walk.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -344,10 +264,6 @@ fn estimate_tree_bounded(
     estimate
 }
 
-pub(crate) fn is_unsafe_link(metadata: &fs::Metadata) -> bool {
-    metadata.file_type().is_symlink() || has_windows_reparse_point(metadata)
-}
-
 fn max_mtime(left: Option<SystemTime>, right: Option<SystemTime>) -> Option<SystemTime> {
     match (left, right) {
         (Some(left), Some(right)) => Some(left.max(right)),
@@ -357,100 +273,11 @@ fn max_mtime(left: Option<SystemTime>, right: Option<SystemTime>) -> Option<Syst
     }
 }
 
-#[cfg(windows)]
-fn has_windows_reparse_point(metadata: &fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-
-    metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-}
-
 fn sizing_warning(kind: SizingWarningKind, detail: impl Into<String>) -> SizingWarning {
     SizingWarning {
         kind,
         detail: detail.into(),
     }
-}
-
-#[cfg(windows)]
-fn probe_windows_reparse_point(path: &Path) -> ReparseProbeResult {
-    use std::{
-        mem::{MaybeUninit, size_of},
-        os::windows::ffi::OsStrExt,
-    };
-
-    use windows_sys::Win32::{
-        Foundation::{CloseHandle, INVALID_HANDLE_VALUE},
-        Storage::FileSystem::{
-            CreateFileW, FILE_ATTRIBUTE_TAG_INFO, FILE_FLAG_BACKUP_SEMANTICS,
-            FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ,
-            FILE_SHARE_WRITE, FileAttributeTagInfo, GetFileInformationByHandleEx, OPEN_EXISTING,
-        },
-    };
-
-    let wide_path: Vec<u16> = path
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
-    let handle = unsafe {
-        CreateFileW(
-            wide_path.as_ptr(),
-            FILE_READ_ATTRIBUTES,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            std::ptr::null(),
-            OPEN_EXISTING,
-            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-            std::ptr::null_mut(),
-        )
-    };
-    if handle == INVALID_HANDLE_VALUE {
-        return classify_windows_probe_error("could not open path without following it");
-    }
-
-    let mut tag_info = MaybeUninit::<FILE_ATTRIBUTE_TAG_INFO>::zeroed();
-    let queried = unsafe {
-        GetFileInformationByHandleEx(
-            handle,
-            FileAttributeTagInfo,
-            tag_info.as_mut_ptr().cast(),
-            size_of::<FILE_ATTRIBUTE_TAG_INFO>() as u32,
-        )
-    };
-    let error = if queried == 0 {
-        Some(std::io::Error::last_os_error())
-    } else {
-        None
-    };
-    unsafe {
-        let _ = CloseHandle(handle);
-    }
-
-    if let Some(error) = error {
-        return classify_windows_probe_error_with("could not read path reparse tag", error);
-    }
-
-    let tag_info = unsafe { tag_info.assume_init() };
-    reparse_probe_result_from_tag_info(tag_info.FileAttributes, tag_info.ReparseTag)
-}
-
-#[cfg(windows)]
-fn classify_windows_probe_error(operation: &str) -> ReparseProbeResult {
-    classify_windows_probe_error_with(operation, std::io::Error::last_os_error())
-}
-
-#[cfg(windows)]
-fn classify_windows_probe_error_with(operation: &str, error: std::io::Error) -> ReparseProbeResult {
-    let detail = format!("{operation}: {error}");
-    match error.raw_os_error() {
-        // These indicate that the filesystem or OS cannot service the tag query.
-        Some(1 | 50 | 87) => ReparseProbeResult::Unsupported { detail },
-        _ => ReparseProbeResult::Error { detail },
-    }
-}
-
-#[cfg(not(windows))]
-fn has_windows_reparse_point(_metadata: &fs::Metadata) -> bool {
-    false
 }
 
 #[cfg(test)]
@@ -542,7 +369,7 @@ mod tests {
 
     #[test]
     fn estimate_tree_stops_promptly_when_cancel_is_requested() {
-        use crate::process_runner::FlagCancelObserver;
+        use crate::process::FlagCancelObserver;
         use std::sync::Arc;
 
         let fixture = Fixture::new();

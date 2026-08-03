@@ -1,8 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+use super::identity::normalize_path_for_compare;
 
 /// Returns whether `target_path` contains the running executable.
 ///
-/// Prefer the central [`crate::safety::SafetyPolicy`] for execution-time checks
+/// Prefer the central [`crate::execution::SafetyPolicy`] for execution-time checks
 /// (including fail-closed `current_exe` lookup). This helper remains for
 /// lightweight containment queries.
 #[allow(dead_code)]
@@ -18,35 +20,7 @@ pub(crate) fn target_contains_current_exe(target_path: Option<&Path>) -> bool {
 }
 
 pub(crate) fn path_contains_path(parent: &Path, child: &Path) -> bool {
-    normalize_path(child).starts_with(normalize_path(parent))
-}
-
-fn normalize_path(path: &Path) -> PathBuf {
-    if let Ok(canonical) = path.canonicalize() {
-        return canonical;
-    }
-
-    let mut missing = Vec::new();
-    let mut current = path;
-    while !current.as_os_str().is_empty() {
-        if let Ok(canonical) = current.canonicalize() {
-            let mut normalized = canonical;
-            for component in missing.iter().rev() {
-                normalized.push(component);
-            }
-            return normalized;
-        }
-        let Some(name) = current.file_name() else {
-            break;
-        };
-        missing.push(name.to_os_string());
-        let Some(parent) = current.parent() else {
-            break;
-        };
-        current = parent;
-    }
-
-    path.to_path_buf()
+    normalize_path_for_compare(child).starts_with(normalize_path_for_compare(parent))
 }
 
 #[cfg(test)]

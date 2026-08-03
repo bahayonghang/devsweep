@@ -61,7 +61,7 @@ explicitly adds cleanup support.
   }
   ```
 - `devsweep clean` defaults to dry-run behavior.
-- `devsweep clean --execute` is owned by `src/executor.rs` after the execution
+- `devsweep clean --execute` is owned by `src/execution/mod.rs` after the execution
   engine task.
 
 #### 4. Validation & Error Matrix
@@ -80,8 +80,8 @@ explicitly adds cleanup support.
 - Good: `just ci` passes before a task is reported complete.
 - Base: `cargo check --all-targets` passes when run directly.
 - Bad: `scan` discovers or deletes directories before the scanner task exists.
-- Bad: `clean --execute` invokes `std::process::Command` outside
-  `src/executor.rs`.
+- Bad: `clean --execute` invokes `std::process::Command` outside the bounded
+  `src/process/` owner.
 
 #### 6. Tests Required
 
@@ -446,7 +446,7 @@ CleanAction::Command {
   - A. Project marker -> relative dir (Node/Python): tabled in
     `PROJECT_DIR_RULES`, consumed by `ProjectScanner::scan_*`.
   - C. Known home-relative global cache (gradle/maven/go/...): tabled in
-    `GLOBAL_CACHE_RULES(_OS)`, consumed by `providers::add_known_cache_targets`.
+    `GLOBAL_CACHE_RULES(_OS)`, consumed by `scan::global` target construction.
   - B. `cargo clean` project rule and D. command providers (npm/pip/pnpm/yarn):
     stay procedurally implemented (B needs a `target/` check; D must run a tool
     and parse stdout, yarn branches on version). Their `RuleDoc` facts still
@@ -610,21 +610,21 @@ ignored by git.
 
 #### 2. Signatures
 
-- Library entrypoint:
-  - `ranking::rank_cleanup_plan(&mut CleanupPlan)`
+- Private ranking owner:
+  - `scan::ranking::rank_cleanup_plan(&mut CleanupPlan)`
 - Score helper:
-  - `ranking::target_score(&CleanTarget, SystemTime) -> f64`
+  - `scan::ranking::freshness_tiebreaker(&CleanTarget, SystemTime) -> f64`
 - Pipeline owner:
-  - `sweep::Sweeper::default().full_scan(&ScanOptions, &mut dyn FnMut(ScanProgress)) -> anyhow::Result<CleanupPlan>`
+  - `scan::Sweeper::default().full_scan(&ScanOptions, &mut dyn FnMut(ScanProgress)) -> anyhow::Result<CleanupPlan>`
 - Assembly boundaries:
   - `ProjectScanner::new().scan_roots(&[PathBuf]) -> anyhow::Result<CleanupPlan>` (returns unranked)
   - `GlobalProviderScanner::new().scan() -> CleanupPlan` (returns unranked)
   - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
-  - TUI scan worker driving `sweep::full_scan`
+  - TUI scan worker driving `scan::Sweeper::full_scan`
 
 #### 3. Contracts
 
-- Ranking ownership lives in `sweep::full_scan`: it merges scanner and provider
+- Ranking ownership lives in `scan::Sweeper::full_scan`: it merges project and global
   results and calls the ranking helper exactly once per cumulative set. Scanner
   and provider modules return unranked plans and must not call ranking
   themselves; callers of `full_scan` receive a ranked plan and must not
@@ -656,7 +656,7 @@ ignored by git.
 
 #### 5. Good/Base/Bad Cases
 
-- Good: CLI and TUI both obtain plans through `sweep::full_scan`, so ranking
+- Good: CLI and TUI both obtain plans through `scan::Sweeper::full_scan`, so ranking
   runs in exactly one production call site instead of each entry point
   implementing local ordering.
 - Good: a 2 GiB global target appears before a 1 GiB project target in both

@@ -5,8 +5,8 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use crate::{
+    filesystem::normalize_absolute_path,
     model::{CLEANUP_PLAN_VERSION, CleanAction, Evidence, Scope},
-    path_identity::normalize_absolute_path,
 };
 
 use super::ValidatedTarget;

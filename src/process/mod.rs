@@ -1,37 +1,27 @@
 //! Bounded external-process runner with timeout, output caps, and tree kill.
 
 use std::{
-    collections::VecDeque,
     env,
     ffi::OsString,
     fs,
-    io::Read,
     path::PathBuf,
-    process::{Child, Command, Stdio},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-        mpsc,
-    },
+    process::{Command, Stdio},
+    sync::mpsc,
     thread,
     time::{Duration, Instant},
 };
 
-/// Observes cooperative cancellation without owning a shared token type.
-/// Real tokens are provided later by the true-cancellation task.
-pub trait CancelObserver: Send + Sync {
-    fn is_cancel_requested(&self) -> bool;
-}
+mod cancel;
+mod capture;
+mod tree;
 
-/// Default observer that never requests cancellation.
-#[derive(Debug, Default, Clone, Copy)]
-pub struct NoopCancelObserver;
+pub use cancel::{ArcCancelObserver, CancelObserver, FlagCancelObserver, NoopCancelObserver};
+pub use capture::sanitize_process_output;
 
-impl CancelObserver for NoopCancelObserver {
-    fn is_cancel_requested(&self) -> bool {
-        false
-    }
-}
+use capture::{collect_capture, read_bounded};
+#[cfg(test)]
+use tree::process_is_alive;
+use tree::{ProcessTreeBackend, wait_for_exit};
 
 /// Working-directory policy for a process request.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -122,7 +112,7 @@ impl ProcessResult {
     }
 }
 
-/// Portable process runner port used by providers and the executor.
+/// Portable process runner interface used by discovery and execution.
 #[derive(Debug, Clone)]
 pub struct ProcessRunner {
     policy: ProcessPolicy,
@@ -279,46 +269,6 @@ impl ProcessRunner {
     }
 }
 
-/// Convert process bytes into a display/audit-safe string.
-///
-/// Strips executable terminal control sequences, keeps a bounded tail, and
-/// marks truncation. Non-UTF-8 bytes are lossy-decoded only here.
-pub fn sanitize_process_output(bytes: &[u8], cap: usize) -> String {
-    let lossy = String::from_utf8_lossy(bytes);
-    let mut sanitized = String::with_capacity(lossy.len().min(cap.saturating_add(32)));
-    let mut truncated = false;
-
-    for ch in lossy.chars() {
-        let piece = match ch {
-            '\n' | '\r' | '\t' => ch.to_string(),
-            c if c.is_control() || c == '\u{7f}' => format!("\\u{{{:x}}}", u32::from(c)),
-            c => c.to_string(),
-        };
-        if sanitized.len() + piece.len() > cap {
-            truncated = true;
-            break;
-        }
-        sanitized.push_str(&piece);
-    }
-
-    if truncated || (cap > 0 && lossy.len() > sanitized.len()) {
-        if sanitized.len() > cap {
-            sanitized.truncate(cap);
-        }
-        sanitized.push_str("...[truncated]");
-    } else if bytes.len() > lossy.len() {
-        // Byte length can exceed char display length for multi-byte sequences;
-        // still mark when the raw buffer was larger than the rendered form and
-        // the caller asked for a tight cap relative to raw input.
-    }
-
-    if cap == 0 {
-        return "...[truncated]".to_string();
-    }
-
-    sanitized
-}
-
 fn effective_deadline(timeout: Option<Duration>, job_deadline: Option<Instant>) -> Option<Instant> {
     let timeout_deadline = timeout.map(|duration| Instant::now() + duration);
     match (timeout_deadline, job_deadline) {
@@ -354,358 +304,6 @@ fn neutral_nonce() -> u64 {
 fn cleanup_neutral_dir(dir: Option<&PathBuf>) {
     if let Some(path) = dir {
         let _ = fs::remove_dir_all(path);
-    }
-}
-
-#[derive(Debug, Default)]
-struct StreamCapture {
-    bytes: Vec<u8>,
-    truncated: bool,
-    total: u64,
-}
-
-fn read_bounded<R: Read>(mut reader: R, cap: usize) -> StreamCapture {
-    let mut ring = ByteRing::new(cap);
-    let mut buf = [0_u8; 8192];
-    loop {
-        match reader.read(&mut buf) {
-            Ok(0) => break,
-            Ok(n) => ring.push(&buf[..n]),
-            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
-            Err(_) => break,
-        }
-    }
-    ring.into_capture()
-}
-
-#[derive(Debug)]
-struct ByteRing {
-    buf: VecDeque<u8>,
-    cap: usize,
-    total: u64,
-    truncated: bool,
-}
-
-impl ByteRing {
-    fn new(cap: usize) -> Self {
-        Self {
-            buf: VecDeque::with_capacity(cap.min(64 * 1024)),
-            cap,
-            total: 0,
-            truncated: false,
-        }
-    }
-
-    fn push(&mut self, data: &[u8]) {
-        self.total = self.total.saturating_add(data.len() as u64);
-        if self.cap == 0 {
-            self.truncated = self.truncated || !data.is_empty();
-            return;
-        }
-        if data.len() >= self.cap {
-            self.truncated = true;
-            self.buf.clear();
-            self.buf
-                .extend(data[data.len() - self.cap..].iter().copied());
-            return;
-        }
-        let next_len = self.buf.len() + data.len();
-        if next_len > self.cap {
-            let drop_count = next_len - self.cap;
-            self.buf.drain(..drop_count);
-            self.truncated = true;
-        }
-        self.buf.extend(data.iter().copied());
-    }
-
-    fn into_capture(self) -> StreamCapture {
-        StreamCapture {
-            bytes: self.buf.into_iter().collect(),
-            truncated: self.truncated,
-            total: self.total,
-        }
-    }
-}
-
-fn collect_capture(
-    rx: mpsc::Receiver<StreamCapture>,
-    worker: Option<thread::JoinHandle<()>>,
-    grace: Duration,
-) -> StreamCapture {
-    let deadline = Instant::now() + grace;
-    let capture = loop {
-        match rx.try_recv() {
-            Ok(capture) => break capture,
-            Err(mpsc::TryRecvError::Empty) => {
-                if Instant::now() >= deadline {
-                    break StreamCapture::default();
-                }
-                thread::sleep(Duration::from_millis(5));
-            }
-            Err(mpsc::TryRecvError::Disconnected) => break StreamCapture::default(),
-        }
-    };
-    if let Some(handle) = worker {
-        let _ = handle.join();
-    }
-    capture
-}
-
-fn wait_for_exit(child: &mut Child, grace: Duration) {
-    let deadline = Instant::now() + grace;
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => return,
-            Ok(None) if Instant::now() >= deadline => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return;
-            }
-            Ok(None) => thread::sleep(Duration::from_millis(10)),
-            Err(_) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return;
-            }
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-struct ProcessTreeBackend {
-    #[cfg(windows)]
-    job: Option<windows_sys::Win32::Foundation::HANDLE>,
-    #[cfg(unix)]
-    child_pid: Option<i32>,
-}
-
-impl ProcessTreeBackend {
-    fn configure_command(&mut self, command: &mut Command) {
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            unsafe {
-                command.pre_exec(|| {
-                    if libc::setpgid(0, 0) != 0 {
-                        return Err(std::io::Error::last_os_error());
-                    }
-                    Ok(())
-                });
-            }
-        }
-        #[cfg(windows)]
-        {
-            let _ = command;
-            // Job assignment happens in attach() after spawn. CREATE_SUSPENDED
-            // is avoided because std::process does not expose the primary
-            // thread handle needed to resume cleanly.
-        }
-        #[cfg(not(any(windows, unix)))]
-        {
-            let _ = command;
-        }
-    }
-
-    fn attach(&mut self, child: &Child) -> std::io::Result<()> {
-        #[cfg(windows)]
-        {
-            windows_backend::attach_job(self, child)
-        }
-        #[cfg(unix)]
-        {
-            self.child_pid = Some(child.id() as i32);
-            Ok(())
-        }
-        #[cfg(not(any(windows, unix)))]
-        {
-            let _ = child;
-            Ok(())
-        }
-    }
-
-    fn terminate(&mut self, child: &mut Child) {
-        #[cfg(windows)]
-        {
-            windows_backend::terminate_job(self);
-            let _ = child.kill();
-        }
-        #[cfg(unix)]
-        {
-            if let Some(pid) = self.child_pid.take() {
-                unsafe {
-                    // Negative pid targets the process group created in pre_exec.
-                    let _ = libc::kill(-pid, libc::SIGKILL);
-                }
-            }
-            let _ = child.kill();
-        }
-        #[cfg(not(any(windows, unix)))]
-        {
-            let _ = child.kill();
-        }
-    }
-}
-
-impl Drop for ProcessTreeBackend {
-    fn drop(&mut self) {
-        #[cfg(windows)]
-        {
-            windows_backend::close_job(self);
-        }
-    }
-}
-
-#[cfg(windows)]
-mod windows_backend {
-    use super::ProcessTreeBackend;
-    use std::{io, mem, process::Child};
-    use windows_sys::Win32::{
-        Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE},
-        System::JobObjects::{
-            AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
-            JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectExtendedLimitInformation,
-            SetInformationJobObject, TerminateJobObject,
-        },
-    };
-
-    pub(super) fn attach_job(backend: &mut ProcessTreeBackend, child: &Child) -> io::Result<()> {
-        use std::os::windows::io::AsRawHandle;
-
-        unsafe {
-            let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
-            if job.is_null() || job == INVALID_HANDLE_VALUE {
-                return Err(io::Error::last_os_error());
-            }
-
-            let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = mem::zeroed();
-            info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-            let ok = SetInformationJobObject(
-                job,
-                JobObjectExtendedLimitInformation,
-                &info as *const _ as *const _,
-                mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
-            );
-            if ok == 0 {
-                let err = io::Error::last_os_error();
-                CloseHandle(job);
-                return Err(err);
-            }
-
-            let process_handle = child.as_raw_handle() as HANDLE;
-            let ok = AssignProcessToJobObject(job, process_handle);
-            if ok == 0 {
-                let err = io::Error::last_os_error();
-                CloseHandle(job);
-                return Err(err);
-            }
-
-            backend.job = Some(job);
-            Ok(())
-        }
-    }
-
-    pub(super) fn terminate_job(backend: &mut ProcessTreeBackend) {
-        if let Some(job) = backend.job.take() {
-            unsafe {
-                let _ = TerminateJobObject(job, 1);
-                let _ = CloseHandle(job);
-            }
-        }
-    }
-
-    pub(super) fn close_job(backend: &mut ProcessTreeBackend) {
-        if let Some(job) = backend.job.take() {
-            unsafe {
-                let _ = CloseHandle(job);
-            }
-        }
-    }
-}
-
-/// Returns true when a process id appears still alive.
-/// Used by dynamic tree-cleanup tests; failure to prove death is a test No-Go.
-pub fn process_is_alive(pid: u32) -> bool {
-    #[cfg(windows)]
-    {
-        windows_process_is_alive(pid)
-    }
-    #[cfg(unix)]
-    {
-        unsafe { libc::kill(pid as i32, 0) == 0 }
-    }
-    #[cfg(not(any(windows, unix)))]
-    {
-        let _ = pid;
-        false
-    }
-}
-
-#[cfg(windows)]
-fn windows_process_is_alive(pid: u32) -> bool {
-    use windows_sys::Win32::{
-        Foundation::{CloseHandle, STILL_ACTIVE, WAIT_TIMEOUT},
-        System::Threading::{
-            GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
-            PROCESS_SYNCHRONIZE, WaitForSingleObject,
-        },
-    };
-
-    unsafe {
-        let handle = OpenProcess(
-            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SYNCHRONIZE,
-            0,
-            pid,
-        );
-        if handle.is_null() {
-            return false;
-        }
-        let mut exit_code = 0_u32;
-        let ok = GetExitCodeProcess(handle, &mut exit_code);
-        let wait = WaitForSingleObject(handle, 0);
-        CloseHandle(handle);
-        ok != 0 && exit_code == STILL_ACTIVE as u32 && wait == WAIT_TIMEOUT
-    }
-}
-
-/// Flag-based cancel observer for tests and future token adapters.
-#[derive(Debug, Default)]
-pub struct FlagCancelObserver {
-    flag: AtomicBool,
-}
-
-impl FlagCancelObserver {
-    pub fn new() -> Self {
-        Self {
-            flag: AtomicBool::new(false),
-        }
-    }
-
-    pub fn request_cancel(&self) {
-        self.flag.store(true, Ordering::SeqCst);
-    }
-
-    pub fn shared(self: &Arc<Self>) -> ArcCancelObserver {
-        ArcCancelObserver {
-            inner: Arc::clone(self),
-        }
-    }
-}
-
-impl CancelObserver for FlagCancelObserver {
-    fn is_cancel_requested(&self) -> bool {
-        self.flag.load(Ordering::SeqCst)
-    }
-}
-
-/// Arc-backed cancel observer for multi-thread tests.
-#[derive(Debug, Clone)]
-pub struct ArcCancelObserver {
-    inner: Arc<FlagCancelObserver>,
-}
-
-impl CancelObserver for ArcCancelObserver {
-    fn is_cancel_requested(&self) -> bool {
-        self.inner.is_cancel_requested()
     }
 }
 
@@ -764,7 +362,7 @@ mod tests {
     use tempfile::TempDir;
 
     fn fixture_exe() -> PathBuf {
-        crate::process_runner::test_support::process_fixture_exe()
+        crate::process::test_support::process_fixture_exe()
     }
 
     fn runner_with(policy: ProcessPolicy) -> ProcessRunner {

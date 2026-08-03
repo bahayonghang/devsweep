@@ -6,7 +6,7 @@ use std::{
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 use crate::{
-    executor::{ExecutionReport, ExecutionTargetStatus},
+    execution::{ExecutionReport, ExecutionTargetStatus},
     inventory::InventoryReport,
     model::{
         CleanAction, CleanTarget, CleanupPlan, Evidence, RiskLevel, ScanHealth, ScanTotals, Scope,
@@ -14,7 +14,7 @@ use crate::{
     },
     plan::validate_scanned_plan,
     rules::PYCACHE_RULE_DOC,
-    sweep::ScanPhase,
+    scan::ScanPhase,
 };
 
 use super::render::{
@@ -2384,7 +2384,7 @@ mod tests {
         target.last_modified = Some(SystemTime::now());
         target.selected_by_default = false;
         target.evidence.push(Evidence::RuleMatched {
-            rule_id: crate::ranking::FRESHNESS_GUARD_RULE_ID.to_string(),
+            rule_id: crate::scan::FRESHNESS_GUARD_RULE_ID.to_string(),
         });
         let mut app = App::with_plan(plan_with_targets(vec![target.clone()]));
         app.selected_ids.insert(target.id.clone());

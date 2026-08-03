@@ -7,11 +7,11 @@ mod digest;
 use digest::digest_for_targets;
 
 use crate::{
+    filesystem::{PathIdentity, capture_path_identity, normalize_absolute_path},
     model::{
         CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupIntent, CleanupPlan, Evidence,
         LEGACY_CLEANUP_PLAN_VERSION, Scope, TargetId, UntrustedPlan, UntrustedTarget,
     },
-    path_identity::{PathIdentity, capture_path_identity, normalize_absolute_path},
     rules::{ActionSpec, intent_from_scan_action, resolve_action},
 };
 

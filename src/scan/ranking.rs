@@ -23,11 +23,6 @@ pub fn freshness_tiebreaker(target: &CleanTarget, now: SystemTime) -> f64 {
     size_mib * age_days
 }
 
-#[deprecated(note = "renamed to freshness_tiebreaker; size is the primary sort key")]
-pub fn target_score(target: &CleanTarget, now: SystemTime) -> f64 {
-    freshness_tiebreaker(target, now)
-}
-
 pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floor: Duration) {
     for target in &mut plan.targets {
         apply_freshness_guard(target, now, floor);

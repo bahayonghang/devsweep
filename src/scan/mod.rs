@@ -2,12 +2,23 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 
+mod global;
+mod project;
+mod ranking;
+
+pub use global::GlobalProviderScanner;
+pub use project::{ProjectScanner, ScanOutcome};
+
+pub(crate) use global::resolve_executable;
+#[cfg(test)]
+pub(crate) use ranking::FRESHNESS_GUARD_RULE_ID;
+
 use crate::model::{CleanupPlan, ScanHealth, ScanReport, TargetId};
 use crate::plan::untrusted_plan_from_scan;
-use crate::process_runner::{CancelObserver, FlagCancelObserver};
-use crate::providers::GlobalProviderScanner;
-use crate::ranking::rank_cleanup_plan;
-use crate::scanner::{ProjectScanner, rescan_target_size};
+use crate::process::{CancelObserver, FlagCancelObserver};
+
+use project::rescan_target_size;
+use ranking::rank_cleanup_plan;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectScanOutcome {
@@ -257,14 +268,12 @@ fn rank_merged_plan(plan: &mut CleanupPlan) {
 mod tests {
     use std::time::{Duration, SystemTime};
 
+    use super::*;
     use crate::model::{
         CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, Ecosystem, Evidence, RiskLevel,
         ScanCompleteness, ScanDiagnostic, ScanDiagnosticOutcome, ScanDiagnosticStage, Scope,
         TargetId, TargetKind,
     };
-    use crate::ranking::FRESHNESS_GUARD_RULE_ID;
-
-    use super::*;
 
     #[test]
     fn full_scan_merges_and_ranks_once() {

@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     fs,
     path::{Path, PathBuf},
     sync::Arc,
@@ -8,11 +7,16 @@ use std::{
 use anyhow::{Context, Result, bail};
 use tracing::warn;
 
+mod cargo;
+mod dedupe;
+
+use cargo::CargoWorkspaceCache;
+use dedupe::{dedupe_targets, footprint_depth};
+
 use crate::cargo_metadata::{
-    CargoMetadataFailure, CargoMetadataProbe, CargoMetadataProbeResult, CargoMetadataScope,
-    SystemCargoMetadataProbe,
+    CargoMetadataFailure, CargoMetadataProbe, CargoMetadataProbeResult, SystemCargoMetadataProbe,
 };
-use crate::fs_size::{
+use crate::filesystem::{
     DEFAULT_SIZE_ENTRY_BUDGET, PathReparseProbe, PathSafety, SystemPathReparseProbe,
     estimate_tree_with_budget_and_cancel_and_probe, inspect_path_no_follow,
 };
@@ -20,7 +24,7 @@ use crate::model::{
     CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel, ScanDiagnosticOutcome,
     Scope, TargetId, TargetKind,
 };
-use crate::process_runner::{CancelObserver, FlagCancelObserver};
+use crate::process::{CancelObserver, FlagCancelObserver};
 use crate::rules::{
     PYCACHE_RULE_DOC, ProjectMarker, RUST_TARGET_METADATA_FALLBACK_RULE_ID, RUST_TARGET_RULE_DOC,
     project_dir_rules,
@@ -524,149 +528,6 @@ impl Default for ProjectScanner {
     }
 }
 
-const MAX_CARGO_METADATA_CACHE_ENTRIES: usize = 256;
-
-/// Scan-lifetime Cargo metadata cache. Successful resolutions are indexed only
-/// by canonical manifests that Cargo explicitly reported as workspace members;
-/// failures are reusable only for the exact canonical manifest that failed.
-#[derive(Debug)]
-struct CargoWorkspaceCache {
-    max_entries: usize,
-    workspaces: Vec<CachedCargoWorkspace>,
-    member_workspaces: HashMap<PathBuf, usize>,
-    failures: HashMap<PathBuf, CargoMetadataFailure>,
-}
-
-#[derive(Debug, Clone)]
-struct CachedCargoWorkspace {
-    canonical_workspace_root: PathBuf,
-    workspace_root: PathBuf,
-    target_directory: PathBuf,
-}
-
-impl CachedCargoWorkspace {
-    fn scope(&self) -> CargoMetadataScope {
-        CargoMetadataScope {
-            workspace_root: self.workspace_root.clone(),
-            target_directory: self.target_directory.clone(),
-            member_manifests: Vec::new(),
-        }
-    }
-}
-
-impl Default for CargoWorkspaceCache {
-    fn default() -> Self {
-        Self::with_limit(MAX_CARGO_METADATA_CACHE_ENTRIES)
-    }
-}
-
-impl CargoWorkspaceCache {
-    fn with_limit(max_entries: usize) -> Self {
-        Self {
-            max_entries,
-            workspaces: Vec::new(),
-            member_workspaces: HashMap::new(),
-            failures: HashMap::new(),
-        }
-    }
-
-    fn resolve(
-        &mut self,
-        manifest: &Path,
-        manifest_dir: &Path,
-        probe: &dyn CargoMetadataProbe,
-        reparse_probe: &dyn PathReparseProbe,
-    ) -> CargoMetadataProbeResult {
-        let manifest_key = canonical_manifest(manifest, reparse_probe);
-        if let Some(manifest_key) = manifest_key.as_ref() {
-            if let Some(failure) = self.failures.get(manifest_key) {
-                return CargoMetadataProbeResult::Failed(failure.clone());
-            }
-            if let Some(workspace_index) = self.member_workspaces.get(manifest_key)
-                && let Some(workspace) = self.workspaces.get(*workspace_index)
-            {
-                return CargoMetadataProbeResult::Resolved(workspace.scope());
-            }
-        }
-
-        let result = probe.probe(manifest_dir);
-        match &result {
-            CargoMetadataProbeResult::Resolved(scope) => {
-                self.cache_success(scope, reparse_probe);
-            }
-            CargoMetadataProbeResult::Failed(failure) => {
-                self.cache_failure(manifest_key, failure);
-            }
-        }
-        result
-    }
-
-    fn cache_success(&mut self, scope: &CargoMetadataScope, reparse_probe: &dyn PathReparseProbe) {
-        let Some(workspace_root) = canonical_workspace_root(&scope.workspace_root, reparse_probe)
-        else {
-            return;
-        };
-        let mut members: Vec<PathBuf> = scope
-            .member_manifests
-            .iter()
-            .filter_map(|member| canonical_manifest(member, reparse_probe))
-            .collect();
-        members.sort();
-        members.dedup();
-        if members.is_empty() {
-            return;
-        }
-
-        let workspace_index = match self
-            .workspaces
-            .iter()
-            .position(|workspace| workspace.canonical_workspace_root == workspace_root)
-        {
-            Some(index) => index,
-            None => {
-                // A new workspace needs one entry plus at least one membership
-                // entry, otherwise it could never be returned by a lookup.
-                if self.entry_count() >= self.max_entries.saturating_sub(1) {
-                    return;
-                }
-                self.workspaces.push(CachedCargoWorkspace {
-                    canonical_workspace_root: workspace_root,
-                    workspace_root: scope.workspace_root.clone(),
-                    target_directory: scope.target_directory.clone(),
-                });
-                self.workspaces.len() - 1
-            }
-        };
-
-        for member in members {
-            if self.member_workspaces.contains_key(&member) {
-                continue;
-            }
-            if !self.has_capacity() {
-                break;
-            }
-            self.member_workspaces.insert(member, workspace_index);
-        }
-    }
-
-    fn cache_failure(&mut self, manifest: Option<PathBuf>, failure: &CargoMetadataFailure) {
-        let Some(manifest) = manifest else {
-            return;
-        };
-        if !self.failures.contains_key(&manifest) && self.has_capacity() {
-            self.failures.insert(manifest, failure.clone());
-        }
-    }
-
-    fn entry_count(&self) -> usize {
-        self.workspaces.len() + self.member_workspaces.len() + self.failures.len()
-    }
-
-    fn has_capacity(&self) -> bool {
-        self.entry_count() < self.max_entries
-    }
-}
-
 #[derive(Debug)]
 struct PythonContext {
     project_root: PathBuf,
@@ -707,18 +568,6 @@ fn cargo_metadata_diagnostic(manifest: &Path, failure: CargoMetadataFailure) -> 
         detail: failure.detail,
         process: failure.process,
     }
-}
-
-fn canonical_manifest(path: &Path, reparse_probe: &dyn PathReparseProbe) -> Option<PathBuf> {
-    is_real_file(path, reparse_probe)
-        .then(|| path.canonicalize().ok())
-        .flatten()
-}
-
-fn canonical_workspace_root(path: &Path, reparse_probe: &dyn PathReparseProbe) -> Option<PathBuf> {
-    is_real_dir(path, reparse_probe)
-        .then(|| path.canonicalize().ok())
-        .flatten()
 }
 
 #[cfg(test)]
@@ -836,108 +685,6 @@ pub(crate) fn rescan_target_size_with_probe(
     Ok(())
 }
 
-fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
-    targets.sort_by(|left, right| {
-        let left_path = left.path.as_deref().map(footprint_depth);
-        let right_path = right.path.as_deref().map(footprint_depth);
-        left_path
-            .cmp(&right_path)
-            .then_with(|| left.id.as_str().cmp(right.id.as_str()))
-    });
-
-    let mut kept: Vec<CleanTarget> = Vec::new();
-    for target in targets {
-        if let Some(existing) = kept.iter_mut().find(|existing| {
-            same_action_identity(existing, &target) && same_footprint(existing, &target)
-        }) {
-            merge_unique_evidence(existing, target.evidence);
-            continue;
-        }
-
-        let is_nested_with_same_action = kept.iter().any(|existing| {
-            same_action_identity(existing, &target) && parent_footprint_covers(existing, &target)
-        });
-        if is_nested_with_same_action {
-            continue;
-        }
-
-        kept.push(target);
-    }
-
-    kept
-}
-
-fn footprint_depth(path: &Path) -> usize {
-    canonical_footprint(path).components().count()
-}
-
-fn canonical_footprint(path: &Path) -> PathBuf {
-    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
-}
-
-fn same_action_identity(left: &CleanTarget, right: &CleanTarget) -> bool {
-    match (&left.action, &right.action) {
-        (CleanAction::MoveToTrash { .. }, CleanAction::MoveToTrash { .. })
-        | (CleanAction::NoopInspectOnly, CleanAction::NoopInspectOnly) => true,
-        (
-            CleanAction::DeletePermanently {
-                requires_explicit_flag: left_flag,
-                ..
-            },
-            CleanAction::DeletePermanently {
-                requires_explicit_flag: right_flag,
-                ..
-            },
-        ) => left_flag == right_flag,
-        (
-            CleanAction::Command {
-                program: left_program,
-                args: left_args,
-                cwd: left_cwd,
-                irreversible: left_irreversible,
-            },
-            CleanAction::Command {
-                program: right_program,
-                args: right_args,
-                cwd: right_cwd,
-                irreversible: right_irreversible,
-            },
-        ) => {
-            left_program == right_program
-                && left_args == right_args
-                && left_cwd == right_cwd
-                && left_irreversible == right_irreversible
-        }
-        _ => false,
-    }
-}
-
-fn same_footprint(left: &CleanTarget, right: &CleanTarget) -> bool {
-    match (&left.path, &right.path) {
-        (Some(left), Some(right)) => canonical_footprint(left) == canonical_footprint(right),
-        _ => false,
-    }
-}
-
-fn parent_footprint_covers(parent: &CleanTarget, child: &CleanTarget) -> bool {
-    match (&parent.path, &child.path) {
-        (Some(parent), Some(child)) => {
-            let parent = canonical_footprint(parent);
-            let child = canonical_footprint(child);
-            child != parent && child.starts_with(parent)
-        }
-        _ => false,
-    }
-}
-
-fn merge_unique_evidence(existing: &mut CleanTarget, evidence: Vec<Evidence>) {
-    for item in evidence {
-        if !existing.evidence.contains(&item) {
-            existing.evidence.push(item);
-        }
-    }
-}
-
 fn find_node_marker(dir: &Path, reparse_probe: &dyn PathReparseProbe) -> Option<PathBuf> {
     [
         "package.json",
@@ -1029,7 +776,7 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
-    use crate::fs_size::ReparseProbeResult;
+    use crate::{cargo_metadata::CargoMetadataScope, filesystem::ReparseProbeResult};
 
     const CLOUD_FILES_REPARSE_TAG: u32 = 0x9000_701A;
 
@@ -1300,7 +1047,7 @@ mod tests {
         }
 
         let metadata = fs::symlink_metadata(&link).expect("link metadata");
-        assert!(crate::fs_size::is_unsafe_link(&metadata));
+        assert!(crate::filesystem::is_unsafe_link(&metadata));
 
         let plan = ProjectScanner::new()
             .scan_roots(&[fixture.path().join("scan")])
@@ -1816,7 +1563,7 @@ mod tests {
 
     #[test]
     fn scan_honors_cancel_flag_without_full_tree_walk() {
-        use crate::process_runner::FlagCancelObserver;
+        use crate::process::FlagCancelObserver;
         use std::sync::Arc;
 
         let fixture = Fixture::new();
