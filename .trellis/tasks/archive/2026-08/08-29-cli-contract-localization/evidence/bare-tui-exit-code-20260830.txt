@@ -1,0 +1,1 @@
+BARE_TUI_EXIT=0

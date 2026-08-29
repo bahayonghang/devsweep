@@ -1,0 +1,31 @@
+{
+  "id": "cli-contract-localization",
+  "name": "cli-contract-localization",
+  "title": "Define breaking CLI and bilingual output contract",
+  "description": "Specify the new five-mode CLI grammar, language-neutral machine schemas, bilingual human output, TUI entry behavior, migration guide, and safety invariants.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "breaking CLI grammar and schemas; bilingual CLI/TUI/Desktop message contract; migration documentation; no domain collector or executor",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-08-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "1-contracts",
+    "depends_on": "none",
+    "approval_state": "implementation_approved",
+    "module_skeleton_approval": "current task owns compiler registration plus 10 command and 8 presentation empty skeletons; downstream tasks own later implementation content and do not edit root mod.rs files"
+  }
+}
