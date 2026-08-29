@@ -1,0 +1,6 @@
+[
+  { "reason": "completed", "error_code": null },
+  { "reason": "canceled", "error_code": null },
+  { "reason": "broken_pipe", "error_code": null },
+  { "reason": "producer_error", "error_code": "output_write_failed" }
+]

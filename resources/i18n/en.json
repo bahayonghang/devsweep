@@ -1,0 +1,22 @@
+{
+  "locale": "en",
+  "messages": {
+    "app.about": { "forms": { "other": "Inspect, plan, and explicitly execute developer maintenance." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "app.title": { "forms": { "other": "DevSweep" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "command.analyze": { "forms": { "other": "Analyze" }, "placeholders": [], "count": "none", "accelerator": "A", "group": "root_modes", "truncation": "never" },
+    "command.clean": { "forms": { "other": "Clean" }, "placeholders": [], "count": "none", "accelerator": "C", "group": "root_modes", "truncation": "never" },
+    "command.history": { "forms": { "other": "History" }, "placeholders": [], "count": "none", "accelerator": "H", "group": "root_modes", "truncation": "never" },
+    "command.optimize": { "forms": { "other": "Optimize" }, "placeholders": [], "count": "none", "accelerator": "P", "group": "root_modes", "truncation": "never" },
+    "command.software": { "forms": { "other": "Software" }, "placeholders": [], "count": "none", "accelerator": "S", "group": "root_modes", "truncation": "never" },
+    "command.status": { "forms": { "other": "Status" }, "placeholders": [], "count": "none", "accelerator": "T", "group": "root_modes", "truncation": "never" },
+    "error.bare_requires_tty": { "forms": { "other": "Bare devsweep requires interactive stdin and stdout. Use an explicit command when redirecting output." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "error.invalid_cli": { "forms": { "other": "Invalid command: {detail}" }, "placeholders": ["detail"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "error.mode_unavailable": { "forms": { "other": "The {command} command is not available in this staged build." }, "placeholders": ["command"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "error.output_exists": { "forms": { "other": "Output already exists: {path}" }, "placeholders": ["path"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "field.path": { "forms": { "other": "Path: {path}" }, "placeholders": ["path"], "count": "none", "accelerator": null, "group": null, "truncation": "user_data_visual_only" },
+    "format.human": { "forms": { "other": "Human" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "format.json": { "forms": { "other": "JSON" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "format.ndjson": { "forms": { "other": "NDJSON" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "summary.item_count": { "forms": { "one": "{count} item", "other": "{count} items" }, "placeholders": ["count"], "count": "cardinal", "accelerator": null, "group": null, "truncation": "never" }
+  }
+}

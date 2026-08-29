@@ -46,7 +46,13 @@ crates/
     └── src/
         ├── main.rs              # minimal delegation to devsweep::run
         ├── lib.rs               # public run function; internals private
-        ├── application/         # Clap parse, dispatch, decoding, output
+        ├── application/
+        │   ├── cli.rs           # frozen Clap grammar and help manifests
+        │   ├── commands/        # compiler-registered domain handlers
+        │   ├── presentation/    # compiler-registered human renderers
+        │   ├── output.rs        # V1 envelopes, sinks, stream lifecycle
+        │   └── mod.rs           # tracing, TTY routing, typed dispatch
+        ├── i18n/                # locale, catalogues, metadata, formatting
         ├── bin/process_fixture.rs # ProcessRunner child-tree fixture
         └── tui/                 # ratatui UI (see frontend spec)
 desktop/
@@ -70,11 +76,20 @@ one integration test proving use from an external crate boundary.
 
 ## Module Organization
 
-- Put application composition under `crates/devsweep-cli/src/application/`. `cli.rs` owns only
-  private Clap types. `commands.rs` owns command handlers, saved plan/report
-  decoding, and CLI formatting. `mod.rs` initializes tracing, retains
-  `Cli::parse()` process-exit semantics, and performs typed dispatch. Backend
-  and TUI modules must not import `application`.
+- Put application composition under `crates/devsweep-cli/src/application/`.
+  `cli.rs` owns the private Clap grammar, contextual help, and deterministic
+  reference manifest. `commands/mod.rs` owns the stable compiler registration
+  tree; each later domain task fills only its assigned handler file.
+  `presentation/mod.rs` does the same for human renderers. `output.rs` owns
+  create-new sinks, V1 envelopes, exit classification, and stream
+  cancel/join/terminal behavior. `mod.rs` initializes tracing, applies bare-TUI
+  and `status live` TTY rules, retains Clap process-exit semantics, and performs
+  typed dispatch. Backend and TUI modules must not import `application`.
+- Put CLI-owned locale selection, embedded catalogue validation, message
+  metadata, interpolation safety, and binary unit formatting under
+  `crates/devsweep-cli/src/i18n/`. Core keeps a separate closed presentation
+  language wire tag and never imports the CLI crate. Shell adapters map that tag
+  exhaustively; they do not duplicate catalogue or locale rules.
 - Put JSON-facing and internal domain values under `crates/devsweep-core/src/model/`. `plan.rs` owns
   `UntrustedPlan`, `UntrustedTarget`, `CleanupIntent`, `CleanupPlan`,
   `CleanTarget`, and `CleanAction`; `scan.rs` owns `ScanReport`, `ScanHealth`,
@@ -137,15 +152,17 @@ one integration test proving use from an external crate boundary.
   adapter owns only command state, event forwarding, app-data paths, and typed
   boundary error mapping.
 
-Example from `crates/devsweep-cli/src/application/commands.rs`:
+Example from `crates/devsweep-cli/src/application/commands/mod.rs`:
 
 ```rust
-let options = ScanOptions {
-    include_projects: command.projects || !command.global,
-    include_global: command.global || !command.projects,
-    roots: command.roots.clone(),
-};
-let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
+mod analyze;
+mod clean;
+mod history;
+mod optimize;
+mod protect;
+mod rules;
+mod software;
+mod status;
 ```
 
 ---
@@ -158,8 +175,8 @@ let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
   `CleanAction`, `RiskLevel`, and `Evidence`.
 - Scanner rule identifiers use dotted lowercase strings such as
   `rust.target`, `node.node_modules`, and `python.pytest_cache`.
-- CLI command structs use `<CommandName>Command`, for example `ScanCommand` and
-  `CleanCommand`.
+- CLI command structs use `<CommandPath>Command`, for example
+  `CleanScanCommand`, `SoftwareInventoryCommand`, and `StatusSnapshotCommand`.
 
 ---
 

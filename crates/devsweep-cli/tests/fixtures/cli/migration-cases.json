@@ -1,0 +1,11 @@
+[
+  ["tui"],
+  ["scan", "C:/code", "--json"],
+  ["scan", "--rescan-target", "legacy-id", "C:/code"],
+  ["inventory", "C:/code", "--json"],
+  ["clean", "--plan", "legacy-plan.json"],
+  ["clean", "--plan", "legacy-plan.json", "--execute"],
+  ["clean", "--audit-log", "legacy-audit.jsonl"],
+  ["protect", "list"],
+  ["rules"]
+]

@@ -1,0 +1,22 @@
+{
+  "locale": "zh-CN",
+  "messages": {
+    "app.about": { "forms": { "other": "检查、规划并仅在明确授权后执行开发环境维护。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "app.title": { "forms": { "other": "DevSweep" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "command.analyze": { "forms": { "other": "分析" }, "placeholders": [], "count": "none", "accelerator": "F", "group": "root_modes", "truncation": "never" },
+    "command.clean": { "forms": { "other": "清理" }, "placeholders": [], "count": "none", "accelerator": "Q", "group": "root_modes", "truncation": "never" },
+    "command.history": { "forms": { "other": "历史" }, "placeholders": [], "count": "none", "accelerator": "L", "group": "root_modes", "truncation": "never" },
+    "command.optimize": { "forms": { "other": "优化" }, "placeholders": [], "count": "none", "accelerator": "Y", "group": "root_modes", "truncation": "never" },
+    "command.software": { "forms": { "other": "软件" }, "placeholders": [], "count": "none", "accelerator": "R", "group": "root_modes", "truncation": "never" },
+    "command.status": { "forms": { "other": "状态" }, "placeholders": [], "count": "none", "accelerator": "Z", "group": "root_modes", "truncation": "never" },
+    "error.bare_requires_tty": { "forms": { "other": "直接运行 devsweep 需要交互式标准输入和标准输出；重定向时请指定明确命令。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "error.invalid_cli": { "forms": { "other": "命令无效：{detail}" }, "placeholders": ["detail"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "error.mode_unavailable": { "forms": { "other": "当前分阶段构建尚未接入 {command} 命令。" }, "placeholders": ["command"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "error.output_exists": { "forms": { "other": "输出文件已存在：{path}" }, "placeholders": ["path"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "field.path": { "forms": { "other": "路径：{path}" }, "placeholders": ["path"], "count": "none", "accelerator": null, "group": null, "truncation": "user_data_visual_only" },
+    "format.human": { "forms": { "other": "人类可读" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "format.json": { "forms": { "other": "JSON" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "format.ndjson": { "forms": { "other": "NDJSON" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "summary.item_count": { "forms": { "other": "{count} 项" }, "placeholders": ["count"], "count": "cardinal", "accelerator": null, "group": null, "truncation": "never" }
+  }
+}

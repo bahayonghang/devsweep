@@ -5,6 +5,7 @@
 use devsweep_core::{execution, inventory, model, plan, process, rules, scan};
 
 mod application;
+mod i18n;
 mod tui;
 
 /// Runs the command-line application using process arguments.
