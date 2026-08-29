@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Load the complete backend pre-development and quality checklist for shared sizing work."}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Keep execution-policy ownership in the existing filesystem sizing module."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Keep pool failure and cancellation behavior truthful, non-panicking, and diagnostic."}
+{"file": ".trellis/tasks/08-29-bound-sizing-concurrency/research/current-sizing-evidence.md", "reason": "Implement from verified hot-path, caller, budget-semantic, and test-gap evidence."}
