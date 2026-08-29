@@ -1,0 +1,36 @@
+COMMAND: rtk just desktop-web-check
+EXIT: 0
+
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+generated src/api/types.gen.ts from 7 named fixture files
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/styles.test.ts (2 tests) 2ms
+ ✓ src/api/contract.test.ts (14 tests) 5ms
+ ✓ src/state/app-state.test.ts (10 tests) 4ms
+ ✓ src/api/bridge.test.ts (3 tests) 5ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 4ms
+ ✓ src/pages/ScanPage.test.tsx (1 test) 108ms
+ ✓ src/api/types-generation.test.ts (2 tests) 1247ms
+ ✓ src/App.test.tsx (10 tests) 1531ms
+ Test Files  8 passed (8)
+      Tests  45 passed (45)
+   Duration  3.90s
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 43 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.39 kB │ gzip:  0.27 kB
+dist/assets/index-B4CK4dz9.css    9.46 kB │ gzip:  2.82 kB
+dist/assets/index-qIxCC_dW.js   232.19 kB │ gzip: 71.00 kB
+✓ built in 445ms

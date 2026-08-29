@@ -1,0 +1,32 @@
+{
+  "id": "generated-app-icon-integration",
+  "name": "generated-app-icon-integration",
+  "title": "Integrate generated DevSweep app icon",
+  "description": "Promote the generated opaque icon master into a stable product asset, regenerate the complete Tauri native icon set, verify 16/32 px identity and Windows packaging, and hand the accepted asset to the shell owner.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "generated stable icon master; complete Tauri native icon inventory; 16/32 px Windows evidence; shell handoff only",
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-08-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-scan-resource-bounds-app-icon",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "1-foundation",
+    "depends_on": "none",
+    "approval_state": "implementation_approved",
+    "implementation_state": "verified_ready_for_commit",
+    "verification_state": "passed"
+  }
+}
