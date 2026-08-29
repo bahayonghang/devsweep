@@ -1,0 +1,15 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace the core, TUI, Tauri, decoder, reducer, and rendering boundaries without duplicating payload ownership."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Load backend scan and safety guidance before changing core contracts."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Keep cancellation and projection failures structured and truthful."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Use the React/Tauri pre-development and quality checklist."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Preserve the quiet workbench, accessible controls, and truthful progress copy."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Maintain reducer ownership, preview/report separation, and digest invalidation."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Keep IPC fixtures, generated types, and closed-world decoders in sync."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Preserve TUI semantics when shared progress changes."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Reuse job-correlated cumulative snapshot semantics and ignore stale worker updates."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Keep TUI worker/domain/view state ownership and selection invariants."}
+{"file": ".trellis/tasks/08-29-desktop-scan-progress-results/research/current-scan-flow.md", "reason": "Use the verified current-flow anchors, contract gaps, and risk inventory."}
+{"file": ".trellis/tasks/08-29-desktop-scan-progress-results/research/ui-brief.md", "reason": "Implement the approved active-scan hierarchy, states, classification, and responsive boundaries."}
+{"file": "CONTEXT.md", "reason": "Use canonical Scan Progress, Scan Preview, Scan Report, and Cleanup Plan vocabulary."}
+{"file": "docs/adr/0001-separate-scan-preview-from-cleanup-authority.md", "reason": "Preserve the accepted preview-versus-authority architectural decision."}
+{"file": ".trellis/tasks/08-29-desktop-scan-progress-results/research/contract-review-summary.md", "reason": "Implementation-facing independent review of authority, cancellation, transport, TUI, UI, and test contracts."}
