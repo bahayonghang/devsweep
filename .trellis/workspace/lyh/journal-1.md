@@ -1402,3 +1402,26 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 49: 实现桌面扫描进度与分类结果
+
+**Date**: 2026-08-29
+**Task**: 实现桌面扫描进度与分类结果
+**Branch**: `dev`
+
+### Summary
+
+实现核心累计扫描预览、CLI/TUI 只读阶段、Tauri Channel 传输与桌面分类结果界面；补齐取消竞态、权限隔离、无障碍节流、规格文档和视觉证据，并通过全部质量门禁。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `53a4082` | (see git log) |
+| `8fb4a86` | (see git log) |
+| `9483ad1` | (see git log) |
+
+### Status
+
+[OK] **Completed**

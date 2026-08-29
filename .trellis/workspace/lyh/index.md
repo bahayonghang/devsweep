@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 48
-- **Last Active**: 2026-08-03
+- **Total Sessions**: 49
+- **Last Active**: 2026-08-29
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1404 | Active |
+| `journal-1.md` | ~1427 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 49 | 2026-08-29 | 实现桌面扫描进度与分类结果 | `53a4082`, `8fb4a86`, `9483ad1` | `dev` |
 | 48 | 2026-08-03 | 完成 Tauri 桌面应用任务树 | `2a63c39` | `dev` |
 | 47 | 2026-08-03 | 修复桌面 CI 前端门禁 | `712884a` | `dev` |
 | 46 | 2026-08-03 | 完成桌面扫描审查执行界面 | `6408f65` | `dev` |
