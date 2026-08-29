@@ -1,6 +1,11 @@
-use std::{fs, path::Path, sync::Arc, time::SystemTime};
+use std::{
+    fs,
+    path::Path,
+    sync::{Arc, OnceLock},
+    time::SystemTime,
+};
 
-use rayon::prelude::*;
+use rayon::{ThreadPool, ThreadPoolBuilder, prelude::*};
 
 use crate::{
     model::{SizingWarning, SizingWarningKind},
@@ -57,6 +62,31 @@ impl SizeEstimate {
 /// Default entry budget for a single size walk root.
 pub(crate) const DEFAULT_SIZE_ENTRY_BUDGET: usize = 50_000;
 
+/// Hard ceiling for filesystem-sizing work owned by this module.
+const SIZE_WALK_WORKERS: usize = 2;
+const MAX_SIZE_WALK_WORKERS: usize = 4;
+const _: () = assert!(SIZE_WALK_WORKERS <= MAX_SIZE_WALK_WORKERS);
+
+static SIZE_WALK_POOL: OnceLock<Result<ThreadPool, rayon::ThreadPoolBuildError>> = OnceLock::new();
+
+#[derive(Clone, Copy)]
+enum RootExecutionMode<'a> {
+    Dedicated(&'a ThreadPool),
+    SerialFallback,
+}
+
+fn production_root_execution_mode() -> RootExecutionMode<'static> {
+    match SIZE_WALK_POOL.get_or_init(|| {
+        ThreadPoolBuilder::new()
+            .num_threads(SIZE_WALK_WORKERS)
+            .thread_name(|index| format!("devsweep-size-{index}"))
+            .build()
+    }) {
+        Ok(pool) => RootExecutionMode::Dedicated(pool),
+        Err(_) => RootExecutionMode::SerialFallback,
+    }
+}
+
 #[cfg(test)]
 fn estimate_tree(path: &Path) -> SizeEstimate {
     estimate_tree_with_budget(path, DEFAULT_SIZE_ENTRY_BUDGET)
@@ -82,14 +112,33 @@ pub(crate) fn estimate_tree_with_budget_and_cancel_and_probe(
     cancel: Option<&Arc<FlagCancelObserver>>,
     probe: &dyn PathReparseProbe,
 ) -> SizeEstimate {
+    estimate_tree_with_limits_and_mode_and_probe(
+        path,
+        entry_budget,
+        64,
+        cancel,
+        probe,
+        production_root_execution_mode(),
+    )
+}
+
+fn estimate_tree_with_limits_and_mode_and_probe(
+    path: &Path,
+    entry_budget: usize,
+    max_depth: usize,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    probe: &dyn PathReparseProbe,
+    root_execution: RootExecutionMode<'_>,
+) -> SizeEstimate {
     let mut remaining = entry_budget;
     estimate_tree_bounded(
         path,
         &mut remaining,
         0,
-        64,
+        max_depth,
         cancel.map(|flag| flag.as_ref()),
         probe,
+        root_execution,
     )
 }
 
@@ -100,6 +149,7 @@ fn estimate_tree_bounded(
     max_depth: usize,
     cancel: Option<&FlagCancelObserver>,
     probe: &dyn PathReparseProbe,
+    root_execution: RootExecutionMode<'_>,
 ) -> SizeEstimate {
     if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
         return SizeEstimate {
@@ -221,19 +271,19 @@ fn estimate_tree_bounded(
         }
     }
 
-    // Top-level fan-out may use rayon; nested walks stay sequential to avoid
-    // task explosion on deep trees.
+    // Top-level fan-out uses only the module-owned pool. Nested walks stay
+    // sequential to avoid task explosion on deep trees.
     let child_estimate = if depth == 0 && children.len() > 1 {
-        children
-            .par_iter()
-            .map(|child| {
-                let mut local = (*remaining).min(DEFAULT_SIZE_ENTRY_BUDGET);
-                estimate_tree_bounded(child, &mut local, depth + 1, max_depth, cancel, probe)
-            })
-            .reduce(
-                || SizeEstimate::trusted(0, None),
-                |left, right| left.merge(right),
-            )
+        estimate_root_children(
+            path,
+            &children,
+            *remaining,
+            depth + 1,
+            max_depth,
+            cancel,
+            probe,
+            root_execution,
+        )
     } else {
         let mut acc = SizeEstimate::trusted(0, None);
         for child in &children {
@@ -252,6 +302,7 @@ fn estimate_tree_bounded(
                 max_depth,
                 cancel,
                 probe,
+                root_execution,
             ));
         }
         acc
@@ -264,6 +315,58 @@ fn estimate_tree_bounded(
         estimate.complete = false;
     }
     estimate
+}
+
+#[allow(clippy::too_many_arguments)]
+fn estimate_root_children(
+    root: &Path,
+    children: &[std::path::PathBuf],
+    root_remaining_at_fanout: usize,
+    child_depth: usize,
+    max_depth: usize,
+    cancel: Option<&FlagCancelObserver>,
+    probe: &dyn PathReparseProbe,
+    root_execution: RootExecutionMode<'_>,
+) -> SizeEstimate {
+    let estimate_child = |child: &Path| {
+        let mut local_remaining = root_remaining_at_fanout.min(DEFAULT_SIZE_ENTRY_BUDGET);
+        estimate_tree_bounded(
+            child,
+            &mut local_remaining,
+            child_depth,
+            max_depth,
+            cancel,
+            probe,
+            root_execution,
+        )
+    };
+
+    match root_execution {
+        RootExecutionMode::Dedicated(pool) => pool.install(|| {
+            children
+                .par_iter()
+                .map(|child| estimate_child(child))
+                .reduce(
+                    || SizeEstimate::trusted(0, None),
+                    |left, right| left.merge(right),
+                )
+        }),
+        RootExecutionMode::SerialFallback => {
+            let mut estimate = SizeEstimate::trusted(0, None);
+            for child in children {
+                if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                    estimate.complete = false;
+                    estimate.warnings.push(sizing_warning(
+                        SizingWarningKind::Canceled,
+                        format!("size walk canceled under {}", root.display()),
+                    ));
+                    break;
+                }
+                estimate = estimate.merge(estimate_child(child));
+            }
+            estimate
+        }
+    }
 }
 
 fn max_mtime(left: Option<SystemTime>, right: Option<SystemTime>) -> Option<SystemTime> {
@@ -288,7 +391,12 @@ mod tests {
         collections::HashMap,
         fs,
         path::{Path, PathBuf},
-        time::SystemTime,
+        sync::{
+            Arc, Condvar, Mutex,
+            atomic::{AtomicUsize, Ordering},
+        },
+        thread,
+        time::{Duration, Instant, SystemTime},
     };
 
     use tempfile::TempDir;
@@ -296,6 +404,12 @@ mod tests {
     use super::*;
 
     const CLOUD_FILES_REPARSE_TAG: u32 = 0x9000_701A;
+
+    #[derive(Clone, Copy)]
+    enum TestRootMode {
+        Dedicated,
+        Serial,
+    }
 
     struct FixtureReparseProbe {
         results: HashMap<PathBuf, ReparseProbeResult>,
@@ -374,39 +488,139 @@ mod tests {
         }
         fixture.file("root/empty/.keep", "");
 
-        assert_eq!(
-            estimate_tree(&fixture.path("root")),
-            serial_estimate_tree(&fixture.path("root"))
+        assert_estimates_equivalent(
+            &estimate_tree(&fixture.path("root")),
+            &serial_estimate_tree(&fixture.path("root")),
         );
     }
 
     #[test]
-    fn estimate_tree_stops_promptly_when_cancel_is_requested() {
-        use crate::process::FlagCancelObserver;
-        use std::sync::Arc;
+    fn dedicated_pool_enforces_the_worker_ceiling() {
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        for child in 0..(SIZE_WALK_WORKERS * 2) {
+            fixture.file(&format!("root/file-{child}.txt"), "payload");
+        }
+        let probe = Arc::new(WorkerGateProbe::new(root.clone()));
+        let worker_probe = Arc::clone(&probe);
+        let pool = test_pool();
+        assert_eq!(pool.current_num_threads(), SIZE_WALK_WORKERS);
 
+        let handle = thread::spawn(move || {
+            estimate_tree_with_limits_and_mode_and_probe(
+                &root,
+                DEFAULT_SIZE_ENTRY_BUDGET,
+                64,
+                None,
+                worker_probe.as_ref(),
+                RootExecutionMode::Dedicated(&pool),
+            )
+        });
+
+        probe.wait_for_workers(SIZE_WALK_WORKERS);
+        probe.release();
+        let estimate = handle.join().expect("dedicated size walk joins");
+        assert!(estimate.complete, "warnings: {:?}", estimate.warnings);
+        assert_eq!(probe.peak.load(Ordering::SeqCst), SIZE_WALK_WORKERS);
+        assert!(probe.peak.load(Ordering::SeqCst) <= SIZE_WALK_WORKERS);
+    }
+
+    #[test]
+    fn estimate_tree_stops_promptly_when_cancel_is_requested() {
         let fixture = Fixture::new();
         for i in 0..200 {
             fixture.file(&format!("root/file-{i}.txt"), "payload");
         }
         let cancel = Arc::new(FlagCancelObserver::new());
         cancel.request_cancel();
-        let started = std::time::Instant::now();
-        let estimate =
-            estimate_tree_with_budget_and_cancel(&fixture.path("root"), 50_000, Some(&cancel));
-        let elapsed = started.elapsed();
-        assert!(!estimate.complete);
-        assert!(
-            estimate
-                .warnings
-                .iter()
-                .any(|warning| warning.kind == SizingWarningKind::Canceled),
-            "expected cancel warning: {:?}",
-            estimate.warnings
+        for mode in [TestRootMode::Dedicated, TestRootMode::Serial] {
+            let started = Instant::now();
+            let estimate = estimate_with_test_mode(
+                &fixture.path("root"),
+                50_000,
+                64,
+                Some(&cancel),
+                &SystemPathReparseProbe,
+                mode,
+            );
+            let elapsed = started.elapsed();
+            assert_canceled(&estimate);
+            assert!(
+                elapsed < Duration::from_millis(250),
+                "cancel should abort size walk quickly, took {elapsed:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn dedicated_and_serial_modes_cancel_mid_walk_without_deadlock() {
+        for mode in [TestRootMode::Dedicated, TestRootMode::Serial] {
+            assert_mid_walk_cancel(mode);
+        }
+    }
+
+    #[test]
+    fn dedicated_and_serial_modes_preserve_fresh_root_child_budgets() {
+        let fixture = Fixture::new();
+        for child in 0..4 {
+            fixture.file(&format!("root/dir-{child}/payload.bin"), "payload");
+        }
+        let root = fixture.path("root");
+        let dedicated = estimate_with_test_mode(
+            &root,
+            2,
+            64,
+            None,
+            &SystemPathReparseProbe,
+            TestRootMode::Dedicated,
         );
-        assert!(
-            elapsed.as_millis() < 250,
-            "cancel should abort size walk quickly, took {elapsed:?}"
+        let serial = estimate_with_test_mode(
+            &root,
+            2,
+            64,
+            None,
+            &SystemPathReparseProbe,
+            TestRootMode::Serial,
+        );
+
+        assert_estimates_equivalent(&dedicated, &serial);
+        assert!(!dedicated.complete);
+        assert_eq!(
+            warning_count(&dedicated, SizingWarningKind::EntryBudgetExhausted),
+            4,
+            "every root child must receive its own local budget"
+        );
+    }
+
+    #[test]
+    fn low_max_depth_is_incomplete_in_both_root_modes() {
+        let fixture = Fixture::new();
+        fixture.file("root/left/nested/payload.bin", "left");
+        fixture.file("root/right/nested/payload.bin", "right");
+        let root = fixture.path("root");
+
+        let dedicated = estimate_with_test_mode(
+            &root,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            1,
+            None,
+            &SystemPathReparseProbe,
+            TestRootMode::Dedicated,
+        );
+        let serial = estimate_with_test_mode(
+            &root,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            1,
+            None,
+            &SystemPathReparseProbe,
+            TestRootMode::Serial,
+        );
+
+        assert_estimates_equivalent(&dedicated, &serial);
+        assert!(!dedicated.complete);
+        assert_eq!(
+            warning_count(&dedicated, SizingWarningKind::MaxDepthReached),
+            2
         );
     }
 
@@ -483,6 +697,16 @@ mod tests {
 
         assert_eq!(estimate.logical_bytes, Some(5));
         assert!(estimate.complete);
+
+        let serial = estimate_with_test_mode(
+            &root,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            64,
+            None,
+            &probe,
+            TestRootMode::Serial,
+        );
+        assert_estimates_equivalent(&estimate, &serial);
     }
 
     #[test]
@@ -634,8 +858,239 @@ mod tests {
             .reduce(|left, right| left.max(right))
     }
 
+    fn test_pool() -> ThreadPool {
+        ThreadPoolBuilder::new()
+            .num_threads(SIZE_WALK_WORKERS)
+            .build()
+            .expect("dedicated test pool")
+    }
+
+    fn estimate_with_test_mode(
+        path: &Path,
+        entry_budget: usize,
+        max_depth: usize,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        probe: &dyn PathReparseProbe,
+        mode: TestRootMode,
+    ) -> SizeEstimate {
+        match mode {
+            TestRootMode::Dedicated => {
+                let pool = test_pool();
+                estimate_tree_with_limits_and_mode_and_probe(
+                    path,
+                    entry_budget,
+                    max_depth,
+                    cancel,
+                    probe,
+                    RootExecutionMode::Dedicated(&pool),
+                )
+            }
+            TestRootMode::Serial => estimate_tree_with_limits_and_mode_and_probe(
+                path,
+                entry_budget,
+                max_depth,
+                cancel,
+                probe,
+                RootExecutionMode::SerialFallback,
+            ),
+        }
+    }
+
     fn serial_estimate_tree(path: &Path) -> SizeEstimate {
-        estimate_tree(path)
+        estimate_with_test_mode(
+            path,
+            DEFAULT_SIZE_ENTRY_BUDGET,
+            64,
+            None,
+            &SystemPathReparseProbe,
+            TestRootMode::Serial,
+        )
+    }
+
+    fn warning_kinds(estimate: &SizeEstimate) -> Vec<String> {
+        let mut kinds = estimate
+            .warnings
+            .iter()
+            .map(|warning| format!("{:?}", warning.kind))
+            .collect::<Vec<_>>();
+        kinds.sort();
+        kinds
+    }
+
+    fn warning_count(estimate: &SizeEstimate, kind: SizingWarningKind) -> usize {
+        estimate
+            .warnings
+            .iter()
+            .filter(|warning| warning.kind == kind)
+            .count()
+    }
+
+    fn assert_estimates_equivalent(left: &SizeEstimate, right: &SizeEstimate) {
+        assert_eq!(left.logical_bytes, right.logical_bytes);
+        assert_eq!(left.complete, right.complete);
+        assert_eq!(left.last_modified, right.last_modified);
+        assert_eq!(warning_kinds(left), warning_kinds(right));
+    }
+
+    fn assert_canceled(estimate: &SizeEstimate) {
+        assert!(!estimate.complete);
+        assert!(
+            estimate
+                .warnings
+                .iter()
+                .any(|warning| warning.kind == SizingWarningKind::Canceled),
+            "expected cancel warning: {:?}",
+            estimate.warnings
+        );
+    }
+
+    fn assert_mid_walk_cancel(mode: TestRootMode) {
+        let fixture = Fixture::new();
+        let root = fixture.path("root");
+        for child in 0..8 {
+            fixture.file(&format!("root/file-{child}.txt"), "payload");
+        }
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let probe = Arc::new(CancelGateProbe::new(root.clone()));
+        let worker_cancel = Arc::clone(&cancel);
+        let worker_probe = Arc::clone(&probe);
+        let handle = thread::spawn(move || {
+            estimate_with_test_mode(
+                &root,
+                DEFAULT_SIZE_ENTRY_BUDGET,
+                64,
+                Some(&worker_cancel),
+                worker_probe.as_ref(),
+                mode,
+            )
+        });
+
+        probe.wait_until_entered();
+        cancel.request_cancel();
+        probe.release();
+        let released = Instant::now();
+        let estimate = handle.join().expect("canceled size walk joins");
+        let elapsed = released.elapsed();
+        assert_canceled(&estimate);
+        assert!(
+            elapsed < Duration::from_millis(250),
+            "mid-walk cancellation took {elapsed:?} after release"
+        );
+    }
+
+    #[derive(Default)]
+    struct GateState {
+        entered: usize,
+        released: bool,
+    }
+
+    struct WorkerGateProbe {
+        root: PathBuf,
+        state: Mutex<GateState>,
+        changed: Condvar,
+        current: AtomicUsize,
+        peak: AtomicUsize,
+    }
+
+    impl WorkerGateProbe {
+        fn new(root: PathBuf) -> Self {
+            Self {
+                root,
+                state: Mutex::new(GateState::default()),
+                changed: Condvar::new(),
+                current: AtomicUsize::new(0),
+                peak: AtomicUsize::new(0),
+            }
+        }
+
+        fn wait_for_workers(&self, expected: usize) {
+            let state = self.state.lock().expect("worker gate lock");
+            let (state, timeout) = self
+                .changed
+                .wait_timeout_while(state, Duration::from_secs(5), |state| {
+                    state.entered < expected
+                })
+                .expect("worker gate wait");
+            assert!(!timeout.timed_out(), "workers did not reach gate");
+            assert!(state.entered >= expected);
+        }
+
+        fn release(&self) {
+            let mut state = self.state.lock().expect("worker gate lock");
+            state.released = true;
+            self.changed.notify_all();
+        }
+    }
+
+    impl PathReparseProbe for WorkerGateProbe {
+        fn probe(&self, path: &Path) -> ReparseProbeResult {
+            if path.parent() != Some(self.root.as_path()) {
+                return ReparseProbeResult::NotReparsePoint;
+            }
+            let current = self.current.fetch_add(1, Ordering::SeqCst) + 1;
+            self.peak.fetch_max(current, Ordering::SeqCst);
+            let mut state = self.state.lock().expect("worker gate lock");
+            state.entered += 1;
+            self.changed.notify_all();
+            let (state, timeout) = self
+                .changed
+                .wait_timeout_while(state, Duration::from_secs(5), |state| !state.released)
+                .expect("worker release wait");
+            assert!(!timeout.timed_out(), "worker gate was not released");
+            drop(state);
+            self.current.fetch_sub(1, Ordering::SeqCst);
+            ReparseProbeResult::NotReparsePoint
+        }
+    }
+
+    struct CancelGateProbe {
+        root: PathBuf,
+        state: Mutex<GateState>,
+        changed: Condvar,
+    }
+
+    impl CancelGateProbe {
+        fn new(root: PathBuf) -> Self {
+            Self {
+                root,
+                state: Mutex::new(GateState::default()),
+                changed: Condvar::new(),
+            }
+        }
+
+        fn wait_until_entered(&self) {
+            let state = self.state.lock().expect("cancel gate lock");
+            let (state, timeout) = self
+                .changed
+                .wait_timeout_while(state, Duration::from_secs(5), |state| state.entered == 0)
+                .expect("cancel gate wait");
+            assert!(!timeout.timed_out(), "size walk did not reach cancel gate");
+            assert!(state.entered > 0);
+        }
+
+        fn release(&self) {
+            let mut state = self.state.lock().expect("cancel gate lock");
+            state.released = true;
+            self.changed.notify_all();
+        }
+    }
+
+    impl PathReparseProbe for CancelGateProbe {
+        fn probe(&self, path: &Path) -> ReparseProbeResult {
+            if path.parent() != Some(self.root.as_path()) {
+                return ReparseProbeResult::NotReparsePoint;
+            }
+            let mut state = self.state.lock().expect("cancel gate lock");
+            state.entered += 1;
+            self.changed.notify_all();
+            let (state, timeout) = self
+                .changed
+                .wait_timeout_while(state, Duration::from_secs(5), |state| !state.released)
+                .expect("cancel release wait");
+            assert!(!timeout.timed_out(), "cancel gate was not released");
+            drop(state);
+            ReparseProbeResult::NotReparsePoint
+        }
     }
 
     struct Fixture {
