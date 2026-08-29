@@ -86,6 +86,10 @@ impl App {
             .any(|job| job.kind == JobKind::Clean && job.status.is_active())
     }
 
+    pub(super) fn has_unpromoted_scan_preview(&self) -> bool {
+        self.scan_snapshot.is_some()
+    }
+
     pub(super) fn has_active_inventory_job(&self) -> bool {
         self.jobs
             .iter()

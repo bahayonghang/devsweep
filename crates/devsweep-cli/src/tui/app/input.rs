@@ -64,7 +64,15 @@ impl App {
                 if self.active_tab == ActiveTab::Inventory {
                     return Vec::new();
                 }
-                if self.has_active_clean_job() {
+                if self.has_unpromoted_scan_preview() {
+                    self.log_entry(
+                        AppLogLevel::Info,
+                        AppLogSource::Scan,
+                        None,
+                        None,
+                        "Scan previews are read-only until the scan finishes",
+                    );
+                } else if self.has_active_clean_job() {
                     self.log_entry(
                         AppLogLevel::Warning,
                         AppLogSource::Clean,
@@ -98,6 +106,16 @@ impl App {
                 if self.active_tab == ActiveTab::Inventory {
                     return Vec::new();
                 }
+                if self.has_unpromoted_scan_preview() {
+                    self.log_entry(
+                        AppLogLevel::Info,
+                        AppLogSource::Scan,
+                        None,
+                        None,
+                        "Dry run is unavailable until the scan finishes",
+                    );
+                    return Vec::new();
+                }
                 self.overlay = Overlay::DryRun;
                 Vec::new()
             }
@@ -122,6 +140,9 @@ impl App {
             }
             KeyCode::Char('a') => {
                 if self.active_tab == ActiveTab::Inventory {
+                    return Vec::new();
+                }
+                if self.has_unpromoted_scan_preview() {
                     return Vec::new();
                 }
                 self.toggle_visible_selection();
@@ -188,13 +209,13 @@ impl App {
                 Vec::new()
             }
             KeyCode::Char('g') => {
-                if self.active_tab != ActiveTab::Inventory {
+                if self.active_tab != ActiveTab::Inventory && !self.has_unpromoted_scan_preview() {
                     self.toggle_selected_pycache_project();
                 }
                 Vec::new()
             }
             KeyCode::Char(' ') => {
-                if self.active_tab != ActiveTab::Inventory {
+                if self.active_tab != ActiveTab::Inventory && !self.has_unpromoted_scan_preview() {
                     self.toggle_selected_target();
                 }
                 Vec::new()

@@ -9,6 +9,7 @@ use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, SizingWarning, SizingWarningKind, TargetId, TargetKind,
 };
+use crate::process::CancelObserver;
 use crate::process::FlagCancelObserver;
 use crate::rules::{
     CARGO_HOME_RULE_DOC, GO_MODCACHE_DIRECTORY_RULE_ID, GO_MODCACHE_RULE_DOC,
@@ -34,6 +35,18 @@ impl GlobalProviderScanner {
     pub(crate) fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
         scan_with_probe(&SystemProviderProbe::with_cancel(cancel.cloned()))
     }
+
+    pub(crate) fn scan_with_cancel_and_progress(
+        &self,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> CleanupPlan {
+        scan_with_probe_and_progress(
+            &SystemProviderProbe::with_cancel(cancel.cloned()),
+            cancel,
+            on_target,
+        )
+    }
 }
 
 impl Default for GlobalProviderScanner {
@@ -43,18 +56,66 @@ impl Default for GlobalProviderScanner {
 }
 
 fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
+    scan_with_probe_and_progress(probe, None, &mut |_| {})
+}
+
+fn scan_with_probe_and_progress(
+    probe: &impl ProviderProbe,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    on_target: &mut dyn FnMut(CleanTarget),
+) -> CleanupPlan {
     let mut targets = Vec::new();
-    add_npm_targets(probe, &mut targets);
-    add_pip_target(probe, &mut targets);
-    add_pnpm_target(probe, &mut targets);
-    add_yarn_target(probe, &mut targets);
-    add_cargo_home_target(probe, &mut targets);
-    add_go_modcache_target(probe, &mut targets);
-    add_known_cache_targets(probe, &mut targets);
+    observe_new_targets(&mut targets, on_target, |targets| {
+        add_npm_targets(probe, targets)
+    });
+    if !cancel_requested(cancel) {
+        observe_new_targets(&mut targets, on_target, |targets| {
+            add_pip_target(probe, targets)
+        });
+    }
+    if !cancel_requested(cancel) {
+        observe_new_targets(&mut targets, on_target, |targets| {
+            add_pnpm_target(probe, targets)
+        });
+    }
+    if !cancel_requested(cancel) {
+        observe_new_targets(&mut targets, on_target, |targets| {
+            add_yarn_target(probe, targets)
+        });
+    }
+    if !cancel_requested(cancel) {
+        observe_new_targets(&mut targets, on_target, |targets| {
+            add_cargo_home_target(probe, targets)
+        });
+    }
+    if !cancel_requested(cancel) {
+        observe_new_targets(&mut targets, on_target, |targets| {
+            add_go_modcache_target(probe, targets)
+        });
+    }
+    if !cancel_requested(cancel) {
+        add_known_cache_targets_with_progress(probe, &mut targets, cancel, on_target);
+    }
 
     CleanupPlan {
         version: CLEANUP_PLAN_VERSION,
         targets,
+    }
+}
+
+fn cancel_requested(cancel: Option<&Arc<FlagCancelObserver>>) -> bool {
+    cancel.is_some_and(|flag| flag.is_cancel_requested())
+}
+
+fn observe_new_targets(
+    targets: &mut Vec<CleanTarget>,
+    on_target: &mut dyn FnMut(CleanTarget),
+    add: impl FnOnce(&mut Vec<CleanTarget>),
+) {
+    let start = targets.len();
+    add(targets);
+    for target in targets[start..].iter().cloned() {
+        on_target(target);
     }
 }
 
@@ -287,11 +348,19 @@ fn add_cargo_home_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarg
 /// Emit targets for known home-relative cache directories that have no official
 /// cleanup command (gradle / maven / go / ...). Trash rules are reversible;
 /// inspect-only rules are surfaced but never auto-deleted. Never auto-selected.
-fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
+fn add_known_cache_targets_with_progress(
+    probe: &impl ProviderProbe,
+    targets: &mut Vec<CleanTarget>,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    on_target: &mut dyn FnMut(CleanTarget),
+) {
     let Some(home) = probe.home_dir() else {
         return;
     };
     for rule in global_cache_rules() {
+        if cancel_requested(cancel) {
+            break;
+        }
         // Official go clean provider owns the executable action; skip the
         // inspect-only home-relative duplicate when go is available.
         if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID && probe.resolve_executable("go").is_some() {
@@ -306,7 +375,7 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
             KnownCacheAction::Trash => CleanAction::MoveToTrash { path: path.clone() },
             KnownCacheAction::InspectOnly => CleanAction::NoopInspectOnly,
         };
-        targets.push(CleanTarget {
+        let target = CleanTarget {
             id: TargetId::new(format!("{}:{}", rule.id, path.display())),
             scope: Scope::Global,
             ecosystem: rule.ecosystem.clone(),
@@ -329,7 +398,9 @@ fn add_known_cache_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTa
                 },
             ],
             action,
-        });
+        };
+        targets.push(target.clone());
+        on_target(target);
     }
 }
 
@@ -730,6 +801,44 @@ mod tests {
             evidence,
             Evidence::RuleMatched { rule_id } if rule_id == "gradle.caches"
         )));
+    }
+
+    #[test]
+    fn known_cache_targets_publish_each_completed_target_before_the_helper_finishes() {
+        let rules = global_cache_rules().take(2).collect::<Vec<_>>();
+        assert_eq!(rules.len(), 2, "fixture requires two known-cache rules");
+        let home = PathBuf::from("/home");
+        let fixture_probe = FakeProbe::default();
+        let paths = rules
+            .iter()
+            .map(|rule| resolve_known_cache_path(&fixture_probe, &home, rule))
+            .collect::<Vec<_>>();
+        let probe = FakeProbe {
+            home: Some(home),
+            dirs: paths.iter().cloned().collect(),
+            sizes: paths.iter().cloned().map(|path| (path, 1)).collect(),
+            ..Default::default()
+        };
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let observer_cancel = Arc::clone(&cancel);
+        let mut observed = Vec::new();
+
+        let plan = scan_with_probe_and_progress(&probe, Some(&cancel), &mut |target| {
+            observed.push(target.id);
+            observer_cancel.request_cancel();
+        });
+
+        assert_eq!(
+            observed.len(),
+            1,
+            "the first known cache is observable immediately"
+        );
+        assert_eq!(
+            plan.targets.len(),
+            1,
+            "cancellation stops the remaining helper loop"
+        );
+        assert_eq!(plan.targets[0].id, observed[0]);
     }
 
     #[test]

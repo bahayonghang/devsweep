@@ -1,6 +1,6 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 
 mod global;
@@ -14,7 +14,9 @@ pub(crate) use global::resolve_executable;
 #[cfg(test)]
 use ranking::FRESHNESS_GUARD_RULE_ID;
 
-use crate::model::{CleanupPlan, ScanHealth, ScanReport, TargetId};
+use crate::model::{
+    CleanTarget, CleanupPlan, ScanHealth, ScanPreviewSnapshot, ScanReport, TargetId,
+};
 use crate::plan::untrusted_plan_from_scan;
 use crate::process::{CancelObserver, FlagCancelObserver};
 
@@ -34,6 +36,16 @@ pub struct ProjectScanOutcome {
 struct ScanPipelineOutcome {
     plan: CleanupPlan,
     health: ScanHealth,
+    canceled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// Explicit terminal result for callers that must not promote canceled work.
+pub enum ScanReportRunOutcome {
+    /// Every requested scan phase reached its terminal boundary.
+    Completed(ScanReport),
+    /// Cooperative cancellation stopped the scan before completion.
+    Canceled,
 }
 
 /// Injectable project-target scanner used by [`Sweeper`].
@@ -56,12 +68,40 @@ pub trait ProjectScan {
             health: ScanHealth::complete(),
         })
     }
+
+    /// Scans project roots and reports each fully constructed target as it is
+    /// discovered. The default preserves compatibility for injected scanners.
+    fn scan_roots_with_health_and_progress(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> Result<ProjectScanOutcome> {
+        let outcome = self.scan_roots_with_health(roots, cancel)?;
+        for target in outcome.plan.targets.iter().cloned() {
+            on_target(target);
+        }
+        Ok(outcome)
+    }
 }
 
 /// Injectable global-provider scanner used by [`Sweeper`].
 pub trait GlobalScan {
     /// Scans global providers while observing cooperative cancellation.
     fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan;
+
+    /// Scans global providers while reporting fully constructed targets.
+    fn scan_with_progress(
+        &self,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> CleanupPlan {
+        let plan = self.scan_with_cancel(cancel);
+        for target in plan.targets.iter().cloned() {
+            on_target(target);
+        }
+        plan
+    }
 }
 
 impl ProjectScan for ProjectScanner {
@@ -85,11 +125,34 @@ impl ProjectScan for ProjectScanner {
             health: ScanHealth::new(outcome.completeness, outcome.diagnostics),
         })
     }
+
+    fn scan_roots_with_health_and_progress(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> Result<ProjectScanOutcome> {
+        let outcome = ProjectScanner::scan_roots_with_diagnostics_and_cancel_and_progress(
+            self, roots, cancel, on_target,
+        )?;
+        Ok(ProjectScanOutcome {
+            plan: outcome.plan,
+            health: ScanHealth::new(outcome.completeness, outcome.diagnostics),
+        })
+    }
 }
 
 impl GlobalScan for GlobalProviderScanner {
     fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
         GlobalProviderScanner::scan_with_cancel(self, cancel)
+    }
+
+    fn scan_with_progress(
+        &self,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> CleanupPlan {
+        GlobalProviderScanner::scan_with_cancel_and_progress(self, cancel, on_target)
     }
 }
 
@@ -125,6 +188,23 @@ pub struct ScanProgress {
     pub message: String,
     /// Cumulative, already-ranked partial plan for the phases finished so far.
     pub partial: Option<CleanupPlan>,
+}
+
+/// Projects an internal cumulative plan into a display-only preview.
+///
+/// Projection rejects malformed identities and duplicate target ids instead of
+/// sending an ambiguous snapshot across an untrusted presentation boundary.
+pub fn scan_preview_from_plan(plan: &CleanupPlan) -> Result<ScanPreviewSnapshot> {
+    let mut ids = HashSet::with_capacity(plan.targets.len());
+    for target in &plan.targets {
+        if target.id.as_str().trim().is_empty() {
+            bail!("scan preview target id must not be empty");
+        }
+        if !ids.insert(target.id.clone()) {
+            bail!("duplicate scan preview target id {}", target.id.as_str());
+        }
+    }
+    Ok(ScanPreviewSnapshot::from_cleanup_plan(plan))
 }
 
 /// Orchestrates project and global scanning, merging, and ranking.
@@ -191,6 +271,25 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
         Ok(ScanReport::new(plan, outcome.health))
     }
 
+    /// Runs the report pipeline and keeps cooperative cancellation distinct
+    /// from a completed report with partial health.
+    pub fn full_scan_report_run_with_cancel(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanReportRunOutcome> {
+        let outcome = self.full_scan_outcome(options, progress, cancel)?;
+        if outcome.canceled {
+            return Ok(ScanReportRunOutcome::Canceled);
+        }
+        let plan = untrusted_plan_from_scan(&outcome.plan)?;
+        Ok(ScanReportRunOutcome::Completed(ScanReport::new(
+            plan,
+            outcome.health,
+        )))
+    }
+
     /// Runs a normal scan, then re-estimates exactly one discovered target with
     /// the reviewed higher budget. The target ID must be present in this live
     /// scan; callers cannot provide an arbitrary path to the size walker.
@@ -233,23 +332,52 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
                 message: "Scanning current directory".to_string(),
                 partial: None,
             });
-            let project_outcome = self
-                .projects
-                .scan_roots_with_health(&options.roots, cancel)?;
+            let project_outcome = self.projects.scan_roots_with_health_and_progress(
+                &options.roots,
+                cancel,
+                &mut |target| {
+                    merge_and_rank_targets(&mut plan, [target]);
+                    progress(ScanProgress {
+                        phase: ScanPhase::Projects,
+                        message: format!(
+                            "Discovered {} project {}",
+                            plan.targets.len(),
+                            target_noun(plan.targets.len())
+                        ),
+                        partial: Some(plan.clone()),
+                    });
+                },
+            )?;
             let count = project_outcome.plan.targets.len();
-            plan.targets.extend(project_outcome.plan.targets);
+            merge_and_rank_targets(&mut plan, project_outcome.plan.targets);
             health.merge(project_outcome.health);
-            rank_merged_plan(&mut plan);
             progress(ScanProgress {
                 phase: ScanPhase::Projects,
-                message: format!("Project scan finished: {count} target(s)"),
+                message: format!("Project scan finished: {count} {}", target_noun(count)),
                 partial: Some(plan.clone()),
             });
         }
 
         if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
             health.mark_partial();
-            return Ok(ScanPipelineOutcome { plan, health });
+            let (phase, message) = if options.include_projects {
+                (
+                    ScanPhase::Projects,
+                    "Project scan canceled at a safe boundary",
+                )
+            } else {
+                (ScanPhase::Global, "Global scan canceled at a safe boundary")
+            };
+            progress(ScanProgress {
+                phase,
+                message: message.to_string(),
+                partial: (!plan.targets.is_empty()).then(|| plan.clone()),
+            });
+            return Ok(ScanPipelineOutcome {
+                plan,
+                health,
+                canceled: true,
+            });
         }
 
         if options.include_global {
@@ -263,18 +391,47 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
                 message: "Estimating global cache sizes".to_string(),
                 partial: None,
             });
-            let global_plan = self.global.scan_with_cancel(cancel);
+            let global_plan = self.global.scan_with_progress(cancel, &mut |target| {
+                merge_and_rank_targets(&mut plan, [target]);
+                progress(ScanProgress {
+                    phase: ScanPhase::Global,
+                    message: format!(
+                        "Discovered {} {} so far",
+                        plan.targets.len(),
+                        target_noun(plan.targets.len())
+                    ),
+                    partial: Some(plan.clone()),
+                });
+            });
             let count = global_plan.targets.len();
-            plan.targets.extend(global_plan.targets);
-            rank_merged_plan(&mut plan);
+            merge_and_rank_targets(&mut plan, global_plan.targets);
+
+            if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                health.mark_partial();
+                progress(ScanProgress {
+                    phase: ScanPhase::Global,
+                    message: "Global scan canceled at a safe boundary".to_string(),
+                    partial: (!plan.targets.is_empty()).then(|| plan.clone()),
+                });
+                return Ok(ScanPipelineOutcome {
+                    plan,
+                    health,
+                    canceled: true,
+                });
+            }
+
             progress(ScanProgress {
                 phase: ScanPhase::Global,
-                message: format!("Global scan finished: {count} target(s)"),
+                message: format!("Global scan finished: {count} {}", target_noun(count)),
                 partial: Some(plan.clone()),
             });
         }
 
-        Ok(ScanPipelineOutcome { plan, health })
+        Ok(ScanPipelineOutcome {
+            plan,
+            health,
+            canceled: false,
+        })
     }
 }
 
@@ -282,6 +439,17 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
 /// once" as an invariant, re-applying it to the cumulative set per phase.
 fn rank_merged_plan(plan: &mut CleanupPlan) {
     rank_cleanup_plan(plan);
+}
+
+fn target_noun(count: usize) -> &'static str {
+    if count == 1 { "target" } else { "targets" }
+}
+
+fn merge_and_rank_targets(plan: &mut CleanupPlan, targets: impl IntoIterator<Item = CleanTarget>) {
+    let mut merged = std::mem::take(&mut plan.targets);
+    merged.extend(targets);
+    plan.targets = project::dedupe::dedupe_targets(merged);
+    rank_merged_plan(plan);
 }
 
 #[cfg(test)]
@@ -398,14 +566,13 @@ mod tests {
 
         let expected = [
             (ScanPhase::Projects, "Scanning current directory", false),
-            (
-                ScanPhase::Projects,
-                "Project scan finished: 1 target(s)",
-                true,
-            ),
+            (ScanPhase::Projects, "Discovered 1 project target", true),
+            (ScanPhase::Projects, "Project scan finished: 1 target", true),
             (ScanPhase::Global, "Scanning global providers", false),
             (ScanPhase::Global, "Estimating global cache sizes", false),
-            (ScanPhase::Global, "Global scan finished: 2 target(s)", true),
+            (ScanPhase::Global, "Discovered 2 targets so far", true),
+            (ScanPhase::Global, "Discovered 3 targets so far", true),
+            (ScanPhase::Global, "Global scan finished: 2 targets", true),
         ];
         assert_eq!(events.len(), expected.len());
         for (event, (phase, message, has_partial)) in events.iter().zip(expected) {
@@ -463,9 +630,73 @@ mod tests {
             })
             .expect("fake scan succeeds");
 
-        assert_eq!(partials.len(), 2);
+        assert_eq!(partials.len(), 4);
         assert_eq!(target_ids(&partials[0]), ["project"]);
-        assert_eq!(target_ids(&partials[1]), ["global", "project"]);
+        assert_eq!(target_ids(&partials[1]), ["project"]);
+        assert_eq!(target_ids(&partials[2]), ["global", "project"]);
+        assert_eq!(target_ids(&partials[3]), ["global", "project"]);
+    }
+
+    #[test]
+    fn preview_projection_omits_cleanup_authority_and_rejects_duplicate_ids() {
+        let mut command = target("command", 42, None, true);
+        command.action = CleanAction::Command {
+            program: "authority-fixture.exe".to_string(),
+            args: vec!["--dangerous".to_string()],
+            cwd: Some(PathBuf::from("C:/authority")),
+            irreversible: true,
+        };
+        let preview = scan_preview_from_plan(&plan_with(vec![command.clone()]))
+            .expect("typed target projects safely");
+        let json = serde_json::to_string(&preview).expect("preview serializes");
+
+        assert_eq!(preview.totals.target_count, 1);
+        assert!(!json.contains("authority-fixture.exe"));
+        assert!(!json.contains("--dangerous"));
+        assert!(!json.contains("selected_by_default"));
+        assert!(!json.contains("intent"));
+        assert!(!json.contains("action"));
+        assert!(!json.contains("version"));
+
+        assert!(
+            scan_preview_from_plan(&plan_with(vec![command.clone(), command])).is_err(),
+            "duplicate ids fail closed"
+        );
+    }
+
+    #[test]
+    fn explicit_terminal_outcome_does_not_promote_canceled_work() {
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+        let outcome = sweeper_with_both_sides()
+            .full_scan_report_run_with_cancel(&scan_all(), &mut |_| {}, Some(&cancel))
+            .expect("canceled scan returns a typed terminal outcome");
+
+        assert_eq!(outcome, ScanReportRunOutcome::Canceled);
+    }
+
+    #[test]
+    fn cancellation_requested_during_global_scan_is_not_promoted() {
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let sweeper = Sweeper::new(FakeProjects(Vec::new()), CancelingGlobal);
+        let mut events = Vec::new();
+        let outcome = sweeper
+            .full_scan_report_run_with_cancel(
+                &ScanOptions {
+                    include_projects: false,
+                    include_global: true,
+                    roots: Vec::new(),
+                },
+                &mut |event| events.push(event),
+                Some(&cancel),
+            )
+            .expect("global cancellation returns a terminal outcome");
+
+        assert_eq!(outcome, ScanReportRunOutcome::Canceled);
+        assert!(events.last().is_some_and(|event| {
+            event.phase == ScanPhase::Global
+                && event.message == "Global scan canceled at a safe boundary"
+        }));
     }
 
     #[test]
@@ -558,6 +789,17 @@ mod tests {
     impl GlobalScan for FakeGlobal {
         fn scan_with_cancel(&self, _cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
             plan_with(self.0.clone())
+        }
+    }
+
+    struct CancelingGlobal;
+
+    impl GlobalScan for CancelingGlobal {
+        fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
+            if let Some(cancel) = cancel {
+                cancel.request_cancel();
+            }
+            plan_with(vec![target("global-canceled", 1, None, false)])
         }
     }
 

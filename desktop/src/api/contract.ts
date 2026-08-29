@@ -3,11 +3,14 @@ import type {
   CapacityEstimate,
   CleanupIntent,
   CommandError,
+  DesktopScanProgress,
+  DesktopScanResult,
   DryRunOutcome,
   Evidence,
   ExecutionReport,
   OutcomeStatus,
-  ScanProgress,
+  ScanPreviewSnapshot,
+  ScanPreviewTarget,
   ScanReport,
   Scope,
   UntrustedTarget,
@@ -22,6 +25,11 @@ function record(value: unknown, name: string): RecordValue {
 function string(value: unknown, name: string): string {
   if (typeof value !== "string") throw new Error(`Invalid ${name}`);
   return value;
+}
+function nonEmptyString(value: unknown, name: string): string {
+  const decoded = string(value, name);
+  if (decoded.trim().length === 0) throw new Error(`Invalid ${name}`);
+  return decoded;
 }
 function unsignedInteger(value: unknown, name: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error(`Invalid ${name}`);
@@ -209,11 +217,87 @@ export function decodeScanReport(value: unknown): ScanReport {
   if (report.version !== 1 || report.plan.version !== 2) throw new Error("Unsupported scan or plan version");
   return report;
 }
-export function decodeScanProgress(value: unknown): ScanProgress {
-  const input = record(value, "scan progress");
-  exact(input, ["phase", "message", "partial"], "scan progress");
-  if (input.partial !== null) throw new Error("Invalid progress.partial authority");
-  return { phase: oneOf(input.phase, ["projects", "global"] as const, "progress.phase"), message: string(input.message, "progress.message"), partial: null };
+
+function decodePreviewTarget(value: unknown): ScanPreviewTarget {
+  const input = record(value, "scan preview target");
+  exact(input, ["id", "scope", "ecosystem", "kind", "path", "estimated_bytes", "size_complete", "sizing_warnings", "last_modified", "risk", "disposition", "evidence"], "scan preview target");
+  const lastModified = input.last_modified;
+  if (lastModified !== null) {
+    const time = record(lastModified, "preview.last_modified");
+    exact(time, ["secs_since_epoch", "nanos_since_epoch"], "preview.last_modified");
+    unsignedInteger(time.secs_since_epoch, "preview.last_modified.secs_since_epoch");
+    unsignedInteger(time.nanos_since_epoch, "preview.last_modified.nanos_since_epoch");
+  }
+  return {
+    id: nonEmptyString(input.id, "preview.id"),
+    scope: decodeScope(input.scope),
+    ecosystem: oneOf(input.ecosystem, ["rust", "node", "python", "docker", "generic"] as const, "preview.ecosystem"),
+    kind: oneOf(input.kind, ["package_cache", "build_artifacts", "dependency_directory", "virtual_env", "test_cache", "tool_cache"] as const, "preview.kind"),
+    path: input.path === null ? null : string(input.path, "preview.path"),
+    estimated_bytes: unsignedInteger(input.estimated_bytes, "preview.estimated_bytes"),
+    size_complete: boolean(input.size_complete, "preview.size_complete"),
+    sizing_warnings: array(input.sizing_warnings, "preview.sizing_warnings", (item) => {
+      const warning = record(item, "preview.sizing_warning");
+      exact(warning, ["kind", "detail"], "preview.sizing_warning");
+      return { kind: oneOf(warning.kind, ["canceled", "entry_budget_exhausted", "metadata_unavailable", "reparse_safety_unverified", "max_depth_reached", "directory_read_failed", "directory_entry_read_failed", "path_unresolved"] as const, "preview.sizing_warning.kind"), detail: string(warning.detail, "preview.sizing_warning.detail") };
+    }),
+    last_modified: lastModified as ScanPreviewTarget["last_modified"],
+    risk: oneOf(input.risk, ["low", "medium", "high", "dangerous"] as const, "preview.risk"),
+    disposition: oneOf(input.disposition, ["candidate", "inspect_only"] as const, "preview.disposition"),
+    evidence: array(input.evidence, "preview.evidence", decodeEvidence),
+  };
+}
+
+function decodeScanPreview(value: unknown): ScanPreviewSnapshot {
+  const input = record(value, "scan preview");
+  exact(input, ["targets", "totals"], "scan preview");
+  const targets = array(input.targets, "preview.targets", decodePreviewTarget);
+  const ids = new Set(targets.map((target) => target.id));
+  if (ids.size !== targets.length) throw new Error("Invalid scan preview duplicate target id");
+  const totalsInput = record(input.totals, "preview.totals");
+  exact(totalsInput, ["target_count", "verified_bytes", "partial_lower_bound_bytes", "unknown_target_count"], "preview.totals");
+  const totals = {
+    target_count: unsignedInteger(totalsInput.target_count, "preview.totals.target_count"),
+    verified_bytes: unsignedInteger(totalsInput.verified_bytes, "preview.totals.verified_bytes"),
+    partial_lower_bound_bytes: unsignedInteger(totalsInput.partial_lower_bound_bytes, "preview.totals.partial_lower_bound_bytes"),
+    unknown_target_count: unsignedInteger(totalsInput.unknown_target_count, "preview.totals.unknown_target_count"),
+  };
+  if (totals.target_count !== targets.length) throw new Error("Invalid scan preview target count");
+  let verifiedBytes = 0;
+  let partialLowerBoundBytes = 0;
+  let unknownTargetCount = 0;
+  for (const target of targets) {
+    if (target.size_complete) verifiedBytes += target.estimated_bytes;
+    else if (target.estimated_bytes > 0) partialLowerBoundBytes += target.estimated_bytes;
+    else unknownTargetCount += 1;
+    if (![verifiedBytes, partialLowerBoundBytes].every(Number.isSafeInteger)) throw new Error("Invalid scan preview capacity totals");
+  }
+  if (totals.verified_bytes !== verifiedBytes || totals.partial_lower_bound_bytes !== partialLowerBoundBytes || totals.unknown_target_count !== unknownTargetCount) {
+    throw new Error("Invalid scan preview capacity totals");
+  }
+  return { targets, totals };
+}
+
+export function decodeDesktopScanProgress(value: unknown): DesktopScanProgress {
+  const input = record(value, "desktop scan progress");
+  exact(input, ["scan_id", "sequence", "phase", "message", "preview"], "desktop scan progress");
+  const sequence = unsignedInteger(input.sequence, "progress.sequence");
+  if (sequence === 0) throw new Error("Invalid progress.sequence");
+  return {
+    scan_id: nonEmptyString(input.scan_id, "progress.scan_id"),
+    sequence,
+    phase: oneOf(input.phase, ["projects", "global"] as const, "progress.phase"),
+    message: string(input.message, "progress.message"),
+    preview: input.preview === null ? null : decodeScanPreview(input.preview),
+  };
+}
+
+export function decodeDesktopScanResult(value: unknown): DesktopScanResult {
+  const input = record(value, "desktop scan result");
+  const type = oneOf(input.type, ["completed", "canceled"] as const, "scan result.type");
+  exact(input, type === "completed" ? ["type", "scan_id", "report"] : ["type", "scan_id"], "desktop scan result");
+  const scan_id = nonEmptyString(input.scan_id, "scan result.scan_id");
+  return type === "completed" ? { type, scan_id, report: decodeScanReport(input.report) } : { type, scan_id };
 }
 export function decodeCommandError(value: unknown): CommandError {
   const input = record(value, "command error");

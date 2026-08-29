@@ -5,16 +5,16 @@ use devsweep_core::{
     execution::{
         ConfirmationDigest, ExecutionReport, ExecutionRequest, Executor, UserProtectionList,
     },
-    model::{ScanReport, TargetId, UntrustedPlan},
+    model::{TargetId, UntrustedPlan},
     plan::validate_plan,
     scan::ScanOptions,
 };
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Manager, State, ipc::Channel};
 
 use crate::{
     error::CommandError,
-    scan::{CoreScanRunner, SCAN_PROGRESS_EVENT, ScanCoordinator, progress_for_ipc, run_scan_job},
+    scan::{CoreScanRunner, DesktopScanProgress, DesktopScanResult, ScanCoordinator, run_scan_job},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -45,20 +45,24 @@ impl ProtectionStore for CoreProtectionStore {
 
 #[tauri::command]
 pub(crate) async fn scan_start(
-    app: AppHandle,
     state: State<'_, ScanCoordinator>,
+    scan_id: String,
     options: ScanOptions,
-) -> Result<ScanReport, CommandError> {
-    let cancel = state.begin()?;
+    on_progress: Channel<DesktopScanProgress>,
+) -> Result<DesktopScanResult, CommandError> {
+    let cancel = state.begin(scan_id.clone())?;
     let worker_cancel = Arc::clone(&cancel);
     let worker_state = state.inner().clone();
-    let worker_app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let result = run_scan_job(&CoreScanRunner, &options, &worker_cancel, |progress| {
-            let _ = worker_app.emit(SCAN_PROGRESS_EVENT, progress_for_ipc(progress));
-        })
+        let result = run_scan_job(
+            &CoreScanRunner,
+            &options,
+            scan_id.clone(),
+            &worker_cancel,
+            |progress| on_progress.send(progress).map_err(anyhow::Error::from),
+        )
         .map_err(CommandError::scan_failed);
-        worker_state.finish(&worker_cancel)?;
+        worker_state.finish(&scan_id, &worker_cancel)?;
         result
     })
     .await
@@ -67,8 +71,11 @@ pub(crate) async fn scan_start(
 }
 
 #[tauri::command]
-pub(crate) async fn scan_cancel(state: State<'_, ScanCoordinator>) -> Result<(), CommandError> {
-    state.cancel()
+pub(crate) async fn scan_cancel(
+    state: State<'_, ScanCoordinator>,
+    scan_id: String,
+) -> Result<(), CommandError> {
+    state.cancel(&scan_id)
 }
 
 #[tauri::command]

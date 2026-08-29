@@ -1,14 +1,12 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { decodeCommandError, decodeDryRunOutcome, decodeExecutedReport, decodeScanProgress, decodeScanReport, reportMatchesSelection } from "./contract";
-import type { DryRunOutcome, ExecutionReport, ScanOptions, ScanProgress, ScanReport, UntrustedPlan } from "./types.gen";
+import { Channel, invoke } from "@tauri-apps/api/core";
+import { decodeCommandError, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDryRunOutcome, decodeExecutedReport, reportMatchesSelection } from "./contract";
+import type { DesktopScanProgress, DesktopScanResult, DryRunOutcome, ExecutionReport, ScanOptions, UntrustedPlan } from "./types.gen";
 
 export interface DesktopBridge {
-  scanStart(options: ScanOptions): Promise<ScanReport>;
-  scanCancel(): Promise<void>;
+  scanStart(scanId: string, options: ScanOptions, onProgress: (progress: DesktopScanProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopScanResult>;
+  scanCancel(scanId: string): Promise<void>;
   planDryRun(plan: UntrustedPlan, selectedIds: string[]): Promise<DryRunOutcome>;
   planExecute(plan: UntrustedPlan, selectedIds: string[], digest: string): Promise<ExecutionReport>;
-  onScanProgress(handler: (progress: ScanProgress) => void, onError: (error: unknown) => void): Promise<() => void>;
 }
 
 function bridgeError(error: unknown) {
@@ -24,8 +22,16 @@ async function call<T>(command: string, args: Record<string, unknown>, decode: (
 }
 
 export const tauriBridge: DesktopBridge = {
-  scanStart: (options) => call("scan_start", { options }, decodeScanReport),
-  scanCancel: async () => { try { await invoke("scan_cancel"); } catch (error) { throw bridgeError(error); } },
+  scanStart: async (scanId, options, onProgress, onProgressError) => {
+    const channel = new Channel<unknown>((value) => {
+      try { onProgress(decodeDesktopScanProgress(value)); }
+      catch (error) { onProgressError(error); }
+    });
+    const result = await call("scan_start", { scanId, options, onProgress: channel }, decodeDesktopScanResult);
+    if (result.scan_id !== scanId) throw new Error("Scan result does not match the active scan");
+    return result;
+  },
+  scanCancel: async (scanId) => { try { await invoke("scan_cancel", { scanId }); } catch (error) { throw bridgeError(error); } },
   planDryRun: (plan, selectedIds) => call("plan_dry_run", { plan, selectedIds }, (value) => {
     const outcome = decodeDryRunOutcome(value);
     if (!reportMatchesSelection(outcome.report, selectedIds)) throw new Error("Dry-run response does not match the requested selection");
@@ -35,9 +41,5 @@ export const tauriBridge: DesktopBridge = {
     const report = decodeExecutedReport(value);
     if (!reportMatchesSelection(report, selectedIds) || report.confirmation_digest !== digest) throw new Error("Execution response does not match the confirmed request");
     return report;
-  }),
-  onScanProgress: (handler, onError) => listen<unknown>("scan://progress", (event) => {
-    try { handler(decodeScanProgress(event.payload)); }
-    catch (error) { onError(error); }
   }),
 };

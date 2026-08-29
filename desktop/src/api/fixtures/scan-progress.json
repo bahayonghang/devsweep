@@ -1,1 +1,28 @@
-{ "phase": "projects", "message": "Scanning project roots", "partial": null }
+{
+  "scan_id": "fixture-scan-1",
+  "sequence": 1,
+  "phase": "projects",
+  "message": "Discovered 1 project target",
+  "preview": {
+    "targets": [{
+      "id": "node.node_modules:C:/fixture/app/node_modules",
+      "scope": { "type": "project", "root": "C:/fixture/app" },
+      "ecosystem": "node",
+      "kind": "dependency_directory",
+      "path": "C:/fixture/app/node_modules",
+      "estimated_bytes": 4096,
+      "size_complete": true,
+      "sizing_warnings": [],
+      "last_modified": null,
+      "risk": "medium",
+      "disposition": "candidate",
+      "evidence": [{ "type": "marker_file", "path": "C:/fixture/app/package.json" }]
+    }],
+    "totals": {
+      "target_count": 1,
+      "verified_bytes": 4096,
+      "partial_lower_bound_bytes": 0,
+      "unknown_target_count": 0
+    }
+  }
+}

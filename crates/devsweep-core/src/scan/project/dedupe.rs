@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::model::{CleanAction, CleanTarget, Evidence};
 
-pub(super) fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
+pub(in crate::scan) fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
     targets.sort_by(|left, right| {
         let left_path = left.path.as_deref().map(footprint_depth);
         let right_path = right.path.as_deref().map(footprint_depth);

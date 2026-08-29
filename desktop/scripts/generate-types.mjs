@@ -16,7 +16,7 @@ const stdout = args.includes("--stdout");
 
 const rootFixtures = {
   ScanReport: ["scan-report.json", "scan-report.real.json"],
-  ScanProgress: ["scan-progress.json"],
+  DesktopScanProgress: ["scan-progress.json"],
   DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json"],
   ExecutionReport: ["execution-report.json"],
 };
@@ -35,7 +35,14 @@ const references = {
   ScanHealth: { completeness: "ScanCompleteness", diagnostics: ["ScanDiagnostic"], totals: "ScanTotals" },
   ScanDiagnostic: { stage: "ScanDiagnosticStage", outcome: "ScanDiagnosticOutcome", process: "ScanProcessProbe" },
   ScanProcessProbe: { status: "ScanProcessStatus", stdout: "ScanProcessOutput", stderr: "ScanProcessOutput" },
-  ScanProgress: { phase: "ScanPhase" },
+  DesktopScanProgress: { phase: "ScanPhase", preview: "ScanPreviewSnapshot" },
+  ScanPreviewSnapshot: { targets: ["ScanPreviewTarget"], totals: "ScanPreviewTotals" },
+  ScanPreviewTarget: {
+    scope: "Scope", ecosystem: "Ecosystem", kind: "TargetKind",
+    sizing_warnings: ["SizingWarning"], last_modified: "SystemTime",
+    risk: "RiskLevel", disposition: "ScanPreviewDisposition", evidence: ["Evidence"],
+  },
+  DesktopScanResultCompleted: { report: "ScanReport" },
   DryRunOutcome: { report: "ExecutionReport" },
   ExecutionReport: { failures: ["ActionFailure"], outcomes: ["TargetOutcome"], notes: ["ExecutionNote"], estimated_recoverable: "ScanTotals" },
   TargetOutcome: { action: "ActionKind", status: "OutcomeStatus", estimated_recoverable: "CapacityEstimate" },

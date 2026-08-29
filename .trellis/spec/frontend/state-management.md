@@ -59,6 +59,13 @@ manifest. Current scan updates invalidate the confirmation, stale worker events
 are rejected by job identity/state, and inventory observations never enter the
 cleanup target selection.
 
+While a scan job is active, cumulative `ScanProgress` targets are read-only
+preview state. Clear cleanup selection at scan start and block selection,
+select-all, group selection, dry-run, and cleanup confirmation until the matching
+`ScanFinished` event replaces the preview and projects final defaults. A canceled
+or failed scan never promotes its staged targets; the unpromoted snapshot remains
+read-only until a later successful scan replaces it.
+
 ---
 
 ## Server State

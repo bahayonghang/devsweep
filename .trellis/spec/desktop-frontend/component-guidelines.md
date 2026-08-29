@@ -14,8 +14,10 @@ display type.
   callbacks rather than importing Tauri directly.
 - Put repeated target presentation in focused components such as `TargetTable`,
   `RiskBadge`, `CapacityLabel`, and `EvidenceList`.
-- Use a real table for comparable target data. Keep selection in the first
-  column, primary path/name next, and risk/capacity/action facts aligned.
+- Use a real table for comparable target data. Completed-review mode keeps
+  selection in the first column; active/stopped preview mode has no selection
+  column or action callback. Keep primary path/name next and risk/capacity/status
+  facts aligned.
 - Keep the persistent summary/action bar outside the table frame. It must remain
   stable when selection, errors, or result counts change.
 - Use a dialog only for the destructive second confirmation. Trap focus through
@@ -37,8 +39,12 @@ display type.
 ## Copy And Formatting
 
 - Commands use direct labels: `Scan`, `Cancel scan`, `Review dry run`, `Execute`.
-- Progress shows the exact backend message and a human phase label; never show a
-  percentage because the contract has no total.
+- Progress uses a labelled native indeterminate `<progress>`, requested phase
+  states, the exact backend message, and discovered-so-far count. Never show a
+  percentage because the contract has no total. Announce only a coalesced
+  message/count status, no more than once per second under same-phase discovery;
+  phase and cancellation changes may announce immediately. Never put the changing
+  result table inside a live region.
 - Use `Estimated recoverable` for plans and dry runs. A successful trash outcome
   says `Moved to trash; capacity becomes available after trash is emptied`.
 - Use `B`, `KB`, `MB`, `GB`, and `TB` consistently. Mark partial values as `At
@@ -52,4 +58,3 @@ display type.
   elevated risk/irreversible warnings, and red only for dangerous/error states.
 - Avoid gradients, glow, glass effects, decorative illustrations, and viewport-
   scaled font sizes.
-

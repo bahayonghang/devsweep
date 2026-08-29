@@ -87,6 +87,141 @@ export interface CommandErrorUnknownTarget {
     target_id: string;
 }
 
+export interface DesktopScanProgress {
+    message:  string;
+    phase:    ScanPhase;
+    preview:  ScanPreviewSnapshot | null;
+    scan_id:  string;
+    sequence: number;
+}
+
+export type ScanPhase = "global" | "projects";
+
+export interface ScanPreviewSnapshot {
+    targets: ScanPreviewTarget[];
+    totals:  ScanPreviewTotals;
+}
+
+export interface ScanPreviewTarget {
+    disposition:     ScanPreviewDisposition;
+    ecosystem:       Ecosystem;
+    estimated_bytes: number;
+    evidence:        Evidence[];
+    id:              string;
+    kind:            TargetKind;
+    last_modified:   SystemTime | null;
+    path:            null | string;
+    risk:            RiskLevel;
+    scope:           Scope;
+    size_complete:   boolean;
+    sizing_warnings: SizingWarning[];
+}
+
+export type ScanPreviewDisposition = "candidate" | "inspect_only";
+
+export type Ecosystem = "docker" | "generic" | "node" | "python" | "rust";
+
+export type TargetKind = "build_artifacts" | "dependency_directory" | "package_cache" | "test_cache" | "tool_cache" | "virtual_env";
+
+export interface SystemTime {
+    nanos_since_epoch: number;
+    secs_since_epoch:  number;
+}
+
+export type RiskLevel = "dangerous" | "high" | "low" | "medium";
+
+export interface SizingWarning {
+    detail: string;
+    kind:   SizingWarningKind;
+}
+
+export type SizingWarningKind = "canceled" | "directory_entry_read_failed" | "directory_read_failed" | "entry_budget_exhausted" | "max_depth_reached" | "metadata_unavailable" | "path_unresolved" | "reparse_safety_unverified";
+
+export interface ScanPreviewTotals {
+    partial_lower_bound_bytes: number;
+    target_count:              number;
+    unknown_target_count:      number;
+    verified_bytes:            number;
+}
+
+export interface ScanReport {
+    health:  ScanHealth;
+    plan:    UntrustedPlan;
+    version: number;
+}
+
+export interface ScanHealth {
+    completeness: ScanCompleteness;
+    diagnostics:  ScanDiagnostic[];
+    totals:       ScanTotals;
+}
+
+export type ScanCompleteness = "complete" | "partial";
+
+export interface ScanDiagnostic {
+    detail:   string;
+    outcome:  ScanDiagnosticOutcome;
+    path:     string;
+    process?: ScanProcessProbe;
+    stage:    ScanDiagnosticStage;
+}
+
+export type ScanDiagnosticOutcome = "canceled" | "failed" | "output_truncated" | "skipped";
+
+export interface ScanProcessProbe {
+    status: ScanProcessStatus;
+    stderr: ScanProcessOutput;
+    stdout: ScanProcessOutput;
+}
+
+export interface ScanProcessOutput {
+    retained_bytes: number;
+    total_bytes:    number;
+    truncated:      boolean;
+}
+
+export type ScanDiagnosticStage = "cargo_metadata" | "discovery" | "provider" | "sizing";
+
+export interface ScanTotals {
+    partial_lower_bound_bytes: number;
+    unknown_target_count:      number;
+    verified_bytes:            number;
+}
+
+export interface UntrustedPlan {
+    targets: UntrustedTarget[];
+    version: number;
+}
+
+export interface UntrustedTarget {
+    ecosystem:           Ecosystem;
+    estimated_bytes:     number;
+    evidence:            Evidence[];
+    id:                  string;
+    intent:              CleanupIntent;
+    kind:                TargetKind;
+    last_modified:       SystemTime | null;
+    path:                null | string;
+    reversible:          boolean;
+    risk:                RiskLevel;
+    rule_id:             string;
+    scope:               Scope;
+    selected_by_default: boolean;
+    size_complete:       boolean;
+    sizing_warnings?:    SizingWarning[];
+}
+
+export interface DesktopScanResultCanceled {
+    scan_id: string;
+    type:    "canceled";
+}
+
+export interface DesktopScanResultCompleted {
+    report:  ScanReport;
+    scan_id: string;
+    type:    "completed";
+}
+
 export interface DryRunOutcome {
     digest: string;
     report: ExecutionReport;
@@ -107,12 +242,6 @@ export interface ExecutionReport {
     succeeded:             number;
 }
 
-export interface ScanTotals {
-    partial_lower_bound_bytes: number;
-    unknown_target_count:      number;
-    verified_bytes:            number;
-}
-
 export interface ExecutionNote {
     target_id: string;
     type:      "duplicate_selection_removed";
@@ -124,8 +253,6 @@ export interface TargetOutcome {
     status:                OutcomeStatus;
     target_id:             string;
 }
-
-export type Ecosystem = "docker" | "generic" | "node" | "python" | "rust";
 
 export interface EvidenceKnownCacheDir {
     path:   string;
@@ -166,47 +293,11 @@ export interface OutcomeStatusSucceeded {
     type: "succeeded";
 }
 
-export type RiskLevel = "dangerous" | "high" | "low" | "medium";
-
-export type ScanCompleteness = "complete" | "partial";
-
-export interface ScanDiagnostic {
-    detail:   string;
-    outcome:  ScanDiagnosticOutcome;
-    path:     string;
-    process?: ScanProcessProbe;
-    stage:    ScanDiagnosticStage;
-}
-
-export type ScanDiagnosticOutcome = "canceled" | "failed" | "output_truncated" | "skipped";
-
-export interface ScanProcessProbe {
-    status: ScanProcessStatus;
-    stderr: ScanProcessOutput;
-    stdout: ScanProcessOutput;
-}
-
-export interface ScanProcessOutput {
-    retained_bytes: number;
-    total_bytes:    number;
-    truncated:      boolean;
-}
-
-export type ScanDiagnosticStage = "cargo_metadata" | "discovery" | "provider" | "sizing";
-
-export interface ScanHealth {
-    completeness: ScanCompleteness;
-    diagnostics:  ScanDiagnostic[];
-    totals:       ScanTotals;
-}
-
 export interface ScanOptions {
     include_global:   boolean;
     include_projects: boolean;
     roots:            string[];
 }
-
-export type ScanPhase = "global" | "projects";
 
 export interface ScanProcessStatusCanceled {
     type: "canceled";
@@ -233,55 +324,6 @@ export interface ScanProcessStatusTimeout {
     type: "timeout";
 }
 
-export interface ScanProgress {
-    message: string;
-    partial: null;
-    phase:   ScanPhase;
-}
-
-export interface ScanReport {
-    health:  ScanHealth;
-    plan:    UntrustedPlan;
-    version: number;
-}
-
-export interface UntrustedPlan {
-    targets: UntrustedTarget[];
-    version: number;
-}
-
-export interface UntrustedTarget {
-    ecosystem:           Ecosystem;
-    estimated_bytes:     number;
-    evidence:            Evidence[];
-    id:                  string;
-    intent:              CleanupIntent;
-    kind:                TargetKind;
-    last_modified:       SystemTime | null;
-    path:                null | string;
-    reversible:          boolean;
-    risk:                RiskLevel;
-    rule_id:             string;
-    scope:               Scope;
-    selected_by_default: boolean;
-    size_complete:       boolean;
-    sizing_warnings?:    SizingWarning[];
-}
-
-export type TargetKind = "build_artifacts" | "dependency_directory" | "package_cache" | "test_cache" | "tool_cache" | "virtual_env";
-
-export interface SystemTime {
-    nanos_since_epoch: number;
-    secs_since_epoch:  number;
-}
-
-export interface SizingWarning {
-    detail: string;
-    kind:   SizingWarningKind;
-}
-
-export type SizingWarningKind = "canceled" | "directory_entry_read_failed" | "directory_read_failed" | "entry_budget_exhausted" | "max_depth_reached" | "metadata_unavailable" | "path_unresolved" | "reparse_safety_unverified";
-
 export interface ScopeGlobal {
     type: "global";
 }
@@ -299,3 +341,4 @@ export type ActionKind = ActionKindCommand | ActionKindInspectOnly | ActionKindM
 export type CapacityEstimate = CapacityEstimatePartial | CapacityEstimateUnknown | CapacityEstimateVerified;
 export type OutcomeStatus = OutcomeStatusFailed | OutcomeStatusSkipped | OutcomeStatusSucceeded;
 export type CommandError = CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
+export type DesktopScanResult = DesktopScanResultCanceled | DesktopScanResultCompleted;

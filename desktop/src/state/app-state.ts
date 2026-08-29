@@ -1,14 +1,36 @@
-import type { CommandError, DryRunOutcome, ExecutionReport, ScanProgress, ScanReport, UntrustedTarget } from "../api/types.gen";
+import type {
+  CommandError,
+  DesktopScanProgress,
+  DryRunOutcome,
+  ExecutionReport,
+  ScanPreviewSnapshot,
+  ScanReport,
+  UntrustedTarget,
+} from "../api/types.gen";
 import { reportMatchesSelection } from "../api/contract";
 
 export type Phase = "idle" | "scanning" | "reviewed" | "dry_run" | "confirming" | "executing" | "reported";
 export type PendingOperation = "dry_run" | null;
 
+export interface ActiveScan {
+  scanId: string;
+  lastSequence: number;
+  progress: DesktopScanProgress | null;
+  preview: ScanPreviewSnapshot | null;
+  cancelRequested: boolean;
+}
+
+export interface StoppedPreview {
+  kind: "canceled" | "failed";
+  progress: DesktopScanProgress | null;
+  preview: ScanPreviewSnapshot | null;
+}
+
 export interface AppState {
   phase: Phase;
   pending: PendingOperation;
-  cancelRequested: boolean;
-  progress: ScanProgress | null;
+  activeScan: ActiveScan | null;
+  stoppedPreview: StoppedPreview | null;
   scan: ScanReport | null;
   selectedIds: Set<string>;
   dryRun: DryRunOutcome | null;
@@ -17,10 +39,13 @@ export interface AppState {
 }
 
 export type AppAction =
-  | { type: "scan_requested" }
-  | { type: "scan_progressed"; progress: ScanProgress }
-  | { type: "scan_cancel_requested" }
-  | { type: "scan_succeeded"; report: ScanReport }
+  | { type: "scan_requested"; scanId: string }
+  | { type: "scan_progressed"; progress: DesktopScanProgress }
+  | { type: "scan_cancel_requested"; scanId: string }
+  | { type: "scan_completed"; scanId: string; report: ScanReport }
+  | { type: "scan_canceled"; scanId: string }
+  | { type: "scan_failed"; scanId: string; error: CommandError }
+  | { type: "stopped_preview_dismissed" }
   | { type: "command_failed"; error: CommandError }
   | { type: "selection_changed"; targetId: string; selected: boolean }
   | { type: "select_all_changed"; selected: boolean }
@@ -34,8 +59,15 @@ export type AppAction =
   | { type: "error_dismissed" };
 
 export const initialState: AppState = {
-  phase: "idle", pending: null, cancelRequested: false, progress: null, scan: null,
-  selectedIds: new Set(), dryRun: null, execution: null, error: null,
+  phase: "idle",
+  pending: null,
+  activeScan: null,
+  stoppedPreview: null,
+  scan: null,
+  selectedIds: new Set(),
+  dryRun: null,
+  execution: null,
+  error: null,
 };
 
 export function isExecutable(target: UntrustedTarget): boolean {
@@ -46,26 +78,120 @@ function executableIds(state: AppState): Set<string> {
   return new Set((state.scan?.plan.targets ?? []).filter(isExecutable).map((target) => target.id));
 }
 
+function defaultSelectedIds(report: ScanReport | null): Set<string> {
+  return new Set(
+    (report?.plan.targets ?? [])
+      .filter((target) => target.selected_by_default && isExecutable(target))
+      .map((target) => target.id),
+  );
+}
+
 function invalidatePreview(state: AppState, selectedIds: Set<string>): AppState {
-  return { ...state, phase: state.scan ? "reviewed" : "idle", pending: null, selectedIds, dryRun: null, execution: null, error: null };
+  return {
+    ...state,
+    phase: state.scan ? "reviewed" : "idle",
+    pending: null,
+    selectedIds,
+    dryRun: null,
+    execution: null,
+    error: null,
+  };
+}
+
+function stoppedPreview(state: AppState, kind: StoppedPreview["kind"]): StoppedPreview {
+  const active = state.activeScan;
+  return {
+    kind,
+    progress: active?.progress ?? null,
+    preview: active?.preview ?? null,
+  };
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case "scan_requested":
-      return { ...initialState, phase: "scanning" };
-    case "scan_progressed":
-      return state.phase === "scanning" ? { ...state, progress: action.progress } : state;
+      if (!action.scanId) return state;
+      return {
+        ...state,
+        phase: "scanning",
+        pending: null,
+        activeScan: {
+          scanId: action.scanId,
+          lastSequence: 0,
+          progress: null,
+          preview: null,
+          cancelRequested: false,
+        },
+        stoppedPreview: null,
+        selectedIds: new Set(),
+        dryRun: null,
+        execution: null,
+        error: null,
+      };
+    case "scan_progressed": {
+      const active = state.activeScan;
+      if (!active || action.progress.scan_id !== active.scanId || action.progress.sequence <= active.lastSequence) return state;
+      return {
+        ...state,
+        activeScan: {
+          ...active,
+          lastSequence: action.progress.sequence,
+          progress: action.progress,
+          preview: action.progress.preview ?? active.preview,
+        },
+      };
+    }
     case "scan_cancel_requested":
-      return state.phase === "scanning" ? { ...state, cancelRequested: true } : state;
-    case "scan_succeeded":
+      return state.activeScan?.scanId === action.scanId
+        ? { ...state, activeScan: { ...state.activeScan, cancelRequested: true } }
+        : state;
+    case "scan_completed":
+      if (state.activeScan?.scanId !== action.scanId) return state;
       return {
         ...initialState,
         phase: "reviewed",
         scan: action.report,
-        selectedIds: new Set(action.report.plan.targets.filter((target) => target.selected_by_default && isExecutable(target)).map((target) => target.id)),
+        selectedIds: defaultSelectedIds(action.report),
+      };
+    case "scan_canceled":
+      if (state.activeScan?.scanId !== action.scanId) return state;
+      return {
+        ...state,
+        phase: state.scan ? "reviewed" : "idle",
+        pending: null,
+        activeScan: null,
+        stoppedPreview: stoppedPreview(state, "canceled"),
+        selectedIds: new Set(),
+        dryRun: null,
+        execution: null,
+        error: null,
+      };
+    case "scan_failed":
+      if (state.activeScan?.scanId !== action.scanId) return state;
+      return {
+        ...state,
+        phase: state.scan ? "reviewed" : "idle",
+        pending: null,
+        activeScan: null,
+        stoppedPreview: stoppedPreview(state, "failed"),
+        selectedIds: new Set(),
+        dryRun: null,
+        execution: null,
+        error: action.error,
+      };
+    case "stopped_preview_dismissed":
+      if (!state.stoppedPreview) return state;
+      return {
+        ...state,
+        phase: state.scan ? "reviewed" : "idle",
+        stoppedPreview: null,
+        selectedIds: defaultSelectedIds(state.scan),
+        dryRun: null,
+        execution: null,
+        error: null,
       };
     case "selection_changed": {
+      if (state.activeScan || state.stoppedPreview) return state;
       const allowed = executableIds(state);
       if (!allowed.has(action.targetId)) return state;
       const selectedIds = new Set(state.selectedIds);
@@ -73,9 +199,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return invalidatePreview(state, selectedIds);
     }
     case "select_all_changed":
+      if (state.activeScan || state.stoppedPreview) return state;
       return invalidatePreview(state, action.selected ? executableIds(state) : new Set());
     case "dry_run_requested":
-      return state.scan && state.selectedIds.size > 0 && state.phase !== "scanning" && state.phase !== "executing"
+      return state.scan && !state.activeScan && !state.stoppedPreview && state.selectedIds.size > 0 && state.phase !== "executing"
         ? { ...state, pending: "dry_run", error: null, execution: null }
         : state;
     case "dry_run_succeeded":
@@ -98,7 +225,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (action.error.code === "stale_confirmation") {
         return { ...state, phase: "reviewed", pending: null, dryRun: null, execution: null, error: action.error };
       }
-      return { ...state, phase: state.phase === "executing" ? "dry_run" : state.phase === "scanning" ? (state.scan ? "reviewed" : "idle") : state.phase, pending: null, cancelRequested: false, error: action.error };
+      return {
+        ...state,
+        phase: state.phase === "executing" ? "dry_run" : state.phase,
+        pending: null,
+        error: action.error,
+      };
     case "error_dismissed":
       return { ...state, error: null };
   }

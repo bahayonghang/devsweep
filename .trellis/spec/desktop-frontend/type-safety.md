@@ -11,7 +11,7 @@ execution authority absent from backend payloads.
 
 - Tauri payload keys are snake_case unless the Rust type explicitly uses another
   Serde rename.
-- Treat `invoke` and `listen` payloads as `unknown`. Decode them once in
+- Treat `invoke`, `Channel`, and event payloads as `unknown`. Decode them once in
   `desktop/src/api/contract.ts`; components and reducers import decoded types.
 - Model tagged Rust enums as discriminated TypeScript unions using their actual
   `type` or `code` tag.
@@ -20,10 +20,14 @@ execution authority absent from backend payloads.
   behavior from it in TypeScript.
 - Preserve optional fields and union variants. Do not coerce missing or malformed
   safety fields to permissive defaults.
-- The desktop shell must clear `ScanProgress.partial` before emitting progress
-  into the untrusted webview because the core value is a trusted `CleanupPlan`
-  containing reconstructed actions. The reviewed desktop event contract accepts
-  only `partial: null`; phase and message remain the progress source of truth.
+- Core `ScanProgress.partial` is a trusted internal `CleanupPlan` and must never
+  cross into the webview. Rust projects it into a purpose-built
+  `ScanPreviewSnapshot` that omits plan version, action/program/argv/cwd, cleanup
+  intent, and default selection. TypeScript decodes that closed-world shape; it
+  must not recreate authority by stripping or interpreting plan fields.
+- Desktop scan progress uses a command-scoped `Channel` envelope with a non-empty
+  `scan_id` and positive safe-integer `sequence`. Unknown fields, duplicate target
+  ids, malformed totals, and authority-bearing preview fields fail closed.
 - Validate dry-run digest/report equality, execution mode, report counts, and
   requested-selection correlation at the IPC boundary before reducer dispatch.
 - Exhaustively switch on command-error, action, outcome, capacity, evidence,

@@ -3,12 +3,12 @@ import scanFixture from "./fixtures/scan-report.json";
 import dryRunFixture from "./fixtures/dry-run-outcome.json";
 import executionFixture from "./fixtures/execution-report.json";
 import progressFixture from "./fixtures/scan-progress.json";
-import { decodeCommandError, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanProgress, decodeScanReport } from "./contract";
+import { decodeCommandError, decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport } from "./contract";
 
 describe("IPC decoders", () => {
   it("decodes archived command and event fixtures", () => {
     expect(decodeScanReport(scanFixture).plan.targets).toHaveLength(3);
-    expect(decodeScanProgress(progressFixture).phase).toBe("projects");
+    expect(decodeDesktopScanProgress(progressFixture).phase).toBe("projects");
     expect(decodeDryRunOutcome(dryRunFixture).digest).toBe(dryRunFixture.digest);
     expect(decodeExecutionReport(executionFixture).outcomes).toHaveLength(2);
   });
@@ -47,8 +47,24 @@ describe("IPC decoders", () => {
     expect(() => decodeExecutedReport(dryRunFixture.report)).toThrow("execution result mode");
   });
 
-  it("rejects progress payloads that expose a trusted partial plan", () => {
-    expect(() => decodeScanProgress({ ...progressFixture, partial: { version: 2, targets: [{ action: { type: "command", program: "cmd.exe" } }] } })).toThrow("progress.partial authority");
+  it("rejects progress payloads that expose cleanup authority", () => {
+    const unsafe = structuredClone(progressFixture) as typeof progressFixture & { preview: { targets: Array<Record<string, unknown>> } };
+    unsafe.preview.targets[0].program = "cmd.exe";
+    expect(() => decodeDesktopScanProgress(unsafe)).toThrow("unknown field");
+    expect(() => decodeDesktopScanProgress({ ...progressFixture, partial: { version: 2, targets: [] } })).toThrow("unknown field");
+  });
+
+  it("rejects unsafe sequences, duplicate ids, and unknown preview fields", () => {
+    expect(() => decodeDesktopScanProgress({ ...progressFixture, sequence: Number.MAX_SAFE_INTEGER + 1 })).toThrow("Invalid progress.sequence");
+    expect(() => decodeDesktopScanProgress({ ...progressFixture, scan_id: " " })).toThrow("Invalid progress.scan_id");
+    const duplicate = structuredClone(progressFixture);
+    duplicate.preview.targets.push(structuredClone(duplicate.preview.targets[0]));
+    duplicate.preview.totals.target_count = 2;
+    expect(() => decodeDesktopScanProgress(duplicate)).toThrow("duplicate target id");
+    const badTotals = structuredClone(progressFixture);
+    badTotals.preview.totals.verified_bytes += 1;
+    expect(() => decodeDesktopScanProgress(badTotals)).toThrow("capacity totals");
+    expect(() => decodeDesktopScanProgress({ ...progressFixture, extra: true })).toThrow("unknown field");
   });
 
   it.each([

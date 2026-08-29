@@ -8,7 +8,7 @@ use crate::{
     model::{CleanupPlan, ScanHealth, ScanReport},
     plan::{ValidatedPlan, validate_plan, validate_scanned_plan},
     process::FlagCancelObserver,
-    scan::{ScanOptions, ScanProgress, Sweeper},
+    scan::{ScanOptions, ScanProgress, ScanReportRunOutcome, Sweeper},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,6 +20,15 @@ pub struct ScanServiceOutcome {
     pub health: ScanHealth,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// Explicit interactive scan terminal result.
+pub enum ScanServiceRunOutcome {
+    /// The scan completed and may be promoted to review state.
+    Completed(ScanServiceOutcome),
+    /// The scan stopped cooperatively and must remain preview-only.
+    Canceled,
+}
+
 /// Runs cleanup scans for an interactive frontend.
 pub trait ScanService: Send + Clone + 'static {
     /// Runs a scan while forwarding progress and observing cancellation.
@@ -29,6 +38,18 @@ pub trait ScanService: Send + Clone + 'static {
         progress: &mut dyn FnMut(ScanProgress),
         cancel: Option<&Arc<FlagCancelObserver>>,
     ) -> Result<ScanServiceOutcome>;
+
+    /// Runs a scan while preserving explicit cancellation semantics. Injected
+    /// services keep the legacy completed behavior unless they override it.
+    fn full_scan_run_with_cancel(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceRunOutcome> {
+        self.full_scan_with_cancel(options, progress, cancel)
+            .map(ScanServiceRunOutcome::Completed)
+    }
 }
 
 /// Revalidates and executes a confirmed cleanup plan.
@@ -66,6 +87,20 @@ impl ScanService for SweepScanService {
     ) -> Result<ScanServiceOutcome> {
         let report = Sweeper::default().full_scan_report_with_cancel(options, progress, cancel)?;
         scan_service_outcome_from_report(report)
+    }
+
+    fn full_scan_run_with_cancel(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceRunOutcome> {
+        match Sweeper::default().full_scan_report_run_with_cancel(options, progress, cancel)? {
+            ScanReportRunOutcome::Completed(report) => {
+                scan_service_outcome_from_report(report).map(ScanServiceRunOutcome::Completed)
+            }
+            ScanReportRunOutcome::Canceled => Ok(ScanServiceRunOutcome::Canceled),
+        }
     }
 }
 

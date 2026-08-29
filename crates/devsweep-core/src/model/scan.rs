@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use super::plan::{CleanupPlan, UntrustedPlan};
+use super::plan::{
+    CleanAction, CleanupPlan, Ecosystem, Evidence, RiskLevel, Scope, TargetId, TargetKind,
+    UntrustedPlan,
+};
 
 /// Current JSON scan report format version.
 pub const SCAN_REPORT_VERSION: u32 = 1;
@@ -219,6 +222,118 @@ pub struct ScanTotals {
     pub partial_lower_bound_bytes: u64,
     /// Number of targets without a usable estimate.
     pub unknown_target_count: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+/// Cumulative display-only observations discovered during an active scan.
+///
+/// This is deliberately not a cleanup plan: it has no version, cleanup
+/// intent, default selection, or trusted action fields.
+pub struct ScanPreviewSnapshot {
+    /// Ranked observations discovered so far.
+    pub targets: Vec<ScanPreviewTarget>,
+    /// Observation counts and capacity confidence for this snapshot.
+    pub totals: ScanPreviewTotals,
+}
+
+impl ScanPreviewSnapshot {
+    /// Projects a trusted in-memory plan into display-only observations.
+    pub fn from_cleanup_plan(plan: &CleanupPlan) -> Self {
+        Self {
+            targets: plan.targets.iter().map(ScanPreviewTarget::from).collect(),
+            totals: ScanPreviewTotals::from_cleanup_plan(plan),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+/// Display-safe facts for one target discovered during an active scan.
+pub struct ScanPreviewTarget {
+    /// Stable observation identifier.
+    pub id: TargetId,
+    /// Filesystem or global scope observed by the scanner.
+    pub scope: Scope,
+    /// Tool ecosystem associated with the observation.
+    pub ecosystem: Ecosystem,
+    /// Kind of generated artifact or cache.
+    pub kind: TargetKind,
+    /// Observed path, when the target is path-backed.
+    pub path: Option<PathBuf>,
+    /// Observed byte count or lower bound.
+    pub estimated_bytes: u64,
+    /// Whether the observed byte count is complete.
+    pub size_complete: bool,
+    /// Reasons why the size observation is incomplete.
+    pub sizing_warnings: Vec<SizingWarning>,
+    /// Most recent observed modification time.
+    pub last_modified: Option<std::time::SystemTime>,
+    /// Scanner-assigned review risk.
+    pub risk: RiskLevel,
+    /// Whether the observation is a cleanup candidate or inspect-only.
+    pub disposition: ScanPreviewDisposition,
+    /// Evidence supporting the observation.
+    pub evidence: Vec<Evidence>,
+}
+
+impl From<&super::plan::CleanTarget> for ScanPreviewTarget {
+    fn from(target: &super::plan::CleanTarget) -> Self {
+        Self {
+            id: target.id.clone(),
+            scope: target.scope.clone(),
+            ecosystem: target.ecosystem.clone(),
+            kind: target.kind.clone(),
+            path: target.path.clone(),
+            estimated_bytes: target.estimated_bytes,
+            size_complete: target.size_complete,
+            sizing_warnings: target.sizing_warnings.clone(),
+            last_modified: target.last_modified,
+            risk: target.risk.clone(),
+            disposition: if matches!(target.action, CleanAction::NoopInspectOnly) {
+                ScanPreviewDisposition::InspectOnly
+            } else {
+                ScanPreviewDisposition::Candidate
+            },
+            evidence: target.evidence.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+/// Read-only disposition exposed by an active scan preview.
+pub enum ScanPreviewDisposition {
+    /// Observation may become a cleanup candidate in the completed report.
+    Candidate,
+    /// Observation is retained only for inspection.
+    InspectOnly,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+/// Aggregate observation facts for a scan preview.
+pub struct ScanPreviewTotals {
+    /// Number of unique observations in the snapshot.
+    pub target_count: u64,
+    /// Bytes from complete size observations.
+    pub verified_bytes: u64,
+    /// Lower-bound bytes from partial observations.
+    pub partial_lower_bound_bytes: u64,
+    /// Number of observations without a usable size.
+    pub unknown_target_count: u64,
+}
+
+impl ScanPreviewTotals {
+    fn from_cleanup_plan(plan: &CleanupPlan) -> Self {
+        let capacity = ScanTotals::from_cleanup_plan(plan);
+        Self {
+            target_count: u64::try_from(plan.targets.len()).unwrap_or(u64::MAX),
+            verified_bytes: capacity.verified_bytes,
+            partial_lower_bound_bytes: capacity.partial_lower_bound_bytes,
+            unknown_target_count: capacity.unknown_target_count,
+        }
+    }
 }
 
 impl ScanTotals {

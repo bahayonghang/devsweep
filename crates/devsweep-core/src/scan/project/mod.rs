@@ -8,7 +8,7 @@ use anyhow::{Context, Result, bail};
 use tracing::warn;
 
 mod cargo;
-mod dedupe;
+pub(super) mod dedupe;
 
 use cargo::CargoWorkspaceCache;
 use dedupe::{dedupe_targets, footprint_depth};
@@ -31,6 +31,14 @@ use crate::rules::{
 };
 
 use crate::model::{ScanCompleteness, ScanDiagnostic, ScanDiagnosticStage};
+
+type TargetObserver<'a> = &'a mut dyn FnMut(CleanTarget);
+
+struct ProjectScanState<'a> {
+    targets: &'a mut Vec<CleanTarget>,
+    diagnostics: &'a mut Vec<ScanDiagnostic>,
+    cargo_cache: &'a mut CargoWorkspaceCache,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ScanOutcome {
@@ -87,6 +95,15 @@ impl ProjectScanner {
         roots: &[PathBuf],
         cancel: Option<&Arc<FlagCancelObserver>>,
     ) -> Result<ScanOutcome> {
+        self.scan_roots_with_diagnostics_and_cancel_and_progress(roots, cancel, &mut |_| {})
+    }
+
+    pub(crate) fn scan_roots_with_diagnostics_and_cancel_and_progress(
+        &self,
+        roots: &[PathBuf],
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: TargetObserver<'_>,
+    ) -> Result<ScanOutcome> {
         let mut targets = Vec::new();
         let mut diagnostics = Vec::new();
         let mut cargo_cache = CargoWorkspaceCache::default();
@@ -122,10 +139,13 @@ impl ProjectScanner {
             self.scan_dir(
                 &root,
                 None,
-                &mut targets,
-                &mut diagnostics,
-                &mut cargo_cache,
+                &mut ProjectScanState {
+                    targets: &mut targets,
+                    diagnostics: &mut diagnostics,
+                    cargo_cache: &mut cargo_cache,
+                },
                 cancel,
+                on_target,
             );
         }
 
@@ -150,13 +170,12 @@ impl ProjectScanner {
         &self,
         dir: &Path,
         python_context: Option<&PythonContext>,
-        targets: &mut Vec<CleanTarget>,
-        diagnostics: &mut Vec<ScanDiagnostic>,
-        cargo_cache: &mut CargoWorkspaceCache,
+        state: &mut ProjectScanState<'_>,
         cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: TargetObserver<'_>,
     ) {
         if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
-            diagnostics.push(scan_diagnostic(
+            state.diagnostics.push(scan_diagnostic(
                 ScanDiagnosticStage::Discovery,
                 dir.to_path_buf(),
                 ScanDiagnosticOutcome::Canceled,
@@ -167,7 +186,7 @@ impl ProjectScanner {
         let metadata = match fs::symlink_metadata(dir) {
             Ok(metadata) => metadata,
             Err(error) => {
-                diagnostics.push(scan_diagnostic(
+                state.diagnostics.push(scan_diagnostic(
                     ScanDiagnosticStage::Discovery,
                     dir.to_path_buf(),
                     ScanDiagnosticOutcome::Skipped,
@@ -181,7 +200,7 @@ impl ProjectScanner {
         }
         let path_safety = inspect_path_no_follow(dir, &metadata, self.reparse_probe.as_ref());
         if !matches!(path_safety, PathSafety::Safe) {
-            diagnostics.push(scan_diagnostic(
+            state.diagnostics.push(scan_diagnostic(
                 ScanDiagnosticStage::Discovery,
                 dir.to_path_buf(),
                 ScanDiagnosticOutcome::Skipped,
@@ -194,7 +213,7 @@ impl ProjectScanner {
             if dir.file_name().and_then(|name| name.to_str()) == Some("__pycache__")
                 && let Some(context) = python_context
             {
-                targets.push(build_path_target_with_probe(
+                let target = build_path_target_with_probe(
                     PathTargetInput {
                         rule_id: PYCACHE_RULE_DOC.id,
                         ecosystem: PYCACHE_RULE_DOC.ecosystem.clone(),
@@ -212,14 +231,23 @@ impl ProjectScanner {
                             },
                         ],
                     },
+                    cancel,
                     self.reparse_probe.as_ref(),
-                ));
+                );
+                push_observed_target(state.targets, target, on_target);
             }
             return;
         }
 
-        self.scan_rust_project(dir, targets, diagnostics, cargo_cache);
-        self.scan_node_project(dir, targets);
+        self.scan_rust_project(
+            dir,
+            state.targets,
+            state.diagnostics,
+            state.cargo_cache,
+            cancel,
+            on_target,
+        );
+        self.scan_node_project(dir, state.targets, cancel, on_target);
 
         let local_python_context =
             find_python_marker(dir, self.reparse_probe.as_ref()).map(|marker| PythonContext {
@@ -228,13 +256,13 @@ impl ProjectScanner {
             });
         let active_python_context = local_python_context.as_ref().or(python_context);
         if let Some(context) = active_python_context {
-            self.scan_python_project_dir(dir, context, targets);
+            self.scan_python_project_dir(dir, context, state.targets, cancel, on_target);
         }
 
         let entries = match fs::read_dir(dir) {
             Ok(entries) => entries,
             Err(error) => {
-                diagnostics.push(scan_diagnostic(
+                state.diagnostics.push(scan_diagnostic(
                     ScanDiagnosticStage::Discovery,
                     dir.to_path_buf(),
                     ScanDiagnosticOutcome::Skipped,
@@ -248,7 +276,7 @@ impl ProjectScanner {
             let entry = match entry {
                 Ok(entry) => entry,
                 Err(error) => {
-                    diagnostics.push(scan_diagnostic(
+                    state.diagnostics.push(scan_diagnostic(
                         ScanDiagnosticStage::Discovery,
                         dir.to_path_buf(),
                         ScanDiagnosticOutcome::Skipped,
@@ -261,7 +289,7 @@ impl ProjectScanner {
             let metadata = match fs::symlink_metadata(&path) {
                 Ok(metadata) => metadata,
                 Err(error) => {
-                    diagnostics.push(scan_diagnostic(
+                    state.diagnostics.push(scan_diagnostic(
                         ScanDiagnosticStage::Discovery,
                         path.clone(),
                         ScanDiagnosticOutcome::Skipped,
@@ -271,14 +299,7 @@ impl ProjectScanner {
                 }
             };
             if metadata.is_dir() {
-                self.scan_dir(
-                    &path,
-                    active_python_context,
-                    targets,
-                    diagnostics,
-                    cargo_cache,
-                    cancel,
-                );
+                self.scan_dir(&path, active_python_context, state, cancel, on_target);
             }
         }
     }
@@ -289,6 +310,8 @@ impl ProjectScanner {
         targets: &mut Vec<CleanTarget>,
         diagnostics: &mut Vec<ScanDiagnostic>,
         cargo_cache: &mut CargoWorkspaceCache,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: TargetObserver<'_>,
     ) {
         let manifest = dir.join("Cargo.toml");
         if !is_real_file(&manifest, self.reparse_probe.as_ref()) {
@@ -345,6 +368,7 @@ impl ProjectScanner {
                             },
                         ],
                     },
+                    cancel,
                     self.reparse_probe.as_ref(),
                 );
                 target.reversible = false;
@@ -360,7 +384,7 @@ impl ProjectScanner {
                     cwd: None,
                     irreversible: true,
                 };
-                targets.push(target);
+                push_observed_target(targets, target, on_target);
             }
             CargoMetadataProbeResult::Failed(failure) => {
                 let diagnostic = cargo_metadata_diagnostic(&manifest, failure);
@@ -403,16 +427,23 @@ impl ProjectScanner {
                             },
                         ],
                     },
+                    cancel,
                     self.reparse_probe.as_ref(),
                 );
                 // Keep MoveToTrash from build_path_target; raise risk already set.
                 target.reversible = true;
-                targets.push(target);
+                push_observed_target(targets, target, on_target);
             }
         }
     }
 
-    fn scan_node_project(&self, dir: &Path, targets: &mut Vec<CleanTarget>) {
+    fn scan_node_project(
+        &self,
+        dir: &Path,
+        targets: &mut Vec<CleanTarget>,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: TargetObserver<'_>,
+    ) {
         let Some(marker) = find_node_marker(dir, self.reparse_probe.as_ref()) else {
             return;
         };
@@ -420,7 +451,7 @@ impl ProjectScanner {
         for rule in project_dir_rules(ProjectMarker::Node) {
             let path = dir.join(rule.relative);
             if is_real_dir(&path, self.reparse_probe.as_ref()) {
-                targets.push(build_path_target_with_probe(
+                let target = build_path_target_with_probe(
                     PathTargetInput {
                         rule_id: rule.id,
                         ecosystem: rule.ecosystem.clone(),
@@ -438,8 +469,10 @@ impl ProjectScanner {
                             },
                         ],
                     },
+                    cancel,
                     self.reparse_probe.as_ref(),
-                ));
+                );
+                push_observed_target(targets, target, on_target);
             }
         }
     }
@@ -449,11 +482,13 @@ impl ProjectScanner {
         dir: &Path,
         context: &PythonContext,
         targets: &mut Vec<CleanTarget>,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: TargetObserver<'_>,
     ) {
         for rule in project_dir_rules(ProjectMarker::Python) {
             let path = dir.join(rule.relative);
             if is_real_dir(&path, self.reparse_probe.as_ref()) {
-                targets.push(build_path_target_with_probe(
+                let target = build_path_target_with_probe(
                     PathTargetInput {
                         rule_id: rule.id,
                         ecosystem: rule.ecosystem.clone(),
@@ -471,8 +506,10 @@ impl ProjectScanner {
                             },
                         ],
                     },
+                    cancel,
                     self.reparse_probe.as_ref(),
-                ));
+                );
+                push_observed_target(targets, target, on_target);
             }
         }
     }
@@ -576,11 +613,12 @@ fn cargo_metadata_diagnostic(manifest: &Path, failure: CargoMetadataFailure) -> 
 #[cfg(test)]
 fn build_path_target(input: PathTargetInput) -> CleanTarget {
     let probe = SystemPathReparseProbe;
-    build_path_target_with_probe(input, &probe)
+    build_path_target_with_probe(input, None, &probe)
 }
 
 fn build_path_target_with_probe(
     input: PathTargetInput,
+    cancel: Option<&Arc<FlagCancelObserver>>,
     reparse_probe: &dyn PathReparseProbe,
 ) -> CleanTarget {
     let PathTargetInput {
@@ -596,7 +634,7 @@ fn build_path_target_with_probe(
     let estimate = estimate_tree_with_budget_and_cancel_and_probe(
         &path,
         DEFAULT_SIZE_ENTRY_BUDGET,
-        None,
+        cancel,
         reparse_probe,
     );
     let selected_by_default = selected_by_default && estimate.complete;
@@ -616,6 +654,15 @@ fn build_path_target_with_probe(
         evidence,
         action: CleanAction::MoveToTrash { path },
     }
+}
+
+fn push_observed_target(
+    targets: &mut Vec<CleanTarget>,
+    target: CleanTarget,
+    on_target: TargetObserver<'_>,
+) {
+    targets.push(target.clone());
+    on_target(target);
 }
 
 /// A reviewed target-size rescan gets a bounded, larger entry budget but never
@@ -770,7 +817,7 @@ fn should_stop_descent(dir: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use std::{
-        collections::HashMap,
+        collections::{HashMap, HashSet},
         fs,
         path::{Path, PathBuf},
         sync::{Arc, Mutex},
@@ -925,6 +972,70 @@ mod tests {
         ] {
             assert!(ids.iter().any(|id| id.starts_with(rule)), "missing {rule}");
         }
+    }
+
+    #[test]
+    fn project_scanner_reports_targets_as_they_are_constructed() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/node_modules/pkg/index.js", "module");
+        fixture.file("node-app/.next/cache/blob", "cache");
+        let mut observed = Vec::new();
+
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics_and_cancel_and_progress(
+                &[fixture.path().to_path_buf()],
+                None,
+                &mut |target| observed.push(target.id.clone()),
+            )
+            .expect("fixture scans with checkpoints");
+
+        assert!(
+            observed.len() >= 2,
+            "same-phase targets arrive incrementally"
+        );
+        assert_eq!(
+            observed.into_iter().collect::<HashSet<_>>(),
+            outcome
+                .plan
+                .targets
+                .iter()
+                .map(|target| target.id.clone())
+                .collect()
+        );
+    }
+
+    #[test]
+    fn ordinary_target_sizing_observes_cancellation() {
+        let fixture = Fixture::new();
+        fixture.file("node-app/package.json", "{}");
+        fixture.file("node-app/node_modules/pkg/index.js", "module");
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+
+        let target = build_path_target_with_probe(
+            PathTargetInput {
+                rule_id: "node.node_modules",
+                ecosystem: Ecosystem::Node,
+                kind: TargetKind::DependencyDirectory,
+                project_root: fixture.path().join("node-app"),
+                path: fixture.path().join("node-app/node_modules"),
+                risk: RiskLevel::Medium,
+                selected_by_default: true,
+                evidence: vec![Evidence::UserConfigured],
+            },
+            Some(&cancel),
+            &SystemPathReparseProbe,
+        );
+
+        assert!(!target.size_complete);
+        assert!(!target.selected_by_default);
+        assert!(
+            target
+                .sizing_warnings
+                .iter()
+                .any(|warning| warning.kind == crate::model::SizingWarningKind::Canceled)
+        );
     }
 
     #[test]

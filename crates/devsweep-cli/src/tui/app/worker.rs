@@ -171,7 +171,6 @@ impl App {
                     self.log_ignored_worker_event(job_id, "job failure");
                     return Vec::new();
                 }
-                self.clear_scan_snapshot(job_id);
                 if self.cleanup_progress_matches(job_id)
                     && let Some(progress) = &mut self.cleanup_progress
                 {
@@ -185,7 +184,6 @@ impl App {
                     self.log_ignored_worker_event(job_id, "job cancellation");
                     return Vec::new();
                 }
-                self.clear_scan_snapshot(job_id);
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;
                 }
@@ -218,6 +216,8 @@ impl App {
     pub(super) fn start_scan_job(&mut self, log_message: impl Into<String>) -> JobId {
         let job_id = self.start_job(JobKind::Scan, "Scan current directory and globals");
         self.scan_snapshot = Some(ScanSnapshot::new(job_id));
+        self.selected_ids.clear();
+        self.selection_overrides.clear();
         self.log_job(AppLogLevel::Info, AppLogSource::Scan, job_id, log_message);
         job_id
     }
@@ -337,7 +337,11 @@ impl App {
 
     pub(super) fn rebuild_targets_from_scan_snapshot(&mut self) {
         if let Some(snapshot) = &self.scan_snapshot {
-            self.replace_targets_preserving_selection(snapshot.targets());
+            self.targets = snapshot.targets();
+            self.selected_ids.clear();
+            self.collapsed_pycache_projects = pycache_project_roots(&self.targets);
+            self.selected_index = 0;
+            self.list_scroll = 0;
         }
     }
 
@@ -373,16 +377,6 @@ impl App {
                 "Scan results changed. Close this dialog and confirm the updated selection."
                     .to_string(),
             );
-        }
-    }
-
-    pub(super) fn clear_scan_snapshot(&mut self, job_id: JobId) {
-        if self
-            .scan_snapshot
-            .as_ref()
-            .is_some_and(|snapshot| snapshot.job_id == job_id)
-        {
-            self.scan_snapshot = None;
         }
     }
 }

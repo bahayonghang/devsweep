@@ -17,7 +17,7 @@ use crate::tui::{
     app::{JobId, WorkerEvent},
     display::compact_target_id,
 };
-use devsweep_core::services::{CleanService, InventoryService, ScanService};
+use devsweep_core::services::{CleanService, InventoryService, ScanService, ScanServiceRunOutcome};
 
 pub(super) fn run_scan_worker<S: ScanService>(
     job_id: JobId,
@@ -35,7 +35,7 @@ pub(super) fn run_scan_worker<S: ScanService>(
                 include_global: true,
                 roots: vec![current_dir],
             };
-            scan.full_scan_with_cancel(
+            scan.full_scan_run_with_cancel(
                 &options,
                 &mut |progress: ScanProgress| {
                     let _ = worker_tx.send(WorkerEvent::ScanProgress {
@@ -49,20 +49,15 @@ pub(super) fn run_scan_worker<S: ScanService>(
             )
         });
     match result {
-        Ok(outcome) if cancel.is_cancel_requested() => {
-            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        Ok(ScanServiceRunOutcome::Completed(outcome)) => {
             let _ = worker_tx.send(WorkerEvent::ScanFinished {
                 job_id,
                 plan: outcome.plan,
                 health: outcome.health,
             });
         }
-        Ok(outcome) => {
-            let _ = worker_tx.send(WorkerEvent::ScanFinished {
-                job_id,
-                plan: outcome.plan,
-                health: outcome.health,
-            });
+        Ok(ScanServiceRunOutcome::Canceled) => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
         }
         Err(_error) if cancel.is_cancel_requested() => {
             let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });

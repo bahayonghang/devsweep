@@ -16,7 +16,9 @@ use crate::{
     scan::{ScanOptions, ScanPhase, ScanProgress},
     tui::{display::compact_target_id, test_support::representative_plan},
 };
-use devsweep_core::services::{CleanService, ExecutorCleanService, ScanServiceOutcome};
+use devsweep_core::services::{
+    CleanService, ExecutorCleanService, ScanServiceOutcome, ScanServiceRunOutcome,
+};
 
 #[derive(Clone)]
 struct FakeScanService {
@@ -45,6 +47,29 @@ impl ScanService for FakeScanService {
 #[derive(Clone)]
 struct FakeInventoryService {
     outcome: Result<InventoryReport, String>,
+}
+
+#[derive(Clone)]
+struct CanceledScanService;
+
+impl ScanService for CanceledScanService {
+    fn full_scan_with_cancel(
+        &self,
+        _options: &ScanOptions,
+        _progress: &mut dyn FnMut(ScanProgress),
+        _cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceOutcome> {
+        unreachable!("the worker uses the explicit terminal API")
+    }
+
+    fn full_scan_run_with_cancel(
+        &self,
+        _options: &ScanOptions,
+        _progress: &mut dyn FnMut(ScanProgress),
+        _cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceRunOutcome> {
+        Ok(ScanServiceRunOutcome::Canceled)
+    }
 }
 
 impl InventoryService for FakeInventoryService {
@@ -234,6 +259,26 @@ fn scan_worker_reports_failure_as_job_failed() {
             job_id: 9,
             message: "scan exploded".to_string(),
         })
+    );
+}
+
+#[test]
+fn scan_worker_does_not_promote_an_explicitly_canceled_scan() {
+    let (worker_tx, worker_rx) = mpsc::channel();
+
+    run_scan_worker(
+        11,
+        worker_tx,
+        CanceledScanService,
+        Arc::new(FlagCancelObserver::new()),
+    );
+
+    assert_eq!(
+        worker_rx.try_iter().collect::<Vec<_>>(),
+        vec![
+            WorkerEvent::ScanStarted { job_id: 11 },
+            WorkerEvent::JobCanceled { job_id: 11 },
+        ]
     );
 }
 

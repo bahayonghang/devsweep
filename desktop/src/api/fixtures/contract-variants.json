@@ -6,6 +6,7 @@
     "ScanDiagnosticOutcome": ["skipped", "failed", "canceled", "output_truncated"],
     "ScanDiagnosticStage": ["discovery", "sizing", "cargo_metadata", "provider"],
     "ScanPhase": ["projects", "global"],
+    "ScanPreviewDisposition": ["candidate", "inspect_only"],
     "SizingWarningKind": ["canceled", "entry_budget_exhausted", "metadata_unavailable", "reparse_safety_unverified", "max_depth_reached", "directory_read_failed", "directory_entry_read_failed", "path_unresolved"],
     "TargetKind": ["package_cache", "build_artifacts", "dependency_directory", "virtual_env", "test_cache", "tool_cache"]
   },
@@ -61,9 +62,44 @@
       "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
       "CommandErrorInspectOnlyTarget": [{ "code": "inspect_only_target", "target_id": "inspect" }],
       "CommandErrorIo": [{ "code": "io", "message": "controlled io failure" }]
+    }},
+    "DesktopScanResult": { "variants": {
+      "DesktopScanResultCompleted": [{
+        "type": "completed",
+        "scan_id": "fixture-scan-1",
+        "report": {
+          "version": 1,
+          "plan": { "version": 2, "targets": [] },
+          "health": {
+            "completeness": "complete",
+            "diagnostics": [],
+            "totals": { "verified_bytes": 0, "partial_lower_bound_bytes": 0, "unknown_target_count": 0 }
+          }
+        }
+      }],
+      "DesktopScanResultCanceled": [{ "type": "canceled", "scan_id": "fixture-scan-1" }]
     }}
   },
   "additional_samples": {
+    "DesktopScanProgress": [
+      { "scan_id": "fixture-scan-2", "sequence": 2, "phase": "global", "message": "Scanning global providers", "preview": null }
+    ],
+    "ScanPreviewTarget": [
+      {
+        "id": "cargo.home.inspect:fixture",
+        "scope": { "type": "global" },
+        "ecosystem": "rust",
+        "kind": "package_cache",
+        "path": null,
+        "estimated_bytes": 0,
+        "size_complete": false,
+        "sizing_warnings": [{ "kind": "path_unresolved", "detail": "controlled path" }],
+        "last_modified": null,
+        "risk": "high",
+        "disposition": "inspect_only",
+        "evidence": [{ "type": "rule_matched", "rule_id": "cargo.home.inspect" }]
+      }
+    ],
     "ScanOptions": [
       { "include_projects": true, "include_global": true, "roots": ["C:/fixture"] },
       { "include_projects": false, "include_global": true, "roots": [] }

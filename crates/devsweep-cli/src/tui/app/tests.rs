@@ -13,7 +13,7 @@ use crate::model::{
 use crate::tui::test_support::{key, plan_with_targets, render_text, representative_plan, target};
 
 #[test]
-fn update_handles_scan_selection_details_filter_help_and_quit() {
+fn update_keeps_scan_preview_read_only_then_restores_completed_selection() {
     let mut app = App::with_plan(representative_plan());
 
     let effects = app.update(key(KeyCode::Char('s')));
@@ -21,7 +21,7 @@ fn update_handles_scan_selection_details_filter_help_and_quit() {
     assert_eq!(app.jobs.len(), 1);
 
     let first_id = app.targets[0].id.clone();
-    assert!(app.selected_ids.contains(&first_id));
+    assert!(!app.selected_ids.contains(&first_id));
     app.update(key(KeyCode::Char(' ')));
     assert!(!app.selected_ids.contains(&first_id));
 
@@ -49,6 +49,7 @@ fn update_handles_scan_selection_details_filter_help_and_quit() {
         plan: representative_plan(),
         health: ScanHealth::complete(),
     }));
+    assert!(app.selected_ids.contains(&first_id));
     app.update(key(KeyCode::Char('q')));
     assert!(app.should_quit);
 }
@@ -585,7 +586,7 @@ fn scan_progress_shows_project_targets_before_global_scan_finishes() {
 
     assert_eq!(app.targets.len(), 1);
     assert!(matches!(app.targets[0].scope, Scope::Project { .. }));
-    assert!(app.selected_ids.contains(&app.targets[0].id));
+    assert!(app.selected_ids.is_empty());
     assert_eq!(app.jobs[0].status, JobStatus::Running);
     assert_eq!(app.jobs[0].progress, "Project scan finished: 1 target(s)");
 
@@ -640,7 +641,7 @@ fn scan_progress_applies_latest_cumulative_partial_plan() {
         vec![&global_target.id, &project_target.id]
     );
     assert_eq!(app.targets.len(), 2);
-    assert!(app.selected_ids.contains(&project_target.id));
+    assert!(!app.selected_ids.contains(&project_target.id));
     assert!(!app.selected_ids.contains(&global_target.id));
 }
 
@@ -709,6 +710,38 @@ fn cancellation_key_requests_active_job_cancellation() {
 
     app.update(UiEvent::Worker(WorkerEvent::JobCanceled { job_id }));
     assert_eq!(app.jobs[0].status, JobStatus::Canceled);
+}
+
+#[test]
+fn canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes() {
+    let mut app = App::with_plan(representative_plan());
+    let effects = app.update(key(KeyCode::Char('s')));
+    let [Effect::StartScan { job_id }] = effects.as_slice() else {
+        panic!("scan key starts scan");
+    };
+    let job_id = *job_id;
+    let preview = representative_plan();
+    let preview_id = preview.targets[0].id.clone();
+
+    app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+        job_id,
+        phase: ScanPhase::Projects,
+        message: "Observed a partial target".to_string(),
+        plan: Some(preview),
+    }));
+    app.update(UiEvent::Worker(WorkerEvent::JobCanceled { job_id }));
+
+    app.update(key(KeyCode::Char(' ')));
+    app.update(key(KeyCode::Char('a')));
+    app.update(key(KeyCode::Char('d')));
+    app.update(key(KeyCode::Char('c')));
+    assert!(!app.selected_ids.contains(&preview_id));
+    assert!(matches!(app.overlay, Overlay::None));
+
+    assert!(matches!(
+        app.update(key(KeyCode::Char('s'))).as_slice(),
+        [Effect::StartScan { .. }]
+    ));
 }
 
 #[test]
@@ -784,7 +817,7 @@ fn accepted_confirmation_executes_its_frozen_manifest() {
 }
 
 #[test]
-fn staged_scan_preserves_explicit_selection_and_defaults_new_targets() {
+fn completed_scan_replaces_preview_and_reapplies_final_defaults() {
     let original_target = representative_plan().targets[0].clone();
     let mut new_target = representative_plan().targets[1].clone();
     new_target.selected_by_default = true;
@@ -812,7 +845,7 @@ fn staged_scan_preserves_explicit_selection_and_defaults_new_targets() {
         health: ScanHealth::complete(),
     }));
 
-    assert!(!app.selected_ids.contains(&original_target.id));
+    assert!(app.selected_ids.contains(&original_target.id));
     assert!(app.selected_ids.contains(&new_target.id));
 
     let effects = app.startup_effects();

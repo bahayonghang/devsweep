@@ -755,6 +755,15 @@ cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
 - Sweep tests with fake scanners proving merge order, single ranking pass with
   freshness guard, staged progress event sequence, and cumulative ranked
   partial plans.
+- Continuous progress snapshots must be cumulative, deduplicated, and ordered by
+  `Sweeper`, not merged by TUI or desktop consumers. Ordinary target sizing must
+  observe cooperative cancellation as well as traversal and provider probes.
+  Provider helpers that can construct more than one target must publish and
+  re-check cancellation after each completed target rather than batching the
+  helper's entire loop behind one callback.
+- Webview progress uses the core-owned `ScanPreviewSnapshot` projection. It is an
+  observation DTO and must omit `CleanAction`, cleanup intent,
+  `selected_by_default`, and the versioned plan envelope.
 - TUI state tests proving staged scan partials apply as cumulative ranked
   snapshots with stale-scan protection.
 - TUI test proving explicit manual selection can still execute a fresh target.

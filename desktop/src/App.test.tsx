@@ -5,54 +5,158 @@ import scanJson from "./api/fixtures/scan-report.json";
 import dryRunJson from "./api/fixtures/dry-run-outcome.json";
 import twoTargetDryRunJson from "./api/fixtures/dry-run-outcome-two-targets.json";
 import executionJson from "./api/fixtures/execution-report.json";
-import { decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./api/contract";
+import progressJson from "./api/fixtures/scan-progress.json";
+import { decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./api/contract";
 import type { DesktopBridge } from "./api/bridge";
-import type { ExecutionReport, ScanProgress } from "./api/types.gen";
+import type { DesktopScanProgress, DesktopScanResult, ExecutionReport } from "./api/types.gen";
 import { App } from "./App";
 
 const scanReport = decodeScanReport(scanJson);
 const dryRun = decodeDryRunOutcome(dryRunJson);
 const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
 const execution = decodeExecutionReport(executionJson);
+const progress = decodeDesktopScanProgress(progressJson);
 
 function fakeBridge(overrides: Partial<DesktopBridge> = {}): DesktopBridge {
   return {
-    scanStart: vi.fn().mockResolvedValue(scanReport),
+    scanStart: vi.fn().mockImplementation(async (scanId: string, _options, onProgress: (progress: DesktopScanProgress) => void) => {
+      onProgress({ ...progress, scan_id: scanId });
+      return { type: "completed", scan_id: scanId, report: scanReport };
+    }),
     scanCancel: vi.fn().mockResolvedValue(undefined),
     planDryRun: vi.fn().mockResolvedValue(dryRun),
     planExecute: vi.fn().mockResolvedValue(execution),
-    onScanProgress: vi.fn().mockImplementation(async (handler: (progress: ScanProgress) => void) => {
-      handler({ phase: "projects", message: "Scanning project roots", partial: null });
-      return () => undefined;
-    }),
     ...overrides,
   };
 }
 
 describe("desktop workflow", () => {
-  it("cancels a scan, reports the error, and rescans", async () => {
-    let rejectFirst: (reason: unknown) => void = () => undefined;
-    const first = new Promise<never>((_, reject) => { rejectFirst = reject; });
-    const scanStart = vi.fn().mockReturnValueOnce(first).mockResolvedValueOnce(scanReport);
-    const scanCancel = vi.fn().mockResolvedValue(undefined);
-    let progressHandler: ((progress: ScanProgress) => void) | undefined;
-    const onScanProgress = vi.fn().mockImplementation(async (handler: (progress: ScanProgress) => void) => {
-      progressHandler = handler;
-      return () => undefined;
+  it("keeps a canceled preview read-only and replaces it on rescan", async () => {
+    let finishFirst: (result: DesktopScanResult) => void = () => undefined;
+    let invocation = 0;
+    const scanStart = vi.fn().mockImplementation((scanId: string, _options, onProgress: (progress: DesktopScanProgress) => void) => {
+      invocation += 1;
+      onProgress({ ...progress, scan_id: scanId });
+      if (invocation === 1) return new Promise<DesktopScanResult>((resolve) => { finishFirst = resolve; });
+      return Promise.resolve<DesktopScanResult>({ type: "completed", scan_id: scanId, report: scanReport });
     });
+    const scanCancel = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(<App bridge={fakeBridge({ scanStart, scanCancel, onScanProgress })} />);
+    render(<App bridge={fakeBridge({ scanStart, scanCancel })} />);
 
     await user.click(screen.getByRole("button", { name: "Scan" }));
-    act(() => progressHandler?.({ phase: "projects", message: "Scanning project roots", partial: null }));
-    expect(screen.getByText(/Scanning project roots/)).toBeInTheDocument();
+    expect(screen.getByText("Discovered so far")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "Scan progress" })).not.toHaveAttribute("aria-valuenow");
+    expect(screen.queryByRole("checkbox", { name: /Select node.node_modules/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Review dry run" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel scan" }));
-    expect(scanCancel).toHaveBeenCalledOnce();
-    rejectFirst({ code: "scan_failed", message: "Scan canceled" });
-    expect(await screen.findByRole("alert")).toHaveTextContent("Scan canceled");
+    expect(scanCancel).toHaveBeenCalledWith(expect.any(String));
+    expect(screen.getByText("Cancel requested; finishing the current safe boundary")).toBeInTheDocument();
+    const firstScanId = scanStart.mock.calls[0][0] as string;
+    act(() => finishFirst({ type: "canceled", scan_id: firstScanId }));
+    expect(await screen.findByText("Scan canceled. These partial observations remain read-only.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Scan" }));
     expect(await screen.findByText("Cleanup targets")).toBeInTheDocument();
     expect(scanStart).toHaveBeenCalledTimes(2);
+  });
+
+  it("distinguishes an active empty scan from a completed empty report", async () => {
+    let finish: (result: DesktopScanResult) => void = () => undefined;
+    const scanStart = vi.fn().mockImplementation(() => new Promise<DesktopScanResult>((resolve) => { finish = resolve; }));
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({ scanStart })} />);
+
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    expect(screen.getByText("Discovering cleanup targets…")).toBeInTheDocument();
+    expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
+    const scanId = scanStart.mock.calls[0][0] as string;
+    act(() => finish({ type: "completed", scan_id: scanId, report: { ...scanReport, plan: { ...scanReport.plan, targets: [] } } }));
+    expect(await screen.findByText("Scan complete; no cleanup targets found")).toBeInTheDocument();
+  });
+
+  it("offers an explicit return to the previous completed report after a stopped rescan", async () => {
+    let finishRescan: (result: DesktopScanResult) => void = () => undefined;
+    let invocation = 0;
+    const scanStart = vi.fn().mockImplementation((scanId: string, _options, onProgress: (value: DesktopScanProgress) => void) => {
+      invocation += 1;
+      if (invocation === 1) return Promise.resolve<DesktopScanResult>({ type: "completed", scan_id: scanId, report: scanReport });
+      onProgress({ ...progress, scan_id: scanId });
+      return new Promise<DesktopScanResult>((resolve) => { finishRescan = resolve; });
+    });
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({ scanStart })} />);
+
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await screen.findByText("Cleanup targets");
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    const rescanId = scanStart.mock.calls[1][0] as string;
+    act(() => finishRescan({ type: "canceled", scan_id: rescanId }));
+
+    const returnButton = await screen.findByRole("button", { name: "Return to previous report" });
+    expect(screen.queryByRole("button", { name: "Review dry run" })).not.toBeInTheDocument();
+    await user.click(returnButton);
+    expect(await screen.findByText("Cleanup targets")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review dry run" })).toBeEnabled();
+  });
+
+  it("requests cancellation on a malformed progress payload and waits for the terminal result", async () => {
+    let finish: (result: DesktopScanResult) => void = () => undefined;
+    const scanCancel = vi.fn().mockResolvedValue(undefined);
+    const scanStart = vi.fn().mockImplementation((scanId: string, _options, onProgress: (value: DesktopScanProgress) => void, onProgressError: (error: unknown) => void) => {
+      onProgress({ ...progress, scan_id: scanId });
+      onProgressError(new Error("Malformed scan progress"));
+      return new Promise<DesktopScanResult>((resolve) => { finish = resolve; });
+    });
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({ scanStart, scanCancel })} />);
+
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await waitFor(() => expect(scanCancel).toHaveBeenCalledOnce());
+    expect(screen.getByRole("button", { name: "Canceling…" })).toBeDisabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Malformed scan progress");
+    const scanId = scanStart.mock.calls[0][0] as string;
+    act(() => finish({ type: "canceled", scan_id: scanId }));
+    expect(await screen.findByText("Scan stopped after an error. These partial observations remain read-only.")).toBeInTheDocument();
+  });
+
+  it("groups cumulative preview rows by scope without announcing the table", async () => {
+    let finish: (result: DesktopScanResult) => void = () => undefined;
+    const scanStart = vi.fn().mockImplementation((scanId: string, _options, onProgress: (value: DesktopScanProgress) => void) => {
+      const projectTarget = progress.preview!.targets[0];
+      const globalTarget = {
+        ...projectTarget,
+        id: "fixture-global",
+        scope: { type: "global" as const },
+        kind: "package_cache" as const,
+        path: "C:/fixture/global-cache",
+        estimated_bytes: 8192,
+      };
+      onProgress({
+        scan_id: scanId,
+        sequence: 2,
+        phase: "global",
+        message: "Scanning controlled global providers",
+        preview: {
+          targets: [globalTarget, projectTarget],
+          totals: { target_count: 2, verified_bytes: 12288, partial_lower_bound_bytes: 0, unknown_target_count: 0 },
+        },
+      });
+      onProgress({ ...progress, scan_id: scanId, sequence: 1, message: "Stale project message" });
+      return new Promise<DesktopScanResult>((resolve) => { finish = resolve; });
+    });
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({ scanStart })} />);
+
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Global caches 1" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Scanning controlled global providers");
+    expect(screen.queryByText("Stale project message")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("table")).toHaveLength(2);
+    expect(screen.getAllByRole("table").every((table) => !table.hasAttribute("aria-live"))).toBe(true);
+    const scanId = scanStart.mock.calls[0][0] as string;
+    act(() => finish({ type: "canceled", scan_id: scanId }));
   });
 
   it("invalidates a dry run after selection changes, then confirms and reports execution", async () => {
