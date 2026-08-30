@@ -1,0 +1,14 @@
+
+running 4 tests
+test analyze::tests::analyze_result_serializes_without_cleanup_intent ... ok
+test analyze::tests::concurrent_analyze_is_rejected ... ok
+test analyze::tests::stale_progress_sequences_are_discarded ... ok
+test analyze::tests::cancel_joins_before_terminal_result ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 26 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

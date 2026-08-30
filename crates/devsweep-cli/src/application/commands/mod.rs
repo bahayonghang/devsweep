@@ -23,6 +23,9 @@ pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError
     if command.starts_with("clean.") {
         return clean::run(cli, locale);
     }
+    if command.starts_with("analyze.") {
+        return analyze::run(cli, locale);
+    }
     let message = catalogue(locale)
         .render("error.mode_unavailable", &[("command", command)], None)
         .map_err(|error| {

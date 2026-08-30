@@ -70,6 +70,8 @@ describe("IPC decoders", () => {
   it.each([
     { code: "scan_already_running" },
     { code: "scan_failed", message: "failed" },
+    { code: "analyze_already_running" },
+    { code: "analyze_failed", message: "failed" },
     { code: "invalid_plan", issues: ["bad version"] },
     { code: "stale_confirmation", expected_digest: "old", actual_digest: "new" },
     { code: "unknown_target", target_id: "missing" },

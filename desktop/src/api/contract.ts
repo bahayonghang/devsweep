@@ -301,10 +301,15 @@ export function decodeDesktopScanResult(value: unknown): DesktopScanResult {
 }
 export function decodeCommandError(value: unknown): CommandError {
   const input = record(value, "command error");
-  const code = oneOf(input.code, ["scan_already_running", "scan_failed", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io"] as const, "error.code");
+  const code = oneOf(input.code, ["scan_already_running", "scan_failed", "analyze_already_running", "analyze_failed", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io"] as const, "error.code");
   switch (code) {
-    case "scan_already_running": exact(input, ["code"], "command error"); return { code };
-    case "scan_failed": case "io": exact(input, ["code", "message"], "command error"); return { code, message: string(input.message, "error.message") };
+    case "scan_already_running":
+    case "analyze_already_running":
+      exact(input, ["code"], "command error"); return { code };
+    case "scan_failed":
+    case "analyze_failed":
+    case "io":
+      exact(input, ["code", "message"], "command error"); return { code, message: string(input.message, "error.message") };
     case "invalid_plan": exact(input, ["code", "issues"], "command error"); return { code, issues: array(input.issues, "error.issues", (item) => string(item, "error.issue")) };
     case "stale_confirmation": exact(input, ["code", "expected_digest", "actual_digest"], "command error"); return { code, expected_digest: string(input.expected_digest, "error.expected_digest"), actual_digest: string(input.actual_digest, "error.actual_digest") };
     case "unknown_target": case "inspect_only_target": exact(input, ["code", "target_id"], "command error"); return { code, target_id: string(input.target_id, "error.target_id") };

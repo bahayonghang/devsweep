@@ -8,7 +8,11 @@
     "ScanPhase": ["projects", "global"],
     "ScanPreviewDisposition": ["candidate", "inspect_only"],
     "SizingWarningKind": ["canceled", "entry_budget_exhausted", "metadata_unavailable", "reparse_safety_unverified", "max_depth_reached", "directory_read_failed", "directory_entry_read_failed", "path_unresolved"],
-    "TargetKind": ["package_cache", "build_artifacts", "dependency_directory", "virtual_env", "test_cache", "tool_cache"]
+    "TargetKind": ["package_cache", "build_artifacts", "dependency_directory", "virtual_env", "test_cache", "tool_cache"],
+    "AnalyzeNodeKind": ["file", "directory", "reparse"],
+    "AnalyzeEvidence": ["complete", "incomplete", "unknown"],
+    "AnalyzeCompleteness": ["complete", "partial_budget", "canceled"],
+    "AnalyzeWarningClass": ["partial_budget", "access_denied", "io_error", "churn", "cycle", "reparse", "duplicate_link"]
   },
   "tagged_unions": {
     "Scope": { "variants": {
@@ -57,6 +61,8 @@
     "CommandError": { "tag": "code", "variants": {
       "CommandErrorScanAlreadyRunning": [{ "code": "scan_already_running" }],
       "CommandErrorScanFailed": [{ "code": "scan_failed", "message": "controlled failure" }],
+      "CommandErrorAnalyzeAlreadyRunning": [{ "code": "analyze_already_running" }],
+      "CommandErrorAnalyzeFailed": [{ "code": "analyze_failed", "message": "controlled analyze failure" }],
       "CommandErrorInvalidPlan": [{ "code": "invalid_plan", "issues": ["controlled issue"] }],
       "CommandErrorStaleConfirmation": [{ "code": "stale_confirmation", "expected_digest": "expected", "actual_digest": "actual" }],
       "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
@@ -78,6 +84,32 @@
         }
       }],
       "DesktopScanResultCanceled": [{ "type": "canceled", "scan_id": "fixture-scan-1" }]
+    }},
+    "DesktopAnalyzeResult": { "variants": {
+      "DesktopAnalyzeResultCompleted": [{
+        "type": "completed",
+        "operation_id": "analyze-op-1",
+        "snapshot": {
+          "version": 1,
+          "root": { "input": "C:/fixture/analyze", "normalized": "C:/fixture/analyze", "volume": "vol" },
+          "nodes": [],
+          "warnings": [],
+          "completeness": "complete",
+          "accounted_owned_bytes": 0
+        }
+      }],
+      "DesktopAnalyzeResultCanceled": [{
+        "type": "canceled",
+        "operation_id": "analyze-op-1",
+        "snapshot": {
+          "version": 1,
+          "root": { "input": "C:/fixture/analyze", "normalized": "C:/fixture/analyze", "volume": "vol" },
+          "nodes": [],
+          "warnings": [{ "class": "partial_budget", "node_id": 0 }],
+          "completeness": "canceled",
+          "accounted_owned_bytes": 0
+        }
+      }]
     }}
   },
   "additional_samples": {
@@ -122,6 +154,36 @@
         "stderr": { "truncated": false, "retained_bytes": 0, "total_bytes": 0 }
       }}
     ],
-    "ActionFailure": [{ "target_id": "fixture-target", "message": "controlled failure" }]
+    "ActionFailure": [{ "target_id": "fixture-target", "message": "controlled failure" }],
+    "AnalyzeWarningV1": [
+      { "class": "access_denied", "node_id": 1 },
+      { "class": "io_error", "node_id": null }
+    ],
+    "AnalyzeNodeV1": [
+      {
+        "id": 2,
+        "parent_id": 0,
+        "kind": "reparse",
+        "name": "link",
+        "bytes": 0,
+        "immediate_count": 0,
+        "recursive_count": 0,
+        "evidence": "incomplete",
+        "warnings": ["reparse"],
+        "mtime_ms": null
+      },
+      {
+        "id": 3,
+        "parent_id": 0,
+        "kind": "file",
+        "name": "gone.bin",
+        "bytes": 0,
+        "immediate_count": 0,
+        "recursive_count": 0,
+        "evidence": "unknown",
+        "warnings": ["churn", "duplicate_link"],
+        "mtime_ms": 1
+      }
+    ]
   }
 }

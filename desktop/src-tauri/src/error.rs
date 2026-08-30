@@ -10,6 +10,10 @@ pub(crate) enum CommandError {
     ScanFailed {
         message: String,
     },
+    AnalyzeAlreadyRunning,
+    AnalyzeFailed {
+        message: String,
+    },
     InvalidPlan {
         issues: Vec<String>,
     },
@@ -37,6 +41,12 @@ impl CommandError {
 
     pub(crate) fn scan_failed(error: anyhow::Error) -> Self {
         Self::ScanFailed {
+            message: format!("{error:#}"),
+        }
+    }
+
+    pub(crate) fn analyze_failed(error: anyhow::Error) -> Self {
+        Self::AnalyzeFailed {
             message: format!("{error:#}"),
         }
     }

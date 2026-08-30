@@ -22,6 +22,47 @@ export interface ActionKindPermanentDelete {
     type: "permanent_delete";
 }
 
+export type AnalyzeCompleteness = "canceled" | "complete" | "partial_budget";
+
+export type AnalyzeEvidence = "complete" | "incomplete" | "unknown";
+
+export type AnalyzeNodeKind = "directory" | "file" | "reparse";
+
+export interface AnalyzeNodeV1 {
+    bytes:           number;
+    evidence:        AnalyzeEvidence;
+    id:              number;
+    immediate_count: number;
+    kind:            AnalyzeNodeKind;
+    mtime_ms:        number | null;
+    name:            string;
+    parent_id:       number | null;
+    recursive_count: number;
+    warnings:        AnalyzeWarningClass[];
+}
+
+export type AnalyzeWarningClass = "access_denied" | "churn" | "cycle" | "duplicate_link" | "io_error" | "partial_budget" | "reparse";
+
+export interface AnalyzeRootIdentity {
+    input:      string;
+    normalized: string;
+    volume:     string;
+}
+
+export interface AnalyzeSnapshotV1 {
+    accounted_owned_bytes: number;
+    completeness:          AnalyzeCompleteness;
+    nodes:                 AnalyzeNodeV1[];
+    root:                  AnalyzeRootIdentity;
+    version:               number;
+    warnings:              AnalyzeWarningV1[];
+}
+
+export interface AnalyzeWarningV1 {
+    class:   AnalyzeWarningClass;
+    node_id: number | null;
+}
+
 export interface CapacityEstimatePartial {
     lower_bound_bytes: number;
     type:              "partial";
@@ -50,6 +91,15 @@ export interface CleanupIntentRunBuiltInAction {
 export interface CleanupIntentTrashProjectArtifact {
     rule_id: string;
     type:    "trash_project_artifact";
+}
+
+export interface CommandErrorAnalyzeAlreadyRunning {
+    code: "analyze_already_running";
+}
+
+export interface CommandErrorAnalyzeFailed {
+    code:    "analyze_failed";
+    message: string;
 }
 
 export interface CommandErrorInspectOnlyTarget {
@@ -85,6 +135,27 @@ export interface CommandErrorStaleConfirmation {
 export interface CommandErrorUnknownTarget {
     code:      "unknown_target";
     target_id: string;
+}
+
+export interface DesktopAnalyzeProgress {
+    accounted_owned_bytes: number;
+    changed_nodes:         AnalyzeNodeV1[];
+    operation_id:          string;
+    queue_depth:           number;
+    sequence:              number;
+    stored_nodes:          number;
+}
+
+export interface DesktopAnalyzeResultCanceled {
+    operation_id: string;
+    snapshot:     AnalyzeSnapshotV1;
+    type:         "canceled";
+}
+
+export interface DesktopAnalyzeResultCompleted {
+    operation_id: string;
+    snapshot:     AnalyzeSnapshotV1;
+    type:         "completed";
 }
 
 export interface DesktopScanProgress {
@@ -340,5 +411,6 @@ export type ScanProcessStatus = ScanProcessStatusCanceled | ScanProcessStatusExi
 export type ActionKind = ActionKindCommand | ActionKindInspectOnly | ActionKindMoveToTrash | ActionKindPermanentDelete;
 export type CapacityEstimate = CapacityEstimatePartial | CapacityEstimateUnknown | CapacityEstimateVerified;
 export type OutcomeStatus = OutcomeStatusFailed | OutcomeStatusSkipped | OutcomeStatusSucceeded;
-export type CommandError = CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
+export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
 export type DesktopScanResult = DesktopScanResultCanceled | DesktopScanResultCompleted;
+export type DesktopAnalyzeResult = DesktopAnalyzeResultCanceled | DesktopAnalyzeResultCompleted;

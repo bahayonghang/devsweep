@@ -1,0 +1,6 @@
+{
+  "command": "just ci",
+  "exit": 0,
+  "status": "passed",
+  "note": "fmt, sync-lock, check, test, clippy; log ends with ci complete"
+}

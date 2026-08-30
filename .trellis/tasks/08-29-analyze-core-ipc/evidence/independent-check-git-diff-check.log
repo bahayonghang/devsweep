@@ -1,0 +1,19 @@
+
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/analyze.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/presentation/analyze.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/presentation/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/Cargo.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/lib.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/tests/public_api.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/scripts/generate-types.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/error.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/lib.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/contract.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/contract.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/fixtures/contract-variants.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/types.gen.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/components/ErrorBanner.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/en.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it

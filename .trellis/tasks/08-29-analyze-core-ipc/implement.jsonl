@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Apply domain placement, bounded concurrency, cancellation, errors, logging, and tests."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace Analyze root input through traversal, evidence DTO, CLI/IPC, progress, cancellation, and output."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/current-devsweep-capabilities.md", "reason": "Reuse verified primitives without coupling Analyze to cleanup execution."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/design.md", "reason": "Implement the read-only bounded snapshot and event contract."}

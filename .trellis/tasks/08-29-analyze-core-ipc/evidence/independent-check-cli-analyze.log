@@ -1,0 +1,30 @@
+
+running 3 tests
+test application::presentation::analyze::tests::bilingual_snapshots_use_owned_renderer ... ok
+test application::commands::analyze::tests::scan_human_uses_owned_renderer_in_both_locales ... ok
+test application::commands::analyze::tests::scan_json_is_locale_invariant_and_has_no_cleanup_plan ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 115 filtered out; finished in 0.02s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.37s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-4f21e71527651189.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-e150118a3654b854.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-702c50019571aab8.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-80f448ceeef1b394.exe)

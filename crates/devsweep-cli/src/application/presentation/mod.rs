@@ -5,7 +5,7 @@
 
 use crate::i18n::{CatalogueError, Locale, catalogue};
 
-mod analyze;
+pub(super) mod analyze;
 mod clean;
 mod history;
 mod optimize;

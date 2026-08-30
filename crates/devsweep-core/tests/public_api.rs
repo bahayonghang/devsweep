@@ -1,4 +1,5 @@
 use devsweep_core::{
+    analysis::{ANALYZE_SNAPSHOT_VERSION, AnalyzeSnapshotV1, analyze_path},
     execution::{ExecutionRequest, Executor, confirmation_digest},
     model::{CLEANUP_PLAN_VERSION, UntrustedPlan},
     plan::validate_plan,
@@ -43,7 +44,21 @@ fn external_crate_can_use_the_supported_core_surface() {
 
     let cancel = FlagCancelObserver::new();
     cancel.request_cancel();
-
+    assert_eq!(ANALYZE_SNAPSHOT_VERSION, 1);
+    let _ = analyze_path;
+    serde_json::to_value(AnalyzeSnapshotV1 {
+        version: ANALYZE_SNAPSHOT_VERSION,
+        root: devsweep_core::analysis::AnalyzeRootIdentity {
+            input: "C:/root".into(),
+            normalized: "C:/root".into(),
+            volume: "vol".into(),
+        },
+        nodes: Vec::new(),
+        warnings: Vec::new(),
+        completeness: devsweep_core::analysis::AnalyzeCompleteness::Complete,
+        accounted_owned_bytes: 0,
+    })
+    .expect("analyze snapshot serializes externally");
     assert_default::<Sweeper>();
     assert_default::<Executor>();
     assert_scan_service::<SweepScanService>();

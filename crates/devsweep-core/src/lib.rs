@@ -2,6 +2,9 @@
 
 //! Reusable scanning, planning, inventory, and cleanup execution logic.
 
+/// Read-only bounded Analyze traversal and versioned snapshots.
+pub mod analysis;
+
 /// Neutral Cargo metadata probing and diagnostics.
 pub mod cargo_metadata;
 /// Cleanup execution orchestration and safety enforcement.

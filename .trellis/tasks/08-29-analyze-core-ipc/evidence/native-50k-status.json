@@ -1,0 +1,17 @@
+{
+  "fixture": "analysis-native-50k-v1",
+  "status": "passed",
+  "command": "cargo test -p devsweep-core --release --lib analysis_native --offline -- --nocapture",
+  "run_exit": 0,
+  "log": ".trellis/tasks/08-29-analyze-core-ipc/evidence/native-50k-run.log",
+  "binary_path": "D:/Documents/Code/Rust/Exp/devsweep/target/release/deps/devsweep_core-d2aa6f1b523bc95a.exe",
+  "binary_sha256": "f49b00b509aa565a793797a98306786f0150c71b76ca7b2ba67be8bbc4f25bc9",
+  "workers": 2,
+  "nodes": 51006,
+  "accounted_bytes": 9095278,
+  "private_bytes_samples": [28749824, 28155904, 29065216, 28708864, 28254208],
+  "wall_ms_samples": [5210, 5007, 5409, 5007, 5006],
+  "cancel_to_join_ms": [3, 3, 3, 3, 3],
+  "p95_cancel_to_join_ms": 3,
+  "cancel_mode": "mid-walk: spawn walk, sleep 150ms, request_cancel, join"
+}

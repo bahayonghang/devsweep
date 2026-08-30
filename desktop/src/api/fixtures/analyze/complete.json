@@ -1,0 +1,29 @@
+{
+  "type": "completed",
+  "operation_id": "analyze-op-1",
+  "snapshot": {
+    "version": 1,
+    "root": {
+      "input": "C:/fixture/analyze",
+      "normalized": "C:/fixture/analyze",
+      "volume": "vol"
+    },
+    "nodes": [
+      {
+        "id": 0,
+        "parent_id": null,
+        "kind": "directory",
+        "name": "analyze",
+        "bytes": 4096,
+        "immediate_count": 1,
+        "recursive_count": 1,
+        "evidence": "complete",
+        "warnings": [],
+        "mtime_ms": 1700000000000
+      }
+    ],
+    "warnings": [],
+    "completeness": "complete",
+    "accounted_owned_bytes": 128
+  }
+}

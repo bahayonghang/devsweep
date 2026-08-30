@@ -19,6 +19,8 @@ const rootFixtures = {
   DesktopScanProgress: ["scan-progress.json", "clean/scan-progress.json"],
   DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json", "clean/dry-run-outcome.json"],
   ExecutionReport: ["execution-report.json", "clean/execution-report.json"],
+  AnalyzeSnapshotV1: ["analyze/snapshot.json"],
+  DesktopAnalyzeProgress: ["analyze/progress.json"],
 };
 
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,
@@ -46,6 +48,12 @@ const references = {
   DryRunOutcome: { report: "ExecutionReport" },
   ExecutionReport: { failures: ["ActionFailure"], outcomes: ["TargetOutcome"], notes: ["ExecutionNote"], estimated_recoverable: "ScanTotals" },
   TargetOutcome: { action: "ActionKind", status: "OutcomeStatus", estimated_recoverable: "CapacityEstimate" },
+  AnalyzeSnapshotV1: { root: "AnalyzeRootIdentity", nodes: ["AnalyzeNodeV1"], warnings: ["AnalyzeWarningV1"], completeness: "AnalyzeCompleteness" },
+  AnalyzeNodeV1: { kind: "AnalyzeNodeKind", evidence: "AnalyzeEvidence", warnings: ["AnalyzeWarningClass"] },
+  AnalyzeWarningV1: { class: "AnalyzeWarningClass" },
+  DesktopAnalyzeProgress: { changed_nodes: ["AnalyzeNodeV1"] },
+  DesktopAnalyzeResultCompleted: { snapshot: "AnalyzeSnapshotV1" },
+  DesktopAnalyzeResultCanceled: { snapshot: "AnalyzeSnapshotV1" },
 };
 
 function addSample(samples, name, value) {

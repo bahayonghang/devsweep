@@ -1,3 +1,4 @@
+mod analyze;
 mod clean;
 mod commands;
 mod error;
@@ -7,10 +8,13 @@ mod scan;
 pub fn run() {
     tauri::Builder::default()
         .manage(scan::ScanCoordinator::default())
+        .manage(analyze::AnalyzeCoordinator::default())
         .manage(commands::PresentationSettingsCoordinator::default())
         .invoke_handler(tauri::generate_handler![
             commands::scan_start,
             commands::scan_cancel,
+            analyze::analyze_start,
+            analyze::analyze_cancel,
             clean::plan_dry_run,
             clean::plan_execute,
             commands::protection_list_get,
