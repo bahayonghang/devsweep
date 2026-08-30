@@ -1,0 +1,5 @@
+COMMAND: npm --prefix desktop run typecheck
+OUTPUT:
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+EXIT_CODE: 0

@@ -1,0 +1,71 @@
+{
+  "task": "08-29-analyze-core-ipc",
+  "reopen_repair": {
+    "gap_1_denied_evidence": "passed",
+    "gap_2_sparse_coverage": "passed",
+    "gap_3_native_churn_and_denied": "passed",
+    "gap_4_cross_surface_parity": "passed_with_vitest_runner_blocked"
+  },
+  "canonical_parity": {
+    "snapshot_sha256": "d14a6c33214dbb4a19527b6184411b68b02b90bec639fb9d8c94e08f7a3e1c36",
+    "node_count": 7,
+    "root_bytes_lower_bound": 8388616,
+    "complete_nodes": 5,
+    "incomplete_nodes": 2,
+    "unknown_nodes": 0,
+    "access_denied_warnings": 1,
+    "sparse_bytes_lower_bound": 8388608,
+    "cli": "passed",
+    "tui_reducer": "passed",
+    "desktop_decoder_selectors": "passed_via_no_spawn_node_fallback",
+    "desktop_vitest": "blocked_spawn_eperm"
+  },
+  "validation": [
+    {
+      "command": "cargo test -p devsweep-core analysis",
+      "exit_code": 0,
+      "log": "reopen-core-analysis.log"
+    },
+    {
+      "command": "cargo test -p devsweep-core analysis --release -- --nocapture",
+      "exit_code": 0,
+      "log": "reopen-core-analysis-release.log"
+    },
+    {
+      "command": "cargo test -p devsweep-cli analyze",
+      "exit_code": 0,
+      "log": "reopen-cli-analyze.log"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "log": "reopen-fmt-check.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "log": "reopen-git-diff-check.log"
+    },
+    {
+      "command": "just ci",
+      "exit_code": 0,
+      "log": "reopen-just-ci.log"
+    },
+    {
+      "command": "npm --prefix desktop run typecheck",
+      "exit_code": 0,
+      "log": "reopen-desktop-typecheck.log"
+    },
+    {
+      "command": "npm --prefix desktop run test",
+      "exit_code": 1,
+      "classification": "sandbox_spawn_eperm",
+      "log": "reopen-desktop-test.log"
+    },
+    {
+      "command": "node --experimental-strip-types .trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-desktop-parity-fallback.mjs",
+      "exit_code": 0,
+      "log": "reopen-parity-desktop-fallback.log"
+    }
+  ]
+}

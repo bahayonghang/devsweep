@@ -1,0 +1,10 @@
+COMMAND: git diff --check
+OUTPUT:
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.trellis/tasks/08-29-analyze-core-ipc/evidence/native-50k-run-meta.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.trellis/tasks/08-29-analyze-core-ipc/evidence/native-50k-status.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.trellis/tasks/08-29-analyze-core-ipc/implement.jsonl', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/modes/analyze/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/analysis/tests.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/analysis/walker.rs', LF will be replaced by CRLF the next time Git touches it
+EXIT_CODE: 0

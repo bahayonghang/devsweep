@@ -1,0 +1,39 @@
+COMMAND: cargo test -p devsweep-cli analyze
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-4f21e71527651189.exe)
+
+running 12 tests
+test tui::modes::analyze::tests::bars_are_proportional_lower_bounds_and_never_invent_unknown_area ... ok
+test tui::modes::analyze::tests::stale_progress_and_terminal_events_are_rejected ... ok
+test tui::modes::analyze::tests::projection_keeps_only_frozen_analyze_snapshot_data ... ok
+test tui::modes::analyze::tests::keyboard_drill_down_and_up_restore_the_directory_anchor ... ok
+test tui::modes::analyze::tests::viewport_scrolls_to_keep_the_keyboard_cursor_visible ... ok
+test tui::modes::analyze::tests::paging_breadcrumbs_focus_and_viewport_are_bounded ... ok
+test tui::modes::analyze::tests::cli_generated_fixture_matches_tui_reducer_totals_evidence_and_warnings ... ok
+test tui::modes::analyze::tests::leaving_analyze_requests_cancel_and_releases_state_only_after_terminal_join_event ... ok
+test application::presentation::analyze::tests::bilingual_snapshots_use_owned_renderer ... ok
+test tui::modes::analyze::tests::test_backend_renders_only_viewport_rows_with_bilingual_evidence_copy ... ok
+test application::commands::analyze::tests::scan_human_uses_owned_renderer_in_both_locales ... ok
+test application::commands::analyze::tests::scan_json_is_locale_invariant_and_has_no_cleanup_plan ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 115 filtered out; finished in 0.02s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-e150118a3654b854.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-702c50019571aab8.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-80f448ceeef1b394.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+EXIT_CODE: 0

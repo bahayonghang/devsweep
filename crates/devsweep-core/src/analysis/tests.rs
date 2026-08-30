@@ -8,6 +8,8 @@ use crate::process::FlagCancelObserver;
 #[cfg(all(windows, not(debug_assertions)))]
 use std::{thread, time::Duration};
 
+#[cfg(all(windows, not(debug_assertions)))]
+use super::AnalyzeSnapshotV1;
 use super::{
     ANALYZE_WORKERS, AnalyzeCompleteness, AnalyzeEvidence, AnalyzeNodeKind, AnalyzeProgressV1,
     AnalyzeWarningClass, Fake250k, MAX_OWNED_BYTES, MAX_STORED_NODES, MapFs, analyze_path,
@@ -124,6 +126,41 @@ fn churn_and_cycle_are_distinguishable() {
             .warnings
             .iter()
             .any(|warning| warning.class == AnalyzeWarningClass::Cycle)
+    );
+}
+
+#[test]
+fn fake_sparse_file_reports_logical_size_without_real_content() {
+    const SPARSE_LOGICAL_BYTES: u64 = 8 * 1024 * 1024 * 1024;
+    let root = PathBuf::from("sparse-fixture-root");
+    let sparse = root.join("sparse-logical.bin");
+    let mut fs = MapFs {
+        volume: "vol".to_string(),
+        ..MapFs::default()
+    };
+    fs.meta.insert(root.clone(), Ok(dir_entry("dir:sparse")));
+    fs.meta.insert(
+        sparse,
+        Ok(file_entry(SPARSE_LOGICAL_BYTES, "file:sparse-logical")),
+    );
+    fs.dirs.insert(
+        root.clone(),
+        Ok(vec![super::walker::DirChild::named("sparse-logical.bin")]),
+    );
+
+    let (outcome, _) =
+        analyze_with_fs_and_stats(&root, &fs, None, None, true).expect("analyze sparse fixture");
+    let snapshot = outcome.snapshot();
+    let sparse = snapshot
+        .nodes
+        .iter()
+        .find(|node| node.name == "sparse-logical.bin")
+        .expect("sparse node");
+    assert_eq!(sparse.bytes, SPARSE_LOGICAL_BYTES);
+    assert_eq!(sparse.evidence, AnalyzeEvidence::Complete);
+    assert_eq!(
+        snapshot.root_node().map(|node| node.bytes),
+        Some(SPARSE_LOGICAL_BYTES)
     );
 }
 
@@ -283,6 +320,217 @@ fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
     std::os::unix::fs::symlink(target, link)
 }
 
+#[cfg(windows)]
+fn create_sparse_file(path: &Path, logical_bytes: u64) -> std::io::Result<()> {
+    use std::{ffi::c_void, fs::OpenOptions, os::windows::io::AsRawHandle};
+    use windows_sys::Win32::Foundation::HANDLE;
+
+    // CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 49, METHOD_BUFFERED, FILE_SPECIAL_ACCESS).
+    const FSCTL_SET_SPARSE: u32 = 590_020;
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn DeviceIoControl(
+            device: HANDLE,
+            control_code: u32,
+            input: *const c_void,
+            input_size: u32,
+            output: *mut c_void,
+            output_size: u32,
+            bytes_returned: *mut u32,
+            overlapped: *mut c_void,
+        ) -> i32;
+    }
+
+    let file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .read(true)
+        .write(true)
+        .open(path)?;
+    let mut bytes_returned = 0;
+    let ok = unsafe {
+        DeviceIoControl(
+            file.as_raw_handle() as HANDLE,
+            FSCTL_SET_SPARSE,
+            std::ptr::null(),
+            0,
+            std::ptr::null_mut(),
+            0,
+            &raw mut bytes_returned,
+            std::ptr::null_mut(),
+        )
+    };
+    if ok == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    file.set_len(logical_bytes)
+}
+
+#[cfg(windows)]
+struct DeniedDirectoryGuard {
+    path: PathBuf,
+}
+
+#[cfg(windows)]
+impl DeniedDirectoryGuard {
+    fn create(path: &Path) -> std::io::Result<Self> {
+        create_directory_with_sddl(path, "D:P(A;OICI;FA;;;WD)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)")?;
+        Ok(Self {
+            path: path.to_path_buf(),
+        })
+    }
+
+    fn deny_read_attributes(&self) -> std::io::Result<()> {
+        set_directory_sddl(
+            &self.path,
+            "D:P(D;OICI;GRGX;;;WD)(A;OICI;FA;;;WD)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)",
+        )
+    }
+}
+
+#[cfg(windows)]
+impl Drop for DeniedDirectoryGuard {
+    fn drop(&mut self) {
+        let _ = set_directory_sddl(
+            &self.path,
+            "D:P(A;OICI;FA;;;WD)(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)",
+        );
+    }
+}
+
+#[cfg(windows)]
+fn create_directory_with_sddl(path: &Path, sddl: &str) -> std::io::Result<()> {
+    use std::{ffi::c_void, os::windows::ffi::OsStrExt};
+    use windows_sys::Win32::{
+        Foundation::LocalFree, Security::SECURITY_ATTRIBUTES, Storage::FileSystem::CreateDirectoryW,
+    };
+
+    #[link(name = "advapi32")]
+    unsafe extern "system" {
+        fn ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            string_security_descriptor: *const u16,
+            string_sd_revision: u32,
+            security_descriptor: *mut *mut c_void,
+            security_descriptor_size: *mut u32,
+        ) -> i32;
+    }
+
+    let wide_sddl = sddl
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let mut descriptor = std::ptr::null_mut();
+    let converted = unsafe {
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            wide_sddl.as_ptr(),
+            1,
+            &raw mut descriptor,
+            std::ptr::null_mut(),
+        )
+    };
+    if converted == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+
+    let wide_path = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let attributes = SECURITY_ATTRIBUTES {
+        nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
+        lpSecurityDescriptor: descriptor,
+        bInheritHandle: 0,
+    };
+    let created = unsafe { CreateDirectoryW(wide_path.as_ptr(), &raw const attributes) };
+    unsafe {
+        let _ = LocalFree(descriptor);
+    }
+    if created == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn set_directory_sddl(path: &Path, sddl: &str) -> std::io::Result<()> {
+    use std::{ffi::c_void, os::windows::ffi::OsStrExt};
+    use windows_sys::Win32::Foundation::LocalFree;
+
+    const DACL_SECURITY_INFORMATION: u32 = 0x0000_0004;
+    #[link(name = "advapi32")]
+    unsafe extern "system" {
+        fn ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            string_security_descriptor: *const u16,
+            string_sd_revision: u32,
+            security_descriptor: *mut *mut c_void,
+            security_descriptor_size: *mut u32,
+        ) -> i32;
+        fn SetFileSecurityW(
+            file_name: *const u16,
+            security_information: u32,
+            security_descriptor: *const c_void,
+        ) -> i32;
+    }
+
+    let wide_sddl = sddl
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let mut descriptor = std::ptr::null_mut();
+    let converted = unsafe {
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            wide_sddl.as_ptr(),
+            1,
+            &raw mut descriptor,
+            std::ptr::null_mut(),
+        )
+    };
+    if converted == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    let wide_path = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let changed =
+        unsafe { SetFileSecurityW(wide_path.as_ptr(), DACL_SECURITY_INFORMATION, descriptor) };
+    unsafe {
+        let _ = LocalFree(descriptor);
+    }
+    if changed == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+#[test]
+fn native_sparse_file_reports_complete_logical_size() {
+    const SPARSE_LOGICAL_BYTES: u64 = 8 * 1024 * 1024 * 1024;
+    let fixture = tempfile::TempDir::new().expect("temp");
+    let root = fixture.path().join("native-sparse-root");
+    std::fs::create_dir_all(&root).expect("root");
+    create_sparse_file(&root.join("native-sparse.bin"), SPARSE_LOGICAL_BYTES)
+        .expect("create sparse file");
+
+    let outcome = analyze_path(&root, None, None).expect("native sparse analyze");
+    let snapshot = outcome.snapshot();
+    let sparse = snapshot
+        .nodes
+        .iter()
+        .find(|node| node.name == "native-sparse.bin")
+        .expect("native sparse node");
+    assert_eq!(sparse.bytes, SPARSE_LOGICAL_BYTES);
+    assert_eq!(sparse.evidence, AnalyzeEvidence::Complete);
+    assert!(sparse.warnings.is_empty());
+    assert_eq!(
+        snapshot.root_node().map(|node| node.bytes),
+        Some(SPARSE_LOGICAL_BYTES)
+    );
+}
+
 #[test]
 fn native_reparse_is_a_leaf() {
     let fixture = tempfile::TempDir::new().expect("temp");
@@ -309,6 +557,157 @@ fn native_reparse_is_a_leaf() {
             .iter()
             .any(|node| node.name == "big.bin" && node.parent_id == Some(reparse.id))
     );
+}
+
+#[cfg(windows)]
+#[test]
+fn native_live_churn_distinguishes_deleted_and_growing_files_and_denied_branch() {
+    use std::{
+        fs::{self, OpenOptions},
+        sync::{
+            Arc,
+            atomic::{AtomicBool, Ordering},
+        },
+        thread,
+        time::Duration,
+    };
+
+    const STABLE_DIRECTORIES: u32 = 60;
+    const FILES_PER_DIRECTORY: u32 = 100;
+    const CHURN_FILES: u32 = 64;
+    const INITIAL_GROWTH_BYTES: u64 = 4_096;
+
+    let fixture = tempfile::TempDir::new().expect("native churn fixture");
+    let root = fixture.path().join("analysis-native-churn-v1");
+    fs::create_dir_all(&root).expect("root");
+    for dir in 0..STABLE_DIRECTORIES {
+        let path = root.join(format!("d{dir:03}"));
+        fs::create_dir_all(&path).expect("stable directory");
+        for file in 0..FILES_PER_DIRECTORY {
+            fs::File::create(path.join(format!("f{file:03}.dat"))).expect("stable file");
+        }
+    }
+
+    let deleted_dir = root.join("z-deleted");
+    let growing_dir = root.join("z-growing");
+    fs::create_dir_all(&deleted_dir).expect("deleted directory");
+    fs::create_dir_all(&growing_dir).expect("growing directory");
+    let deleted_paths = (0..CHURN_FILES)
+        .map(|index| deleted_dir.join(format!("deleted-{index:03}.dat")))
+        .collect::<Vec<_>>();
+    let growing_paths = (0..CHURN_FILES)
+        .map(|index| growing_dir.join(format!("growing-{index:03}.dat")))
+        .collect::<Vec<_>>();
+    for path in &deleted_paths {
+        fs::write(path, [1u8]).expect("deleted fixture file");
+    }
+    for path in &growing_paths {
+        create_sparse_file(path, INITIAL_GROWTH_BYTES).expect("growing sparse file");
+    }
+
+    let denied_dir = root.join("y-denied");
+    let denied_guard = DeniedDirectoryGuard::create(&denied_dir).expect("create denied ACL");
+    fs::write(denied_dir.join("excluded.bin"), vec![7u8; 64 * 1024]).expect("denied content");
+    denied_guard
+        .deny_read_attributes()
+        .expect("deny read attributes");
+
+    let stop = Arc::new(AtomicBool::new(false));
+    let mutator_stop = Arc::clone(&stop);
+    let mutator = thread::spawn(move || {
+        // The z-* directories are enumerated after the stable directory set;
+        // their children are queued behind the 6,000 stable files.
+        thread::sleep(Duration::from_millis(25));
+        for path in deleted_paths {
+            let _ = fs::remove_file(path);
+        }
+        let growing_files = growing_paths
+            .iter()
+            .map(|path| OpenOptions::new().write(true).open(path))
+            .collect::<std::io::Result<Vec<_>>>()
+            .expect("open growing files");
+        let mut logical_bytes = INITIAL_GROWTH_BYTES;
+        while !mutator_stop.load(Ordering::Relaxed) {
+            logical_bytes = logical_bytes.saturating_add(4_096);
+            for file in &growing_files {
+                file.set_len(logical_bytes).expect("grow sparse file");
+            }
+            thread::yield_now();
+        }
+        logical_bytes
+    });
+
+    let outcome = analyze_path(&root, None, None);
+    stop.store(true, Ordering::Relaxed);
+    let final_growth_bytes = mutator.join().expect("mutator join");
+    let outcome = outcome.expect("native churn analyze");
+    let snapshot = outcome.snapshot();
+
+    let deleted = snapshot
+        .nodes
+        .iter()
+        .filter(|node| node.name.starts_with("deleted-"))
+        .collect::<Vec<_>>();
+    assert!(
+        deleted.iter().any(|node| {
+            node.evidence == AnalyzeEvidence::Unknown
+                && node.warnings.contains(&AnalyzeWarningClass::Churn)
+        }),
+        "at least one listed-then-deleted file must remain explicit unknown churn"
+    );
+    let growing = snapshot
+        .nodes
+        .iter()
+        .filter(|node| node.name.starts_with("growing-"))
+        .collect::<Vec<_>>();
+    assert!(
+        growing.iter().any(|node| {
+            node.evidence == AnalyzeEvidence::Incomplete
+                && node.warnings.contains(&AnalyzeWarningClass::Churn)
+                && node.bytes >= INITIAL_GROWTH_BYTES
+                && node.bytes <= final_growth_bytes
+        }),
+        "at least one growing file must be an incomplete lower bound"
+    );
+
+    let denied = snapshot
+        .nodes
+        .iter()
+        .find(|node| node.name == "y-denied")
+        .expect("denied node");
+    assert_eq!(denied.evidence, AnalyzeEvidence::Incomplete);
+    assert_eq!(
+        denied.bytes, 0,
+        "denied content must not count as available"
+    );
+    assert!(denied.warnings.contains(&AnalyzeWarningClass::AccessDenied));
+    assert!(
+        !snapshot
+            .nodes
+            .iter()
+            .any(|node| node.name == "excluded.bin")
+    );
+
+    for directory in snapshot
+        .nodes
+        .iter()
+        .filter(|node| node.kind == AnalyzeNodeKind::Directory)
+    {
+        let children = snapshot
+            .nodes
+            .iter()
+            .filter(|node| node.parent_id == Some(directory.id))
+            .collect::<Vec<_>>();
+        assert_eq!(directory.immediate_count as usize, children.len());
+        assert_eq!(
+            directory.bytes,
+            children.iter().map(|node| node.bytes).sum::<u64>(),
+            "directory {} must remain the sum of represented lower bounds",
+            directory.name
+        );
+    }
+
+    drop(denied_guard);
 }
 
 #[cfg(all(windows, not(debug_assertions)))]
@@ -359,13 +758,37 @@ mod native_gate {
         Ok(())
     }
 
+    fn assert_denied_branch(snapshot: &AnalyzeSnapshotV1) {
+        let denied = snapshot
+            .nodes
+            .iter()
+            .find(|node| node.name == "denied")
+            .expect("denied node");
+        assert_eq!(denied.evidence, AnalyzeEvidence::Incomplete);
+        assert_eq!(denied.bytes, 0);
+        assert!(denied.warnings.contains(&AnalyzeWarningClass::AccessDenied));
+        assert!(
+            !snapshot
+                .nodes
+                .iter()
+                .any(|node| node.name == "excluded.bin")
+        );
+    }
+
     #[test]
     fn analysis_native_50k_v1_resource_gate() {
         let fixture = tempfile::TempDir::new().expect("native fixture");
         let root = fixture.path().join("analysis-native-50k-v1");
         generate_native_50k(&root).expect("generate tree");
+        let denied_path = root.join("denied");
+        let denied_guard = DeniedDirectoryGuard::create(&denied_path).expect("create denied ACL");
+        fs::write(denied_path.join("excluded.bin"), vec![9u8; 64 * 1024]).expect("denied content");
+        denied_guard
+            .deny_read_attributes()
+            .expect("deny read attributes");
 
         let _warmup = analyze_path(&root, None, None).expect("warmup");
+        assert_denied_branch(_warmup.snapshot());
         let mut samples = Vec::new();
         for _ in 0..5 {
             let started = Instant::now();
@@ -386,6 +809,7 @@ mod native_gate {
             sampler_stop.store(true, std::sync::atomic::Ordering::Relaxed);
             peak_private = handle.join().unwrap_or(peak_private).max(peak_private);
             let snapshot = outcome.snapshot();
+            assert_denied_branch(snapshot);
             samples.push(serde_json::json!({
                 "nodes": snapshot.nodes.len(),
                 "accounted_bytes": snapshot.accounted_owned_bytes,
@@ -437,7 +861,9 @@ mod native_gate {
             "cancel_to_join_ms": cancel_ms,
             "p95_cancel_to_join_ms": p95,
             "workers": ANALYZE_WORKERS,
+            "denied_branch": "access_denied_incomplete_zero_bytes",
         });
         println!("{evidence}");
+        drop(denied_guard);
     }
 }

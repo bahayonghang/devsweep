@@ -1,0 +1,35 @@
+Reopen repair completed. All four gaps are implemented; no commit or push was performed.
+
+Per-gap results:
+
+- Gap 1: ACL-denied, unverified no-follow opens now return `AccessDenied`, producing incomplete evidence, an access-denied warning, zero available bytes, and no traversal.
+- Gap 2: Added fake 8 GiB logical sparse-file coverage and native Windows sparse-file coverage using `FSCTL_SET_SPARSE`.
+- Gap 3: Added a 6,000-file live-churn gate distinguishing deletion (`Unknown + Churn`) from growth (`Incomplete + Churn`), with lower-bound reconciliation and a real ACL-denied branch. The refreshed release 50k gate passed with 51,007 nodes, two warnings, 8.6–12.4 second scan samples, and 3 ms p95 cancel-to-join.
+- Gap 4: Added a deterministic regular/sparse/denied fixture generator, recorded CLI JSON fixture, TUI reducer parity test, desktop decoder/selector Vitest test, and reproducible no-spawn desktop fallback. All surfaces agree on 7 nodes, 8,388,616 lower-bound bytes, 5 complete nodes, 2 incomplete nodes, and one access-denied warning. Snapshot SHA-256: `d14a6c33214dbb4a19527b6184411b68b02b90bec639fb9d8c94e08f7a3e1c36`.
+
+Files changed:
+
+- `crates/devsweep-core/src/analysis/walker.rs`
+- `crates/devsweep-core/src/analysis/tests.rs`
+- `crates/devsweep-cli/src/tui/modes/analyze/mod.rs`
+- `desktop/src/api/fixtures/analyze/cli-parity.json`
+- `desktop/src/modes/analyze/parity.test.ts`
+- `.trellis/tasks/08-29-analyze-core-ipc/implement.jsonl`
+- Reopen evidence generator, fallback harness, logs, summary, and refreshed native 50k status files under `.trellis/tasks/08-29-analyze-core-ipc/evidence/`
+
+Validation:
+
+- `cargo test -p devsweep-core analysis` — exit 0, 15 passed.
+- `cargo test -p devsweep-core analysis --release -- --nocapture` — exit 0, 16 passed including the 50k gate.
+- `cargo test -p devsweep-cli analyze` — exit 0, 12 passed.
+- `cargo run -p devsweep-cli --bin devsweep -- analyze scan --root <fixture> --format json --output desktop/src/api/fixtures/analyze/cli-parity.json` — exit 0. `--bin devsweep` is required because the package contains multiple binaries.
+- `node --experimental-strip-types .trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-desktop-parity-fallback.mjs` — exit 0.
+- `npm --prefix desktop run typecheck` — exit 0.
+- `npm --prefix desktop run test` — exit 1; Vitest could not start because esbuild spawning was rejected with sandbox `EPERM`. The main session must rerun this gate outside the restricted sandbox.
+- `cargo fmt --all -- --check` — exit 0.
+- `git diff --check` — exit 0.
+- `just ci` — exit 0.
+
+Raw evidence and the machine-readable result are in `.trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-summary.json` and the accompanying `reopen-*.log` files.
+
+One temporary fixture remains at `C:\Users\lyh\AppData\Local\Temp\devsweep-analyze-parity-reopen-20260831-a` because recursive removal was rejected by sandbox policy. Its denied ACL was restored before cleanup was attempted. Pre-existing changes to `.trellis/.gitignore`, `README.md`, `justfile`, and other task directories were preserved untouched.

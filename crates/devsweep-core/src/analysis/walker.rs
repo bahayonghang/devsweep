@@ -118,7 +118,11 @@ impl AnalyzeFs for NativeFs {
             .ok()
             .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|duration| duration.as_millis() as u64);
-        let object_id = capture_object_id_no_follow(path).ok();
+        let object_id = capture_object_id_no_follow(path);
+        if unverified_open_was_denied(&safety, &object_id) {
+            return Err(FsFail::AccessDenied);
+        }
+        let object_id = object_id.ok();
         match safety {
             PathSafety::ReparsePoint { .. } => Ok(EntryMeta {
                 kind: AnalyzeNodeKind::Reparse,
@@ -141,13 +145,20 @@ impl AnalyzeFs for NativeFs {
                 object_id,
                 size_unstable: false,
             }),
-            PathSafety::Safe => Ok(EntryMeta {
-                kind: AnalyzeNodeKind::File,
-                size: metadata.len(),
-                mtime_ms,
-                object_id,
-                size_unstable: false,
-            }),
+            PathSafety::Safe => {
+                // A second no-follow observation after the handle-based identity
+                // capture detects live-file deletion and growth. Keep the smaller
+                // observed length so an unstable file is always a lower bound.
+                let verified = std::fs::symlink_metadata(path).map_err(map_io)?;
+                let size_unstable = verified.len() != metadata.len();
+                Ok(EntryMeta {
+                    kind: AnalyzeNodeKind::File,
+                    size: verified.len().min(metadata.len()),
+                    mtime_ms,
+                    object_id,
+                    size_unstable,
+                })
+            }
         }
     }
 
@@ -167,6 +178,32 @@ impl AnalyzeFs for NativeFs {
         capture_object_id_no_follow(path)
             .map(|id| volume_from_object_id(&id.0))
             .map_err(map_io)
+    }
+}
+
+fn unverified_open_was_denied(safety: &PathSafety, object_id: &std::io::Result<ObjectId>) -> bool {
+    matches!(safety, PathSafety::Unverified { .. })
+        && matches!(
+            object_id.as_ref(),
+            Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied
+        )
+}
+
+#[cfg(test)]
+mod native_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn permission_denied_unverified_open_maps_to_access_denied_path() {
+        let safety = PathSafety::Unverified {
+            detail: "mocked access denial".to_string(),
+        };
+        let denied = Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+        let unsupported = Err(std::io::Error::from(std::io::ErrorKind::Unsupported));
+
+        assert!(unverified_open_was_denied(&safety, &denied));
+        assert!(!unverified_open_was_denied(&safety, &unsupported));
+        assert!(!unverified_open_was_denied(&PathSafety::Safe, &denied));
     }
 }
 
@@ -221,8 +258,8 @@ fn capture_windows_object_id(path: &Path) -> std::io::Result<ObjectId> {
         Foundation::{HANDLE, INVALID_HANDLE_VALUE},
         Storage::FileSystem::{
             BY_HANDLE_FILE_INFORMATION, CreateFileW, FILE_FLAG_BACKUP_SEMANTICS,
-            FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-            GetFileInformationByHandle, OPEN_EXISTING,
+            FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ,
+            FILE_SHARE_WRITE, GetFileInformationByHandle, OPEN_EXISTING,
         },
     };
 
@@ -231,7 +268,7 @@ fn capture_windows_object_id(path: &Path) -> std::io::Result<ObjectId> {
     let raw = unsafe {
         CreateFileW(
             wide.as_ptr(),
-            0,
+            FILE_READ_ATTRIBUTES,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             ptr::null(),
             OPEN_EXISTING,

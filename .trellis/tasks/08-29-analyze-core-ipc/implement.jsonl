@@ -2,3 +2,9 @@
 {"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace Analyze root input through traversal, evidence DTO, CLI/IPC, progress, cancellation, and output."}
 {"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/current-devsweep-capabilities.md", "reason": "Reuse verified primitives without coupling Analyze to cleanup execution."}
 {"file": ".trellis/tasks/08-29-analyze-core-ipc/design.md", "reason": "Implement the read-only bounded snapshot and event contract."}
+{"file": "crates/devsweep-core/src/analysis/walker.rs", "reason": "Repair no-follow access-denied classification and capture live size/deletion churn conservatively."}
+{"file": "crates/devsweep-core/src/analysis/tests.rs", "reason": "Add fake and native sparse, live churn, ACL-denied, and refreshed 50k native coverage."}
+{"file": "crates/devsweep-cli/src/tui/modes/analyze/mod.rs", "reason": "Assert the TUI reducer consumes the canonical CLI snapshot without totals or evidence drift."}
+{"file": "desktop/src/modes/analyze/parity.test.ts", "reason": "Verify the desktop decoder and selectors preserve the canonical CLI fixture totals, evidence, and warnings."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-generate-parity-fixture.ps1", "reason": "Generate the deterministic shared parity tree with regular, sparse, and ACL-denied branches."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-desktop-parity-fallback.mjs", "reason": "Run the real desktop decoder and selectors without Vitest's sandbox-blocked esbuild spawn."}

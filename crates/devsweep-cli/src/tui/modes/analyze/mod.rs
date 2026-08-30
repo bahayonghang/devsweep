@@ -547,6 +547,54 @@ mod tests {
     }
 
     #[test]
+    fn cli_generated_fixture_matches_tui_reducer_totals_evidence_and_warnings() {
+        let envelope: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../../desktop/src/api/fixtures/analyze/cli-parity.json"
+        ))
+        .expect("CLI parity envelope");
+        let snapshot: AnalyzeSnapshotV1 =
+            serde_json::from_value(envelope["data"].clone()).expect("Analyze V1 snapshot");
+        let state = completed(snapshot);
+        let snapshot = state.snapshot.as_ref().expect("reducer snapshot");
+        let root = snapshot.root_node().expect("represented root");
+
+        assert_eq!(state.stored_nodes, 7);
+        assert_eq!(root.bytes, 8_388_616);
+        assert_eq!(
+            snapshot
+                .nodes
+                .iter()
+                .filter(|node| node.evidence == AnalyzeEvidence::Complete)
+                .count(),
+            5
+        );
+        assert_eq!(
+            snapshot
+                .nodes
+                .iter()
+                .filter(|node| node.evidence == AnalyzeEvidence::Incomplete)
+                .count(),
+            2
+        );
+        assert_eq!(
+            snapshot
+                .warnings
+                .iter()
+                .filter(|warning| warning.class == AnalyzeWarningClass::AccessDenied)
+                .count(),
+            1
+        );
+        assert_eq!(
+            state
+                .visible_children()
+                .iter()
+                .map(|node| node.bytes)
+                .sum::<u64>(),
+            root.bytes
+        );
+    }
+
+    #[test]
     fn leaving_analyze_requests_cancel_and_releases_state_only_after_terminal_join_event() {
         let shell = ShellComposition::for_locale(Locale::En).expect("shell");
         let mut app = App::with_shell(shell);

@@ -1,9 +1,10 @@
 {
-  "command": "cargo test -p devsweep-core --release --lib analysis_native --offline -- --nocapture",
+  "command": "cargo test -p devsweep-core analysis --release -- --nocapture",
   "compile_exit": 0,
   "run_exit": 0,
   "binary_path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\deps\\devsweep_core-d2aa6f1b523bc95a.exe",
-  "binary_sha256": "8bc0b4714b04bfc4e734df7210be0bca109c573ccdadcb2139413306ef1bf09c",
-  "binary_size": 3671552,
-  "elapsed_s": 67.09712982177734
+  "binary_sha256": "379f95912d64c07e4e10f19d813806bc5d3ce8f86ae9dce471f3c4b0f332e1ca",
+  "binary_size": 3722752,
+  "compile_s": 59.86,
+  "test_s": 110.28
 }

@@ -1,0 +1,15 @@
+COMMAND: scoped diff and authority/contract audit
+CHANGED_SCOPED_PATHS:
+warning: in the working copy of 'crates/devsweep-cli/src/tui/modes/analyze/mod.rs', LF will be replaced by CRLF the next time Git touches it
+crates/devsweep-cli/src/tui/modes/analyze/mod.rs
+crates/devsweep-core/src/analysis/walker.rs
+warning: in the working copy of 'crates/devsweep-core/src/analysis/walker.rs', LF will be replaced by CRLF the next time Git touches it
+FORBIDDEN_PATH_CHANGE_COUNT: 0
+PRODUCTION_AUTHORITY_MATCH_EXIT_CODE: 1
+CAP_CONTRACT:
+10:pub const MAX_STORED_NODES: u32 = 250_000;
+12:pub const MAX_WARNINGS: u32 = 10_000;
+14:pub const MAX_OWNED_BYTES: u64 = 268_435_456;
+18:pub const ANALYZE_WORKERS: usize = 2;
+64:        Self::with_cap(MAX_OWNED_BYTES)
+EXIT_CODE: 0
