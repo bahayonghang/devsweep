@@ -3,7 +3,7 @@
   "name": "analyze-core-ipc",
   "title": "Implement Analyze core, contracts, and IPC",
   "description": "Own bounded read-only traversal, evidence-bearing size DTOs, cancellation, CLI serialization, and Tauri IPC for Analyze.",
-  "status": "completed",
+  "status": "in_progress",
   "dev_type": null,
   "scope": "read-only bounded Analyze traversal; versioned snapshot; CLI and Tauri IPC; no cleanup authority",
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "lyh",
   "assignee": "lyh",
   "createdAt": "2026-08-29",
-  "completedAt": "2026-08-31",
+  "completedAt": null,
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -25,6 +25,7 @@
   "meta": {
     "phase": "3-core-modes",
     "depends_on": "08-29-cli-contract-localization",
-    "approval_state": "awaiting_parent_approval"
+    "approval_state": "awaiting_parent_approval",
+    "reopen_reason": "parent 08-29-analyze-mode acceptance FAIL: R2/AC1/AC2/AC3 evidence and walker classification gaps"
   }
 }
