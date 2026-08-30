@@ -1,0 +1,7 @@
+Overall: **FAIL**
+
+- AC1: **FAIL** — core child lacks required sparse-file and native live-churn evidence.
+- AC2: **FAIL** — no identical-fixture CLI/TUI/desktop parity comparison was recorded.
+- AC3: **FAIL** — native live churn is absent, and ACL-denied content is reported as available/unsupported rather than incomplete/unknown.
+
+Acceptance report: `.trellis/tasks/08-29-analyze-mode/acceptance.md`

@@ -1,0 +1,33 @@
+{
+  "id": "analyze-mode",
+  "name": "analyze-mode",
+  "title": "Deliver Analyze mode",
+  "description": "Own the read-only disk-analysis domain, IPC, CLI/TUI/Desktop presentation, truthful size evidence, and treemap interaction.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": "Analyze recursive coordination and acceptance only; no direct product-code ownership",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-29-analyze-core-ipc",
+    "08-29-analyze-tui-desktop-treemap"
+  ],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "3-core-modes",
+    "depends_on": "08-29-cli-contract-localization,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}
