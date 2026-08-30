@@ -12,12 +12,28 @@ impl App {
             return self.request_quit();
         }
 
+        if key.modifiers.contains(KeyModifiers::ALT)
+            && let KeyCode::Char(ch) = key.code
+            && let Some(mode) = self
+                .shell
+                .navigation
+                .iter()
+                .find(|item| item.accelerator == Some(ch.to_ascii_lowercase()))
+                .map(|item| item.id)
+        {
+            return self.request_mode(mode);
+        }
+
         if self.language_settings.open {
             return self.handle_language_settings_key(key);
         }
 
         if self.filter_active {
             return self.handle_filter_key(key);
+        }
+
+        if self.shell.active == ModeId::Analyze {
+            return self.handle_analyze_key(key);
         }
 
         if matches!(self.overlay, Overlay::None)
@@ -272,6 +288,83 @@ impl App {
         }
     }
 
+    pub(super) fn request_mode(&mut self, mode: ModeId) -> Vec<Effect> {
+        if self.shell.active == mode || self.pending_mode == Some(mode) {
+            return Vec::new();
+        }
+        self.pending_mode = Some(mode);
+        if let Some(operation_id) = self.analyze.operation_id
+            && self.shell.active == ModeId::Analyze
+        {
+            self.analyze
+                .reduce(AnalyzeAction::CancelRequested { operation_id });
+        }
+        let effects = self.cancel_all_active_jobs();
+        if effects.is_empty() {
+            return self.maybe_finish_pending_mode();
+        }
+        effects
+    }
+
+    pub(super) fn handle_analyze_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match key.code {
+            KeyCode::Char('q') | KeyCode::Esc => self.request_quit(),
+            KeyCode::Char('s') => self.start_analyze_job(),
+            KeyCode::Char('x') => {
+                if let Some(operation_id) = self.analyze.operation_id {
+                    self.analyze
+                        .reduce(AnalyzeAction::CancelRequested { operation_id });
+                }
+                self.cancel_active_job()
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.analyze.reduce(AnalyzeAction::MoveCursor(1));
+                Vec::new()
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.analyze.reduce(AnalyzeAction::MoveCursor(-1));
+                Vec::new()
+            }
+            KeyCode::PageDown | KeyCode::Char(']') => {
+                self.analyze.reduce(AnalyzeAction::PageChanged(1));
+                Vec::new()
+            }
+            KeyCode::PageUp | KeyCode::Char('[') => {
+                self.analyze.reduce(AnalyzeAction::PageChanged(-1));
+                Vec::new()
+            }
+            KeyCode::Enter | KeyCode::Right => {
+                self.analyze.reduce(AnalyzeAction::OpenFocused);
+                Vec::new()
+            }
+            KeyCode::Backspace | KeyCode::Left => {
+                self.analyze.reduce(AnalyzeAction::Up);
+                Vec::new()
+            }
+            KeyCode::Char('/') => {
+                self.filter_active = true;
+                Vec::new()
+            }
+            KeyCode::Char('o') => {
+                let next = match self.analyze.sort {
+                    AnalyzeSort::SizeDescending => AnalyzeSort::SizeAscending,
+                    AnalyzeSort::SizeAscending => AnalyzeSort::Name,
+                    AnalyzeSort::Name => AnalyzeSort::Kind,
+                    AnalyzeSort::Kind => AnalyzeSort::SizeDescending,
+                };
+                self.analyze.reduce(AnalyzeAction::SortChanged(next));
+                Vec::new()
+            }
+            KeyCode::Char('p') => {
+                self.language_settings.open = true;
+                self.language_settings.selected = self.shell.locale;
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
     fn handle_language_settings_key(&mut self, key: KeyEvent) -> Vec<Effect> {
         if self.language_settings.pending_request.is_some() {
             return Vec::new();
@@ -319,6 +412,23 @@ impl App {
     }
 
     pub(super) fn handle_filter_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        if self.shell.active == ModeId::Analyze {
+            match key.code {
+                KeyCode::Esc | KeyCode::Enter => self.filter_active = false,
+                KeyCode::Backspace => {
+                    let mut query = self.analyze.query.clone();
+                    query.pop();
+                    self.analyze.reduce(AnalyzeAction::QueryChanged(query));
+                }
+                KeyCode::Char(ch) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    let mut query = self.analyze.query.clone();
+                    query.push(ch);
+                    self.analyze.reduce(AnalyzeAction::QueryChanged(query));
+                }
+                _ => {}
+            }
+            return Vec::new();
+        }
         match key.code {
             KeyCode::Esc | KeyCode::Enter => {
                 self.filter_active = false;

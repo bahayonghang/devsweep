@@ -1,0 +1,4 @@
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+
+exit_code: 0

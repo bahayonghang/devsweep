@@ -21,7 +21,10 @@ use super::display::{
     CommandPreview, action_summary, command_previews, compact_target_id, display_path,
     format_cleanup_progress, selected_target_summary, target_title,
 };
-use super::shell::ShellComposition;
+use super::{
+    modes::analyze::{AnalyzeAction, AnalyzeModeState, AnalyzeSort},
+    shell::{ModeId, ShellComposition},
+};
 use crate::i18n::Locale;
 
 mod events;
@@ -43,6 +46,8 @@ pub(super) struct App {
     /// Presentation-only shell state. It has no cleanup-plan authority.
     pub(super) shell: ShellComposition,
     pub(super) language_settings: LanguageSettingsState,
+    pub(super) analyze: AnalyzeModeState,
+    pub(super) pending_mode: Option<ModeId>,
     pub(super) targets: Vec<CleanTarget>,
     pub(super) scan_health: ScanHealth,
     /// Read-only capacity observations kept separate from cleanup targets.
@@ -133,6 +138,8 @@ impl App {
         let mut app = Self {
             shell,
             language_settings: LanguageSettingsState::closed(locale),
+            analyze: AnalyzeModeState::default(),
+            pending_mode: None,
             targets: plan.targets,
             scan_health,
             inventory_report: None,
@@ -439,6 +446,7 @@ pub(super) enum JobKind {
     Scan,
     Inventory,
     Clean,
+    Analyze,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -502,6 +510,7 @@ pub(super) enum AppLogSource {
     Inventory,
     Clean,
     Audit,
+    Analyze,
 }
 
 pub(super) fn cleanup_progress_for_plan(job_id: JobId, plan: &CleanupPlan) -> CleanupProgress {

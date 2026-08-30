@@ -3,7 +3,10 @@ import scanFixture from "./fixtures/scan-report.json";
 import dryRunFixture from "./fixtures/dry-run-outcome.json";
 import executionFixture from "./fixtures/execution-report.json";
 import progressFixture from "./fixtures/scan-progress.json";
-import { decodeCommandError, decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport } from "./contract";
+import analyzeSnapshotFixture from "./fixtures/analyze/snapshot.json";
+import analyzeProgressFixture from "./fixtures/analyze/progress.json";
+import analyzeCompleteFixture from "./fixtures/analyze/complete.json";
+import { decodeAnalyzeSnapshot, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport } from "./contract";
 
 describe("IPC decoders", () => {
   it("decodes archived command and event fixtures", () => {
@@ -11,6 +14,20 @@ describe("IPC decoders", () => {
     expect(decodeDesktopScanProgress(progressFixture).phase).toBe("projects");
     expect(decodeDryRunOutcome(dryRunFixture).digest).toBe(dryRunFixture.digest);
     expect(decodeExecutionReport(executionFixture).outcomes).toHaveLength(2);
+    expect(decodeAnalyzeSnapshot(analyzeSnapshotFixture).nodes).toHaveLength(2);
+    expect(decodeDesktopAnalyzeProgress(analyzeProgressFixture).sequence).toBe(1);
+    expect(decodeDesktopAnalyzeResult(analyzeCompleteFixture).type).toBe("completed");
+  });
+
+  it("rejects malformed Analyze identities, sequences, bounds, and authority fields", () => {
+    expect(() => decodeDesktopAnalyzeProgress({ ...analyzeProgressFixture, sequence: 0 })).toThrow("progress bounds");
+    expect(() => decodeDesktopAnalyzeProgress({ ...analyzeProgressFixture, queue_depth: 5 })).toThrow("progress bounds");
+    expect(() => decodeDesktopAnalyzeProgress({ ...analyzeProgressFixture, operation_id: " " })).toThrow("operation_id");
+    expect(() => decodeAnalyzeSnapshot({ ...analyzeSnapshotFixture, version: 2 })).toThrow("Unsupported analyze snapshot version");
+    const badParent = structuredClone(analyzeSnapshotFixture);
+    badParent.nodes[1].parent_id = 99;
+    expect(() => decodeAnalyzeSnapshot(badParent)).toThrow("parent identity");
+    expect(() => decodeAnalyzeSnapshot({ ...analyzeSnapshotFixture, cleanup: true })).toThrow("unknown field");
   });
 
   it("rejects missing safety fields", () => {

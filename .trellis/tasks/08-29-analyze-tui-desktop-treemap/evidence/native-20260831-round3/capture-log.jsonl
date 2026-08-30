@@ -1,0 +1,46 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"f977af3d7f16a0643b3bd9cf78a3c1d1e74c8f93ba2081b3aa76e0f197762b47"}
+{"event":"acl_deny_read_data_set","dir":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831-round3\\fixture\\src\\locked"}
+{"event":"app_launched","pid":81036,"cdpPort":9350,"scalePercent":null,"extraArgs":null}
+{"event":"force_en","selectValue":"zh-CN","store":"{\"schema_version\":1,\"language\":\"en\"}"}
+{"event":"scan_summary","tag":"r3-01","summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence"}
+{"event":"screenshot","name":"r3-01-analyze-complete-en-1440"}
+{"event":"screenshot","name":"r3-01-analyze-complete-en-1024"}
+{"event":"screenshot","name":"r3-01-analyze-complete-en-800"}
+{"event":"screenshot","name":"r3-01-analyze-complete-en-390"}
+{"event":"partial_probe","partialProbe":true,"listProbe":{"crumbs":2,"options":["Accessible directory list","small — Directory — 7.1 KiB — Available","locked — Unsupported reparse point — 0 B — Available — Unsupported or unfollowed entry"],"summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831-round3/fixtured:/documents/code/rust/exp/de"}}
+{"event":"screenshot","name":"r3-02-analyze-src-warnings-en"}
+{"event":"keyboard_focus_postfix","kbAfter":{"activeClass":"analyze-listbox","crumbs":2}}
+{"event":"screenshot","name":"r3-03-analyze-keyboard-drill-en"}
+{"event":"screenshot","name":"r3-04-analyze-reduced-motion-en"}
+{"event":"screenshot","name":"r3-05-analyze-forced-colors-en"}
+{"event":"axtree_captured","nodes":123}
+{"event":"canceling_state","canceling":{"status":"Analyzing… 0 represented nodes.","cancelVisible":true}}
+{"event":"screenshot","name":"r3-06-analyze-canceling-en"}
+{"event":"return_after_cancel","returnState":{"empty":true}}
+{"event":"screenshot","name":"r3-07-analyze-after-cancel-return"}
+{"event":"store_audit","exists":true,"content":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"scan_summary","tag":"r3-08","summary":"分析完成。3126 个节点；194.6 KiB。根目录：d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831-ro"}
+{"event":"screenshot","name":"r3-08-analyze-complete-zh-1440"}
+{"event":"screenshot","name":"r3-08-analyze-complete-zh-390"}
+{"event":"app_closed","pid":81036}
+{"event":"app_launched","pid":74636,"cdpPort":9360,"scalePercent":100,"extraArgs":" --force-device-scale-factor=1"}
+{"event":"scan_summary","tag":"r3-dpi-100","summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence"}
+{"event":"screenshot","name":"r3-dpi-100-analyze-complete-en-native-window"}
+{"event":"dpi_probe","scalePercent":100,"dpr":1,"inner":[1000,750],"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+{"event":"app_closed","pid":74636}
+{"event":"app_launched","pid":66360,"cdpPort":9363,"scalePercent":125,"extraArgs":" --force-device-scale-factor=1.25"}
+{"event":"scan_summary","tag":"r3-dpi-125","summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence"}
+{"event":"screenshot","name":"r3-dpi-125-analyze-complete-en-native-window"}
+{"event":"dpi_probe","scalePercent":125,"dpr":1.25,"inner":[800,600],"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+{"event":"app_closed","pid":66360}
+{"event":"app_launched","pid":70872,"cdpPort":9365,"scalePercent":150,"extraArgs":" --force-device-scale-factor=1.5"}
+{"event":"scan_summary","tag":"r3-dpi-150","summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence"}
+{"event":"screenshot","name":"r3-dpi-150-analyze-complete-en-native-window"}
+{"event":"dpi_probe","scalePercent":150,"dpr":1.5,"inner":[667,500],"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+{"event":"app_closed","pid":70872}
+{"event":"app_launched","pid":59508,"cdpPort":9370,"scalePercent":200,"extraArgs":" --force-device-scale-factor=2"}
+{"event":"scan_summary","tag":"r3-dpi-200","summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence"}
+{"event":"screenshot","name":"r3-dpi-200-analyze-complete-en-native-window"}
+{"event":"dpi_probe","scalePercent":200,"dpr":2,"inner":[500,375],"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+{"event":"app_closed","pid":59508}
+{"event":"done"}

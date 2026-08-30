@@ -7,8 +7,10 @@ impl App {
                 if self.language_settings.pending_request != Some(request_id) {
                     return Vec::new();
                 }
+                let active_mode = self.shell.active;
                 match ShellComposition::for_locale(locale) {
-                    Ok(shell) => {
+                    Ok(mut shell) => {
+                        let _ = shell.activate(active_mode);
                         self.shell = shell;
                         self.language_settings = LanguageSettingsState::closed(locale);
                     }
@@ -39,6 +41,26 @@ impl App {
                 if !self.transition_job(job_id, JobStatus::Running, "Started") {
                     self.log_ignored_worker_event(job_id, "inventory started");
                 }
+            }
+            WorkerEvent::AnalyzeStarted { job_id } => {
+                self.ensure_job(job_id, JobKind::Analyze, "Analyze current directory");
+                if !self.transition_job(job_id, JobStatus::Running, "Started") {
+                    self.log_ignored_worker_event(job_id, "Analyze started");
+                }
+            }
+            WorkerEvent::AnalyzeProgress { job_id, progress } => {
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Running,
+                    format!("Represented {} node(s)", progress.stored_nodes),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Analyze progress");
+                    return Vec::new();
+                }
+                self.analyze.reduce(AnalyzeAction::Progressed {
+                    operation_id: job_id,
+                    progress,
+                });
             }
             WorkerEvent::JobProgress { job_id, message } => {
                 if self.transition_job(job_id, JobStatus::Running, message.clone()) {
@@ -157,6 +179,37 @@ impl App {
                     ),
                 );
             }
+            WorkerEvent::AnalyzeFinished { job_id, outcome } => {
+                let completeness = outcome.snapshot().completeness;
+                let status =
+                    if completeness == devsweep_core::analysis::AnalyzeCompleteness::Canceled {
+                        JobStatus::Canceled
+                    } else {
+                        JobStatus::Succeeded
+                    };
+                if !self.transition_job(
+                    job_id,
+                    status,
+                    format!("Represented {} node(s)", outcome.snapshot().nodes.len()),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Analyze finished");
+                    return Vec::new();
+                }
+                self.analyze.reduce(AnalyzeAction::Finished {
+                    operation_id: job_id,
+                    outcome,
+                });
+                self.log_job(
+                    if completeness == devsweep_core::analysis::AnalyzeCompleteness::Complete {
+                        AppLogLevel::Info
+                    } else {
+                        AppLogLevel::Warning
+                    },
+                    AppLogSource::Analyze,
+                    job_id,
+                    format!("Analyze finished with {completeness:?}"),
+                );
+            }
             WorkerEvent::CleanFinished { job_id, report } => {
                 let status = if report.failed == 0 {
                     JobStatus::Succeeded
@@ -192,9 +245,19 @@ impl App {
                 }
             }
             WorkerEvent::JobFailed { job_id, message } => {
+                let analyze_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Analyze);
                 if !self.transition_job(job_id, JobStatus::Failed, message.clone()) {
                     self.log_ignored_worker_event(job_id, "job failure");
                     return Vec::new();
+                }
+                if analyze_job {
+                    self.analyze.reduce(AnalyzeAction::Failed {
+                        operation_id: job_id,
+                        message: message.clone(),
+                    });
                 }
                 if self.cleanup_progress_matches(job_id)
                     && let Some(progress) = &mut self.cleanup_progress
@@ -205,9 +268,18 @@ impl App {
                 self.log_job(AppLogLevel::Error, self.job_source(job_id), job_id, message);
             }
             WorkerEvent::JobCanceled { job_id } => {
+                let analyze_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Analyze);
                 if !self.transition_job(job_id, JobStatus::Canceled, "Canceled") {
                     self.log_ignored_worker_event(job_id, "job cancellation");
                     return Vec::new();
+                }
+                if analyze_job {
+                    self.analyze.reduce(AnalyzeAction::Canceled {
+                        operation_id: job_id,
+                    });
                 }
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;
@@ -221,7 +293,9 @@ impl App {
             }
         }
 
-        self.maybe_start_pending_scan()
+        let mut effects = self.maybe_finish_pending_mode();
+        effects.extend(self.maybe_start_pending_scan());
+        effects
     }
 
     pub(super) fn set_tab(&mut self, tab: ActiveTab) -> Vec<Effect> {
@@ -245,6 +319,23 @@ impl App {
         self.selection_overrides.clear();
         self.log_job(AppLogLevel::Info, AppLogSource::Scan, job_id, log_message);
         job_id
+    }
+
+    pub(super) fn start_analyze_job(&mut self) -> Vec<Effect> {
+        if self.has_active_mutation_job() || self.analyze.is_active() {
+            return Vec::new();
+        }
+        let job_id = self.start_job(JobKind::Analyze, "Analyze current directory");
+        self.analyze.reduce(AnalyzeAction::Started {
+            operation_id: job_id,
+        });
+        self.log_job(
+            AppLogLevel::Info,
+            AppLogSource::Analyze,
+            job_id,
+            "Analyze requested",
+        );
+        vec![Effect::StartAnalyze { job_id }]
     }
 
     pub(super) fn request_inventory(&mut self, log_message: impl Into<String>) -> Vec<Effect> {

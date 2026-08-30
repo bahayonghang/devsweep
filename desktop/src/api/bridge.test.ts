@@ -3,6 +3,8 @@ import scanJson from "./fixtures/scan-report.json";
 import progressJson from "./fixtures/scan-progress.json";
 import dryRunJson from "./fixtures/dry-run-outcome.json";
 import executionJson from "./fixtures/execution-report.json";
+import analyzeCompleteJson from "./fixtures/analyze/complete.json";
+import analyzeProgressJson from "./fixtures/analyze/progress.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -64,6 +66,21 @@ describe("tauriBridge", () => {
 
     expect(onProgress).toHaveBeenCalledOnce();
     expect(onError).toHaveBeenCalledOnce();
+  });
+
+  it("uses a command-scoped Analyze channel and correlates terminal identity", async () => {
+    mocks.invoke
+      .mockResolvedValueOnce({ ...analyzeCompleteJson, operation_id: "analyze-current" })
+      .mockResolvedValueOnce(undefined);
+    const onProgress = vi.fn();
+    const promise = tauriBridge.analyzeStart("analyze-current", "C:/fixture", onProgress, vi.fn());
+    mocks.channels[0].onmessage({ ...analyzeProgressJson, operation_id: "analyze-current" });
+    await promise;
+    await tauriBridge.analyzeCancel("analyze-current");
+
+    expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ operation_id: "analyze-current", sequence: 1 }));
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "analyze_start", { operationId: "analyze-current", root: "C:/fixture", onProgress: expect.any(mocks.Channel) });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "analyze_cancel", { operationId: "analyze-current" });
   });
 
   it("rejects a terminal result correlated to another scan", async () => {

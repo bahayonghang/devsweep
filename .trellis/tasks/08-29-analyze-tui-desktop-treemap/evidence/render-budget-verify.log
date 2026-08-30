@@ -1,0 +1,7 @@
+command: PowerShell independent nearest-rank verification of render-budget-250k.json
+sample_count: 30
+nearest_rank: 29
+recomputed_layout_p95_ms: 1.9589
+rectangle_count: 513
+passed: True
+exit_code: 0

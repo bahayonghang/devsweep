@@ -10,6 +10,7 @@ use crate::model::ScanHealth;
 
 use super::app::{ActiveTab, App, Overlay};
 
+mod analyze;
 mod format;
 mod inventory;
 mod jobs;
@@ -17,6 +18,7 @@ mod overlays;
 mod targets;
 mod theme;
 
+use analyze::render_analyze;
 use format::*;
 use inventory::render_inventory;
 use jobs::{render_jobs_logs, scan_diagnostic_lines};
@@ -50,6 +52,10 @@ struct FooterAction {
 }
 
 pub(super) fn render_app(frame: &mut Frame<'_>, app: &App) {
+    if app.shell.active == super::shell::ModeId::Analyze {
+        render_analyze(frame, app);
+        return;
+    }
     let area = frame.area();
     let chunks = Layout::default()
         .direction(Direction::Vertical)

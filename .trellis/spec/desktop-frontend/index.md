@@ -64,6 +64,23 @@ data was freed; the approved language is estimated recoverable capacity and,
 for trash outcomes, moved to trash pending emptying. Record native Windows
 scaling evidence separately without changing the system scale automatically.
 
+### Render-budget and native evidence protocol
+
+When a mode carries a frozen render budget (rectangle/DOM caps, layout and
+commit p95), ship a production-build harness page (e.g. `render-benchmark.tsx`
+plus a `benchmark:*` npm script and its own Vite config) that mounts the real
+component with the product coordinator, performs the contracted warm-up/sample
+counts, and emits one JSON record with raw samples, host, and method. Drive it
+with a checked-in CDP driver over a loopback port; never fabricate samples.
+Practical constraints proven by Analyze: `import.meta.url` is not a `file:` URL
+under Vitest, so read fixture assets through the project root; in-app browser
+panes can throttle `requestAnimationFrame` to zero, so capture native evidence
+by launching the real app binary with an isolated `LOCALAPPDATA` and a loopback
+WebView2 debugging port, emulating scale factors through the WebView's own
+device scale rather than changing user display settings, and recording store
+audits, PID, hashes, and a CDP accessibility (screen-reader) tree alongside
+screenshots.
+
 ## Completion Checklist
 
 - [ ] All five available primary modes and supporting destinations use one typed

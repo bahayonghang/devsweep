@@ -13,7 +13,7 @@ use crate::i18n::{
 /// The frozen five-mode navigation identity. Availability is supplied by
 /// registrations; absent modes are not rendered as placeholders.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ModeId {
+pub(super) enum ModeId {
     Clean,
     Software,
     Optimize,
@@ -50,10 +50,17 @@ impl ModeRegistration {
     const fn clean() -> Self {
         Self { id: ModeId::Clean }
     }
+
+    const fn analyze() -> Self {
+        Self {
+            id: ModeId::Analyze,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct ShellNavigationItem {
+    pub(super) id: ModeId,
     pub(super) label: String,
     pub(super) accelerator: Option<char>,
 }
@@ -97,6 +104,7 @@ pub(super) struct ShellComposition {
     pub(super) locale: Locale,
     pub(super) app_title: String,
     pub(super) active_label: String,
+    pub(super) active: ModeId,
     pub(super) navigation: Vec<ShellNavigationItem>,
     pub(super) copy: ShellCopy,
 }
@@ -104,6 +112,15 @@ pub(super) struct ShellComposition {
 impl ShellComposition {
     pub(super) fn for_locale(locale: Locale) -> Result<Self> {
         TuiShell::with_locale(locale).compose()
+    }
+
+    pub(super) fn activate(&mut self, mode: ModeId) -> bool {
+        let Some(item) = self.navigation.iter().find(|item| item.id == mode) else {
+            return false;
+        };
+        self.active = mode;
+        self.active_label.clone_from(&item.label);
+        true
     }
 }
 
@@ -129,7 +146,7 @@ impl TuiShell {
     fn with_locale(locale: Locale) -> Self {
         Self {
             locale,
-            registrations: vec![ModeRegistration::clean()],
+            registrations: vec![ModeRegistration::clean(), ModeRegistration::analyze()],
             active: ModeId::Clean,
         }
     }
@@ -153,6 +170,7 @@ impl TuiShell {
             .map(|registration| {
                 let key = registration.id.message_key();
                 Ok(ShellNavigationItem {
+                    id: registration.id,
                     label: catalogue(self.locale).render(key, &[], None)?,
                     accelerator: message_metadata(self.locale, key)?.accelerator,
                 })
@@ -163,6 +181,7 @@ impl TuiShell {
             locale: self.locale,
             app_title: catalogue(self.locale).render("app.title", &[], None)?,
             active_label,
+            active: self.active,
             navigation,
             copy: ShellCopy::for_locale(self.locale)?,
         })
@@ -216,20 +235,36 @@ mod tests {
         assert_eq!(english.active_label, "Clean");
         assert_eq!(
             english.navigation,
-            [ShellNavigationItem {
-                label: "Clean".to_string(),
-                accelerator: Some('c'),
-            }]
+            [
+                ShellNavigationItem {
+                    id: ModeId::Clean,
+                    label: "Clean".to_string(),
+                    accelerator: Some('c'),
+                },
+                ShellNavigationItem {
+                    id: ModeId::Analyze,
+                    label: "Analyze".to_string(),
+                    accelerator: Some('a'),
+                },
+            ]
         );
 
         let chinese = TuiShell::with_locale(Locale::ZhCn).compose().unwrap();
         assert_eq!(chinese.active_label, "清理");
         assert_eq!(
             chinese.navigation,
-            [ShellNavigationItem {
-                label: "清理".to_string(),
-                accelerator: None,
-            }]
+            [
+                ShellNavigationItem {
+                    id: ModeId::Clean,
+                    label: "清理".to_string(),
+                    accelerator: None,
+                },
+                ShellNavigationItem {
+                    id: ModeId::Analyze,
+                    label: "分析".to_string(),
+                    accelerator: Some('f'),
+                },
+            ]
         );
         assert_eq!(chinese.copy.settings_title, "语言设置");
     }

@@ -1,0 +1,63 @@
+{
+  "status": "implementer_complete_main_session_browser_pending",
+  "gates": [
+    {
+      "command": "node --experimental-strip-types .trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs",
+      "exit_code": 0,
+      "log": "render-budget-benchmark.log",
+      "result": "layout p95 1.9588999999999999 ms; 513 rectangles"
+    },
+    {
+      "command": "npm --prefix desktop run typecheck",
+      "exit_code": 0,
+      "log": "desktop-typecheck-repair.log"
+    },
+    {
+      "command": "npm --prefix desktop run lint",
+      "exit_code": 0,
+      "log": "desktop-lint-repair.log"
+    },
+    {
+      "command": "cargo test -p devsweep-cli tui::modes::analyze",
+      "exit_code": 0,
+      "log": "cargo-test-tui-analyze.log"
+    },
+    {
+      "command": "cargo test -p devsweep-cli --lib",
+      "exit_code": 0,
+      "log": "cargo-test-cli-lib.log"
+    },
+    {
+      "command": "just desktop-web-check",
+      "exit_code": 0,
+      "log": "desktop-web-check-main-session.log",
+      "note": "Existing main-session pass predates the repair harness; fresh rerun delegated to the main session"
+    },
+    {
+      "command": "just desktop-build",
+      "exit_code": 0,
+      "log": "desktop-build-main-session.log",
+      "note": "Existing main-session pass predates the repair harness; fresh rerun delegated to the main session"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "log": "git-diff-check.log"
+    },
+    {
+      "command": "just ci",
+      "exit_code": 0,
+      "log": "just-ci.log"
+    },
+    {
+      "command": "PowerShell independent nearest-rank verification of render-budget-250k.json",
+      "exit_code": 0,
+      "log": "render-budget-verify.log"
+    }
+  ],
+  "pending": [
+    "Fresh main-session just desktop-web-check and just desktop-build after the repair",
+    "Release-build browser harness output for React commit p95 and DOM elements",
+    "Native visual evidence matrix"
+  ]
+}

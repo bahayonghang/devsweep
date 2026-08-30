@@ -1,0 +1,43 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Consume the shell-owned post-update five-mode desktop spec; this mode must not edit that spec independently."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Apply TUI presentation and quality conventions."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/design.md", "reason": "Consume only the frozen immutable Analyze snapshot and evidence states."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/design.md", "reason": "Implement deterministic treemap/list linkage and lifecycle ownership."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/prd.md", "reason": "Apply the frozen accessible hierarchy, render-budget, lifecycle, and evidence acceptance criteria."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/implement.md", "reason": "Follow the approved three-step implementation and validation order."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Keep TUI rendering pure and cover it with reducer and TestBackend tests."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Place Analyze state, worker, and rendering logic at the existing TUI seams."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Use pure ratatui render functions and typed read-only inputs."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Keep worker ownership in runtime and mode state in the root reducer."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Route Analyze input and worker events through typed effects with stale-id rejection."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Consume the core Analyze DTO directly without stringly typed shadow schemas."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Build a responsive accessible linked list and supplemental treemap."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Use mode-local reducer state and coordinator cancel-and-join ownership."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Decode generated Analyze contracts once at the IPC boundary."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Respect the frozen read-only Analyze domain and backend ownership boundaries."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace Analyze DTO and lifecycle events from core through IPC, reducers, and renderers."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing bridge, coordinator, catalogue, and mode registration patterns."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/cargo-test-tui-analyze.log", "reason": "Record the focused Analyze TUI gate with its real passing output."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/desktop-web-check.log", "reason": "Record the sandbox spawn EPERM that blocked Vitest and Vite build execution after lint and typecheck."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/desktop-build.log", "reason": "Record the same sandbox spawn EPERM at the Tauri production build boundary."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-250k.json", "reason": "Record the 30 raw layout samples and mandatory p95 budget STOP without raising the cap."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/just-ci.log", "reason": "Record the canonical workspace gate with its real passing output."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/repair-dispatch-prompt.md", "reason": "Apply repair round 1 without changing caps, frozen DTO/CLI contracts, or unrelated task scope."}
+{"file": "desktop/src/modes/analyze/treemap.ts", "reason": "Replace ICU collation with deterministic UTF-16 ordering and aggregate omitted bytes/count in one linear pass."}
+{"file": "desktop/src/modes/analyze/selectors.ts", "reason": "Cache deterministic sorted immutable child lists by directory-array identity and sort key so navigation/search do not repeat the 10,000-row sort."}
+{"file": "desktop/src/modes/analyze/selectors.test.ts", "reason": "Prove repeated immutable directory selection reuses the cached ordering while filtered results preserve that order."}
+{"file": "desktop/src/modes/analyze/render-benchmark.tsx", "reason": "Mount the real AnalyzePage with a 250,000-node fixture and measure five warm-ups plus 30 post-commit drill-ins with DOM/rectangle counts."}
+{"file": "desktop/analyze-render-benchmark.html", "reason": "Provide a Vite-servable release-host entry page with visible and automation-readable JSON output."}
+{"file": "desktop/vite.benchmark.config.ts", "reason": "Build and preview the standalone Analyze benchmark as production test tooling without a new dependency."}
+{"file": "desktop/package.json", "reason": "Expose exact build and preview commands for the Analyze release-host benchmark."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs", "reason": "Keep the fixture/hash and nearest-rank method while emitting complete honest layout evidence fields."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-250k.json", "reason": "Record 30 measured pure-layout samples with p95 1.9588999999999999 ms and 513 rectangles; browser fields remain null."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.log", "reason": "Record the initial Node import failure, its dependency-free resolution, and the successful rerun."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md", "reason": "Document the exact release-build browser harness method, commands, output seam, and remaining UNVERIFIED native matrix."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/gate-summary.json", "reason": "Summarize passing implementer gates and explicitly delegate fresh desktop/browser/native evidence to the main session."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/desktop-typecheck-repair.log", "reason": "Record the repaired desktop TypeScript contract and benchmark harness typecheck with exit code 0."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/desktop-lint-repair.log", "reason": "Record the repaired desktop lint gate with exit code 0."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/cargo-test-cli-lib.log", "reason": "Record all 125 devsweep-cli library tests passing after the repair."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/git-diff-check.log", "reason": "Record the final whitespace check with exit code 0 and only pre-existing line-ending warnings."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-verify.log", "reason": "Independently recompute the 29th-of-30 layout p95 and threshold result from raw samples."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/artifact-validation.log", "reason": "Validate JSON/JSONL artifacts, benchmark entry files, and removal of localeCompare from the Analyze hot path."}
+{"file": "desktop/src/modes/analyze/AnalyzePage.test.tsx", "reason": "Repair round 2: resolve the checked-in Analyze stylesheet from the Vitest project root via process.cwd() so suite loading does not depend on import.meta.url having the file scheme; accessibility CSS assertions remain unchanged."}

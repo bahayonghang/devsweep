@@ -20,6 +20,18 @@
         "evidence": "complete",
         "warnings": [],
         "mtime_ms": 1700000000000
+      },
+      {
+        "id": 1,
+        "parent_id": 0,
+        "kind": "file",
+        "name": "a.bin",
+        "bytes": 4096,
+        "immediate_count": 0,
+        "recursive_count": 0,
+        "evidence": "complete",
+        "warnings": [],
+        "mtime_ms": null
       }
     ],
     "warnings": [],

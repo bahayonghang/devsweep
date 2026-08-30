@@ -3,20 +3,30 @@ import progressJson from "./fixtures/scan-progress.json";
 import dryRunJson from "./fixtures/dry-run-outcome.json";
 import twoTargetDryRunJson from "./fixtures/dry-run-outcome-two-targets.json";
 import executionJson from "./fixtures/execution-report.json";
-import { decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./contract";
+import analyzeCompleteJson from "./fixtures/analyze/complete.json";
+import analyzeProgressJson from "./fixtures/analyze/progress.json";
+import { decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./contract";
 import type { DesktopBridge } from "./bridge";
-import type { DesktopScanProgress, DesktopScanResult } from "./types.gen";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
 
 const scanReport = decodeScanReport(scanJson);
 const projectProgress = decodeDesktopScanProgress(progressJson);
 const dryRun = decodeDryRunOutcome(dryRunJson);
 const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
 const execution = decodeExecutionReport(executionJson);
+const analyzeComplete = decodeDesktopAnalyzeResult(analyzeCompleteJson);
+const analyzeProgress = decodeDesktopAnalyzeProgress(analyzeProgressJson);
 const cargoTargetId = "cargo.target:C:/work/app/target";
 const npmTargetId = "npm.cache.clean:global";
 const inspectOnlyTargetId = "cargo.home.inspect:C:/Users/dev/.cargo";
 let scanCount = 0;
 let pendingCancellation: { scanId: string; resolve: (result: DesktopScanResult) => void } | undefined;
+let analyzeCount = 0;
+let pendingAnalyzeCancellation: { operationId: string; resolve: (result: DesktopAnalyzeResult) => void } | undefined;
+
+function correlatedAnalyzeProgress(operationId: string): DesktopAnalyzeProgress {
+  return { ...analyzeProgress, operation_id: operationId };
+}
 
 function correlatedProjectProgress(scanId: string): DesktopScanProgress {
   return { ...projectProgress, scan_id: scanId, sequence: 1 };
@@ -51,6 +61,26 @@ function mixedProgress(scanId: string): DesktopScanProgress {
 }
 
 export const fixtureBridge: DesktopBridge = {
+  analyzeStart: async (operationId, _root, onProgress) => {
+    analyzeCount += 1;
+    onProgress(correlatedAnalyzeProgress(operationId));
+    if (analyzeCount === 1) {
+      return new Promise((resolve) => { pendingAnalyzeCancellation = { operationId, resolve }; });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    return { ...analyzeComplete, operation_id: operationId };
+  },
+  analyzeCancel: async (operationId) => {
+    if (pendingAnalyzeCancellation?.operationId === operationId) {
+      pendingAnalyzeCancellation.resolve({
+        ...analyzeComplete,
+        type: "canceled",
+        operation_id: operationId,
+        snapshot: { ...analyzeComplete.snapshot, completeness: "canceled" },
+      });
+      pendingAnalyzeCancellation = undefined;
+    }
+  },
   scanStart: async (scanId, _options, onProgress) => {
     scanCount += 1;
     onProgress(correlatedProjectProgress(scanId));

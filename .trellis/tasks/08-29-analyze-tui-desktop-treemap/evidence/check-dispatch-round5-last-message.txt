@@ -1,0 +1,36 @@
+## Findings (fixed)
+
+- File: `evidence/capture-native-analyze-round3.mjs`, `evidence/native-20260831-round3/capture-log.jsonl`, refreshed PNGs and AX tree
+- Issue: Round 4 found that English-labelled captures contained Chinese because the reused profile persisted zh-CN.
+- Fix: The driver now selects English through the real settings control, audits `{"schema_version":1,"language":"en"}`, captures the English scenarios, then separately switches to and audits zh-CN before r3-08. All captured content now matches its locale label.
+
+- File: `evidence/independent-check-report.md`
+- Issue: The current verdict and AC3/AC4 reflected the round-4 locale mismatch.
+- Fix: Added the round-5 audit and changed the current verdict, AC3, and AC4 to PASS while preserving earlier rounds as historical evidence.
+
+## Findings (not fixed)
+
+None. No blocking product or evidence defect remains in the dispatched scope.
+
+## Verification
+
+- Raw log: PASS — 46 parseable events; 5 launches/5 closes; 6 scan summaries; 16 screenshots; 4 DPI probes; terminal `done`.
+- Locale stores: PASS — English persisted before r3-01 and zh-CN before r3-08.
+- Visual inspection: PASS — all 16 logged PNGs inspected at original detail. English-labelled width, warning, focus, accessibility, canceling, cleared-state, and DPI captures visibly contain English; both r3-08 captures visibly contain Chinese.
+- AX tree: PASS — 123 nodes, English labels present, zero CJK codepoints.
+- Dimensions: PASS — 1800×1075 reconciles to 1440×860 CSS at DPR 1.25; 1024/800/390 captures reconcile to 1280/1000/488 device pixels; zh-CN 390 is also 488 pixels.
+- Scaling: PASS — DPR 1/1.25/1.5/2 and corresponding native-window dimensions remain consistent with the accepted round-3/4 audit.
+- Executable authenticity: PASS — the current release executable matches the logged SHA-256.
+- Product-scope audit: PASS — no product source changed after round 4; subsequent material writes are confined to the evidence driver, capture artifacts/index, and dispatch records.
+- Lint: PASS from the accepted round-3 final logs; not rerun because round 5 changed no product source.
+- TypeCheck: PASS from the accepted round-3 final logs; not rerun.
+- Tests/builds: PASS from the accepted round-3 final logs; not rerun.
+
+## Acceptance criteria
+
+- **AC1 — PASS:** Deterministic layout, paging, snapshot parity, render-budget calculations, and caps remain accepted and unchanged.
+- **AC2 — PASS:** Accessibility, keyboard focus, contrast, reduced-motion/forced-colors, and no-cleanup conclusions remain accepted; the refreshed English AX tree provides consistent native evidence.
+- **AC3 — PASS:** Bilingual coverage, final English and zh-CN captures, responsive width matrix, scaling matrix, and render budget pass. The round-4 locale-labelling blocker is closed.
+- **AC4 — PASS:** Previously accepted gates, release build, executable hash, focus/cancel lifecycle, AX tree, and final native visual evidence pass.
+
+Overall verdict: **PASS — AC1 PASS, AC2 PASS, AC3 PASS, AC4 PASS.**

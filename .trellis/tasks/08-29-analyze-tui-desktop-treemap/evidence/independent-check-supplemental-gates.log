@@ -1,0 +1,18 @@
+command: cargo fmt --all -- --check
+exit_code: 0
+
+command: npm --prefix desktop run lint
+exit_code: 0
+output:
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+
+command: npm --prefix desktop run typecheck
+exit_code: 0
+output:
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+
+command: just ci
+exit_code: 0
+result: canonical Rust gate passed format, offline dependency check, cargo check, full workspace tests, and clippy; the independent Analyze-focused raw logs are recorded separately.

@@ -1,0 +1,78 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit desktop tree/treemap components, state, accessibility, responsiveness, and native evidence."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Audit TUI navigation, state, and keyboard behavior."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/prd.md", "reason": "Trace visualization truthfulness, accessibility, lifecycle, and bilingual criteria."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/design.md", "reason": "Verify frozen contracts, exact change scope, data flow, and evidence requirements."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/implement.md", "reason": "Verify implementation steps and required native/render-budget matrix."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/task.json", "reason": "Confirm active task metadata and scope."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/implement.jsonl", "reason": "Review implementer context manifest and recorded file reads."}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Verify TUI and frontend file placement."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify rendering, focus, localization, and accessibility conventions."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Verify lifecycle and hook cleanup conventions."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Verify reducer ownership, stale-event rejection, and bounded view state."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Apply frontend quality gates and testing requirements."}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify typed boundaries and absence of unsafe assertions."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Verify native desktop component, keyboard, list alternative, and responsive behavior."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Verify desktop operation lifecycle and ephemeral Analyze state."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Verify desktop decoder and state typing rules."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Load required cross-layer and reuse quality checks."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace Analyze data and lifecycle across core, CLI, IPC, and desktop."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Check canonical ownership and duplicated transformations."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Verify core-side safety and test conventions used by the cross-layer audit."}
+{"file": "code_map.md", "reason": "Use the maintained repository map before cross-layer navigation."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/design.md", "reason": "Verify frozen Analyze DTO and operation/event contracts inherited by this task."}
+{"file": "crates/devsweep-core/src/analysis/mod.rs", "reason": "Trace the public core Analyze entrypoint and no-cleanup authority boundary."}
+{"file": "crates/devsweep-core/src/analysis/model.rs", "reason": "Audit frozen snapshot/node/evidence DTOs and deny-unknown-fields contract."}
+{"file": "crates/devsweep-core/src/analysis/walker.rs", "reason": "Audit cancel, path-safety, reparse, access-denied, and bounded traversal behavior."}
+{"file": "crates/devsweep-core/src/analysis/tests.rs", "reason": "Verify cleanup-plan absence, AccessDenied fixtures, cancellation, and 250k bounds."}
+{"file": "crates/devsweep-cli/src/application/commands/analyze.rs", "reason": "Trace frozen core snapshot through CLI Analyze execution."}
+{"file": "crates/devsweep-cli/src/presentation/analyze.rs", "reason": "Verify JSON/human output remains data-only and bilingual."}
+{"file": "desktop/src-tauri/src/analyze.rs", "reason": "Audit IPC operation IDs, monotonic sequences, cancellation, and terminal join behavior."}
+{"file": "desktop/src-tauri/src/lib.rs", "reason": "Verify Analyze IPC registration without schema or cleanup expansion."}
+{"file": "desktop/src/state/operation-coordinator.ts", "reason": "Verify single-flight cancel-and-join lifecycle."}
+{"file": "desktop/src/app-shell/AppShell.tsx", "reason": "Verify mode leave awaits cancellation and clears ephemeral Analyze state."}
+{"file": "crates/devsweep-cli/src/tui/app/events.rs", "reason": "Audit Analyze worker event integration."}
+{"file": "crates/devsweep-cli/src/tui/app/input.rs", "reason": "Audit keyboard drill, paging, search, sort, and cancel routes."}
+{"file": "crates/devsweep-cli/src/tui/app/jobs.rs", "reason": "Audit mode transition and Analyze state ownership."}
+{"file": "crates/devsweep-cli/src/tui/app/mod.rs", "reason": "Audit TUI application integration."}
+{"file": "crates/devsweep-cli/src/tui/app/worker.rs", "reason": "Audit Analyze worker start/cancel/join event flow."}
+{"file": "crates/devsweep-cli/src/tui/modes/mod.rs", "reason": "Verify bounded Analyze mode module registration."}
+{"file": "crates/devsweep-cli/src/tui/modes/analyze/mod.rs", "reason": "Review and self-fix Analyze projection, navigation, viewport, paging, and tests."}
+{"file": "crates/devsweep-cli/src/tui/render/jobs.rs", "reason": "Verify Analyze render dispatch registration."}
+{"file": "crates/devsweep-cli/src/tui/render/mod.rs", "reason": "Verify Analyze renderer module registration."}
+{"file": "crates/devsweep-cli/src/tui/render/analyze.rs", "reason": "Review and self-fix bilingual truthful warning and bounded viewport rendering."}
+{"file": "crates/devsweep-cli/src/tui/runtime/mod.rs", "reason": "Audit Analyze runtime command/event integration."}
+{"file": "crates/devsweep-cli/src/tui/runtime/workers.rs", "reason": "Audit worker cancellation and terminal joining."}
+{"file": "crates/devsweep-cli/src/tui/shell/mod.rs", "reason": "Confirm frozen ModeId variants are unchanged and only mode wiring was added."}
+{"file": "desktop/package.json", "reason": "Verify no dependency addition and isolate benchmark-only script wiring."}
+{"file": "desktop/src/App.tsx", "reason": "Verify Analyze page registration."}
+{"file": "desktop/src/App.test.tsx", "reason": "Verify Analyze mode routing coverage."}
+{"file": "desktop/src/api/bridge.ts", "reason": "Trace decoded Analyze events/results through the bridge."}
+{"file": "desktop/src/api/bridge.test.ts", "reason": "Verify bridge correlation and decode coverage."}
+{"file": "desktop/src/api/contract.ts", "reason": "Audit catalogue-driven strict Analyze decoder."}
+{"file": "desktop/src/api/contract.test.ts", "reason": "Verify malformed/unknown Analyze payload rejection."}
+{"file": "desktop/src/api/fixture-bridge.ts", "reason": "Audit fixture operation behavior and cancellation."}
+{"file": "desktop/src/api/fixtures/analyze/complete.json", "reason": "Verify complete snapshot fixture shape and evidence states."}
+{"file": "desktop/src/modes/analyze/index.ts", "reason": "Verify Analyze module export surface."}
+{"file": "desktop/src/modes/analyze/state.ts", "reason": "Review and self-fix stale-event, navigation-page, and anchor state behavior."}
+{"file": "desktop/src/modes/analyze/state.test.ts", "reason": "Add regression coverage for stale sequences and page-aware anchor restoration."}
+{"file": "desktop/src/modes/analyze/selectors.ts", "reason": "Audit pure bounded selectors, canonical paging, sort, search, and aggregation."}
+{"file": "desktop/src/modes/analyze/selectors.test.ts", "reason": "Verify 512-child cap, Other aggregation, search/sort, and paging coverage."}
+{"file": "desktop/src/modes/analyze/treemap.ts", "reason": "Audit pure deterministic layout and rectangle cap."}
+{"file": "desktop/src/modes/analyze/treemap.test.ts", "reason": "Verify treemap area/error/determinism and hard-cap tests."}
+{"file": "desktop/src/modes/analyze/AnalyzePage.tsx", "reason": "Review and self-fix keyboard focus and page-aware navigation in the canonical list/treemap UI."}
+{"file": "desktop/src/modes/analyze/AnalyzePage.test.tsx", "reason": "Add bilingual state, keyboard, focus, paging, CSS, and no-cleanup regressions."}
+{"file": "desktop/src/modes/analyze/styles.css", "reason": "Review and self-fix contrast and focus-visible styling; verify reduced-motion and forced-colors rules."}
+{"file": "desktop/src/modes/analyze/render-benchmark.tsx", "reason": "Audit production render-budget benchmark setup and measured DOM route."}
+{"file": "desktop/analyze-render-benchmark.html", "reason": "Verify isolated benchmark entrypoint."}
+{"file": "desktop/vite.benchmark.config.ts", "reason": "Verify benchmark build excludes runtime product behavior."}
+{"file": "resources/i18n/en.json", "reason": "Verify and extend exact Analyze catalogue schema for English."}
+{"file": "resources/i18n/zh-CN.json", "reason": "Verify and extend exact Analyze catalogue schema for zh-CN."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-250k.json", "reason": "Recompute pure-layout nearest-rank p95 from 30 raw samples and verify warm-ups/host metadata."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-browser.json", "reason": "Recompute browser commit p95 and verify rectangle/DOM caps and browser metadata."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs", "reason": "Audit synthetic 250k-node fixture and pure-layout sampling method."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/run-render-benchmark-cdp.mjs", "reason": "Audit raw CDP browser sampling and DOM/rectangle measurement."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md", "reason": "Audit native width/language/state/accessibility evidence and disclosed scaling limitation."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/capture-log.jsonl", "reason": "Audit raw native capture events, focus result, cancellation, locale persistence, and warning observation."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/gate-summary.json", "reason": "Compare implementer gate claims with independent executions."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/implement-dispatch-last-message.txt", "reason": "Review first implementation verdict and original layout-budget stop."}
+{"file": ".trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/repair-dispatch-last-message.txt", "reason": "Review post-repair gate and benchmark claims."}

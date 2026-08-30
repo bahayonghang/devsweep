@@ -1,0 +1,12 @@
+npm notice run devsweep-desktop-ui@0.2.0 benchmark:analyze:build
+npm notice run tsc --noEmit && vite build --config vite.benchmark.config.ts
+[36mvite v7.3.6 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 42 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/analyze-render-benchmark/[22m[32manalyze-render-benchmark.html                 [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:  0.35 kB[22m
+[2mdist/analyze-render-benchmark/[22m[32massets/devsweep-icon-master-Bn2Ejx_Y.png      [39m[1m[2m956.58 kB[22m[1m[22m
+[2mdist/analyze-render-benchmark/[22m[35massets/analyze-render-benchmark-DnB4ef2b.css  [39m[1m[2m 18.05 kB[22m[1m[22m[2m │ gzip:  4.56 kB[22m
+[2mdist/analyze-render-benchmark/[22m[36massets/analyze-render-benchmark-CciDmwxU.js   [39m[1m[2m260.01 kB[22m[1m[22m[2m │ gzip: 75.09 kB[22m
+[32m✓ built in 537ms[39m

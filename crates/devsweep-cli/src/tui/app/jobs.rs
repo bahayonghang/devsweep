@@ -97,12 +97,32 @@ impl App {
     }
 
     pub(super) fn maybe_start_pending_scan(&mut self) -> Vec<Effect> {
-        if !self.pending_scan_restart || self.has_active_mutation_job() {
+        if !self.pending_scan_restart
+            || self.has_active_mutation_job()
+            || self.pending_mode.is_some()
+        {
             return Vec::new();
         }
         self.pending_scan_restart = false;
         let job_id = self.start_scan_job("Replacement scan started after prior work joined");
         vec![Effect::StartScan { job_id }]
+    }
+
+    pub(super) fn maybe_finish_pending_mode(&mut self) -> Vec<Effect> {
+        let Some(mode) = self.pending_mode else {
+            return Vec::new();
+        };
+        if self.has_active_mutation_job() {
+            return Vec::new();
+        }
+        self.pending_mode = None;
+        if self.shell.active == ModeId::Analyze && mode != ModeId::Analyze {
+            self.analyze.reduce(AnalyzeAction::Release);
+        }
+        let _ = self.shell.activate(mode);
+        self.overlay = Overlay::None;
+        self.filter_active = false;
+        Vec::new()
     }
 
     pub(super) fn log_ignored_worker_event(&mut self, job_id: JobId, event: &str) {
@@ -122,6 +142,7 @@ impl App {
                 JobKind::Scan => AppLogSource::Scan,
                 JobKind::Clean => AppLogSource::Clean,
                 JobKind::Inventory => AppLogSource::Inventory,
+                JobKind::Analyze => AppLogSource::Analyze,
             })
             .unwrap_or(AppLogSource::App)
     }

@@ -17,7 +17,42 @@ use crate::tui::{
     app::{JobId, WorkerEvent},
     display::compact_target_id,
 };
+use devsweep_core::analysis::analyze_path;
 use devsweep_core::services::{CleanService, InventoryService, ScanService, ScanServiceRunOutcome};
+
+pub(super) fn run_analyze_worker(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let _ = worker_tx.send(WorkerEvent::AnalyzeStarted { job_id });
+    let result = std::env::current_dir()
+        .context("failed to get current directory for Analyze")
+        .and_then(|root| {
+            let progress_tx = worker_tx.clone();
+            let mut progress = move |batch| {
+                let _ = progress_tx.send(WorkerEvent::AnalyzeProgress {
+                    job_id,
+                    progress: batch,
+                });
+            };
+            analyze_path(&root, Some(cancel.as_ref()), Some(&mut progress))
+        });
+    match result {
+        Ok(outcome) => {
+            let _ = worker_tx.send(WorkerEvent::AnalyzeFinished { job_id, outcome });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
 
 pub(super) fn run_scan_worker<S: ScanService>(
     job_id: JobId,

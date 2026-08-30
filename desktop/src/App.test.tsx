@@ -23,6 +23,8 @@ const progress = decodeDesktopScanProgress(progressJson);
 
 function fakeBridge(overrides: Partial<DesktopBridge> = {}): DesktopBridge {
   return {
+    analyzeStart: vi.fn().mockRejectedValue({ code: "analyze_failed", message: "Analyze is not exercised by this Clean fixture" }),
+    analyzeCancel: vi.fn().mockResolvedValue(undefined),
     scanStart: vi.fn().mockImplementation(async (scanId: string, _options, onProgress: (progress: DesktopScanProgress) => void) => {
       onProgress({ ...progress, scan_id: scanId });
       return { type: "completed", scan_id: scanId, report: scanReport };

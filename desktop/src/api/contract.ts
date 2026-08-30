@@ -1,8 +1,13 @@
 import type {
   ActionKind,
+  AnalyzeNodeV1,
+  AnalyzeSnapshotV1,
+  AnalyzeWarningV1,
   CapacityEstimate,
   CleanupIntent,
   CommandError,
+  DesktopAnalyzeProgress,
+  DesktopAnalyzeResult,
   DesktopScanProgress,
   DesktopScanResult,
   DryRunOutcome,
@@ -54,6 +59,100 @@ function oneOf<T extends string>(value: unknown, values: readonly T[], name: str
 function exact(input: RecordValue, keys: readonly string[], name: string): void {
   const allowed = new Set(keys);
   if (Object.keys(input).some((key) => !allowed.has(key))) throw new Error(`Invalid ${name}: unknown field`);
+}
+
+const ANALYZE_WARNING_CLASSES = ["partial_budget", "access_denied", "io_error", "churn", "cycle", "reparse", "duplicate_link"] as const;
+
+function nullableUnsignedInteger(value: unknown, name: string): number | null {
+  return value === null ? null : unsignedInteger(value, name);
+}
+
+function decodeAnalyzeWarning(value: unknown): AnalyzeWarningV1 {
+  const input = record(value, "analyze warning");
+  exact(input, ["class", "node_id"], "analyze warning");
+  return {
+    class: oneOf(input.class, ANALYZE_WARNING_CLASSES, "analyze warning.class"),
+    node_id: nullableUnsignedInteger(input.node_id, "analyze warning.node_id"),
+  };
+}
+
+function decodeAnalyzeNode(value: unknown): AnalyzeNodeV1 {
+  const input = record(value, "analyze node");
+  exact(input, ["id", "parent_id", "kind", "name", "bytes", "immediate_count", "recursive_count", "evidence", "warnings", "mtime_ms"], "analyze node");
+  return {
+    id: unsignedInteger(input.id, "analyze node.id"),
+    parent_id: nullableUnsignedInteger(input.parent_id, "analyze node.parent_id"),
+    kind: oneOf(input.kind, ["directory", "file", "reparse"] as const, "analyze node.kind"),
+    name: string(input.name, "analyze node.name"),
+    bytes: unsignedInteger(input.bytes, "analyze node.bytes"),
+    immediate_count: unsignedInteger(input.immediate_count, "analyze node.immediate_count"),
+    recursive_count: unsignedInteger(input.recursive_count, "analyze node.recursive_count"),
+    evidence: oneOf(input.evidence, ["complete", "incomplete", "unknown"] as const, "analyze node.evidence"),
+    warnings: array(input.warnings, "analyze node.warnings", (item) => oneOf(item, ANALYZE_WARNING_CLASSES, "analyze node.warning")),
+    mtime_ms: nullableUnsignedInteger(input.mtime_ms, "analyze node.mtime_ms"),
+  };
+}
+
+export function decodeAnalyzeSnapshot(value: unknown): AnalyzeSnapshotV1 {
+  const input = record(value, "analyze snapshot");
+  exact(input, ["version", "root", "nodes", "warnings", "completeness", "accounted_owned_bytes"], "analyze snapshot");
+  const root = record(input.root, "analyze root");
+  exact(root, ["input", "normalized", "volume"], "analyze root");
+  const nodes = array(input.nodes, "analyze snapshot.nodes", decodeAnalyzeNode);
+  const warnings = array(input.warnings, "analyze snapshot.warnings", decodeAnalyzeWarning);
+  const snapshot: AnalyzeSnapshotV1 = {
+    version: unsignedInteger(input.version, "analyze snapshot.version"),
+    root: {
+      input: string(root.input, "analyze root.input"),
+      normalized: nonEmptyString(root.normalized, "analyze root.normalized"),
+      volume: string(root.volume, "analyze root.volume"),
+    },
+    nodes,
+    warnings,
+    completeness: oneOf(input.completeness, ["complete", "partial_budget", "canceled"] as const, "analyze snapshot.completeness"),
+    accounted_owned_bytes: unsignedInteger(input.accounted_owned_bytes, "analyze snapshot.accounted_owned_bytes"),
+  };
+  if (snapshot.version !== 1) throw new Error("Unsupported analyze snapshot version");
+  for (const [index, node] of nodes.entries()) {
+    if (node.id !== index) throw new Error("Invalid analyze snapshot node order");
+    if (index === 0 ? node.parent_id !== null : node.parent_id === null || node.parent_id >= index) {
+      throw new Error("Invalid analyze snapshot parent identity");
+    }
+    if (node.kind !== "directory" && node.immediate_count !== 0) throw new Error("Invalid analyze leaf child count");
+  }
+  const immediateCounts = new Array<number>(nodes.length).fill(0);
+  for (const node of nodes.slice(1)) immediateCounts[node.parent_id!] += 1;
+  if (nodes.some((node) => node.immediate_count !== immediateCounts[node.id])) throw new Error("Invalid analyze snapshot immediate count");
+  if (warnings.some((warning) => warning.node_id !== null && warning.node_id >= nodes.length)) throw new Error("Invalid analyze warning node identity");
+  return snapshot;
+}
+
+export function decodeDesktopAnalyzeProgress(value: unknown): DesktopAnalyzeProgress {
+  const input = record(value, "desktop analyze progress");
+  exact(input, ["operation_id", "sequence", "stored_nodes", "accounted_owned_bytes", "changed_nodes", "queue_depth"], "desktop analyze progress");
+  const sequence = unsignedInteger(input.sequence, "analyze progress.sequence");
+  const queueDepth = unsignedInteger(input.queue_depth, "analyze progress.queue_depth");
+  const changedNodes = array(input.changed_nodes, "analyze progress.changed_nodes", decodeAnalyzeNode);
+  if (sequence === 0 || queueDepth > 4 || changedNodes.length > 256) throw new Error("Invalid analyze progress bounds");
+  return {
+    operation_id: nonEmptyString(input.operation_id, "analyze progress.operation_id"),
+    sequence,
+    stored_nodes: unsignedInteger(input.stored_nodes, "analyze progress.stored_nodes"),
+    accounted_owned_bytes: unsignedInteger(input.accounted_owned_bytes, "analyze progress.accounted_owned_bytes"),
+    changed_nodes: changedNodes,
+    queue_depth: queueDepth,
+  };
+}
+
+export function decodeDesktopAnalyzeResult(value: unknown): DesktopAnalyzeResult {
+  const input = record(value, "desktop analyze result");
+  const type = oneOf(input.type, ["completed", "canceled"] as const, "analyze result.type");
+  exact(input, ["type", "operation_id", "snapshot"], "desktop analyze result");
+  return {
+    type,
+    operation_id: nonEmptyString(input.operation_id, "analyze result.operation_id"),
+    snapshot: decodeAnalyzeSnapshot(input.snapshot),
+  };
 }
 
 function decodeScope(value: unknown): Scope {

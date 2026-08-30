@@ -1,0 +1,37 @@
+## Findings (fixed)
+
+- File: `evidence/native-20260831-round3/screenshots/`
+- Issue: Round 3 lacked a genuine 1440 CSS-pixel capture.
+- Fix: Confirmed the rerun produced 1800×1075 PNGs, corresponding to 1440×860 CSS pixels at DPR 1.25. The 1024/800/390 dimensions also reconcile correctly.
+
+## Findings (not fixed)
+
+- File: `evidence/capture-native-analyze-round3.mjs`, `evidence/native-20260831-round3/capture-log.jsonl`
+- Issue: The reused profile was already `zh-CN`, and the driver never selected English before `r3-01`–`r3-07`. The log, AX tree, and visible screenshots prove that files labelled `en` contain Chinese UI.
+- Impact: Fresh English target-width/state evidence is missing, invalidating the round-3 bilingual native-evidence conclusion.
+- Required action: Force English or use a clean profile, rerun the driver, and audit the replacement artifacts.
+
+- File: `evidence/native-evidence.md:152-165`
+- Issue: The index still describes these overwritten captures as English.
+- Why not fixed: Round-4 scope authorized only the independent report update.
+
+## Verification
+
+- PNG dimensions: pass
+- JSONL integrity: pass — 45 events, 5 launches/closes, 16 captures, 4 DPI probes, terminal `done`
+- Executable hash: pass — matches `f977af3d7f16a0643b3bd9cf78a3c1d1e74c8f93ba2081b3aa76e0f197762b47`
+- Real Analyze UI: pass
+- Scaling matrix: pass; the 150% capture’s 1001-pixel width is expected rounding
+- Accessibility/focus/cancel lifecycle: pass
+- Lint/type-check/tests/build: not rerun; accepted round-3 results remain unchanged
+
+## Acceptance criteria
+
+- **AC1 — PASS**
+- **AC2 — PASS**
+- **AC3 — FAIL:** Fresh English target-width/state evidence is absent.
+- **AC4 — FAIL:** Native evidence remains internally mislabelled and incomplete.
+
+Overall verdict: **FAIL**.
+
+The round-4 audit was added to `evidence/independent-check-report.md`. No product files, dependencies, schemas, gates, or other task files were modified.

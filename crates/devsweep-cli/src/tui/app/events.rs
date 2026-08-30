@@ -7,6 +7,7 @@ use crate::{
     model::{CleanupPlan, ScanHealth, TargetId},
     scan::ScanPhase,
 };
+use devsweep_core::analysis::{AnalyzeProgressV1, AnalyzeRunOutcome};
 
 pub(in crate::tui) type JobId = u64;
 
@@ -18,6 +19,9 @@ pub(in crate::tui) enum UiEvent {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::tui) enum Effect {
+    StartAnalyze {
+        job_id: JobId,
+    },
     StartScan {
         job_id: JobId,
     },
@@ -54,6 +58,17 @@ pub(in crate::tui) enum WorkerEvent {
     },
     InventoryStarted {
         job_id: JobId,
+    },
+    AnalyzeStarted {
+        job_id: JobId,
+    },
+    AnalyzeProgress {
+        job_id: JobId,
+        progress: AnalyzeProgressV1,
+    },
+    AnalyzeFinished {
+        job_id: JobId,
+        outcome: AnalyzeRunOutcome,
     },
     JobProgress {
         job_id: JobId,
