@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Route the sizing child through the full backend safety and cancellation checklist."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Route the icon child through the complete React and Tauri accessibility and build checklist."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Keep the internal resource policy out of shared contracts and keep task assets out of runtime paths."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/research/current-sizing-evidence.md", "reason": "Use the verified sizing hot path, per-child budget semantics, callers, and test gaps."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/research/icon-generation.md", "reason": "Use the selected small-size generated asset, prompt, metadata, and evidence boundary."}

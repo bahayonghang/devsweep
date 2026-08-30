@@ -1,0 +1,38 @@
+head=d79041fe4635eb2492ca7a31a2eb829be7d79583
+branch=dev
+git_diff_check_exit=0
+sizing_current_equals_product_commit_exit=0
+icon_current_equals_product_commit_exit=0
+sizing_archive_equals_archive_commit_exit=0
+icon_archive_equals_archive_commit_exit=0
+parent_status=planning
+parent_acceptance_exists=False
+ref_exists=.trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/research/current-sizing-evidence.md|True
+ref_exists=.trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/research/icon-generation.md|True
+staged_count=0
+generated_tracked_status_count=0
+devsweep_process_count=0
+status_short_begin
+ M .trellis/.gitignore
+ M README.md
+ M justfile
+?? .trellis/tasks/08-29-analyze-core-ipc/
+?? .trellis/tasks/08-29-analyze-mode/
+?? .trellis/tasks/08-29-analyze-tui-desktop-treemap/
+?? .trellis/tasks/08-29-clean-mode-workbench/
+?? .trellis/tasks/08-29-desktop-shell-navigation-brand/
+?? .trellis/tasks/08-29-five-mode-native-integration/
+?? .trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/
+?? .trellis/tasks/08-29-optimize-catalog-execution/
+?? .trellis/tasks/08-29-optimize-cli-tui-desktop-native/
+?? .trellis/tasks/08-29-optimize-mode/
+?? .trellis/tasks/08-29-protect-rules-history-surfaces/
+?? .trellis/tasks/08-29-scan-resource-bounds-app-icon/
+?? .trellis/tasks/08-29-software-cli-tui-desktop-native/
+?? .trellis/tasks/08-29-software-execution-audit/
+?? .trellis/tasks/08-29-software-inventory-plan/
+?? .trellis/tasks/08-29-software-mode/
+?? .trellis/tasks/08-29-status-collector-cli/
+?? .trellis/tasks/08-29-status-mode/
+?? .trellis/tasks/08-29-status-tui-desktop-native/
+status_short_end
