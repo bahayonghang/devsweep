@@ -1,0 +1,17 @@
+cargo fmt --all -- --check
+error: recipe `fmt` failed on line 9 with exit code 1
+Diff in \\?\D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri\src\lib.rs:27:
+ mod tests {
+     #[test]
+     fn capability_grants_only_event_subscription_and_last_window_destroy() {
+-        let capability: serde_json::Value = serde_json::from_str(include_str!(
+-            "../capabilities/default.json"
+-        ))
+-        .expect("desktop capability must be valid JSON");
++        let capability: serde_json::Value =
++            serde_json::from_str(include_str!("../capabilities/default.json"))
++                .expect("desktop capability must be valid JSON");
+         let permissions = capability["permissions"]
+             .as_array()
+             .expect("desktop capability permissions must be an array");
+

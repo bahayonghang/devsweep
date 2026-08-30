@@ -91,8 +91,10 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
     let text = match header_layout_kind(area) {
         BodyLayoutKind::Full => vec![
             Line::from(vec![
-                Span::styled("devsweep", accent_style()),
-                Span::styled("  cleanup plan cockpit", muted_style()),
+                Span::styled(app.shell.app_title.clone(), accent_style()),
+                Span::styled(format!("  {}", app.shell.copy.workbench), muted_style()),
+                Span::styled("  |  ", muted_style()),
+                Span::styled(shell_navigation_label(app), panel_style()),
                 Span::styled("  |  ", muted_style()),
                 Span::styled("Selected ", muted_style()),
                 Span::styled(
@@ -110,7 +112,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
         ],
         BodyLayoutKind::Focused => vec![
             Line::from(vec![
-                Span::styled("devsweep", accent_style()),
+                Span::styled(app.shell.app_title.clone(), accent_style()),
+                Span::styled(format!("  {}", app.shell.active_label), panel_style()),
                 Span::styled("  |  ", muted_style()),
                 Span::styled("Selected ", muted_style()),
                 Span::styled(
@@ -129,7 +132,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
             scan_totals_line(app, true),
         ],
         BodyLayoutKind::Compact => vec![Line::from(vec![
-            Span::styled("devsweep", accent_style()),
+            Span::styled(app.shell.app_title.clone(), accent_style()),
+            Span::styled(format!("  {}", app.shell.active_label), panel_style()),
             Span::styled("  |  ", muted_style()),
             Span::styled("Selected ", muted_style()),
             Span::styled(
@@ -153,6 +157,18 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
             .alignment(Alignment::Left),
         area,
     );
+}
+
+fn shell_navigation_label(app: &App) -> String {
+    app.shell
+        .navigation
+        .iter()
+        .map(|item| match item.accelerator {
+            Some(accelerator) => format!("[{}] {}", accelerator.to_ascii_uppercase(), item.label),
+            None => item.label.clone(),
+        })
+        .collect::<Vec<_>>()
+        .join("  ")
 }
 
 fn scan_health_label(app: &App) -> &'static str {
@@ -331,6 +347,23 @@ fn footer_action_width(action: &FooterAction) -> usize {
 }
 
 fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
+    if app.language_settings.open {
+        let copy = &app.shell.copy;
+        let enter = if app.language_settings.pending_request.is_some() {
+            footer_action("Enter", copy.saving, FooterTone::Warning)
+        } else {
+            footer_action("Enter", copy.save, FooterTone::Accent)
+        };
+        return (
+            copy.settings_title,
+            FooterTone::Accent,
+            vec![
+                enter,
+                footer_action("Esc", copy.cancel, FooterTone::Neutral),
+            ],
+        );
+    }
+
     if app.filter_active {
         return (
             "FILTER",
@@ -428,6 +461,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
         footer_action("s", "Scan", FooterTone::Accent),
         footer_action("Space", "Select", FooterTone::Neutral),
         footer_action("c", "Clean", FooterTone::Danger),
+        footer_action("p", app.shell.copy.settings_action, FooterTone::Accent),
         footer_action("q", "Quit", FooterTone::Danger),
         footer_action("/", "Filter", FooterTone::Neutral),
         footer_action("?", "Help", FooterTone::Neutral),

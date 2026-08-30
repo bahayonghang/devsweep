@@ -1,0 +1,13 @@
+warning: associated functions `new` and `with_plan` are never used
+   --> crates\devsweep-cli\src\tui\app\mod.rs:98:19
+    |
+ 97 | impl App {
+    | -------- associated functions in this implementation
+ 98 |     pub(super) fn new() -> Self {
+    |                   ^^^
+...
+111 |     pub(super) fn with_plan(plan: CleanupPlan) -> Self {
+    |                   ^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+cargo build: 0 errors, 1 warnings (0 crates)

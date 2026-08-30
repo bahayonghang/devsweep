@@ -14,6 +14,8 @@ pub mod inventory;
 pub mod model;
 /// Untrusted-plan validation and canonical plan identity.
 pub mod plan;
+/// Locale-only presentation preferences shared by interactive frontends.
+pub mod presentation_settings;
 /// Bounded external-process execution and cooperative cancellation.
 pub mod process;
 /// Built-in cleanup rule declarations and trusted action reconstruction.

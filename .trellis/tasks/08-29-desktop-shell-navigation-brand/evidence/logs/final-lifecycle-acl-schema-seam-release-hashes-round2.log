@@ -1,0 +1,12 @@
+CAPABILITY_EXACT=True
+CAPABILITY_PERMISSIONS=core:event:allow-listen,core:event:allow-unlisten,core:window:allow-destroy
+SCHEMA_DESTROY_EXACT=True
+SCHEMA_DESTROY_COMMANDS=destroy
+SEAM needle=debug_native_fault_mode target=desktop/dist found=False
+SEAM needle=debug_native_fault_mode target=target/release/devsweep-desktop.exe found=False
+SEAM needle=DEVSWEEP_TASK_NATIVE_FAULT target=desktop/dist found=False
+SEAM needle=DEVSWEEP_TASK_NATIVE_FAULT target=target/release/devsweep-desktop.exe found=False
+SEAM needle=route_cancel_once target=desktop/dist found=False
+SEAM needle=route_cancel_once target=target/release/devsweep-desktop.exe found=False
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe bytes=9826816 sha256=C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742 modified=2026-08-30T17:05:53.6650404+08:00
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.2.0_x64-setup.exe bytes=3150041 sha256=662FD425FF9B3701BA974769EF7C403FC385237F69DAB0E8F568EEC1B4347CAF modified=2026-08-30T17:05:52.7447248+08:00

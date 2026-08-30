@@ -1,0 +1,41 @@
+requested: rtk cargo test -p devsweep-cli i18n
+executed: cargo test -p devsweep-cli i18n  # unfiltered complete log; rtk compact already exited 0
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+exit: 0
+elapsed_s: 0.559
+
+
+running 10 tests
+test i18n::tests::binary_formatter_covers_boundaries_without_floating_point ... ok
+test i18n::tests::locale_resolution_and_presentation_tag_boundary_are_closed ... ok
+test i18n::tests::long_user_data_is_returned_in_full_by_the_catalogue ... ok
+test i18n::tests::human_golden_fixtures_are_owned_by_the_canonical_catalogues ... ok
+test i18n::tests::plural_selection_and_interpolation_are_locale_specific_and_injection_safe ... ok
+test i18n::tests::canonical_shell_v1_namespace_has_exact_copy_and_closed_metadata ... ok
+test i18n::tests::shell_metadata_facade_exposes_exact_locale_specific_contracts ... ok
+test i18n::tests::catalogue_schema_rejects_unknown_fields_and_duplicate_placeholders ... ok
+test i18n::tests::embedded_catalogues_have_exact_schema_parity ... ok
+test i18n::tests::duplicate_accelerators_are_rejected_within_one_group ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 98 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)

@@ -1,0 +1,9 @@
+---- presentation_settings::tests::concurrent_frontends_serialize_complete_transactions stdout ----
+
+thread 'presentation_settings::tests::concurrent_frontends_serialize_complete_transactions' (31268) panicked at crates\devsweep-core\src\presentation_settings.rs:682:36:
+called `Result::unwrap()` on an `Err` value: Io { stage: "replace_document", path: "C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmpkpOVah\\DevSweep/settings/presentation-v1.json", source: Os { code: 5, kind: PermissionDenied, message: "Access is denied." } }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.18s
+[full output: "$HOME/AppData/Local/rtk/tee/1788073535_cargo_test.log"]

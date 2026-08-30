@@ -1,0 +1,25 @@
+**********************
+PowerShell transcript start
+Start time: 20260830152855
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$repo='D:\Documents\Code\Rust\Exp\devsweep'; $base=Join-Path $repo '.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-source-native-20260830\tui'; $env:LOCALAPPDATA=Join-Path $base 'isolated-localappdata'; Set-Location (Join-Path $base 'session-root'); Start-Transcript -LiteralPath (Join-Path $base 'session1-explicit-en-save-zh.process.log') -Force | Out-Null; & (Join-Path $repo 'target\debug\devsweep.exe') --language en; $code=$LASTEXITCODE; Stop-Transcript | Out-Null; Write-Output "SESSION1_EXIT=$code"; exit $code
+Process ID: 24256
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+**********************
+PowerShell transcript end
+End time: 20260830152919
+**********************

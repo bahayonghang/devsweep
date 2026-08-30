@@ -1,0 +1,92 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260830203738
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-artifact-rebind-92c-run2-20260830/final-readonly-audit.ps1
+Process ID: 76544
+PSVersion: 5.1.26100.9278
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9278
+BuildVersion: 10.0.26100.9278
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+ARTIFACT path=target/release/devsweep-desktop.exe bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 matches=True
+ARTIFACT path=target/debug/devsweep-desktop.exe bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5 matches=True
+ARTIFACT path=target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328 matches=True
+RESIDUE main=0 webview=0 port9381=0 port9382=0 lock_temp=0
+OLD_RUN1_02_EXISTS=False
+RUN2_02 lines=45 bytes=4558 sha256=FAE0E9A8F4EBFAEB1F3BF057F14EBEBB40662A56BD2D75E0999948A73AA2C2C1
+RUN2_CDP lines=1 bytes=156 sha256=BA694D1119970AB4DCE3628B9AA07C75604BD8BED74758E27EA01A370DB4B22C
+› Ask Codex to do anything
+DIFF_CHECK_EXIT=0
+› Ask Codex to do anything
+TASK_VALIDATE_EXIT=0
+GIT_STATUS_EXIT=0 entries=57
+STATUS  M .trellis/.gitignore
+STATUS  M .trellis/spec/desktop-frontend/component-guidelines.md
+STATUS  M .trellis/spec/desktop-frontend/index.md
+STATUS  M .trellis/spec/desktop-frontend/state-management.md
+STATUS  M README.md
+STATUS  M crates/devsweep-cli/src/application/mod.rs
+STATUS  M crates/devsweep-cli/src/i18n/mod.rs
+STATUS  M crates/devsweep-cli/src/tui/app/events.rs
+STATUS  M crates/devsweep-cli/src/tui/app/input.rs
+STATUS  M crates/devsweep-cli/src/tui/app/jobs.rs
+STATUS  M crates/devsweep-cli/src/tui/app/mod.rs
+STATUS  M crates/devsweep-cli/src/tui/app/tests.rs
+STATUS  M crates/devsweep-cli/src/tui/app/worker.rs
+STATUS  M crates/devsweep-cli/src/tui/mod.rs
+STATUS  M crates/devsweep-cli/src/tui/render/mod.rs
+STATUS  M crates/devsweep-cli/src/tui/render/overlays.rs
+STATUS  M crates/devsweep-cli/src/tui/render/tests.rs
+STATUS  M crates/devsweep-cli/src/tui/runtime/mod.rs
+STATUS  M crates/devsweep-cli/src/tui/runtime/tests.rs
+STATUS  M crates/devsweep-core/src/lib.rs
+STATUS  M desktop/src-tauri/capabilities/default.json
+STATUS  M desktop/src-tauri/src/commands.rs
+STATUS  M desktop/src-tauri/src/lib.rs
+STATUS  M desktop/src/App.test.tsx
+STATUS  M desktop/src/App.tsx
+STATUS  M desktop/src/components/format.ts
+STATUS  M desktop/src/styles.css
+STATUS  M desktop/src/styles.test.ts
+STATUS  M justfile
+STATUS  M resources/i18n/en.json
+STATUS  M resources/i18n/zh-CN.json
+STATUS ?? .trellis/tasks/08-29-analyze-core-ipc/
+STATUS ?? .trellis/tasks/08-29-analyze-mode/
+STATUS ?? .trellis/tasks/08-29-analyze-tui-desktop-treemap/
+STATUS ?? .trellis/tasks/08-29-clean-mode-workbench/
+STATUS ?? .trellis/tasks/08-29-desktop-shell-navigation-brand/
+STATUS ?? .trellis/tasks/08-29-five-mode-native-integration/
+STATUS ?? .trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/
+STATUS ?? .trellis/tasks/08-29-optimize-catalog-execution/
+STATUS ?? .trellis/tasks/08-29-optimize-cli-tui-desktop-native/
+STATUS ?? .trellis/tasks/08-29-optimize-mode/
+STATUS ?? .trellis/tasks/08-29-protect-rules-history-surfaces/
+STATUS ?? .trellis/tasks/08-29-scan-resource-bounds-app-icon/
+STATUS ?? .trellis/tasks/08-29-software-cli-tui-desktop-native/
+STATUS ?? .trellis/tasks/08-29-software-execution-audit/
+STATUS ?? .trellis/tasks/08-29-software-inventory-plan/
+STATUS ?? .trellis/tasks/08-29-software-mode/
+STATUS ?? .trellis/tasks/08-29-status-collector-cli/
+STATUS ?? .trellis/tasks/08-29-status-mode/
+STATUS ?? .trellis/tasks/08-29-status-tui-desktop-native/
+STATUS ?? crates/devsweep-cli/src/tui/shell/
+STATUS ?? crates/devsweep-core/src/presentation_settings.rs
+STATUS ?? desktop/src/app-shell/
+STATUS ?? desktop/src/i18n/
+STATUS ?? desktop/src/lifecycle.test.ts
+STATUS ?? desktop/src/lifecycle.ts
+STATUS ?? desktop/src/state/operation-coordinator.ts
+FINAL_READONLY_AUDIT=PASS
+**********************
+Windows PowerShell transcript end
+End time: 20260830203744
+**********************

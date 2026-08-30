@@ -1,0 +1,26 @@
+{
+  "time": "2026-08-30T17:40:06.7404904+08:00",
+  "session": "devsweep-shell-release-1d2fcac28664",
+  "close_exit": 0,
+  "close_output": "✓ Browser closed",
+  "session_info_exit": 0,
+  "session_info": "Session: devsweep-shell-release-1d2fcac28664\nSocket dir: C:\\Users\\lyh\\.agent-browser\nDaemon: not running",
+  "port_9335_listeners": [],
+  "devsweep_processes": [],
+  "agent_browser_daemon_observation": [
+    {
+      "ProcessId": 26848,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T17:40:03.718986+08:00",
+      "CommandLine": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe --session devsweep-shell-release-1d2fcac28664 --cdp 9335 snapshot -i"
+    },
+    {
+      "ProcessId": 64128,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T17:40:03.839041+08:00",
+      "CommandLine": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\""
+    }
+  ]
+}

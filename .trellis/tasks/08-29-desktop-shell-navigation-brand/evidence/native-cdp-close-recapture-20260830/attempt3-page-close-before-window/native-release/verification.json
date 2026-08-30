@@ -1,0 +1,387 @@
+{
+  "started_at": "2026-08-30T21:40:32.7778297+08:00",
+  "release": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "expected_hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+  "localappdata": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\localappdata",
+  "state": "failed",
+  "hashes_before": [
+    {
+      "name": "release",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+      "bytes": 9827328,
+      "hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+      "expected_bytes": 9827328,
+      "expected_hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20"
+    },
+    {
+      "name": "debug",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+      "bytes": 14758912,
+      "hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5",
+      "expected_bytes": 14758912,
+      "expected_hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5"
+    },
+    {
+      "name": "nsis",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\bundle\\nsis\\devsweep_0.2.0_x64-setup.exe",
+      "bytes": 3152372,
+      "hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328",
+      "expected_bytes": 3152372,
+      "expected_hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328"
+    }
+  ],
+  "toolchain": {
+    "pwsh_path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+    "pwsh_version": "7.6.5",
+    "process_id": 69904,
+    "command_line": "\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -NoProfile -ExecutionPolicy Bypass -File D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-recapture.ps1 -RepositoryRoot D:\\Documents\\Code\\Rust\\Exp\\devsweep -EvidenceRoot D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release -FirstPort 9401 -RestartPort 9402 -ExpectedHash 92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 -PwshPath \"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -WrapperPath D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-wrapper.ps1",
+    "nested_json_roundtrip": "pass",
+    "client_websocket": "pass",
+    "start_transcript": "pass",
+    "ui_automation": "pass",
+    "static_parse": "pass",
+    "artifacts": [
+      {
+        "name": "release",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+        "bytes": 9827328,
+        "hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+        "expected_bytes": 9827328,
+        "expected_hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20"
+      },
+      {
+        "name": "debug",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+        "bytes": 14758912,
+        "hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5",
+        "expected_bytes": 14758912,
+        "expected_hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5"
+      },
+      {
+        "name": "nsis",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\bundle\\nsis\\devsweep_0.2.0_x64-setup.exe",
+        "bytes": 3152372,
+        "hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328",
+        "expected_bytes": 3152372,
+        "expected_hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328"
+      }
+    ],
+    "prelaunch": {
+      "main": 0,
+      "webview": 0,
+      "first_port": 0,
+      "restart_port": 0
+    }
+  },
+  "first": {
+    "launch": {
+      "Name": "first",
+      "Port": 9401,
+      "Pid": 25648,
+      "Hwnd": {
+        "value": 17569004
+      },
+      "StartTime": "2026-08-30T21:40:35.1429818+08:00",
+      "Path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+      "Hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+      "Target": [
+        {
+          "description": "",
+          "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@419e77616b4ed7d0a544b85cb53ccd5b74d5f135/inspector.html?ws=127.0.0.1:9401/devtools/page/E72ABD42D85C06ED625488354D71A106",
+          "id": "E72ABD42D85C06ED625488354D71A106",
+          "title": "devsweep",
+          "type": "page",
+          "url": "http://tauri.localhost/#/clean",
+          "webSocketDebuggerUrl": "ws://127.0.0.1:9401/devtools/page/E72ABD42D85C06ED625488354D71A106"
+        }
+      ],
+      "Listener": {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9401,
+        "AddressFamily": "InterNetwork"
+      }
+    },
+    "initial": {
+      "hash": "#/clean",
+      "locale": "en",
+      "activeTag": "BODY",
+      "activeText": "DevSweepCleanup plan workbenchCleanLanguageHelpClean Projects Global cachesReadyScanNo scan resultsRun a scan to review cleanup targets.Confirm cleanupThe reviewed actions will now run. Files moved to trash continue to occupy capacity until the trash is emptied.Confirmation digestCancelExecute cleanup",
+      "cleanLabel": "Clean",
+      "languageButtons": [
+        "Language"
+      ],
+      "selectPresent": false,
+      "selectValue": null,
+      "unhandled": [],
+      "windowErrors": []
+    },
+    "settings_en": {
+      "hash": "#/settings",
+      "locale": "en",
+      "activeTag": "BUTTON",
+      "activeText": "Language",
+      "cleanLabel": "Clean",
+      "languageButtons": [
+        "Language"
+      ],
+      "selectPresent": true,
+      "selectValue": "en",
+      "unhandled": [],
+      "windowErrors": []
+    },
+    "chinese": {
+      "hash": "#/settings",
+      "locale": "zh-CN",
+      "activeTag": "BUTTON",
+      "activeText": "语言",
+      "cleanLabel": "清理",
+      "languageButtons": [
+        "语言"
+      ],
+      "selectPresent": true,
+      "selectValue": "zh-CN",
+      "unhandled": [],
+      "windowErrors": []
+    },
+    "store": {
+      "exists": true,
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\localappdata\\DevSweep\\settings\\presentation-v1.json",
+      "length": 39,
+      "utf8": "{\"schema_version\":1,\"language\":\"zh-CN\"}",
+      "base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibGFuZ3VhZ2UiOiJ6aC1DTiJ9",
+      "expected_base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibGFuZ3VhZ2UiOiJ6aC1DTiJ9",
+      "sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899",
+      "files": {
+        "Name": "presentation-v1.json",
+        "Length": 39,
+        "FullName": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\localappdata\\DevSweep\\settings\\presentation-v1.json"
+      },
+      "lock_temp_count": 0
+    },
+    "capture": {
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\screenshots\\release-first-zh-CN.png",
+      "width": 814,
+      "height": 638,
+      "bytes": 14104,
+      "sha256": "146437FC610C988C2DCF4056C1AD63E430FB76EA4666721312E94E55AA6BF3D3"
+    },
+    "close": {
+      "debugger": {
+        "target_id": "E72ABD42D85C06ED625488354D71A106",
+        "methods": [
+          {
+            "sent": true,
+            "method": "Page.close",
+            "request_id": 10,
+            "json_result": {
+              "id": 10,
+              "result": {}
+            },
+            "socket_closed": true,
+            "state": "Aborted",
+            "elapsed_ms": 28.0,
+            "cdp_error": null
+          },
+          {
+            "sent": false,
+            "method": "Target.closeTarget",
+            "reason": "socket_not_open",
+            "state": "Aborted",
+            "socket_closed": true
+          }
+        ],
+        "socket_state_before": "Open",
+        "browser_close_used": false,
+        "socket_state_before_dispose": "Aborted",
+        "socket_state_after_dispose": "Aborted"
+      },
+      "port_wait": {
+        "api": "IPGlobalProperties.GetActiveTcpListeners",
+        "nettcpconnection_available": false,
+        "closed": true,
+        "elapsed_ms": 134.0,
+        "samples": [
+          {
+            "i": 1,
+            "time": "2026-08-30T21:40:38.0946401+08:00",
+            "ms_after_dispose": 10.0,
+            "query_ms": 3.0,
+            "listener_count": 1,
+            "listeners": [
+              {
+                "LocalAddress": "127.0.0.1",
+                "LocalPort": 9401
+              }
+            ]
+          },
+          {
+            "i": 2,
+            "time": "2026-08-30T21:40:38.2173903+08:00",
+            "ms_after_dispose": 133.0,
+            "query_ms": 5.3,
+            "listener_count": 0,
+            "listeners": []
+          }
+        ]
+      },
+      "close_main_window": true,
+      "close_requested_at": "2026-08-30T21:40:38.2201174+08:00",
+      "elapsed_ms": 5072.0,
+      "main_alive": false,
+      "residue_samples": [
+        {
+          "i": 1,
+          "time": "2026-08-30T21:40:38.9346242+08:00",
+          "ms_after_close": 715.0,
+          "query_ms": 696.7,
+          "cheap_ms": 18.9,
+          "identity_ms": 677.5,
+          "candidate_webview_count": 25,
+          "main_count": 1,
+          "owned_webview_count": 0,
+          "listener_count": 0,
+          "lock_temp_count": 0,
+          "owned": []
+        },
+        {
+          "i": 2,
+          "time": "2026-08-30T21:40:39.8219577+08:00",
+          "ms_after_close": 1602.0,
+          "query_ms": 667.7,
+          "cheap_ms": 15.5,
+          "identity_ms": 652.1,
+          "candidate_webview_count": 25,
+          "main_count": 1,
+          "owned_webview_count": 0,
+          "listener_count": 0,
+          "lock_temp_count": 0,
+          "owned": []
+        },
+        {
+          "i": 3,
+          "time": "2026-08-30T21:40:40.6811219+08:00",
+          "ms_after_close": 2461.0,
+          "query_ms": 644.0,
+          "cheap_ms": 16.6,
+          "identity_ms": 627.1,
+          "candidate_webview_count": 25,
+          "main_count": 1,
+          "owned_webview_count": 0,
+          "listener_count": 0,
+          "lock_temp_count": 0,
+          "owned": []
+        },
+        {
+          "i": 4,
+          "time": "2026-08-30T21:40:41.6216272+08:00",
+          "ms_after_close": 3402.0,
+          "query_ms": 702.7,
+          "cheap_ms": 15.9,
+          "identity_ms": 686.6,
+          "candidate_webview_count": 25,
+          "main_count": 1,
+          "owned_webview_count": 0,
+          "listener_count": 0,
+          "lock_temp_count": 0,
+          "owned": []
+        },
+        {
+          "i": 5,
+          "time": "2026-08-30T21:40:42.4385097+08:00",
+          "ms_after_close": 4218.0,
+          "query_ms": 608.5,
+          "cheap_ms": 14.1,
+          "identity_ms": 594.2,
+          "candidate_webview_count": 25,
+          "main_count": 1,
+          "owned_webview_count": 0,
+          "listener_count": 0,
+          "lock_temp_count": 0,
+          "owned": []
+        }
+      ],
+      "main_residue": [
+        {
+          "pid": 25648,
+          "path": null,
+          "start_time": "2026-08-30T21:40:35.1429818+08:00"
+        }
+      ],
+      "owned_webview_residue": [],
+      "listener_residue": [],
+      "lock_temp_residue": [],
+      "final_query_ms": 636.0,
+      "graceful_clear": false,
+      "identity_gated_termination": [
+        {
+          "target": "main",
+          "pid": 25648,
+          "command": "Stop-Process -Id 25648 -Force",
+          "matched": true,
+          "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+          "start_time": "2026-08-30T21:40:35.1429818+08:00",
+          "hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+          "ownership": "task-owned-release-main",
+          "result": "exited"
+        }
+      ]
+    }
+  },
+  "failure": {
+    "message": "first release close left residue",
+    "position": "At D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-recapture.ps1:975 char:9\r\n+         throw \"first release close left residue\"\r\n+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+    "stack": "at <ScriptBlock>, D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-recapture.ps1: line 975"
+  },
+  "hashes_after": [
+    {
+      "name": "release",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+      "bytes": 9827328,
+      "hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+      "expected_bytes": 9827328,
+      "expected_hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20"
+    },
+    {
+      "name": "debug",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+      "bytes": 14758912,
+      "hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5",
+      "expected_bytes": 14758912,
+      "expected_hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5"
+    },
+    {
+      "name": "nsis",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\bundle\\nsis\\devsweep_0.2.0_x64-setup.exe",
+      "bytes": 3152372,
+      "hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328",
+      "expected_bytes": 3152372,
+      "expected_hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328"
+    }
+  ],
+  "hash_drift": null,
+  "final": {
+    "release_hash": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+    "debug_hash": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5",
+    "nsis_hash": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328",
+    "main_processes": [],
+    "webview_processes": [],
+    "first_port_listeners": [],
+    "restart_port_listeners": [],
+    "store": {
+      "exists": true,
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\localappdata\\DevSweep\\settings\\presentation-v1.json",
+      "length": 39,
+      "utf8": "{\"schema_version\":1,\"language\":\"zh-CN\"}",
+      "base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibGFuZ3VhZ2UiOiJ6aC1DTiJ9",
+      "expected_base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibGFuZ3VhZ2UiOiJ6aC1DTiJ9",
+      "sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899",
+      "files": {
+        "Name": "presentation-v1.json",
+        "Length": 39,
+        "FullName": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\localappdata\\DevSweep\\settings\\presentation-v1.json"
+      },
+      "lock_temp_count": 0
+    }
+  },
+  "finished_at": "2026-08-30T21:40:47.6270379+08:00"
+}

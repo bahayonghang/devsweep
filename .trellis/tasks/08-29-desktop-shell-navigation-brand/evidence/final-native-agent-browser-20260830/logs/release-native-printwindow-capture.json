@@ -1,0 +1,23 @@
+{
+  "time": "2026-08-30T17:38:14.2419544+08:00",
+  "pid": 45252,
+  "hwnd": "0xC615FA",
+  "title": "devsweep",
+  "release_path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "release_hash": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "printwindow_success": true,
+  "window_rect": [
+    102,
+    102,
+    814,
+    638
+  ],
+  "native_screenshot": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\screenshots\\release-settings-zh-CN-native-printwindow.png",
+  "taskbar_crop": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\screenshots\\release-taskbar-bound-crop.png",
+  "taskbar_crop_rect": [
+    0,
+    1104,
+    380,
+    48
+  ]
+}

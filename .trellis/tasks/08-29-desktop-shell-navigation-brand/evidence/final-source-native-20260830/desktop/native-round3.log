@@ -1,0 +1,59 @@
+DevSweep Desktop final-source native evidence, round 3
+Captured: 2026-08-30T15:38:06+08:00 through 2026-08-30T15:47:58+08:00
+Repository: D:\Documents\Code\Rust\Exp\devsweep
+Executable: target/release/devsweep-desktop.exe
+Executable bytes: 9791488
+Executable SHA-256: 64C69BB3568ACE9D343196C2F47BB1053E42C1C41FF1A3DF8957C59B8BF08D44
+Process-level LOCALAPPDATA: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-source-native-20260830\desktop\isolated-localappdata-round3
+Initial DevSweep presentation document: absent
+
+Launch command mechanism: Start-Process target/release/devsweep-desktop.exe with the
+process environment LOCALAPPDATA set to the task-owned path above. PowerShell command
+exit 0. PID 35600, original Tauri top-level HWND 38474398, title devsweep.
+
+Capture mechanism: GetWindowRect plus PrintWindow(hwnd, PW_RENDERFULLCONTENT=2).
+The target HWND capture is independent of another foreground application's pixels.
+
+00-initial-en.png
+  PrintWindow: true
+  814x638 physical capture
+  SHA-256: 119946A59E8F889BE50AE407D4D1882D6F7C817780194A068E9D301A4BB40E58
+  Reliable observation: native Tauri window, original header icon/brand, English
+  Clean shell, Projects/Global caches/Ready and No scan results.
+
+01-focus-clean-tab.png through 04-focus-after-forced-tab.png
+  SHA-256: 119946A59E8F889BE50AE407D4D1882D6F7C817780194A068E9D301A4BB40E58
+  Diagnostic only. The first foreground attempt did not reach the WebView; later
+  user32 thread-input attachment successfully made the Tauri HWND foreground, but
+  these identical captures do not independently establish the focused element.
+
+05-after-settings-enter.png
+  PrintWindow: true
+  SHA-256: DFAB9CA148C53332C8277E3848DF7A934339EA7C6AC9DAFCF00E3880F9F992DA
+  Reliable observation: keyboard Tab/Enter opened the real English Language settings
+  panel with the English select value. This proves keyboard activation of Settings,
+  but not focus restoration after Back.
+
+06-settings-zh-saved.png
+  SHA-256: DFAB9CA148C53332C8277E3848DF7A934339EA7C6AC9DAFCF00E3880F9F992DA
+  Diagnostic only. The select still displayed English and no presentation document
+  existed, so this is not save or Chinese-locale evidence.
+
+07-after-tab-end.png
+  SHA-256: E98FD762304F6FC7FF50A2807125F023FCFF507976A9396605F0CAFECABC6363
+  Invalid black diagnostic capture. It is not UI evidence.
+
+Close/residue sequence:
+  Get-Process showed PID 35600 responsive but with a blank transient MainWindowTitle.
+  Process.CloseMainWindow() returned true; WaitForExit(10000) returned false.
+  PostMessage(original HWND, WM_CLOSE) returned true; WaitForExit(15000) returned false.
+  A final foreground Alt+F4 attempt could not acquire the already-destroyed window.
+  A read-only EnumWindows audit then found zero top-level windows for PID 35600,
+  but PID 35600 remained alive. No task-owned listener and no presentation store,
+  lock file, or temporary file was present.
+
+Final native round result: STOPPED after the third evidence attempt. English launch,
+original header icon, and keyboard opening of Settings are direct PASS observations.
+Chinese persistence/restart, Back/focus restoration, route-error recovery, graceful
+process exit, and zero process residue remain UNVERIFIED or failed as detailed in
+verification.md. No kill or destructive cleanup was used.

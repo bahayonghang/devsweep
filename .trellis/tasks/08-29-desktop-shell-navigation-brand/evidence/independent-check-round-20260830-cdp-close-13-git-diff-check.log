@@ -1,0 +1,37 @@
+requested: git diff --check
+executed: git diff --check
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+node22: False
+exit: 0
+elapsed_s: 0.096
+
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.trellis/spec/desktop-frontend/component-guidelines.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.trellis/spec/desktop-frontend/index.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.trellis/spec/desktop-frontend/state-management.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/i18n/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/events.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/input.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/jobs.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/tests.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/worker.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/overlays.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/tests.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/runtime/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/runtime/tests.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/lib.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/capabilities/default.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/commands.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/lib.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.test.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/types.gen.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/components/format.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/styles.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/styles.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/en.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it

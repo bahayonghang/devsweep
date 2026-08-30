@@ -3,6 +3,31 @@ use super::*;
 impl App {
     pub(super) fn handle_worker_event(&mut self, event: WorkerEvent) -> Vec<Effect> {
         match event {
+            WorkerEvent::PresentationLanguageSaved { request_id, locale } => {
+                if self.language_settings.pending_request != Some(request_id) {
+                    return Vec::new();
+                }
+                match ShellComposition::for_locale(locale) {
+                    Ok(shell) => {
+                        self.shell = shell;
+                        self.language_settings = LanguageSettingsState::closed(locale);
+                    }
+                    Err(error) => {
+                        let _diagnostic = error;
+                        self.language_settings.pending_request = None;
+                        self.language_settings.failure =
+                            Some(LanguageSettingsFailure::PersistenceUnavailable);
+                    }
+                }
+            }
+            WorkerEvent::PresentationLanguageSaveFailed { request_id } => {
+                if self.language_settings.pending_request != Some(request_id) {
+                    return Vec::new();
+                }
+                self.language_settings.pending_request = None;
+                self.language_settings.failure =
+                    Some(LanguageSettingsFailure::PersistenceUnavailable);
+            }
             WorkerEvent::ScanStarted { job_id } => {
                 self.ensure_job(job_id, JobKind::Scan, "Scan current directory and globals");
                 if !self.transition_job(job_id, JobStatus::Running, "Started") {
@@ -196,7 +221,7 @@ impl App {
             }
         }
 
-        Vec::new()
+        self.maybe_start_pending_scan()
     }
 
     pub(super) fn set_tab(&mut self, tab: ActiveTab) -> Vec<Effect> {

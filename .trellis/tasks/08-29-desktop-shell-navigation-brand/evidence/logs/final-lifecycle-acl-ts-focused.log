@@ -1,0 +1,10 @@
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 61ms
+ ✓ src/lifecycle.test.ts (4 tests) 67ms
+ ✓ src/app-shell/AppShell.test.tsx (11 tests) 776ms
+ ✓ src/App.test.tsx (33 tests) 3990ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  469ms
+ Test Files  4 passed (4)
+      Tests  54 passed (54)
+   Start at  17:02:50
+   Duration  6.31s (transform 229ms, setup 954ms, collect 703ms, tests 4.89s, environment 3.57s, prepare 300ms)

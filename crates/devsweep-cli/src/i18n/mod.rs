@@ -7,6 +7,31 @@ use std::{
 const EN_JSON: &str = include_str!("../../../../resources/i18n/en.json");
 const ZH_CN_JSON: &str = include_str!("../../../../resources/i18n/zh-CN.json");
 
+pub(crate) const SHELL_V1_KEYS: [&str; 22] = [
+    "shell.v1.help",
+    "shell.v1.persistence.saving",
+    "shell.v1.persistence.unavailable",
+    "shell.v1.route.dismiss",
+    "shell.v1.route.error",
+    "shell.v1.settings.action",
+    "shell.v1.settings.cancel",
+    "shell.v1.settings.instruction",
+    "shell.v1.settings.option.en",
+    "shell.v1.settings.option.zh_cn",
+    "shell.v1.settings.save",
+    "shell.v1.settings.saving",
+    "shell.v1.settings.title",
+    "shell.v1.store.loading",
+    "shell.v1.store.unavailable.detail",
+    "shell.v1.store.unavailable.recovery",
+    "shell.v1.store.unavailable.title",
+    "shell.v1.supporting",
+    "shell.v1.supporting.history",
+    "shell.v1.supporting.protection",
+    "shell.v1.supporting.rules",
+    "shell.v1.workbench",
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Locale {
     En,
@@ -172,6 +197,15 @@ impl Catalogue {
     fn parse(source: &str) -> Result<Self, CatalogueError> {
         let document: serde_json::Value = serde_json::from_str(source)
             .map_err(|error| CatalogueError(format!("catalogue is not valid JSON: {error}")))?;
+        let document = document
+            .as_object()
+            .ok_or_else(|| CatalogueError("catalogue must be an object".to_string()))?;
+        let document_fields = document.keys().map(String::as_str).collect::<BTreeSet<_>>();
+        if document_fields != BTreeSet::from(["locale", "messages"]) {
+            return Err(CatalogueError(
+                "catalogue must contain only locale and messages".to_string(),
+            ));
+        }
         let locale = document
             .get("locale")
             .and_then(serde_json::Value::as_str)
@@ -187,6 +221,21 @@ impl Catalogue {
             let object = value
                 .as_object()
                 .ok_or_else(|| CatalogueError(format!("message {key} must be an object")))?;
+            let fields = object.keys().map(String::as_str).collect::<BTreeSet<_>>();
+            if fields
+                != BTreeSet::from([
+                    "accelerator",
+                    "count",
+                    "forms",
+                    "group",
+                    "placeholders",
+                    "truncation",
+                ])
+            {
+                return Err(CatalogueError(format!(
+                    "message {key} must contain the exact metadata fields"
+                )));
+            }
             let forms_object = object
                 .get("forms")
                 .and_then(serde_json::Value::as_object)
@@ -209,19 +258,23 @@ impl Catalogue {
                 )));
             }
 
-            let placeholders = object
+            let placeholder_values = object
                 .get("placeholders")
                 .and_then(serde_json::Value::as_array)
                 .ok_or_else(|| {
                     CatalogueError(format!("message {key} placeholders must be an array"))
-                })?
-                .iter()
-                .map(|value| {
-                    value.as_str().map(str::to_string).ok_or_else(|| {
-                        CatalogueError(format!("message {key} placeholder must be text"))
-                    })
-                })
-                .collect::<Result<BTreeSet<_>, _>>()?;
+                })?;
+            let mut placeholders = BTreeSet::new();
+            for value in placeholder_values {
+                let placeholder = value.as_str().ok_or_else(|| {
+                    CatalogueError(format!("message {key} placeholder must be text"))
+                })?;
+                if !placeholders.insert(placeholder.to_string()) {
+                    return Err(CatalogueError(format!(
+                        "message {key} contains duplicate placeholder metadata"
+                    )));
+                }
+            }
 
             let count = match object.get("count").and_then(serde_json::Value::as_str) {
                 Some("none") => CountKind::None,
@@ -289,9 +342,9 @@ impl Catalogue {
                     )));
                 }
             };
-            if accelerator.is_some() != group.is_some() {
+            if accelerator.is_some() && group.is_none() {
                 return Err(CatalogueError(format!(
-                    "message {key} accelerator and group must be defined together"
+                    "message {key} accelerator requires a visible-scope group"
                 )));
             }
             let truncation = match object.get("truncation").and_then(serde_json::Value::as_str) {
@@ -353,6 +406,22 @@ impl Catalogue {
         interpolate(template, &supplied)
     }
 
+    pub(crate) fn static_text(&self, key: &str) -> Result<&str, CatalogueError> {
+        let message = self
+            .messages
+            .get(key)
+            .ok_or_else(|| CatalogueError(format!("unknown message key {key}")))?;
+        if message.count != CountKind::None || !message.placeholders.is_empty() {
+            return Err(CatalogueError(format!(
+                "message {key} is not static presentation copy"
+            )));
+        }
+        Ok(message
+            .forms
+            .get("other")
+            .expect("validated static messages contain other"))
+    }
+
     fn metadata(&self, key: &str) -> Result<MessageMetadata<'_>, CatalogueError> {
         let message = self
             .messages
@@ -391,9 +460,9 @@ fn validate_parity(english: &Catalogue, chinese: &Catalogue) -> Result<(), Catal
                 "message {key} count metadata differs by locale"
             )));
         }
-        if en.group != zh.group || en.accelerator.is_some() != zh.accelerator.is_some() {
+        if en.group != zh.group {
             return Err(CatalogueError(format!(
-                "message {key} accelerator metadata differs by locale"
+                "message {key} accelerator group differs by locale"
             )));
         }
         if en.truncation != zh.truncation {
@@ -630,11 +699,47 @@ mod tests {
         assert!(en.placeholders.is_empty());
         assert_eq!(en.count, CountKind::None);
         assert_eq!(en.accelerator, Some('c'));
-        assert_eq!(zh.accelerator, Some('q'));
+        assert_eq!(zh.accelerator, None);
         assert_eq!(en.group, Some("root_modes"));
         assert_eq!(zh.group, en.group);
         assert_eq!(en.truncation, TruncationContract::Never);
         assert_eq!(zh.truncation, en.truncation);
+
+        let root_modes = [
+            ("command.analyze", Some('a'), Some('f')),
+            ("command.clean", Some('c'), None),
+            ("command.history", Some('h'), Some('l')),
+            ("command.optimize", Some('p'), Some('y')),
+            ("command.software", Some('s'), Some('r')),
+            ("command.status", Some('t'), Some('z')),
+        ];
+        for (key, english, chinese) in root_modes {
+            let en = message_metadata(Locale::En, key).unwrap();
+            let zh = message_metadata(Locale::ZhCn, key).unwrap();
+            assert_eq!(
+                en.accelerator, english,
+                "English accelerator drifted for {key}"
+            );
+            assert_eq!(
+                zh.accelerator, chinese,
+                "Chinese accelerator drifted for {key}"
+            );
+            assert_eq!(en.group, Some("root_modes"));
+            assert_eq!(zh.group, en.group);
+        }
+
+        let document: serde_json::Value = serde_json::from_str(ZH_CN_JSON).unwrap();
+        assert_eq!(
+            document["messages"]["command.clean"],
+            serde_json::json!({
+                "forms": { "other": "清理" },
+                "placeholders": [],
+                "count": "none",
+                "accelerator": null,
+                "group": "root_modes",
+                "truncation": "never"
+            })
+        );
 
         let counted = message_metadata(Locale::En, "summary.item_count").unwrap();
         assert_eq!(counted.count, CountKind::Cardinal);
@@ -648,6 +753,132 @@ mod tests {
         );
         let path = message_metadata(Locale::ZhCn, "field.path").unwrap();
         assert_eq!(path.truncation, TruncationContract::UserDataVisualOnly);
+    }
+
+    #[test]
+    fn canonical_shell_v1_namespace_has_exact_copy_and_closed_metadata() {
+        let expected = [
+            ("shell.v1.help", "Help", "帮助"),
+            (
+                "shell.v1.persistence.saving",
+                "Saving language preference…",
+                "正在保存语言偏好…",
+            ),
+            (
+                "shell.v1.persistence.unavailable",
+                "Language preference was not changed. Close Settings, check the presentation settings file, and try again.",
+                "语言偏好未更改。请关闭设置、检查显示设置文件后重试。",
+            ),
+            ("shell.v1.route.dismiss", "Dismiss", "关闭"),
+            (
+                "shell.v1.route.error",
+                "Could not change destination. The current page remains active.",
+                "无法切换目标页面；当前页面保持不变。",
+            ),
+            ("shell.v1.settings.action", "Language", "语言"),
+            ("shell.v1.settings.cancel", "Cancel", "取消"),
+            (
+                "shell.v1.settings.instruction",
+                "Choose a language, then press Enter to save.",
+                "选择语言，然后按 Enter 保存。",
+            ),
+            ("shell.v1.settings.option.en", "English", "英语"),
+            (
+                "shell.v1.settings.option.zh_cn",
+                "Simplified Chinese",
+                "简体中文",
+            ),
+            ("shell.v1.settings.save", "Save", "保存"),
+            ("shell.v1.settings.saving", "Saving", "正在保存"),
+            ("shell.v1.settings.title", "Language settings", "语言设置"),
+            (
+                "shell.v1.store.loading",
+                "Loading presentation settings…",
+                "正在加载显示设置…",
+            ),
+            (
+                "shell.v1.store.unavailable.detail",
+                "DevSweep could not safely read the presentation settings file. Existing bytes were preserved.",
+                "DevSweep 无法安全读取显示设置文件；现有字节已保留。",
+            ),
+            (
+                "shell.v1.store.unavailable.recovery",
+                "Close DevSweep, check the file, and try again.",
+                "请关闭 DevSweep、检查该文件后重试。",
+            ),
+            (
+                "shell.v1.store.unavailable.title",
+                "Presentation settings unavailable",
+                "显示设置不可用",
+            ),
+            (
+                "shell.v1.supporting",
+                "Supporting destinations",
+                "支持目的地",
+            ),
+            ("shell.v1.supporting.history", "History", "历史"),
+            ("shell.v1.supporting.protection", "Protection", "保护"),
+            ("shell.v1.supporting.rules", "Rules", "规则"),
+            (
+                "shell.v1.workbench",
+                "Cleanup plan workbench",
+                "清理计划工作区",
+            ),
+        ];
+        assert_eq!(
+            expected.map(|(key, _, _)| key),
+            SHELL_V1_KEYS,
+            "the versioned shell namespace must change deliberately"
+        );
+        for (locale, expected_index) in [(Locale::En, 1_usize), (Locale::ZhCn, 2_usize)] {
+            let catalogue = catalogue(locale);
+            let actual_keys = catalogue
+                .messages
+                .keys()
+                .filter(|key| key.starts_with("shell.v1."))
+                .map(String::as_str)
+                .collect::<Vec<_>>();
+            assert_eq!(actual_keys, SHELL_V1_KEYS);
+            for entry in expected {
+                let key = entry.0;
+                let expected_text = if expected_index == 1 {
+                    entry.1
+                } else {
+                    entry.2
+                };
+                assert_eq!(catalogue.render(key, &[], None).unwrap(), expected_text);
+                let message = &catalogue.messages[key];
+                assert_eq!(
+                    message.forms.keys().map(String::as_str).collect::<Vec<_>>(),
+                    ["other"]
+                );
+                assert!(message.placeholders.is_empty());
+                assert_eq!(message.count, CountKind::None);
+                assert_eq!(message.accelerator, None);
+                assert_eq!(message.group, None);
+                assert_eq!(message.truncation, TruncationContract::Never);
+            }
+        }
+    }
+
+    #[test]
+    fn catalogue_schema_rejects_unknown_fields_and_duplicate_placeholders() {
+        let unknown_root = EN_JSON.replace(
+            "\"locale\": \"en\",",
+            "\"locale\": \"en\", \"unknown\": true,",
+        );
+        assert!(Catalogue::parse(&unknown_root).is_err());
+        let unknown_message = EN_JSON.replacen(
+            "\"count\": \"none\",",
+            "\"count\": \"none\", \"unknown\": true,",
+            1,
+        );
+        assert!(Catalogue::parse(&unknown_message).is_err());
+        let duplicate_placeholder = EN_JSON.replace(
+            "\"placeholders\": [\"detail\"]",
+            "\"placeholders\": [\"detail\", \"detail\"]",
+        );
+        assert!(Catalogue::parse(&duplicate_placeholder).is_err());
     }
 
     #[test]
@@ -671,6 +902,13 @@ mod tests {
     fn duplicate_accelerators_are_rejected_within_one_group() {
         let invalid = EN_JSON.replace("\"accelerator\": \"P\"", "\"accelerator\": \"S\"");
         assert!(Catalogue::parse(&invalid).is_err());
+
+        let missing_group = EN_JSON.replace(
+            "\"accelerator\": \"C\", \"group\": \"root_modes\"",
+            "\"accelerator\": \"C\", \"group\": null",
+        );
+        assert!(Catalogue::parse(&missing_group).is_err());
+        assert!(Catalogue::parse(ZH_CN_JSON).is_ok());
     }
 
     #[test]

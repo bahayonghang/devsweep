@@ -1,0 +1,8 @@
+SEAM needle=debug_native_fault_mode target=desktop/dist found=False
+SEAM needle=debug_native_fault_mode target=target/release/devsweep-desktop.exe found=False
+SEAM needle=DEVSWEEP_TASK_NATIVE_FAULT target=desktop/dist found=False
+SEAM needle=DEVSWEEP_TASK_NATIVE_FAULT target=target/release/devsweep-desktop.exe found=False
+SEAM needle=route_cancel_once target=desktop/dist found=False
+SEAM needle=route_cancel_once target=target/release/devsweep-desktop.exe found=False
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe bytes=9795072 sha256=E30AC97FB4EF8FA12BA41C415A6E66A7E36A8B9EEA58FD8920F9883E3F41C418 modified=2026-08-30T16:40:46.8279036+08:00
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.2.0_x64-setup.exe bytes=3121609 sha256=B9E3191786D575D7FBFC5D594E7A0FA8CD53E4D00ECCD7DD5D38DB72B3E9E2C5 modified=2026-08-30T16:40:45.8540949+08:00

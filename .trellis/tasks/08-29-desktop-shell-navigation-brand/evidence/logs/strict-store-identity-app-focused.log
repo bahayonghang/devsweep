@@ -1,0 +1,11 @@
+command: rtk npm test -- src/App.test.tsx
+working_directory: D:\Documents\Code\Rust\Exp\devsweep\desktop
+exit_code: 0
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/App.test.tsx (22 tests) 2908ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  449ms
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  11:53:59
+   Duration  4.58s (transform 129ms, setup 118ms, collect 243ms, tests 2.91s, environment 419ms, prepare 56ms)

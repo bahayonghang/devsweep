@@ -1,0 +1,7 @@
+COMMAND=release string audit after rtk just desktop-build
+RESULT=FAIL
+debug_native_fault_mode absent from desktop/dist and target/release/devsweep-desktop.exe
+DEVSWEEP_TASK_NATIVE_FAULT absent from desktop/dist and target/release/devsweep-desktop.exe
+route_cancel_once present in the release artifact
+DIAGNOSIS=The debug command and environment opt-in were correctly absent, but ShellRouteCoordinatorAdapter.setNativeFaultMode still compiled its closed debug mode comparison into the production web bundle.
+REPAIR=Gate the adapter comparison itself behind import.meta.env.DEV so Vite removes the one-shot recognition branch from production output.

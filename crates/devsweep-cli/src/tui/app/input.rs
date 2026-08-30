@@ -12,6 +12,10 @@ impl App {
             return self.request_quit();
         }
 
+        if self.language_settings.open {
+            return self.handle_language_settings_key(key);
+        }
+
         if self.filter_active {
             return self.handle_filter_key(key);
         }
@@ -56,6 +60,43 @@ impl App {
                         "Cleanup is active; scan requests are disabled until it finishes",
                     );
                     return Vec::new();
+                }
+                if self.pending_scan_restart {
+                    self.log_entry(
+                        AppLogLevel::Info,
+                        AppLogSource::Scan,
+                        None,
+                        None,
+                        "Replacement scan is already waiting for prior work to join",
+                    );
+                    return Vec::new();
+                }
+                let active = self
+                    .jobs
+                    .iter()
+                    .filter(|job| job.status.is_active())
+                    .map(|job| job.id)
+                    .collect::<Vec<_>>();
+                if !active.is_empty() {
+                    self.pending_scan_restart = true;
+                    let mut effects = Vec::new();
+                    for job_id in active {
+                        if self.transition_job(
+                            job_id,
+                            JobStatus::Cancelling,
+                            "Cancellation requested; waiting to join before replacement scan.",
+                        ) {
+                            effects.push(Effect::CancelJob { job_id });
+                        }
+                    }
+                    self.log_entry(
+                        AppLogLevel::Info,
+                        AppLogSource::Scan,
+                        None,
+                        None,
+                        "Replacement scan queued after cancel and join",
+                    );
+                    return effects;
                 }
                 let job_id = self.start_scan_job("Scan requested");
                 vec![Effect::StartScan { job_id }]
@@ -121,6 +162,13 @@ impl App {
             }
             KeyCode::Char('?') => {
                 self.overlay = Overlay::Help;
+                Vec::new()
+            }
+            KeyCode::Char('p') => {
+                self.language_settings.open = true;
+                self.language_settings.selected = self.shell.locale;
+                self.language_settings.pending_request = None;
+                self.language_settings.failure = None;
                 Vec::new()
             }
             KeyCode::Char('/') => {
@@ -219,6 +267,52 @@ impl App {
                     self.toggle_selected_target();
                 }
                 Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn handle_language_settings_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        if self.language_settings.pending_request.is_some() {
+            return Vec::new();
+        }
+        match key.code {
+            KeyCode::Esc => {
+                self.language_settings.open = false;
+                self.language_settings.selected = self.shell.locale;
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            KeyCode::Left
+            | KeyCode::Up
+            | KeyCode::Right
+            | KeyCode::Down
+            | KeyCode::Tab
+            | KeyCode::BackTab => {
+                self.language_settings.selected = match self.language_settings.selected {
+                    Locale::En => Locale::ZhCn,
+                    Locale::ZhCn => Locale::En,
+                };
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            KeyCode::Char('e') => {
+                self.language_settings.selected = Locale::En;
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            KeyCode::Char('z') => {
+                self.language_settings.selected = Locale::ZhCn;
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            KeyCode::Enter => {
+                let request_id = self.next_language_request_id;
+                self.next_language_request_id = self.next_language_request_id.saturating_add(1);
+                let locale = self.language_settings.selected;
+                self.language_settings.pending_request = Some(request_id);
+                self.language_settings.failure = None;
+                vec![Effect::SavePresentationLanguage { request_id, locale }]
             }
             _ => Vec::new(),
         }

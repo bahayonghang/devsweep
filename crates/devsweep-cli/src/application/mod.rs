@@ -40,14 +40,17 @@ pub(crate) fn run() -> Result<()> {
         terminate(&cli, error);
     }
 
-    let locale = resolve_locale(cli.explicit_locale(), windows_user_locale().as_deref());
+    let explicit_locale = cli.explicit_locale();
     let result = if cli.is_bare() {
-        // The shell-owned language adapter will consume this session locale.
-        // This task deliberately does not persist it or modify the TUI.
-        crate::tui::run().map_err(|error| {
+        // The shell owns persisted interactive preference precedence. The CLI
+        // passes only the original parsed option and never reparses argv.
+        crate::tui::run(explicit_locale).map_err(|error| {
             ApplicationError::failed("tui_failed", format!("terminal UI failed: {error:#}"))
         })
     } else {
+        // Non-interactive commands never read persisted presentation settings.
+        let locale =
+            resolve_non_interactive_locale(explicit_locale, windows_user_locale().as_deref());
         commands::dispatch(&cli, locale)
     };
 
@@ -55,6 +58,13 @@ pub(crate) fn run() -> Result<()> {
         terminate(&cli, error);
     }
     Ok(())
+}
+
+fn resolve_non_interactive_locale(
+    explicit: Option<crate::i18n::Locale>,
+    windows_locale: Option<&str>,
+) -> crate::i18n::Locale {
+    resolve_locale(explicit, windows_locale)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -205,6 +215,25 @@ mod tests {
             )
             .is_ok()
         );
+    }
+
+    #[test]
+    fn non_interactive_resolution_remains_explicit_then_os_then_english() {
+        use crate::i18n::Locale;
+
+        assert_eq!(
+            resolve_non_interactive_locale(Some(Locale::En), Some("zh-CN")),
+            Locale::En
+        );
+        assert_eq!(
+            resolve_non_interactive_locale(None, Some("zh-SG")),
+            Locale::ZhCn
+        );
+        assert_eq!(
+            resolve_non_interactive_locale(None, Some("zh-TW")),
+            Locale::En
+        );
+        assert_eq!(resolve_non_interactive_locale(None, None), Locale::En);
     }
 
     #[test]

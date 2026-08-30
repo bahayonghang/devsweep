@@ -1,0 +1,14 @@
+{
+  "time": "2026-08-30T17:40:52.5105520+08:00",
+  "agent_browser_processes": [
+    {
+      "ProcessId": 64128,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T17:40:03.839041+08:00",
+      "CommandLine": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\""
+    }
+  ],
+  "port_9335_listeners": 0,
+  "devsweep_processes": []
+}

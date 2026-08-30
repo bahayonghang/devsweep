@@ -1,0 +1,9 @@
+HOST_SYSTEM_DPI=96
+EXECUTABLE=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe
+ISOLATED_LOCALAPPDATA=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-source-native-20260830\desktop\isolated-localappdata
+FIRST_PID=7036 WINDOW_DPI=120 NATIVE_SCALE_PERCENT=125
+CAPTURE locale=en scale=125 requested_css=390x900 target_physical=488x1125 actual_physical=488x1125
+CAPTURE locale=en scale=125 requested_css=800x900 target_physical=1000x1125 actual_physical=1000x1125
+CAPTURE locale=en scale=125 requested_css=1024x900 target_physical=1280x1125 actual_physical=1280x1125
+CAPTURE locale=en scale=125 requested_css=1440x900 target_physical=1800x1125 actual_physical=1800x1125
+CAPTURE keyboard_focus scale=125 requested_css=390x900 actual_physical=488x1125

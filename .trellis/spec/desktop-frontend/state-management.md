@@ -2,9 +2,58 @@
 
 ## Owner
 
-`desktop/src/state/` owns the reducer and workflow invariants. Components render
-state and dispatch intents. `desktop/src/api/` owns all Tauri calls and event
-subscription. No component may call `invoke` or `listen` directly.
+`desktop/src/app-shell/` owns typed route registration, focus restoration, and
+shell presentation state. `desktop/src/state/operation-coordinator.ts` owns the
+frontend heavy-operation lifecycle seam. Each mode owns its reducer beneath its
+mode directory; Clean's existing reducer remains under `desktop/src/state/` and
+retains every authority invariant below. Components render state and dispatch
+intents. `desktop/src/api/` owns Tauri calls and event subscription. No component
+may call `invoke` or `listen` directly.
+
+Shell state contains no targets, plans, selections, digests, confirmation
+authority, or mode results. Unavailable mode registrations are absent rather
+than represented by disabled placeholder state.
+
+## Shell Routing And Mode State
+
+- Primary mode tags are the closed set Clean, Software, Optimize, Analyze, and
+  Status. Protection, Rules, History, and Settings are supporting destinations.
+- One typed registry owns route ids, paths, localized label keys, availability,
+  and render adapters. Deep-link parsing fails closed to the first available
+  route and never materializes an unavailable page.
+- Browser history/back uses the same registry and does not recreate domain
+  state. Each registered mode keeps its own state across route and language
+  changes.
+- Route transitions capture the activating navigation element and restore focus
+  after composition. Closing settings restores its opener.
+
+## Operation Coordinator
+
+The coordinator accepts only a typed operation kind, opaque operation id,
+cancellation callback, and join promise. It serializes Scan, Analyze, Software,
+Optimize, and live Status work. Switching mode, closing/unmounting, or starting
+another heavy operation requests cancellation and awaits join before new work
+starts. Rapid requests are ordered; stale completions/events from superseded ids
+are ignored. Close drains owned work. The coordinator never grants domain
+authority or sees plans, digests, selected paths, commands, or audit records.
+
+## Presentation Settings
+
+Core is the sole persisted-state owner. `PresentationSettingsV1` stores only a
+closed `PresentationLanguageTag` (`en` or `zh-CN`) at
+`%LOCALAPPDATA%\DevSweep\settings\presentation-v1.json` as exact closed JSON
+`{"schema_version":1,"language":"en"|"zh-CN"|null}`. The core store uses an
+OS-visible cross-process transaction lock, same-directory flushed temporary
+file, and atomic replace. Missing `LOCALAPPDATA` makes persistence unavailable.
+Invalid UTF-8/JSON, unknown fields/tags, and unknown/newer versions preserve the
+original bytes, report unavailable, and are never overwritten or mapped to
+English.
+
+Desktop and TUI adapters exhaustively map the two core tags to the CLI-owned
+runtime locale/catalogue and pure precedence resolver. Core never imports CLI.
+The persisted selection affects interactive presentation only; explicit CLI
+`--language` remains session-only, and JSON/NDJSON/machine schemas never consult
+the persisted UI setting.
 
 ## Workflow
 
@@ -58,6 +107,13 @@ scan result or backend error remains authoritative.
   actions around each call; do not store promises in state.
 - Disable conflicting commands while scanning, dry-running, or executing.
 - Ignore late, duplicate, out-of-order, or mismatched progress and terminal events.
+- Register every heavy mode effect with the shared coordinator before invoking
+  its mode-owned service. Cancellation requests ownership; only joined terminal
+  settlement releases the permit. A route change is not proof of cancellation.
+- On language change, persist through the single core-backed command, update the
+  presentation adapter only after a successful write, and retain all mode-local
+  workflow state. Persistence failure is visible and cannot overwrite unreadable
+  bytes.
 - A channel decode failure requests cancellation but keeps the run active until
   its command promise settles. Only then may the reducer store a failed stopped
   preview, preventing a replacement scan from racing the still-running backend.
@@ -169,3 +225,11 @@ selection, inspect-only rejection, digest invalidation, stale-confirmation
 recovery, and execution gating. App/API tests use an injected bridge and must
 cover progress, cancel, structured errors, dry-run, confirmation, and result
 rendering without real cleanup side effects.
+
+Shell/coordinator tests additionally cover typed route/deep-link/back behavior,
+unavailable-route absence, focus restore, mode-local state retention across
+locale changes, rapid switching, cancel request, join-before-start, stale
+events/completions, unmount/close, and zero surviving owned work. Store contract
+tests cover exact V1 bytes/path, both frontend adapters, concurrent writers,
+missing `LOCALAPPDATA`, corrupt/unknown/newer byte preservation, exhaustive tag
+mapping, and machine-output isolation.

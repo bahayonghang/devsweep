@@ -1,0 +1,35 @@
+{
+  "time": "2026-08-30T18:02:08.1909993+08:00",
+  "note": "Initial launch command started the process, then had a PowerShell Where-Object predicate parse error before interaction; this same-run follow-up records identity without restarting.",
+  "pid": 43992,
+  "start_time": "2026-08-30T18:01:30.5499597+08:00",
+  "hwnd": "0x114081A",
+  "title": "devsweep",
+  "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+  "size": 14758912,
+  "sha256": "5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9",
+  "fault_env": "route_cancel_once",
+  "localappdata": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\debug\\localappdata",
+  "initial_settings_files": [],
+  "cdp_port": 9336,
+  "listener": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 9336,
+    "OwningProcess": 58008
+  },
+  "port_owner": {
+    "ProcessId": 58008,
+    "ParentProcessId": 43992,
+    "Name": "msedgewebview2.exe",
+    "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+    "CreationDate": "2026-08-30T18:01:30.866707+08:00",
+    "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --embedded-browser-webview=1 --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --noerrdialogs --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=9336 --lang=en-US --mojo-named-platform-channel-pipe=43992.32684.1927382377024016728 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+  },
+  "vite_listener": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 4180,
+      "OwningProcess": 39856
+    }
+  ]
+}

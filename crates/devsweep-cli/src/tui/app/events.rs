@@ -2,6 +2,7 @@ use crossterm::event::KeyEvent;
 
 use crate::{
     execution::{ExecutionReport, ExecutionTargetStatus},
+    i18n::Locale,
     inventory::InventoryReport,
     model::{CleanupPlan, ScanHealth, TargetId},
     scan::ScanPhase,
@@ -32,11 +33,22 @@ pub(in crate::tui) enum Effect {
     CancelJob {
         job_id: JobId,
     },
+    SavePresentationLanguage {
+        request_id: u64,
+        locale: Locale,
+    },
     Quit,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::tui) enum WorkerEvent {
+    PresentationLanguageSaved {
+        request_id: u64,
+        locale: Locale,
+    },
+    PresentationLanguageSaveFailed {
+        request_id: u64,
+    },
     ScanStarted {
         job_id: JobId,
     },

@@ -1,0 +1,148 @@
+﻿{
+    "generated_at":  "2026-08-30T20:38:04.1462198+08:00",
+    "decision":  "rejected_incomplete_run2",
+    "wrapper_observed_exit_code":  1,
+    "helper_exit_code":  1,
+    "transcript_internal_exit_sentinel":  99,
+    "transcript":  {
+                       "path":  "02-native-release-rebind.log",
+                       "lines":  45,
+                       "bytes":  4558,
+                       "sha256":  "FAE0E9A8F4EBFAEB1F3BF057F14EBEBB40662A56BD2D75E0999948A73AA2C2C1"
+                   },
+    "cdp":  {
+                "path":  "native-release/cdp-messages.jsonl",
+                "lines":  1,
+                "bytes":  156,
+                "sha256":  "BA694D1119970AB4DCE3628B9AA07C75604BD8BED74758E27EA01A370DB4B22C"
+            },
+    "missing_expected_outputs":  [
+                                     "native-release/shell-tray-wnd-uia-raw.json",
+                                     "native-release/screenshots/*.png",
+                                     "native-release/localappdata/DevSweep/settings/presentation-v1.json"
+                                 ],
+    "old_run1_raw_02_exists":  false,
+    "artifacts":  [
+                      {
+                          "path":  "target/release/devsweep-desktop.exe",
+                          "bytes":  9827328,
+                          "sha256":  "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20"
+                      },
+                      {
+                          "path":  "target/debug/devsweep-desktop.exe",
+                          "bytes":  14758912,
+                          "sha256":  "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5"
+                      },
+                      {
+                          "path":  "target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe",
+                          "bytes":  3152372,
+                          "sha256":  "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328"
+                      }
+                  ],
+    "files":  [
+                  {
+                      "path":  "00-wrapper-command.txt",
+                      "bytes":  448,
+                      "lines":  1,
+                      "sha256":  "463C86A9B42AD9FD1F7422FA20072C3332C760090191C626A12D4CA5054BE6B3"
+                  },
+                  {
+                      "path":  "01-preflight-hashes.json",
+                      "bytes":  1384,
+                      "lines":  32,
+                      "sha256":  "D3670832B9E170E527EF520019CE39A4C7E1FFE4F372174C01BD4EC7170E4A5B"
+                  },
+                  {
+                      "path":  "02-native-release-rebind.log",
+                      "bytes":  4558,
+                      "lines":  45,
+                      "sha256":  "FAE0E9A8F4EBFAEB1F3BF057F14EBEBB40662A56BD2D75E0999948A73AA2C2C1"
+                  },
+                  {
+                      "path":  "03-post-run-hashes.json",
+                      "bytes":  11084,
+                      "lines":  102,
+                      "sha256":  "2D3C2D4B6ECD39A47EF9413A850C7DB0EFE2B26D98B9AAAC3C416BB9D2DF7722"
+                  },
+                  {
+                      "path":  "04-observed-exit-code.md",
+                      "bytes":  492,
+                      "lines":  10,
+                      "sha256":  "38DFE2D5F91D59CB53206087AB754FA58DE9E48EBA568EDDA07529B2DF15AB01"
+                  },
+                  {
+                      "path":  "05-residual-graceful-close.log",
+                      "bytes":  1429,
+                      "lines":  26,
+                      "sha256":  "7B78714431C9A9B1D0A321954634E8DD744C420B1D1D4948EFAD9EBFB867D0F6"
+                  },
+                  {
+                      "path":  "06-final-readonly-audit.log",
+                      "bytes":  4627,
+                      "lines":  92,
+                      "sha256":  "E55B5356D8F3E46DE3C5815C836F5C37D2B3BC17FC868EF64D6B45AF4EB18D1A"
+                  },
+                  {
+                      "path":  "final-readonly-audit.ps1",
+                      "bytes":  3687,
+                      "lines":  51,
+                      "sha256":  "DFE0131FC1E2C972FB56D8BCA03C080A7B4FB0B39C795C907DBE3D24065A804C"
+                  },
+                  {
+                      "path":  "generate-manifest.ps1",
+                      "bytes":  3618,
+                      "lines":  86,
+                      "sha256":  "763DEFA1C09A6B70AB96162BF378343D6DFC6C3FEBAFF4D8B675452D03E8DE20"
+                  },
+                  {
+                      "path":  "native-release/cdp-messages.jsonl",
+                      "bytes":  156,
+                      "lines":  1,
+                      "sha256":  "BA694D1119970AB4DCE3628B9AA07C75604BD8BED74758E27EA01A370DB4B22C"
+                  },
+                  {
+                      "path":  "native-release/verification.json",
+                      "bytes":  744357,
+                      "lines":  4359,
+                      "sha256":  "49C5102FC34C3383C592DE9CC95320A296054405A04F40655C2DD7A5869EA0CF"
+                  },
+                  {
+                      "path":  "release-rebind-run2.ps1",
+                      "bytes":  37461,
+                      "lines":  637,
+                      "sha256":  "50DB70FD6F9596F2CFAAAA6F7CE462CBEE2F696D89ECEADDAC6C88A60EE38F16"
+                  },
+                  {
+                      "path":  "residual-graceful-close.ps1",
+                      "bytes":  2726,
+                      "lines":  41,
+                      "sha256":  "5B6D87A91FC62C6F4EFA0287162ED0FD2D7DCE7F83E00459AC42E0DF57E95AF6"
+                  },
+                  {
+                      "path":  "run2-wrapper.ps1",
+                      "bytes":  7099,
+                      "lines":  125,
+                      "sha256":  "6A6636434BEC51DDA511C0BFD875621D92E47B7BBE8AFD279096871B85B17F56"
+                  },
+                  {
+                      "path":  "verification.md",
+                      "bytes":  4862,
+                      "lines":  85,
+                      "sha256":  "414963F823A3E2A26A8084E7C2EF9F4B04FA8A247FECFAA54F27AA6B6C9CE300"
+                  }
+              ],
+    "external_reports":  [
+                             {
+                                 "path":  ".trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md",
+                                 "bytes":  29708,
+                                 "lines":  355,
+                                 "sha256":  "6C62CE9B23A63FA995797CE9F50E5A9FF68A0949120DB62E9566E9B0ED5762F6"
+                             },
+                             {
+                                 "path":  ".trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-artifact-rebind-92c-20260830/verification.md",
+                                 "bytes":  4864,
+                                 "lines":  91,
+                                 "sha256":  "67A8A247BB37DF088D1E0891A779C35361AA7EA02B6BF1C7442D8EF361DA023B"
+                             }
+                         ]
+}

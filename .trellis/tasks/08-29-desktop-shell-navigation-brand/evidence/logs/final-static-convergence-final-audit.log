@@ -1,0 +1,39 @@
+**********************
+PowerShell transcript start
+Start time: 20260830133440
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$log = '.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/logs/final-static-convergence-final-audit.log'
+Start-Transcript -Path $log -Force
+rtk git diff --check
+$diffCode = $LASTEXITCODE
+"git_diff_check_exit=$diffCode"
+python ./.trellis/scripts/task.py validate .trellis/tasks/08-29-desktop-shell-navigation-brand
+$validateCode = $LASTEXITCODE
+"task_validate_exit=$validateCode"
+Stop-Transcript | Out-Null
+if ($diffCode -ne 0) { exit $diffCode }
+exit $validateCode
+Process ID: 70032
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/logs/final-static-convergence-final-audit.log
+› Ask Codex to do anything
+git_diff_check_exit=0
+› Ask Codex to do anything
+task_validate_exit=0
+**********************
+PowerShell transcript end
+End time: 20260830133440
+**********************

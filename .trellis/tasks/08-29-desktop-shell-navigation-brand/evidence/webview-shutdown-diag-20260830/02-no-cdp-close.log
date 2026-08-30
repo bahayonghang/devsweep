@@ -1,0 +1,27 @@
+**********************
+PowerShell transcript start
+Start time: 20260830212121
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -ExecutionPolicy Bypass -File .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/webview-shutdown-diag-20260830/02-no-cdp-close.ps1
+Process ID: 67956
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+LAUNCH pid=44252 hwnd=0x23E1392 webviews=5 cim_ms=755
+CLOSE close_main_window=True wait_for_exit=True main_elapsed_ms=72
+SAMPLE i=1 after_ms=233 main=0 get_process_webview=25 owned=0 cheap_ms=48 identity_ms=755
+FINAL owned=0
+**********************
+PowerShell transcript end
+End time: 20260830212127
+**********************

@@ -1,0 +1,45 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260830203231
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\run2-wrapper.ps1 -RepositoryRoot D:\Documents\Code\Rust\Exp\devsweep -RunRoot D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830 -FirstPort 9381 -RestartPort 9382
+Process ID: 51512
+PSVersion: 5.1.26100.9278
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9278
+BuildVersion: 10.0.26100.9278
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+RUN2_WRAPPER_START=2026-08-30T20:32:31.5158411+08:00
+REPOSITORY_ROOT=D:\Documents\Code\Rust\Exp\devsweep
+RUN_ROOT=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830
+HELPER_PATH=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\release-rebind-run2.ps1
+WRAPPER_SHA256=6A6636434BEC51DDA511C0BFD875621D92E47B7BBE8AFD279096871B85B17F56
+HELPER_SHA256=50DB70FD6F9596F2CFAAAA6F7CE462CBEE2F696D89ECEADDAC6C88A60EE38F16
+PORTS=9381,9382
+PREFLIGHT_ARTIFACT name=release bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 matches=True
+PREFLIGHT_ARTIFACT name=debug bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5 matches=True
+PREFLIGHT_ARTIFACT name=nsis bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328 matches=True
+PREFLIGHT_RESIDUE main=0 webview=0 port1=0 port2=0 vite=0
+HELPER_COMMAND=powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\release-rebind-run2.ps1" -RepositoryRoot "D:\Documents\Code\Rust\Exp\devsweep" -EvidenceRoot "D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\native-release" -FirstPort 9381 -RestartPort 9382 -ExpectedHash 92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20
+[2026-08-30T20:32:38.4657501+08:00] HELPER_START release=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe expected_hash=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 localappdata=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\native-release\localappdata cdp_log=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\native-release\cdp-messages.jsonl
+[2026-08-30T20:32:50.7952446+08:00] FINAL_AUDIT state=failed release_hash=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 main=1 webview=5 port1=1 port2=0 store_lock_temp= cdp_lines=1 cdp_sha256=BA694D1119970AB4DCE3628B9AA07C75604BD8BED74758E27EA01A370DB4B22C
+HELPER_EXIT_CODE=1
+POSTFLIGHT_ARTIFACT name=release bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 matches=True
+POSTFLIGHT_ARTIFACT name=debug bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5 matches=True
+POSTFLIGHT_ARTIFACT name=nsis bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328 matches=True
+POSTFLIGHT_RESIDUE main=1 webview=5 port1=1 port2=0 vite=0
+PS>TerminatingError(run2-wrapper.ps1): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: RUN2_FAILURE=native release helper exited 1
+at <ScriptBlock>, D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-artifact-rebind-92c-run2-20260830\run2-wrapper.ps1: line 109"
+EXIT_CODE=99
+RUN2_WRAPPER_FINISHED=2026-08-30T20:32:56.7578325+08:00
+**********************
+Windows PowerShell transcript end
+End time: 20260830203256
+**********************

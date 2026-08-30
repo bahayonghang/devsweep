@@ -96,6 +96,15 @@ impl App {
             .any(|job| job.kind == JobKind::Inventory && job.status.is_active())
     }
 
+    pub(super) fn maybe_start_pending_scan(&mut self) -> Vec<Effect> {
+        if !self.pending_scan_restart || self.has_active_mutation_job() {
+            return Vec::new();
+        }
+        self.pending_scan_restart = false;
+        let job_id = self.start_scan_job("Replacement scan started after prior work joined");
+        vec![Effect::StartScan { job_id }]
+    }
+
     pub(super) fn log_ignored_worker_event(&mut self, job_id: JobId, event: &str) {
         self.log_job(
             AppLogLevel::Warning,

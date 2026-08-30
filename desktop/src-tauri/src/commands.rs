@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::Result;
 use devsweep_core::{
@@ -7,6 +10,10 @@ use devsweep_core::{
     },
     model::{TargetId, UntrustedPlan},
     plan::validate_plan,
+    presentation_settings::{
+        PresentationLanguageTag, PresentationSettingsV1, load_presentation_settings,
+        save_presentation_settings,
+    },
     scan::ScanOptions,
 };
 use serde::Serialize;
@@ -22,6 +29,62 @@ use crate::{
 pub(crate) struct DryRunOutcome {
     pub report: ExecutionReport,
     pub digest: ConfirmationDigest,
+}
+
+/// Serializes settings calls within this process while the core store provides
+/// the cross-process transaction lock.
+#[derive(Clone, Default)]
+pub(crate) struct PresentationSettingsCoordinator(Arc<Mutex<()>>);
+
+#[tauri::command]
+pub(crate) async fn presentation_settings_get(
+    state: State<'_, PresentationSettingsCoordinator>,
+) -> Result<PresentationSettingsV1, CommandError> {
+    let coordinator = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = coordinator
+            .0
+            .lock()
+            .map_err(|_| CommandError::io("presentation settings coordinator is poisoned"))?;
+        load_presentation_settings().map_err(CommandError::io)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub(crate) async fn presentation_settings_set(
+    state: State<'_, PresentationSettingsCoordinator>,
+    language: Option<PresentationLanguageTag>,
+) -> Result<PresentationSettingsV1, CommandError> {
+    let coordinator = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = coordinator
+            .0
+            .lock()
+            .map_err(|_| CommandError::io("presentation settings coordinator is poisoned"))?;
+        let settings = PresentationSettingsV1 { language };
+        save_presentation_settings(settings).map_err(CommandError::io)?;
+        Ok(settings)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[cfg(debug_assertions)]
+fn debug_native_fault_mode_from(value: Option<std::ffi::OsString>) -> &'static str {
+    match value.as_deref().and_then(std::ffi::OsStr::to_str) {
+        Some("route_cancel_once") => "route_cancel_once",
+        _ => "disabled",
+    }
+}
+
+/// Closed native-evidence seam. The command is absent from release builds and
+/// cannot receive paths, commands, argv, or cleanup authority.
+#[cfg(debug_assertions)]
+#[tauri::command]
+pub(crate) fn debug_native_fault_mode() -> &'static str {
+    debug_native_fault_mode_from(std::env::var_os("DEVSWEEP_TASK_NATIVE_FAULT"))
 }
 
 pub(crate) trait ProtectionStore {
@@ -203,6 +266,41 @@ mod tests {
             *self.0.lock().expect("memory protection lock") = paths;
             self.get()
         }
+    }
+
+    #[test]
+    fn presentation_setting_ipc_payload_is_locale_only_and_closed() {
+        assert_eq!(
+            serde_json::to_value(PresentationSettingsV1 {
+                language: Some(PresentationLanguageTag::ZhCn),
+            })
+            .unwrap(),
+            serde_json::json!({ "language": "zh-CN" })
+        );
+        assert!(
+            serde_json::from_value::<PresentationSettingsV1>(
+                serde_json::json!({ "language": "en", "future": true })
+            )
+            .is_err()
+        );
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn debug_native_fault_mode_is_exact_and_closed() {
+        assert_eq!(debug_native_fault_mode_from(None), "disabled");
+        assert_eq!(
+            debug_native_fault_mode_from(Some("route_cancel_once".into())),
+            "route_cancel_once"
+        );
+        assert_eq!(
+            debug_native_fault_mode_from(Some("route_cancel_always".into())),
+            "disabled"
+        );
+        assert_eq!(
+            debug_native_fault_mode_from(Some("ROUTE_CANCEL_ONCE".into())),
+            "disabled"
+        );
     }
 
     #[test]

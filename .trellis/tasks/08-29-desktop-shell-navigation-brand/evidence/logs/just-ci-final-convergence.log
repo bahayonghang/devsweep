@@ -1,0 +1,79 @@
+cargo fmt --all -- --check
+cargo update --offline --package devsweep-core --package devsweep-cli
+     Locking 0 packages to latest Rust 1.88.0 compatible versions
+note: pass `--verbose` to see 56 unchanged dependencies behind latest
+cargo check --workspace --locked --all-targets
+    Checking devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.95s
+cargo test --workspace --locked --all-targets
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+warning: linker stdout: 正在创建库 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.lib 和对象 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.exp
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `devsweep-desktop` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.70s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-bf9cd558e9784cd0.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-2851853c80183705.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-b7861cb533d0d237.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-b5bd3e48d18063b0.exe)
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-a415c73a15415fa1.exe)
+     Running tests\public_api.rs (target\debug\deps\public_api-621444cdd0b6dd0c.exe)
+     Running unittests src\lib.rs (target\debug\deps\devsweep_desktop_lib-f1a680e4b202b281.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep_desktop-df9db387bdfb4926.exe)
+cargo clippy --workspace --locked --all-targets -- -D warnings
+    Checking devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Checking devsweep-desktop v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.32s
+running 103 tests
+test application::commands::tests::frozen_module_tree_is_compiler_registered ... ok
+test application::output::tests::machine_error_envelope_has_stable_locale_neutral_fields ... ok
+test application::output::tests::broken_pipe_cancels_and_joins_without_another_write ... ok
+test application::output::tests::non_broken_write_failure_records_producer_error_and_joins ... ok
+test i18n::tests::binary_formatter_covers_boundaries_without_floating_point ... ok
+test application::tests::non_interactive_resolution_remains_explicit_then_os_then_english ... ok
+test application::commands::tests::staged_commands_fail_closed_instead_of_running_legacy_handlers ... ok
+test application::presentation::tests::renderer_tree_is_frozen_without_domain_implementations ... ok
+test application::tests::bare_invocation_requires_both_terminal_streams ... ok
+test application::tests::human_live_requires_stdout_tty_but_ndjson_does_not ... ok
+test i18n::tests::human_golden_fixtures_are_owned_by_the_canonical_catalogues ... ok
+test i18n::tests::locale_resolution_and_presentation_tag_boundary_are_closed ... ok
+test i18n::tests::long_user_data_is_returned_in_full_by_the_catalogue ... ok
+test application::cli::tests::cli_definition_is_valid ... ok
+test i18n::tests::duplicate_accelerators_are_rejected_within_one_group ... ok
+test i18n::tests::plural_selection_and_interpolation_are_locale_specific_and_injection_safe ... ok
+test application::cli::tests::repeated_roots_and_selections_preserve_command_line_order ... ok
+test i18n::tests::embedded_catalogues_have_exact_schema_parity ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test application::cli::tests::rescan_requires_one_project_containing_root ... ok
+test i18n::tests::shell_metadata_facade_exposes_exact_locale_specific_contracts ... ok
+test application::cli::tests::removed_roots_are_unknown_commands ... ok
+test tui::app::tests::cancellation_key_requests_active_job_cancellation ... ok
+test tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes ... ok
+test tui::app::tests::completed_scan_replaces_preview_and_reapplies_final_defaults ... ok
+test tui::app::tests::cancelling_job_ignores_late_progress_events ... ok
+test application::cli::tests::semantic_validation_rejects_machine_language_and_path_collisions ... ok
+test tui::app::tests::accepted_confirmation_keeps_explicit_fresh_target_selection ... ok
+test tui::app::tests::accepted_confirmation_executes_its_frozen_manifest ... ok
+test application::tests::chinese_help_detection_requires_an_explicit_supported_flag ... ok
+test tui::app::tests::completed_scan_keeps_partial_health_and_capacity_totals_in_state ... ok
+test application::cli::tests::english_and_chinese_references_exactly_match_the_clap_manifest ... ok
+test tui::app::tests::byte_summaries_count_duplicate_paths_once ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test application::cli::tests::built_tree_and_real_parser_preserve_inherited_language_semantics ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+test application::output::tests::output_files_use_exclusive_create_new_without_truncation ... ok
+test tui::app::tests::language_save_failure_stays_visible_without_changing_the_session_locale ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::quit_during_active_job_opens_confirm_instead_of_detaching ... ok
+test tui::app::tests::pycache_groups_collapse_without_changing_target_selection_or_identity ... ok
+test tui::app::tests::scan_progress_applies_latest_cumulative_partial_plan ... ok
+test tui::app::tests::stale_scan_updates_do_not_overwrite_newer_scan_results ... ok
+test tui::app::tests::startup_effects_request_an_initial_scan ... ok
+test tui::app::tests::startup_default_selection_follows_selected_by_default_even_for_self_targets ... ok
+test tui::app::tests::terminal_jobs_ignore_late_worker_events ... ok
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+... (285 lines truncated)
+[see remaining: tail -n +51 "$HOME/AppData/Local/rtk/tee/1788058456_just_ci.log"]

@@ -1,0 +1,35 @@
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ❯ src/lifecycle.test.ts (5 tests | 1 failed) 8ms
+   ✓ desktop lifecycle > decodes only the closed debug fault modes 1ms
+   ✓ desktop lifecycle > shares one drain and one destroy across duplicate close requests 1ms
+   × desktop lifecycle > awaits join and consumes cancellation failure before destroying the window 5ms
+     → expected { kind: 'status', id: 'active-close' } to be null
+   ✓ desktop lifecycle > retries only window destruction after a destroy failure 0ms
+   ✓ desktop lifecycle > keeps the debug route fault one-shot and otherwise delegates 1ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 60ms
+ ✓ src/app-shell/AppShell.test.tsx (11 tests) 775ms
+ ✓ src/App.test.tsx (29 tests) 3808ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  490ms
+   ✓ desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  308ms
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 50 passed (51)
+   Start at  16:04:40
+   Duration  6.13s (transform 275ms, setup 882ms, collect 684ms, tests 4.65s, environment 3.28s, prepare 323ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/lifecycle.test.ts > desktop lifecycle > awaits join and consumes cancellation failure before destroying the window
+AssertionError: expected { kind: 'status', id: 'active-close' } to be null
+- Expected: 
+null
++ Received: 
+{
+  "id": "active-close",
+  "kind": "status",
+}
+ ❯ src/lifecycle.test.ts:49:42
+     47|     await Promise.resolve();
+     48|     expect(destroyLastWindow).not.toHaveBeenCalled();
+     49|     expect(coordinator.activeIdentity()).toBeNull();
+       |                                          ^
+     50| 
+     51|     joined.resolve();
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

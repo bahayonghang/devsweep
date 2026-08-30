@@ -1,0 +1,6 @@
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe bytes=9827328 sha256=DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604 hash_length=64
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\debug\devsweep-desktop.exe bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5 hash_length=64
+ARTIFACT path=D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.2.0_x64-setup.exe bytes=3150790 sha256=029FFD2BB8EF563ADE98E290B0C2D33DAC05D8D67F0967C9B83D5F457B9CE8C4 hash_length=64
+RELEASE_SEAM_RG_EXIT=1 expected=1
+CAPABILITIES=core:event:allow-listen,core:event:allow-unlisten,core:window:allow-destroy
+CAPABILITY_COUNT=3

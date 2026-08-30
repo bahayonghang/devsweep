@@ -20,6 +20,27 @@ use devsweep_core::services::{
     CleanService, ExecutorCleanService, ScanServiceOutcome, ScanServiceRunOutcome,
 };
 
+#[test]
+fn presentation_effect_returns_typed_success_and_failure_without_stdout() {
+    let (worker_tx, worker_rx) = mpsc::channel();
+    dispatch_presentation_language(41, crate::i18n::Locale::ZhCn, &worker_tx, |_| Ok(()));
+    assert_eq!(
+        worker_rx.recv().unwrap(),
+        WorkerEvent::PresentationLanguageSaved {
+            request_id: 41,
+            locale: crate::i18n::Locale::ZhCn,
+        }
+    );
+
+    dispatch_presentation_language(42, crate::i18n::Locale::En, &worker_tx, |_| {
+        Err(anyhow::anyhow!("store refused unknown bytes"))
+    });
+    assert_eq!(
+        worker_rx.recv().unwrap(),
+        WorkerEvent::PresentationLanguageSaveFailed { request_id: 42 }
+    );
+}
+
 #[derive(Clone)]
 struct FakeScanService {
     partial: Option<CleanupPlan>,
@@ -69,6 +90,23 @@ impl ScanService for CanceledScanService {
         _cancel: Option<&Arc<FlagCancelObserver>>,
     ) -> Result<ScanServiceRunOutcome> {
         Ok(ScanServiceRunOutcome::Canceled)
+    }
+}
+
+#[derive(Clone)]
+struct CountingScanService {
+    invocations: Arc<AtomicUsize>,
+}
+
+impl ScanService for CountingScanService {
+    fn full_scan_with_cancel(
+        &self,
+        _options: &ScanOptions,
+        _progress: &mut dyn FnMut(ScanProgress),
+        _cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceOutcome> {
+        self.invocations.fetch_add(1, Ordering::SeqCst);
+        Ok(complete_scan_outcome(CleanupPlan::empty()))
     }
 }
 
@@ -437,6 +475,7 @@ fn duplicate_clean_dispatch_starts_only_one_worker() {
     };
     let plan = representative_plan();
     let selected = plan.default_selected_ids();
+    let worker_registry: WorkerRegistry = Arc::new(Mutex::new(HashMap::new()));
 
     dispatch_effects(
         vec![
@@ -458,7 +497,7 @@ fn duplicate_clean_dispatch_starts_only_one_worker() {
         &inventory,
         &clean,
         &clean_dispatch_in_flight,
-        &Arc::new(Mutex::new(HashMap::new())),
+        &worker_registry,
     )
     .expect("effects dispatch");
 
@@ -483,6 +522,7 @@ fn duplicate_clean_dispatch_starts_only_one_worker() {
             .recv_timeout(Duration::from_secs(1))
             .expect("worker emits terminal event");
         if matches!(event, WorkerEvent::CleanFinished { job_id: 1, .. }) {
+            join_terminal_worker(&event, &worker_registry).expect("clean worker joins");
             saw_terminal_event = true;
             break;
         }
@@ -496,6 +536,93 @@ fn duplicate_clean_dispatch_starts_only_one_worker() {
     }
     assert!(!clean_dispatch_in_flight.load(Ordering::Acquire));
     assert_eq!(invocations.load(Ordering::SeqCst), 1);
+    assert!(worker_registry.lock().expect("registry lock").is_empty());
+}
+
+#[test]
+fn scan_dispatch_is_refused_until_prior_worker_terminal_is_joined() {
+    let (worker_tx, worker_rx) = mpsc::channel();
+    let (prior_tx, prior_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let worker_registry: WorkerRegistry = Arc::new(Mutex::new(HashMap::new()));
+    let prior_cancel = Arc::new(FlagCancelObserver::new());
+    let prior_join = thread::spawn(move || {
+        release_rx.recv().expect("prior worker release");
+        prior_tx
+            .send(WorkerEvent::JobCanceled { job_id: 1 })
+            .expect("prior terminal event");
+    });
+    worker_registry.lock().expect("registry lock").insert(
+        1,
+        WorkerRegistration {
+            cancel: prior_cancel,
+            join: prior_join,
+        },
+    );
+
+    let invocations = Arc::new(AtomicUsize::new(0));
+    let scan = CountingScanService {
+        invocations: Arc::clone(&invocations),
+    };
+    let inventory = FakeInventoryService {
+        outcome: Ok(empty_inventory_report()),
+    };
+    let clean = FakeCleanService {
+        progress: Vec::new(),
+        outcome: Ok(successful_report()),
+        requests: Arc::new(Mutex::new(Vec::new())),
+    };
+    let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
+
+    dispatch_effect(
+        Effect::StartScan { job_id: 2 },
+        worker_tx.clone(),
+        &scan,
+        &inventory,
+        &clean,
+        &clean_dispatch_in_flight,
+        &worker_registry,
+    )
+    .expect("replacement dispatch is refused safely");
+    assert_eq!(invocations.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        worker_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+        WorkerEvent::JobFailed {
+            job_id: 2,
+            message: "Scan dispatch rejected: prior heavy work has not joined".to_string(),
+        }
+    );
+
+    release_tx.send(()).expect("release prior worker");
+    let prior_terminal = prior_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("prior terminal event arrives");
+    join_terminal_worker(&prior_terminal, &worker_registry).expect("prior worker joins");
+
+    dispatch_effect(
+        Effect::StartScan { job_id: 3 },
+        worker_tx,
+        &scan,
+        &inventory,
+        &clean,
+        &clean_dispatch_in_flight,
+        &worker_registry,
+    )
+    .expect("scan starts after join");
+    assert_eq!(
+        worker_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+        WorkerEvent::ScanStarted { job_id: 3 }
+    );
+    let terminal = worker_rx
+        .recv_timeout(Duration::from_secs(1))
+        .expect("replacement terminal event");
+    assert!(matches!(
+        terminal,
+        WorkerEvent::ScanFinished { job_id: 3, .. }
+    ));
+    join_terminal_worker(&terminal, &worker_registry).expect("replacement worker joins");
+    assert_eq!(invocations.load(Ordering::SeqCst), 1);
+    assert!(worker_registry.lock().expect("registry lock").is_empty());
 }
 
 #[test]

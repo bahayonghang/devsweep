@@ -13,6 +13,81 @@ use crate::model::{
 use crate::tui::test_support::{key, plan_with_targets, render_text, representative_plan, target};
 
 #[test]
+fn chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit() {
+    let shell = ShellComposition::for_locale(Locale::ZhCn).unwrap();
+    assert_eq!(shell.active_label, "清理");
+    assert_eq!(shell.navigation[0].accelerator, None);
+    let mut app = App::with_shell(shell);
+
+    let effects = app.update(key(KeyCode::Char('q')));
+
+    assert_eq!(effects, [Effect::Quit]);
+    assert!(app.should_quit);
+    assert!(!app.language_settings.open);
+    assert_eq!(app.shell.active_label, "清理");
+}
+
+#[test]
+fn language_settings_flow_is_typed_visible_and_preserves_clean_state() {
+    let mut app = App::with_plan(representative_plan());
+    let original_targets = app.targets.clone();
+    let original_selection = app.selected_ids.clone();
+
+    assert!(app.update(key(KeyCode::Char('p'))).is_empty());
+    assert!(app.language_settings.open);
+    assert_eq!(app.language_settings.selected, crate::i18n::Locale::En);
+    assert!(app.update(key(KeyCode::Char('z'))).is_empty());
+    assert_eq!(app.language_settings.selected, crate::i18n::Locale::ZhCn);
+
+    let effects = app.update(key(KeyCode::Enter));
+    assert_eq!(
+        effects,
+        [Effect::SavePresentationLanguage {
+            request_id: 1,
+            locale: crate::i18n::Locale::ZhCn,
+        }]
+    );
+    assert_eq!(app.language_settings.pending_request, Some(1));
+
+    app.update(UiEvent::Worker(WorkerEvent::PresentationLanguageSaved {
+        request_id: 2,
+        locale: crate::i18n::Locale::En,
+    }));
+    assert_eq!(app.language_settings.pending_request, Some(1));
+    assert_eq!(app.shell.locale, crate::i18n::Locale::En);
+
+    app.update(UiEvent::Worker(WorkerEvent::PresentationLanguageSaved {
+        request_id: 1,
+        locale: crate::i18n::Locale::ZhCn,
+    }));
+    assert!(!app.language_settings.open);
+    assert_eq!(app.shell.locale, crate::i18n::Locale::ZhCn);
+    assert_eq!(app.shell.active_label, "清理");
+    assert_eq!(app.targets, original_targets);
+    assert_eq!(app.selected_ids, original_selection);
+}
+
+#[test]
+fn language_save_failure_stays_visible_without_changing_the_session_locale() {
+    let mut app = App::new();
+    app.update(key(KeyCode::Char('p')));
+    app.update(key(KeyCode::Char('z')));
+    app.update(key(KeyCode::Enter));
+
+    app.update(UiEvent::Worker(
+        WorkerEvent::PresentationLanguageSaveFailed { request_id: 1 },
+    ));
+
+    assert!(app.language_settings.open);
+    assert_eq!(app.language_settings.pending_request, None);
+    assert_eq!(app.shell.locale, crate::i18n::Locale::En);
+    assert_eq!(
+        app.language_settings.failure,
+        Some(LanguageSettingsFailure::PersistenceUnavailable)
+    );
+}
+
+#[test]
 fn update_keeps_scan_preview_read_only_then_restores_completed_selection() {
     let mut app = App::with_plan(representative_plan());
 
@@ -646,7 +721,7 @@ fn scan_progress_applies_latest_cumulative_partial_plan() {
 }
 
 #[test]
-fn stale_scan_updates_do_not_overwrite_newer_scan_results() {
+fn replacement_scan_waits_for_cancel_terminal_and_rejects_stale_results() {
     let mut app = App::new();
     let startup_effects = app.startup_effects();
     let [Effect::StartScan { job_id: first_job }] = startup_effects.as_slice() else {
@@ -658,13 +733,33 @@ fn stale_scan_updates_do_not_overwrite_newer_scan_results() {
     }));
 
     let manual_effects = app.update(key(KeyCode::Char('s')));
-    let [Effect::StartScan { job_id: second_job }] = manual_effects.as_slice() else {
-        panic!("manual scan starts second job");
-    };
-    let second_job = *second_job;
+    assert!(matches!(
+        manual_effects.as_slice(),
+        [Effect::CancelJob { job_id }] if *job_id == first_job
+    ));
+    assert_eq!(app.jobs[0].status, JobStatus::Cancelling);
+    assert!(app.update(key(KeyCode::Char('s'))).is_empty());
+
     let representative = representative_plan();
     let second_target = representative.targets[0].clone();
     let stale_target = representative.targets[1].clone();
+
+    app.update(UiEvent::Worker(WorkerEvent::ScanProgress {
+        job_id: first_job,
+        phase: ScanPhase::Projects,
+        message: "Late progress after cancellation".to_string(),
+        plan: Some(plan_with_targets(vec![stale_target.clone()])),
+    }));
+    assert!(app.targets.is_empty());
+
+    let restart_effects = app.update(UiEvent::Worker(WorkerEvent::JobCanceled {
+        job_id: first_job,
+    }));
+    let [Effect::StartScan { job_id: second_job }] = restart_effects.as_slice() else {
+        panic!("terminal cancellation starts exactly one replacement scan");
+    };
+    let second_job = *second_job;
+    assert_ne!(second_job, first_job);
 
     app.update(UiEvent::Worker(WorkerEvent::ScanStarted {
         job_id: second_job,
@@ -683,7 +778,7 @@ fn stale_scan_updates_do_not_overwrite_newer_scan_results() {
 
     assert_eq!(app.targets.len(), 1);
     assert_eq!(app.targets[0].id, second_target.id);
-    assert_eq!(app.jobs[0].status, JobStatus::Succeeded);
+    assert_eq!(app.jobs[0].status, JobStatus::Canceled);
     assert_eq!(app.jobs[1].status, JobStatus::Running);
 }
 
@@ -729,6 +824,10 @@ fn canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes() {
         message: "Observed a partial target".to_string(),
         plan: Some(preview),
     }));
+    assert!(matches!(
+        app.update(key(KeyCode::Char('x'))).as_slice(),
+        [Effect::CancelJob { job_id: requested }] if *requested == job_id
+    ));
     app.update(UiEvent::Worker(WorkerEvent::JobCanceled { job_id }));
 
     app.update(key(KeyCode::Char(' ')));

@@ -1,0 +1,6 @@
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/app-shell/AppShell.test.tsx (15 tests) 970ms
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  19:35:42
+   Duration  3.26s (transform 80ms, setup 235ms, collect 177ms, tests 970ms, environment 873ms, prepare 94ms)

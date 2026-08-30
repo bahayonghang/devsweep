@@ -1,0 +1,58 @@
+**********************
+PowerShell transcript start
+Start time: 20260830175523
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference='Stop'
+$debug=(Resolve-Path '..\target\debug\devsweep-desktop.exe').Path
+$hash=(Get-FileHash -Algorithm SHA256 $debug).Hash
+if($hash -ne 'E16F09D393A81291D7D05F1D655648B16592A456786EAA431E0478CF5B727091'){throw "debug hash drift before launch: $hash"}
+$taskRoot=(Resolve-Path '..\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-native-agent-browser-20260830').Path
+$isolated=(Resolve-Path (Join-Path $taskRoot 'debug\localappdata')).Path
+if(@(Get-ChildItem $isolated -Recurse -Force -File -ErrorAction SilentlyContinue).Count -ne 0){throw 'debug isolated LOCALAPPDATA not empty'}
+if(@(Get-NetTCPConnection -LocalPort 4180,9336 -State Listen -ErrorAction SilentlyContinue).Count -ne 0){throw 'debug port occupied'}
+$env:LOCALAPPDATA=$isolated
+$env:DEVSWEEP_TASK_NATIVE_FAULT='route_cancel_once'
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS='--remote-debugging-port=9336'
+$log=Join-Path $taskRoot 'logs\debug-tauri-dev-transcript.txt'
+Start-Transcript -LiteralPath $log -Force
+try { npm.cmd run tauri -- dev --no-watch } finally { Stop-Transcript }
+Process ID: 47924
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-native-agent-browser-20260830\logs\debug-tauri-dev-transcript.txt
+npm notice run vite
+
+  VITE v7.3.6  ready in 339 ms
+
+  ➜  Local:   http://127.0.0.1:4180/
+     Running DevCommand (`cargo  run --no-default-features --color always --`)
+   Compiling devsweep-desktop v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\deskto
+p\src-tauri)
+warning: linker stdout: 正正在在创创建建库库 D:\Documents\Code\Rust\Exp\devsweep\target\de
+bug\deps\devsweep_desktop_lib.dll.lib 和和对对象象 D:\Documents\Code\Rust\Exp\devsweep
+\target\debug\deps\devsweep_desktop_lib.dll.exp
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `devsweep-desktop` (lib) generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.71s
+     Running `D:\Documents\Code\Rust\Exp\devsweep\target\debug\devsweep-desktop.
+exe`
+5:55:37 PM [vite] (client) ✨✨ new dependencies optimized: @tauri-apps/api/window
+5:55:37 PM [vite] (client) ✨✨ optimized dependencies changed. reloading
+**********************
+PowerShell transcript end
+End time: 20260830175624
+**********************

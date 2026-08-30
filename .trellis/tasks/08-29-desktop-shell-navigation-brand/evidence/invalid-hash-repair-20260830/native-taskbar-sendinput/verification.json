@@ -1,0 +1,508 @@
+{
+  "started_at": "2026-08-30T19:54:23.9829610+08:00",
+  "expected_hash": "DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604",
+  "release": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "localappdata": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\invalid-hash-repair-20260830\\native-taskbar-sendinput\\localappdata",
+  "cdp_port": 9365,
+  "state": "pass",
+  "launch": {
+    "pid": 67692,
+    "start_time": "2026-08-30T19:54:25.9234183+08:00",
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+    "hash": "DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604",
+    "hwnd": "0x6D412C2",
+    "title": "devsweep"
+  },
+  "taskbar_enumeration": {
+    "shell_tray_wnd": "0x10162",
+    "candidate_count": 33,
+    "candidates": [
+      {
+        "index": 0,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Pane",
+        "bounding_rectangle": "0,1380,2048,48",
+        "supported_patterns": []
+      },
+      {
+        "index": 1,
+        "name": "",
+        "automation_id": "TaskbarFrame",
+        "control_type": "ControlType.Pane",
+        "bounding_rectangle": "0,1380,2560,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Start",
+        "automation_id": "StartButton",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "0,1380,69,60",
+        "supported_patterns": [
+          "TogglePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 3,
+        "name": "Home / X - Tabbit - 1 running window",
+        "automation_id": "Window: 0xe30a6e",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "69,1380,185,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 4,
+        "name": "Orca - 1 running window",
+        "automation_id": "Window: 0x2b7083a",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "254,1380,97,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 5,
+        "name": "Claude - 1 running window",
+        "automation_id": "Window: 0x12e07d0",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "351,1380,112,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 6,
+        "name": "thesis - writing - Antigravity IDE - implement.md - 1 running window",
+        "automation_id": "Window: 0xd509e6",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "463,1380,225,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 7,
+        "name": "Welcome - industrytslib [SSH: 192.168.31.17(lyh)] - python - Visual Studio Code - 1 running window",
+        "automation_id": "Window: 0x450f0c",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "688,1380,225,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 8,
+        "name": "Inbox - Google Chrome - 1 running window",
+        "automation_id": "Window: 0x221360",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "913,1380,225,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 9,
+        "name": "DESKTOP-516BF74: ccr - 1 running window",
+        "automation_id": "Window: 0x50908c2",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "1138,1380,216,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 10,
+        "name": "thesis - 1 running window",
+        "automation_id": "Window: 0x900f7e",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "1354,1380,103,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 11,
+        "name": "devsweep - 1 running window",
+        "automation_id": "Window: 0x6d412c2",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "1458,1380,133,60",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 12,
+        "name": "Show Hidden Icons",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2041,1380,40,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 13,
+        "name": " Clash Verge 2.5.2\nSystem Proxy: off\nTUN: on\nProfile: 奈云-basic",
+        "automation_id": "NotifyItemIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2081,1380,40,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 14,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Image",
+        "bounding_rectangle": "2091,1400,20,20",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 15,
+        "name": "滴答清单",
+        "automation_id": "NotifyItemIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2121,1380,40,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 16,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Image",
+        "bounding_rectangle": "2131,1400,20,20",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 17,
+        "name": " Weixin",
+        "automation_id": "NotifyItemIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2161,1380,40,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 18,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Image",
+        "bounding_rectangle": "2171,1400,20,20",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 19,
+        "name": " QQ: 1035829460\n声音: 开启\n消息提醒框: 开启\n会话消息: 任务栏头像闪动",
+        "automation_id": "NotifyItemIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2201,1380,40,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 20,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Image",
+        "bounding_rectangle": "2211,1400,20,20",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 21,
+        "name": "Tray Input Indicator Right click to show IME options",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2241,1380,40,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 22,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Image",
+        "bounding_rectangle": "2251,1400,20,20",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 23,
+        "name": "Tray Input Indicator Chinese (Simplified, Mainland China)\r\n微信输入法\r\n\r\nTo switch input methods, press Windows key + space.",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2281,1380,55,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 24,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Image",
+        "bounding_rectangle": "2299,1400,20,20",
+        "supported_patterns": [
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 25,
+        "name": "Network TP-LINK_1BDC\nInternet access\n\nMeta\nNo internet access",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2341,1380,30,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 26,
+        "name": "Volume 耳机 (OPPO Enco X3): 19%",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2376,1380,30,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 27,
+        "name": "Power Battery status: 99% remaining",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2411,1380,35,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 28,
+        "name": "Clock 7:54:26 PM\n‎8/‎30/‎2026",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2456,1380,84,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 29,
+        "name": "Show Desktop",
+        "automation_id": "SystemTrayIcon",
+        "control_type": "ControlType.Button",
+        "bounding_rectangle": "2545,1380,15,60",
+        "supported_patterns": [
+          "InvokePatternIdentifiers.Pattern",
+          "ScrollItemPatternIdentifiers.Pattern"
+        ]
+      },
+      {
+        "index": 30,
+        "name": "",
+        "automation_id": "",
+        "control_type": "ControlType.Pane",
+        "bounding_rectangle": "2041,1380,519,60",
+        "supported_patterns": []
+      },
+      {
+        "index": 31,
+        "name": "",
+        "automation_id": "40965",
+        "control_type": "ControlType.Pane",
+        "bounding_rectangle": "69,1380,619,60",
+        "supported_patterns": []
+      },
+      {
+        "index": 32,
+        "name": "Running applications",
+        "automation_id": "",
+        "control_type": "ControlType.Pane",
+        "bounding_rectangle": "69,1380,619,60",
+        "supported_patterns": []
+      }
+    ],
+    "exact_match_count": 1
+  },
+  "binding": {
+    "minimize_requested_at": "2026-08-30T19:54:26.4195257+08:00",
+    "minimize_samples": [
+      {
+        "time": "2026-08-30T19:54:26.5579246+08:00",
+        "foreground": {
+          "hwnd": "0x900F7E",
+          "pid": 58468
+        },
+        "is_iconic": true
+      }
+    ],
+    "clickable_point_available": false,
+    "click_point": {
+      "x": 1524.5,
+      "y": 1410.0
+    },
+    "before_click": {
+      "time": "2026-08-30T19:54:26.6503405+08:00",
+      "cursor": {
+        "x": 450,
+        "y": 635
+      },
+      "foreground": {
+        "hwnd": "0x900F7E",
+        "pid": 58468
+      },
+      "is_iconic": true
+    },
+    "clicked_at": "2026-08-30T19:54:26.6560429+08:00",
+    "after_click_time": "2026-08-30T19:54:27.3414818+08:00",
+    "cursor_after": {
+      "x": 1524,
+      "y": 1410
+    },
+    "activation_samples": [
+      {
+        "time": "2026-08-30T19:54:26.7821309+08:00",
+        "foreground": {
+          "hwnd": "0x6D412C2",
+          "pid": 67692
+        },
+        "is_iconic": false
+      }
+    ],
+    "foreground": {
+      "hwnd": "0x6D412C2",
+      "pid": 67692,
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+      "hash": "DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604",
+      "is_iconic": false
+    },
+    "capture_timestamp": "20260830-195426806",
+    "capture_started": "2026-08-30T19:54:26.8069593+08:00",
+    "capture_finished": "2026-08-30T19:54:27.3413029+08:00",
+    "desktop_capture": {
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\invalid-hash-repair-20260830\\native-taskbar-sendinput\\screenshots\\taskbar-bound-desktop-20260830-195426806.png",
+      "bytes": 4644164,
+      "width": 6453,
+      "height": 2582,
+      "sha256": "C2BE3EFD8A4CA6FB0BB20A8207495BF7E85083CE84F8E09E82FBF79B243A8E9F"
+    },
+    "taskbar_capture": {
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\invalid-hash-repair-20260830\\native-taskbar-sendinput\\screenshots\\taskbar-bound-crop-20260830-195426806.png",
+      "bytes": 68648,
+      "width": 2560,
+      "height": 60,
+      "sha256": "8DA7000B7F233E445229B29F419BBD8D19D4EA44C18B2398CDA9B683110E673C"
+    },
+    "app_reference_capture": {
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\invalid-hash-repair-20260830\\native-taskbar-sendinput\\screenshots\\taskbar-bound-app-reference-20260830-195426806.png",
+      "bytes": 30787,
+      "width": 1018,
+      "height": 797,
+      "sha256": "BECABE5658FFFFB77A7CCB8384C9C29F0E044535D4CCC294A893790074A8241A"
+    }
+  },
+  "close": {
+    "close_main_window": true,
+    "elapsed_ms": 2131.0,
+    "descendants_before": [
+      {
+        "ProcessId": 20296,
+        "ParentProcessId": 67692,
+        "Name": "msedgewebview2.exe",
+        "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+        "CreationDate": "2026-08-30T19:54:25.997289+08:00",
+        "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --embedded-browser-webview=1 --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --noerrdialogs --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=9365 --lang=en-US --mojo-named-platform-channel-pipe=67692.31720.6616335773728423107 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+      },
+      {
+        "ProcessId": 37948,
+        "ParentProcessId": 20296,
+        "Name": "msedgewebview2.exe",
+        "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+        "CreationDate": "2026-08-30T19:54:26.038231+08:00",
+        "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=crashpad-handler --user-data-dir=C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView /prefetch:4 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e --monitor-self-annotation=ptype=crashpad-handler --database=C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\\Crashpad --annotation=IsOfficialBuild=1 --annotation=channel= --annotation=chromium-version=151.0.7922.174 \"--annotation=exe=C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --annotation=plat=Win64 \"--annotation=prod=Edge WebView2\" --annotation=ver=151.0.4129.107 --initial-client-data=0x174,0x178,0x17c,0x150,0x184,0x7fffd87965f0,0x7fffd8796600,0x7fffd8796610"
+      },
+      {
+        "ProcessId": 34032,
+        "ParentProcessId": 20296,
+        "Name": "msedgewebview2.exe",
+        "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+        "CreationDate": "2026-08-30T19:54:26.157017+08:00",
+        "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=gpu-process --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --gpu-preferences=WAAAAAAAAADgAAAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAAEAAAAAIAAAABAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --startup-read-main-dll --metrics-shmem-handle=2236,i,5199443008897989181,13174658414758578212,262144 --field-trial-handle=2344,i,14857714141672900603,16752719864442440107,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2348,i,8089941351011082111,13038197730329046192,4 --trace-process-track-uuid=3190708988185955192 --mojo-platform-channel-handle=2336 /prefetch:2 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+      },
+      {
+        "ProcessId": 66232,
+        "ParentProcessId": 20296,
+        "Name": "msedgewebview2.exe",
+        "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+        "CreationDate": "2026-08-30T19:54:26.160145+08:00",
+        "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --startup-read-main-dll --metrics-shmem-handle=2556,i,7094398121751816823,4404597088439927480,524288 --field-trial-handle=2344,i,14857714141672900603,16752719864442440107,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2348,i,8089941351011082111,13038197730329046192,4 --trace-process-track-uuid=3190708989122997041 --mojo-platform-channel-handle=2568 /prefetch:11 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+      },
+      {
+        "ProcessId": 79988,
+        "ParentProcessId": 20296,
+        "Name": "msedgewebview2.exe",
+        "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+        "CreationDate": "2026-08-30T19:54:26.186476+08:00",
+        "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --startup-read-main-dll --metrics-shmem-handle=2900,i,15930032942959255917,14602655495162360550,524288 --field-trial-handle=2344,i,14857714141672900603,16752719864442440107,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2348,i,8089941351011082111,13038197730329046192,4 --trace-process-track-uuid=3190708990060038890 --mojo-platform-channel-handle=2332 /prefetch:13 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+      },
+      {
+        "ProcessId": 64544,
+        "ParentProcessId": 20296,
+        "Name": "msedgewebview2.exe",
+        "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+        "CreationDate": "2026-08-30T19:54:26.240488+08:00",
+        "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=renderer --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --remote-debugging-port=9365 --video-capture-use-gpu-memory-buffer --lang=en-US --js-flags=--expose-gc --device-scale-factor=1.25 --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=5 --time-ticks-at-unix-epoch=-1788005321295131 --launch-time-ticks=85544942355 --ssd-no-pressure-read-main-dll --metrics-shmem-handle=4324,i,18408419802719900773,2798408123869127408,2097152 --field-trial-handle=2344,i,14857714141672900603,16752719864442440107,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2348,i,8089941351011082111,13038197730329046192,4 --trace-process-track-uuid=3190708990997080739 --mojo-platform-channel-handle=4340 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e /prefetch:1"
+      }
+    ],
+    "residue": {
+      "samples": [
+        {
+          "time": "2026-08-30T19:54:30.2675768+08:00",
+          "main": 0,
+          "descendants": 0,
+          "owned_webviews": 0,
+          "listeners": 0,
+          "lock_temp": 0
+        }
+      ],
+      "main": [],
+      "descendants": [],
+      "owned_webviews": [],
+      "listeners": [],
+      "lock_temp": []
+    }
+  },
+  "final_hash": "DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604",
+  "finished_at": "2026-08-30T19:54:30.3004507+08:00"
+}

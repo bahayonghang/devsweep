@@ -1,0 +1,23 @@
+{
+  "time": "2026-08-30T17:56:23.7110428+08:00",
+  "stop_reason": "debug hash drift after tauri dev relink; dispatch requires immediate stop",
+  "identity": {
+    "pid": 41724,
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+    "size": 14758912,
+    "actual_sha256": "5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9",
+    "expected_sha256": "E16F09D393A81291D7D05F1D655648B16592A456786EAA431E0478CF5B727091",
+    "start_time": "2026-08-30T17:55:36.0595588+08:00",
+    "hwnd": "0x33E0CE2",
+    "title": "devsweep",
+    "fault_env_expected": "route_cancel_once",
+    "cdp_port": 9336
+  },
+  "CloseMainWindow": true,
+  "elapsed_ms": 283.0,
+  "main_alive": false,
+  "devsweep_main_residue": [],
+  "devsweep_webview_residue": [],
+  "cdp_9336_residue": [],
+  "debug_settings_files": []
+}

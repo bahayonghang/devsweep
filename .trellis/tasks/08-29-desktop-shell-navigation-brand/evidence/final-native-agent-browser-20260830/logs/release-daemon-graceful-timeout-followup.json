@@ -1,0 +1,10 @@
+{
+  "time": "2026-08-30T18:00:37.2711337+08:00",
+  "session": "devsweep-shell-release-1d2fcac28664",
+  "stream_disable_exit": 0,
+  "stream_disable_output": "Streaming disabled",
+  "close_exit": 0,
+  "close_output": "✓ Browser closed",
+  "agent_browser_processes_after_12s": [],
+  "agent_browser_listeners_after_12s": []
+}

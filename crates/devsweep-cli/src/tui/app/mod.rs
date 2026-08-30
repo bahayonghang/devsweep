@@ -21,6 +21,8 @@ use super::display::{
     CommandPreview, action_summary, command_previews, compact_target_id, display_path,
     format_cleanup_progress, selected_target_summary, target_title,
 };
+use super::shell::ShellComposition;
+use crate::i18n::Locale;
 
 mod events;
 mod input;
@@ -38,6 +40,9 @@ enum SelectionOverride {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct App {
+    /// Presentation-only shell state. It has no cleanup-plan authority.
+    pub(super) shell: ShellComposition,
+    pub(super) language_settings: LanguageSettingsState,
     pub(super) targets: Vec<CleanTarget>,
     pub(super) scan_health: ScanHealth,
     /// Read-only capacity observations kept separate from cleanup targets.
@@ -66,12 +71,45 @@ pub(super) struct App {
     pub(super) should_quit: bool,
     /// User asked to quit after active jobs reach a terminal state (D9).
     pub(super) quit_after_jobs: bool,
+    /// A replacement scan requested while read-only work is still owned. The
+    /// terminal event starts it only after every prior worker has joined.
+    pending_scan_restart: bool,
     pub(super) next_job_id: JobId,
+    next_language_request_id: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct LanguageSettingsState {
+    pub(super) open: bool,
+    pub(super) selected: Locale,
+    pub(super) pending_request: Option<u64>,
+    pub(super) failure: Option<LanguageSettingsFailure>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum LanguageSettingsFailure {
+    PersistenceUnavailable,
+}
+
+impl LanguageSettingsState {
+    fn closed(locale: Locale) -> Self {
+        Self {
+            open: false,
+            selected: locale,
+            pending_request: None,
+            failure: None,
+        }
+    }
 }
 
 impl App {
+    #[cfg(test)]
     pub(super) fn new() -> Self {
         Self::with_plan(CleanupPlan::empty())
+    }
+
+    pub(super) fn with_shell(shell: ShellComposition) -> Self {
+        Self::with_plan_and_shell(CleanupPlan::empty(), shell)
     }
 
     pub(super) fn startup_effects(&mut self) -> Vec<Effect> {
@@ -79,12 +117,22 @@ impl App {
         vec![Effect::StartScan { job_id }]
     }
 
+    #[cfg(test)]
     pub(super) fn with_plan(plan: CleanupPlan) -> Self {
+        let shell = ShellComposition::for_locale(Locale::En)
+            .expect("the embedded English shell catalogue must be valid");
+        Self::with_plan_and_shell(plan, shell)
+    }
+
+    fn with_plan_and_shell(plan: CleanupPlan, shell: ShellComposition) -> Self {
         let selected_ids = default_selected_ids(&plan.targets);
         let collapsed_pycache_projects = pycache_project_roots(&plan.targets);
         let scan_health = complete_health_for_plan(&plan);
+        let locale = shell.locale;
 
         let mut app = Self {
+            shell,
+            language_settings: LanguageSettingsState::closed(locale),
             targets: plan.targets,
             scan_health,
             inventory_report: None,
@@ -108,7 +156,9 @@ impl App {
             scan_snapshot: None,
             should_quit: false,
             quit_after_jobs: false,
+            pending_scan_restart: false,
             next_job_id: 1,
+            next_language_request_id: 1,
         };
         app.log("Ready");
         app

@@ -1,0 +1,29 @@
+{
+  "time": "2026-08-30T17:43:19.7711298+08:00",
+  "pid": 34712,
+  "hwnd": "0x4830F80",
+  "title": "devsweep",
+  "release": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "release_sha256": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "localappdata": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\release\\localappdata",
+  "store_before": {
+    "length": 39,
+    "sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899",
+    "utf8": "{\"schema_version\":1,\"language\":\"zh-CN\"}"
+  },
+  "port": 9337,
+  "listener": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 9337,
+    "OwningProcess": 62764,
+    "State": 2
+  },
+  "port_owner": {
+    "ProcessId": 62764,
+    "ParentProcessId": 34712,
+    "Name": "msedgewebview2.exe",
+    "ExecutablePath": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+    "CreationDate": "2026-08-30T17:43:17.358313+08:00",
+    "CommandLine": "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --embedded-browser-webview=1 --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --noerrdialogs --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=9337 --lang=en-US --mojo-named-platform-channel-pipe=34712.61192.16473724935061112142 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+  }
+}

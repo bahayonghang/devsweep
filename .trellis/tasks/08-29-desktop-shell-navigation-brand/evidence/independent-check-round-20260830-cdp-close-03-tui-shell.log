@@ -1,0 +1,35 @@
+requested: rtk cargo test -p devsweep-cli tui::shell
+executed: cargo test -p devsweep-cli tui::shell  # unfiltered complete log; rtk compact already exited 0
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+exit: 0
+elapsed_s: 0.424
+
+
+running 4 tests
+test tui::shell::tests::corrupt_persisted_store_fails_closed_at_every_precedence_level ... ok
+test tui::shell::tests::exhaustive_stable_tag_mapping_round_trips ... ok
+test tui::shell::tests::locale_precedence_is_explicit_then_persisted_then_os_then_english ... ok
+test tui::shell::tests::frozen_mode_identity_is_complete_but_unregistered_modes_are_absent ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 104 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)

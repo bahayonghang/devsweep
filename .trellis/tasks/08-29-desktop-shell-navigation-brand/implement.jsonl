@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Load desktop component, state, type-safety, and validation requirements."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "This shell task exclusively updates the component contract from Clean-only composition to five-mode shell composition before product UI edits."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "This shell task exclusively updates state ownership for mode-local reducers, coordination, and persisted presentation settings while retaining Clean safety invariants."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Apply shared TUI/frontend presentation and quality conventions where relevant."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/design.md", "reason": "Implement the approved structural visual direction and cross-mode coordinator boundary."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/localization-contract.md", "reason": "Implement persisted bilingual presentation without changing machine identity."}
+{"file": ".trellis/tasks/08-29-desktop-shell-navigation-brand/design.md", "reason": "Keep shell ownership separate from mode state and execution authority."}

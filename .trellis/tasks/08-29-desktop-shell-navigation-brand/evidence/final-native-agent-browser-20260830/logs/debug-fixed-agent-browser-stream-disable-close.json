@@ -1,0 +1,16 @@
+[
+  {
+    "session": "devsweep-shell-debug-1d2fcac28664",
+    "stream_disable_exit": 0,
+    "stream_disable_output": "Streaming disabled",
+    "close_exit": 0,
+    "close_output": "✓ Browser closed"
+  },
+  {
+    "session": "devsweep-shell-debug-cdp-1d2fcac28664",
+    "stream_disable_exit": 1,
+    "stream_disable_output": "✗ A daemon for session 'devsweep-shell-debug-cdp-1d2fcac28664' started concurrently with different daemon configuration. Retry the command so agent-browser can restart it with the requested configuration.",
+    "close_exit": 0,
+    "close_output": "✓ Browser closed"
+  }
+]

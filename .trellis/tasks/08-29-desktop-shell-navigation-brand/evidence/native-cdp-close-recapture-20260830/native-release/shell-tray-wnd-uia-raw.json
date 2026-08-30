@@ -1,0 +1,410 @@
+{
+  "captured_at": "2026-08-30T21:43:41.1521749+08:00",
+  "shell_tray_wnd": "0x10162",
+  "expected_pid": 47692,
+  "expected_hwnd": "0x1C7A0904",
+  "exact_match_count": 1,
+  "descendants": [
+    {
+      "index": 0,
+      "name": "",
+      "control_type": "ControlType.Pane",
+      "automation_id": "",
+      "class_name": "Windows.UI.Input.InputSite.WindowClass",
+      "is_enabled": true,
+      "bounding_rectangle": "0,1380,2048,48",
+      "supported_patterns": []
+    },
+    {
+      "index": 1,
+      "name": "",
+      "control_type": "ControlType.Pane",
+      "automation_id": "TaskbarFrame",
+      "class_name": "Taskbar.TaskbarFrameAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "0,1380,2560,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Start",
+      "control_type": "ControlType.Button",
+      "automation_id": "StartButton",
+      "class_name": "ToggleButton",
+      "is_enabled": true,
+      "bounding_rectangle": "0,1380,69,60",
+      "supported_patterns": [
+        "TogglePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Grok - Tabbit - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0xe30a6e",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "69,1380,154,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Orca - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x2b7083a",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "223,1380,97,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Claude - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x12e07d0",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "320,1380,112,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 6,
+      "name": "thesis - writing - Antigravity IDE - document.tex - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0xd509e6",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "432,1380,225,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 7,
+      "name": "Welcome - industrytslib [SSH: 192.168.31.17(lyh)] - python - Visual Studio Code - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x450f0c",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "657,1380,225,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 8,
+      "name": "如何在一天之内蹬完 Codex 的订阅额度？ - Cubox - Google Chrome - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x221360",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "882,1380,225,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 9,
+      "name": "DESKTOP-516BF74: ccr - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x50908c2",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "1107,1380,216,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 10,
+      "name": "⠏ thesis - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x900f7e",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "1323,1380,120,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 11,
+      "name": "devsweep - 1 running window",
+      "control_type": "ControlType.Button",
+      "automation_id": "Window: 0x1c7a0904",
+      "class_name": "Taskbar.TaskListButtonAutomationPeer",
+      "is_enabled": true,
+      "bounding_rectangle": "1443,1380,133,60",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 12,
+      "name": "Show Hidden Icons",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2041,1380,40,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 13,
+      "name": " Clash Verge 2.5.2\nSystem Proxy: off\nTUN: on\nProfile: 奈云-basic",
+      "control_type": "ControlType.Button",
+      "automation_id": "NotifyItemIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2081,1380,40,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 14,
+      "name": "",
+      "control_type": "ControlType.Image",
+      "automation_id": "",
+      "class_name": "Image",
+      "is_enabled": true,
+      "bounding_rectangle": "2091,1400,20,20",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 15,
+      "name": "滴答清单",
+      "control_type": "ControlType.Button",
+      "automation_id": "NotifyItemIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2121,1380,40,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 16,
+      "name": "",
+      "control_type": "ControlType.Image",
+      "automation_id": "",
+      "class_name": "Image",
+      "is_enabled": true,
+      "bounding_rectangle": "2131,1400,20,20",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 17,
+      "name": " Weixin",
+      "control_type": "ControlType.Button",
+      "automation_id": "NotifyItemIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2161,1380,40,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 18,
+      "name": "",
+      "control_type": "ControlType.Image",
+      "automation_id": "",
+      "class_name": "Image",
+      "is_enabled": true,
+      "bounding_rectangle": "2171,1400,20,20",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 19,
+      "name": " QQ: 1035829460\n声音: 开启\n消息提醒框: 开启\n会话消息: 任务栏头像闪动",
+      "control_type": "ControlType.Button",
+      "automation_id": "NotifyItemIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2201,1380,40,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 20,
+      "name": "",
+      "control_type": "ControlType.Image",
+      "automation_id": "",
+      "class_name": "Image",
+      "is_enabled": true,
+      "bounding_rectangle": "2211,1400,20,20",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 21,
+      "name": "Tray Input Indicator Right click to show IME options",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2241,1380,40,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 22,
+      "name": "",
+      "control_type": "ControlType.Image",
+      "automation_id": "",
+      "class_name": "Image",
+      "is_enabled": true,
+      "bounding_rectangle": "2251,1400,20,20",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 23,
+      "name": "Tray Input Indicator Chinese (Simplified, Mainland China)\r\n微信输入法\r\n\r\nTo switch input methods, press Windows key + space.",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.NormalButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2281,1380,55,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 24,
+      "name": "",
+      "control_type": "ControlType.Image",
+      "automation_id": "",
+      "class_name": "Image",
+      "is_enabled": true,
+      "bounding_rectangle": "2299,1400,20,20",
+      "supported_patterns": [
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 25,
+      "name": "Network TP-LINK_1BDC\nInternet access\n\nMeta\nNo internet access",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.AccentButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2341,1380,30,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 26,
+      "name": "Volume 扬声器 (Realtek(R) Audio): Muted",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.OmniButtonCenter",
+      "is_enabled": true,
+      "bounding_rectangle": "2376,1380,30,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 27,
+      "name": "Power Battery status: 99% remaining",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.AccentButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2411,1380,35,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 28,
+      "name": "Clock 9:43:41 PM\n‎8/‎30/‎2026",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.OmniButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2456,1380,84,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 29,
+      "name": "Show Desktop",
+      "control_type": "ControlType.Button",
+      "automation_id": "SystemTrayIcon",
+      "class_name": "SystemTray.ShowDesktopButton",
+      "is_enabled": true,
+      "bounding_rectangle": "2545,1380,15,60",
+      "supported_patterns": [
+        "InvokePatternIdentifiers.Pattern",
+        "ScrollItemPatternIdentifiers.Pattern"
+      ]
+    },
+    {
+      "index": 30,
+      "name": "",
+      "control_type": "ControlType.Pane",
+      "automation_id": "",
+      "class_name": "TrayNotifyWnd",
+      "is_enabled": true,
+      "bounding_rectangle": "2041,1380,519,60",
+      "supported_patterns": []
+    },
+    {
+      "index": 31,
+      "name": "",
+      "control_type": "ControlType.Pane",
+      "automation_id": "40965",
+      "class_name": "ReBarWindow32",
+      "is_enabled": true,
+      "bounding_rectangle": "69,1380,587,60",
+      "supported_patterns": []
+    },
+    {
+      "index": 32,
+      "name": "Running applications",
+      "control_type": "ControlType.Pane",
+      "automation_id": "",
+      "class_name": "MSTaskSwWClass",
+      "is_enabled": true,
+      "bounding_rectangle": "69,1380,587,60",
+      "supported_patterns": []
+    }
+  ]
+}

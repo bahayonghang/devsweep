@@ -26,6 +26,54 @@ use crate::tui::test_support::{
 };
 
 #[test]
+fn real_shell_settings_and_saved_locale_render_from_app_state() {
+    let mut app = App::with_plan(representative_plan());
+    app.update(key(KeyCode::Char('p')));
+    app.update(key(KeyCode::Char('z')));
+    let settings = render_text(&app);
+    assert!(settings.contains("Language settings"));
+    assert!(settings.contains("> [z] Simplified Chinese"));
+    assert!(settings.contains("[Enter] Save"));
+
+    app.update(key(KeyCode::Enter));
+    let saving = render_text(&app);
+    assert!(saving.contains("Saving"));
+    app.update(UiEvent::Worker(WorkerEvent::PresentationLanguageSaved {
+        request_id: 1,
+        locale: crate::i18n::Locale::ZhCn,
+    }));
+    let chinese = render_text(&app);
+    assert!(chinese.contains("清理计划工作区"));
+    assert!(chinese.contains("清理"));
+    assert!(!chinese.contains("[Q]"));
+    assert!(!chinese.contains("Language settings"));
+}
+
+#[test]
+fn presentation_save_failure_renders_only_canonical_locale_copy() {
+    let mut app = App::with_plan(representative_plan());
+    app.update(key(KeyCode::Char('p')));
+    app.update(key(KeyCode::Char('z')));
+    app.update(key(KeyCode::Enter));
+    app.update(UiEvent::Worker(
+        WorkerEvent::PresentationLanguageSaveFailed { request_id: 1 },
+    ));
+
+    let rendered = render_text(&app);
+    assert_eq!(
+        app.shell.copy.persistence_unavailable,
+        "Language preference was not changed. Close Settings, check the presentation settings file, and try again."
+    );
+    assert!(
+        rendered.contains(
+            "Language preference was not changed. Close Settings, check the presentation"
+        )
+    );
+    assert!(rendered.contains("settings file, and try again."));
+    assert!(!rendered.contains("store refused unknown bytes"));
+}
+
+#[test]
 fn representative_state_renders_with_targets_details_and_jobs() {
     let mut app = App::with_plan(representative_plan());
     let job_id = app.start_job(JobKind::Scan, "Scan fixture");

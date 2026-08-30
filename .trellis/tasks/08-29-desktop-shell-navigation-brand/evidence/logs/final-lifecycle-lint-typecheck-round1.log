@@ -1,0 +1,6 @@
+COMMAND=rtk npm run lint
+ok
+LINT_EXIT=0
+COMMAND=rtk npm run typecheck
+ok
+TYPECHECK_EXIT=0

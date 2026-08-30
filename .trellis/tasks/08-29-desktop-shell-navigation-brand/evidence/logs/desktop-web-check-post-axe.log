@@ -1,0 +1,41 @@
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+generated src/api/types.gen.ts from 7 named fixture files
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/styles.test.ts (4 tests) 2ms
+ ✓ src/app-shell/operation-coordinator.test.ts (5 tests) 5ms
+ ✓ src/api/contract.test.ts (14 tests) 6ms
+ ✓ src/i18n/index.test.ts (4 tests) 2ms
+ ✓ src/state/app-state.test.ts (10 tests) 4ms
+ ✓ src/api/bridge.test.ts (3 tests) 6ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 5ms
+ ✓ src/pages/ScanPage.test.tsx (1 test) 127ms
+ ✓ src/app-shell/AppShell.test.tsx (5 tests) 250ms
+ ✓ src/api/types-generation.test.ts (2 tests) 1331ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  720ms
+   ✓ IPC type generation > changes when a named fixture changes  611ms
+ ✓ src/App.test.tsx (12 tests) 1881ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  406ms
+ Test Files  11 passed (11)
+      Tests  63 passed (63)
+   Start at  09:55:32
+   Duration  3.98s (transform 554ms, setup 1.96s, collect 1.95s, tests 3.62s, environment 6.86s, prepare 879ms)
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 50 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB │ gzip:  0.26 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/index-C2jmr7a2.css                  12.85 kB │ gzip:  3.62 kB
+dist/assets/index-B6ZxW6n8.js                  245.51 kB │ gzip: 75.00 kB
+✓ built in 479ms

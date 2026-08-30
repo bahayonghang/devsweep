@@ -1,0 +1,24 @@
+release_hash=DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604
+taskbar_state=pass
+exact_matches=1
+foreground_hwnd=0x6D412C2
+foreground_pid=67692
+foreground_path=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe
+foreground_hash=DEC46FB5FC07338C84A16AAFF5A6412EFFC4EE9F5FCA6381C3ADDAEAAD54D604
+desktop_png_hash=C2BE3EFD8A4CA6FB0BB20A8207495BF7E85083CE84F8E09E82FBF79B243A8E9F
+taskbar_png_hash=8DA7000B7F233E445229B29F419BBD8D19D4EA44C18B2398CDA9B683110E673C
+app_png_hash=BECABE5658FFFFB77A7CCB8384C9C29F0E044535D4CCC294A893790074A8241A
+forced_termination=False
+residue_main=0 descendant=0 webview=0 listener=0 lock_temp=0
+
+git_diff_check_exit=0
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand
+
+  [0;32mimplement.jsonl: ✓ (7 entries)[0m
+  [0;32mcheck.jsonl: ✓ (3 entries)[0m
+
+[0;32m✓ All validations passed[0m
+task_validate_exit=0
+live_main=0 live_webview=0 live_9365=0
+manifest_lock_status_count=0

@@ -1,0 +1,12 @@
+cargo test: 10 passed, 110 filtered out (4 suites, 0.00s)
+cargo test: 31 passed, 89 filtered out (4 suites, 0.01s)
+cargo test: 11 passed, 109 filtered out (4 suites, 0.00s)
+---- tui::render::tests::presentation_save_failure_renders_only_canonical_locale_copy stdout ----
+
+thread 'tui::render::tests::presentation_save_failure_renders_only_canonical_locale_copy' (47392) panicked at crates\devsweep-cli\src\tui\render\tests.rs:64:5:
+assertion failed: normalized.contains("Language preference was not changed. Close Settings, check the presentation settings file, and try again.")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+test result: FAILED. 23 passed; 1 failed; 0 ignored; 0 measured; 84 filtered out; finished in 0.01s
+[full output: "$HOME/AppData/Local/rtk/tee/1788074329_cargo_test.log"]

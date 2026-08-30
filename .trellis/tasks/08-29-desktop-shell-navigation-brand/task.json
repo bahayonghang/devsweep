@@ -1,0 +1,30 @@
+{
+  "id": "desktop-shell-navigation-brand",
+  "name": "desktop-shell-navigation-brand",
+  "title": "Build Windows desktop and TUI shell, navigation, and brand system",
+  "description": "Plan and implement the original DevSweep shell, five-mode navigation, bilingual presentation infrastructure, generated-brand integration, responsive Windows behavior, and shared state boundaries.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "five-mode Windows desktop and TUI shell; navigation; operation coordinator; localization persistence; React/TUI brand placement; no mode domain logic",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "2-shell",
+    "depends_on": "08-29-cli-contract-localization,08-29-generated-app-icon-integration",
+    "approval_state": "implementation_approved"
+  }
+}

@@ -10,7 +10,8 @@ use crate::{
     rules::risk_label,
     tui::{
         app::{
-            App, CleanupItemStatus, CleanupProgress, CleanupProgressItem, ConfirmState, Overlay,
+            App, CleanupItemStatus, CleanupProgress, CleanupProgressItem, ConfirmState,
+            LanguageSettingsFailure, Overlay,
         },
         display::{
             action_summary, compact_context_text, compact_text, format_cleanup_progress,
@@ -22,6 +23,10 @@ use crate::{
 use super::{format_bytes, selected_details_lines, theme::*};
 
 pub(super) fn render_overlay(frame: &mut Frame<'_>, app: &App) {
+    if app.language_settings.open {
+        render_language_settings(frame, app);
+        return;
+    }
     match &app.overlay {
         Overlay::None => {
             if let Some(progress) = &app.cleanup_progress {
@@ -39,6 +44,7 @@ pub(super) fn render_overlay(frame: &mut Frame<'_>, app: &App) {
                 Line::from("g expands or collapses a __pycache__ project group"),
                 Line::from("d opens dry-run preview"),
                 Line::from("c opens cleanup confirmation"),
+                Line::from(format!("p opens {}", app.shell.copy.settings_title)),
                 Line::from("/ filters targets; r cycles risk filter"),
                 Line::from("x requests a stop at the next action boundary"),
                 Line::from("Esc closes overlays; q quits"),
@@ -61,6 +67,42 @@ pub(super) fn render_overlay(frame: &mut Frame<'_>, app: &App) {
             ],
         ),
     }
+}
+
+fn render_language_settings(frame: &mut Frame<'_>, app: &App) {
+    let copy = &app.shell.copy;
+    let english_marker = if app.language_settings.selected == crate::i18n::Locale::En {
+        ">"
+    } else {
+        " "
+    };
+    let chinese_marker = if app.language_settings.selected == crate::i18n::Locale::ZhCn {
+        ">"
+    } else {
+        " "
+    };
+    let mut lines = vec![
+        Line::from(copy.settings_instruction),
+        Line::from(""),
+        Line::from(format!("{english_marker} [e] {}", copy.english)),
+        Line::from(format!("{chinese_marker} [z] {}", copy.simplified_chinese)),
+        Line::from(""),
+    ];
+    if app.language_settings.pending_request.is_some() {
+        lines.push(Line::styled(copy.saving, warning_style()));
+    } else {
+        lines.push(Line::styled(
+            format!("Enter {}  |  Esc {}", copy.save, copy.cancel),
+            muted_style(),
+        ));
+    }
+    if matches!(
+        app.language_settings.failure,
+        Some(LanguageSettingsFailure::PersistenceUnavailable)
+    ) {
+        lines.push(Line::styled(copy.persistence_unavailable, error_style()));
+    }
+    render_modal(frame, copy.settings_title, lines);
 }
 
 fn render_confirm(frame: &mut Frame<'_>, confirm: &ConfirmState) {
@@ -279,7 +321,17 @@ fn cleanup_item_status_display(status: CleanupItemStatus) -> (&'static str, Styl
 }
 
 fn render_modal(frame: &mut Frame<'_>, title: &'static str, lines: Vec<Line<'static>>) {
-    let desired_height = (lines.len() as u16).saturating_add(4).max(10);
+    let max_width = frame.area().width.saturating_sub(4).max(1);
+    let modal_width = 80_u16.clamp(52_u16.min(max_width), max_width);
+    let content_width = usize::from(modal_width.saturating_sub(2).max(1));
+    let visual_rows = lines
+        .iter()
+        .map(|line| line.width().div_ceil(content_width).max(1))
+        .sum::<usize>();
+    let desired_height = u16::try_from(visual_rows)
+        .unwrap_or(u16::MAX)
+        .saturating_add(4)
+        .max(10);
     let area = centered_modal_rect(frame.area(), 80, desired_height, 52, 10);
     frame.render_widget(Clear, area);
     frame.render_widget(
