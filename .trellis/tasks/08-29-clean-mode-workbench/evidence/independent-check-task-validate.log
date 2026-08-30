@@ -1,0 +1,10 @@
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-clean-mode-workbench
+
+  [0;31mimplement.jsonl:4: File not found: .trellis/tasks/08-29-bound-sizing-concurrency/design.md[0m
+  [0;31mimplement.jsonl: ✗ (1 errors)[0m
+  [0;32mcheck.jsonl: ✓ (4 entries)[0m
+
+[0;31m✗ Validation failed (1 errors)[0m
+
+exit=1

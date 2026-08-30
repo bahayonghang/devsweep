@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "plan": {
+    "version": 2,
+    "targets": [
+      {
+        "id": "cargo.target:C:/work/app/target",
+        "rule_id": "cargo.target",
+        "scope": { "type": "project", "root": "C:/work/app" },
+        "ecosystem": "rust",
+        "kind": "build_artifacts",
+        "path": "C:/work/app/target",
+        "estimated_bytes": 524288000,
+        "size_complete": true,
+        "sizing_warnings": [],
+        "last_modified": { "secs_since_epoch": 1785720000, "nanos_since_epoch": 0 },
+        "risk": "low",
+        "reversible": true,
+        "selected_by_default": true,
+        "evidence": [
+          { "type": "marker_file", "path": "C:/work/app/Cargo.toml" },
+          { "type": "rule_matched", "rule_id": "cargo.target" }
+        ],
+        "intent": { "type": "trash_project_artifact", "rule_id": "cargo.target" }
+      },
+      {
+        "id": "cargo.home.inspect:C:/Users/dev/.cargo",
+        "rule_id": "cargo.home.inspect",
+        "scope": { "type": "global" },
+        "ecosystem": "rust",
+        "kind": "package_cache",
+        "path": "C:/Users/dev/.cargo",
+        "estimated_bytes": 0,
+        "size_complete": false,
+        "sizing_warnings": [{ "kind": "metadata_unavailable", "detail": "Inspect-only aggregate" }],
+        "last_modified": null,
+        "risk": "high",
+        "reversible": true,
+        "selected_by_default": false,
+        "evidence": [{ "type": "user_configured" }],
+        "intent": { "type": "inspect_only", "rule_id": "cargo.home.inspect" }
+      },
+      {
+        "id": "npm.cache.clean:global",
+        "rule_id": "npm.cache.clean",
+        "scope": { "type": "global" },
+        "ecosystem": "node",
+        "kind": "package_cache",
+        "path": null,
+        "estimated_bytes": 134217728,
+        "size_complete": false,
+        "sizing_warnings": [{ "kind": "entry_budget_exhausted", "detail": "Bounded estimate" }],
+        "last_modified": null,
+        "risk": "medium",
+        "reversible": false,
+        "selected_by_default": false,
+        "evidence": [
+          { "type": "official_command", "command": "npm cache verify" },
+          { "type": "known_cache_dir", "source": "npm config", "path": "C:/Users/dev/AppData/Local/npm-cache" }
+        ],
+        "intent": { "type": "run_built_in_action", "provider_id": "npm", "action_id": "cache_clean" }
+      }
+    ]
+  },
+  "health": {
+    "completeness": "partial",
+    "diagnostics": [{ "stage": "sizing", "path": "C:/Users/dev/AppData/Local/npm-cache", "outcome": "skipped", "detail": "Bounded estimate retained" }],
+    "totals": { "verified_bytes": 524288000, "partial_lower_bound_bytes": 134217728, "unknown_target_count": 1 }
+  }
+}

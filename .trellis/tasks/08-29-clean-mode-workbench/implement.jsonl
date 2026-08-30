@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Preserve cleanup model, validation, cancellation, execution, logging, and safety contracts."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Consume the shell-owned post-update five-mode desktop spec before implementing typed Clean state, components, accessibility, and responsive validation; this mode must not edit that spec independently."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace scan through selection, saved plan, preview digest, confirmation, execution, audit, and UI feedback."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/design.md", "reason": "Consume bounded sizing only after its semantic and throughput gates pass."}
+{"file": ".trellis/tasks/08-29-clean-mode-workbench/design.md", "reason": "Implement the typed Clean state machine and original workbench topology."}

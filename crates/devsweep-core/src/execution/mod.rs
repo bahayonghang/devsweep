@@ -11,8 +11,11 @@ mod command;
 mod safety;
 
 use audit::default_audit_log_path;
-#[cfg(test)]
-use audit::replay_unconfirmed_starts;
+pub use audit::{
+    CleanAuditError, CleanAuditRecordV1, ProtectionErrorCode, ProtectionEvidence,
+    ProtectionMutationAction, ProtectionOutcomeCode, append_clean_audit_record,
+    clean_audit_v1_path, identity_sha256, legacy_audit_log_path,
+};
 pub use command::{
     CommandOutcome, CommandRequest, CommandRunner, ProcessCommandRunner, SystemTrashRunner,
     TrashRunner,
@@ -25,7 +28,7 @@ use safety::{
 
 #[cfg(test)]
 use audit::JournalIo;
-use audit::{AuditJournal, JournalEvent, action_path_from_authorized, command_from_action};
+use audit::{AuditJournal, ExecutionErrorCode, ExecutionOutcomeCode};
 use command::command_argv;
 
 use crate::{
@@ -446,6 +449,40 @@ pub struct ExecutionProgress {
     pub message: String,
 }
 
+fn execution_audit_record(
+    journal: &AuditJournal,
+    transition: u64,
+    outcome_code: ExecutionOutcomeCode,
+    error_code: Option<ExecutionErrorCode>,
+    target: &CleanTarget,
+    duration_ms: Option<u64>,
+) -> Result<CleanAuditRecordV1> {
+    CleanAuditRecordV1::execution(
+        journal.operation_id(),
+        transition,
+        outcome_code,
+        error_code,
+        target,
+        duration_ms,
+    )
+    .map_err(anyhow::Error::from)
+}
+
+fn skip_error_code(message: &str) -> ExecutionErrorCode {
+    if message.contains(SELF_CLEAN_SKIP_MESSAGE) {
+        ExecutionErrorCode::SelfCleanSkip
+    } else {
+        ExecutionErrorCode::SafetySkip
+    }
+}
+
+fn failure_error_code(action: &CleanAction) -> ExecutionErrorCode {
+    match action {
+        CleanAction::MoveToTrash { .. } => ExecutionErrorCode::TrashFailed,
+        _ => ExecutionErrorCode::CommandFailed,
+    }
+}
+
 /// Executes validated cleanup plans through command, trash, safety, and audit boundaries.
 pub struct Executor<C = ProcessCommandRunner, T = SystemTrashRunner> {
     command_runner: C,
@@ -546,17 +583,20 @@ where
             return Ok(report);
         }
 
+        #[cfg(test)]
         let audit_path = match request.audit_log {
             Some(path) => path,
             None => default_audit_log_path()?,
         };
+        #[cfg(not(test))]
+        let audit_path = default_audit_log_path()?;
         #[cfg(test)]
         let mut journal = match self.journal_io.borrow_mut().take() {
             Some(io) => AuditJournal::with_io(audit_path.clone(), io),
-            None => AuditJournal::open(&audit_path, plan.digest().to_string())?,
+            None => AuditJournal::open(&audit_path)?,
         };
         #[cfg(not(test))]
-        let mut journal = AuditJournal::open(&audit_path, plan.digest().to_string())?;
+        let mut journal = AuditJournal::open(&audit_path)?;
         let mut report = ExecutionReport::new(
             &selected_targets,
             prepared.notes,
@@ -624,15 +664,16 @@ where
 
             let authorized = match self.authorize_target(validated_target, &auth_context) {
                 Ok(ActionPrep::Skipped { message }) => {
-                    let seq = journal.next_sequence();
-                    let terminal = JournalEvent::skipped(
-                        journal.run_id(),
-                        seq,
-                        plan.digest(),
+                    let transition = journal.next_transition();
+                    let duration_ms = u64::try_from(started_at.elapsed().as_millis()).ok();
+                    let terminal = execution_audit_record(
+                        &journal,
+                        transition,
+                        ExecutionOutcomeCode::Skipped,
+                        Some(skip_error_code(&message)),
                         target,
-                        message.clone(),
-                        started_at.elapsed().as_millis(),
-                    );
+                        duration_ms,
+                    )?;
                     if let Err(audit_error) = journal.write_terminal(terminal) {
                         let audit_message = format!(
                             "safety skip ({message}); audit persistence failed: {audit_error}"
@@ -654,7 +695,6 @@ where
                             status: ExecutionTargetStatus::Failed,
                             message,
                         });
-                        // Do not dispatch another target after the journal has failed.
                         halt_reason = Some("execution halted after audit persistence failure");
                         break;
                     }
@@ -679,20 +719,16 @@ where
                         error.to_string().as_bytes(),
                         EXECUTOR_DIAGNOSTIC_CAP,
                     );
-                    let run_id = journal.run_id().to_string();
-                    let sequence = journal.next_sequence();
-                    let terminal = JournalEvent::finished(
-                        &run_id,
-                        sequence,
-                        plan.digest(),
+                    let transition = journal.next_transition();
+                    let duration_ms = u64::try_from(started_at.elapsed().as_millis()).ok();
+                    let terminal = execution_audit_record(
+                        &journal,
+                        transition,
+                        ExecutionOutcomeCode::Failed,
+                        Some(ExecutionErrorCode::AuthorizationDenied),
                         target,
-                        "failed",
-                        command_from_action(&target.action),
-                        None,
-                        target.path.clone(),
-                        started_at.elapsed().as_millis(),
-                        Some(message.clone()),
-                    );
+                        duration_ms,
+                    )?;
                     if let Err(audit_error) = journal.write_terminal(terminal) {
                         let audit_message = format!(
                             "authorization denied ({message}); audit persistence failed: {audit_error}"
@@ -714,7 +750,6 @@ where
                             status: ExecutionTargetStatus::Failed,
                             message,
                         });
-                        // Do not dispatch another target without recording this denial.
                         halt_reason = Some("execution halted after audit persistence failure");
                         break;
                     }
@@ -735,10 +770,15 @@ where
                 }
             };
 
-            let run_id = journal.run_id().to_string();
-            let seq = journal.next_sequence();
-            let started_event =
-                JournalEvent::started(&run_id, seq, plan.digest(), target, &authorized);
+            let transition = journal.next_transition();
+            let started_event = execution_audit_record(
+                &journal,
+                transition,
+                ExecutionOutcomeCode::Started,
+                None,
+                target,
+                None,
+            )?;
             if let Err(error) = journal.write_started_durable(&started_event) {
                 let message = format!("audit-blocked before side effect: {error}");
                 report.record_outcome(
@@ -754,36 +794,26 @@ where
                     status: ExecutionTargetStatus::Failed,
                     message,
                 });
-                // Halt further actions after audit-start failure.
                 halt_reason = Some("execution halted after audit persistence failure");
                 break;
             }
 
             let outcome = self.dispatch_authorized(&authorized, target, cancel.as_deref());
-            let duration_ms = started_at.elapsed().as_millis();
-            let finish_seq = journal.next_sequence();
-            let run_id = journal.run_id().to_string();
+            let duration_ms = u64::try_from(started_at.elapsed().as_millis()).ok();
+            let finish_transition = journal.next_transition();
             let (progress_status, progress_message, outcome_status, terminal) = match outcome {
-                Ok(ActionStatus::Success {
-                    command,
-                    exit_code,
-                    action_path,
-                }) => (
+                Ok(ActionStatus::Success { .. }) => (
                     ExecutionTargetStatus::Succeeded,
                     "completed".to_string(),
                     OutcomeStatus::Succeeded,
-                    JournalEvent::finished(
-                        &run_id,
-                        finish_seq,
-                        plan.digest(),
-                        target,
-                        "success",
-                        command,
-                        exit_code,
-                        action_path,
-                        duration_ms,
+                    execution_audit_record(
+                        &journal,
+                        finish_transition,
+                        ExecutionOutcomeCode::Succeeded,
                         None,
-                    ),
+                        target,
+                        duration_ms,
+                    )?,
                 ),
                 Ok(ActionStatus::Skipped { message }) => (
                     ExecutionTargetStatus::Skipped,
@@ -791,18 +821,14 @@ where
                     OutcomeStatus::Skipped {
                         reason: message.clone(),
                     },
-                    JournalEvent::finished(
-                        &run_id,
-                        finish_seq,
-                        plan.digest(),
+                    execution_audit_record(
+                        &journal,
+                        finish_transition,
+                        ExecutionOutcomeCode::Skipped,
+                        Some(skip_error_code(&message)),
                         target,
-                        "skipped",
-                        None,
-                        None,
-                        action_path_from_authorized(&authorized),
                         duration_ms,
-                        Some(message),
-                    ),
+                    )?,
                 ),
                 Err(error) => {
                     let message = error.to_string();
@@ -812,18 +838,14 @@ where
                         OutcomeStatus::Failed {
                             message: message.clone(),
                         },
-                        JournalEvent::finished(
-                            &run_id,
-                            finish_seq,
-                            plan.digest(),
+                        execution_audit_record(
+                            &journal,
+                            finish_transition,
+                            ExecutionOutcomeCode::Failed,
+                            Some(failure_error_code(&target.action)),
                             target,
-                            "failed",
-                            command_from_action(&target.action),
-                            None,
-                            action_path_from_authorized(&authorized),
                             duration_ms,
-                            Some(message),
-                        ),
+                        )?,
                     )
                 }
             };
@@ -1340,17 +1362,25 @@ mod tests {
         );
 
         let records = read_jsonl(&audit_path);
-        assert!(records.iter().any(|r| r["event"] == "action_started"));
+        let text = serde_json::to_string(&records).expect("records serialize");
+        assert!(
+            !text.contains("\"command\":"),
+            "journal must not store argv: {text}"
+        );
+        assert!(!text.contains(&manifest.display().to_string()));
+        assert!(records.iter().any(|r| r["outcome_code"] == "started"));
         let finished = records
             .iter()
-            .find(|r| r["event"] == "action_finished")
+            .find(|r| r["outcome_code"] == "succeeded")
             .expect("finished record");
-        assert_eq!(finished["status"], "success");
-        assert_eq!(finished["command"][0], "cargo");
-        assert_eq!(finished["command"][3], manifest.display().to_string());
-        assert!(finished.get("plan_digest").is_some());
-        assert!(finished.get("run_id").is_some());
-        assert!(finished.get("sequence").is_some());
+        assert_eq!(finished["record_kind"], "execution_transition");
+        assert_eq!(finished["evidence"]["action_kind"], "command");
+        assert_eq!(
+            finished["evidence"]["target_identity_sha256"],
+            identity_sha256(plan.targets[0].id.as_str())
+        );
+        assert!(finished.get("operation_id").is_some());
+        assert!(finished.get("transition").is_some());
     }
 
     #[test]
@@ -1437,21 +1467,18 @@ mod tests {
         assert_eq!(trash_runner.paths().len(), 1);
 
         let records = read_jsonl(&audit_path);
-        // started+finished for each of two targets
         assert_eq!(records.len(), 4);
         let finished: Vec<_> = records
             .iter()
-            .filter(|r| r["event"] == "action_finished")
+            .filter(|r| r["outcome_code"] == "succeeded" || r["outcome_code"] == "failed")
             .collect();
         assert_eq!(finished.len(), 2);
-        assert_eq!(finished[0]["status"], "success");
-        assert_eq!(finished[1]["status"], "failed");
-        assert!(
-            finished[1]["error"]
-                .as_str()
-                .expect("error string")
-                .contains("cargo unavailable")
-        );
+        assert_eq!(finished[0]["outcome_code"], "succeeded");
+        assert_eq!(finished[1]["outcome_code"], "failed");
+        assert_eq!(finished[1]["error_code"], "command_failed");
+        let text = serde_json::to_string(&records).expect("records serialize");
+        assert!(!text.contains("cargo unavailable"));
+        assert!(!text.contains("\"command\":"));
     }
 
     #[test]
@@ -1511,11 +1538,12 @@ mod tests {
         assert_eq!(records.len(), 4);
         let finished: Vec<_> = records
             .iter()
-            .filter(|r| r["event"] == "action_finished")
+            .filter(|r| r["outcome_code"] == "succeeded" || r["outcome_code"] == "failed")
             .collect();
         assert_eq!(finished.len(), 2);
-        assert_eq!(finished[0]["status"], "failed");
-        assert_eq!(finished[1]["status"], "success");
+        assert_eq!(finished[0]["outcome_code"], "failed");
+        assert_eq!(finished[0]["error_code"], "trash_failed");
+        assert_eq!(finished[1]["outcome_code"], "succeeded");
     }
 
     #[test]
@@ -1760,13 +1788,11 @@ mod tests {
         assert!(progress[0].message.contains(SELF_CLEAN_SKIP_MESSAGE));
 
         let records = read_jsonl(&audit_path);
-        assert_eq!(records[0]["status"], "skipped");
-        assert!(
-            records[0]["error"]
-                .as_str()
-                .expect("skip reason")
-                .contains(SELF_CLEAN_SKIP_MESSAGE)
-        );
+        assert_eq!(records[0]["outcome_code"], "skipped");
+        assert_eq!(records[0]["error_code"], "self_clean_skip");
+        let text = serde_json::to_string(&records).expect("records serialize");
+        assert!(!text.contains(SELF_CLEAN_SKIP_MESSAGE));
+        assert!(!text.contains("\"path\""));
     }
 
     #[test]
@@ -1924,18 +1950,23 @@ mod tests {
 
         let records = read_jsonl(&audit_path);
         assert_eq!(records.len(), 3);
-        assert_eq!(records[0]["event"], "action_finished");
-        assert_eq!(records[0]["target_id"], plan.targets[0].id.as_str());
-        assert_eq!(records[0]["action_path"], denied_path.display().to_string());
-        assert_eq!(records[0]["status"], "failed");
-        let reason = records[0]["error"]
-            .as_str()
-            .expect("denial reason is recorded");
-        assert!(reason.contains("authorization denied"));
-        assert!(!reason.as_bytes().contains(&0x1b));
-        assert!(!reason.as_bytes().contains(&0x07));
-        assert_eq!(records[1]["event"], "action_started");
-        assert_eq!(records[1]["target_id"], plan.targets[1].id.as_str());
+        assert_eq!(records[0]["record_kind"], "execution_transition");
+        assert_eq!(records[0]["outcome_code"], "failed");
+        assert_eq!(records[0]["error_code"], "authorization_denied");
+        assert_eq!(
+            records[0]["evidence"]["target_identity_sha256"],
+            identity_sha256(plan.targets[0].id.as_str())
+        );
+        let text = serde_json::to_string(&records).expect("records serialize");
+        assert!(!text.contains(&denied_path.display().to_string()));
+        assert!(!text.contains("authorization denied"));
+        assert!(!text.as_bytes().contains(&0x1b));
+        assert!(!text.as_bytes().contains(&0x07));
+        assert_eq!(records[1]["outcome_code"], "started");
+        assert_eq!(
+            records[1]["evidence"]["target_identity_sha256"],
+            identity_sha256(plan.targets[1].id.as_str())
+        );
     }
 
     #[test]
@@ -2087,18 +2118,11 @@ mod tests {
                 .contains("duplicate action fingerprint")
         );
         let records = read_jsonl(&audit_path);
-        // first target: started+finished success; second: no started (blocked pre-dispatch)
-        // duplicate failure is report-only without journal start
-        assert!(
-            records
-                .iter()
-                .filter(|r| r["event"] == "action_finished")
-                .any(|r| r["status"] == "success")
-        );
+        assert!(records.iter().any(|r| r["outcome_code"] == "succeeded"));
         assert_eq!(
             records
                 .iter()
-                .filter(|r| r["event"] == "action_started")
+                .filter(|r| r["outcome_code"] == "started")
                 .count(),
             1
         );
@@ -2389,19 +2413,46 @@ mod tests {
     }
 
     #[test]
-    fn replay_marks_started_without_finished_as_unconfirmed() {
+    fn legacy_journal_bytes_fail_closed_and_are_preserved() {
         let fixture = TempDir::new().expect("temp dir");
         let audit_path = fixture.path().join("audit.jsonl");
-        fs::write(
-            &audit_path,
-            concat!(
-                r#"{"event":"action_started","timestamp_epoch_ms":1,"run_id":"r1","sequence":1,"plan_digest":"d","target_id":"t1","action":"move_to_trash","command":null,"action_path":"C:/x","estimated_bytes":1}"#,
-                "\n"
-            ),
+        let original = concat!(
+            r#"{"event":"action_started","timestamp_epoch_ms":1,"run_id":"r1","sequence":1,"plan_digest":"d","target_id":"t1","action":"move_to_trash","command":null,"action_path":"C:/x","estimated_bytes":1}"#,
+            "\n"
+        );
+        fs::write(&audit_path, original).expect("write legacy journal");
+        let cleanup_path = fixture.path().join("node_modules");
+        let plan = CleanupPlan {
+            version: crate::model::CLEANUP_PLAN_VERSION,
+            targets: vec![target(
+                "node.node_modules",
+                CleanAction::MoveToTrash {
+                    path: cleanup_path.clone(),
+                },
+                Some(cleanup_path),
+            )],
+        };
+        let report = test_executor(
+            RecordingCommandRunner::default(),
+            RecordingTrashRunner::default(),
         )
-        .expect("write partial journal");
-        let unconfirmed = replay_unconfirmed_starts(&audit_path).expect("replay");
-        assert_eq!(unconfirmed, vec!["started_unconfirmed:t1".to_string()]);
+        .run_plan(
+            &test_validated_plan(&plan),
+            ExecutionRequest {
+                selected: plan.default_selected_ids(),
+                execute: true,
+                audit_log: Some(audit_path.clone()),
+                expected_digest: None,
+                cancel: None,
+            },
+        )
+        .expect("legacy bytes fail closed per target");
+        assert_eq!(report.failed, 1);
+        assert!(report.failures[0].message.contains("corrupt"));
+        assert_eq!(
+            fs::read_to_string(&audit_path).expect("preserved"),
+            original
+        );
     }
 
     #[test]

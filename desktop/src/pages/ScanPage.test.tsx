@@ -40,4 +40,16 @@ describe("ScanPage announcements", () => {
     rerender(<ScanPage activeScan={activeScan("Global phase", 3, "global")} busy={false} options={options} onOptions={noOp} onScan={noOp} onCancel={noOp} />);
     expect(screen.getByRole("status")).toHaveTextContent("Global caches. Global phase");
   });
+
+  it("uses Chinese catalogue copy instead of English chrome", () => {
+    render(
+      <ScanPage locale="zh-CN" activeScan={null} busy={false} options={options} onOptions={noOp} onScan={noOp} onCancel={noOp} />,
+    );
+    expect(screen.getByRole("button", { name: "扫描" })).toBeInTheDocument();
+    expect(screen.getByText("项目")).toBeInTheDocument();
+    expect(screen.getByText("就绪")).toBeInTheDocument();
+    expect(screen.queryByText("Projects")).not.toBeInTheDocument();
+    expect(screen.queryByText("Scan")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ready")).not.toBeInTheDocument();
+  });
 });

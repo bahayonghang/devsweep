@@ -1,3 +1,4 @@
+mod clean;
 mod commands;
 mod error;
 mod scan;
@@ -10,8 +11,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::scan_start,
             commands::scan_cancel,
-            commands::plan_dry_run,
-            commands::plan_execute,
+            clean::plan_dry_run,
+            clean::plan_execute,
             commands::protection_list_get,
             commands::protection_list_set,
             commands::presentation_settings_get,

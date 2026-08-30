@@ -1,0 +1,79 @@
+warning: function `legacy_audit_log_path` is never used
+   --> crates\devsweep-core\src\execution\audit.rs:315:8
+    |
+315 | pub fn legacy_audit_log_path() -> Option<PathBuf> {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `path` is never used
+   --> crates\devsweep-core\src\execution\audit.rs:663:19
+    |
+639 | impl AuditJournal {
+    | ----------------- method in this implementation
+...
+663 |     pub(super) fn path(&self) -> &Path {
+    |                   ^^^^
+
+warning: function `sanitize_audit_detail` is never used
+   --> crates\devsweep-core\src\execution\audit.rs:703:15
+    |
+703 | pub(super) fn sanitize_audit_detail(message: impl AsRef<str>) -> String {
+    |               ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unreachable `pub` item
+   --> crates\devsweep-core\src\execution\audit.rs:315:1
+    |
+315 | pub fn legacy_audit_log_path() -> Option<PathBuf> {
+    | ---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | |
+    | help: consider restricting its visibility: `pub(super)`
+    |
+    = help: or consider exporting it for use by other crates
+note: the lint level is defined here
+   --> crates\devsweep-core\src\lib.rs:1:9
+    |
+  1 | #![warn(unreachable_pub)]
+    |         ^^^^^^^^^^^^^^^
+
+warning: `devsweep-core` (lib) generated 4 warnings (run `cargo fix --lib -p devsweep-core` to apply 1 suggestion)
+warning: `devsweep-core` (lib test) generated 4 warnings (4 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 26 tests
+test model::plan::tests::default_selected_ids_returns_default_selected_targets_in_plan_order ... ok
+test model::plan::tests::empty_plan_has_versioned_shape ... ok
+test plan::tests::rejects_relative_paths_before_registry_resolution ... ok
+test plan::tests::rejects_unknown_plan_versions ... ok
+test plan::tests::provider_aliases_cannot_bypass_logical_fingerprint_deduplication ... ok
+test plan::tests::rejects_unknown_rules_and_actions ... ok
+test model::scan::tests::embedded_plan_rejects_untrusted_executable_fields ... ok
+test plan::tests::rejects_path_mismatches_before_action_reconstruction ... ok
+test plan::tests::provider_commands_use_trusted_logical_footprints_for_deduplication ... ok
+test model::plan::tests::untrusted_target_round_trips_through_json_without_executable_fields ... ok
+test plan::tests::json_dto_rejects_arbitrary_action_fields ... ok
+test plan::tests::rejects_risk_and_reversibility_that_drift_from_the_registry ... ok
+test plan::tests::digest_binds_the_reconstructed_provider_command ... ok
+test plan::tests::digest_changes_when_a_validated_target_changes ... ok
+test plan::tests::nested_plan_facts_reject_unknown_fields ... ok
+test plan::tests::rejects_paths_that_escape_the_declared_project_scope ... ok
+test plan::tests::rejects_selected_inspect_only_intents ... ok
+test plan::tests::typed_intents_reject_arbitrary_programs_and_arguments ... ok
+test plan::tests::rejects_v1_with_rescan_guidance ... ok
+test plan::tests::rejects_windows_case_separator_and_trailing_separator_duplicates ... ok
+test plan::tests::rejects_duplicate_equivalent_fingerprints ... ok
+test plan::tests::sizing_warnings_are_observational_and_do_not_change_cleanup_authority ... ok
+test scan::tests::partial_plans_are_cumulative_and_ranked ... ok
+test plan::tests::equivalent_target_order_has_the_same_digest ... ok
+test scan::project::tests::scanner_output_has_plan_contract_fields_and_keeps_files ... ok
+test execution::tests::trash_action_uses_only_path_from_cleanup_plan ... ok
+
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 159 filtered out; finished in 0.02s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

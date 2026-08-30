@@ -1,39 +1,28 @@
-# 清理已保存计划
+# Clean 工作台
 
-`clean` 使用已保存的清理计划或扫描报告。它会在执行前验证文档，并使用计划中默认选中
-的目标 ID。
+Clean 使用冻结的授权链：
 
-```powershell
-cargo run --locked --bin devsweep -- clean --plan plan.json
-```
-
-## 先演练
-
-上面的命令是演练执行。它会报告选中目标的数量，不会调用清理命令，也不会把路径移入
-回收站。
-
-计划过旧、项目发生变化或之前扫描报告不完整健康状态时，应再次演练。计划是复核产物，
-不是永久授权令牌。
-
-## 仅在复核后执行
-
-执行同时需要计划路径和明确标志：
+扫描观察 → 完成报告 → 精确选择 → 已保存的不可信计划 → 实时预览 → 摘要 → 确认 → 执行 → Clean V1 审计。
 
 ```powershell
-cargo run --locked --bin devsweep -- clean --plan plan.json --execute --audit-log devsweep-audit.jsonl
+devsweep clean scan --root . --scope all
+devsweep clean plan --observation report.json --select TARGET_ID --output plan.json
+devsweep clean preview --plan plan.json
+devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ```
 
-DevSweep 会把 JSONL 审计记录写入指定路径。执行时如果省略 `--audit-log`，默认使用
-`devsweep-audit.jsonl`。
+## 安全
 
-## 验证边界
+- 扫描完成前结果不可选。
+- 预览始终是演练，不会运行命令或移入回收站。
+- 执行必须同时提供已保存计划、该次预览的 `sha256:` 摘要和 `--confirm`。
+- 永久删除保持关闭。Docker 不在范围内。Cargo home 仅为检查。
+- 命令清理保持 program 与 argv 分离。没有 `--audit-log` 参数。
 
-- 计划格式 v1 会被拒绝；请重新运行 `devsweep scan --json`。
-- 盘点报告会被拒绝，因为它只有观察值，没有清理授权。
-- 不受支持的报告版本和未知字段会被拒绝。
-- 序列化可执行命令字段不会被信任。有效操作由内置规则目录重建。
-- 仅检查、已不再获得授权，或已不符合预期身份的目标不可执行。
+## 容量
 
-## 没有永久删除开关
+容量标签区分已验证、部分下限和未知证据。不完整合计不会显示为精确值。回收站成功表示目标已移入回收站；清空回收站后容量才会可用。
 
-没有任何命令行选项可重新启用永久删除。Docker 和 Cargo home 仍不属于可执行清理行为。
+## 审计
+
+执行只向 `%LOCALAPPDATA%\DevSweep\audit\v1\clean.jsonl` 追加经过脱敏的 Clean V1 记录。`record_kind` 只有 `execution_transition` 和 `protection_mutation`。记录不含 argv、命令字符串、原始路径、计划载荷或本地化文本。未知版本和损坏字节会被保留并失败关闭。已移除的 `--audit-log` 路径和 `%APPDATA%\devsweep\audit.jsonl` 不会被发现或改写。

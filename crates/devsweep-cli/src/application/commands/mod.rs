@@ -20,6 +20,9 @@ pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError
     let command = cli
         .command_name()
         .expect("bare invocation is routed before command dispatch");
+    if command.starts_with("clean.") {
+        return clean::run(cli, locale);
+    }
     let message = catalogue(locale)
         .render("error.mode_unavailable", &[("command", command)], None)
         .map_err(|error| {
@@ -53,10 +56,10 @@ mod tests {
 
     #[test]
     fn staged_commands_fail_closed_instead_of_running_legacy_handlers() {
-        let cli =
-            Cli::try_parse_from(["devsweep", "clean", "scan"]).expect("frozen command parses");
+        let cli = Cli::try_parse_from(["devsweep", "software", "inventory"])
+            .expect("frozen command parses");
         let error = dispatch(&cli, Locale::En).expect_err("handler is not yet wired");
         assert_eq!(error.code, "mode_unavailable");
-        assert!(error.message.contains("clean.scan"));
+        assert!(error.message.contains("software.inventory"));
     }
 }

@@ -1,5 +1,7 @@
 mod app;
 mod display;
+#[allow(dead_code)]
+mod modes;
 mod render;
 mod runtime;
 mod shell;

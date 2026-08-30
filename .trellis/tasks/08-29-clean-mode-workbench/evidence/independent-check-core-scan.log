@@ -1,0 +1,83 @@
+
+running 66 tests
+test model::scan::tests::diagnostics_force_partial_scan_health ... ok
+test model::scan::tests::scan_totals_keep_verified_partial_and_unknown_observations_separate ... ok
+test plan::tests::rejects_v1_with_rescan_guidance ... ok
+test model::scan::tests::incomplete_target_warnings_are_typed_and_make_a_report_partial ... ok
+test model::scan::tests::embedded_plan_rejects_untrusted_executable_fields ... ok
+test model::scan::tests::scan_report_rejects_untrusted_executable_fields ... ok
+test scan::global::tests::cargo_home_is_inspect_only ... ok
+test scan::global::tests::known_cache_targets_publish_each_completed_target_before_the_helper_finishes ... ok
+test scan::global::tests::classic_yarn_uses_classic_cache_clean_command ... ok
+test scan::global::tests::command_providers_emit_official_actions_when_tools_are_available ... ok
+test scan::global::tests::known_cache_targets_emit_trash_for_present_dirs ... ok
+test scan::global::tests::missing_command_providers_are_non_fatal ... ok
+test scan::global::tests::missing_home_dir_emits_no_known_cache_targets ... ok
+test scan::global::tests::npm_cache_path_emits_one_cleanup_target ... ok
+test scan::global::tests::provider_scan_returns_all_discovered_targets ... ok
+test model::scan::tests::scan_report_round_trips_with_structured_health ... ok
+test scan::global::tests::known_cache_inspect_rule_is_noop ... ok
+test scan::project::tests::dedupe_targets_removes_nested_cleanup_paths ... ok
+test scan::project::tests::cargo_metadata_failures_are_replayed_only_for_the_exact_manifest ... ok
+test scan::project::tests::dedupe_targets_keeps_same_footprint_with_distinct_actions ... ok
+test scan::project::tests::dedupe_targets_merges_evidence_for_exact_footprint_and_action ... ok
+test scan::project::tests::reviewed_rescan_honors_cancellation_and_deselects_an_incomplete_target ... ok
+test scan::project::tests::reviewed_rescan_rejects_an_injected_cloud_files_target ... ok
+test scan::project::tests::cargo_metadata_cache_entry_limit_prevents_unbounded_failure_growth ... ok
+test scan::project::tests::ordinary_target_sizing_observes_cancellation ... ok
+test scan::project::tests::reviewed_rescan_replaces_only_the_selected_target_observation ... ok
+test scan::ranking::tests::equal_sizes_use_score_age_and_id_tie_breakers ... ok
+test scan::ranking::tests::freshness_guard_deselects_recent_default_targets_once ... ok
+test scan::ranking::tests::freshness_guard_preserves_stale_and_unselected_targets ... ok
+test scan::ranking::tests::incomplete_size_is_not_selected_by_default ... ok
+test scan::ranking::tests::score_is_size_mib_times_age_days ... ok
+test scan::project::tests::unreadable_root_remains_a_hard_error ... ok
+test scan::ranking::tests::score_returns_zero_for_missing_or_future_mtime ... ok
+test scan::ranking::tests::sorts_targets_by_size_descending ... ok
+test scan::tests::explicit_terminal_outcome_does_not_promote_canceled_work ... ok
+test scan::tests::cancellation_requested_during_global_scan_is_not_promoted ... ok
+test scan::tests::full_scan_applies_freshness_guard_exactly_once ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_child ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_marker ... ok
+test scan::tests::preview_projection_omits_cleanup_authority_and_rejects_duplicate_ids ... ok
+test scan::project::tests::cache_named_directory_still_discovers_nested_projects ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_root ... ok
+test scan::tests::partial_plans_are_cumulative_and_ranked ... ok
+test scan::tests::scan_request_and_progress_types_round_trip_with_snake_case_json ... ok
+test scan::tests::scan_options_skip_phases ... ok
+test scan::tests::full_scan_merges_and_ranks_once ... ok
+test scan::tests::full_scan_report_preserves_health_and_separates_size_totals ... ok
+test scan::project::tests::scanner_does_not_follow_symlinked_project_directories ... ok
+test scan::tests::progress_events_follow_staged_sequence ... ok
+test scan::project::tests::scanner_output_has_plan_contract_fields_and_keeps_files ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_target ... ok
+test scan::project::tests::scan_roots_collapses_case_and_separator_equivalent_roots ... ok
+test scan::project::tests::scan_roots_reduces_duplicate_and_nested_roots ... ok
+test scan::project::tests::scan_roots_keeps_sibling_cache_targets_after_dedupe ... ok
+test scan::project::tests::scanner_skips_windows_reparse_point_directories ... ok
+test scan::project::tests::truncated_cargo_metadata_failure_reaches_scan_health_with_process_metadata ... ok
+test scan::project::tests::project_scanner_reports_targets_as_they_are_constructed ... ok
+test scan::project::tests::cargo_workspace_member_resolution_is_reused_once_per_scan ... ok
+test scan::project::tests::scanner_ignores_markerless_cleanup_names ... ok
+test scan::project::tests::unproven_nested_manifest_runs_its_own_cargo_metadata_probe ... ok
+test execution::safety::tests::allows_legal_descendants_under_home_and_scan_root ... ok
+processed file: C:\Users\lyh\AppData\Local\Temp\.tmpVnnnxH\app/secret
+Successfully processed 1 files; Failed processing 0 files
+test scan::project::tests::unreadable_nested_child_keeps_sibling_targets_and_is_partial ... ok
+test scan::project::tests::rust_target_uses_cargo_clean_with_manifest_path ... ok
+test scan::project::tests::scan_honors_cancel_flag_without_full_tree_walk ... ok
+test scan::project::tests::scanner_finds_marker_backed_project_targets ... ok
+test scan::global::tests::provider_probe_timeout_does_not_abort_later_providers ... ok
+
+test result: ok. 66 passed; 0 failed; 0 ignored; 0 measured; 119 filtered out; finished in 0.33s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+exit=0

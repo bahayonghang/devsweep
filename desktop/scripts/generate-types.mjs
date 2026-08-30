@@ -15,10 +15,10 @@ const fixtureRoot = fixtureArg >= 0 ? path.resolve(args[fixtureArg + 1]) : path.
 const stdout = args.includes("--stdout");
 
 const rootFixtures = {
-  ScanReport: ["scan-report.json", "scan-report.real.json"],
-  DesktopScanProgress: ["scan-progress.json"],
-  DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json"],
-  ExecutionReport: ["execution-report.json"],
+  ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json"],
+  DesktopScanProgress: ["scan-progress.json", "clean/scan-progress.json"],
+  DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json", "clean/dry-run-outcome.json"],
+  ExecutionReport: ["execution-report.json", "clean/execution-report.json"],
 };
 
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,

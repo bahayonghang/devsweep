@@ -1,44 +1,28 @@
-# Clean a Saved Plan
+# Clean workbench
 
-`clean` consumes a saved cleanup plan or a saved scan report. It validates the
-document before doing anything and uses the plan's default selected target IDs.
+Clean follows a frozen authority chain:
 
-```powershell
-cargo run --locked --bin devsweep -- clean --plan plan.json
-```
-
-## Dry-run first
-
-The command above is a dry-run. It reports how many targets are selected and
-does not invoke a cleanup command or move a path to trash.
-
-Run a dry-run again when a plan is old, a project has changed, or an earlier
-scan reported incomplete health. A plan is a review artifact, not a permanent
-authorization token.
-
-## Execute only after review
-
-Execution requires an explicit flag and a plan path:
+scan observation → completed report → exact selection → saved untrusted plan → live preview → digest → confirm → execution → Clean V1 audit.
 
 ```powershell
-cargo run --locked --bin devsweep -- clean --plan plan.json --execute --audit-log devsweep-audit.jsonl
+devsweep clean scan --root . --scope all
+devsweep clean plan --observation report.json --select TARGET_ID --output plan.json
+devsweep clean preview --plan plan.json
+devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ```
 
-DevSweep writes JSONL audit records to the supplied path. If `--audit-log` is
-omitted during execution, it uses `devsweep-audit.jsonl`.
+## Safety
 
-## Validation boundaries
+- Scan results are not selectable until a completed report exists.
+- Preview is always a dry run. It never runs a command or moves trash.
+- Execute requires the saved plan, the live `sha256:` digest from that preview, and `--confirm`.
+- Permanent delete is disabled. Docker is out of scope. Cargo home is inspect-only.
+- Command cleanup keeps program and argv separate. There is no `--audit-log` flag.
 
-- A plan format v1 document is rejected; rerun `devsweep scan --json`.
-- An inventory report is rejected because it has observations, not cleanup
-  authority.
-- Unsupported report versions and unknown fields are rejected.
-- Serialized executable command fields are not trusted. Validated actions are
-  reconstructed from the built-in rule registry.
-- Targets that are inspect-only, no longer authorized, or no longer match their
-  expected identity are not executable.
+## Capacity
 
-## No permanent-delete escape hatch
+Size labels show verified, partial lower-bound, or unknown evidence. Incomplete totals are never shown as exact. A trash success says the target was moved to trash; capacity becomes available after trash is emptied.
 
-There is no command-line option that re-enables permanent deletion. Docker and
-Cargo home remain outside executable cleanup behavior.
+## Audit
+
+Execution appends redacted Clean V1 records only to `%LOCALAPPDATA%\DevSweep\audit\v1\clean.jsonl`. Records are `execution_transition` or `protection_mutation`. They do not contain argv, command strings, raw paths, plan payloads, or localized text. Unknown versions and corrupt bytes are preserved and fail closed. The removed `--audit-log` path and `%APPDATA%\devsweep\audit.jsonl` are never discovered or rewritten.

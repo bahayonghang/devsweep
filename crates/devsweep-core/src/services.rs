@@ -151,6 +151,56 @@ impl CleanService for ExecutorCleanService {
     }
 }
 
+/// Frontend-neutral Clean workbench adapter over scan and execution services.
+#[derive(Clone)]
+pub struct CleanModeAdapter {
+    scan: SweepScanService,
+    clean: ExecutorCleanService,
+}
+
+impl Default for CleanModeAdapter {
+    fn default() -> Self {
+        Self {
+            scan: SweepScanService,
+            clean: ExecutorCleanService,
+        }
+    }
+}
+
+impl ScanService for CleanModeAdapter {
+    fn full_scan_with_cancel(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceOutcome> {
+        self.scan.full_scan_with_cancel(options, progress, cancel)
+    }
+
+    fn full_scan_run_with_cancel(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: Option<&Arc<FlagCancelObserver>>,
+    ) -> Result<ScanServiceRunOutcome> {
+        self.scan
+            .full_scan_run_with_cancel(options, progress, cancel)
+    }
+}
+
+impl CleanService for CleanModeAdapter {
+    fn run_plan(
+        &self,
+        plan: &CleanupPlan,
+        expected_digest: &str,
+        request: ExecutionRequest,
+        on_progress: &mut dyn FnMut(ExecutionProgress),
+    ) -> Result<ExecutionReport> {
+        self.clean
+            .run_plan(plan, expected_digest, request, on_progress)
+    }
+}
+
 pub(crate) fn validate_confirmed_plan(
     plan: &CleanupPlan,
     expected_digest: &str,

@@ -5,31 +5,19 @@ use std::{
 
 use anyhow::Result;
 use devsweep_core::{
-    execution::{
-        ConfirmationDigest, ExecutionReport, ExecutionRequest, Executor, UserProtectionList,
-    },
-    model::{TargetId, UntrustedPlan},
-    plan::validate_plan,
+    execution::UserProtectionList,
     presentation_settings::{
         PresentationLanguageTag, PresentationSettingsV1, load_presentation_settings,
         save_presentation_settings,
     },
     scan::ScanOptions,
 };
-use serde::Serialize;
-use tauri::{AppHandle, Manager, State, ipc::Channel};
+use tauri::{State, ipc::Channel};
 
 use crate::{
     error::CommandError,
     scan::{CoreScanRunner, DesktopScanProgress, DesktopScanResult, ScanCoordinator, run_scan_job},
 };
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DryRunOutcome {
-    pub report: ExecutionReport,
-    pub digest: ConfirmationDigest,
-}
 
 /// Serializes settings calls within this process while the core store provides
 /// the cross-process transaction lock.
@@ -142,80 +130,6 @@ pub(crate) async fn scan_cancel(
 }
 
 #[tauri::command]
-pub(crate) async fn plan_dry_run(
-    plan: UntrustedPlan,
-    selected_ids: Vec<TargetId>,
-) -> Result<DryRunOutcome, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || plan_dry_run_inner(plan, selected_ids))
-        .await
-        .map_err(CommandError::io)?
-}
-
-fn plan_dry_run_inner(
-    plan: UntrustedPlan,
-    selected_ids: Vec<TargetId>,
-) -> Result<DryRunOutcome, CommandError> {
-    let validated = validate_plan(&plan).map_err(CommandError::invalid_plan)?;
-    let report = Executor::default()
-        .run_plan(
-            &validated,
-            ExecutionRequest {
-                execute: false,
-                audit_log: None,
-                selected: selected_ids,
-                expected_digest: None,
-                cancel: None,
-            },
-        )
-        .map_err(CommandError::execution)?;
-    Ok(DryRunOutcome {
-        digest: report.confirmation_digest.clone(),
-        report,
-    })
-}
-
-#[tauri::command]
-pub(crate) async fn plan_execute(
-    app: AppHandle,
-    plan: UntrustedPlan,
-    selected_ids: Vec<TargetId>,
-    digest: ConfirmationDigest,
-) -> Result<ExecutionReport, CommandError> {
-    let audit_log = app
-        .path()
-        .app_data_dir()
-        .map_err(CommandError::io)?
-        .join("audit")
-        .join("devsweep-audit.jsonl");
-    tauri::async_runtime::spawn_blocking(move || {
-        plan_execute_inner(plan, selected_ids, digest, audit_log)
-    })
-    .await
-    .map_err(CommandError::io)?
-}
-
-fn plan_execute_inner(
-    plan: UntrustedPlan,
-    selected_ids: Vec<TargetId>,
-    digest: ConfirmationDigest,
-    audit_log: PathBuf,
-) -> Result<ExecutionReport, CommandError> {
-    let validated = validate_plan(&plan).map_err(CommandError::invalid_plan)?;
-    Executor::default()
-        .run_plan(
-            &validated,
-            ExecutionRequest {
-                execute: true,
-                audit_log: Some(audit_log),
-                selected: selected_ids,
-                expected_digest: Some(digest),
-                cancel: None,
-            },
-        )
-        .map_err(CommandError::execution)
-}
-
-#[tauri::command]
 pub(crate) async fn protection_list_get() -> Result<Vec<PathBuf>, CommandError> {
     tauri::async_runtime::spawn_blocking(|| CoreProtectionStore.get())
         .await
@@ -242,9 +156,12 @@ mod tests {
         time::{Duration, Instant},
     };
 
-    use devsweep_core::model::{
-        CLEANUP_PLAN_VERSION, CleanupIntent, Ecosystem, Evidence, RiskLevel, Scope, TargetKind,
-        UntrustedTarget,
+    use devsweep_core::{
+        execution::ConfirmationDigest,
+        model::{
+            CLEANUP_PLAN_VERSION, CleanupIntent, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
+            TargetKind, UntrustedPlan, UntrustedTarget,
+        },
     };
     #[cfg(windows)]
     use devsweep_core::{
@@ -253,6 +170,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::clean::{plan_dry_run_inner, plan_execute_inner};
 
     #[derive(Default)]
     struct MemoryProtectionStore(Mutex<Vec<PathBuf>>);
@@ -304,22 +222,12 @@ mod tests {
     }
 
     #[test]
-    fn empty_plan_dry_run_and_execute_accept_matching_digest() {
-        let plan = UntrustedPlan::empty();
-        let dry_run = plan_dry_run_inner(plan.clone(), Vec::new()).expect("dry run succeeds");
-        let temp = tempfile::tempdir().expect("temp directory");
-
-        let report = plan_execute_inner(
-            plan,
-            Vec::new(),
-            dry_run.digest,
-            temp.path().join("audit.jsonl"),
-        )
-        .expect("matching digest executes");
-
-        assert!(!report.dry_run);
-        assert_eq!(report.selected, 0);
-        assert!(report.audit_log.is_some());
+    fn empty_plan_dry_run_accepts_matching_digest() {
+        let dry_run =
+            plan_dry_run_inner(UntrustedPlan::empty(), Vec::new()).expect("dry run succeeds");
+        assert!(dry_run.report.dry_run);
+        assert_eq!(dry_run.report.selected, 0);
+        assert!(dry_run.report.audit_log.is_none());
     }
 
     #[test]
@@ -328,7 +236,6 @@ mod tests {
             UntrustedPlan::empty(),
             Vec::new(),
             ConfirmationDigest::new("stale"),
-            PathBuf::from("unused.jsonl"),
         )
         .expect_err("stale confirmation is rejected");
 
@@ -342,13 +249,8 @@ mod tests {
         let second = plan.targets[1].id.clone();
         let dry_run = plan_dry_run_inner(plan.clone(), vec![first]).expect("dry run succeeds");
 
-        let error = plan_execute_inner(
-            plan,
-            vec![second],
-            dry_run.digest,
-            PathBuf::from("unused.jsonl"),
-        )
-        .expect_err("changed selection invalidates digest");
+        let error = plan_execute_inner(plan, vec![second], dry_run.digest)
+            .expect_err("changed selection invalidates digest");
 
         assert!(matches!(error, CommandError::StaleConfirmation { .. }));
     }
