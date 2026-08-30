@@ -1,0 +1,6 @@
+COMMAND: current Windows identity standard-user and SID-shape check
+is_elevated=false
+uac_prompt_observed=false
+sid_shape_valid=true
+sid_value_redacted=true
+EXIT_CODE: 0

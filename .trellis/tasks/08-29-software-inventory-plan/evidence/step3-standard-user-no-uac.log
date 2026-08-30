@@ -1,0 +1,5 @@
+COMMAND: [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+OUTPUT:
+is_elevated=false
+uac_prompt_requested=false
+EXIT_CODE: 0

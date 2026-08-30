@@ -1,0 +1,51 @@
+## Child verification
+
+Overall result: **PASS**. PRD acceptance criteria AC1–AC5 pass after two in-scope, fail-closed fixes. No blockers remain.
+
+## Findings (fixed)
+
+- File: `crates/devsweep-core/src/software/mod.rs`, `tests.rs`
+- Issue: Exact-identity duplicate merging was order-dependent and did not merge every refusal flag.
+- Fix: Normalized scope from tagged identity, merged all refusal flags conservatively, removed conflicting metadata deterministically, and added regression coverage.
+
+- File: `crates/devsweep-core/src/software/msix.rs`
+- Issue: `windows` 0.56 implicit iteration could silently treat `MoveNext()` failure as successful completion.
+- Fix: Added fallible WinRT collection using `First`/`HasCurrent`/`Current`/`MoveNext` and `Size`/`GetAt`. Failures and cancellation now preserve observations while marking the source partial.
+
+## Findings (not fixed)
+
+None.
+
+## Verification
+
+- Lint: **pass**
+  - `cargo fmt --all -- --check`: exit 0
+  - `git diff --check`: exit 0
+  - Workspace Clippy through `just ci`: pass
+- TypeCheck: **pass**
+  - Workspace Cargo check through `just ci`: pass
+  - `npm --prefix desktop run typecheck`: exit 0
+- Tests: **pass**
+  - `cargo test -p devsweep-core software`: exit 0, 14 passed
+  - `cargo test -p devsweep-cli software`: exit 0, 5 passed
+  - `just ci`: exit 0
+- Dependency: **pass**
+  - Windows-target-only `windows = "=0.56.0"` with the five approved features
+  - Only `windows` 0.56.0 occurs in the `devsweep-core` dependency tree
+- Release size: **pass**
+  - Binary: 3,900,416 bytes, +413,184 bytes, below 5 MiB threshold
+  - Zip: 1,541,981 bytes, +150,480 bytes, below 2 MiB threshold
+  - `just release-archive`: exit 0
+- Native evidence: **pass**
+  - Recomputed 1,293 entries: 823 ARP, 291 MSI, 179 MSIX
+  - Five available and three partial sources
+  - All MSI records manual; no selectable non-MSIX record
+  - All MSIX records current-user scope
+  - Saved plan contains exactly the five frozen fields
+  - Current host remains non-elevated; no UAC prompt observed
+- Authority audit: **pass**
+  - No `CleanupPlan` conversion, removal call, vendor uninstall/icon read, all-user MSIX query, network access, serialized installed path, or new shell/process execution path
+  - CLI parser grammar remains untouched
+  - `software preview` and `software uninstall` remain unavailable
+
+Report and independent logs were saved under `.trellis/tasks/08-29-software-inventory-plan/evidence/`, and `check.jsonl` was appended.

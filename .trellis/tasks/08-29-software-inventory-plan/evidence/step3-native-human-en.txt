@@ -1,0 +1,2 @@
+Software inventory: 1293 entries; 86 selectable; 1207 manual.
+Sources: 5 available; 3 partial; 0 permission denied; 0 unsupported.

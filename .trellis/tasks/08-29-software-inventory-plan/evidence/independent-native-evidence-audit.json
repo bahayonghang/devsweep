@@ -1,0 +1,69 @@
+{
+  "recorded_evidence_authenticity": "passed",
+  "inventory_command_exit_code": 0,
+  "inventory_outcome": "partial",
+  "source_count": 8,
+  "entry_count": 1293,
+  "identity_counts": {
+    "arp": 823,
+    "msi": 291,
+    "msix": 179
+  },
+  "source_states": {
+    "available": 5,
+    "partial": 3,
+    "permission": 0,
+    "unsupported": 0
+  },
+  "registry_view_counts": {
+    "current_user_registry32": 42,
+    "current_user_registry64": 42,
+    "local_machine_registry32": 279,
+    "local_machine_registry64": 460
+  },
+  "msi_context_counts": {
+    "machine": 288,
+    "user_managed": 0,
+    "user_unmanaged": 3
+  },
+  "msix_scope_counts": {
+    "current_user": 179,
+    "other_user_or_machine": 0
+  },
+  "eligibility": {
+    "all_msi_manual": true,
+    "selectable_non_msix_count": 0,
+    "selected_plan_entry_count": 1,
+    "selected_plan_entry_is_selectable_current_user_msix": true
+  },
+  "optional_evidence": {
+    "available_measured_msix": 178,
+    "available_reported_arp": 530,
+    "partial_measured_lower_bound": 1,
+    "unknown": 584,
+    "maximum_available_size_bytes": 109808461824,
+    "all_last_used_exact_unknown": true
+  },
+  "plan": {
+    "command_exit_code": 0,
+    "field_count": 5,
+    "fields": [
+      "expires_at_unix_ms",
+      "inventory_fingerprint",
+      "inventory_observed_at_unix_ms",
+      "selected_ids",
+      "version"
+    ],
+    "ttl_delta_ms": 900000,
+    "fingerprint_matches_inventory": true,
+    "observed_at_matches_inventory": true,
+    "forbidden_field_hits": []
+  },
+  "host": {
+    "current_check_is_elevated": false,
+    "uac_prompt_observed": false,
+    "current_sid_shape_valid": true,
+    "sid_value_redacted": true,
+    "raw_log": "independent-native-host-check.log"
+  }
+}

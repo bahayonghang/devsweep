@@ -1,0 +1,19 @@
+COMMAND: cargo test -p devsweep-core software::plan
+OUTPUT:
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.63s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-0d5238c2890ee81d.exe)
+
+running 3 tests
+test software::plan::tests::hostile_display_observations_never_enter_the_selection_plan ... ok
+test software::plan::tests::preview_digest_is_stable_and_contains_only_opaque_strategy_tokens ... ok
+test software::plan::tests::removed_changed_reinstalled_and_expired_plans_fail_closed ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 210 filtered out; finished in 0.00s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-c2e5cb0a2b6c2d49.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+EXIT_CODE: 0

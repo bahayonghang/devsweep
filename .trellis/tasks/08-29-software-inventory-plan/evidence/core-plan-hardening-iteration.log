@@ -1,0 +1,13 @@
+COMMAND: cargo test -p devsweep-core software::plan
+OUTPUT:
+running 3 tests
+test software::plan::tests::hostile_display_observations_never_enter_the_selection_plan ... ok
+test software::plan::tests::removed_changed_reinstalled_and_expired_plans_fail_closed ... FAILED
+test software::plan::tests::preview_digest_is_stable_and_contains_only_opaque_strategy_tokens ... ok
+
+thread 'software::plan::tests::removed_changed_reinstalled_and_expired_plans_fail_closed' panicked at crates\devsweep-core\src\software\plan.rs:310:9:
+assertion failed: matches!(preview_selection_plan(&plan, &saved, &removed, 1_002), Err(SoftwarePlanError::StaleSelection(_)))
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 210 filtered out; finished in 0.00s
+EXIT_CODE: 1
+RESOLUTION: recomputed the hostile live fixture fingerprint so header-integrity validation passes before the intended exact stale-selection assertion.

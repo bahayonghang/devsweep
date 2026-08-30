@@ -1,0 +1,52 @@
+Step 3 is complete. No commit or push was performed.
+
+Implemented:
+
+- Activated `software.*` dispatch without changing the frozen parser.
+- Implemented frozen `software inventory` and `software plan` handlers.
+- Added closed inventory decoding, exact-ID plan generation, hostile-field rejection, locale-neutral JSON, and bilingual human summaries.
+- Kept `software preview` and `software uninstall` unavailable.
+- Updated the stale integration assertion and resolved one Clippy issue in the task-owned ARP adapter.
+
+Validation:
+
+- `cargo test -p devsweep-cli software` — exit 0, 5 passed.
+- `cargo test -p devsweep-core software` — exit 0, 13 passed.
+- Focused CLI contract rerun — exit 0.
+- `git diff --check` — exit 0.
+- Final `just ci` — exit 0; format, check, all workspace tests, and Clippy passed.
+- `just release-archive` — exit 0.
+
+Native standard-user evidence:
+
+- No elevation/UAC; `is_elevated=false`.
+- 1,293 entries: 823 ARP, 291 MSI, 179 current-user MSIX.
+- All four ARP hive/view combinations and all three MSI source contexts were queried.
+- All 291 MSI entries were manual; all 86 selectable entries were current-user MSIX.
+- Three ARP sources truthfully reported `registry_entry_incomplete`; sibling sources remained visible.
+- All last-used fields were exactly `unknown/no_supported_exact_source`.
+- Exact current-process SID and joined MTA-worker test passed with zero workers remaining.
+- Native plan contained only the five frozen plan fields and no program, argv, uninstall string, icon, or installed path.
+- Live OS permission denial did not naturally occur; denied/corrupt behavior was verified by Windows-host fixtures.
+
+Release growth:
+
+- Binary: +411,136 bytes, below the 5,242,880-byte stop threshold.
+- ZIP: +149,703 bytes, below the 2,097,152-byte stop threshold.
+
+Resolved gate failures:
+
+- Initial integration drift: `left Some(0), right Some(4)` after Software inventory became active.
+- Clippy: `clippy::chunks-exact-to-as-chunks` at `software/arp.rs:384:18`.
+- Both were corrected; no blockers remain.
+
+Primary evidence is under `.trellis/tasks/08-29-software-inventory-plan/evidence/`, notably:
+
+- `step3-native-summary.json`
+- `step3-validation-summary.json`
+- `step3-size-budget.json`
+- `step3-just-ci-final.log`
+- `step3-native-inventory.json`
+- `step3-native-plan-safety.log`
+
+Unrelated existing changes in `.trellis/.gitignore`, `README.md`, `justfile`, and other task directories were preserved and not edited.

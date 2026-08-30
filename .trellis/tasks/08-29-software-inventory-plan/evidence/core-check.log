@@ -1,0 +1,5 @@
+COMMAND: cargo check -p devsweep-core --all-targets
+OUTPUT:
+    Checking devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.76s
+EXIT_CODE: 0

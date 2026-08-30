@@ -1,0 +1,31 @@
+{
+  "id": "software-inventory-plan",
+  "name": "software-inventory-plan",
+  "title": "Implement Software inventory and preview plans",
+  "description": "Own tagged ARP/MSI/MSIX inventory identities, immutable fingerprints, untrusted selections, preview digests, protected/manual states, and hostile-fixture tests.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "tagged ARP/MSI/MSIX inventory; immutable fingerprint; selection plan and preview; no execution",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-software-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "4-software",
+    "depends_on": "08-29-cli-contract-localization",
+    "dependency_approval": "approved exact Windows-target windows =0.56.0 direct declaration with ApplicationModel, Foundation, Foundation_Collections, Management_Deployment, and Win32_System_WinRT only; no other dependency",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

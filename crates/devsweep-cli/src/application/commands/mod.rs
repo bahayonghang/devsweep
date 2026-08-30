@@ -26,6 +26,9 @@ pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError
     if command.starts_with("analyze.") {
         return analyze::run(cli, locale);
     }
+    if command.starts_with("software.") {
+        return software::run(cli, locale);
+    }
     let message = catalogue(locale)
         .render("error.mode_unavailable", &[("command", command)], None)
         .map_err(|error| {
@@ -55,14 +58,33 @@ mod tests {
         let _ = software::Route;
         let _ = status::Route;
         software::assert_leaf_routes_registered();
+        let _ = software::run;
     }
 
     #[test]
     fn staged_commands_fail_closed_instead_of_running_legacy_handlers() {
-        let cli = Cli::try_parse_from(["devsweep", "software", "inventory"])
-            .expect("frozen command parses");
+        let cli =
+            Cli::try_parse_from(["devsweep", "optimize", "list"]).expect("frozen command parses");
         let error = dispatch(&cli, Locale::En).expect_err("handler is not yet wired");
         assert_eq!(error.code, "mode_unavailable");
-        assert!(error.message.contains("software.inventory"));
+        assert!(error.message.contains("optimize.list"));
+    }
+
+    #[test]
+    fn software_commands_reach_the_owned_handler() {
+        let cli = Cli::try_parse_from([
+            "devsweep",
+            "software",
+            "plan",
+            "--inventory",
+            "missing-inventory.json",
+            "--select",
+            "software:v1:msix:missing",
+            "--output",
+            "unused-plan.json",
+        ])
+        .expect("frozen command parses");
+        let error = dispatch(&cli, Locale::En).expect_err("missing inventory fails");
+        assert_eq!(error.code, "inventory_read_failed");
     }
 }

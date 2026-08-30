@@ -27,3 +27,5 @@ pub mod rules;
 pub mod scan;
 /// Frontend-neutral scan, inventory, and cleanup service boundaries.
 pub mod services;
+/// Read-only installed-software inventory and immutable preview planning.
+pub mod software;

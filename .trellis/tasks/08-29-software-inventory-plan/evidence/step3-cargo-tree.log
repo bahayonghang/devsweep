@@ -1,0 +1,58 @@
+COMMAND: cargo tree -p devsweep-core -e features -i windows@0.56.0
+OUTPUT:
+windows v0.56.0
+├── windows feature "ApplicationModel"
+│   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+│       └── devsweep-core feature "default" (command-line)
+├── windows feature "Foundation"
+│   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core) (*)
+│   ├── windows feature "ApplicationModel" (*)
+│   ├── windows feature "Foundation_Collections"
+│   │   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core) (*)
+│   └── windows feature "Management"
+│       └── windows feature "Management_Deployment"
+│           └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core) (*)
+├── windows feature "Foundation_Collections" (*)
+├── windows feature "Management" (*)
+├── windows feature "Management_Deployment" (*)
+├── windows feature "Win32"
+│   ├── windows feature "Win32_Foundation"
+│   │   └── trash v5.2.6
+│   │       ├── trash feature "chrono"
+│   │       │   └── trash feature "default"
+│   │       │       └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core) (*)
+│   │       ├── trash feature "coinit_apartmentthreaded"
+│   │       │   └── trash feature "default" (*)
+│   │       └── trash feature "default" (*)
+│   │   └── windows feature "Win32" (*)
+│   ├── windows feature "Win32_Storage"
+│   │   └── windows feature "Win32_Storage_EnhancedStorage"
+│   │       └── trash v5.2.6 (*)
+│   ├── windows feature "Win32_System"
+│   │   ├── windows feature "Win32_System_Com"
+│   │   │   └── windows feature "Win32_System_Com_StructuredStorage"
+│   │   │       └── trash v5.2.6 (*)
+│   │   ├── windows feature "Win32_System_SystemServices"
+│   │   │   └── trash v5.2.6 (*)
+│   │   └── windows feature "Win32_System_WinRT"
+│   │       └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core) (*)
+│   └── windows feature "Win32_UI"
+│       └── windows feature "Win32_UI_Shell"
+│           └── windows feature "Win32_UI_Shell_PropertiesSystem"
+│               └── trash v5.2.6 (*)
+├── windows feature "Win32_Foundation" (*)
+├── windows feature "Win32_Storage" (*)
+├── windows feature "Win32_Storage_EnhancedStorage" (*)
+├── windows feature "Win32_System" (*)
+├── windows feature "Win32_System_Com" (*)
+├── windows feature "Win32_System_Com_StructuredStorage" (*)
+├── windows feature "Win32_System_SystemServices" (*)
+├── windows feature "Win32_System_WinRT" (*)
+├── windows feature "Win32_UI" (*)
+├── windows feature "Win32_UI_Shell" (*)
+├── windows feature "Win32_UI_Shell_PropertiesSystem" (*)
+└── windows feature "default"
+    ├── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core) (*)
+    └── trash v5.2.6 (*)
+NOTE: direct selected projection remains windows 0.56.0 with the five approved features; no new dependency was added in Step 3.
+EXIT_CODE: 0

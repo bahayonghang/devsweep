@@ -1,0 +1,10 @@
+COMMAND: cargo run --locked -p devsweep-cli --bin devsweep -- --language en software inventory --source all --output .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-human-en.txt
+OUTPUT:
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running `target\debug\devsweep.exe --language en software inventory --source all --output .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-human-en.txt`
+EXIT_CODE: 0
+COMMAND: cargo run --locked -p devsweep-cli --bin devsweep -- --language zh-CN software inventory --source all --output .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-human-zh-cn.txt
+OUTPUT:
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running `target\debug\devsweep.exe --language zh-CN software inventory --source all --output .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-human-zh-cn.txt`
+EXIT_CODE: 0

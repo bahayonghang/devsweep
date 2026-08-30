@@ -1,0 +1,15 @@
+COMMAND: cargo tree -p devsweep-core -e features -i windows@0.56.0
+OUTPUT:
+windows v0.56.0
+├── windows feature "ApplicationModel"
+│   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+├── windows feature "Foundation"
+│   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+├── windows feature "Foundation_Collections"
+│   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+├── windows feature "Management_Deployment"
+│   └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+└── windows feature "Win32_System_WinRT"
+    └── devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+NOTE: the devsweep-core tree resolves one windows package version, 0.56.0. The workspace lock already contained windows 0.61.3 for another workspace dependency before this task; Cargo.lock diff adds no package block or version.
+EXIT_CODE: 0

@@ -11,7 +11,7 @@ mod history;
 mod optimize;
 mod protect;
 mod rules;
-mod software;
+pub(super) mod software;
 mod status;
 
 #[allow(dead_code)]

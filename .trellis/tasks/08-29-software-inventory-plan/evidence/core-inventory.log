@@ -1,0 +1,20 @@
+COMMAND: cargo test -p devsweep-core software::inventory
+OUTPUT:
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-0d5238c2890ee81d.exe)
+
+running 5 tests
+test software::inventory_tests::reported_kib_uses_checked_integer_arithmetic ... ok
+test software::inventory_tests::refusal_matrix_uses_the_exact_first_matching_priority ... ok
+test software::inventory_tests::denied_or_partial_sources_do_not_erase_complete_siblings ... ok
+test software::inventory_tests::exact_identity_conflicts_do_not_fuzzy_merge_duplicate_display_names ... ok
+test software::inventory_tests::inventory_order_and_fingerprint_are_deterministic ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 208 filtered out; finished in 0.00s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-c2e5cb0a2b6c2d49.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+EXIT_CODE: 0

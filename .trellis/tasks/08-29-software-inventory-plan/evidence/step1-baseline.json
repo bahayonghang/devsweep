@@ -1,0 +1,24 @@
+{
+  "task": "08-29-software-inventory-plan",
+  "recorded_at": "2026-08-31T06:24:42+08:00",
+  "cargo_tree": {
+    "command": "cargo tree -p devsweep-core -e features",
+    "exit_code": 0,
+    "windows_package_versions": ["0.56.0"]
+  },
+  "cargo_lock": {
+    "path": "Cargo.lock",
+    "size_bytes": 138503,
+    "sha256": "bec95dbcb91ca0f67087cc882857e1c1fe71db6d29b0ad60cacfaf015fc0c0a8"
+  },
+  "release_binary": {
+    "path": "target/release/devsweep.exe",
+    "size_bytes": 3487232,
+    "sha256": "4ac8b7a95deca838b42798672b684d5b6a2a6b0553944da4f4be218d465fde41"
+  },
+  "release_zip": {
+    "path": "dist/devsweep-x86_64-pc-windows-msvc.zip",
+    "size_bytes": 1391501,
+    "sha256": "d2f8f80b0c77c5c3ca0b321eb7b31028ac9a3abcf9511f9537ede07d1c7649ad"
+  }
+}

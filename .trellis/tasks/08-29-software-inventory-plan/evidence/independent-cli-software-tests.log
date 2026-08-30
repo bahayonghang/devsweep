@@ -1,0 +1,34 @@
+COMMAND: cargo test -p devsweep-cli software
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.51s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-c73006d8acebc199.exe)
+
+running 5 tests
+test application::commands::software::inventory::tests::truthful_last_used_shape_is_not_relabelled_by_the_cli ... ok
+test application::commands::tests::software_commands_reach_the_owned_handler ... ok
+test application::presentation::software::tests::software_inventory_summary_is_bilingual ... ok
+test application::commands::software::inventory::tests::hostile_inventory_fields_cannot_enter_a_saved_plan ... ok
+test application::commands::software::inventory::tests::software_inventory_json_is_locale_invariant_and_preserves_partial_evidence ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.01s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-b8344168a9e83e7b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-81a5d9406bdd73f7.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-3701fee7812062de.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+EXIT_CODE: 0

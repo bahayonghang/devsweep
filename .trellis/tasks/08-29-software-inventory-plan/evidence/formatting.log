@@ -1,0 +1,12 @@
+COMMAND: cargo fmt --all -- --check
+OUTPUT:
+rustfmt reported formatting differences in the newly added Software V1 Rust files.
+EXIT_CODE: 1
+
+COMMAND: cargo fmt --all
+OUTPUT:
+EXIT_CODE: 0
+
+COMMAND: cargo fmt --all -- --check
+OUTPUT:
+EXIT_CODE: 0
