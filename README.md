@@ -78,6 +78,30 @@ The complete English and Simplified Chinese documentation site lives in
 [`docs/`](docs/index.md). Install its locked dependencies with `npm ci`, then run
 `just docs` to start the local site.
 
+## Five-mode product
+
+The accepted Windows product exposes five primary modes together: Clean,
+Software, Optimize, Analyze, and Status, plus read-only History, Protection,
+and Rules. Bare `devsweep` from an interactive TTY opens the TUI. The shipped
+roots are `clean`, `software`, `optimize`, `analyze`, `status`, and `history`.
+Old `tui`, `scan`, `inventory`, `protect`, and `rules` roots are unknown
+commands, not aliases.
+
+Machine JSON, NDJSON, plan identities, digests, and audit records stay
+locale-neutral. Human CLI/TUI/desktop copy is English or Simplified Chinese.
+Mutating commands require a saved domain plan, a live `sha256:` preview digest,
+and `--confirm`. Software uninstall is current-user MSIX only. Optimize
+executes DNS cache flush and can launch frozen Settings URIs; a Settings launch
+is not maintenance completion. Analyze and Status never create cleanup
+authority.
+
+See [`docs/guide/cli-migration.md`](docs/guide/cli-migration.md) and
+[`docs/safety-capability-matrix.md`](docs/safety-capability-matrix.md). Native
+Windows evidence is recorded in
+[`docs/validation/five-mode-native.md`](docs/validation/five-mode-native.md).
+Local packaging remains unsigned. This task does not push, sign, publish, or
+release.
+
 ## Validation
 
 The canonical local gate is:

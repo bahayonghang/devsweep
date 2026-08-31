@@ -11,3 +11,8 @@ export {
   type SupportingDestinationId,
   type SupportingDestinationRegistration,
 } from "./AppShell";
+export {
+  shippedModeRegistrations,
+  shippedSupportingRegistrations,
+  type ShellRegistrationInput,
+} from "./registry";

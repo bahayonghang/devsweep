@@ -8,6 +8,43 @@ mod software;
 mod status;
 mod support;
 
+/// Frozen Tauri command names registered after every mode child passed
+/// recursive acceptance. Glue adds no compatibility alias and no domain
+/// handler of its own.
+#[cfg(test)]
+const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
+    "scan_start",
+    "scan_cancel",
+    "analyze_start",
+    "analyze_cancel",
+    "software_inventory_start",
+    "software_preview",
+    "software_uninstall",
+    "software_audit",
+    "software_cancel",
+    "optimize_list",
+    "optimize_preview",
+    "optimize_run",
+    "optimize_audit",
+    "optimize_cancel",
+    "status_snapshot",
+    "status_live_start",
+    "status_cancel",
+    "plan_dry_run",
+    "plan_execute",
+    "protection_list_get",
+    "protection_list_set",
+    "protection_list",
+    "protection_add",
+    "protection_remove",
+    "rules_list",
+    "rules_show",
+    "history_list",
+    "history_show",
+    "presentation_settings_get",
+    "presentation_settings_set",
+];
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -57,6 +94,39 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    use super::SHIPPED_INVOKE_COMMANDS;
+
+    #[test]
+    fn invoke_handler_registers_every_accepted_mode_and_no_alias() {
+        let source = include_str!("lib.rs");
+        let start = source
+            .find("tauri::generate_handler![")
+            .expect("invoke handler inventory");
+        let block = source[start..]
+            .split_once("])")
+            .map(|(block, _)| block)
+            .expect("closed invoke handler");
+        for command in SHIPPED_INVOKE_COMMANDS {
+            assert!(
+                block.contains(command),
+                "shipped command {command} is missing from generate_handler"
+            );
+        }
+        for alias in [
+            "commands::tui",
+            "commands::inventory",
+            "legacy_scan",
+            "compatibility_alias",
+        ] {
+            assert!(
+                !block.contains(alias),
+                "compatibility alias {alias} must not enter the invoke handler"
+            );
+        }
+        assert!(block.contains("debug_native_fault_mode"));
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 30);
+    }
+
     #[test]
     fn capability_grants_only_event_subscription_and_last_window_destroy() {
         let capability: serde_json::Value =

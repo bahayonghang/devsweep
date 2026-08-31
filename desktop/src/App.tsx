@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { tauriBridge, type DesktopBridge } from "./api/bridge";
-import { AppShell, type ModeRegistration } from "./app-shell";
+import { AppShell, shippedModeRegistrations, shippedSupportingRegistrations } from "./app-shell";
 import {
   message,
   resolvePresentationLanguage,
@@ -15,12 +15,6 @@ import {
   tauriDesktopLifecycleBridge,
   type DesktopLifecycleBridge,
 } from "./lifecycle";
-import { CleanWorkbench } from "./modes/clean";
-import { AnalyzePage } from "./modes/analyze";
-import { SoftwareWorkbench } from "./modes/software";
-import { OptimizeWorkbench } from "./modes/optimize";
-import { StatusWorkbench } from "./modes/status";
-import { HistoryPage, ProtectionPage, RulesPage } from "./support";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
 
@@ -189,18 +183,13 @@ export function App({
   }
   if (presentation.status !== "ready") return <PresentationStoreGate state={presentation.status} />;
 
-  const modes: readonly ModeRegistration[] = [
-    { id: "clean", render: () => <CleanWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
-    { id: "software", render: () => <SoftwareWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
-    { id: "optimize", render: () => <OptimizeWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
-    { id: "analyze", render: () => <AnalyzePage bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
-    { id: "status", render: () => <StatusWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
-  ];
-  const supporting = [
-    { id: "protection" as const, render: () => <ProtectionPage bridge={bridge} locale={presentation.locale} /> },
-    { id: "rules" as const, render: () => <RulesPage bridge={bridge} locale={presentation.locale} /> },
-    { id: "history" as const, render: () => <HistoryPage bridge={bridge} locale={presentation.locale} /> },
-  ];
+  const registrationInput = {
+    bridge,
+    coordinator,
+    locale: presentation.locale,
+  };
+  const modes = shippedModeRegistrations(registrationInput);
+  const supporting = shippedSupportingRegistrations(registrationInput);
   return <AppShell
     modes={modes}
     supporting={supporting}

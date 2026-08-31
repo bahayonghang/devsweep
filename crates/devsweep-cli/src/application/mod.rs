@@ -14,6 +14,13 @@ mod commands;
 mod output;
 mod presentation;
 
+/// Frozen CLI roots registered after every mode child passed recursive
+/// acceptance. Removed roots stay unknown commands, not aliases.
+#[cfg(test)]
+const SHIPPED_COMMAND_ROOTS: &[&str] = &[
+    "clean", "software", "optimize", "analyze", "status", "history",
+];
+
 pub(crate) fn run() -> Result<()> {
     init_tracing();
     if let Err(error) = validate_embedded_catalogues() {
@@ -237,6 +244,33 @@ mod tests {
             Locale::En
         );
         assert_eq!(resolve_non_interactive_locale(None, None), Locale::En);
+    }
+
+    #[test]
+    fn shipped_roots_are_registered_without_compatibility_aliases() {
+        let status = Cli::try_parse_from(["devsweep", "status", "snapshot"]).unwrap();
+        assert_eq!(status.command_name(), Some("status.snapshot"));
+        let analyze = Cli::try_parse_from(["devsweep", "analyze", "scan", "--root", "."]).unwrap();
+        assert_eq!(analyze.command_name(), Some("analyze.scan"));
+        let software =
+            Cli::try_parse_from(["devsweep", "software", "inventory", "--format", "json"]).unwrap();
+        assert_eq!(software.command_name(), Some("software.inventory"));
+        let optimize = Cli::try_parse_from(["devsweep", "optimize", "list"]).unwrap();
+        assert_eq!(optimize.command_name(), Some("optimize.list"));
+        let clean = Cli::try_parse_from([
+            "devsweep", "clean", "scan", "--root", ".", "--scope", "projects",
+        ])
+        .unwrap();
+        assert_eq!(clean.command_name(), Some("clean.scan"));
+        let history = Cli::try_parse_from(["devsweep", "history", "list"]).unwrap();
+        assert_eq!(history.command_name(), Some("history.list"));
+        for alias in ["tui", "scan", "inventory", "protect", "rules"] {
+            assert!(
+                Cli::try_parse_from(["devsweep", alias]).is_err(),
+                "removed root {alias} must not parse"
+            );
+        }
+        assert_eq!(SHIPPED_COMMAND_ROOTS.len(), 6);
     }
 
     #[test]
