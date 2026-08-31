@@ -1,0 +1,3 @@
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/windows-status-boundary.md", "reason": "Coordinate collectors and presentation from the approved metrics, bounds, and unsupported states."}
+{"file": ".trellis/tasks/08-29-status-mode/design.md", "reason": "Enforce collector-before-presentation ownership and atomic rollback."}
+{"file": ".trellis/tasks/08-29-status-mode/acceptance.md", "reason": "Coordination-parent acceptance review PASS at HEAD 25b83d8; both leaves archived with product commits 70e43ce and fc3a69c; umbrella remains active."}

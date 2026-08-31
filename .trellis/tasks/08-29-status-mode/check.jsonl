@@ -1,0 +1,18 @@
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/windows-status-boundary.md", "reason": "Audit recursive behavior against supported metrics, explicit gaps, and resource bounds."}
+{"file": ".trellis/tasks/08-29-status-mode/prd.md", "reason": "Trace parity, privacy, lifecycle, resource, native, and rollback criteria."}
+{"file": ".trellis/tasks/08-29-status-mode/design.md", "reason": "Confirm collector-before-presentation ownership and exact R4 application."}
+{"file": ".trellis/tasks/08-29-status-mode/implement.md", "reason": "Apply umbrella PASS conditions: archived leaves, no completion-required UNVERIFIED, stay active."}
+{"file": ".trellis/tasks/08-29-status-mode/acceptance.md", "reason": "Independent verification of parent overall PASS claims against product and child archives."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-collector-cli/task.json", "reason": "Confirm completed status and parent pointer."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-collector-cli/prd.md", "reason": "Map parent R1/R2/R5 to collector/CLI child contract."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-collector-cli/evidence/independent-check-report.md", "reason": "Child-1 independent PASS and sanctioned UNVERIFIED ledger."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-collector-cli/evidence/independent-native/summary.json", "reason": "Recompute CLI R4 snapshot/live/post-exit numbers."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-collector-cli/evidence/independent-native/snapshot-1.json", "reason": "Verify availability, process keys, unsupported codes, missing-not-zero."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-tui-desktop-native/task.json", "reason": "Confirm completed status and parent pointer."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-tui-desktop-native/prd.md", "reason": "Map parent AC2/AC3 presentation and native-evidence clauses."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-tui-desktop-native/evidence/independent-check-report.md", "reason": "Child-2 independent PASS, clippy self-fix, R4 round-2 hash."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-tui-desktop-native/evidence/independent-native/resource/summary.json", "reason": "Recompute desktop R4 including 25-sample final-five hold."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-status-tui-desktop-native/evidence/independent-native/localappdata/DevSweep/settings/presentation-v1.json", "reason": "Confirm isolated store is language only, not sample history."}
+{"file": "crates/devsweep-core/src/status/mod.rs", "reason": "Frozen AvailabilityV1/StatusSnapshotV1/ProcessV1/StatusEventV1 at HEAD."}
+{"file": "desktop/src/api/contract.ts", "reason": "Closed PROCESS_ROW_KEYS, four events, decodePowerValue missing-battery reject."}
+{"file": ".trellis/tasks/08-29-status-mode/evidence/independent-check-report.md", "reason": "Independent parent check overall PASS; no completion-required UNVERIFIED."}
