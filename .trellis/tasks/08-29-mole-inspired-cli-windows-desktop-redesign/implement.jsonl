@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Load the complete backend safety and quality contract before any five-mode core or Windows integration work."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Load the desktop component, state, type-safety, and native validation contract before shell or mode work."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Trace every CLI/TUI/Desktop action through DTO, IPC, domain authority, persistence, and feedback."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/mole-reference-audit.md", "reason": "Keep implementation inside the pinned clean-room accept/adapt/reject boundary."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/current-devsweep-capabilities.md", "reason": "Start from verified current services and gaps instead of assuming Mole parity."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/localization-contract.md", "reason": "Keep bilingual presentation and locale-neutral machine contracts consistent."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/design.md", "reason": "Follow the approved domain separation, operation coordination, delivery order, and dependency gates."}
