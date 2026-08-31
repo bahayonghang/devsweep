@@ -12,7 +12,7 @@ pub(super) mod optimize;
 mod protect;
 mod rules;
 pub(super) mod software;
-mod status;
+pub(super) mod status;
 
 #[allow(dead_code)]
 pub(super) fn render(

@@ -31,3 +31,5 @@ pub mod scan;
 pub mod services;
 /// Read-only installed-software inventory and immutable preview planning.
 pub mod software;
+/// Bounded read-only Windows Status snapshots and live sampling.
+pub mod status;

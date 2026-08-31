@@ -1,5 +1,6 @@
 use std::{
     fs,
+    io::Read,
     path::Path,
     process::{Command, Output, Stdio},
 };
@@ -110,7 +111,7 @@ fn help_exposes_only_the_frozen_roots_in_english_and_chinese() {
 
 #[test]
 fn explicit_chinese_language_localizes_human_errors_only() {
-    let output = devsweep(&["--language", "zh-CN", "status", "snapshot"]);
+    let output = devsweep(&["--language", "zh-CN", "history", "list"]);
     assert_eq!(output.status.code(), Some(4));
     assert!(output.stdout.is_empty());
     assert!(stderr(&output).contains("当前分阶段构建尚未接入"));
@@ -179,28 +180,37 @@ fn bare_redirected_invocation_and_human_live_name_the_tty_contract() {
 fn json_and_ndjson_are_locale_neutral_and_keep_diagnostics_off_stderr() {
     let first = devsweep(&["status", "snapshot", "--format", "json"]);
     let second = devsweep(&["status", "snapshot", "--format", "json"]);
-    assert_eq!(first.status.code(), Some(4));
-    assert_eq!(second.status.code(), Some(4));
-    assert_eq!(first.stdout, second.stdout);
+    let first_code = first.status.code();
+    let second_code = second.status.code();
+    assert!(
+        first_code == Some(0) || first_code == Some(5),
+        "snapshot exit {first_code:?}"
+    );
+    assert!(
+        second_code == Some(0) || second_code == Some(5),
+        "snapshot exit {second_code:?}"
+    );
     assert!(first.stderr.is_empty());
+    assert!(second.stderr.is_empty());
     let envelope: serde_json::Value = serde_json::from_slice(&first.stdout).unwrap();
     assert_eq!(envelope["schema_version"], 1);
     assert_eq!(envelope["command"], "status.snapshot");
-    assert_eq!(envelope["error"]["code"], "mode_unavailable");
-    assert!(envelope["error"]["message"].is_null());
+    assert!(envelope["error"].is_null());
+    status_v1_contract::decode_snapshot_envelope(&envelope).expect("live snapshot is closed V1");
 
-    let stream = devsweep(&["status", "live", "--format", "ndjson"]);
-    assert_eq!(stream.status.code(), Some(4));
-    assert!(stream.stderr.is_empty());
-    let lines = stdout(&stream)
-        .lines()
-        .map(str::to_string)
-        .collect::<Vec<_>>();
-    assert_eq!(lines.len(), 1);
-    let terminal: serde_json::Value = serde_json::from_str(&lines[0]).unwrap();
-    assert_eq!(terminal["event"], "status_terminal");
-    assert_eq!(terminal["sequence"], 0);
-    assert_eq!(terminal["data"]["reason"], "producer_error");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_devsweep"))
+        .args(["status", "live", "--format", "ndjson", "--interval", "1"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("status live starts");
+    let mut stdout = child.stdout.take().expect("live stdout");
+    let mut buffer = [0_u8; 4096];
+    let _ = stdout.read(&mut buffer);
+    drop(stdout);
+    let status = child.wait().expect("live exits after pipe close");
+    assert_eq!(status.code(), Some(0));
 }
 
 #[test]
@@ -1205,6 +1215,10 @@ mod status_v1_contract {
             return Err("status stream must contain exactly one terminal".to_string());
         }
         Ok(events)
+    }
+
+    pub(super) fn decode_snapshot_envelope(value: &Value) -> DecodeResult<()> {
+        SnapshotEnvelopeV1::decode(value.clone()).map(|_| ())
     }
 
     pub(super) fn verify_canonical_fixtures() {

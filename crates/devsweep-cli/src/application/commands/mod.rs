@@ -32,6 +32,9 @@ pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError
     if command.starts_with("optimize.") {
         return optimize::run(cli, locale);
     }
+    if command.starts_with("status.") {
+        return status::run(cli, locale);
+    }
     let message = catalogue(locale)
         .render("error.mode_unavailable", &[("command", command)], None)
         .map_err(|error| {
@@ -62,15 +65,31 @@ mod tests {
         let _ = status::Route;
         software::assert_leaf_routes_registered();
         let _ = software::run;
+        let _ = status::run;
     }
 
     #[test]
     fn staged_commands_fail_closed_instead_of_running_legacy_handlers() {
         let cli =
-            Cli::try_parse_from(["devsweep", "status", "snapshot"]).expect("frozen command parses");
+            Cli::try_parse_from(["devsweep", "history", "list"]).expect("frozen command parses");
         let error = dispatch(&cli, Locale::En).expect_err("handler is not yet wired");
         assert_eq!(error.code, "mode_unavailable");
-        assert!(error.message.contains("status.snapshot"));
+        assert!(error.message.contains("history.list"));
+    }
+
+    #[test]
+    fn status_commands_reach_the_owned_handler() {
+        let cli = Cli::try_parse_from(["devsweep", "status", "snapshot", "--format", "json"])
+            .expect("frozen command parses");
+        match dispatch(&cli, Locale::En) {
+            Ok(()) => {}
+            Err(error) => assert!(
+                error.exit == crate::application::output::ExitClass::Partial
+                    || error.code == "broken_pipe",
+                "{}",
+                error.code
+            ),
+        }
     }
 
     #[test]
