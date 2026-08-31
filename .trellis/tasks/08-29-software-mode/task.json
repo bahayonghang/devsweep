@@ -1,0 +1,34 @@
+{
+  "id": "software-mode",
+  "name": "software-mode",
+  "title": "Deliver Windows Software mode",
+  "description": "Own safe Windows application inventory, preview, current-user MSIX-only uninstall authorization, all-MSI manual handoff, audit, CLI/TUI/Desktop surfaces, and native evidence.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": "Software recursive coordination and acceptance only; no direct product-code ownership",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-29-software-inventory-plan",
+    "08-29-software-execution-audit",
+    "08-29-software-cli-tui-desktop-native"
+  ],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "4-software",
+    "depends_on": "08-29-cli-contract-localization,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}
