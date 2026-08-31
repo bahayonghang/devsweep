@@ -300,6 +300,116 @@ CommandRequest {
 }
 ```
 
+### Scenario: Software execution and durable audit
+
+#### 1. Scope / Trigger
+
+- Trigger: `software preview` or `software uninstall` consumes a Software V1
+  selection plan, reconstructs current-user MSIX authority, calls the WinRT
+  removal API, or appends/replays the Software audit journal.
+
+#### 2. Signatures
+
+- CLI entrypoints:
+  - `devsweep software preview --plan PATH [--format <human|json>] [--output FILE]`
+  - `devsweep software uninstall --plan PATH --preview-digest DIGEST --confirm
+    [--format <human|json>] [--output FILE]`
+- Core boundary:
+  `SoftwareExecutor::execute(SoftwareExecutionRequest { plan,
+  expected_preview_digest, confirmed, cancel })`.
+
+#### 3. Contracts
+
+- `SoftwareExecutionRequest` cannot carry a serialized or caller-constructed
+  inventory. The executor acquires current-user MSIX inventory through its
+  private live provider behind process single-flight and audit locking, after
+  reconciling pending dispatches.
+- `ValidatedSoftwareAction` is opaque and non-deserializable. Only a matching
+  live eligible current-user MSIX identity and preview digest can construct it;
+  explicit confirmation is also required at the core boundary.
+- MSI, registry-only, machine/other-user, protected, stale, malformed, and
+  unsupported identities fail before the removal adapter. No vendor command,
+  shell text, elevation fallback, or serialized argv participates.
+- The fixed versioned Software journal durably syncs `dispatch_started` before
+  `RemovePackageAsync`, holds an exclusive sidecar lock, enforces monotonic
+  transitions and exactly one terminal, and contains tagged identity plus
+  stable codes without localized or executable text.
+- Startup recovery re-queries pending exact identities and never redispatches.
+  A terminal must match accumulated adapter and requery evidence from the same
+  operation.
+- The MSIX adapter sends the exact `PackageFullName` through the joined MTA
+  helper, monitors for at most 120 seconds, requests post-dispatch OS
+  cancellation at most once, waits five seconds, then re-queries at 0, 2, and
+  10 seconds.
+- Post-dispatch terminals are exactly `removed`, `reboot_required`,
+  `still_present`, `failed`, or `unknown_after_dispatch`. Software uninstall is
+  irreversible from DevSweep's perspective and has no execution `partial`.
+
+#### 4. Validation & Error Matrix
+
+- Missing confirmation, stale digest, invalid identity, or audit-lock failure
+  -> no adapter call.
+- Cancellation before durable dispatch -> `canceled_before_start`, no adapter
+  call. Cancellation, timeout, crash, or unfinished adapter after dispatch ->
+  authoritative requery or `unknown_after_dispatch`, never canceled.
+- Exact identity absent -> `removed`, except documented reboot evidence wins as
+  `reboot_required`. Present plus definitive failure -> `failed`; present plus
+  success -> `still_present`; unavailable/conflicting evidence ->
+  `unknown_after_dispatch` unless reboot evidence has higher precedence.
+- Unknown audit version, corrupt transition order, repeated terminal, or a
+  terminal inconsistent with accumulated evidence -> fail closed without a new
+  dispatch.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: preview exposes the exact tagged current-user MSIX identity and opaque
+  digest; uninstall independently reacquires live authority after recovery.
+- Base: adapter success plus exact identity still present is
+  `still_present`, not removal success.
+- Bad: a public request injects a forged `SoftwareInventoryV1`, recovery calls
+  the adapter again, or a terminal claims an installed state that no requery
+  observed.
+
+#### 6. Tests Required
+
+- Compile/runtime authority tests for opaque actions, private live inventory,
+  explicit confirmation, every refusal class, digest failure, and lock failure
+  before adapter invocation.
+- Exhaustive valid adapter/installed-state terminal matrix, pre/post-dispatch
+  cancellation, timeout, crash/recovery, evidence conflict, and no-second-call
+  recovery tests.
+- Journal durability, redaction, unknown-version, transition-order, accumulated
+  evidence, exclusive-lock, and exactly-one-terminal tests.
+- CLI hostile-plan, locale-neutral machine output, irreversible copy, and
+  single-document failed-exit tests.
+- Native non-uninstall evidence must verify medium integrity, no UAC, stale
+  authority, and journal persistence. Real removal remains `UNVERIFIED` when no
+  user-confirmed disposable current-user MSIX fixture exists.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+SoftwareExecutionRequest {
+    plan: &plan,
+    live_inventory: &deserialized_inventory,
+    expected_preview_digest: &digest,
+    cancel: None,
+}
+```
+
+Correct:
+
+```rust
+SoftwareExecutionRequest {
+    plan: &plan,
+    expected_preview_digest: &digest,
+    confirmed: true,
+    cancel: None,
+}
+```
+
 ### Scenario: Declarative plan trust boundary
 
 #### 1. Scope / Trigger

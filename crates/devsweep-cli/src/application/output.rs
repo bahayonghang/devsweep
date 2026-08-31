@@ -29,6 +29,7 @@ pub(super) struct ApplicationError {
     pub(super) exit: ExitClass,
     pub(super) code: &'static str,
     pub(super) message: String,
+    pub(super) output_already_emitted: bool,
 }
 
 impl ApplicationError {
@@ -37,6 +38,20 @@ impl ApplicationError {
             exit,
             code,
             message: message.into(),
+            output_already_emitted: false,
+        }
+    }
+
+    pub(super) fn after_output(
+        exit: ExitClass,
+        code: &'static str,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            exit,
+            code,
+            message: message.into(),
+            output_already_emitted: true,
         }
     }
 

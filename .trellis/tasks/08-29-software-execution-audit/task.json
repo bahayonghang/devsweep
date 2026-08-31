@@ -1,0 +1,30 @@
+{
+  "id": "software-execution-audit",
+  "name": "software-execution-audit",
+  "title": "Implement Software execution and durable audit",
+  "description": "Own current-user MSIX-only strategy reconstruction, revalidation, single-flight dispatch, durable restart recovery, the closed five terminal outcomes, and audit; every MSI is manual in V1.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "current-user MSIX-only execution strategy; durable dispatch/restart recovery; post-state requery; durable audit; no MSI execution, UI, or elevation",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-software-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "4-software",
+    "depends_on": "08-29-software-inventory-plan",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

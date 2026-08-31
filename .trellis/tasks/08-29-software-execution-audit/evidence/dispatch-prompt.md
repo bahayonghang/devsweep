@@ -1,0 +1,18 @@
+Active task: .trellis/tasks/08-29-software-execution-audit
+
+You are the trellis-implement sub-agent for this task in repo D:\Documents\Code\Rust\Exp\devsweep (Windows, Git Bash shell, branch `dev`). Standing constraints: no commit/push; protected dirty files (`.trellis/.gitignore`, `README.md`, `justfile`) untouched; no sub-agents; no other-user/machine/MSI execution; no vendor commands; no elevation; no new dependencies; no rollback/reinstall promises; program/argv separation; frozen parser grammar untouched (the `software.*` dispatch branch already exists — `software preview` and `software uninstall` handlers live in the owned `commands/software/` handler).
+
+## Read context first
+`.trellis/tasks/08-29-software-execution-audit/implement.jsonl` → `prd.md` → `design.md` → `implement.md` (authoritative; follow step order and the exact timing/evidence tables). Spec: `.trellis/spec/backend/index.md` + guides. The Software V1 domain you build on is `crates/devsweep-core/src/software/` (inventory/plan from the archived prior task; reuse its MTA worker, identities, revalidation, and preview token/digest — do not duplicate).
+
+## Deliverables (summary; implement.md is authoritative)
+1. Non-deserializable `ValidatedSoftwareAction` constructors reachable only from live preview revalidation + exact eligible current-user MSIX identities; prove MSI/registry-only identities have no constructor (type-level test). Locked versioned audit: durable pre-side-effect `dispatch_started`, monotonic transitions, one closed terminal, durable flush, stable codes, redaction; startup recovery of nonterminal records by identity-only requery with NO adapter retry. Fixtures for all-MSI/manual, machine/other-user MSIX, registry/protected/stale/malformed identities, digest/lock failures before any adapter call.
+2. Exact MSIX adapter: one uninstall at a time; `PackageManager::RemovePackageAsync` with the exact `PackageFullName` through the inventory MTA worker; monitoring bound to 120 s; pre-dispatch cancellation = canceled; post-dispatch OS cancel requested at most once, wait 5 s, requery at 0/2/10 s; first-match evidence table → only removed | reboot_required | still_present | failed | unknown_after_dispatch; never reversible; never `partial`. Crash points before/after durable `dispatch_started`, restart recovery, evidence conflict, adapter-unfinished, absent+reboot, present+failure/success fixtures; prove recovery performs no second removal call.
+3. Frozen CLI `software preview` + `software uninstall` in the owned handler; hostile fixtures; locale-invariant documents; `cargo test -p devsweep-cli software`, `git diff --check`, `just ci`.
+4. Native evidence: process/integrity tree, no UAC, audit durability, and all NON-uninstall native scenarios. For the real-uninstall scenarios: the repo contains no disposable MSIX fixture — do NOT uninstall any real package, do NOT install/sign a fixture; record the native uninstall evidence as UNVERIFIED with a note that it awaits explicit user confirmation of a concrete current-user target, per implement.md.
+
+## Validation
+`cargo test -p devsweep-core software::execution`, `software::audit`, `software::execution::msix`, plus full `cargo test -p devsweep-core software`, `cargo test -p devsweep-cli software`, `cargo fmt --all -- --check`, `git diff --check`, `just ci`. Use plain `cargo`. Raw logs (command + exit code) under `.trellis/tasks/08-29-software-execution-audit/evidence/`; append `implement.jsonl` journal lines.
+
+## Report back
+Per-step implementation summary, every gate command + exit code, evidence paths, deviations/blockers with exact error text, files changed, and the explicit UNVERIFIED list (should be limited to real-uninstall native scenarios).

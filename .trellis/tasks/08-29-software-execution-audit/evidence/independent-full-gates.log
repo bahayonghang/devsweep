@@ -1,0 +1,22 @@
+Independent verification timestamp: 2026-08-31T08:37:20.2238764+08:00
+
+COMMAND: just ci
+EXIT_CODE=0
+RESULTS:
+- cargo fmt --all -- --check: pass
+- cargo update --offline --package devsweep-core --package devsweep-cli: pass; 0 packages changed
+- cargo check --workspace --locked --all-targets: pass
+- cargo test --workspace --locked --all-targets: pass
+  - devsweep CLI/library: 136 passed
+  - CLI contract integration: 12 passed
+  - devsweep core: 235 passed
+  - core public API: 1 passed
+  - desktop: 28 passed, 2 intentional process-fixture entrypoints ignored
+- cargo clippy --workspace --locked --all-targets -- -D warnings: pass
+- Final output: ci complete
+NOTE: rustc emitted the existing Windows desktop linker import-library message as a warning; no gate failed.
+
+COMMAND: npm --prefix desktop run typecheck
+EXIT_CODE=0
+RESULT: tsc --noEmit pass
+

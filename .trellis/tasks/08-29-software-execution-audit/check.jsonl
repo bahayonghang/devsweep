@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit execution authority, process/API safety, cancellation, errors, audit durability, and tests."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/prd.md", "reason": "Trace dispatch, no-UAC, post-state, unknown, redaction, and native evidence clauses."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/design.md", "reason": "Verify no serialized or vendor command data can become execution input."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/independent-check-report.md", "reason": "Independent trellis-check result: PASS after in-scope authority, audit replay, single-output, coverage, and spec-sync fixes."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/independent-focused-gates.log", "reason": "Independent focused Software core/CLI tests plus format and diff gate exit codes."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/independent-full-gates.log", "reason": "Independent just ci and desktop TypeScript type-check results."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/independent-static-audit.log", "reason": "Independent parser/dependency, authority, audit, recovery, redaction, and native-evidence trace."}

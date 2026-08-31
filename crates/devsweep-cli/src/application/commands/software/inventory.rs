@@ -122,7 +122,7 @@ fn emit_inventory(
     }
 }
 
-fn map_plan_error(error: SoftwarePlanError) -> ApplicationError {
+pub(super) fn map_plan_error(error: SoftwarePlanError) -> ApplicationError {
     let (exit, code) = match error {
         SoftwarePlanError::UnsupportedInventoryVersion(_)
         | SoftwarePlanError::UnsupportedPlanVersion(_)

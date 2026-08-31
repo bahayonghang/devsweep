@@ -280,6 +280,8 @@ pub struct SoftwareSelectionPlanV1 {
 pub struct SoftwarePreviewV1 {
     pub version: u32,
     pub inventory_fingerprint: String,
+    /// Software removal is never reversible from DevSweep's perspective.
+    pub irreversible: bool,
     pub selected: Vec<SoftwarePreviewItemV1>,
     pub digest: String,
 }
@@ -289,6 +291,7 @@ pub struct SoftwarePreviewV1 {
 #[serde(deny_unknown_fields)]
 pub struct SoftwarePreviewItemV1 {
     pub id: String,
+    pub identity: SoftwareIdentity,
     pub action_class: SoftwareActionClass,
     pub scope: SoftwareScope,
     pub eligibility: SoftwareEligibilityReason,

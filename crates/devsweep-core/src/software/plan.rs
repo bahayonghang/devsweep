@@ -129,19 +129,50 @@ pub fn preview_selection_plan(
         if live.scope != SoftwareScope::CurrentUser {
             return Err(SoftwarePlanError::InvalidSelectedIdentity(id.clone()));
         }
-        selected.push(SoftwarePreviewItemV1 {
-            id: id.clone(),
-            action_class: SoftwareActionClass::RemoveCurrentUserMsix,
-            scope: SoftwareScope::CurrentUser,
-            eligibility: SoftwareEligibilityReason::EligibleCurrentUserMsix,
-            strategy_token: strategy_token(&live.identity, live.version.as_deref())?,
-        });
+        selected.push(preview_item(live)?);
     }
     selected.sort_by(|left, right| left.id.cmp(&right.id));
     let digest = preview_digest(&plan.inventory_fingerprint, &selected)?;
     Ok(SoftwarePreviewV1 {
         version: SOFTWARE_PREVIEW_VERSION,
         inventory_fingerprint: plan.inventory_fingerprint.clone(),
+        irreversible: true,
+        selected,
+        digest,
+    })
+}
+
+/// Revalidates an untrusted saved plan directly against a fresh exact-identity
+/// inventory. This is the frozen CLI boundary: the plan contributes only its
+/// opaque selection ids, expiry, and prior fingerprint; all strategy facts are
+/// reconstructed from the live current-user MSIX inventory.
+pub fn preview_selection_plan_live(
+    plan: &SoftwareSelectionPlanV1,
+    live_inventory: &SoftwareInventoryV1,
+    now_unix_ms: u64,
+) -> Result<SoftwarePreviewV1, SoftwarePlanError> {
+    validate_live_plan_header(plan, now_unix_ms)?;
+    validate_inventory_header(live_inventory)?;
+
+    let mut selected = Vec::with_capacity(plan.selected_ids.len());
+    let mut seen = BTreeSet::new();
+    for id in &plan.selected_ids {
+        if !seen.insert(id) {
+            return Err(SoftwarePlanError::DuplicateSelection(id.clone()));
+        }
+        let live = live_inventory
+            .entries
+            .iter()
+            .find(|entry| &entry.id == id)
+            .ok_or_else(|| SoftwarePlanError::StaleSelection(id.clone()))?;
+        selected.push(preview_item(live)?);
+    }
+    selected.sort_by(|left, right| left.id.cmp(&right.id));
+    let digest = preview_digest(&plan.inventory_fingerprint, &selected)?;
+    Ok(SoftwarePreviewV1 {
+        version: SOFTWARE_PREVIEW_VERSION,
+        inventory_fingerprint: plan.inventory_fingerprint.clone(),
+        irreversible: true,
         selected,
         digest,
     })
@@ -180,6 +211,90 @@ fn validate_saved_plan(
         return Err(SoftwarePlanError::InventoryExpired);
     }
     validate_selections(inventory, &plan.selected_ids)
+}
+
+fn validate_live_plan_header(
+    plan: &SoftwareSelectionPlanV1,
+    now_unix_ms: u64,
+) -> Result<(), SoftwarePlanError> {
+    if plan.version != SOFTWARE_PLAN_VERSION {
+        return Err(SoftwarePlanError::UnsupportedPlanVersion(plan.version));
+    }
+    if !is_sha256(&plan.inventory_fingerprint) {
+        return Err(SoftwarePlanError::InvalidFingerprint);
+    }
+    if now_unix_ms > plan.expires_at_unix_ms
+        || plan.expires_at_unix_ms
+            != plan
+                .inventory_observed_at_unix_ms
+                .checked_add(SOFTWARE_INVENTORY_TTL_MS)
+                .ok_or(SoftwarePlanError::InventoryExpired)?
+    {
+        return Err(SoftwarePlanError::InventoryExpired);
+    }
+    if plan.selected_ids.is_empty() {
+        return Err(SoftwarePlanError::EmptySelection);
+    }
+    Ok(())
+}
+
+fn preview_item(
+    live: &super::model::SoftwareEntryV1,
+) -> Result<SoftwarePreviewItemV1, SoftwarePlanError> {
+    if !live.eligibility.is_selectable()
+        || live.eligibility.reason != SoftwareEligibilityReason::EligibleCurrentUserMsix
+        || live.scope != SoftwareScope::CurrentUser
+    {
+        return Err(SoftwarePlanError::ManualSelection(live.id.clone()));
+    }
+    let SoftwareIdentity::Msix { package_full_name } = &live.identity else {
+        return Err(SoftwarePlanError::InvalidSelectedIdentity(live.id.clone()));
+    };
+    if !valid_package_full_name(package_full_name) {
+        return Err(SoftwarePlanError::InvalidSelectedIdentity(live.id.clone()));
+    }
+    Ok(SoftwarePreviewItemV1 {
+        id: live.id.clone(),
+        identity: live.identity.clone(),
+        action_class: SoftwareActionClass::RemoveCurrentUserMsix,
+        scope: SoftwareScope::CurrentUser,
+        eligibility: SoftwareEligibilityReason::EligibleCurrentUserMsix,
+        strategy_token: strategy_token(&live.identity, live.version.as_deref())?,
+    })
+}
+
+pub(crate) fn valid_package_full_name(value: &str) -> bool {
+    if value.is_empty()
+        || value.len() > 8 * 1024
+        || !value.is_ascii()
+        || value
+            .bytes()
+            .any(|byte| byte.is_ascii_control() || byte.is_ascii_whitespace())
+    {
+        return false;
+    }
+    let parts = value.split('_').collect::<Vec<_>>();
+    if parts.len() != 5
+        || parts[0].is_empty()
+        || parts[1].is_empty()
+        || parts[2].is_empty()
+        || parts[4].is_empty()
+    {
+        return false;
+    }
+    let version = parts[1].split('.').collect::<Vec<_>>();
+    version.len() == 4
+        && version
+            .iter()
+            .all(|part| !part.is_empty() && part.parse::<u16>().is_ok())
+        && matches!(parts[2], "x86" | "x64" | "arm" | "arm64" | "neutral")
+        && parts[0]
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-'))
+        && parts[3]
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'-'))
+        && parts[4].bytes().all(|byte| byte.is_ascii_alphanumeric())
 }
 
 fn validate_inventory_header(inventory: &SoftwareInventoryV1) -> Result<(), SoftwarePlanError> {

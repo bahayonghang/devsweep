@@ -54,6 +54,16 @@ Audit writes are part of execution, so the audit file must be opened before any
 target action runs. If the audit file cannot be opened, execution must fail
 before command or trash side effects.
 
+Software removal uses a separate fixed
+`%LOCALAPPDATA%\DevSweep\audit\v1\software.jsonl` contract. Each append is
+flushed and synced, and an exclusive `software.lock` sidecar serializes writers
+across processes. Records contain the exact tagged current-user MSIX identity,
+inventory fingerprint, preview digest, transition, stable status/error codes,
+reboot evidence, and installed-state requery result. They never contain vendor
+commands, argv, environment, localized text, raw deployment output, or an
+execution `partial`. Recovery may reconstruct only identity-only requery work;
+it cannot reconstruct or redispatch a removal strategy from the journal.
+
 ---
 
 ## Migrations

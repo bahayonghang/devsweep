@@ -17,9 +17,8 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
         Some(Command::Software(group)) => match &group.command {
             SoftwareCommand::Inventory(command) => inventory::run_inventory(command, locale, cli),
             SoftwareCommand::Plan(command) => inventory::run_plan(command),
-            SoftwareCommand::Preview(_) | SoftwareCommand::Uninstall(_) => {
-                Err(mode_unavailable(cli, locale))
-            }
+            SoftwareCommand::Preview(command) => execution::run_preview(command, locale, cli),
+            SoftwareCommand::Uninstall(command) => execution::run_uninstall(command, locale, cli),
         },
         _ => Err(mode_unavailable(cli, locale)),
     }

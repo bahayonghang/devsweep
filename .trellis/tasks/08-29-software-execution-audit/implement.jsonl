@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Apply executor, error, logging, persistence, cancellation, and test safety contracts."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/windows-software-boundary.md", "reason": "Use the source/identity research only; the task design narrows execution to user-approved current-user MSIX-only with every MSI manual and no elevation."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-inventory-plan/design.md", "reason": "Consume only live-resolved opaque strategies from exact inventory identities; the dependency task is archived."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/design.md", "reason": "Implement single-flight dispatch, post-state truth, and durable redacted audit."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/focused-gates.log", "reason": "Implementation journal step 1-3: exact focused core, audit, MSIX, full Software, CLI, format, and diff gates passed."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/just-ci.log", "reason": "Implementation journal step 3: canonical workspace just ci gate passed, including clippy with warnings denied."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/native-non-uninstall.log", "reason": "Implementation journal native gate: actual Windows preview process, integrity, child cleanup, UAC absence, and audit durability evidence."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/evidence/native-evidence.md", "reason": "Implementation journal boundary: verified non-uninstall evidence and explicit real-uninstall-only UNVERIFIED list."}

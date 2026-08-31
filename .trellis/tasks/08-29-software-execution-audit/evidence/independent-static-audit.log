@@ -1,0 +1,33 @@
+Independent verification timestamp: 2026-08-31T08:37:20.2238764+08:00
+
+CHECK: git diff --exit-code -- crates/devsweep-cli/src/application/cli.rs
+EXIT_CODE=0
+RESULT: frozen parser grammar unchanged
+
+CHECK: git diff --exit-code -- Cargo.toml Cargo.lock crates/devsweep-core/Cargo.toml crates/devsweep-cli/Cargo.toml desktop/src-tauri/Cargo.toml
+EXIT_CODE=0
+RESULT: no dependency or lockfile change
+
+CHECK: execution source and task-document search for MSI/vendor/shell/rollback/reinstall/reversible/partial language
+EXIT_CODE=0
+RESULT: production Software execution contains no MSI adapter, vendor command, shell command, rollback/reinstall promise, reversible result, or execution partial field/terminal. Matches were hostile-input fixtures, negative assertions, the required irreversible fields/copy, or task text explicitly forbidding those behaviors.
+
+CHECK: authority and dispatch trace
+RESULT:
+- Public SoftwareExecutionRequest has no live_inventory field; the executor owns a private current-user MSIX live provider.
+- Explicit confirmation is enforced by the core executor before audit or adapter access.
+- ValidatedSoftwareAction remains opaque, has private fields, and has no Serialize/Deserialize implementation.
+- RemovePackageAsync is called only by the private RealMsixAdapter with ValidatedSoftwareAction.package_full_name().
+- Private live-source tests reject MSI, registry-only, machine/other-user-shaped, protected, and malformed identities before the fake adapter.
+
+CHECK: audit and recovery trace
+RESULT:
+- dispatch_started append performs write_all, flush, and sync_all before the adapter call.
+- Process mutex plus exclusive software.lock sidecar provide in-process and cross-process single flight.
+- Journal replay rejects non-monotonic transitions, repeated terminals, terminals without requery, and terminals inconsistent with accumulated adapter/requery evidence.
+- recover_pending performs identity-only requery and contains no adapter call; crash fixtures prove no second removal.
+- The audit schema has no raw output, command, argv, environment, path, localized message, or partial field; redaction/version/durability tests pass.
+
+CHECK: native evidence documentation
+RESULT: native-evidence.md and native-non-uninstall.log consistently record medium integrity, no consent.exe/UAC, stale-authority exit 3, no orphaned product process, audit durability/redaction/locking, and unknown-version refusal. They explicitly state that no package removal occurred and keep the real-uninstall scenario set UNVERIFIED because no user-confirmed disposable current-user MSIX fixture exists.
+

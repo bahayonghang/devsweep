@@ -1,0 +1,100 @@
+COMMAND: cargo test -p devsweep-core software::execution
+EXIT_CODE=0
+running 13 tests
+test software::execution::msix::tests::documented_reboot_codes_are_closed ... ok
+test software::execution::msix::tests::exact_absent_hresult_table_is_closed ... ok
+test software::execution::tests::terminal_evidence_table_is_exact_and_has_no_partial_state ... ok
+test software::execution::tests::opaque_action_is_constructed_only_from_live_exact_current_user_msix ... ok
+test software::execution::tests::msi_registry_machine_manual_stale_and_malformed_identities_have_no_constructor ... ok
+test software::execution::tests::all_msi_manual_and_digest_mismatch_reach_no_adapter ... ok
+test software::execution::tests::cancellation_before_dispatch_is_closed_and_calls_no_adapter ... ok
+test software::execution::tests::recovery_uses_last_identity_only_requery_observation ... ok
+test software::execution::tests::one_conflicting_identity_observation_remains_fail_closed ... ok
+test software::execution::tests::post_dispatch_cancel_or_timeout_never_reports_canceled ... ok
+test software::execution::tests::audit_lock_failure_occurs_before_adapter_call ... ok
+test software::execution::tests::crashes_before_and_after_dispatch_recover_without_removal_retry ... ok
+test software::execution::tests::executor_covers_removed_reboot_present_failure_success_and_unknown_fixtures ... ok
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 218 filtered out; finished in 0.24s
+
+COMMAND: cargo test -p devsweep-core software::audit
+EXIT_CODE=0
+running 4 tests
+test software::audit::tests::fixed_path_requires_local_app_data ... ok
+test software::audit::tests::transition_machine_is_monotonic_and_terminal_is_closed ... ok
+test software::audit::tests::exclusive_lock_conflict_does_not_modify_journal ... ok
+test software::audit::tests::journal_is_durable_redacted_and_rejects_unknown_version ... ok
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 227 filtered out; finished in 0.02s
+
+COMMAND: cargo test -p devsweep-core software::execution::msix
+EXIT_CODE=0
+running 2 tests
+test software::execution::msix::tests::documented_reboot_codes_are_closed ... ok
+test software::execution::msix::tests::exact_absent_hresult_table_is_closed ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 229 filtered out; finished in 0.00s
+
+COMMAND: cargo test -p devsweep-core software
+EXIT_CODE=0
+running 31 tests
+test software::arp::tests::adapter_allowlist_contains_no_command_or_icon_fields ... ok
+test software::audit::tests::exclusive_lock_conflict_does_not_modify_journal ... ok
+test software::audit::tests::fixed_path_requires_local_app_data ... ok
+test software::audit::tests::journal_is_durable_redacted_and_rejects_unknown_version ... ok
+test software::audit::tests::transition_machine_is_monotonic_and_terminal_is_closed ... ok
+test software::execution::msix::tests::documented_reboot_codes_are_closed ... ok
+test software::execution::msix::tests::exact_absent_hresult_table_is_closed ... ok
+test software::execution::tests::all_msi_manual_and_digest_mismatch_reach_no_adapter ... ok
+test software::execution::tests::audit_lock_failure_occurs_before_adapter_call ... ok
+test software::execution::tests::cancellation_before_dispatch_is_closed_and_calls_no_adapter ... ok
+test software::execution::tests::crashes_before_and_after_dispatch_recover_without_removal_retry ... ok
+test software::execution::tests::executor_covers_removed_reboot_present_failure_success_and_unknown_fixtures ... ok
+test software::execution::tests::msi_registry_machine_manual_stale_and_malformed_identities_have_no_constructor ... ok
+test software::execution::tests::one_conflicting_identity_observation_remains_fail_closed ... ok
+test software::execution::tests::opaque_action_is_constructed_only_from_live_exact_current_user_msix ... ok
+test software::execution::tests::post_dispatch_cancel_or_timeout_never_reports_canceled ... ok
+test software::execution::tests::recovery_uses_last_identity_only_requery_observation ... ok
+test software::execution::tests::terminal_evidence_table_is_exact_and_has_no_partial_state ... ok
+test software::inventory_tests::denied_or_partial_sources_do_not_erase_complete_siblings ... ok
+test software::inventory_tests::exact_duplicate_merging_is_order_independent_and_preserves_refusals ... ok
+test software::inventory_tests::exact_identity_conflicts_do_not_fuzzy_merge_duplicate_display_names ... ok
+test software::inventory_tests::inventory_order_and_fingerprint_are_deterministic ... ok
+test software::inventory_tests::refusal_matrix_uses_the_exact_first_matching_priority ... ok
+test software::inventory_tests::reported_kib_uses_checked_integer_arithmetic ... ok
+test software::model::tests::last_used_wire_is_closed_to_truthful_unknown ... ok
+test software::model::tests::size_wire_distinguishes_all_v1_states_in_integer_bytes ... ok
+test software::msi::tests::all_msi_contexts_are_explicit_and_never_infer_execution_support ... ok
+test software::plan::tests::hostile_display_observations_never_enter_the_selection_plan ... ok
+test software::plan::tests::preview_digest_is_stable_and_contains_only_opaque_strategy_tokens ... ok
+test software::plan::tests::removed_changed_reinstalled_and_expired_plans_fail_closed ... ok
+test software::windows::current_process_sid_is_exact_and_mta_worker_joins ... ok
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 200 filtered out; finished in 9.33s
+
+COMMAND: cargo test -p devsweep-cli software
+EXIT_CODE=0
+running 8 tests
+test application::commands::software::execution::tests::execution_machine_document_never_uses_partial_or_reversible ... ok
+test application::commands::software::execution::tests::hostile_plan_fields_fail_closed_before_any_live_or_adapter_call ... ok
+test application::commands::software::execution::tests::preview_machine_document_is_locale_invariant_and_irreversible ... ok
+test application::commands::software::inventory::tests::hostile_inventory_fields_cannot_enter_a_saved_plan ... ok
+test application::commands::software::inventory::tests::software_inventory_json_is_locale_invariant_and_preserves_partial_evidence ... ok
+test application::commands::software::inventory::tests::truthful_last_used_shape_is_not_relabelled_by_the_cli ... ok
+test application::commands::tests::software_commands_reach_the_owned_handler ... ok
+test application::presentation::software::tests::software_inventory_summary_is_bilingual ... ok
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.02s
+
+COMMAND: cargo fmt --all -- --check
+EXIT_CODE=0
+
+COMMAND: git diff --check
+EXIT_CODE=0
+STDERR:
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/software/execution.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/software/inventory.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/software/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/tests/cli_contract.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/software/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/software/model.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/software/msix.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/software/plan.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/en.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it

@@ -105,6 +105,9 @@ fn validate_terminal_contract(cli: &Cli, terminals: TerminalState) -> Result<(),
 }
 
 fn terminate(cli: &Cli, mut error: ApplicationError) -> ! {
+    if error.output_already_emitted {
+        std::process::exit(error.exit.code());
+    }
     let exit = emit_error(cli, &error).unwrap_or_else(|write_error| {
         eprintln!("{}: {}", write_error.code, write_error.message);
         error = write_error;

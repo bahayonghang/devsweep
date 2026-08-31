@@ -11,11 +11,23 @@ use sha2::{Digest, Sha256};
 use crate::process::FlagCancelObserver;
 
 mod arp;
+#[path = "execution/audit.rs"]
+mod audit;
+mod execution;
 mod model;
 mod msi;
 mod msix;
 mod plan;
 
+pub use execution::{
+    MSIX_CANCEL_GRACE, MSIX_MONITOR_TIMEOUT, MSIX_REQUERY_OFFSETS, SOFTWARE_AUDIT_VERSION,
+    SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1, SoftwareAuditError,
+    SoftwareAuditErrorCode, SoftwareAuditRecordV1, SoftwareAuditRequeryResult,
+    SoftwareAuditStatusCode, SoftwareAuditTransition, SoftwareExecutionError,
+    SoftwareExecutionOutcome, SoftwareExecutionReportV1, SoftwareExecutionRequest,
+    SoftwareExecutor, SoftwareInstalledState, SoftwareRebootEvidence, ValidatedSoftwareAction,
+    software_audit_v1_path,
+};
 pub use model::{
     MsiContext, RegistryHive, RegistryView, SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION,
     SOFTWARE_PREVIEW_VERSION, SoftwareActionClass, SoftwareEligibility, SoftwareEligibilityReason,
@@ -27,7 +39,7 @@ pub use model::{
 };
 pub use plan::{
     SOFTWARE_INVENTORY_TTL_MS, SoftwarePlanError, build_selection_plan, preview_selection_plan,
-    validate_preview_digest,
+    preview_selection_plan_live, validate_preview_digest,
 };
 
 use model::{EligibilityFlags, SoftwareObservation};

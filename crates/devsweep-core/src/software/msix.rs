@@ -32,29 +32,9 @@ fn windows_inventory(
     observed_at_unix_ms: u64,
     cancel: Option<Arc<FlagCancelObserver>>,
 ) -> SourceInventory {
-    use std::sync::atomic::Ordering;
-
     let source = SoftwareSourceId::MsixCurrentUser;
-    let worker = std::thread::Builder::new()
-        .name("devsweep-software-mta".to_string())
-        .spawn(move || {
-            ACTIVE_MTA_WORKERS.fetch_add(1, Ordering::SeqCst);
-            struct ActiveGuard;
-            impl Drop for ActiveGuard {
-                fn drop(&mut self) {
-                    ACTIVE_MTA_WORKERS.fetch_sub(1, Ordering::SeqCst);
-                }
-            }
-            let _active = ActiveGuard;
-            enumerate_on_mta(observed_at_unix_ms, cancel.as_ref())
-        });
-    let result = match worker {
-        Ok(worker) => match worker.join() {
-            Ok(result) => result,
-            Err(_) => MtaResult::failed("mta_worker_panicked"),
-        },
-        Err(_) => MtaResult::failed("mta_worker_spawn_failed"),
-    };
+    let result = run_joined_mta(move || enumerate_on_mta(observed_at_unix_ms, cancel.as_ref()))
+        .unwrap_or_else(MtaResult::failed);
     let complete = result.state == SoftwareSourceState::Available;
     let evidence = if complete {
         SoftwareSourceEvidence::available(source.clone())
@@ -98,6 +78,47 @@ fn windows_inventory(
 #[cfg(windows)]
 static ACTIVE_MTA_WORKERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
+/// Runs one Software WinRT job on the same joined, counted MTA worker used by
+/// inventory. The closure is invoked only after successful MTA initialization.
+#[cfg(windows)]
+pub(crate) fn run_joined_mta<T, F>(job: F) -> Result<T, &'static str>
+where
+    T: Send + 'static,
+    F: FnOnce() -> T + Send + 'static,
+{
+    use std::sync::atomic::Ordering;
+    use windows::Win32::System::WinRT::{RO_INIT_MULTITHREADED, RoInitialize, RoUninitialize};
+
+    let worker = std::thread::Builder::new()
+        .name("devsweep-software-mta".to_string())
+        .spawn(move || {
+            ACTIVE_MTA_WORKERS.fetch_add(1, Ordering::SeqCst);
+            struct ActiveGuard;
+            impl Drop for ActiveGuard {
+                fn drop(&mut self) {
+                    ACTIVE_MTA_WORKERS.fetch_sub(1, Ordering::SeqCst);
+                }
+            }
+            let _active = ActiveGuard;
+
+            // SAFETY: this dedicated worker has not initialized COM/WinRT.
+            if unsafe { RoInitialize(RO_INIT_MULTITHREADED) }.is_err() {
+                return Err("winrt_mta_initialize_failed");
+            }
+            struct RoGuard;
+            impl Drop for RoGuard {
+                fn drop(&mut self) {
+                    // SAFETY: paired with successful initialization above.
+                    unsafe { RoUninitialize() };
+                }
+            }
+            let _ro = RoGuard;
+            Ok(job())
+        })
+        .map_err(|_| "mta_worker_spawn_failed")?;
+    worker.join().map_err(|_| "mta_worker_panicked")?
+}
+
 #[cfg(windows)]
 struct MtaResult {
     state: SoftwareSourceState,
@@ -138,26 +159,11 @@ fn enumerate_on_mta(
     use std::{collections::BTreeSet, path::Path};
 
     use windows::{
-        ApplicationModel::PackageSignatureKind,
-        Management::Deployment::PackageManager,
-        Win32::System::WinRT::{RO_INIT_MULTITHREADED, RoInitialize, RoUninitialize},
+        ApplicationModel::PackageSignatureKind, Management::Deployment::PackageManager,
         core::HSTRING,
     };
 
     use crate::{filesystem::estimate_tree_with_budget_and_cancel, process::CancelObserver};
-
-    // SAFETY: this dedicated thread has not initialized COM/WinRT elsewhere.
-    if unsafe { RoInitialize(RO_INIT_MULTITHREADED) }.is_err() {
-        return MtaResult::failed("winrt_mta_initialize_failed");
-    }
-    struct RoGuard;
-    impl Drop for RoGuard {
-        fn drop(&mut self) {
-            // SAFETY: paired with the successful RoInitialize on this thread.
-            unsafe { RoUninitialize() };
-        }
-    }
-    let _ro = RoGuard;
 
     if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
         return MtaResult::failed("canceled");
@@ -403,7 +409,7 @@ fn optional_bounded(
 }
 
 #[cfg(windows)]
-pub(super) fn current_process_sid() -> Result<String, ()> {
+pub(crate) fn current_process_sid() -> Result<String, ()> {
     use std::{ffi::c_void, ptr};
 
     use windows_sys::Win32::{
@@ -473,7 +479,7 @@ pub(super) fn current_process_sid() -> Result<String, ()> {
 }
 
 #[cfg(not(windows))]
-pub(super) fn current_process_sid() -> Result<String, ()> {
+pub(crate) fn current_process_sid() -> Result<String, ()> {
     Err(())
 }
 
