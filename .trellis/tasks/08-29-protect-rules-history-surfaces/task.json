@@ -1,0 +1,30 @@
+{
+  "id": "protect-rules-history-surfaces",
+  "name": "protect-rules-history-surfaces",
+  "title": "Build Protection, Rules, and History support surfaces",
+  "description": "Expose protection management, rule inspection, and versioned audit history as capability-backed supporting surfaces without creating additional product modes.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "exact-path Protection; read-only Rules; non-replayable audit History; CLI/TUI/Desktop supporting surfaces",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "7-support",
+    "depends_on": "08-29-clean-mode-workbench,08-29-software-execution-audit,08-29-optimize-catalog-execution,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

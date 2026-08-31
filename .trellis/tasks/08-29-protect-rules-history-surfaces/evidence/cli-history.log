@@ -1,0 +1,4 @@
+command: rtk cargo test --offline -p devsweep-cli -- history
+exit: 0
+
+cargo test: 4 passed, 190 filtered out (5 suites, 0.01s)

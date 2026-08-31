@@ -1,0 +1,1 @@
+DevSweep Cleanup plan workbench Clean Software Optimize Analyze Status Protection Rules History Language Help Protection Protection Protected paths: 1. Exact path EXACT PATH REMOVE PATH D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-protect-rules-history-surfaces\evidence\native-desktop\keep-display Remove path Add path Add path

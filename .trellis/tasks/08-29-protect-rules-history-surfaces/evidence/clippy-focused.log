@@ -1,0 +1,4 @@
+command: rtk cargo clippy --offline --locked -p devsweep-core -p devsweep-cli -p devsweep-desktop --all-targets -- -D warnings
+exit: 0
+
+cargo clippy: No issues found
