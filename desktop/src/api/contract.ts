@@ -18,6 +18,8 @@ import type {
   DesktopOptimizeListResult,
   DesktopOptimizePreviewResult,
   DesktopOptimizeRunResult,
+  DesktopStatusLiveResult,
+  DesktopStatusSnapshotResult,
   DryRunOutcome,
   Evidence,
   ExecutionReport,
@@ -49,6 +51,8 @@ import type {
   SoftwareSizeEvidence,
   SoftwareSourceEvidence,
   SoftwareSourceId,
+  StatusEventV1,
+  StatusSnapshotV1,
   UntrustedTarget,
 } from "./types.gen";
 
@@ -926,13 +930,14 @@ export function decodeCommandError(value: unknown): CommandError {
     "scan_already_running", "scan_failed", "analyze_already_running", "analyze_failed",
     "software_already_running", "software_failed", "software_stale_authority", "software_audit_unavailable",
     "optimize_already_running", "optimize_failed", "optimize_stale_authority", "optimize_unavailable",
-    "optimize_audit_unavailable", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io",
+    "optimize_audit_unavailable", "status_already_running", "status_failed", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io",
   ] as const, "error.code");
   switch (code) {
     case "scan_already_running":
     case "analyze_already_running":
     case "software_already_running":
     case "optimize_already_running":
+    case "status_already_running":
       exact(input, ["code"], "command error"); return { code };
     case "scan_failed":
     case "analyze_failed":
@@ -943,6 +948,7 @@ export function decodeCommandError(value: unknown): CommandError {
     case "optimize_stale_authority":
     case "optimize_unavailable":
     case "optimize_audit_unavailable":
+    case "status_failed":
     case "io":
       exact(input, ["code", "message"], "command error"); return { code, message: string(input.message, "error.message") };
     case "invalid_plan": exact(input, ["code", "issues"], "command error"); return { code, issues: array(input.issues, "error.issues", (item) => string(item, "error.issue")) };
@@ -953,4 +959,255 @@ export function decodeCommandError(value: unknown): CommandError {
       return _exhaustive;
     }
   }
+}
+
+const PROCESS_ROW_KEYS = [
+  "pid", "name", "cpu_basis_points_of_one_logical_core", "private_bytes", "read_bytes_per_second", "write_bytes_per_second",
+] as const;
+const UNSUPPORTED_CODES = [
+  "gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity",
+] as const;
+const SNAPSHOT_KEYS = [
+  "snapshot_id", "sampled_at_unix_ms", "sample_window_ms", "logical_processor_count",
+  "cpu", "memory", "volumes", "network", "power", "processes", "unsupported_capabilities",
+] as const;
+
+function decodeAvailability<T>(
+  value: unknown,
+  name: string,
+  decodeValue: (input: unknown) => T,
+): StatusSnapshotV1["cpu"] {
+  const input = record(value, name);
+  const state = oneOf(input.state, ["available", "partial", "unavailable", "permission_denied", "unsupported"] as const, `${name}.state`);
+  if (state === "available") {
+    exact(input, ["state", "sampled_at_unix_ms", "age_ms", "value"], name);
+    return {
+      state,
+      sampled_at_unix_ms: unsignedInteger(input.sampled_at_unix_ms, `${name}.sampled_at_unix_ms`),
+      age_ms: unsignedInteger(input.age_ms, `${name}.age_ms`),
+      value: decodeValue(input.value),
+    } as StatusSnapshotV1["cpu"];
+  }
+  if (state === "partial") {
+    exact(input, ["state", "sampled_at_unix_ms", "age_ms", "value", "reason_codes"], name);
+    const reason_codes = array(input.reason_codes, `${name}.reason_codes`, (item) => nonEmptyString(item, `${name}.reason_code`));
+    if (reason_codes.length === 0) throw new Error(`Invalid ${name}.reason_codes`);
+    return {
+      state,
+      sampled_at_unix_ms: unsignedInteger(input.sampled_at_unix_ms, `${name}.sampled_at_unix_ms`),
+      age_ms: unsignedInteger(input.age_ms, `${name}.age_ms`),
+      value: decodeValue(input.value),
+      reason_codes,
+    } as StatusSnapshotV1["cpu"];
+  }
+  exact(input, ["state", "sampled_at_unix_ms", "reason_code"], name);
+  return {
+    state,
+    sampled_at_unix_ms: nullableUnsignedInteger(input.sampled_at_unix_ms, `${name}.sampled_at_unix_ms`),
+    reason_code: nonEmptyString(input.reason_code, `${name}.reason_code`),
+  } as StatusSnapshotV1["cpu"];
+}
+
+function decodeCpuValue(value: unknown) {
+  const input = record(value, "cpu.value");
+  exact(input, ["system_utilization_basis_points"], "cpu.value");
+  return { system_utilization_basis_points: unsignedInteger(input.system_utilization_basis_points, "cpu.system_utilization_basis_points") };
+}
+
+function decodeMemoryValue(value: unknown) {
+  const input = record(value, "memory.value");
+  exact(input, ["total_bytes", "available_bytes", "used_bytes"], "memory.value");
+  return {
+    total_bytes: unsignedInteger(input.total_bytes, "memory.total_bytes"),
+    available_bytes: unsignedInteger(input.available_bytes, "memory.available_bytes"),
+    used_bytes: unsignedInteger(input.used_bytes, "memory.used_bytes"),
+  };
+}
+
+function decodeVolumesValue(value: unknown) {
+  const input = record(value, "volumes.value");
+  exact(input, ["items", "complete"], "volumes.value");
+  return {
+    items: array(input.items, "volumes.items", (item) => {
+      const volume = record(item, "volume");
+      exact(volume, ["volume_id", "mount_points", "total_bytes", "available_bytes"], "volume");
+      return {
+        volume_id: nonEmptyString(volume.volume_id, "volume.volume_id"),
+        mount_points: array(volume.mount_points, "volume.mount_points", (mount) => string(mount, "volume.mount_point")),
+        total_bytes: unsignedInteger(volume.total_bytes, "volume.total_bytes"),
+        available_bytes: unsignedInteger(volume.available_bytes, "volume.available_bytes"),
+      };
+    }),
+    complete: boolean(input.complete, "volumes.complete"),
+  };
+}
+
+function decodeNetworkValue(value: unknown) {
+  const input = record(value, "network.value");
+  exact(input, ["interval_ms", "interfaces"], "network.value");
+  return {
+    interval_ms: unsignedInteger(input.interval_ms, "network.interval_ms"),
+    interfaces: array(input.interfaces, "network.interfaces", (item) => {
+      const iface = record(item, "network.interface");
+      exact(iface, ["interface_luid", "name", "rx_bytes_per_second", "tx_bytes_per_second"], "network.interface");
+      return {
+        interface_luid: nonEmptyString(iface.interface_luid, "network.interface_luid"),
+        name: string(iface.name, "network.name"),
+        rx_bytes_per_second: unsignedInteger(iface.rx_bytes_per_second, "network.rx_bytes_per_second"),
+        tx_bytes_per_second: unsignedInteger(iface.tx_bytes_per_second, "network.tx_bytes_per_second"),
+      };
+    }),
+  };
+}
+
+function decodePowerValue(value: unknown) {
+  const input = record(value, "power.value");
+  exact(input, ["battery_present", "ac_state", "charge_basis_points", "remaining_seconds"], "power.value");
+  const battery_present = boolean(input.battery_present, "power.battery_present");
+  const charge_basis_points = nullableUnsignedInteger(input.charge_basis_points, "power.charge_basis_points");
+  const remaining_seconds = nullableUnsignedInteger(input.remaining_seconds, "power.remaining_seconds");
+  if (!battery_present && (charge_basis_points !== null || remaining_seconds !== null)) {
+    throw new Error("Missing battery must not report charge or remaining time");
+  }
+  return {
+    battery_present,
+    ac_state: oneOf(input.ac_state, ["online", "offline", "unknown"] as const, "power.ac_state"),
+    charge_basis_points,
+    remaining_seconds,
+  };
+}
+
+function decodeProcessRow(value: unknown) {
+  const input = record(value, "process");
+  exact(input, PROCESS_ROW_KEYS, "process");
+  return {
+    pid: unsignedInteger(input.pid, "process.pid"),
+    name: string(input.name, "process.name"),
+    cpu_basis_points_of_one_logical_core: unsignedInteger(input.cpu_basis_points_of_one_logical_core, "process.cpu"),
+    private_bytes: unsignedInteger(input.private_bytes, "process.private_bytes"),
+    read_bytes_per_second: unsignedInteger(input.read_bytes_per_second, "process.read_bytes_per_second"),
+    write_bytes_per_second: unsignedInteger(input.write_bytes_per_second, "process.write_bytes_per_second"),
+  };
+}
+
+function decodeProcessesValue(value: unknown) {
+  const input = record(value, "processes.value");
+  exact(input, [
+    "items", "enumerated_count", "returned_count", "requested_limit", "enumeration_ceiling",
+    "detail_budget_ms", "truncated_by_limit", "budget_exhausted",
+  ], "processes.value");
+  const items = array(input.items, "processes.items", decodeProcessRow);
+  const returned_count = unsignedInteger(input.returned_count, "processes.returned_count");
+  if (returned_count !== items.length) throw new Error("Invalid processes.returned_count");
+  return {
+    items,
+    enumerated_count: unsignedInteger(input.enumerated_count, "processes.enumerated_count"),
+    returned_count,
+    requested_limit: unsignedInteger(input.requested_limit, "processes.requested_limit"),
+    enumeration_ceiling: unsignedInteger(input.enumeration_ceiling, "processes.enumeration_ceiling"),
+    detail_budget_ms: unsignedInteger(input.detail_budget_ms, "processes.detail_budget_ms"),
+    truncated_by_limit: boolean(input.truncated_by_limit, "processes.truncated_by_limit"),
+    budget_exhausted: boolean(input.budget_exhausted, "processes.budget_exhausted"),
+  };
+}
+
+function decodeUnsupportedCapability(value: unknown) {
+  const input = record(value, "unsupported capability");
+  exact(input, ["code", "state", "reason_code"], "unsupported capability");
+  return {
+    code: oneOf(input.code, UNSUPPORTED_CODES, "unsupported capability.code"),
+    state: oneOf(input.state, ["unsupported"] as const, "unsupported capability.state"),
+    reason_code: nonEmptyString(input.reason_code, "unsupported capability.reason_code"),
+  };
+}
+
+export function decodeStatusSnapshot(value: unknown): StatusSnapshotV1 {
+  const input = record(value, "status snapshot");
+  exact(input, SNAPSHOT_KEYS, "status snapshot");
+  const unsupported_capabilities = array(input.unsupported_capabilities, "unsupported_capabilities", decodeUnsupportedCapability);
+  const codes = unsupported_capabilities.map((item) => item.code);
+  if (codes.join("\n") !== UNSUPPORTED_CODES.join("\n")) {
+    throw new Error("Status V1 unsupported capabilities are not the closed set");
+  }
+  return {
+    snapshot_id: nonEmptyString(input.snapshot_id, "snapshot.snapshot_id"),
+    sampled_at_unix_ms: unsignedInteger(input.sampled_at_unix_ms, "snapshot.sampled_at_unix_ms"),
+    sample_window_ms: unsignedInteger(input.sample_window_ms, "snapshot.sample_window_ms"),
+    logical_processor_count: unsignedInteger(input.logical_processor_count, "snapshot.logical_processor_count"),
+    cpu: decodeAvailability(input.cpu, "cpu", decodeCpuValue) as StatusSnapshotV1["cpu"],
+    memory: decodeAvailability(input.memory, "memory", decodeMemoryValue) as StatusSnapshotV1["memory"],
+    volumes: decodeAvailability(input.volumes, "volumes", decodeVolumesValue) as StatusSnapshotV1["volumes"],
+    network: decodeAvailability(input.network, "network", decodeNetworkValue) as StatusSnapshotV1["network"],
+    power: decodeAvailability(input.power, "power", decodePowerValue) as StatusSnapshotV1["power"],
+    processes: decodeAvailability(input.processes, "processes", decodeProcessesValue) as StatusSnapshotV1["processes"],
+    unsupported_capabilities,
+  };
+}
+
+export function decodeStatusEvent(value: unknown): StatusEventV1 {
+  const input = record(value, "status event");
+  const event = oneOf(input.event, ["status_started", "status_snapshot", "tick_skipped", "status_terminal"] as const, "status event.event");
+  exact(input, ["schema_version", "event", "operation_id", "sequence", "emitted_at_unix_ms", "data"], "status event");
+  const schema_version = unsignedInteger(input.schema_version, "status event.schema_version");
+  if (schema_version !== 1) throw new Error("Unsupported status event schema_version");
+  const envelope = {
+    schema_version,
+    operation_id: nonEmptyString(input.operation_id, "status event.operation_id"),
+    sequence: unsignedInteger(input.sequence, "status event.sequence"),
+    emitted_at_unix_ms: unsignedInteger(input.emitted_at_unix_ms, "status event.emitted_at_unix_ms"),
+  };
+  if (event === "status_started") {
+    const data = record(input.data, "status_started.data");
+    exact(data, ["interval_ms", "process_limit"], "status_started.data");
+    return {
+      ...envelope,
+      event,
+      data: {
+        interval_ms: unsignedInteger(data.interval_ms, "status_started.interval_ms"),
+        process_limit: unsignedInteger(data.process_limit, "status_started.process_limit"),
+      },
+    };
+  }
+  if (event === "status_snapshot") {
+    return { ...envelope, event, data: decodeStatusSnapshot(input.data) };
+  }
+  if (event === "tick_skipped") {
+    const data = record(input.data, "tick_skipped.data");
+    exact(data, ["reason", "skipped_total"], "tick_skipped.data");
+    return {
+      ...envelope,
+      event,
+      data: {
+        reason: oneOf(data.reason, ["sample_in_flight"] as const, "tick_skipped.reason"),
+        skipped_total: unsignedInteger(data.skipped_total, "tick_skipped.skipped_total"),
+      },
+    };
+  }
+  const data = record(input.data, "status_terminal.data");
+  exact(data, ["reason", "error_code"], "status_terminal.data");
+  return {
+    ...envelope,
+    event,
+    data: {
+      reason: oneOf(data.reason, ["completed", "canceled", "broken_pipe", "producer_error"] as const, "status_terminal.reason"),
+      error_code: data.error_code === null ? null : nonEmptyString(data.error_code, "status_terminal.error_code"),
+    },
+  };
+}
+
+export function decodeDesktopStatusSnapshotResult(value: unknown): DesktopStatusSnapshotResult {
+  const input = record(value, "desktop status snapshot result");
+  const type = oneOf(input.type, ["completed", "canceled"] as const, "status snapshot result.type");
+  exact(input, type === "completed" ? ["type", "operation_id", "snapshot"] : ["type", "operation_id"], "desktop status snapshot result");
+  const operation_id = nonEmptyString(input.operation_id, "status snapshot result.operation_id");
+  return type === "completed"
+    ? { type, operation_id, snapshot: decodeStatusSnapshot(input.snapshot) }
+    : { type, operation_id };
+}
+
+export function decodeDesktopStatusLiveResult(value: unknown): DesktopStatusLiveResult {
+  const input = record(value, "desktop status live result");
+  const type = oneOf(input.type, ["completed", "canceled"] as const, "status live result.type");
+  exact(input, ["type", "operation_id"], "desktop status live result");
+  return { type, operation_id: nonEmptyString(input.operation_id, "status live result.operation_id") };
 }

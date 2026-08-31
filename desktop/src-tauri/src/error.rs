@@ -41,6 +41,10 @@ pub(crate) enum CommandError {
     OptimizeAuditUnavailable {
         message: String,
     },
+    StatusAlreadyRunning,
+    StatusFailed {
+        message: String,
+    },
     InvalidPlan {
         issues: Vec<String>,
     },
@@ -165,6 +169,12 @@ impl CommandError {
             _ => Self::SoftwareFailed {
                 message: error.to_string(),
             },
+        }
+    }
+
+    pub(crate) fn status_failed(error: anyhow::Error) -> Self {
+        Self::StatusFailed {
+            message: format!("{error:#}"),
         }
     }
 

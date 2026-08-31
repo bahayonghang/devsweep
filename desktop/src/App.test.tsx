@@ -269,7 +269,7 @@ describe("desktop workflow", () => {
     const softwareTab = screen.getByRole("tab", { name: "软件" });
     expect(softwareTab).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "优化" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "状态" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "状态" })).toBeInTheDocument();
     await user.click(softwareTab);
     expect(screen.getByRole("region", { name: "软件" })).toBeInTheDocument();
     expect(document.querySelector(".shell-brand-icon")).toHaveAttribute("src", "/src/assets/devsweep-icon-master.png");

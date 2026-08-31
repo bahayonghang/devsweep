@@ -17,6 +17,7 @@ mod jobs;
 mod optimize;
 mod overlays;
 mod software;
+mod status;
 mod targets;
 mod theme;
 
@@ -27,6 +28,7 @@ use jobs::{render_jobs_logs, scan_diagnostic_lines};
 use optimize::render_optimize;
 use overlays::render_overlay;
 use software::render_software;
+use status::render_status;
 use targets::{
     render_categories, render_compact_summary, render_details_panel, render_rules, render_targets,
     selected_details_lines,
@@ -66,6 +68,10 @@ pub(super) fn render_app(frame: &mut Frame<'_>, app: &App) {
     }
     if app.shell.active == super::shell::ModeId::Optimize {
         render_optimize(frame, app);
+        return;
+    }
+    if app.shell.active == super::shell::ModeId::Status {
+        render_status(frame, app);
         return;
     }
     let area = frame.area();

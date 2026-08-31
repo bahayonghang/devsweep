@@ -6,7 +6,11 @@ import progressFixture from "./fixtures/scan-progress.json";
 import analyzeSnapshotFixture from "./fixtures/analyze/snapshot.json";
 import analyzeProgressFixture from "./fixtures/analyze/progress.json";
 import analyzeCompleteFixture from "./fixtures/analyze/complete.json";
-import { decodeAnalyzeSnapshot, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport } from "./contract";
+import statusSnapshotFixture from "./fixtures/status/snapshot.json";
+import statusCompletedFixture from "./fixtures/status/snapshot-completed.json";
+import statusStartedFixture from "./fixtures/status/event-started.json";
+import statusUnknownFixture from "./fixtures/status/unknown-event.json";
+import { decodeAnalyzeSnapshot, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport, decodeStatusEvent, decodeStatusSnapshot } from "./contract";
 
 describe("IPC decoders", () => {
   it("decodes archived command and event fixtures", () => {
@@ -101,7 +105,29 @@ describe("IPC decoders", () => {
     { code: "optimize_stale_authority", message: "stale" },
     { code: "optimize_unavailable", message: "the Windows OS build query is unavailable" },
     { code: "optimize_audit_unavailable", message: "audit" },
+    { code: "status_already_running" },
+    { code: "status_failed", message: "failed" },
   ])("decodes structured error $code", (error) => {
     expect(decodeCommandError(error).code).toBe(error.code);
+  });
+});
+
+describe("Status V1 decoders", () => {
+  it("decodes the frozen snapshot and rejects process privacy fields", () => {
+    const snapshot = decodeStatusSnapshot(statusSnapshotFixture);
+    expect(snapshot.cpu.state).toBe("available");
+    expect(snapshot.memory.state).toBe("partial");
+    expect(snapshot.power.state === "available" && snapshot.power.value?.battery_present === false).toBe(true);
+    expect(snapshot.processes.state === "partial" && snapshot.processes.value?.truncated_by_limit === true).toBe(true);
+    expect(JSON.stringify(snapshot)).not.toMatch(/cmdline|executable_path|"user"/);
+    expect(decodeDesktopStatusSnapshotResult(statusCompletedFixture).type).toBe("completed");
+    expect(decodeStatusEvent(statusStartedFixture).event).toBe("status_started");
+    const leaked = structuredClone(statusSnapshotFixture) as typeof statusSnapshotFixture & {
+      processes: { value: { items: Array<Record<string, unknown>> } };
+    };
+    leaked.processes.value.items[0].cmdline = "secret";
+    expect(() => decodeStatusSnapshot(leaked)).toThrow("unknown field");
+    expect(() => decodeStatusEvent(statusUnknownFixture)).toThrow("status event.event");
+    expect(() => decodeStatusSnapshot({ ...statusSnapshotFixture, gpu: 0 })).toThrow("unknown field");
   });
 });

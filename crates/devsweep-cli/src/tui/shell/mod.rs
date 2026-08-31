@@ -68,6 +68,10 @@ impl ModeRegistration {
             id: ModeId::Optimize,
         }
     }
+
+    const fn status() -> Self {
+        Self { id: ModeId::Status }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -163,6 +167,7 @@ impl TuiShell {
                 ModeRegistration::software(),
                 ModeRegistration::optimize(),
                 ModeRegistration::analyze(),
+                ModeRegistration::status(),
             ],
             active: ModeId::Clean,
         }
@@ -273,6 +278,11 @@ mod tests {
                     label: "Analyze".to_string(),
                     accelerator: Some('a'),
                 },
+                ShellNavigationItem {
+                    id: ModeId::Status,
+                    label: "Status".to_string(),
+                    accelerator: Some('t'),
+                },
             ]
         );
 
@@ -300,6 +310,11 @@ mod tests {
                     id: ModeId::Analyze,
                     label: "分析".to_string(),
                     accelerator: Some('f'),
+                },
+                ShellNavigationItem {
+                    id: ModeId::Status,
+                    label: "状态".to_string(),
+                    accelerator: Some('z'),
                 },
             ]
         );

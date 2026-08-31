@@ -25,6 +25,7 @@ use super::{
     modes::analyze::{AnalyzeAction, AnalyzeModeState, AnalyzeSort},
     modes::optimize::{OptimizeAction, OptimizeModeState, OptimizePhase},
     modes::software::{SoftwareAction, SoftwareModeState, SoftwarePhase},
+    modes::status::StatusModeState,
     shell::{ModeId, ShellComposition},
 };
 use crate::i18n::Locale;
@@ -51,6 +52,7 @@ pub(super) struct App {
     pub(super) analyze: AnalyzeModeState,
     pub(super) software: SoftwareModeState,
     pub(super) optimize: OptimizeModeState,
+    pub(super) status: StatusModeState,
     pub(super) pending_mode: Option<ModeId>,
     pub(super) targets: Vec<CleanTarget>,
     pub(super) scan_health: ScanHealth,
@@ -145,6 +147,7 @@ impl App {
             analyze: AnalyzeModeState::default(),
             software: SoftwareModeState::default(),
             optimize: OptimizeModeState::default(),
+            status: StatusModeState::default(),
             pending_mode: None,
             targets: plan.targets,
             scan_health,
@@ -455,6 +458,7 @@ pub(super) enum JobKind {
     Analyze,
     Software,
     Optimize,
+    Status,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -521,6 +525,7 @@ pub(super) enum AppLogSource {
     Analyze,
     Software,
     Optimize,
+    Status,
 }
 
 pub(super) fn cleanup_progress_for_plan(job_id: JobId, plan: &CleanupPlan) -> CleanupProgress {

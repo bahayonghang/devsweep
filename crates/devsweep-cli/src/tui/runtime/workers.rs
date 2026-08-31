@@ -35,6 +35,7 @@ use devsweep_core::{
         SoftwareExecutor, SoftwareInventorySource, SoftwareInventoryV1, SoftwareSelectionPlanV1,
         build_selection_plan, inventory_software, preview_selection_plan_live,
     },
+    status::{LiveRequest, StatusError, capture_snapshot, spawn_live},
 };
 
 pub(super) fn run_analyze_worker(
@@ -495,4 +496,85 @@ pub(super) fn run_clean_worker<C: CleanService>(
     }
 
     clean_dispatch_in_flight.store(false, Ordering::Release);
+}
+
+pub(super) fn run_status_snapshot_worker(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    match capture_snapshot(
+        devsweep_core::status::DEFAULT_PROCESS_LIMIT,
+        Some(cancel.as_ref()),
+    ) {
+        Ok(snapshot) => {
+            let _ = worker_tx.send(WorkerEvent::StatusSnapshotFinished {
+                job_id,
+                snapshot: Box::new(snapshot),
+            });
+        }
+        Err(StatusError::Canceled) => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+pub(super) fn run_status_live_worker(
+    job_id: JobId,
+    interval_ms: u32,
+    process_limit: u32,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let (rx, mut control) = match spawn_live(LiveRequest {
+        interval_ms,
+        process_limit,
+        operation_id: format!("tui-status-{job_id}"),
+        cancel: Some(&cancel),
+    }) {
+        Ok(pair) => pair,
+        Err(StatusError::Canceled) => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+            return;
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+            return;
+        }
+    };
+    let mut sent_terminal = false;
+    loop {
+        match rx.recv_timeout(std::time::Duration::from_millis(50)) {
+            Ok(event) => {
+                let terminal = event.is_terminal();
+                let _ = worker_tx.send(WorkerEvent::StatusLiveEvent {
+                    job_id,
+                    event: Box::new(event),
+                });
+                if terminal {
+                    sent_terminal = true;
+                    break;
+                }
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                if cancel.is_cancel_requested() {
+                    control.request_cancel();
+                }
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+    }
+    control.join();
+    if !sent_terminal {
+        let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+    }
 }

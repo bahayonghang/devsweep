@@ -31,7 +31,8 @@ use workers::{
     run_analyze_worker, run_clean_worker, run_inventory_worker, run_optimize_audit_worker,
     run_optimize_list_worker, run_optimize_preview_worker, run_optimize_run_worker,
     run_scan_worker, run_software_audit_worker, run_software_inventory_worker,
-    run_software_preview_worker, run_software_uninstall_worker,
+    run_software_preview_worker, run_software_uninstall_worker, run_status_live_worker,
+    run_status_snapshot_worker,
 };
 
 struct WorkerRegistration {
@@ -444,6 +445,61 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .insert(job_id, WorkerRegistration { cancel, join });
         }
+        Effect::StartStatusSnapshot { job_id } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Status snapshot start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Status snapshot rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join =
+                thread::spawn(move || run_status_snapshot_worker(job_id, worker_tx, worker_cancel));
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Status snapshot start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartStatusLive {
+            job_id,
+            interval_ms,
+            process_limit,
+        } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Status live start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Status live rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join = thread::spawn(move || {
+                run_status_live_worker(job_id, interval_ms, process_limit, worker_tx, worker_cancel)
+            });
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Status live start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
         Effect::StartClean {
             job_id,
             plan,
@@ -508,10 +564,16 @@ fn join_terminal_worker(event: &WorkerEvent, worker_registry: &WorkerRegistry) -
         | WorkerEvent::SoftwarePreviewFinished { job_id, .. }
         | WorkerEvent::SoftwareUninstallFinished { job_id, .. }
         | WorkerEvent::SoftwareAuditFinished { job_id, .. }
+        | WorkerEvent::OptimizeListFinished { job_id, .. }
+        | WorkerEvent::OptimizePreviewFinished { job_id, .. }
+        | WorkerEvent::OptimizeRunFinished { job_id, .. }
+        | WorkerEvent::OptimizeAuditFinished { job_id, .. }
+        | WorkerEvent::StatusSnapshotFinished { job_id, .. }
         | WorkerEvent::JobFailed { job_id, .. }
         | WorkerEvent::JobCanceled { job_id }
         | WorkerEvent::ScanFinished { job_id, .. }
         | WorkerEvent::InventoryFinished { job_id, .. } => *job_id,
+        WorkerEvent::StatusLiveEvent { job_id, event } if event.is_terminal() => *job_id,
         _ => return Ok(()),
     };
 

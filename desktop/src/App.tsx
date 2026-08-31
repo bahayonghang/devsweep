@@ -19,6 +19,7 @@ import { CleanWorkbench } from "./modes/clean";
 import { AnalyzePage } from "./modes/analyze";
 import { SoftwareWorkbench } from "./modes/software";
 import { OptimizeWorkbench } from "./modes/optimize";
+import { StatusWorkbench } from "./modes/status";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
 
@@ -192,6 +193,7 @@ export function App({
     { id: "software", render: () => <SoftwareWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
     { id: "optimize", render: () => <OptimizeWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
     { id: "analyze", render: () => <AnalyzePage bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
+    { id: "status", render: () => <StatusWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
   ];
   return <AppShell
     modes={modes}

@@ -41,6 +41,9 @@ impl App {
         if self.shell.active == ModeId::Optimize {
             return self.handle_optimize_key(key);
         }
+        if self.shell.active == ModeId::Status {
+            return self.handle_status_key(key);
+        }
 
         if matches!(self.overlay, Overlay::None)
             && self
@@ -317,6 +320,14 @@ impl App {
             self.optimize
                 .reduce(OptimizeAction::CancelRequested(operation_id));
         }
+        if let Some(operation_id) = self.status.operation_id
+            && self.shell.active == ModeId::Status
+        {
+            self.status
+                .reduce(crate::tui::modes::status::StatusAction::CancelRequested(
+                    operation_id,
+                ));
+        }
         let effects = self.cancel_all_active_jobs();
         if effects.is_empty() {
             return self.maybe_finish_pending_mode();
@@ -582,6 +593,93 @@ impl App {
             plan,
             preview_digest: preview.digest,
         }]
+    }
+
+    pub(super) fn handle_status_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match key.code {
+            KeyCode::Char('q') | KeyCode::Esc => self.request_quit(),
+            KeyCode::Char('r') => self.start_status_snapshot(),
+            KeyCode::Char('l') => self.start_status_live(),
+            KeyCode::Char('x') => {
+                if let Some(operation_id) = self.status.operation_id {
+                    self.status
+                        .reduce(crate::tui::modes::status::StatusAction::CancelRequested(
+                            operation_id,
+                        ));
+                }
+                self.cancel_active_job()
+            }
+            KeyCode::Char(']') => {
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::IntervalStep(1));
+                self.maybe_restart_status_live()
+            }
+            KeyCode::Char('[') => {
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::IntervalStep(-1));
+                self.maybe_restart_status_live()
+            }
+            KeyCode::Char('s') => {
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::CycleSort);
+                Vec::new()
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::MoveCursor(1));
+                Vec::new()
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::MoveCursor(-1));
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    pub(super) fn start_status_snapshot(&mut self) -> Vec<Effect> {
+        if self.has_active_mutation_job() || self.status.operation_id.is_some() {
+            return Vec::new();
+        }
+        let job_id = self.start_job(JobKind::Status, "Capture Status snapshot");
+        self.status
+            .reduce(crate::tui::modes::status::StatusAction::SnapshotStarted(
+                job_id,
+            ));
+        vec![Effect::StartStatusSnapshot { job_id }]
+    }
+
+    pub(super) fn start_status_live(&mut self) -> Vec<Effect> {
+        if self.has_active_mutation_job() || self.status.operation_id.is_some() {
+            return Vec::new();
+        }
+        let job_id = self.start_job(JobKind::Status, "Start Status live");
+        let interval_ms = self.status.interval_ms;
+        let process_limit = self.status.process_limit;
+        self.status
+            .reduce(crate::tui::modes::status::StatusAction::LiveStarted(job_id));
+        vec![Effect::StartStatusLive {
+            job_id,
+            interval_ms,
+            process_limit,
+        }]
+    }
+
+    fn maybe_restart_status_live(&mut self) -> Vec<Effect> {
+        if !self.status.pending_live_restart
+            || self.status.operation != Some(crate::tui::modes::status::StatusOperation::Live)
+        {
+            return Vec::new();
+        }
+        if let Some(operation_id) = self.status.operation_id {
+            self.status
+                .reduce(crate::tui::modes::status::StatusAction::CancelRequested(
+                    operation_id,
+                ));
+            return self.cancel_active_job();
+        }
+        Vec::new()
     }
 
     fn handle_language_settings_key(&mut self, key: KeyEvent) -> Vec<Effect> {

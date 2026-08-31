@@ -1,6 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutedReport, reportMatchesSelection } from "./contract";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DryRunOutcome, ExecutionReport, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, UntrustedPlan } from "./types.gen";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, StatusEventV1, UntrustedPlan } from "./types.gen";
 
 export interface DesktopBridge {
   analyzeStart(operationId: string, root: string, onProgress: (progress: DesktopAnalyzeProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopAnalyzeResult>;
@@ -15,6 +15,9 @@ export interface DesktopBridge {
   optimizeRun(operationId: string, plan: MaintenancePlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopOptimizeRunResult>;
   optimizeAudit(operationId: string): Promise<DesktopOptimizeAuditResult>;
   optimizeCancel(operationId: string): Promise<void>;
+  statusSnapshot(operationId: string, processLimit?: number): Promise<DesktopStatusSnapshotResult>;
+  statusLiveStart(operationId: string, intervalMs: number, processLimit: number, onEvent: (event: StatusEventV1) => void, onEventError: (error: unknown) => void): Promise<DesktopStatusLiveResult>;
+  statusCancel(operationId: string): Promise<void>;
   scanStart(scanId: string, options: ScanOptions, onProgress: (progress: DesktopScanProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopScanResult>;
   scanCancel(scanId: string): Promise<void>;
   planDryRun(plan: UntrustedPlan, selectedIds: string[]): Promise<DryRunOutcome>;
@@ -86,6 +89,21 @@ export const tauriBridge: DesktopBridge = {
     return result;
   },
   optimizeCancel: async (operationId) => { try { await invoke("optimize_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
+  statusSnapshot: async (operationId, processLimit) => {
+    const result = await call("status_snapshot", { operationId, processLimit: processLimit ?? null }, decodeDesktopStatusSnapshotResult);
+    if (result.operation_id !== operationId) throw new Error("Status snapshot result does not match the active operation");
+    return result;
+  },
+  statusLiveStart: async (operationId, intervalMs, processLimit, onEvent, onEventError) => {
+    const channel = new Channel<unknown>((value) => {
+      try { onEvent(decodeStatusEvent(value)); }
+      catch (error) { onEventError(error); }
+    });
+    const result = await call("status_live_start", { operationId, intervalMs, processLimit, onEvent: channel }, decodeDesktopStatusLiveResult);
+    if (result.operation_id !== operationId) throw new Error("Status live result does not match the active operation");
+    return result;
+  },
+  statusCancel: async (operationId) => { try { await invoke("status_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
   scanStart: async (scanId, options, onProgress, onProgressError) => {
     const channel = new Channel<unknown>((value) => {
       try { onProgress(decodeDesktopScanProgress(value)); }

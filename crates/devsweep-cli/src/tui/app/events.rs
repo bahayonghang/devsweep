@@ -16,6 +16,7 @@ use devsweep_core::{
     software::{
         SoftwareExecutionReportV1, SoftwareInventoryV1, SoftwarePreviewV1, SoftwareSelectionPlanV1,
     },
+    status::{StatusEventV1, StatusSnapshotV1},
 };
 
 pub(in crate::tui) type JobId = u64;
@@ -67,6 +68,14 @@ pub(in crate::tui) enum Effect {
     },
     StartOptimizeAudit {
         job_id: JobId,
+    },
+    StartStatusSnapshot {
+        job_id: JobId,
+    },
+    StartStatusLive {
+        job_id: JobId,
+        interval_ms: u32,
+        process_limit: u32,
     },
     StartClean {
         job_id: JobId,
@@ -144,6 +153,14 @@ pub(in crate::tui) enum WorkerEvent {
         job_id: JobId,
         recovered: Vec<MaintenanceActionOutcomeV1>,
         records: Vec<OptimizeAuditRecordV1>,
+    },
+    StatusSnapshotFinished {
+        job_id: JobId,
+        snapshot: Box<StatusSnapshotV1>,
+    },
+    StatusLiveEvent {
+        job_id: JobId,
+        event: Box<StatusEventV1>,
     },
     JobProgress {
         job_id: JobId,

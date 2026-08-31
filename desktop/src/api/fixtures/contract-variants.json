@@ -35,7 +35,12 @@
     "MaintenanceExecutionOutcome": ["canceled_before_start", "succeeded", "launched", "failed", "unknown_after_dispatch"],
     "OptimizeAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_unfinished", "canceled_before_start", "recovered_before_dispatch", "succeeded", "launched", "failed", "unknown_after_dispatch"],
     "OptimizeAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_timed_out", "adapter_canceled_after_dispatch", "recovered_after_crash"],
-    "OptimizeAdapterOutcome": ["success", "failure", "unfinished"]
+    "OptimizeAdapterOutcome": ["success", "failure", "unfinished"],
+    "AcState": ["online", "offline", "unknown"],
+    "UnsupportedCode": ["gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity"],
+    "UnsupportedCapabilityState": ["unsupported"],
+    "TickSkipReason": ["sample_in_flight"],
+    "TerminalReason": ["completed", "canceled", "broken_pipe", "producer_error"]
   },
   "tagged_unions": {
     "Scope": { "variants": {
@@ -95,6 +100,8 @@
       "CommandErrorOptimizeStaleAuthority": [{ "code": "optimize_stale_authority", "message": "controlled stale optimize authority" }],
       "CommandErrorOptimizeUnavailable": [{ "code": "optimize_unavailable", "message": "the Windows OS build query is unavailable" }],
       "CommandErrorOptimizeAuditUnavailable": [{ "code": "optimize_audit_unavailable", "message": "controlled optimize audit failure" }],
+      "CommandErrorStatusAlreadyRunning": [{ "code": "status_already_running" }],
+      "CommandErrorStatusFailed": [{ "code": "status_failed", "message": "controlled status failure" }],
       "CommandErrorInvalidPlan": [{ "code": "invalid_plan", "issues": ["controlled issue"] }],
       "CommandErrorStaleConfirmation": [{ "code": "stale_confirmation", "expected_digest": "expected", "actual_digest": "actual" }],
       "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
@@ -200,6 +207,90 @@
       }],
       "DesktopOptimizeListResultCanceled": [{ "type": "canceled", "operation_id": "optimize-list-1" }]
     }},
+    "DesktopStatusSnapshotResult": { "variants": {
+      "DesktopStatusSnapshotResultCompleted": [{
+        "type": "completed",
+        "operation_id": "status-snapshot-1",
+        "snapshot": {
+          "snapshot_id": "snapshot-fixture",
+          "sampled_at_unix_ms": 1788019200000,
+          "sample_window_ms": 1000,
+          "logical_processor_count": 16,
+          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321 } },
+          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184 }, "reason_codes": ["counter_lagged"] },
+          "volumes": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "items": [{ "volume_id": "volume-fixture", "mount_points": ["C:\\"], "total_bytes": 1000000000, "available_bytes": 400000000 }], "complete": true } },
+          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048 }] } },
+          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null } },
+          "processes": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 3, "value": { "items": [{ "pid": 42, "name": "fixture.exe", "cpu_basis_points_of_one_logical_core": 12500, "private_bytes": 1048576, "read_bytes_per_second": 2048, "write_bytes_per_second": 1024 }], "enumerated_count": 4096, "returned_count": 1, "requested_limit": 15, "enumeration_ceiling": 4096, "detail_budget_ms": 150, "truncated_by_limit": true, "budget_exhausted": true }, "reason_codes": ["process_limit", "detail_budget_exhausted"] },
+          "unsupported_capabilities": [
+            { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+          ]
+        }
+      }],
+      "DesktopStatusSnapshotResultCanceled": [{ "type": "canceled", "operation_id": "status-snapshot-1" }]
+    }},
+    "DesktopStatusLiveResult": { "variants": {
+      "DesktopStatusLiveResultCompleted": [{ "type": "completed", "operation_id": "status-live-1" }],
+      "DesktopStatusLiveResultCanceled": [{ "type": "canceled", "operation_id": "status-live-1" }]
+    }},
+    "StatusEventV1": { "tag": "event", "variants": {
+      "StatusEventV1Started": [{
+        "schema_version": 1,
+        "event": "status_started",
+        "operation_id": "op-fixture",
+        "sequence": 0,
+        "emitted_at_unix_ms": 1788019200000,
+        "data": { "interval_ms": 2000, "process_limit": 15 }
+      }],
+      "StatusEventV1Snapshot": [{
+        "schema_version": 1,
+        "event": "status_snapshot",
+        "operation_id": "op-fixture",
+        "sequence": 1,
+        "emitted_at_unix_ms": 1788019202000,
+        "data": {
+          "snapshot_id": "snapshot-fixture",
+          "sampled_at_unix_ms": 1788019202000,
+          "sample_window_ms": 1000,
+          "logical_processor_count": 16,
+          "cpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "memory": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "processes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "unsupported_capabilities": [
+            { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+          ]
+        }
+      }],
+      "StatusEventV1TickSkipped": [{
+        "schema_version": 1,
+        "event": "tick_skipped",
+        "operation_id": "op-fixture",
+        "sequence": 2,
+        "emitted_at_unix_ms": 1788019203000,
+        "data": { "reason": "sample_in_flight", "skipped_total": 1 }
+      }],
+      "StatusEventV1Terminal": [{
+        "schema_version": 1,
+        "event": "status_terminal",
+        "operation_id": "op-fixture",
+        "sequence": 3,
+        "emitted_at_unix_ms": 1788019204000,
+        "data": { "reason": "completed", "error_code": null }
+      }]
+    }},
     "OptimizeAuditTransition": { "tag": "kind", "variants": {
       "OptimizeAuditTransitionValidated": [{ "kind": "validated" }],
       "OptimizeAuditTransitionDispatchStarted": [{ "kind": "dispatch_started" }],
@@ -299,6 +390,19 @@
         "reboot_evidence": "none",
         "irreversible": true
       }
+    ],
+    "CpuAvailabilityV1": [
+      { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },
+      { "state": "permission_denied", "sampled_at_unix_ms": null, "reason_code": "access_denied" }
+    ],
+    "PowerV1": [
+      { "battery_present": true, "ac_state": "offline", "charge_basis_points": 5400, "remaining_seconds": 3600 },
+      { "battery_present": false, "ac_state": "unknown", "charge_basis_points": null, "remaining_seconds": null }
+    ],
+    "StatusTerminalV1": [
+      { "reason": "canceled", "error_code": null },
+      { "reason": "broken_pipe", "error_code": null },
+      { "reason": "producer_error", "error_code": "sample_failed" }
     ]
   }
 }

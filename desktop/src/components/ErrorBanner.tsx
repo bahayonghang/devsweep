@@ -15,6 +15,8 @@ function errorMessage(error: CommandError): string {
     case "optimize_stale_authority": return `Optimize authority is stale: ${error.message}`;
     case "optimize_unavailable": return `Optimize is unavailable: ${error.message}`;
     case "optimize_audit_unavailable": return `Optimize audit is unavailable: ${error.message}`;
+    case "status_already_running": return "A Status operation is already running. Cancel it or wait for it to finish.";
+    case "status_failed": return `Status operation failed: ${error.message}`;
     case "invalid_plan": return `The scan plan is no longer valid: ${error.issues.join("; ")}`;
     case "stale_confirmation": return "The cleanup selection changed. Review the targets and run the dry run again.";
     case "unknown_target": return `Target ${error.target_id} is no longer available. Rescan before continuing.`;

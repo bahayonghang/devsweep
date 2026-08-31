@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "event": "status_snapshot",
+  "operation_id": "op-fixture",
+  "sequence": 1,
+  "emitted_at_unix_ms": 1788019202000,
+  "data": {
+    "snapshot_id": "snapshot-fixture",
+    "sampled_at_unix_ms": 1788019202000,
+    "sample_window_ms": 1000,
+    "logical_processor_count": 16,
+    "cpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+    "memory": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+    "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+    "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+    "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+    "processes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+    "unsupported_capabilities": [
+      { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
+      { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
+      { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
+      { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
+      { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
+      { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+    ]
+  }
+}

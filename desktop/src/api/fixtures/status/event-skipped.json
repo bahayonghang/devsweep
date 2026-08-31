@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "event": "tick_skipped",
+  "operation_id": "op-fixture",
+  "sequence": 2,
+  "emitted_at_unix_ms": 1788019203000,
+  "data": { "reason": "sample_in_flight", "skipped_total": 1 }
+}

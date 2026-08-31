@@ -16,7 +16,7 @@ mod system;
 #[cfg(test)]
 mod tests;
 
-pub use sampler::{StatusError, StatusSampler, spawn_live};
+pub use sampler::{LiveControl, StatusError, StatusSampler, spawn_live};
 pub use system::{cpu_utilization_basis_points, memory_from_physical};
 
 /// Snapshot rate window in milliseconds.

@@ -19,7 +19,12 @@ import optimizeExecutionSettingsJson from "./fixtures/optimize/execution-setting
 import optimizeAuditJson from "./fixtures/optimize/audit.json";
 import optimizeRefusalGuidanceJson from "./fixtures/optimize/refusal-guidance.json";
 import optimizeRefusalStaleJson from "./fixtures/optimize/refusal-stale.json";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory } from "./contract";
+import statusSnapshotJson from "./fixtures/status/snapshot-completed.json";
+import statusStartedJson from "./fixtures/status/event-started.json";
+import statusLiveSnapshotJson from "./fixtures/status/event-snapshot.json";
+import statusSkippedJson from "./fixtures/status/event-skipped.json";
+import statusTerminalJson from "./fixtures/status/event-terminal.json";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeStatusEvent } from "./contract";
 import type { DesktopBridge } from "./bridge";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
 
@@ -46,6 +51,11 @@ const optimizeExecutionSettings = decodeDesktopOptimizeRunResult(optimizeExecuti
 const optimizeAudit = decodeDesktopOptimizeAuditResult(optimizeAuditJson);
 const optimizeRefusalGuidance = decodeCommandError(optimizeRefusalGuidanceJson);
 const optimizeRefusalStale = decodeCommandError(optimizeRefusalStaleJson);
+const statusSnapshot = decodeDesktopStatusSnapshotResult(statusSnapshotJson);
+const statusStarted = decodeStatusEvent(statusStartedJson);
+const statusLiveSnapshot = decodeStatusEvent(statusLiveSnapshotJson);
+const statusSkipped = decodeStatusEvent(statusSkippedJson);
+const statusTerminal = decodeStatusEvent(statusTerminalJson);
 const cargoTargetId = "cargo.target:C:/work/app/target";
 const npmTargetId = "npm.cache.clean:global";
 const inspectOnlyTargetId = "cargo.home.inspect:C:/Users/dev/.cargo";
@@ -53,6 +63,7 @@ let scanCount = 0;
 let pendingCancellation: { scanId: string; resolve: (result: DesktopScanResult) => void } | undefined;
 let analyzeCount = 0;
 let pendingAnalyzeCancellation: { operationId: string; resolve: (result: DesktopAnalyzeResult) => void } | undefined;
+let pendingStatusLive: { operationId: string; resolve: (result: { type: "canceled"; operation_id: string } | { type: "completed"; operation_id: string }) => void } | undefined;
 
 function correlatedAnalyzeProgress(operationId: string): DesktopAnalyzeProgress {
   return { ...analyzeProgress, operation_id: operationId };
@@ -155,6 +166,42 @@ export const fixtureBridge: DesktopBridge = {
   },
   optimizeAudit: async (operationId) => ({ ...optimizeAudit, operation_id: operationId }),
   optimizeCancel: async () => undefined,
+  statusSnapshot: async (operationId) => (
+    statusSnapshot.type === "completed"
+      ? { ...statusSnapshot, operation_id: operationId }
+      : { type: "canceled", operation_id: operationId }
+  ),
+  statusLiveStart: async (operationId, _intervalMs, _processLimit, onEvent) => {
+    onEvent({ ...statusStarted, operation_id: operationId, sequence: 0 });
+    onEvent({ ...statusLiveSnapshot, operation_id: operationId, sequence: 1 });
+    onEvent({ ...statusSkipped, operation_id: operationId, sequence: 2 });
+    return new Promise((resolve) => {
+      pendingStatusLive = {
+        operationId,
+        resolve: (result) => {
+          if (result.type === "completed") {
+            onEvent({ ...statusTerminal, operation_id: operationId, sequence: 3 });
+          } else {
+            onEvent({
+              schema_version: 1,
+              event: "status_terminal",
+              operation_id: operationId,
+              sequence: 3,
+              emitted_at_unix_ms: statusTerminal.emitted_at_unix_ms,
+              data: { reason: "canceled", error_code: null },
+            });
+          }
+          resolve(result);
+        },
+      };
+    });
+  },
+  statusCancel: async (operationId) => {
+    if (pendingStatusLive?.operationId === operationId) {
+      pendingStatusLive.resolve({ type: "canceled", operation_id: operationId });
+      pendingStatusLive = undefined;
+    }
+  },
   scanStart: async (scanId, _options, onProgress) => {
     scanCount += 1;
     onProgress(correlatedProjectProgress(scanId));

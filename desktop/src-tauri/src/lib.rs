@@ -5,6 +5,7 @@ mod error;
 mod optimize;
 mod scan;
 mod software;
+mod status;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,6 +14,7 @@ pub fn run() {
         .manage(analyze::AnalyzeCoordinator::default())
         .manage(software::SoftwareCoordinator::default())
         .manage(optimize::OptimizeCoordinator::default())
+        .manage(status::StatusCoordinator::default())
         .manage(commands::PresentationSettingsCoordinator::default())
         .invoke_handler(tauri::generate_handler![
             commands::scan_start,
@@ -29,6 +31,9 @@ pub fn run() {
             optimize::optimize_run,
             optimize::optimize_audit,
             optimize::optimize_cancel,
+            status::status_snapshot,
+            status::status_live_start,
+            status::status_cancel,
             clean::plan_dry_run,
             clean::plan_execute,
             commands::protection_list_get,

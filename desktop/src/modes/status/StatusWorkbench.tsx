@@ -1,0 +1,383 @@
+import { useEffect, useReducer, useRef } from "react";
+import type { DesktopBridge } from "../../api/bridge";
+import { decodeCommandError } from "../../api/contract";
+import type {
+  CommandError,
+  DesktopStatusLiveResult,
+  DesktopStatusSnapshotResult,
+  StatusEventV1,
+  StatusSnapshotV1,
+} from "../../api/types.gen";
+import { AccessibleUserData } from "../../app-shell/AppShell";
+import { ErrorBanner } from "../../components/ErrorBanner";
+import { formatBytes } from "../../components/format";
+import { message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
+import { OperationCoordinator } from "../../state/operation-coordinator";
+import {
+  DEFAULT_PROCESS_LIMIT,
+  INTERVAL_STEPS_MS,
+  availableValue,
+  formatBasisPoints,
+  initialStatusState,
+  sortedProcesses,
+  statusReducer,
+  type ChartPoint,
+  type ProcessSort,
+  type StatusOperation,
+} from "./state";
+import "./styles.css";
+
+interface StatusWorkbenchProps {
+  readonly bridge: DesktopBridge;
+  readonly coordinator: OperationCoordinator;
+  readonly locale: PresentationLanguageTag;
+}
+
+let operationSequence = 0;
+function createOperationId(kind: StatusOperation): string {
+  operationSequence += 1;
+  const randomId = globalThis.crypto?.randomUUID?.();
+  return randomId ? `status-${kind}-${randomId}` : `status-${kind}-${Date.now()}-${operationSequence}`;
+}
+
+function commandError(error: unknown): CommandError {
+  try { return decodeCommandError(error); }
+  catch { return { code: "io", message: error instanceof Error ? error.message : "Unexpected Status IPC error" }; }
+}
+
+function taggedLine(locale: PresentationLanguageTag, group: string, availability: { readonly state: string; readonly reason_code?: string; readonly reason_codes?: readonly string[] }): string {
+  if (availability.state === "partial") {
+    return message(locale, "status.v1.group.partial", { group, reasons: (availability.reason_codes ?? []).join(",") });
+  }
+  if (availability.state === "unavailable") {
+    return message(locale, "status.v1.group.unavailable", { group, reason: availability.reason_code ?? "" });
+  }
+  if (availability.state === "permission_denied") {
+    return message(locale, "status.v1.group.permission_denied", { group, reason: availability.reason_code ?? "" });
+  }
+  if (availability.state === "unsupported") {
+    return message(locale, "status.v1.group.unsupported", { group, reason: availability.reason_code ?? "" });
+  }
+  return group;
+}
+
+function cpuCard(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string {
+  const cpu = availableValue(snapshot.cpu);
+  if (!cpu) return taggedLine(locale, "cpu", snapshot.cpu);
+  return message(locale, "status.v1.cpu", { percent: formatBasisPoints(cpu.system_utilization_basis_points) });
+}
+
+function memoryCard(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string {
+  const memory = availableValue(snapshot.memory);
+  if (!memory) return taggedLine(locale, "memory", snapshot.memory);
+  const text = message(locale, "status.v1.memory", {
+    used: formatBytes(memory.used_bytes),
+    total: formatBytes(memory.total_bytes),
+    available: formatBytes(memory.available_bytes),
+  });
+  return snapshot.memory.state === "partial" ? `${text} ${taggedLine(locale, "memory", snapshot.memory)}` : text;
+}
+
+function volumeCards(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string[] {
+  const volumes = availableValue(snapshot.volumes);
+  if (!volumes) return [taggedLine(locale, "volumes", snapshot.volumes)];
+  return volumes.items.map((volume) => message(locale, "status.v1.volume.item", {
+    mount: volume.mount_points[0] ?? "-",
+    available: formatBytes(volume.available_bytes),
+    total: formatBytes(volume.total_bytes),
+  }));
+}
+
+function networkCards(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string[] {
+  const network = availableValue(snapshot.network);
+  if (!network) return [taggedLine(locale, "network", snapshot.network)];
+  return network.interfaces.map((iface) => message(locale, "status.v1.network.item", {
+    name: iface.name,
+    rx: formatBytes(iface.rx_bytes_per_second),
+    tx: formatBytes(iface.tx_bytes_per_second),
+  }));
+}
+
+function powerCard(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string {
+  const power = availableValue(snapshot.power);
+  if (!power) return taggedLine(locale, "power", snapshot.power);
+  const ac = message(locale, `status.v1.ac.${power.ac_state}` as MessageKey);
+  const acLine = message(locale, "status.v1.power.ac", { ac });
+  if (!power.battery_present) return `${acLine} ${message(locale, "status.v1.power.no_battery")}`;
+  if (power.charge_basis_points === null) return acLine;
+  return `${acLine} ${message(locale, "status.v1.power.battery", {
+    percent: formatBasisPoints(power.charge_basis_points),
+    remaining: power.remaining_seconds === null ? "-" : String(power.remaining_seconds),
+  })}`;
+}
+
+function chartValues(locale: PresentationLanguageTag, points: readonly ChartPoint[], present: (point: ChartPoint) => string | null): string {
+  const gap = message(locale, "status.v1.chart.gap");
+  return points.map((point) => present(point) ?? gap).join(", ");
+}
+
+function chartSegments(points: readonly ChartPoint[], present: (point: ChartPoint) => number | null): string[] {
+  const width = Math.max(points.length - 1, 1);
+  const values = points.map(present);
+  const finite = values.filter((value): value is number => value !== null);
+  const max = Math.max(...finite, 1);
+  const segments: string[] = [];
+  let current: string[] = [];
+  values.forEach((value, index) => {
+    if (value === null) {
+      if (current.length > 1) segments.push(current.join(" "));
+      current = [];
+      return;
+    }
+    const x = (index / width) * 100;
+    const y = 40 - (value / max) * 36;
+    current.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  });
+  if (current.length > 1) segments.push(current.join(" "));
+  return segments;
+}
+
+function StatusChart({
+  locale,
+  labelKey,
+  points,
+  present,
+  format,
+}: {
+  readonly locale: PresentationLanguageTag;
+  readonly labelKey: MessageKey;
+  readonly points: readonly ChartPoint[];
+  readonly present: (point: ChartPoint) => number | null;
+  readonly format: (value: number) => string;
+}) {
+  const label = message(locale, labelKey);
+  const values = chartValues(locale, points, (point) => {
+    const value = present(point);
+    return value === null ? null : format(value);
+  });
+  const segments = chartSegments(points, present);
+  return <figure className="status-chart">
+    <figcaption>{label}</figcaption>
+    <svg viewBox="0 0 100 48" role="img" aria-label={message(locale, "status.v1.chart.alternative", { label, values })}>
+      {segments.map((pointsAttr) => <polyline key={pointsAttr} className="status-chart-line" points={pointsAttr} />)}
+    </svg>
+    <p className="status-chart-values">{message(locale, "status.v1.chart.alternative", { label, values })}</p>
+  </figure>;
+}
+
+export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbenchProps) {
+  const [state, dispatch] = useReducer(statusReducer, initialStatusState);
+  const mounted = useRef(true);
+  useEffect(() => () => {
+    mounted.current = false;
+    dispatch({ type: "released" });
+  }, []);
+
+  const runOperation = async <T,>(
+    operation: StatusOperation,
+    start: (operationId: string) => Promise<T>,
+    completed: (operationId: string, result: T) => void,
+  ) => {
+    const operationId = createOperationId(operation);
+    let started = false;
+    try {
+      const lease = await coordinator.start<T>({
+        kind: "status",
+        id: operationId,
+        cancel: async () => {
+          if (mounted.current) dispatch({ type: "cancel_requested", operationId });
+          await bridge.statusCancel(operationId);
+        },
+        start: () => {
+          started = true;
+          if (mounted.current) dispatch({ type: "operation_requested", operationId, operation });
+          return start(operationId);
+        },
+      });
+      if (!lease) return;
+      try {
+        const result = await lease.result;
+        if (mounted.current) completed(operationId, result);
+      } finally {
+        await lease.complete().catch(() => false);
+      }
+    } catch (error) {
+      if (started && mounted.current) dispatch({ type: "operation_failed", operationId, error: commandError(error) });
+    }
+  };
+
+  const captureSnapshot = () => void runOperation<DesktopStatusSnapshotResult>(
+    "snapshot",
+    (operationId) => bridge.statusSnapshot(operationId),
+    (operationId, result) => {
+      if (result.type === "completed") dispatch({ type: "snapshot_completed", operationId, snapshot: result.snapshot });
+      else dispatch({ type: "operation_canceled", operationId });
+    },
+  );
+
+  const startLive = (intervalMs = state.intervalMs) => {
+    void runOperation<DesktopStatusLiveResult>(
+      "live",
+      (operationId) => bridge.statusLiveStart(
+        operationId,
+        intervalMs,
+        DEFAULT_PROCESS_LIMIT,
+        (event: StatusEventV1) => {
+          if (mounted.current) dispatch({ type: "live_event", operationId, event });
+        },
+        (error) => {
+          if (mounted.current) dispatch({ type: "operation_failed", operationId, error: error instanceof Error ? error.message : String(error) });
+        },
+      ),
+      (operationId, result) => {
+        if (result.type === "canceled") dispatch({ type: "operation_canceled", operationId });
+      },
+    );
+  };
+
+  const cancelActive = async () => {
+    const operationId = state.operationId;
+    if (!operationId) return;
+    dispatch({ type: "cancel_requested", operationId });
+    try { await bridge.statusCancel(operationId); }
+    catch (error) {
+      dispatch({ type: "operation_failed", operationId, error: commandError(error) });
+    }
+  };
+
+  useEffect(() => {
+    captureSnapshot();
+    // Auto-load one snapshot on enter; live remains opt-in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const active = state.operationId !== null;
+  const live = state.status === "live" || state.status === "canceling";
+  const statusText = state.status === "snapshot" ? message(locale, "status.v1.state.loading")
+    : state.status === "live" ? message(locale, "status.v1.state.live")
+      : state.status === "canceling" ? message(locale, "status.v1.state.canceling")
+        : state.status === "failed" ? message(locale, "status.v1.state.failed")
+          : null;
+  const processes = sortedProcesses(state);
+  const processGroup = state.snapshot ? availableValue(state.snapshot.processes) : null;
+  const decodeError = typeof state.error === "string" ? state.error : null;
+  const commandErr = state.error && typeof state.error !== "string" ? state.error : null;
+
+  return <div className="status-mode" data-status={state.status}>
+    <section className="status-toolbar" aria-label={message(locale, "command.status")}>
+      <button type="button" className="primary-button" disabled={active} onClick={captureSnapshot}>
+        {message(locale, "status.v1.action.snapshot")}
+      </button>
+      {live
+        ? <button type="button" className="danger-button" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>
+            {message(locale, "status.v1.action.live.stop")}
+          </button>
+        : <button type="button" className="secondary-button" disabled={active} onClick={() => startLive()}>
+            {message(locale, "status.v1.action.live.start")}
+          </button>}
+      <label>
+        <span>{message(locale, "status.v1.interval.label")}</span>
+        <select
+          aria-label={message(locale, "status.v1.interval.label")}
+          value={String(state.intervalMs)}
+          onChange={(event) => {
+            const intervalMs = Number(event.target.value);
+            dispatch({ type: "interval_changed", intervalMs });
+            if (state.status === "live") startLive(intervalMs);
+          }}
+        >
+          {INTERVAL_STEPS_MS.map((step) => (
+            <option key={step} value={step}>{message(locale, "status.v1.interval.value", { seconds: String(step / 1000) })}</option>
+          ))}
+        </select>
+      </label>
+      {statusText ? <p className="status-live-status" role="status" aria-live="polite" aria-label={statusText}>{statusText}</p> : null}
+    </section>
+
+    {commandErr ? <ErrorBanner error={commandErr} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
+    {decodeError ? <div className="error-banner" role="alert">
+      <span>{message(locale, "status.v1.decode.error", { reason: decodeError })}</span>
+      <button type="button" className="icon-button" onClick={() => dispatch({ type: "error_dismissed" })} aria-label="Dismiss error">×</button>
+    </div> : null}
+
+    {!state.snapshot ? <section className="status-capability">
+      <p>{message(locale, "status.v1.chart.empty")}</p>
+      <p>{message(locale, "status.v1.capability.note")}</p>
+    </section> : <>
+      <section className="status-capability">
+        <p>{message(locale, "status.v1.snapshot.title", { id: state.snapshot.snapshot_id })}</p>
+        <p>{message(locale, "status.v1.sampled_at", { timestamp: String(state.snapshot.sampled_at_unix_ms) })}</p>
+        <p>{message(locale, "status.v1.logical.processors", { count: String(state.snapshot.logical_processor_count) })}</p>
+        <p>{message(locale, "status.v1.capability.note")}</p>
+      </section>
+      <section className="status-cards" aria-label={message(locale, "command.status")}>
+        <article className="status-card"><h3>{message(locale, "status.v1.chart.cpu")}</h3><p><AccessibleUserData value={cpuCard(locale, state.snapshot)} /></p></article>
+        <article className="status-card"><h3>{message(locale, "status.v1.chart.memory")}</h3><p><AccessibleUserData value={memoryCard(locale, state.snapshot)} /></p></article>
+        <article className="status-card"><p><AccessibleUserData value={powerCard(locale, state.snapshot)} /></p></article>
+        {volumeCards(locale, state.snapshot).map((line) => <article className="status-card" key={line}><p><AccessibleUserData value={line} /></p></article>)}
+        {networkCards(locale, state.snapshot).map((line) => <article className="status-card" key={line}><p><AccessibleUserData value={line} /></p></article>)}
+      </section>
+    </>}
+
+    <section className="status-charts">
+      <h2>{message(locale, "status.v1.state.live")}</h2>
+      {state.chart.length === 0
+        ? <p>{message(locale, "status.v1.chart.empty")}</p>
+        : <>
+          <StatusChart locale={locale} labelKey="status.v1.chart.cpu" points={state.chart} present={(point) => point.cpuBp} format={formatBasisPoints} />
+          <StatusChart locale={locale} labelKey="status.v1.chart.memory" points={state.chart} present={(point) => point.memoryUsedBytes} format={formatBytes} />
+          <StatusChart locale={locale} labelKey="status.v1.chart.network.rx" points={state.chart} present={(point) => point.rxBytesPerSecond} format={formatBytes} />
+          <StatusChart locale={locale} labelKey="status.v1.chart.network.tx" points={state.chart} present={(point) => point.txBytesPerSecond} format={formatBytes} />
+        </>}
+    </section>
+
+    <section className="status-processes">
+      <h2>{message(locale, "status.v1.process.summary", {
+        returned: String(processGroup?.returned_count ?? 0),
+        enumerated: String(processGroup?.enumerated_count ?? 0),
+        limit: String(processGroup?.requested_limit ?? state.processLimit),
+      })}</h2>
+      {processGroup?.truncated_by_limit
+        ? <p className="status-warning">{message(locale, "status.v1.process.truncated", {
+            returned: String(processGroup.returned_count),
+            enumerated: String(processGroup.enumerated_count),
+          })}</p>
+        : null}
+      {processGroup?.budget_exhausted
+        ? <p className="status-warning">{message(locale, "status.v1.process.budget", {
+            budget: String(processGroup.detail_budget_ms),
+          })}</p>
+        : null}
+      <div className="status-table-frame">
+        <table className="status-table">
+          <thead>
+            <tr>
+              {(["name", "pid", "cpu", "memory"] as const).map((column) => {
+                const sort: ProcessSort = column === "name" ? "name" : column === "pid" ? "pid" : column === "cpu" ? "cpu" : "memory";
+                return <th key={column}>
+                  <button type="button" aria-pressed={state.processSort === sort} onClick={() => dispatch({ type: "sort_changed", sort })}>
+                    {message(locale, `status.v1.table.${column}` as MessageKey)}
+                  </button>
+                </th>;
+              })}
+              <th>{message(locale, "status.v1.table.read")}</th>
+              <th>{message(locale, "status.v1.table.write")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {processes.map((process) => (
+              <tr key={process.pid}>
+                <td><AccessibleUserData value={process.name} /></td>
+                <td>{process.pid}</td>
+                <td>{formatBasisPoints(process.cpu_basis_points_of_one_logical_core)}</td>
+                <td>{formatBytes(process.private_bytes)}</td>
+                <td>{formatBytes(process.read_bytes_per_second)}</td>
+                <td>{formatBytes(process.write_bytes_per_second)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>;
+}

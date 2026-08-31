@@ -413,6 +413,66 @@ impl App {
                     "Optimize audit recovery completed without redispatch",
                 );
             }
+            WorkerEvent::StatusSnapshotFinished { job_id, snapshot } => {
+                if !self.transition_job(job_id, JobStatus::Succeeded, "Status snapshot ready") {
+                    self.log_ignored_worker_event(job_id, "Status snapshot completion");
+                    return Vec::new();
+                }
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::SnapshotFinished {
+                        job_id,
+                        snapshot,
+                    });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Status,
+                    job_id,
+                    "Status snapshot finished",
+                );
+            }
+            WorkerEvent::StatusLiveEvent { job_id, event } => {
+                let terminal = event.is_terminal();
+                let reason = match event.as_ref() {
+                    devsweep_core::status::StatusEventV1::Terminal { data, .. } => {
+                        Some(data.reason)
+                    }
+                    _ => None,
+                };
+                if terminal {
+                    let cancelling = self
+                        .jobs
+                        .iter()
+                        .any(|job| job.id == job_id && job.status == JobStatus::Cancelling);
+                    let status = match reason {
+                        Some(devsweep_core::status::TerminalReason::ProducerError) => {
+                            JobStatus::Failed
+                        }
+                        Some(devsweep_core::status::TerminalReason::Canceled) if cancelling => {
+                            JobStatus::Canceled
+                        }
+                        _ => JobStatus::Succeeded,
+                    };
+                    if !self.transition_job(job_id, status, "Status live stopped") {
+                        self.log_ignored_worker_event(job_id, "Status live terminal");
+                    }
+                }
+                self.status
+                    .reduce(crate::tui::modes::status::StatusAction::LiveEvent {
+                        job_id,
+                        event: *event,
+                    });
+                if self.status.needs_cancel_after_decode_failure()
+                    && let Some(operation_id) = self.status.operation_id
+                {
+                    self.status
+                        .reduce(crate::tui::modes::status::StatusAction::CancelRequested(
+                            operation_id,
+                        ));
+                    return vec![Effect::CancelJob {
+                        job_id: operation_id,
+                    }];
+                }
+            }
             WorkerEvent::CleanFinished { job_id, report } => {
                 let status = if report.failed == 0 {
                     JobStatus::Succeeded
@@ -460,6 +520,10 @@ impl App {
                     .jobs
                     .iter()
                     .any(|job| job.id == job_id && job.kind == JobKind::Optimize);
+                let status_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Status);
                 if !self.transition_job(job_id, JobStatus::Failed, message.clone()) {
                     self.log_ignored_worker_event(job_id, "job failure");
                     return Vec::new();
@@ -482,6 +546,13 @@ impl App {
                         message: message.clone(),
                     });
                 }
+                if status_job {
+                    self.status
+                        .reduce(crate::tui::modes::status::StatusAction::Failed {
+                            job_id,
+                            message: message.clone(),
+                        });
+                }
                 if self.cleanup_progress_matches(job_id)
                     && let Some(progress) = &mut self.cleanup_progress
                 {
@@ -503,6 +574,10 @@ impl App {
                     .jobs
                     .iter()
                     .any(|job| job.id == job_id && job.kind == JobKind::Optimize);
+                let status_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Status);
                 if !self.transition_job(job_id, JobStatus::Canceled, "Canceled") {
                     self.log_ignored_worker_event(job_id, "job cancellation");
                     return Vec::new();
@@ -518,6 +593,10 @@ impl App {
                 if optimize_job {
                     self.optimize.reduce(OptimizeAction::Canceled(job_id));
                 }
+                if status_job {
+                    self.status
+                        .reduce(crate::tui::modes::status::StatusAction::Canceled(job_id));
+                }
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;
                 }
@@ -532,6 +611,9 @@ impl App {
 
         let mut effects = self.maybe_finish_pending_mode();
         effects.extend(self.maybe_start_pending_scan());
+        if self.status.pending_live_restart && self.status.operation_id.is_none() {
+            effects.extend(self.start_status_live());
+        }
         effects
     }
 
