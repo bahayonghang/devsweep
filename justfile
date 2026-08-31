@@ -2,6 +2,9 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
 
 default: ci
 
+help:
+    @just --list
+
 fmt:
     cargo fmt --all -- --check
 
@@ -19,6 +22,9 @@ clippy:
 
 build:
     cargo build --locked -p devsweep-cli --bin devsweep
+
+install:
+    cargo install --locked --path crates/devsweep-cli --bin devsweep
 
 [script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
 release-archive:
@@ -88,7 +94,31 @@ desktop-test:
     cargo test --locked -p devsweep-desktop
 
 desktop-build:
-    cd desktop; cargo tauri build
+    cd desktop; npm run tauri -- build
+
+# Build the unsigned NSIS installer and silently install the Tauri desktop app
+[script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
+tinstall: desktop-build
+    $ErrorActionPreference = 'Stop'
+    $nsisDirs = @(
+        'target\release\bundle\nsis',
+        'desktop\src-tauri\target\release\bundle\nsis'
+    )
+    $setup = $nsisDirs |
+        Where-Object { Test-Path $_ } |
+        ForEach-Object { Get-ChildItem -Path $_ -Filter '*-setup.exe' } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $setup) {
+        throw 'NSIS setup exe missing; expected target\release\bundle\nsis\*-setup.exe'
+    }
+    Write-Output ('installing: ' + $setup.FullName)
+    $proc = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait -PassThru
+    if ($null -eq $proc) { throw 'NSIS installer did not start' }
+    if ($proc.ExitCode -ne 0) {
+        throw ('NSIS installer failed with exit code ' + $proc.ExitCode)
+    }
+    Write-Output 'desktop install complete'
 
 ci: fmt sync-lock check test clippy
     @echo "ci complete"

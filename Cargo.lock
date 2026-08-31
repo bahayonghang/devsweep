@@ -823,7 +823,7 @@ dependencies = [
 
 [[package]]
 name = "devsweep-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "devsweep-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "libc",
@@ -855,7 +855,7 @@ dependencies = [
 
 [[package]]
 name = "devsweep-desktop"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "devsweep-core",
