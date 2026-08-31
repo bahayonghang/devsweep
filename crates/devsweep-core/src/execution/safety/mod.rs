@@ -11,7 +11,9 @@ use serde::Serialize;
 
 mod protections;
 
-pub use protections::UserProtectionList;
+pub use protections::{
+    ProtectionError, ProtectionMutationReport, UserProtectionList, canonical_protection_identity,
+};
 
 use crate::{
     cargo_metadata::query_cargo_metadata,
@@ -103,6 +105,7 @@ type CurrentExeFn = Arc<dyn Fn() -> io::Result<PathBuf> + Send + Sync>;
 /// Default-deny safety policy evaluated immediately before side effects.
 pub(super) struct SafetyPolicy {
     user_protections: UserProtectionList,
+    protections_unavailable: bool,
     current_exe: CurrentExeFn,
     home: Option<PathBuf>,
     process_runner: ProcessRunner,
@@ -111,33 +114,40 @@ pub(super) struct SafetyPolicy {
 
 impl Default for SafetyPolicy {
     fn default() -> Self {
-        Self::load_default().unwrap_or_else(|_| Self {
-            user_protections: UserProtectionList::empty_in_memory_for_tests_only(),
-            current_exe: Arc::new(env::current_exe),
-            home: resolve_home_dir(),
-            process_runner: ProcessRunner::default(),
-            reparse_probe: Arc::new(SystemPathReparseProbe),
-        })
+        match UserProtectionList::load() {
+            Ok(user_protections) => Self::from_user_list(user_protections),
+            Err(_) => Self::fail_closed_unavailable(),
+        }
     }
 }
 
 impl SafetyPolicy {
     /// Load policy from the OS app-data protection list. Load failures are
     /// returned so callers can fail closed instead of using an empty list.
+    #[allow(dead_code)]
     pub(super) fn load_default() -> Result<Self> {
-        let user_protections = UserProtectionList::load()?;
-        Ok(Self {
-            user_protections,
+        match UserProtectionList::load() {
+            Ok(user_protections) => Ok(Self::from_user_list(user_protections)),
+            Err(error) if error.is_store_unavailable() => Ok(Self::fail_closed_unavailable()),
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    fn fail_closed_unavailable() -> Self {
+        Self {
+            user_protections: UserProtectionList::empty_in_memory_for_tests_only(),
+            protections_unavailable: true,
             current_exe: Arc::new(env::current_exe),
             home: resolve_home_dir(),
             process_runner: ProcessRunner::default(),
             reparse_probe: Arc::new(SystemPathReparseProbe),
-        })
+        }
     }
 
     pub(super) fn from_user_list(user_protections: UserProtectionList) -> Self {
         Self {
             user_protections,
+            protections_unavailable: false,
             current_exe: Arc::new(env::current_exe),
             home: resolve_home_dir(),
             process_runner: ProcessRunner::default(),
@@ -174,6 +184,17 @@ impl SafetyPolicy {
     ) -> Result<AuthorizedAction, Denial> {
         let target = validated.target();
         let action_path = action_path(target);
+        if self.protections_unavailable {
+            let path = action_path
+                .as_deref()
+                .or(target.path.as_deref())
+                .unwrap_or_else(|| Path::new("<unavailable>"));
+            return Err(denial(
+                ProtectionCategory::UserProtectionList,
+                path,
+                "protection store unavailable; cleanup is refused",
+            ));
+        }
 
         if let Some(path) = action_path.as_deref() {
             // Exact-node equality first so home/scan-root denials keep the
@@ -1155,7 +1176,8 @@ mod tests {
         fs::create_dir_all(&keep).expect("keep");
 
         let mut list = UserProtectionList::load_from_path(config.clone()).expect("load");
-        list.add(&keep).expect("add");
+        let audit = fixture.path().join("clean.jsonl");
+        list.add_with_audit_journal(&keep, &audit).expect("add");
         assert_eq!(list.list().len(), 1);
 
         let reloaded = UserProtectionList::load_from_path(config.clone()).expect("reload");
@@ -1179,16 +1201,58 @@ mod tests {
         // remove by normalized absolute form after deleting the path
         fs::remove_dir_all(&replacement).expect("delete replacement");
         let mut reloaded = UserProtectionList::load_from_path(config.clone()).expect("reload");
-        assert!(reloaded.remove(&replacement).expect("remove"));
+        assert!(
+            reloaded
+                .remove_with_audit_journal(&replacement, &audit)
+                .expect("remove")
+                .changed
+        );
         assert!(reloaded.list().is_empty());
 
         fs::write(&config, "{not-json").expect("corrupt");
-        let error = UserProtectionList::load_from_path(config).expect_err("corrupt fails closed");
-        assert!(
-            error.to_string().contains("failed to parse")
-                || error.to_string().contains("JSON")
-                || error.to_string().contains("parse")
-        );
+        let original = fs::read(&config).expect("corrupt bytes");
+        let error =
+            UserProtectionList::load_from_path(config.clone()).expect_err("corrupt fails closed");
+        assert!(error.is_store_unavailable());
+        assert_eq!(fs::read(&config).expect("preserved"), original);
+    }
+
+    #[test]
+    fn user_protection_immediately_denies_cleanup_of_the_protected_path() {
+        let fixture = TempDir::new().expect("temp");
+        let root = fixture.path().join("app");
+        let keep = root.join("node_modules");
+        fs::create_dir_all(&keep).expect("keep");
+        fs::write(root.join("package.json"), "{}").expect("marker");
+        let mut list = UserProtectionList::empty_in_memory_for_tests_only();
+        list.add(&keep).expect("protect");
+        let policy =
+            SafetyPolicy::from_user_list(list).with_home(Some(fixture.path().to_path_buf()));
+        let denial = policy
+            .authorize(
+                &validated(project_target(&root, "node_modules", "node.node_modules")),
+                &AuthorizationContext::default(),
+            )
+            .expect_err("protected");
+        assert_eq!(denial.category, ProtectionCategory::UserProtectionList);
+    }
+
+    #[test]
+    fn unavailable_protection_store_denies_all_path_cleanup() {
+        let fixture = TempDir::new().expect("temp");
+        let root = fixture.path().join("app");
+        fs::create_dir_all(root.join("node_modules")).expect("nm");
+        fs::write(root.join("package.json"), "{}").expect("marker");
+        let policy =
+            SafetyPolicy::fail_closed_unavailable().with_home(Some(fixture.path().to_path_buf()));
+        let denial = policy
+            .authorize(
+                &validated(project_target(&root, "node_modules", "node.node_modules")),
+                &AuthorizationContext::default(),
+            )
+            .expect_err("fail closed");
+        assert_eq!(denial.category, ProtectionCategory::UserProtectionList);
+        assert!(denial.message.contains("unavailable"));
     }
 
     #[test]

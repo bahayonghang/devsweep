@@ -27,6 +27,7 @@ use super::{
     modes::software::{SoftwareAction, SoftwareModeState, SoftwarePhase},
     modes::status::StatusModeState,
     shell::{ModeId, ShellComposition},
+    support::SupportOverlay,
 };
 use crate::i18n::Locale;
 
@@ -352,6 +353,8 @@ pub(super) enum Overlay {
     Details,
     DryRun,
     Confirm(ConfirmState),
+    /// Supporting Protection/Rules/History destinations under help/overflow.
+    Support(SupportOverlay),
     /// D9: mutation running; user must wait or cancel-and-wait before quit.
     QuitConfirm,
 }

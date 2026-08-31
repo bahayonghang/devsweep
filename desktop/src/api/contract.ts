@@ -931,6 +931,8 @@ export function decodeCommandError(value: unknown): CommandError {
     "software_already_running", "software_failed", "software_stale_authority", "software_audit_unavailable",
     "optimize_already_running", "optimize_failed", "optimize_stale_authority", "optimize_unavailable",
     "optimize_audit_unavailable", "status_already_running", "status_failed", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io",
+    "protection_store_unavailable", "protection_audit_unknown", "protection_path_missing", "protection_confirmation_required",
+    "history_store_unavailable", "history_not_found", "rule_not_found",
   ] as const, "error.code");
   switch (code) {
     case "scan_already_running":
@@ -950,6 +952,13 @@ export function decodeCommandError(value: unknown): CommandError {
     case "optimize_audit_unavailable":
     case "status_failed":
     case "io":
+    case "protection_store_unavailable":
+    case "protection_audit_unknown":
+    case "protection_path_missing":
+    case "protection_confirmation_required":
+    case "history_store_unavailable":
+    case "history_not_found":
+    case "rule_not_found":
       exact(input, ["code", "message"], "command error"); return { code, message: string(input.message, "error.message") };
     case "invalid_plan": exact(input, ["code", "issues"], "command error"); return { code, issues: array(input.issues, "error.issues", (item) => string(item, "error.issue")) };
     case "stale_confirmation": exact(input, ["code", "expected_digest", "actual_digest"], "command error"); return { code, expected_digest: string(input.expected_digest, "error.expected_digest"), actual_digest: string(input.actual_digest, "error.actual_digest") };

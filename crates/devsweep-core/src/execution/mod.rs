@@ -20,10 +20,12 @@ pub use command::{
     CommandOutcome, CommandRequest, CommandRunner, ProcessCommandRunner, SystemTrashRunner,
     TrashRunner,
 };
-pub use safety::UserProtectionList;
 use safety::{
     AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
     SafetyPolicy,
+};
+pub use safety::{
+    ProtectionError, ProtectionMutationReport, UserProtectionList, canonical_protection_identity,
 };
 
 #[cfg(test)]
@@ -504,10 +506,7 @@ impl<C, T> Executor<C, T> {
         Self {
             command_runner,
             trash_runner,
-            safety: SafetyPolicy::from_user_list(
-                UserProtectionList::load()
-                    .unwrap_or_else(|_| UserProtectionList::empty_in_memory_for_tests_only()),
-            ),
+            safety: SafetyPolicy::default(),
             #[cfg(test)]
             journal_io: RefCell::new(None),
         }

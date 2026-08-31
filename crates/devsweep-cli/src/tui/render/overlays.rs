@@ -45,6 +45,7 @@ pub(super) fn render_overlay(frame: &mut Frame<'_>, app: &App) {
                 Line::from("d opens dry-run preview"),
                 Line::from("c opens cleanup confirmation"),
                 Line::from(format!("p opens {}", app.shell.copy.settings_title)),
+                Line::from("o opens supporting Protection, Rules, and History destinations"),
                 Line::from("/ filters targets; r cycles risk filter"),
                 Line::from("x requests a stop at the next action boundary"),
                 Line::from("Esc closes overlays; q quits"),
@@ -55,6 +56,11 @@ pub(super) fn render_overlay(frame: &mut Frame<'_>, app: &App) {
         }
         Overlay::DryRun => render_modal(frame, "Dry-run preview", dry_run_lines(app)),
         Overlay::Confirm(confirm) => render_confirm(frame, confirm),
+        Overlay::Support(support) => render_modal(
+            frame,
+            support.title(app.shell.locale),
+            support.lines(app.shell.locale),
+        ),
         Overlay::QuitConfirm => render_modal(
             frame,
             "Active job running",

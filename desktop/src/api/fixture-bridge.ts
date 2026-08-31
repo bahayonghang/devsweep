@@ -237,4 +237,11 @@ export const fixtureBridge: DesktopBridge = {
     }
     throw { code: "stale_confirmation", expected_digest: digest, actual_digest: selected.size === 2 ? twoTargetDryRun.digest : dryRun.digest };
   },
+  protectionList: async () => [],
+  protectionAdd: async () => { throw { code: "protection_confirmation_required", message: "fixture add requires confirmation" }; },
+  protectionRemove: async () => { throw { code: "protection_confirmation_required", message: "fixture remove requires confirmation" }; },
+  rulesList: async () => [],
+  rulesShow: async (id) => { throw { code: "rule_not_found", message: id }; },
+  historyList: async () => ({ operations: [], stores: [] }),
+  historyShow: async () => { throw { code: "history_not_found", message: "missing" }; },
 };

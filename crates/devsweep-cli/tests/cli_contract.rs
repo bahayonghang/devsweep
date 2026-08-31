@@ -111,10 +111,19 @@ fn help_exposes_only_the_frozen_roots_in_english_and_chinese() {
 
 #[test]
 fn explicit_chinese_language_localizes_human_errors_only() {
-    let output = devsweep(&["--language", "zh-CN", "history", "list"]);
-    assert_eq!(output.status.code(), Some(4));
+    let output = devsweep(&[
+        "--language",
+        "zh-CN",
+        "clean",
+        "protect",
+        "add",
+        "--path",
+        "C:/devsweep-missing-protect-path-xyz",
+        "--confirm",
+    ]);
+    assert_eq!(output.status.code(), Some(6));
     assert!(output.stdout.is_empty());
-    assert!(stderr(&output).contains("当前分阶段构建尚未接入"));
+    assert!(stderr(&output).contains("添加保护要求路径已经存在"));
 }
 
 #[test]

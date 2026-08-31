@@ -420,7 +420,7 @@ fn footer_actions(app: &App) -> (&'static str, FooterTone, Vec<FooterAction>) {
                 ],
             );
         }
-        Overlay::Help | Overlay::Details | Overlay::DryRun => {
+        Overlay::Help | Overlay::Details | Overlay::DryRun | Overlay::Support(_) => {
             return (
                 "MODAL",
                 FooterTone::Accent,

@@ -576,6 +576,19 @@ pub fn append_clean_audit_record(record: &CleanAuditRecordV1) -> Result<(), Clea
     append_to_path(&clean_audit_v1_path()?, record)
 }
 
+/// Append one closed V1 record to a caller-supplied journal path.
+///
+/// Protection tests use this to keep mutation-audit fixtures off the real
+/// `%LOCALAPPDATA%` store. Production mutation still calls
+/// [`append_clean_audit_record`].
+#[cfg(test)]
+pub(crate) fn append_clean_audit_record_to(
+    path: &Path,
+    record: &CleanAuditRecordV1,
+) -> Result<(), CleanAuditError> {
+    append_to_path(path, record)
+}
+
 fn append_to_path(path: &Path, record: &CleanAuditRecordV1) -> Result<(), CleanAuditError> {
     let line = serialize_record(record)?;
     let parent = path.parent().ok_or_else(|| {

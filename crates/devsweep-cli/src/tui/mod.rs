@@ -5,6 +5,7 @@ mod modes;
 mod render;
 mod runtime;
 mod shell;
+mod support;
 mod terminal;
 #[cfg(test)]
 mod test_support;

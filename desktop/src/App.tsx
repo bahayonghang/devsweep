@@ -20,6 +20,7 @@ import { AnalyzePage } from "./modes/analyze";
 import { SoftwareWorkbench } from "./modes/software";
 import { OptimizeWorkbench } from "./modes/optimize";
 import { StatusWorkbench } from "./modes/status";
+import { HistoryPage, ProtectionPage, RulesPage } from "./support";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
 
@@ -195,8 +196,14 @@ export function App({
     { id: "analyze", render: () => <AnalyzePage bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
     { id: "status", render: () => <StatusWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
   ];
+  const supporting = [
+    { id: "protection" as const, render: () => <ProtectionPage bridge={bridge} locale={presentation.locale} /> },
+    { id: "rules" as const, render: () => <RulesPage bridge={bridge} locale={presentation.locale} /> },
+    { id: "history" as const, render: () => <HistoryPage bridge={bridge} locale={presentation.locale} /> },
+  ];
   return <AppShell
     modes={modes}
+    supporting={supporting}
     locale={presentation.locale}
     onLocaleChange={changeLocale}
     coordinator={shellCoordinator}

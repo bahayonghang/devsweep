@@ -32,6 +32,23 @@ impl App {
             return self.handle_filter_key(key);
         }
 
+        // Overlays, including Help overflow into support destinations, must win
+        // over mode-specific accelerators (Analyze uses `o` for sort).
+        if !matches!(self.overlay, Overlay::None) {
+            return match self.overlay {
+                Overlay::Confirm(_) => self.handle_confirm_key(key),
+                Overlay::QuitConfirm => self.handle_quit_confirm_key(key),
+                Overlay::Support(_) => self.handle_support_key(key),
+                Overlay::Help | Overlay::Details | Overlay::DryRun => self.handle_overlay_key(key),
+                Overlay::None => unreachable!(),
+            };
+        }
+
+        if matches!(key.code, KeyCode::Char('?')) {
+            self.overlay = Overlay::Help;
+            return Vec::new();
+        }
+
         if self.shell.active == ModeId::Analyze {
             return self.handle_analyze_key(key);
         }
@@ -59,6 +76,7 @@ impl App {
         match self.overlay {
             Overlay::Confirm(_) => self.handle_confirm_key(key),
             Overlay::QuitConfirm => self.handle_quit_confirm_key(key),
+            Overlay::Support(_) => self.handle_support_key(key),
             Overlay::Help | Overlay::Details | Overlay::DryRun => self.handle_overlay_key(key),
             Overlay::None => self.handle_normal_key(key),
         }
@@ -187,6 +205,10 @@ impl App {
             }
             KeyCode::Char('?') => {
                 self.overlay = Overlay::Help;
+                Vec::new()
+            }
+            KeyCode::Char('o') => {
+                self.overlay = Overlay::Support(super::super::support::SupportOverlay::menu());
                 Vec::new()
             }
             KeyCode::Char('p') => {
@@ -781,11 +803,28 @@ impl App {
     }
 
     pub(super) fn handle_overlay_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        if matches!(self.overlay, Overlay::Help) && matches!(key.code, KeyCode::Char('o')) {
+            self.overlay = Overlay::Support(super::super::support::SupportOverlay::menu());
+            return Vec::new();
+        }
         match key.code {
             KeyCode::Esc | KeyCode::Enter | KeyCode::Char('q') => {
                 self.overlay = Overlay::None;
             }
             _ => {}
+        }
+        Vec::new()
+    }
+
+    fn handle_support_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        let locale = self.shell.locale;
+        let close = if let Overlay::Support(support) = &mut self.overlay {
+            support.handle_key(key, locale)
+        } else {
+            false
+        };
+        if close {
+            self.overlay = Overlay::None;
         }
         Vec::new()
     }

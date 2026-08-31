@@ -165,6 +165,13 @@ function benchmarkBridge(snapshot: AnalyzeSnapshotV1): DesktopBridge {
     scanCancel: async () => undefined,
     planDryRun: async () => { throw new Error("unused benchmark bridge method"); },
     planExecute: async () => { throw new Error("unused benchmark bridge method"); },
+    protectionList: async () => { throw new Error("unused benchmark bridge method"); },
+    protectionAdd: async () => { throw new Error("unused benchmark bridge method"); },
+    protectionRemove: async () => { throw new Error("unused benchmark bridge method"); },
+    rulesList: async () => { throw new Error("unused benchmark bridge method"); },
+    rulesShow: async () => { throw new Error("unused benchmark bridge method"); },
+    historyList: async () => { throw new Error("unused benchmark bridge method"); },
+    historyShow: async () => { throw new Error("unused benchmark bridge method"); },
   };
 }
 

@@ -104,6 +104,16 @@ export interface CommandErrorAnalyzeFailed {
     message: string;
 }
 
+export interface CommandErrorHistoryNotFound {
+    code:    "history_not_found";
+    message: string;
+}
+
+export interface CommandErrorHistoryStoreUnavailable {
+    code:    "history_store_unavailable";
+    message: string;
+}
+
 export interface CommandErrorInspectOnlyTarget {
     code:      "inspect_only_target";
     target_id: string;
@@ -140,6 +150,31 @@ export interface CommandErrorOptimizeStaleAuthority {
 
 export interface CommandErrorOptimizeUnavailable {
     code:    "optimize_unavailable";
+    message: string;
+}
+
+export interface CommandErrorProtectionAuditUnknown {
+    code:    "protection_audit_unknown";
+    message: string;
+}
+
+export interface CommandErrorProtectionConfirmationRequired {
+    code:    "protection_confirmation_required";
+    message: string;
+}
+
+export interface CommandErrorProtectionPathMissing {
+    code:    "protection_path_missing";
+    message: string;
+}
+
+export interface CommandErrorProtectionStoreUnavailable {
+    code:    "protection_store_unavailable";
+    message: string;
+}
+
+export interface CommandErrorRuleNotFound {
+    code:    "rule_not_found";
     message: string;
 }
 
@@ -1015,7 +1050,7 @@ export type ScanProcessStatus = ScanProcessStatusCanceled | ScanProcessStatusExi
 export type ActionKind = ActionKindCommand | ActionKindInspectOnly | ActionKindMoveToTrash | ActionKindPermanentDelete;
 export type CapacityEstimate = CapacityEstimatePartial | CapacityEstimateUnknown | CapacityEstimateVerified;
 export type OutcomeStatus = OutcomeStatusFailed | OutcomeStatusSkipped | OutcomeStatusSucceeded;
-export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorOptimizeAlreadyRunning | CommandErrorOptimizeAuditUnavailable | CommandErrorOptimizeFailed | CommandErrorOptimizeStaleAuthority | CommandErrorOptimizeUnavailable | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorStatusAlreadyRunning | CommandErrorStatusFailed | CommandErrorUnknownTarget;
+export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorHistoryNotFound | CommandErrorHistoryStoreUnavailable | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorOptimizeAlreadyRunning | CommandErrorOptimizeAuditUnavailable | CommandErrorOptimizeFailed | CommandErrorOptimizeStaleAuthority | CommandErrorOptimizeUnavailable | CommandErrorProtectionAuditUnknown | CommandErrorProtectionConfirmationRequired | CommandErrorProtectionPathMissing | CommandErrorProtectionStoreUnavailable | CommandErrorRuleNotFound | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorStatusAlreadyRunning | CommandErrorStatusFailed | CommandErrorUnknownTarget;
 export type DesktopScanResult = DesktopScanResultCanceled | DesktopScanResultCompleted;
 export type DesktopAnalyzeResult = DesktopAnalyzeResultCanceled | DesktopAnalyzeResultCompleted;
 export type SoftwareSourceId = SoftwareSourceIdArp | SoftwareSourceIdMsi | SoftwareSourceIdMsixCurrentUser;

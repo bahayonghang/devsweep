@@ -6,6 +6,7 @@ mod optimize;
 mod scan;
 mod software;
 mod status;
+mod support;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -38,6 +39,13 @@ pub fn run() {
             clean::plan_execute,
             commands::protection_list_get,
             commands::protection_list_set,
+            support::protection_list,
+            support::protection_add,
+            support::protection_remove,
+            support::rules_list,
+            support::rules_show,
+            support::history_list,
+            support::history_show,
             commands::presentation_settings_get,
             commands::presentation_settings_set,
             #[cfg(debug_assertions)]

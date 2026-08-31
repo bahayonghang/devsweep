@@ -75,23 +75,17 @@ pub(crate) fn debug_native_fault_mode() -> &'static str {
     debug_native_fault_mode_from(std::env::var_os("DEVSWEEP_TASK_NATIVE_FAULT"))
 }
 
-pub(crate) trait ProtectionStore {
-    fn get(&self) -> Result<Vec<PathBuf>>;
-    fn set(&self, paths: Vec<PathBuf>) -> Result<Vec<PathBuf>>;
+fn protection_list_get_inner() -> Result<Vec<PathBuf>, CommandError> {
+    UserProtectionList::load()
+        .map(|list| list.list().to_vec())
+        .map_err(CommandError::protection)
 }
 
-struct CoreProtectionStore;
-
-impl ProtectionStore for CoreProtectionStore {
-    fn get(&self) -> Result<Vec<PathBuf>> {
-        Ok(UserProtectionList::load()?.list().to_vec())
-    }
-
-    fn set(&self, paths: Vec<PathBuf>) -> Result<Vec<PathBuf>> {
-        let mut list = UserProtectionList::load()?;
-        list.replace(paths)?;
-        Ok(list.list().to_vec())
-    }
+fn protection_list_set_inner(_paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, CommandError> {
+    Err(CommandError::ProtectionConfirmationRequired {
+        message: "protection mutations require protection_add or protection_remove with explicit confirmation"
+            .to_string(),
+    })
 }
 
 #[tauri::command]
@@ -131,18 +125,14 @@ pub(crate) async fn scan_cancel(
 
 #[tauri::command]
 pub(crate) async fn protection_list_get() -> Result<Vec<PathBuf>, CommandError> {
-    tauri::async_runtime::spawn_blocking(|| CoreProtectionStore.get())
+    tauri::async_runtime::spawn_blocking(protection_list_get_inner)
         .await
         .map_err(CommandError::io)?
-        .map_err(CommandError::io)
 }
 
 #[tauri::command]
 pub(crate) async fn protection_list_set(paths: Vec<PathBuf>) -> Result<Vec<PathBuf>, CommandError> {
-    tauri::async_runtime::spawn_blocking(move || CoreProtectionStore.set(paths))
-        .await
-        .map_err(CommandError::io)?
-        .map_err(CommandError::io)
+    protection_list_set_inner(paths)
 }
 
 #[cfg(test)]
@@ -171,6 +161,11 @@ mod tests {
 
     use super::*;
     use crate::clean::{plan_dry_run_inner, plan_execute_inner};
+
+    trait ProtectionStore {
+        fn get(&self) -> Result<Vec<PathBuf>>;
+        fn set(&self, paths: Vec<PathBuf>) -> Result<Vec<PathBuf>>;
+    }
 
     #[derive(Default)]
     struct MemoryProtectionStore(Mutex<Vec<PathBuf>>);
@@ -305,6 +300,21 @@ mod tests {
 
         assert_eq!(store.set(paths.clone()).expect("set paths"), paths);
         assert_eq!(store.get().expect("get paths"), paths);
+    }
+
+    #[test]
+    fn protection_list_set_cannot_bypass_confirm_lock_or_audit() {
+        let error = protection_list_set_inner(vec![PathBuf::from("C:/secret-keep")])
+            .expect_err("legacy protection_list_set must refuse mutation");
+        assert_eq!(
+            error,
+            CommandError::ProtectionConfirmationRequired {
+                message: "protection mutations require protection_add or protection_remove with explicit confirmation"
+                    .to_string(),
+            }
+        );
+        let payload = serde_json::to_value(&error).expect("json");
+        assert_eq!(payload["code"], "protection_confirmation_required");
     }
 
     #[cfg(windows)]

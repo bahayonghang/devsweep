@@ -22,6 +22,13 @@ function errorMessage(error: CommandError): string {
     case "unknown_target": return `Target ${error.target_id} is no longer available. Rescan before continuing.`;
     case "inspect_only_target": return `Target ${error.target_id} is inspect-only and cannot be executed.`;
     case "io": return `Desktop operation failed: ${error.message}`;
+    case "protection_store_unavailable": return `Protection store unavailable: ${error.message}`;
+    case "protection_audit_unknown": return `Protection mutation audit is unknown: ${error.message}`;
+    case "protection_path_missing": return `Protect add requires an existing path: ${error.message}`;
+    case "protection_confirmation_required": return `Protection changes require confirmation: ${error.message}`;
+    case "history_store_unavailable": return `History store unavailable: ${error.message}`;
+    case "history_not_found": return `History operation was not found: ${error.message}`;
+    case "rule_not_found": return `Rule was not found: ${error.message}`;
     default: {
       const _exhaustive: never = error;
       return _exhaustive;

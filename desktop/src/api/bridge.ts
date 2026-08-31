@@ -1,6 +1,21 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, StatusEventV1, UntrustedPlan } from "./types.gen";
+import {
+  decodeHistoryDetail,
+  decodeHistoryList,
+  decodeProtectionMutation,
+  decodeProtectionPaths,
+  decodeRuleProjection,
+  decodeRules,
+} from "../support/decode";
+import type {
+  HistoryDetailV1,
+  HistoryDomain,
+  HistoryListV1,
+  ProtectionMutationReport,
+  RuleProjectionV1,
+} from "../support/types";
 
 export interface DesktopBridge {
   analyzeStart(operationId: string, root: string, onProgress: (progress: DesktopAnalyzeProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopAnalyzeResult>;
@@ -22,6 +37,13 @@ export interface DesktopBridge {
   scanCancel(scanId: string): Promise<void>;
   planDryRun(plan: UntrustedPlan, selectedIds: string[]): Promise<DryRunOutcome>;
   planExecute(plan: UntrustedPlan, selectedIds: string[], digest: string): Promise<ExecutionReport>;
+  protectionList(): Promise<string[]>;
+  protectionAdd(path: string, confirm: boolean): Promise<ProtectionMutationReport>;
+  protectionRemove(path: string, confirm: boolean): Promise<ProtectionMutationReport>;
+  rulesList(): Promise<RuleProjectionV1[]>;
+  rulesShow(id: string): Promise<RuleProjectionV1>;
+  historyList(domain?: HistoryDomain, limit?: number): Promise<HistoryListV1>;
+  historyShow(operationId: string): Promise<HistoryDetailV1>;
 }
 
 function bridgeError(error: unknown) {
@@ -124,4 +146,11 @@ export const tauriBridge: DesktopBridge = {
     if (!reportMatchesSelection(report, selectedIds) || report.confirmation_digest !== digest) throw new Error("Execution response does not match the confirmed request");
     return report;
   }),
+  protectionList: () => call("protection_list", {}, decodeProtectionPaths),
+  protectionAdd: (path, confirm) => call("protection_add", { path, confirm }, decodeProtectionMutation),
+  protectionRemove: (path, confirm) => call("protection_remove", { path, confirm }, decodeProtectionMutation),
+  rulesList: () => call("rules_list", {}, decodeRules),
+  rulesShow: (id) => call("rules_show", { id }, decodeRuleProjection),
+  historyList: (domain, limit) => call("history_list", { domain: domain ?? null, limit: limit ?? null }, decodeHistoryList),
+  historyShow: (operationId) => call("history_show", { operationId }, decodeHistoryDetail),
 };

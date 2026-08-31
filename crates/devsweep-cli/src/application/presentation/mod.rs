@@ -7,10 +7,10 @@ use crate::i18n::{CatalogueError, Locale, catalogue};
 
 pub(super) mod analyze;
 mod clean;
-mod history;
+pub(super) mod history;
 pub(super) mod optimize;
-mod protect;
-mod rules;
+pub(super) mod protect;
+pub(super) mod rules;
 pub(super) mod software;
 pub(super) mod status;
 

@@ -29,7 +29,8 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
             CleanCommand::Plan(command) => run_plan(command, locale),
             CleanCommand::Preview(command) => run_preview(command, locale, cli),
             CleanCommand::Execute(command) => run_execute(command, locale, cli),
-            CleanCommand::Protect(_) | CleanCommand::Rules(_) => Err(mode_unavailable(cli, locale)),
+            CleanCommand::Protect(_) => super::protect::run(cli, locale),
+            CleanCommand::Rules(_) => super::rules::run(cli, locale),
         },
         _ => Err(mode_unavailable(cli, locale)),
     }

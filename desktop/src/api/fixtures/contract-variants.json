@@ -106,7 +106,14 @@
       "CommandErrorStaleConfirmation": [{ "code": "stale_confirmation", "expected_digest": "expected", "actual_digest": "actual" }],
       "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
       "CommandErrorInspectOnlyTarget": [{ "code": "inspect_only_target", "target_id": "inspect" }],
-      "CommandErrorIo": [{ "code": "io", "message": "controlled io failure" }]
+      "CommandErrorIo": [{ "code": "io", "message": "controlled io failure" }],
+      "CommandErrorProtectionStoreUnavailable": [{ "code": "protection_store_unavailable", "message": "protection store unavailable" }],
+      "CommandErrorProtectionAuditUnknown": [{ "code": "protection_audit_unknown", "message": "protection audit unknown" }],
+      "CommandErrorProtectionPathMissing": [{ "code": "protection_path_missing", "message": "protect add requires an existing path" }],
+      "CommandErrorProtectionConfirmationRequired": [{ "code": "protection_confirmation_required", "message": "protection mutations require explicit confirmation" }],
+      "CommandErrorHistoryStoreUnavailable": [{ "code": "history_store_unavailable", "message": "history store unavailable" }],
+      "CommandErrorHistoryNotFound": [{ "code": "history_not_found", "message": "operation was not found" }],
+      "CommandErrorRuleNotFound": [{ "code": "rule_not_found", "message": "rule is not in the shipped registry" }]
     }},
     "DesktopScanResult": { "variants": {
       "DesktopScanResultCompleted": [{

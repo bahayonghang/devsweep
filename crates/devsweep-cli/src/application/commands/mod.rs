@@ -16,6 +16,14 @@ mod rules;
 mod software;
 mod status;
 
+#[cfg(test)]
+pub(super) fn lock_process_env() -> std::sync::MutexGuard<'static, ()> {
+    use std::sync::Mutex;
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
     let command = cli
         .command_name()
@@ -34,6 +42,9 @@ pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError
     }
     if command.starts_with("status.") {
         return status::run(cli, locale);
+    }
+    if command.starts_with("history.") {
+        return history::run(cli, locale);
     }
     let message = catalogue(locale)
         .render("error.mode_unavailable", &[("command", command)], None)
@@ -69,12 +80,13 @@ mod tests {
     }
 
     #[test]
-    fn staged_commands_fail_closed_instead_of_running_legacy_handlers() {
-        let cli =
-            Cli::try_parse_from(["devsweep", "history", "list"]).expect("frozen command parses");
-        let error = dispatch(&cli, Locale::En).expect_err("handler is not yet wired");
-        assert_eq!(error.code, "mode_unavailable");
-        assert!(error.message.contains("history.list"));
+    fn history_commands_reach_the_owned_handler() {
+        let cli = Cli::try_parse_from(["devsweep", "history", "list", "--format", "json"])
+            .expect("parses");
+        match dispatch(&cli, Locale::En) {
+            Ok(()) => {}
+            Err(error) => assert_ne!(error.code, "mode_unavailable", "{}", error.code),
+        }
     }
 
     #[test]

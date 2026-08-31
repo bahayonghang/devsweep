@@ -61,6 +61,27 @@ pub(crate) enum CommandError {
     Io {
         message: String,
     },
+    ProtectionStoreUnavailable {
+        message: String,
+    },
+    ProtectionAuditUnknown {
+        message: String,
+    },
+    ProtectionPathMissing {
+        message: String,
+    },
+    ProtectionConfirmationRequired {
+        message: String,
+    },
+    HistoryStoreUnavailable {
+        message: String,
+    },
+    HistoryNotFound {
+        message: String,
+    },
+    RuleNotFound {
+        message: String,
+    },
 }
 
 impl CommandError {
@@ -181,6 +202,30 @@ impl CommandError {
     pub(crate) fn io(error: impl std::fmt::Display) -> Self {
         Self::Io {
             message: error.to_string(),
+        }
+    }
+
+    pub(crate) fn protection(error: devsweep_core::execution::ProtectionError) -> Self {
+        let message = error.to_string();
+        match error {
+            devsweep_core::execution::ProtectionError::TargetMissing { .. } => {
+                Self::ProtectionPathMissing { message }
+            }
+            devsweep_core::execution::ProtectionError::AuditUnknown => {
+                Self::ProtectionAuditUnknown { message }
+            }
+            _ => Self::ProtectionStoreUnavailable { message },
+        }
+    }
+
+    pub(crate) fn history(error: devsweep_core::history::HistoryError) -> Self {
+        let message = error.to_string();
+        match error {
+            devsweep_core::history::HistoryError::NotFound {
+                stores_incomplete: false,
+                ..
+            } => Self::HistoryNotFound { message },
+            _ => Self::HistoryStoreUnavailable { message },
         }
     }
 

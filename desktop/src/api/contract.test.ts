@@ -107,6 +107,13 @@ describe("IPC decoders", () => {
     { code: "optimize_audit_unavailable", message: "audit" },
     { code: "status_already_running" },
     { code: "status_failed", message: "failed" },
+    { code: "protection_store_unavailable", message: "store" },
+    { code: "protection_audit_unknown", message: "audit" },
+    { code: "protection_path_missing", message: "missing" },
+    { code: "protection_confirmation_required", message: "confirm" },
+    { code: "history_store_unavailable", message: "store" },
+    { code: "history_not_found", message: "missing" },
+    { code: "rule_not_found", message: "missing" },
   ])("decodes structured error $code", (error) => {
     expect(decodeCommandError(error).code).toBe(error.code);
   });

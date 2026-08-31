@@ -8,6 +8,8 @@
 mod definitions;
 mod registry;
 
+use serde::{Deserialize, Serialize};
+
 use crate::model::{Ecosystem, RiskLevel, TargetKind};
 
 pub use definitions::PYCACHE_RULE_DOC;
@@ -87,6 +89,63 @@ pub struct RuleDoc {
     pub action: &'static str,
     /// Short user-facing rule description.
     pub summary: &'static str,
+}
+
+/// Read-only projection of a shipped rule. It cannot be edited or executed.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuleProjectionV1 {
+    pub id: String,
+    pub source: &'static str,
+    pub ecosystem: Ecosystem,
+    pub scope: &'static str,
+    pub safety_class: &'static str,
+    pub risk: RiskLevel,
+    pub platform_applicability: &'static str,
+    pub inspect_only: bool,
+    pub rationale: String,
+}
+
+/// Project the authoritative shipped registry into inspect-only DTOs.
+pub fn rule_projections() -> Vec<RuleProjectionV1> {
+    rule_catalogue().into_iter().map(project_rule).collect()
+}
+
+/// Inspect one shipped rule by stable identity.
+pub fn rule_projection_by_id(id: &str) -> Option<RuleProjectionV1> {
+    rule_catalogue()
+        .into_iter()
+        .find(|doc| doc.id == id)
+        .map(project_rule)
+}
+
+fn project_rule(doc: RuleDoc) -> RuleProjectionV1 {
+    let safety_class = match doc.action {
+        "inspect only" => "inspect_only",
+        "deferred" => "deferred",
+        "trash" => "trash",
+        "cargo clean" | "official command" => "command",
+        _ => "inspect_only",
+    };
+    let inspect_only = matches!(safety_class, "inspect_only" | "deferred");
+    let platform_applicability = match doc.id {
+        "jetbrains.caches" | "huggingface.hub" => "os_native",
+        _ => "all",
+    };
+    let scope = match doc.scope {
+        RuleScope::Project => "project",
+        RuleScope::Global => "global",
+    };
+    RuleProjectionV1 {
+        id: doc.id.to_string(),
+        source: "shipped_registry",
+        ecosystem: doc.ecosystem,
+        scope,
+        safety_class,
+        risk: doc.risk,
+        platform_applicability,
+        inspect_only,
+        rationale: doc.summary.to_string(),
+    }
 }
 
 /// Project directory rules gated by the given marker.
@@ -184,6 +243,23 @@ mod tests {
         for doc in rule_catalogue() {
             assert!(seen.insert(doc.id), "duplicate catalogue id {}", doc.id);
         }
+    }
+
+    #[test]
+    fn rule_projections_match_the_authoritative_registry_and_are_inspect_only() {
+        let docs = rule_catalogue();
+        let projections = rule_projections();
+        assert_eq!(projections.len(), docs.len());
+        for (doc, projection) in docs.iter().zip(projections.iter()) {
+            assert_eq!(projection.id, doc.id);
+            assert_eq!(projection.source, "shipped_registry");
+            assert_eq!(projection.rationale, doc.summary);
+        }
+        let encoded = serde_json::to_string(&projections).expect("json");
+        assert!(!encoded.contains("program"));
+        assert!(!encoded.contains("argv"));
+        assert!(!encoded.contains("execute"));
+        assert!(rule_projection_by_id("missing-rule").is_none());
     }
 
     #[test]

@@ -11,6 +11,8 @@ pub mod cargo_metadata;
 pub mod execution;
 /// Shared filesystem identity, containment, reparse, and sizing operations.
 pub mod filesystem;
+/// Versioned, non-replayable Clean/Software/Optimize audit history.
+pub mod history;
 /// Read-only capacity inventory operations.
 pub mod inventory;
 /// Cleanup plans and scan report domain models.
