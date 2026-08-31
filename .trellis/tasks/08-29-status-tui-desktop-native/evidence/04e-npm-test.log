@@ -1,0 +1,54 @@
+COMMAND: npm test
+CWD: D:\Documents\Code\Rust\Exp\devsweep\desktop
+STARTED: 2026-08-31T16:48:13.8989324+08:00
+
+
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/modes/analyze/treemap.test.ts (3 tests) 10ms
+ ✓ src/modes/analyze/selectors.test.ts (2 tests) 3ms
+ ✓ src/modes/analyze/parity.test.ts (1 test) 4ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 66ms
+ ✓ src/modes/status/parity.test.ts (2 tests) 2ms
+ ✓ src/state/app-state.test.ts (10 tests) 4ms
+ ✓ src/modes/optimize/parity.test.ts (2 tests) 3ms
+ ✓ src/i18n/index.test.ts (5 tests) 5ms
+ ✓ src/lifecycle.test.ts (4 tests) 67ms
+ ✓ src/api/bridge.test.ts (4 tests) 6ms
+ ✓ src/pages/ScanPage.test.tsx (2 tests) 137ms
+ ✓ src/modes/software/parity.test.ts (2 tests) 3ms
+ ✓ src/api/contract.test.ts (27 tests) 9ms
+ ✓ src/modes/status/state.test.ts (3 tests) 3ms
+ ✓ src/components/TargetTable.test.tsx (1 test) 146ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 4ms
+ ✓ src/app-shell/AppShell.test.tsx (15 tests) 1062ms
+ ✓ src/modes/analyze/state.test.ts (2 tests) 2ms
+ ✓ src/modes/optimize/state.test.ts (4 tests) 3ms
+ ✓ src/modes/software/state.test.ts (4 tests) 3ms
+ ✓ src/modes/status/StatusWorkbench.test.tsx (3 tests) 321ms
+ ✓ src/modes/software/SoftwareWorkbench.test.tsx (2 tests) 515ms
+   ✓ SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  457ms
+ ✓ src/styles.test.ts (4 tests) 2ms
+ ✓ src/modes/clean/reducer.test.ts (1 test) 2ms
+ ✓ src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 614ms
+   ✓ OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  533ms
+ ✓ src/api/types-generation.test.ts (2 tests) 2236ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  1174ms
+   ✓ IPC type generation > changes when a named fixture changes  1061ms
+ ✓ src/modes/analyze/AnalyzePage.test.tsx (6 tests) 1595ms
+   ✓ AnalyzePage > restores the focused directory on its canonical 200-row parent page  660ms
+   ✓ AnalyzePage > covers empty/loading/canceling/canceled/partial/error/complete copy in 'zh-CN'  310ms
+ ✓ src/App.test.tsx (34 tests) 4249ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  454ms
+   ✓ desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  305ms
+
+ Test Files  28 passed (28)
+      Tests  157 passed (157)
+   Start at  16:48:14
+   Duration  7.79s (transform 2.17s, setup 6.04s, collect 11.31s, tests 11.08s, environment 26.59s, prepare 3.90s)
+
+
+EXIT: 0

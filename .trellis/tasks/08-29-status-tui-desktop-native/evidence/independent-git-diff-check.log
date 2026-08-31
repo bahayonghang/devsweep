@@ -1,0 +1,7 @@
+COMMAND: rtk git diff --check
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T17:06:27.4180633+08:00
+
+
+EXIT: 0
+FINISHED: 2026-08-31T17:06:27.6885514+08:00

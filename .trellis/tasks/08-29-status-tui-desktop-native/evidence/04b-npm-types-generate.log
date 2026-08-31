@@ -1,0 +1,10 @@
+COMMAND: npm run types:generate
+CWD: D:\Documents\Code\Rust\Exp\devsweep\desktop
+STARTED: 2026-08-31T16:48:08.8701720+08:00
+
+
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+generated src/api/types.gen.ts from 32 named fixture files
+
+EXIT: 0

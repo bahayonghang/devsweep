@@ -1,0 +1,64 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"9b4ebb3f8e95326c5663065f6150979a63d94c9cc4c575b3a4fef9cc16fa0185"}
+{"event":"app_launched","pid":58056,"cdpPort":9471,"scalePercent":null,"profile":"localappdata"}
+{"event":"cdp_target","url":"http://tauri.localhost/","title":"about:blank","id":"34CBCF1D091A682468C8FD5B8CD0CAFC"}
+{"event":"locale_audit_en","store":null}
+{"event":"snapshot_state","tag":"en","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166396489-1","Sampled at 1788166396489 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"width_probe","locale":"en","width":1440,"metrics":{"innerWidth":1440,"innerHeight":900,"dpr":1.25}}
+{"event":"screenshot","name":"status-snapshot-en-1440"}
+{"event":"screenshot","name":"status-snapshot-en-1024"}
+{"event":"width_probe","locale":"en","width":1024,"metrics":{"innerWidth":1024,"innerHeight":860,"dpr":1.25}}
+{"event":"screenshot","name":"status-snapshot-en-800"}
+{"event":"width_probe","locale":"en","width":800,"metrics":{"innerWidth":800,"innerHeight":860,"dpr":1.25}}
+{"event":"screenshot","name":"status-snapshot-en-390"}
+{"event":"width_probe","locale":"en","width":390,"metrics":{"innerWidth":390,"innerHeight":860,"dpr":1.25}}
+{"event":"keyboard_focus_start_live","focused":{"tag":"BUTTON","text":"Start live","aria":null}}
+{"event":"live_started_keyboard","liveState":{"status":"live","stopLive":true,"chart":0,"liveLabel":"Live"},"priorSnapshot":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166396489-1","Sampled at 1788166396489 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"screenshot","name":"status-live-started-en"}
+{"event":"interval_change","intervalState":{"status":"live","interval":"5000","stopLive":true}}
+{"event":"screenshot","name":"status-interval-change-en"}
+{"event":"screenshot","name":"status-reduced-motion-en"}
+{"event":"high_contrast_probe","hcProbe":{"forced":true,"contrast":true}}
+{"event":"screenshot","name":"status-high-contrast-en"}
+{"event":"axtree_captured","nodes":792}
+{"event":"stop_live","stop":{"clicked":true,"label":"Stop live"}}
+{"event":"leave","left":{"hash":"#/clean","statusMode":false}}
+{"event":"snapshot_state","tag":"restart-en","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166408213-3","Sampled at 1788166408213 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"restart","restarted":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166408213-3","Sampled at 1788166408213 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"locale_audit_zh","store":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"snapshot_state","tag":"zh-CN","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["状态快照 snapshot-1788166411978-4","采样于 1788166411978 UTC 毫秒","24 个逻辑处理器","Status V1 不包含 GPU、显存、温度、风扇、SMART 或物理磁盘活动。这些能力为不受支持，不会显示为零。"],"gpuZero":false,"cmdline":false}}
+{"event":"screenshot","name":"status-snapshot-zh-1440"}
+{"event":"screenshot","name":"status-snapshot-zh-1024"}
+{"event":"screenshot","name":"status-snapshot-zh-800"}
+{"event":"screenshot","name":"status-snapshot-zh-390"}
+{"event":"close"}
+{"event":"force_kill_after_path_pid_match","pid":58056,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":58056}
+{"event":"app_launched","pid":69420,"cdpPort":9580,"scalePercent":100,"profile":"localappdata-dpi-100"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"C5976CC14B367172EE4412B6C0BC0302"}
+{"event":"snapshot_state","tag":"dpi-100","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166424222-1","Sampled at 1788166424222 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"screenshot","name":"status-dpi-100-en"}
+{"event":"dpi_probe","scalePercent":100,"dpr":1,"inner":[1000,750]}
+{"event":"force_kill_after_path_pid_match","pid":69420,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":69420}
+{"event":"app_launched","pid":76180,"cdpPort":9605,"scalePercent":125,"profile":"localappdata-dpi-125"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"FC9AB08DC1F10CF874DFC49700CBB26F"}
+{"event":"snapshot_state","tag":"dpi-125","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166433513-1","Sampled at 1788166433513 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"screenshot","name":"status-dpi-125-en"}
+{"event":"dpi_probe","scalePercent":125,"dpr":1.25,"inner":[800,600]}
+{"event":"force_kill_after_path_pid_match","pid":76180,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":76180}
+{"event":"app_launched","pid":43464,"cdpPort":9630,"scalePercent":150,"profile":"localappdata-dpi-150"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"20BFC16A3E7C5C08CEA3F20542F11677"}
+{"event":"snapshot_state","tag":"dpi-150","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166442717-1","Sampled at 1788166442717 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"screenshot","name":"status-dpi-150-en"}
+{"event":"dpi_probe","scalePercent":150,"dpr":1.5,"inner":[667,500]}
+{"event":"force_kill_after_path_pid_match","pid":43464,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":43464}
+{"event":"app_launched","pid":50780,"cdpPort":9680,"scalePercent":200,"profile":"localappdata-dpi-200"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"CEB3759EF8185602C9C7F0F85B2154B2"}
+{"event":"snapshot_state","tag":"dpi-200","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788166452218-1","Sampled at 1788166452218 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false}}
+{"event":"screenshot","name":"status-dpi-200-en"}
+{"event":"dpi_probe","scalePercent":200,"dpr":2,"inner":[500,375]}
+{"event":"force_kill_after_path_pid_match","pid":50780,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":50780}
+{"event":"done"}

@@ -1,0 +1,30 @@
+{
+  "id": "status-tui-desktop-native",
+  "name": "status-tui-desktop-native",
+  "title": "Build Status TUI, desktop, and native evidence",
+  "description": "Own Status cards/process table, bilingual unavailable states, opt-in live lifecycle, IPC wiring, accessibility, and native resource/evidence validation.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "Status TUI/Desktop snapshot and opt-in live presentation; native resource evidence; no collector ownership",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-status-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "6-status",
+    "depends_on": "08-29-status-collector-cli,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

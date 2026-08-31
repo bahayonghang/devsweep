@@ -1,0 +1,48 @@
+COMMAND: cargo test --locked -p devsweep-cli -- tui::modes::status
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T16:47:23.5013905+08:00
+
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.51s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-64503e5d89a1cc2f.exe)
+
+running 10 tests
+test tui::modes::status::tests::interval_change_is_local_until_a_new_live_operation ... ok
+test tui::modes::status::tests::serde_rejects_unknown_status_event_variant_from_fixture ... ok
+test tui::modes::status::tests::exact_sequence_rejects_duplicate_and_nonmonotonic_events ... ok
+test tui::modes::status::tests::leave_close_and_pause_clear_ephemeral_live_state ... ok
+test tui::modes::status::tests::process_sort_and_churn_keep_privacy_and_truncation_flags ... ok
+test tui::modes::status::tests::canonical_snapshot_keeps_privacy_partial_and_no_battery ... ok
+test tui::modes::status::tests::live_opt_in_skip_stale_terminal_and_broken_pipe ... ok
+test tui::modes::status::tests::unknown_event_and_unknown_fields_are_rejected_at_the_wire ... ok
+test tui::modes::status::tests::chart_caps_at_sixty_gaps_missing_samples_and_drops_on_leave ... ok
+test tui::modes::status::tests::tui_renders_snapshot_cards_text_chart_alternative_and_chinese ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 161 filtered out; finished in 0.02s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-8c6247651963d1c0.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-b6a4e003ef78679c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-6033c02056e284c3.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+   Doc-tests devsweep
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+EXIT: 0

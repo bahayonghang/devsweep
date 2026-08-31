@@ -1,0 +1,153 @@
+{
+  "host": {
+    "os": "Microsoft Windows 11 רҵ��",
+    "build": "26200",
+    "integrity": "Mandatory Label\\Medium Mandatory Level Label            S-1-16-8192                                                                                      ",
+    "consent": 0,
+    "logical_processors": 24,
+    "total_physical_memory": 68143853568,
+    "sha256": "f9211e8f75ee8a718a7fdf64e825b7b6f003bbd13431eb598b0a9451bd17400a",
+    "exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+    "pid": 47716,
+    "leftover_before_launch": ""
+  },
+  "warmup": {
+    "status": "ready",
+    "snapshot": true
+  },
+  "snapshot_latency_ms": [
+    822,
+    810,
+    814,
+    818,
+    823
+  ],
+  "snapshot_p95_ms": 823,
+  "idle": {
+    "private_median": 6270976,
+    "private_max": 6270976,
+    "threads_median": 36,
+    "threads_max": 36,
+    "cpu_median_pct": 0,
+    "sample_count": 50,
+    "present_count": 50
+  },
+  "live60": {
+    "sample_count": 300,
+    "present_count": 300,
+    "cpu_median_pct": 0,
+    "cpu_p95_pct": 8.31616876101058,
+    "private_peak": 6852608,
+    "threads_peak": 37,
+    "live_ready": {
+      "status": "live",
+      "stop": true
+    }
+  },
+  "post_exit": {
+    "sample_count": 25,
+    "final_five": [
+      {
+        "wall_ms": 4012.091,
+        "present": true,
+        "user_ms": 296.875,
+        "kernel_ms": 812.5,
+        "cpu_ms": 1109.375,
+        "private": 6463488,
+        "threads": 33
+      },
+      {
+        "wall_ms": 4210.979,
+        "present": true,
+        "user_ms": 296.875,
+        "kernel_ms": 812.5,
+        "cpu_ms": 1109.375,
+        "private": 6463488,
+        "threads": 33
+      },
+      {
+        "wall_ms": 4413.407,
+        "present": true,
+        "user_ms": 296.875,
+        "kernel_ms": 812.5,
+        "cpu_ms": 1109.375,
+        "private": 6463488,
+        "threads": 33
+      },
+      {
+        "wall_ms": 4614.882,
+        "present": true,
+        "user_ms": 296.875,
+        "kernel_ms": 812.5,
+        "cpu_ms": 1109.375,
+        "private": 6463488,
+        "threads": 33
+      },
+      {
+        "wall_ms": 4816.88,
+        "present": true,
+        "user_ms": 296.875,
+        "kernel_ms": 812.5,
+        "cpu_ms": 1109.375,
+        "private": 6463488,
+        "threads": 33
+      }
+    ],
+    "final_five_eval": [
+      {
+        "present": true,
+        "cpu": 0,
+        "threads": 33,
+        "cpu_ok": true,
+        "threads_ok": true
+      },
+      {
+        "present": true,
+        "cpu": 0,
+        "threads": 33,
+        "cpu_ok": true,
+        "threads_ok": true
+      },
+      {
+        "present": true,
+        "cpu": 0,
+        "threads": 33,
+        "cpu_ok": true,
+        "threads_ok": true
+      },
+      {
+        "present": true,
+        "cpu": 0,
+        "threads": 33,
+        "cpu_ok": true,
+        "threads_ok": true
+      },
+      {
+        "present": true,
+        "cpu": 0,
+        "threads": 33,
+        "cpu_ok": true,
+        "threads_ok": true
+      }
+    ],
+    "hold": true,
+    "remaining_path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+  },
+  "thresholds": {
+    "idlePlus64": 73379840,
+    "idlePlus4": 40,
+    "idleCpuCap": 0.5,
+    "idleThreadCap": 37
+  },
+  "gates": {
+    "snapshot_p95_le_2000ms": true,
+    "live_private_le_idle_plus_64mib": true,
+    "live_threads_le_idle_plus_4": true,
+    "live_cpu_median_le_5": true,
+    "live_cpu_p95_le_15": true,
+    "post_exit_25_samples": true,
+    "post_exit_final_five_hold": true,
+    "post_exit_no_missing_sample": true
+  },
+  "pass": true
+}

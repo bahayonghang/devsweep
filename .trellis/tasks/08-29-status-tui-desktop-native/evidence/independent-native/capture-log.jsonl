@@ -1,0 +1,66 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"f9211e8f75ee8a718a7fdf64e825b7b6f003bbd13431eb598b0a9451bd17400a","leftover_pids":""}
+{"event":"app_launched","pid":56536,"cdpPort":19671,"scalePercent":null,"profile":"localappdata"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"0494C3DFCCE7AE685B39CDED56E1ACF7","pid":56536}
+{"event":"locale_audit_en","store":null}
+{"event":"snapshot_state","tag":"en","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167612421-1","Sampled at 1788167612421 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["powershell.exe","33076","21.87","74.0 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"width_probe","locale":"en","width":1440,"metrics":{"innerWidth":1440,"innerHeight":900,"dpr":1.25}}
+{"event":"screenshot","name":"status-snapshot-en-1440","pid":56536}
+{"event":"screenshot","name":"status-snapshot-en-1024","pid":56536}
+{"event":"width_probe","locale":"en","width":1024,"metrics":{"innerWidth":1024,"innerHeight":860,"dpr":1.25}}
+{"event":"screenshot","name":"status-snapshot-en-800","pid":56536}
+{"event":"width_probe","locale":"en","width":800,"metrics":{"innerWidth":800,"innerHeight":860,"dpr":1.25}}
+{"event":"screenshot","name":"status-snapshot-en-390","pid":56536}
+{"event":"width_probe","locale":"en","width":390,"metrics":{"innerWidth":390,"innerHeight":860,"dpr":1.25}}
+{"event":"keyboard_focus_sort_name","sortFocused":{"tag":"BUTTON","text":"Name","aria":"false"},"beforeSort":{"first":["powershell.exe","33076","21.87","74.0 MiB","0 B","0 B"],"pressed":[{"text":"Name","pressed":"false"},{"text":"PID","pressed":"false"},{"text":"CPU","pressed":"true"},{"text":"Private","pressed":"false"}]}}
+{"event":"keyboard_sort_name","afterSort":{"first":["Antigravity IDE.exe","68488","0.00","3.0 GiB","0 B","0 B"],"pressed":[{"text":"Name","pressed":"true"},{"text":"PID","pressed":"false"},{"text":"CPU","pressed":"false"},{"text":"Private","pressed":"false"}]}}
+{"event":"keyboard_focus_start_live","focused":{"tag":"BUTTON","text":"Start live","aria":null}}
+{"event":"live_started_keyboard","liveState":{"status":"live","stopLive":true,"chart":0,"liveLabel":"Live","chartText":[],"gpuZero":false,"cmdline":false},"priorSnapshot":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167612421-1","Sampled at 1788167612421 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["powershell.exe","33076","21.87","74.0 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"screenshot","name":"status-live-started-en","pid":56536}
+{"event":"interval_change","intervalState":{"status":"live","interval":"5000","stopLive":true}}
+{"event":"screenshot","name":"status-interval-change-en","pid":56536}
+{"event":"screenshot","name":"status-reduced-motion-en","pid":56536}
+{"event":"high_contrast_probe","hcProbe":{"forced":true,"contrast":true}}
+{"event":"screenshot","name":"status-high-contrast-en","pid":56536}
+{"event":"axtree_captured","nodes":792,"privacyHit":false,"hasStopLive":true,"hasStartOrRefresh":true,"hasCmdline":false}
+{"event":"stop_live","stop":{"clicked":true,"label":"Stop live"}}
+{"event":"leave","left":{"hash":"#/clean","statusMode":false}}
+{"event":"snapshot_state","tag":"restart-en","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167624431-3","Sampled at 1788167624431 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["WeChatAppEx.exe","5724","109.37","313.9 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"restart","restarted":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167624431-3","Sampled at 1788167624431 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["WeChatAppEx.exe","5724","109.37","313.9 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"locale_audit_zh","store":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"snapshot_state","tag":"zh-CN","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["状态快照 snapshot-1788167628177-4","采样于 1788167628177 UTC 毫秒","24 个逻辑处理器","Status V1 不包含 GPU、显存、温度、风扇、SMART 或物理磁盘活动。这些能力为不受支持，不会显示为零。"],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["WeChatAppEx.exe","5724","40.62","329.9 MiB"],"headers":["名称","PID","CPU","专用"]}}
+{"event":"screenshot","name":"status-snapshot-zh-1440","pid":56536}
+{"event":"screenshot","name":"status-snapshot-zh-1024","pid":56536}
+{"event":"screenshot","name":"status-snapshot-zh-800","pid":56536}
+{"event":"screenshot","name":"status-snapshot-zh-390","pid":56536}
+{"event":"close"}
+{"event":"force_kill_after_path_pid_match","pid":56536,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":56536}
+{"event":"app_launched","pid":74748,"cdpPort":19780,"scalePercent":100,"profile":"localappdata-dpi-100"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"81D02638FB62CABD0500FE264179C923","pid":74748}
+{"event":"snapshot_state","tag":"dpi-100","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167640684-1","Sampled at 1788167640684 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["WeChatAppEx.exe","5724","34.37","237.2 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"screenshot","name":"status-dpi-100-en","pid":74748}
+{"event":"dpi_probe","scalePercent":100,"pid":74748,"dpr":1,"inner":[1000,750]}
+{"event":"force_kill_after_path_pid_match","pid":74748,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":74748}
+{"event":"app_launched","pid":68852,"cdpPort":19805,"scalePercent":125,"profile":"localappdata-dpi-125"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"5D4095F28F832228CE68B57585A39B41","pid":68852}
+{"event":"snapshot_state","tag":"dpi-125","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167650347-1","Sampled at 1788167650347 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["WeChatAppEx.exe","5724","25.00","237.7 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"screenshot","name":"status-dpi-125-en","pid":68852}
+{"event":"dpi_probe","scalePercent":125,"pid":68852,"dpr":1.25,"inner":[800,600]}
+{"event":"force_kill_after_path_pid_match","pid":68852,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":68852}
+{"event":"app_launched","pid":70048,"cdpPort":19830,"scalePercent":150,"profile":"localappdata-dpi-150"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"DB49F98D7C88D85ADFE0FBA9CCAB006F","pid":70048}
+{"event":"snapshot_state","tag":"dpi-150","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167659780-1","Sampled at 1788167659780 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["ChatGPT.exe","79732","43.75","710.4 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"screenshot","name":"status-dpi-150-en","pid":70048}
+{"event":"dpi_probe","scalePercent":150,"pid":70048,"dpr":1.5,"inner":[667,500]}
+{"event":"force_kill_after_path_pid_match","pid":70048,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":70048}
+{"event":"app_launched","pid":5748,"cdpPort":19880,"scalePercent":200,"profile":"localappdata-dpi-200"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"750922DE5E7DDE1328212683BCC80718","pid":5748}
+{"event":"snapshot_state","tag":"dpi-200","state":{"status":"ready","hasMode":true,"snapshot":true,"startLive":true,"stopLive":false,"processRows":15,"capability":["Status snapshot snapshot-1788167669171-1","Sampled at 1788167669171 UTC ms","24 logical processors","Status V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero."],"gpuZero":false,"cmdline":false,"privacyHit":false,"chartGap":false,"firstProcess":["Cursor.exe","25128","40.62","368.6 MiB"],"headers":["Name","PID","CPU","Private"]}}
+{"event":"screenshot","name":"status-dpi-200-en","pid":5748}
+{"event":"dpi_probe","scalePercent":200,"pid":5748,"dpr":2,"inner":[500,375]}
+{"event":"force_kill_after_path_pid_match","pid":5748,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":5748}
+{"event":"done"}
