@@ -1,0 +1,36 @@
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 10.57s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-41ec56baa04c95cb.exe)
+
+running 9 tests
+test application::commands::optimize::tests::plan_error_mapping_is_typed_by_exit_class ... ok
+test application::commands::tests::optimize_commands_reach_the_owned_handler ... ok
+test application::presentation::optimize::tests::preview_and_execution_state_launched_is_not_completion ... ok
+test application::presentation::optimize::tests::catalogue_is_bilingual_and_lists_all_eight_rows ... ok
+test application::commands::optimize::tests::plan_writes_versioned_single_id_json_and_rejects_selections ... ok
+test application::commands::optimize::tests::hostile_plan_fields_fail_closed_without_echoing_payloads ... ok
+test application::commands::optimize::tests::execution_machine_document_never_claims_settings_completion ... ok
+test application::commands::optimize::tests::list_documents_are_locale_invariant_and_closed ... ok
+test application::commands::optimize::tests::preview_is_locale_invariant_or_fails_closed_off_windows ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 140 filtered out; finished in 0.02s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-5fd49abf47f716f6.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-0097ce6c8c01577f.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-ebea6a5a5c29731f.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+

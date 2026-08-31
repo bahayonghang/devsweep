@@ -1,0 +1,29 @@
+== guidance ids never plan (expect exit 6 invalid_optimize_selection) ==
+invalid_optimize_selection: guidance entry guidance.drive_optimize is never dispatched
+guidance.drive_optimize exit=6
+invalid_optimize_selection: guidance entry guidance.system_integrity is never dispatched
+guidance.system_integrity exit=6
+invalid_optimize_selection: guidance entry guidance.filesystem_check is never dispatched
+guidance.filesystem_check exit=6
+invalid_optimize_selection: guidance entry guidance.network_reset is never dispatched
+guidance.network_reset exit=6
+
+== unknown/rejected ids never plan ==
+invalid_optimize_selection: unknown optimize operation security.defender
+[security.defender] exit=6
+invalid_optimize_selection: unknown optimize operation windows.update.reset
+[windows.update.reset] exit=6
+invalid_optimize_selection: unknown optimize operation registry.tweak
+[registry.tweak] exit=6
+invalid_optimize_selection: unknown optimize operation storage_sense.configure
+[storage_sense.configure] exit=6
+invalid_optimize_selection: unknown optimize operation cmd.exe /c calc
+[cmd.exe /c calc] exit=6
+invalid_optimize_selection: unknown optimize operation ipconfig
+[ipconfig] exit=6
+invalid_optimize_selection: unknown optimize operation DNS.FLUSH
+[DNS.FLUSH] exit=6
+
+== no rejected plan file was ever written ==
+0
+0 rejected files

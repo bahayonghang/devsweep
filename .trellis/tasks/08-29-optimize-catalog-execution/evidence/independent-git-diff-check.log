@@ -1,0 +1,9 @@
+command: "C:\Users\lyh\.cargo\bin\rtk.exe" git diff --check
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:21:13.8402954+08:00
+----- output -----
+
+
+-----
+exit=0
+finished: 2026-08-31T13:21:14.0406545+08:00

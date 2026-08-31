@@ -1,0 +1,20 @@
+workdir=.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures
+== plan ==
+exit=0
+
+== preview ==
+exit=0
+digest=sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d
+
+== run WITHOUT --confirm (expect clap exit 2) ==
+For more information, try '--help'.
+exit=2
+
+== run with WRONG digest (expect exit 3 invalid_optimize_authority) ==
+invalid_optimize_authority: optimize preview digest mismatch
+exit=3
+
+== run CONFIRMED matching digest -> real System32 ipconfig.exe /flushdns ==
+Optimize run finished: 1 succeeded; 0 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+dns.flush | Succeeded | Operation optimize-op-000001a05602e38a-000083f0-0000000000000000
+exit=0

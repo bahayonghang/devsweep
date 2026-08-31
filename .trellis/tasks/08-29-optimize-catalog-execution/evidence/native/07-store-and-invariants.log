@@ -1,0 +1,17 @@
+== locale-invariant JSON: zh-CN --language is rejected for machine output (exit 2) ==
+{"command":"optimize.list","data":null,"error":{"code":"invalid_cli","message":null},"outcome":"failed","schema_version":1,"warnings":[]}
+exit=2
+
+== human list under zh-CN is localized (already recorded in 01) ==
+
+== LOCALAPPDATA override: audit store path derivation ==
+run exit=0
+-- derived store --
+fixtures/fake-lappdata/DevSweep/audit/v1/optimize.jsonl
+fixtures/fake-lappdata/DevSweep/audit/v1/optimize.lock
+-- derived journal is the same redacted schema --
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a05606eb5d-000109b0-0000000000000000","timestamp_unix_ms":1788149689181,"catalogue_ver
+
+== deterministic digest across processes ==
+first : sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d (log 02)
+second: sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d (this run)

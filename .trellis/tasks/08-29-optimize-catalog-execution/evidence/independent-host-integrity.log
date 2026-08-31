@@ -1,0 +1,30 @@
+command: host inventory (whoami, integrity, OS build, binary hash, leftover SystemSettings close)
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:24:43.2507878+08:00
+----- output -----
+whoami: desktop-516bf74\lyh
+integrity lines:
+Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+consent.exe before: none
+CurrentBuild=26200 UBR=9278 DisplayVersion=25H2 ProductName=Windows 10 Pro
+[Environment]::OSVersion=Microsoft Windows NT 10.0.26200.0 (manifest-sensitive; product uses RtlGetVersion, not this)
+PROCESSOR_ARCHITECTURE=AMD64
+Is64BitProcess=True
+EnumWindows available=True
+x64 exe: D:\Documents\Code\Rust\Exp\devsweep\target\debug\devsweep.exe sha256=7373435F9B8E1E8469AC977D68CBB80B1B9E2DFDC6FCF6743DB1DC6B611B77E6 size=10522112 machine=amd64 (0x8664)
+ipconfig System32 exists=True
+ipconfig Sysnative exists=False (expected false from native x64 PowerShell)
+ipconfig SysWOW64 exists=True
+
+-- leftover SystemSettings BEFORE close --
+(no SystemSettings.exe processes)
+
+
+-- SystemSettings AFTER leftover close --
+(no SystemSettings.exe processes)
+
+consent.exe after leftover close: none
+
+-----
+exit=0
+finished: 2026-08-31T13:24:45.9124521+08:00

@@ -1,0 +1,10 @@
+== x86 devsweep.exe (32-bit WOW64 process on x64 Windows) ==
+== plan/preview dns.flush: resolver must take the IsWow64Process2 -> GetWindowsDirectoryW -> Sysnative branch ==
+plan exit=0
+preview exit=0
+digest=sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba (must equal the x64 digest: identity is path-independent of the resolver branch? NO - Sysnative path differs, so digest may differ; recorded for evidence)
+
+== run CONFIRMED -> real ipconfig.exe /flushdns reached through the Sysnative alias ==
+Optimize run finished: 1 succeeded; 0 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+dns.flush | Succeeded | Operation optimize-op-000001a0560863f0-0000b5cc-0000000000000000
+exit=0

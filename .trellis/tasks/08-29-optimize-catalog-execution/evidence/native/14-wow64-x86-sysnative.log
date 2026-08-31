@@ -1,0 +1,27 @@
+command: D:\Documents\Code\Rust\Exp\devsweep\target\i686-pc-windows-msvc\debug\devsweep.exe optimize plan/preview/run dns.flush (WOW64 Sysnative, fresh outputs)
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:03:57.2053658+08:00
+----- output -----
+
+i686 PE machine=i386 (0x14c) sha256=0E8537AD48C832FE646388210D71E45416F49D3FE47EEC82291364CDDF295416
+plan exit=0
+preview exit=0
+x86 digest=sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba
+x64 digest=sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d
+preview json:
+{"command":"optimize.preview","data":{"action_class":"execute","catalogue_version":1,"digest":"sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba","operation_id":"dns.flush","version":1},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+
+Optimize run finished: 1 succeeded; 0 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+dns.flush | Succeeded | Operation optimize-op-000001a05633e7e6-0000b748-0000000000000000
+confirmed-run exit=0
+
+-- journal --
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a05633e7e6-0000b748-0000000000000000","timestamp_unix_ms":1788152637414,"catalogue_version":1,"catalogue_id":"dns.flush","action_class":"execute","preview_digest":"sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba","transition":{"kind":"validated"},"status_code":"validated"}
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a05633e7e6-0000b748-0000000000000000","timestamp_unix_ms":1788152637418,"catalogue_version":1,"catalogue_id":"dns.flush","action_class":"execute","preview_digest":"sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba","transition":{"kind":"dispatch_started"},"status_code":"dispatch_started"}
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a05633e7e6-0000b748-0000000000000000","timestamp_unix_ms":1788152637446,"catalogue_version":1,"catalogue_id":"dns.flush","action_class":"execute","preview_digest":"sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba","transition":{"kind":"adapter_completed"},"status_code":"adapter_succeeded","adapter_outcome":"success"}
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a05633e7e6-0000b748-0000000000000000","timestamp_unix_ms":1788152637448,"catalogue_version":1,"catalogue_id":"dns.flush","action_class":"execute","preview_digest":"sha256:10759319f8fe8607c7ee800641affeccb744719ee230a04d82791257e3e0f6ba","transition":{"kind":"terminal","outcome":"succeeded"},"status_code":"succeeded","adapter_outcome":"success"}
+
+
+-----
+exit=0
+finished: 2026-08-31T13:03:57.4747805+08:00

@@ -1,0 +1,21 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-9efc717c4c33890e.exe)
+
+running 8 tests
+test optimize::tests::authorizer::guidance_cannot_resolve_any_dispatch_identity ... ok
+test optimize::tests::authorizer::unsupported_preflight_states_are_typed_failures ... ok
+test optimize::tests::authorizer::versioned_headers_fail_closed ... ok
+test optimize::tests::authorizer::changed_preflight_produces_a_different_digest_and_fails_the_old_one ... ok
+test optimize::tests::authorizer::digest_validation_rejects_mismatch_and_foreign_digest ... ok
+test optimize::tests::authorizer::preview_documents_never_leak_resolved_identities ... ok
+test optimize::tests::authorizer::dry_run_and_execute_resolve_byte_equivalent_identities ... ok
+test optimize::tests::authorizer::digest_binds_catalogue_version_id_class_and_identity ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 271 filtered out; finished in 0.00s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-8517483b5bf2ac5a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

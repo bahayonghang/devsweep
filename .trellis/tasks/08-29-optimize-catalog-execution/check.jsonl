@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit catalogue closure, fixed process/URI adapters, authority, audit, errors, and tests."}
+{"file": ".trellis/tasks/08-29-optimize-catalog-execution/prd.md", "reason": "Trace all allowed, guidance, rejected, no-UAC, and native clauses."}
+{"file": ".trellis/tasks/08-29-optimize-catalog-execution/design.md", "reason": "Verify arbitrary identifiers, argv, URIs, and scripts cannot enter execution."}

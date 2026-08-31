@@ -1,0 +1,24 @@
+command: P/Invoke ShellExecuteExW missing-drive launch-failure control (not a catalogue id)
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:32:14.2293880+08:00
+----- output -----
+Diagnostic method change after ignored probe hung on unregistered-scheme ShellExecuteExW
+(hInstApp=42 printed, then >60s stall; test process killed; cargo exit=-1).
+This recapture does NOT invoke ms-settings:search or unregistered schemes.
+It only probes the documented nonexistent-drive control through ShellExecuteExW
+with verb=open, SEE_MASK_FLAG_NO_UI, no parameters/cwd — the same flags as
+crates/devsweep-core/src/optimize/windows.rs launch_settings_probe.
+
+SHELLEXECUTEINFO sizeof=112 (expect 112 on x64)
+missing-drive: cbSize=112 succeeded=False hInstApp=2 last_error=2 hProcess=0 (SE_ERR_FNF=2 SE_ERR_ACCESSDENIED=5)
+
+rejection journal inspect:
+path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\independent-fixtures\lappdata-rejections\DevSweep\audit\v1\optimize.jsonl
+bytes=0
+empty file means optimize run opened the fixed store+lock before unknown-id refusal;
+zero records; no adapter dispatch of the hostile URI.
+consent=none
+leftover SystemSettings after this control: none
+-----
+exit=0
+finished: 2026-08-31T13:32:14.7844018+08:00

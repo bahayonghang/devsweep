@@ -1,0 +1,67 @@
+command: devsweep optimize plan/preview/run hostile ids and non-allowlisted URIs
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:30:50.7104269+08:00
+----- output -----
+LOCALAPPDATA=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\independent-fixtures\lappdata-rejections
+Prove plan/preview/run cannot dispatch non-allowlisted URIs or hostile ids.
+== PLAN ms-settings:search exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation ms-settings:search
+== PLAN ms-settings:evil exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation ms-settings:evil
+== PLAN ms-settings:storagerecommendations exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation ms-settings:storagerecommendations
+== PLAN ms-settings:energyrecommendations exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation ms-settings:energyrecommendations
+== PLAN devsweep-not-a-protocol:test exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation devsweep-not-a-protocol:test
+== PLAN guidance.drive_optimize exit=6 file_exists=False ==
+invalid_optimize_selection: guidance entry guidance.drive_optimize is never dispatched
+== PLAN guidance.system_integrity exit=6 file_exists=False ==
+invalid_optimize_selection: guidance entry guidance.system_integrity is never dispatched
+== PLAN guidance.filesystem_check exit=6 file_exists=False ==
+invalid_optimize_selection: guidance entry guidance.filesystem_check is never dispatched
+== PLAN guidance.network_reset exit=6 file_exists=False ==
+invalid_optimize_selection: guidance entry guidance.network_reset is never dispatched
+== PLAN security.defender exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation security.defender
+== PLAN security.uac exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation security.uac
+== PLAN firewall.reset exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation firewall.reset
+== PLAN windows.update.reset exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation windows.update.reset
+== PLAN registry.tweak exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation registry.tweak
+== PLAN cmd.exe /c calc exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation cmd.exe /c calc
+== PLAN ipconfig exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation ipconfig
+== PLAN DNS.FLUSH exit=6 file_exists=False ==
+invalid_optimize_selection: unknown optimize operation DNS.FLUSH
+== PREVIEW plan with extra uri field ==
+exit=6
+{"command":"optimize.preview","data":null,"error":{"code":"invalid_optimize_plan","message":null},"outcome":"failed","schema_version":1,"warnings":[]}
+
+== PREVIEW operation_id=ms-settings:search (URI is not a catalogue id) ==
+exit=6
+{"command":"optimize.preview","data":null,"error":{"code":"invalid_optimize_selection","message":null},"outcome":"failed","schema_version":1,"warnings":[]}
+
+== RUN operation_id=ms-settings:search ==
+exit=6
+invalid_optimize_selection: unknown optimize operation ms-settings:search
+
+== PREVIEW unregistered scheme as operation_id ==
+exit=6
+{"command":"optimize.preview","data":null,"error":{"code":"invalid_optimize_selection","message":null},"outcome":"failed","schema_version":1,"warnings":[]}
+
+== RUN unregistered scheme as operation_id ==
+exit=6
+invalid_optimize_selection: unknown optimize operation devsweep-not-a-protocol:test
+
+rejection journal exists=True (expect False; no dispatch)
+hostile plan files written by CLI plan: 0 (expect 0)
+consent after rejections: none
+
+-----
+exit=1
+finished: 2026-08-31T13:30:52.3138750+08:00

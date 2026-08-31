@@ -1,0 +1,8 @@
+command: "C:\Users\lyh\.cargo\bin\rtk.exe" cargo fmt --all -- --check
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:21:14.0426223+08:00
+----- output -----
+
+-----
+exit=0
+finished: 2026-08-31T13:21:14.6851931+08:00

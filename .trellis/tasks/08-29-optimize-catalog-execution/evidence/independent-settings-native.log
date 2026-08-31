@@ -1,0 +1,77 @@
+command: CLEAN settings.search launched pair with new PID/HWND identity
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:24:46.5021761+08:00
+----- output -----
+LOCALAPPDATA=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\independent-fixtures\lappdata-settings
+This recapture does NOT reuse implementer PID 27684 or probe PID 67816.
+consent before settings: none
+
+-- processes BEFORE confirmed settings.search run --
+(no SystemSettings.exe processes)
+
+== plan settings.search ==
+
+plan exit=0
+{
+  "version": 1,
+  "catalogue_version": 1,
+  "operation_id": "settings.search"
+}
+
+== preview settings.search ==
+
+{"command":"optimize.preview","data":{"action_class":"settings_handoff","catalogue_version":1,"digest":"sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479","operation_id":"settings.search","version":1},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+
+digest=sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479
+== run no-confirm ==
+error: the following required arguments were not provided:
+  --confirm
+
+Usage: devsweep.exe optimize run --plan <FILE> --preview-digest <DIGEST> --confirm
+
+For more information, try '--help'.
+
+no-confirm exit=2 (expect 2)
+== run wrong-digest ==
+invalid_optimize_authority: optimize preview digest mismatch
+
+wrong-digest exit=3 (expect 3)
+== run CONFIRMED settings.search (launched only; not completion) ==
+Optimize run finished: 0 succeeded; 1 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.search | Launched (Settings page opened) | Operation optimize-op-000001a056470044-000067ec-0000000000000000
+
+confirmed-run exit=0
+-- processes AFTER confirmed run (polled) --
+PID=48704 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 1:24:49 PM CreationDate=8/31/2026 1:24:49 PM HWND=0 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+
+NEW PROCESS IDENTITY (distinct from pre-existing PIDs):
+PID=48704 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 1:24:49 PM HWND(Get-Process)=393234
+path matches C:\Windows\ImmersiveControlPanel\SystemSettings.exe: True
+pre-existing PIDs were: []
+PID is new: True
+-- EnumWindows for PID 48704 --
+HWND=223089154 visible=False title=
+HWND=39652074 visible=False title=MSCTFIME UI
+HWND=10028788 visible=False title=Default IME
+HWND=73733330 visible=False title=Default IME
+journal path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\independent-fixtures\lappdata-settings\DevSweep\audit\v1\optimize.jsonl exists=True
+-- journal --
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a056470044-000067ec-0000000000000000","timestamp_unix_ms":1788153888836,"catalogue_version":1,"catalogue_id":"settings.search","action_class":"settings_handoff","preview_digest":"sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479","transition":{"kind":"validated"},"status_code":"validated"}
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a056470044-000067ec-0000000000000000","timestamp_unix_ms":1788153888839,"catalogue_version":1,"catalogue_id":"settings.search","action_class":"settings_handoff","preview_digest":"sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479","transition":{"kind":"dispatch_started"},"status_code":"dispatch_started"}
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a056470044-000067ec-0000000000000000","timestamp_unix_ms":1788153889533,"catalogue_version":1,"catalogue_id":"settings.search","action_class":"settings_handoff","preview_digest":"sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479","transition":{"kind":"adapter_completed"},"status_code":"adapter_succeeded","adapter_outcome":"success"}
+{"schema_version":1,"domain":"optimize","operation_id":"optimize-op-000001a056470044-000067ec-0000000000000000","timestamp_unix_ms":1788153889544,"catalogue_version":1,"catalogue_id":"settings.search","action_class":"settings_handoff","preview_digest":"sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479","transition":{"kind":"terminal","outcome":"launched"},"status_code":"launched","adapter_outcome":"success"}
+
+REDACTED_OK no forbidden tokens
+Closing recapture-started SystemSettings after identity verification
+CloseMainWindow PID=48704 returned=False HWND=0
+force-kill after identity re-check PID=48704 still_present=False
+
+-- SystemSettings AFTER recapture close --
+(no SystemSettings.exe processes)
+
+consent after settings: none
+Do not treat launched as maintenance completion. No Windows setting was changed. No signing.
+
+-----
+exit=0
+finished: 2026-08-31T13:25:01.4754480+08:00

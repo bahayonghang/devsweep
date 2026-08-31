@@ -1,0 +1,46 @@
+command: C:\Users\lyh\.cargo\bin\cargo.exe test -p devsweep-core --lib native_settings_shell_execute_probe -- --ignored --nocapture
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:03:52.7680053+08:00
+----- output -----
+
+note: rtk cargo test drops --ignored; cargo.exe used so the ignored native probe actually runs.
+-- processes before --
+
+Name             : ApplicationFrameHost
+Id               : 50076
+MainWindowHandle : 0
+StartTime        : 8/29/2026 8:17:46 PM
+
+
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.59s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-9efc717c4c33890e.exe)
+
+running 1 test
+allowlisted ms-settings:search: succeeded=true h_inst_app=42 (SE_ERR_ACCESSDENIED=5 SE_ERR_NOASSOC=31) last_error=0 h_process=0 (HWND not returned; SEE_MASK_FLAG_NO_UI only)
+unregistered scheme control (not a catalogue id; host may still succeed): succeeded=true h_inst_app=42 (SE_ERR_ACCESSDENIED=5 SE_ERR_NOASSOC=31) last_error=0 h_process=0 (HWND not returned; SEE_MASK_FLAG_NO_UI only)
+nonexistent-drive control (not a catalogue id): succeeded=false h_inst_app=2 (SE_ERR_ACCESSDENIED=5 SE_ERR_NOASSOC=31) last_error=2 h_process=0 (HWND not returned; SEE_MASK_FLAG_NO_UI only)
+test optimize::tests::windows::native_settings_shell_execute_probe ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 279 filtered out; finished in 0.77s
+
+
+-- processes after --
+
+Name             : ApplicationFrameHost
+Id               : 50076
+MainWindowHandle : 26155188
+StartTime        : 8/29/2026 8:17:46 PM
+
+Name             : SystemSettings
+Id               : 67816
+MainWindowHandle : 39586538
+StartTime        : 8/31/2026 1:03:56 PM
+
+
+consent.exe=none
+integrity=Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+
+-----
+exit=0
+finished: 2026-08-31T13:03:57.2040072+08:00
