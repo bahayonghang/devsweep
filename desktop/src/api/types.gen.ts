@@ -117,6 +117,30 @@ export interface CommandErrorIo {
     message: string;
 }
 
+export interface CommandErrorOptimizeAlreadyRunning {
+    code: "optimize_already_running";
+}
+
+export interface CommandErrorOptimizeAuditUnavailable {
+    code:    "optimize_audit_unavailable";
+    message: string;
+}
+
+export interface CommandErrorOptimizeFailed {
+    code:    "optimize_failed";
+    message: string;
+}
+
+export interface CommandErrorOptimizeStaleAuthority {
+    code:    "optimize_stale_authority";
+    message: string;
+}
+
+export interface CommandErrorOptimizeUnavailable {
+    code:    "optimize_unavailable";
+    message: string;
+}
+
 export interface CommandErrorScanAlreadyRunning {
     code: "scan_already_running";
 }
@@ -175,6 +199,94 @@ export interface DesktopAnalyzeResultCompleted {
     operation_id: string;
     snapshot:     AnalyzeSnapshotV1;
     type:         "completed";
+}
+
+export interface DesktopOptimizeAuditResult {
+    operation_id: string;
+    records:      OptimizeAuditRecordV1[];
+    recovered:    MaintenanceActionOutcomeV1[];
+}
+
+export interface OptimizeAuditRecordV1 {
+    action_class:      MaintenanceActionClass;
+    adapter_outcome?:  OptimizeAdapterOutcome;
+    catalogue_id:      string;
+    catalogue_version: number;
+    domain:            string;
+    error_code?:       OptimizeAuditErrorCode;
+    operation_id:      string;
+    preview_digest:    string;
+    schema_version:    number;
+    status_code:       OptimizeAuditStatusCode;
+    timestamp_unix_ms: number;
+    transition:        OptimizeAuditTransition;
+}
+
+export type MaintenanceActionClass = "execute" | "guidance" | "settings_handoff";
+
+export type OptimizeAdapterOutcome = "failure" | "success" | "unfinished";
+
+export type OptimizeAuditErrorCode = "adapter_canceled_after_dispatch" | "adapter_dispatch_failed" | "adapter_operation_failed" | "adapter_timed_out" | "recovered_after_crash";
+
+export type OptimizeAuditStatusCode = "adapter_failed" | "adapter_succeeded" | "adapter_unfinished" | "canceled_before_start" | "dispatch_started" | "failed" | "launched" | "recovered_before_dispatch" | "succeeded" | "unknown_after_dispatch" | "validated";
+
+export type MaintenanceExecutionOutcome = "canceled_before_start" | "failed" | "launched" | "succeeded" | "unknown_after_dispatch";
+
+export interface MaintenanceActionOutcomeV1 {
+    action_class: MaintenanceActionClass;
+    catalogue_id: string;
+    error_code?:  OptimizeAuditErrorCode;
+    operation_id: string;
+    outcome:      MaintenanceExecutionOutcome;
+}
+
+export interface MaintenanceCatalogueEntryV1 {
+    action_class: MaintenanceActionClass;
+    build_floor:  number | null;
+    id:           string;
+}
+
+export interface DesktopOptimizeListResultCanceled {
+    operation_id: string;
+    type:         "canceled";
+}
+
+export interface DesktopOptimizeListResultCompleted {
+    catalogue_version: number;
+    entries:           MaintenanceCatalogueEntryV1[];
+    operation_id:      string;
+    type:              "completed";
+}
+
+export interface DesktopOptimizePreviewResult {
+    operation_id: string;
+    plan:         MaintenancePlanV1;
+    preview:      MaintenancePreviewV1;
+}
+
+export interface MaintenancePlanV1 {
+    catalogue_version: number;
+    operation_id:      string;
+    version:           number;
+}
+
+export interface MaintenancePreviewV1 {
+    action_class:      MaintenanceActionClass;
+    catalogue_version: number;
+    digest:            string;
+    operation_id:      string;
+    version:           number;
+}
+
+export interface DesktopOptimizeRunResult {
+    operation_id: string;
+    report:       MaintenanceExecutionReportV1;
+}
+
+export interface MaintenanceExecutionReportV1 {
+    catalogue_version: number;
+    outcomes:          MaintenanceActionOutcomeV1[];
+    version:           number;
 }
 
 export interface DesktopScanProgress {
@@ -517,6 +629,23 @@ export interface EvidenceUserConfigured {
 
 export type MsiContext = "machine" | "user_managed" | "user_unmanaged";
 
+export interface OptimizeAuditTransitionAdapterCompleted {
+    kind: "adapter_completed";
+}
+
+export interface OptimizeAuditTransitionDispatchStarted {
+    kind: "dispatch_started";
+}
+
+export interface OptimizeAuditTransitionTerminal {
+    kind:    "terminal";
+    outcome: MaintenanceExecutionOutcome;
+}
+
+export interface OptimizeAuditTransitionValidated {
+    kind: "validated";
+}
+
 export interface OutcomeStatusFailed {
     message: string;
     type:    "failed";
@@ -664,7 +793,7 @@ export type ScanProcessStatus = ScanProcessStatusCanceled | ScanProcessStatusExi
 export type ActionKind = ActionKindCommand | ActionKindInspectOnly | ActionKindMoveToTrash | ActionKindPermanentDelete;
 export type CapacityEstimate = CapacityEstimatePartial | CapacityEstimateUnknown | CapacityEstimateVerified;
 export type OutcomeStatus = OutcomeStatusFailed | OutcomeStatusSkipped | OutcomeStatusSucceeded;
-export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
+export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorOptimizeAlreadyRunning | CommandErrorOptimizeAuditUnavailable | CommandErrorOptimizeFailed | CommandErrorOptimizeStaleAuthority | CommandErrorOptimizeUnavailable | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
 export type DesktopScanResult = DesktopScanResultCanceled | DesktopScanResultCompleted;
 export type DesktopAnalyzeResult = DesktopAnalyzeResultCanceled | DesktopAnalyzeResultCompleted;
 export type SoftwareSourceId = SoftwareSourceIdArp | SoftwareSourceIdMsi | SoftwareSourceIdMsixCurrentUser;
@@ -672,3 +801,5 @@ export type SoftwareIdentity = SoftwareIdentityArp | SoftwareIdentityMsi | Softw
 export type SoftwareSizeEvidence = SoftwareSizeEvidenceAvailable | SoftwareSizeEvidencePartial | SoftwareSizeEvidenceUnknown;
 export type SoftwareAuditTransition = SoftwareAuditTransitionAdapterCompleted | SoftwareAuditTransitionDispatchStarted | SoftwareAuditTransitionRequeryObserved | SoftwareAuditTransitionTerminal | SoftwareAuditTransitionValidated;
 export type DesktopSoftwareInventoryResult = DesktopSoftwareInventoryResultCanceled | DesktopSoftwareInventoryResultCompleted;
+export type DesktopOptimizeListResult = DesktopOptimizeListResultCanceled | DesktopOptimizeListResultCompleted;
+export type OptimizeAuditTransition = OptimizeAuditTransitionAdapterCompleted | OptimizeAuditTransitionDispatchStarted | OptimizeAuditTransitionTerminal | OptimizeAuditTransitionValidated;

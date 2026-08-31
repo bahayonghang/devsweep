@@ -1,0 +1,15 @@
+{
+  "operation_id": "optimize-run-settings",
+  "report": {
+    "version": 1,
+    "catalogue_version": 1,
+    "outcomes": [
+      {
+        "operation_id": "optimize-op-settings",
+        "catalogue_id": "settings.search",
+        "action_class": "settings_handoff",
+        "outcome": "launched"
+      }
+    ]
+  }
+}

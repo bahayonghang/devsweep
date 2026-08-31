@@ -23,6 +23,7 @@ use super::display::{
 };
 use super::{
     modes::analyze::{AnalyzeAction, AnalyzeModeState, AnalyzeSort},
+    modes::optimize::{OptimizeAction, OptimizeModeState, OptimizePhase},
     modes::software::{SoftwareAction, SoftwareModeState, SoftwarePhase},
     shell::{ModeId, ShellComposition},
 };
@@ -49,6 +50,7 @@ pub(super) struct App {
     pub(super) language_settings: LanguageSettingsState,
     pub(super) analyze: AnalyzeModeState,
     pub(super) software: SoftwareModeState,
+    pub(super) optimize: OptimizeModeState,
     pub(super) pending_mode: Option<ModeId>,
     pub(super) targets: Vec<CleanTarget>,
     pub(super) scan_health: ScanHealth,
@@ -142,6 +144,7 @@ impl App {
             language_settings: LanguageSettingsState::closed(locale),
             analyze: AnalyzeModeState::default(),
             software: SoftwareModeState::default(),
+            optimize: OptimizeModeState::default(),
             pending_mode: None,
             targets: plan.targets,
             scan_health,
@@ -451,6 +454,7 @@ pub(super) enum JobKind {
     Clean,
     Analyze,
     Software,
+    Optimize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -516,6 +520,7 @@ pub(super) enum AppLogSource {
     Audit,
     Analyze,
     Software,
+    Optimize,
 }
 
 pub(super) fn cleanup_progress_for_plan(job_id: JobId, plan: &CleanupPlan) -> CleanupProgress {

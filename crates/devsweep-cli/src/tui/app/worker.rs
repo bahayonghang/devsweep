@@ -307,6 +307,112 @@ impl App {
                     "Software audit recovery completed without redispatch",
                 );
             }
+            WorkerEvent::OptimizeListFinished { job_id, entries } => {
+                let count = entries.len();
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!("Loaded {count} Optimize catalogue rows"),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Optimize list completion");
+                    return Vec::new();
+                }
+                self.optimize
+                    .reduce(OptimizeAction::ListFinished { job_id, entries });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Optimize,
+                    job_id,
+                    format!("Optimize catalogue loaded: {count} rows"),
+                );
+            }
+            WorkerEvent::OptimizePreviewFinished {
+                job_id,
+                plan,
+                preview,
+            } => {
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!("Previewed {}", preview.operation_id),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Optimize preview completion");
+                    return Vec::new();
+                }
+                self.optimize.reduce(OptimizeAction::PreviewFinished {
+                    job_id,
+                    plan,
+                    preview,
+                });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Optimize,
+                    job_id,
+                    "Optimize preview finished",
+                );
+            }
+            WorkerEvent::OptimizeRunFinished { job_id, report } => {
+                let unknown = report.outcomes.iter().any(|outcome| {
+                    outcome.outcome
+                        == devsweep_core::optimize::MaintenanceExecutionOutcome::UnknownAfterDispatch
+                });
+                let failed = report.outcomes.iter().any(|outcome| {
+                    outcome.outcome == devsweep_core::optimize::MaintenanceExecutionOutcome::Failed
+                });
+                if !self.transition_job(
+                    job_id,
+                    if failed || unknown {
+                        JobStatus::Failed
+                    } else {
+                        JobStatus::Succeeded
+                    },
+                    format!("{} closed Optimize outcome(s)", report.outcomes.len()),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Optimize run completion");
+                    return Vec::new();
+                }
+                self.optimize
+                    .reduce(OptimizeAction::RunFinished { job_id, report });
+                self.log_job(
+                    if failed || unknown {
+                        AppLogLevel::Warning
+                    } else {
+                        AppLogLevel::Info
+                    },
+                    AppLogSource::Optimize,
+                    job_id,
+                    "Optimize dispatch reached a closed terminal outcome",
+                );
+            }
+            WorkerEvent::OptimizeAuditFinished {
+                job_id,
+                recovered,
+                records,
+            } => {
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!(
+                        "Recovered {} Optimize outcome(s); {} audit record(s)",
+                        recovered.len(),
+                        records.len()
+                    ),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Optimize audit completion");
+                    return Vec::new();
+                }
+                self.optimize.reduce(OptimizeAction::AuditFinished {
+                    job_id,
+                    recovered,
+                    records,
+                });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Optimize,
+                    job_id,
+                    "Optimize audit recovery completed without redispatch",
+                );
+            }
             WorkerEvent::CleanFinished { job_id, report } => {
                 let status = if report.failed == 0 {
                     JobStatus::Succeeded
@@ -350,6 +456,10 @@ impl App {
                     .jobs
                     .iter()
                     .any(|job| job.id == job_id && job.kind == JobKind::Software);
+                let optimize_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Optimize);
                 if !self.transition_job(job_id, JobStatus::Failed, message.clone()) {
                     self.log_ignored_worker_event(job_id, "job failure");
                     return Vec::new();
@@ -362,6 +472,12 @@ impl App {
                 }
                 if software_job {
                     self.software.reduce(SoftwareAction::Failed {
+                        job_id,
+                        message: message.clone(),
+                    });
+                }
+                if optimize_job {
+                    self.optimize.reduce(OptimizeAction::Failed {
                         job_id,
                         message: message.clone(),
                     });
@@ -383,6 +499,10 @@ impl App {
                     .jobs
                     .iter()
                     .any(|job| job.id == job_id && job.kind == JobKind::Software);
+                let optimize_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Optimize);
                 if !self.transition_job(job_id, JobStatus::Canceled, "Canceled") {
                     self.log_ignored_worker_event(job_id, "job cancellation");
                     return Vec::new();
@@ -394,6 +514,9 @@ impl App {
                 }
                 if software_job {
                     self.software.reduce(SoftwareAction::Canceled(job_id));
+                }
+                if optimize_job {
+                    self.optimize.reduce(OptimizeAction::Canceled(job_id));
                 }
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;

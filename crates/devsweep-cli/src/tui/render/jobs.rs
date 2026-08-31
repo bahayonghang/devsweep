@@ -196,5 +196,6 @@ fn app_log_source_label(source: AppLogSource) -> &'static str {
         AppLogSource::Audit => "Audit",
         AppLogSource::Analyze => "Analyze",
         AppLogSource::Software => "Software",
+        AppLogSource::Optimize => "Optimize",
     }
 }

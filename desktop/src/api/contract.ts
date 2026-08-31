@@ -14,9 +14,22 @@ import type {
   DesktopSoftwareInventoryResult,
   DesktopSoftwarePreviewResult,
   DesktopSoftwareUninstallResult,
+  DesktopOptimizeAuditResult,
+  DesktopOptimizeListResult,
+  DesktopOptimizePreviewResult,
+  DesktopOptimizeRunResult,
   DryRunOutcome,
   Evidence,
   ExecutionReport,
+  MaintenanceActionClass,
+  MaintenanceActionOutcomeV1,
+  MaintenanceCatalogueEntryV1,
+  MaintenanceExecutionOutcome,
+  MaintenanceExecutionReportV1,
+  MaintenancePlanV1,
+  MaintenancePreviewV1,
+  OptimizeAuditRecordV1,
+  OptimizeAuditTransition,
   OutcomeStatus,
   ScanPreviewSnapshot,
   ScanPreviewTarget,
@@ -483,6 +496,187 @@ export function decodeDesktopSoftwareAuditResult(value: unknown): DesktopSoftwar
   };
 }
 
+const OPTIMIZE_IDS = [
+  "dns.flush",
+  "settings.storage_recommendations",
+  "settings.search",
+  "settings.energy_recommendations",
+  "guidance.drive_optimize",
+  "guidance.system_integrity",
+  "guidance.filesystem_check",
+  "guidance.network_reset",
+] as const;
+const OPTIMIZE_ACTION_CLASSES = ["execute", "settings_handoff", "guidance"] as const;
+const OPTIMIZE_OUTCOMES = ["canceled_before_start", "succeeded", "launched", "failed", "unknown_after_dispatch"] as const;
+const OPTIMIZE_STATUS_CODES = [
+  "validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_unfinished",
+  "canceled_before_start", "recovered_before_dispatch", "succeeded", "launched", "failed", "unknown_after_dispatch",
+] as const;
+const OPTIMIZE_ERROR_CODES = [
+  "adapter_dispatch_failed", "adapter_operation_failed", "adapter_timed_out",
+  "adapter_canceled_after_dispatch", "recovered_after_crash",
+] as const;
+
+function decodeOptimizeId(value: unknown, name: string): (typeof OPTIMIZE_IDS)[number] {
+  return oneOf(value, OPTIMIZE_IDS, name);
+}
+
+function decodeMaintenanceActionClass(value: unknown, name: string): MaintenanceActionClass {
+  return oneOf(value, OPTIMIZE_ACTION_CLASSES, name);
+}
+
+function decodeCatalogueEntry(value: unknown): MaintenanceCatalogueEntryV1 {
+  const input = record(value, "optimize catalogue entry");
+  exact(input, ["id", "action_class", "build_floor"], "optimize catalogue entry");
+  const id = decodeOptimizeId(input.id, "optimize catalogue entry.id");
+  const action_class = decodeMaintenanceActionClass(input.action_class, "optimize catalogue entry.action_class");
+  if (id.startsWith("guidance.") && action_class !== "guidance") throw new Error("Guidance id must be guidance-only");
+  if (id === "dns.flush" && action_class !== "execute") throw new Error("dns.flush must run here");
+  if (id.startsWith("settings.") && action_class !== "settings_handoff") throw new Error("Settings id must open Windows Settings");
+  const build_floor = input.build_floor === null ? null : unsignedInteger(input.build_floor, "optimize catalogue entry.build_floor");
+  if ((id === "settings.storage_recommendations" || id === "settings.search") && build_floor !== 22000) {
+    throw new Error("Settings review floor must be 22000");
+  }
+  if (id === "settings.energy_recommendations" && build_floor !== 22624) {
+    throw new Error("Energy floor must be 22624");
+  }
+  if ((id === "dns.flush" || id.startsWith("guidance.")) && build_floor !== null) {
+    throw new Error("Execute and guidance rows have no build floor");
+  }
+  return { id, action_class, build_floor };
+}
+
+export function decodeDesktopOptimizeListResult(value: unknown): DesktopOptimizeListResult {
+  const input = record(value, "desktop optimize list result");
+  const type = oneOf(input.type, ["completed", "canceled"] as const, "optimize list result.type");
+  exact(input, type === "completed" ? ["type", "operation_id", "catalogue_version", "entries"] : ["type", "operation_id"], "desktop optimize list result");
+  const operation_id = nonEmptyString(input.operation_id, "optimize list result.operation_id");
+  if (type === "canceled") return { type, operation_id };
+  const catalogue_version = unsignedInteger(input.catalogue_version, "optimize list result.catalogue_version");
+  const entries = array(input.entries, "optimize list result.entries", decodeCatalogueEntry);
+  if (catalogue_version !== 1 || entries.length !== 8) throw new Error("Invalid Optimize catalogue envelope");
+  if (entries.map((entry) => entry.id).join("\n") !== OPTIMIZE_IDS.join("\n")) throw new Error("Optimize catalogue ids are not the closed V1 set");
+  return { type, operation_id, catalogue_version, entries };
+}
+
+function decodeMaintenancePlan(value: unknown): MaintenancePlanV1 {
+  const input = record(value, "optimize plan");
+  exact(input, ["version", "catalogue_version", "operation_id"], "optimize plan");
+  const plan = {
+    version: unsignedInteger(input.version, "optimize plan.version"),
+    catalogue_version: unsignedInteger(input.catalogue_version, "optimize plan.catalogue_version"),
+    operation_id: decodeOptimizeId(input.operation_id, "optimize plan.operation_id"),
+  };
+  if (plan.version !== 1 || plan.catalogue_version !== 1) throw new Error("Invalid Optimize plan version");
+  if (plan.operation_id.startsWith("guidance.")) throw new Error("Guidance entries cannot be planned");
+  return plan;
+}
+
+function decodeMaintenancePreview(value: unknown): MaintenancePreviewV1 {
+  const input = record(value, "optimize preview");
+  exact(input, ["version", "catalogue_version", "operation_id", "action_class", "digest"], "optimize preview");
+  const preview = {
+    version: unsignedInteger(input.version, "optimize preview.version"),
+    catalogue_version: unsignedInteger(input.catalogue_version, "optimize preview.catalogue_version"),
+    operation_id: decodeOptimizeId(input.operation_id, "optimize preview.operation_id"),
+    action_class: decodeMaintenanceActionClass(input.action_class, "optimize preview.action_class"),
+    digest: digest(input.digest, "optimize preview.digest"),
+  };
+  if (preview.version !== 1 || preview.catalogue_version !== 1) throw new Error("Invalid Optimize preview version");
+  if (preview.action_class === "guidance") throw new Error("Guidance entries cannot be previewed");
+  if (preview.operation_id === "dns.flush" && preview.action_class !== "execute") throw new Error("dns.flush preview must execute");
+  if (preview.operation_id.startsWith("settings.") && preview.action_class !== "settings_handoff") throw new Error("Settings preview must be a handoff");
+  return preview;
+}
+
+export function decodeDesktopOptimizePreviewResult(value: unknown): DesktopOptimizePreviewResult {
+  const input = record(value, "desktop optimize preview result");
+  exact(input, ["operation_id", "plan", "preview"], "desktop optimize preview result");
+  const plan = decodeMaintenancePlan(input.plan);
+  const preview = decodeMaintenancePreview(input.preview);
+  if (plan.operation_id !== preview.operation_id || plan.catalogue_version !== preview.catalogue_version) {
+    throw new Error("Optimize preview does not match its plan");
+  }
+  return { operation_id: nonEmptyString(input.operation_id, "optimize preview result.operation_id"), plan, preview };
+}
+
+function decodeMaintenanceOutcome(value: unknown): MaintenanceActionOutcomeV1 {
+  const input = record(value, "optimize action outcome");
+  exact(input, ["operation_id", "catalogue_id", "action_class", "outcome", "error_code"].filter((key) => input[key] !== undefined), "optimize action outcome");
+  const action_class = decodeMaintenanceActionClass(input.action_class, "optimize action outcome.action_class");
+  const outcome = oneOf(input.outcome, OPTIMIZE_OUTCOMES, "optimize action outcome.outcome") as MaintenanceExecutionOutcome;
+  if (action_class === "guidance") throw new Error("Guidance has no execution outcome");
+  if (action_class === "settings_handoff" && outcome === "succeeded") throw new Error("Settings cannot succeed as maintenance completion");
+  if (action_class === "execute" && outcome === "launched") throw new Error("DNS flush cannot launch a Settings page");
+  const error_code = input.error_code === undefined ? undefined : oneOf(input.error_code, OPTIMIZE_ERROR_CODES, "optimize action outcome.error_code");
+  return {
+    operation_id: nonEmptyString(input.operation_id, "optimize action outcome.operation_id"),
+    catalogue_id: decodeOptimizeId(input.catalogue_id, "optimize action outcome.catalogue_id"),
+    action_class,
+    outcome,
+    ...(error_code === undefined ? {} : { error_code }),
+  };
+}
+
+function decodeMaintenanceReport(value: unknown): MaintenanceExecutionReportV1 {
+  const input = record(value, "optimize execution report");
+  exact(input, ["version", "catalogue_version", "outcomes"], "optimize execution report");
+  const report = {
+    version: unsignedInteger(input.version, "optimize execution report.version"),
+    catalogue_version: unsignedInteger(input.catalogue_version, "optimize execution report.catalogue_version"),
+    outcomes: array(input.outcomes, "optimize execution report.outcomes", decodeMaintenanceOutcome),
+  };
+  if (report.version !== 1 || report.catalogue_version !== 1) throw new Error("Invalid Optimize execution report");
+  if (new Set(report.outcomes.map((item) => item.operation_id)).size !== report.outcomes.length) throw new Error("Duplicate Optimize outcome identity");
+  return report;
+}
+
+export function decodeDesktopOptimizeRunResult(value: unknown): DesktopOptimizeRunResult {
+  const input = record(value, "desktop optimize run result");
+  exact(input, ["operation_id", "report"], "desktop optimize run result");
+  return { operation_id: nonEmptyString(input.operation_id, "optimize run result.operation_id"), report: decodeMaintenanceReport(input.report) };
+}
+
+function decodeOptimizeAuditTransition(value: unknown): OptimizeAuditTransition {
+  const input = record(value, "optimize audit transition");
+  const kind = oneOf(input.kind, ["validated", "dispatch_started", "adapter_completed", "terminal"] as const, "optimize audit transition.kind");
+  exact(input, kind === "terminal" ? ["kind", "outcome"] : ["kind"], "optimize audit transition");
+  return kind === "terminal" ? { kind, outcome: oneOf(input.outcome, OPTIMIZE_OUTCOMES, "optimize audit transition.outcome") } : { kind };
+}
+
+function decodeOptimizeAuditRecord(value: unknown): OptimizeAuditRecordV1 {
+  const input = record(value, "optimize audit record");
+  exact(input, ["schema_version", "domain", "operation_id", "timestamp_unix_ms", "catalogue_version", "catalogue_id", "action_class", "preview_digest", "transition", "status_code", "error_code", "adapter_outcome"].filter((key) => input[key] !== undefined), "optimize audit record");
+  const schema_version = unsignedInteger(input.schema_version, "optimize audit record.schema_version");
+  const domain = string(input.domain, "optimize audit record.domain");
+  if (schema_version !== 1 || domain !== "optimize") throw new Error("Invalid Optimize audit record invariant");
+  const error_code = input.error_code === undefined ? undefined : oneOf(input.error_code, OPTIMIZE_ERROR_CODES, "optimize audit record.error_code");
+  const adapter_outcome = input.adapter_outcome === undefined ? undefined : oneOf(input.adapter_outcome, ["success", "failure", "unfinished"] as const, "optimize audit record.adapter_outcome");
+  return {
+    schema_version, domain,
+    operation_id: nonEmptyString(input.operation_id, "optimize audit record.operation_id"),
+    timestamp_unix_ms: unsignedInteger(input.timestamp_unix_ms, "optimize audit record.timestamp_unix_ms"),
+    catalogue_version: unsignedInteger(input.catalogue_version, "optimize audit record.catalogue_version"),
+    catalogue_id: decodeOptimizeId(input.catalogue_id, "optimize audit record.catalogue_id"),
+    action_class: decodeMaintenanceActionClass(input.action_class, "optimize audit record.action_class"),
+    preview_digest: digest(input.preview_digest, "optimize audit record.preview_digest"),
+    transition: decodeOptimizeAuditTransition(input.transition),
+    status_code: oneOf(input.status_code, OPTIMIZE_STATUS_CODES, "optimize audit record.status_code"),
+    ...(error_code === undefined ? {} : { error_code }),
+    ...(adapter_outcome === undefined ? {} : { adapter_outcome }),
+  };
+}
+
+export function decodeDesktopOptimizeAuditResult(value: unknown): DesktopOptimizeAuditResult {
+  const input = record(value, "desktop optimize audit result");
+  exact(input, ["operation_id", "recovered", "records"], "desktop optimize audit result");
+  return {
+    operation_id: nonEmptyString(input.operation_id, "optimize audit result.operation_id"),
+    recovered: array(input.recovered, "optimize audit result.recovered", decodeMaintenanceOutcome),
+    records: array(input.records, "optimize audit result.records", decodeOptimizeAuditRecord),
+  };
+}
+
 function decodeScope(value: unknown): Scope {
   const input = record(value, "scope");
   const type = oneOf(input.type, ["global", "project"] as const, "scope.type");
@@ -728,17 +922,35 @@ export function decodeDesktopScanResult(value: unknown): DesktopScanResult {
 }
 export function decodeCommandError(value: unknown): CommandError {
   const input = record(value, "command error");
-  const code = oneOf(input.code, ["scan_already_running", "scan_failed", "analyze_already_running", "analyze_failed", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io"] as const, "error.code");
+  const code = oneOf(input.code, [
+    "scan_already_running", "scan_failed", "analyze_already_running", "analyze_failed",
+    "software_already_running", "software_failed", "software_stale_authority", "software_audit_unavailable",
+    "optimize_already_running", "optimize_failed", "optimize_stale_authority", "optimize_unavailable",
+    "optimize_audit_unavailable", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io",
+  ] as const, "error.code");
   switch (code) {
     case "scan_already_running":
     case "analyze_already_running":
+    case "software_already_running":
+    case "optimize_already_running":
       exact(input, ["code"], "command error"); return { code };
     case "scan_failed":
     case "analyze_failed":
+    case "software_failed":
+    case "software_stale_authority":
+    case "software_audit_unavailable":
+    case "optimize_failed":
+    case "optimize_stale_authority":
+    case "optimize_unavailable":
+    case "optimize_audit_unavailable":
     case "io":
       exact(input, ["code", "message"], "command error"); return { code, message: string(input.message, "error.message") };
     case "invalid_plan": exact(input, ["code", "issues"], "command error"); return { code, issues: array(input.issues, "error.issues", (item) => string(item, "error.issue")) };
     case "stale_confirmation": exact(input, ["code", "expected_digest", "actual_digest"], "command error"); return { code, expected_digest: string(input.expected_digest, "error.expected_digest"), actual_digest: string(input.actual_digest, "error.actual_digest") };
     case "unknown_target": case "inspect_only_target": exact(input, ["code", "target_id"], "command error"); return { code, target_id: string(input.target_id, "error.target_id") };
+    default: {
+      const _exhaustive: never = code;
+      return _exhaustive;
+    }
   }
 }

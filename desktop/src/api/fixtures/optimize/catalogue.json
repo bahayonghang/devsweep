@@ -1,0 +1,15 @@
+{
+  "type": "completed",
+  "operation_id": "optimize-list-1",
+  "catalogue_version": 1,
+  "entries": [
+    { "id": "dns.flush", "action_class": "execute", "build_floor": null },
+    { "id": "settings.storage_recommendations", "action_class": "settings_handoff", "build_floor": 22000 },
+    { "id": "settings.search", "action_class": "settings_handoff", "build_floor": 22000 },
+    { "id": "settings.energy_recommendations", "action_class": "settings_handoff", "build_floor": 22624 },
+    { "id": "guidance.drive_optimize", "action_class": "guidance", "build_floor": null },
+    { "id": "guidance.system_integrity", "action_class": "guidance", "build_floor": null },
+    { "id": "guidance.filesystem_check", "action_class": "guidance", "build_floor": null },
+    { "id": "guidance.network_reset", "action_class": "guidance", "build_floor": null }
+  ]
+}

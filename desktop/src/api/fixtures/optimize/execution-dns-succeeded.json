@@ -1,0 +1,15 @@
+{
+  "operation_id": "optimize-run-dns",
+  "report": {
+    "version": 1,
+    "catalogue_version": 1,
+    "outcomes": [
+      {
+        "operation_id": "optimize-op-dns",
+        "catalogue_id": "dns.flush",
+        "action_class": "execute",
+        "outcome": "succeeded"
+      }
+    ]
+  }
+}

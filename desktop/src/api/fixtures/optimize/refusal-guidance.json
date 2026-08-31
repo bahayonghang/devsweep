@@ -1,0 +1,4 @@
+{
+  "code": "optimize_failed",
+  "message": "guidance entry guidance.drive_optimize is never dispatched"
+}

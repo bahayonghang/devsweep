@@ -1,9 +1,13 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-    mpsc::Sender,
+use std::{
+    fs,
+    io::ErrorKind,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::Sender,
+    },
+    time::SystemTime,
 };
-use std::time::SystemTime;
 
 use anyhow::Context;
 
@@ -21,6 +25,11 @@ use crate::tui::{
 use devsweep_core::services::{CleanService, InventoryService, ScanService, ScanServiceRunOutcome};
 use devsweep_core::{
     analysis::analyze_path,
+    optimize::{
+        MaintenanceExecutionRequest, MaintenanceExecutor, MaintenancePlanV1,
+        OPTIMIZE_AUDIT_VERSION, catalogue_entries, optimize_audit_v1_path, plan_operation,
+        preview_maintenance_plan_live,
+    },
     software::{
         SOFTWARE_EXECUTION_VERSION, SoftwareExecutionReportV1, SoftwareExecutionRequest,
         SoftwareExecutor, SoftwareInventorySource, SoftwareInventoryV1, SoftwareSelectionPlanV1,
@@ -188,6 +197,145 @@ pub(super) fn run_software_audit_worker(
             });
         }
     }
+}
+
+pub(super) fn run_optimize_list_worker(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    if cancel.is_cancel_requested() {
+        let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        return;
+    }
+    let _ = worker_tx.send(WorkerEvent::OptimizeListFinished {
+        job_id,
+        entries: catalogue_entries().to_vec(),
+    });
+}
+
+pub(super) fn run_optimize_preview_worker(
+    job_id: JobId,
+    catalogue_id: String,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let result = (|| {
+        let plan = plan_operation(&catalogue_id)?;
+        if cancel.is_cancel_requested() {
+            return Ok(None);
+        }
+        let preview = preview_maintenance_plan_live(&plan)?;
+        Ok::<_, anyhow::Error>(Some((plan, preview)))
+    })();
+    match result {
+        Ok(Some((plan, preview))) => {
+            let _ = worker_tx.send(WorkerEvent::OptimizePreviewFinished {
+                job_id,
+                plan,
+                preview,
+            });
+        }
+        Ok(None) => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(_) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+pub(super) fn run_optimize_run_worker(
+    job_id: JobId,
+    plan: MaintenancePlanV1,
+    preview_digest: String,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let result = MaintenanceExecutor::default().execute(MaintenanceExecutionRequest {
+        plan: &plan,
+        expected_preview_digest: &preview_digest,
+        confirmed: true,
+        cancel: Some(Arc::clone(&cancel)),
+    });
+    match result {
+        Ok(report) => {
+            let _ = worker_tx.send(WorkerEvent::OptimizeRunFinished { job_id, report });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+pub(super) fn run_optimize_audit_worker(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    if cancel.is_cancel_requested() {
+        let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        return;
+    }
+    match (|| {
+        let recovered = MaintenanceExecutor::default().recover_startup()?;
+        let records = read_optimize_audit_records()?;
+        Ok::<_, anyhow::Error>((recovered, records))
+    })() {
+        Ok((_recovered, _records)) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Ok((recovered, records)) => {
+            let _ = worker_tx.send(WorkerEvent::OptimizeAuditFinished {
+                job_id,
+                recovered,
+                records,
+            });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+fn read_optimize_audit_records()
+-> anyhow::Result<Vec<devsweep_core::optimize::OptimizeAuditRecordV1>> {
+    let path = optimize_audit_v1_path()?;
+    let text = match fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) => {
+            return Err(error).with_context(|| format!("failed to read {}", path.display()));
+        }
+    };
+    let mut records = Vec::new();
+    for (index, line) in text.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let record: devsweep_core::optimize::OptimizeAuditRecordV1 = serde_json::from_str(line)
+            .with_context(|| format!("invalid Optimize audit record on line {}", index + 1))?;
+        if record.schema_version != OPTIMIZE_AUDIT_VERSION || record.domain != "optimize" {
+            anyhow::bail!("unsupported Optimize audit record on line {}", index + 1);
+        }
+        records.push(record);
+    }
+    Ok(records)
 }
 
 fn unix_ms_now() -> u64 {

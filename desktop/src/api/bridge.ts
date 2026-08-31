@@ -1,6 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutedReport, reportMatchesSelection } from "./contract";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DryRunOutcome, ExecutionReport, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, UntrustedPlan } from "./types.gen";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutedReport, reportMatchesSelection } from "./contract";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DryRunOutcome, ExecutionReport, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, UntrustedPlan } from "./types.gen";
 
 export interface DesktopBridge {
   analyzeStart(operationId: string, root: string, onProgress: (progress: DesktopAnalyzeProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopAnalyzeResult>;
@@ -10,6 +10,11 @@ export interface DesktopBridge {
   softwareUninstall(operationId: string, plan: SoftwareSelectionPlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopSoftwareUninstallResult>;
   softwareAudit(operationId: string): Promise<DesktopSoftwareAuditResult>;
   softwareCancel(operationId: string): Promise<void>;
+  optimizeListStart(operationId: string): Promise<DesktopOptimizeListResult>;
+  optimizePreview(operationId: string, catalogueId: string): Promise<DesktopOptimizePreviewResult>;
+  optimizeRun(operationId: string, plan: MaintenancePlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopOptimizeRunResult>;
+  optimizeAudit(operationId: string): Promise<DesktopOptimizeAuditResult>;
+  optimizeCancel(operationId: string): Promise<void>;
   scanStart(scanId: string, options: ScanOptions, onProgress: (progress: DesktopScanProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopScanResult>;
   scanCancel(scanId: string): Promise<void>;
   planDryRun(plan: UntrustedPlan, selectedIds: string[]): Promise<DryRunOutcome>;
@@ -60,6 +65,27 @@ export const tauriBridge: DesktopBridge = {
     return result;
   },
   softwareCancel: async (operationId) => { try { await invoke("software_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
+  optimizeListStart: async (operationId) => {
+    const result = await call("optimize_list", { operationId }, decodeDesktopOptimizeListResult);
+    if (result.operation_id !== operationId) throw new Error("Optimize list result does not match the active operation");
+    return result;
+  },
+  optimizePreview: async (operationId, catalogueId) => {
+    const result = await call("optimize_preview", { operationId, catalogueId }, decodeDesktopOptimizePreviewResult);
+    if (result.operation_id !== operationId) throw new Error("Optimize preview result does not match the active operation");
+    return result;
+  },
+  optimizeRun: async (operationId, plan, previewDigest, confirmed) => {
+    const result = await call("optimize_run", { operationId, plan, previewDigest, confirmed }, decodeDesktopOptimizeRunResult);
+    if (result.operation_id !== operationId) throw new Error("Optimize run result does not match the active operation");
+    return result;
+  },
+  optimizeAudit: async (operationId) => {
+    const result = await call("optimize_audit", { operationId }, decodeDesktopOptimizeAuditResult);
+    if (result.operation_id !== operationId) throw new Error("Optimize audit result does not match the active operation");
+    return result;
+  },
+  optimizeCancel: async (operationId) => { try { await invoke("optimize_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
   scanStart: async (scanId, options, onProgress, onProgressError) => {
     const channel = new Channel<unknown>((value) => {
       try { onProgress(decodeDesktopScanProgress(value)); }

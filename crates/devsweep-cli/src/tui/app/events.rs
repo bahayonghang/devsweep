@@ -9,6 +9,10 @@ use crate::{
 };
 use devsweep_core::{
     analysis::{AnalyzeProgressV1, AnalyzeRunOutcome},
+    optimize::{
+        MaintenanceActionOutcomeV1, MaintenanceCatalogueEntryV1, MaintenanceExecutionReportV1,
+        MaintenancePlanV1, MaintenancePreviewV1, OptimizeAuditRecordV1,
+    },
     software::{
         SoftwareExecutionReportV1, SoftwareInventoryV1, SoftwarePreviewV1, SoftwareSelectionPlanV1,
     },
@@ -47,6 +51,21 @@ pub(in crate::tui) enum Effect {
         preview_digest: String,
     },
     StartSoftwareAudit {
+        job_id: JobId,
+    },
+    StartOptimizeList {
+        job_id: JobId,
+    },
+    StartOptimizePreview {
+        job_id: JobId,
+        catalogue_id: String,
+    },
+    StartOptimizeRun {
+        job_id: JobId,
+        plan: MaintenancePlanV1,
+        preview_digest: String,
+    },
+    StartOptimizeAudit {
         job_id: JobId,
     },
     StartClean {
@@ -107,6 +126,24 @@ pub(in crate::tui) enum WorkerEvent {
     SoftwareAuditFinished {
         job_id: JobId,
         report: SoftwareExecutionReportV1,
+    },
+    OptimizeListFinished {
+        job_id: JobId,
+        entries: Vec<MaintenanceCatalogueEntryV1>,
+    },
+    OptimizePreviewFinished {
+        job_id: JobId,
+        plan: MaintenancePlanV1,
+        preview: MaintenancePreviewV1,
+    },
+    OptimizeRunFinished {
+        job_id: JobId,
+        report: MaintenanceExecutionReportV1,
+    },
+    OptimizeAuditFinished {
+        job_id: JobId,
+        recovered: Vec<MaintenanceActionOutcomeV1>,
+        records: Vec<OptimizeAuditRecordV1>,
     },
     JobProgress {
         job_id: JobId,

@@ -25,6 +25,19 @@ const rootFixtures = {
   DesktopSoftwarePreviewResult: ["software/preview.json"],
   DesktopSoftwareUninstallResult: ["software/execution-five-terminal.json"],
   DesktopSoftwareAuditResult: ["software/audit-restart.json"],
+  DesktopOptimizeListResult: ["optimize/catalogue.json"],
+  DesktopOptimizePreviewResult: [
+    "optimize/preview-dns.json",
+    "optimize/preview-settings-search.json",
+    "optimize/preview-settings-storage.json",
+    "optimize/preview-settings-energy.json"
+  ],
+  DesktopOptimizeRunResult: [
+    "optimize/execution-dns-succeeded.json",
+    "optimize/execution-settings-launched.json",
+    "optimize/execution-five-terminal.json"
+  ],
+  DesktopOptimizeAuditResult: ["optimize/audit.json"],
 };
 
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,
@@ -79,6 +92,20 @@ const references = {
     installed_state: "SoftwareInstalledState", requery_result: "SoftwareAuditRequeryResult", adapter_outcome: "SoftwareAdapterOutcome",
   },
   DesktopSoftwareInventoryResultCompleted: { inventory: "SoftwareInventoryV1" },
+  DesktopOptimizeListResultCompleted: { entries: ["MaintenanceCatalogueEntryV1"] },
+  MaintenanceCatalogueEntryV1: { action_class: "MaintenanceActionClass" },
+  MaintenancePreviewV1: { action_class: "MaintenanceActionClass" },
+  MaintenanceExecutionReportV1: { outcomes: ["MaintenanceActionOutcomeV1"] },
+  MaintenanceActionOutcomeV1: { action_class: "MaintenanceActionClass", outcome: "MaintenanceExecutionOutcome", error_code: "OptimizeAuditErrorCode" },
+  DesktopOptimizePreviewResult: { plan: "MaintenancePlanV1", preview: "MaintenancePreviewV1" },
+  DesktopOptimizeRunResult: { report: "MaintenanceExecutionReportV1" },
+  DesktopOptimizeAuditResult: { recovered: ["MaintenanceActionOutcomeV1"], records: ["OptimizeAuditRecordV1"] },
+  OptimizeAuditRecordV1: {
+    action_class: "MaintenanceActionClass", transition: "OptimizeAuditTransition",
+    status_code: "OptimizeAuditStatusCode", error_code: "OptimizeAuditErrorCode",
+    adapter_outcome: "OptimizeAdapterOutcome",
+  },
+  OptimizeAuditTransitionTerminal: { outcome: "MaintenanceExecutionOutcome" },
 };
 
 function addSample(samples, name, value) {

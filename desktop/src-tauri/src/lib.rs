@@ -2,6 +2,7 @@ mod analyze;
 mod clean;
 mod commands;
 mod error;
+mod optimize;
 mod scan;
 mod software;
 
@@ -11,6 +12,7 @@ pub fn run() {
         .manage(scan::ScanCoordinator::default())
         .manage(analyze::AnalyzeCoordinator::default())
         .manage(software::SoftwareCoordinator::default())
+        .manage(optimize::OptimizeCoordinator::default())
         .manage(commands::PresentationSettingsCoordinator::default())
         .invoke_handler(tauri::generate_handler![
             commands::scan_start,
@@ -22,6 +24,11 @@ pub fn run() {
             software::software_uninstall,
             software::software_audit,
             software::software_cancel,
+            optimize::optimize_list,
+            optimize::optimize_preview,
+            optimize::optimize_run,
+            optimize::optimize_audit,
+            optimize::optimize_cancel,
             clean::plan_dry_run,
             clean::plan_execute,
             commands::protection_list_get,

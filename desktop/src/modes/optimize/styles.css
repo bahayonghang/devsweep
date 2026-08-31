@@ -1,0 +1,123 @@
+.optimize-mode {
+  --text-primary: #18201d;
+  --text-muted: #52605a;
+  --surface: #fff;
+  --surface-raised: #fff;
+  --border: #c9d0cc;
+  --border-strong: #8d9b94;
+  --success: #1a6542;
+  --warning: #8a5a12;
+  --danger: #8f2c26;
+  display: grid;
+  min-height: 0;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.optimize-toolbar,
+.optimize-catalogue-header,
+.optimize-summary-bar,
+.optimize-summary-actions,
+.optimize-row-primary,
+.optimize-row-facts,
+.optimize-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.optimize-toolbar { flex-wrap: wrap; }
+.optimize-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
+
+.optimize-empty,
+.optimize-catalogue,
+.optimize-preview,
+.optimize-results,
+.optimize-audit {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  padding: 14px;
+}
+
+.optimize-catalogue-header { justify-content: space-between; flex-wrap: wrap; }
+.optimize-list { display: grid; gap: 8px; list-style: none; margin: 12px 0 0; padding: 0; }
+.optimize-row { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.optimize-row article { display: grid; gap: 8px; padding: 12px; }
+.optimize-row-primary { justify-content: space-between; min-width: 0; }
+.optimize-selection { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.optimize-selection strong { min-width: 0; }
+.optimize-badge { color: var(--text-muted); white-space: nowrap; font-weight: 650; }
+.optimize-badge-execute { color: var(--success); }
+.optimize-badge-settings_handoff { color: var(--warning); }
+.optimize-badge-guidance { color: var(--text-muted); }
+.optimize-row-facts { display: grid; grid-template-columns: minmax(160px, 1.1fr) minmax(140px, 1fr) minmax(180px, 1fr); align-items: start; }
+.optimize-no-run { color: var(--warning); font-weight: 650; }
+.optimize-row details { border-top: 1px solid var(--border); padding-top: 8px; }
+.optimize-row dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
+.optimize-row dd { margin: 0; overflow-wrap: anywhere; user-select: text; }
+
+.optimize-handoff-note { border-left: 4px solid var(--warning); padding-left: 10px; font-weight: 650; }
+.optimize-results [data-outcome="unknown_after_dispatch"],
+.optimize-results [data-outcome="failed"] { color: var(--danger); }
+.optimize-results [data-outcome="launched"] { color: var(--warning); }
+.optimize-results [data-outcome="succeeded"] { color: var(--success); }
+
+.optimize-summary-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  justify-content: space-between;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  padding: 10px 12px;
+  box-shadow: 0 -2px 8px rgb(0 0 0 / 18%);
+}
+.optimize-summary-bar p {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.optimize-confirm-dialog {
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  margin: auto;
+  overflow: auto;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  padding: 20px;
+}
+.optimize-confirm-dialog::backdrop {
+  background: rgb(16 25 20 / 55%);
+}
+.optimize-confirm-actions { justify-content: flex-end; }
+
+@media (max-width: 800px) {
+  .optimize-row-primary { align-items: flex-start; flex-direction: column; }
+  .optimize-badge { white-space: normal; }
+  .optimize-row-facts { grid-template-columns: 1fr; }
+  .optimize-summary-bar { align-items: stretch; flex-direction: column; }
+  .optimize-summary-actions > * { flex: 1; }
+}
+
+@media (max-width: 430px) {
+  .optimize-toolbar > *, .optimize-summary-actions { width: 100%; }
+  .optimize-summary-actions { flex-direction: column; }
+  .optimize-summary-bar { gap: 8px; }
+  .optimize-row dl { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optimize-mode *, .optimize-mode *::before, .optimize-mode *::after { animation: none !important; transition: none !important; }
+}
+
+@media (forced-colors: active) {
+  .optimize-row, .optimize-summary-bar, .optimize-confirm-dialog[open] { border: 1px solid CanvasText; }
+  .optimize-badge-execute, .optimize-badge-settings_handoff, .optimize-no-run { color: CanvasText; }
+  .optimize-handoff-note { border-color: Highlight; }
+}

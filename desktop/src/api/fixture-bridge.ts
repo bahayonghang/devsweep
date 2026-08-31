@@ -9,7 +9,17 @@ import softwareInventoryJson from "./fixtures/software/inventory.json";
 import softwarePreviewJson from "./fixtures/software/preview.json";
 import softwareExecutionJson from "./fixtures/software/execution-five-terminal.json";
 import softwareAuditJson from "./fixtures/software/audit-restart.json";
-import { decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory } from "./contract";
+import optimizeCatalogueJson from "./fixtures/optimize/catalogue.json";
+import optimizePreviewDnsJson from "./fixtures/optimize/preview-dns.json";
+import optimizePreviewSearchJson from "./fixtures/optimize/preview-settings-search.json";
+import optimizePreviewStorageJson from "./fixtures/optimize/preview-settings-storage.json";
+import optimizePreviewEnergyJson from "./fixtures/optimize/preview-settings-energy.json";
+import optimizeExecutionDnsJson from "./fixtures/optimize/execution-dns-succeeded.json";
+import optimizeExecutionSettingsJson from "./fixtures/optimize/execution-settings-launched.json";
+import optimizeAuditJson from "./fixtures/optimize/audit.json";
+import optimizeRefusalGuidanceJson from "./fixtures/optimize/refusal-guidance.json";
+import optimizeRefusalStaleJson from "./fixtures/optimize/refusal-stale.json";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory } from "./contract";
 import type { DesktopBridge } from "./bridge";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
 
@@ -24,6 +34,18 @@ const softwareInventory = decodeSoftwareInventory(softwareInventoryJson);
 const softwarePreview = decodeDesktopSoftwarePreviewResult(softwarePreviewJson);
 const softwareExecution = decodeDesktopSoftwareUninstallResult(softwareExecutionJson);
 const softwareAudit = decodeDesktopSoftwareAuditResult(softwareAuditJson);
+const optimizeCatalogue = decodeDesktopOptimizeListResult(optimizeCatalogueJson);
+const optimizePreviewById = {
+  "dns.flush": decodeDesktopOptimizePreviewResult(optimizePreviewDnsJson),
+  "settings.search": decodeDesktopOptimizePreviewResult(optimizePreviewSearchJson),
+  "settings.storage_recommendations": decodeDesktopOptimizePreviewResult(optimizePreviewStorageJson),
+  "settings.energy_recommendations": decodeDesktopOptimizePreviewResult(optimizePreviewEnergyJson),
+} as const;
+const optimizeExecutionDns = decodeDesktopOptimizeRunResult(optimizeExecutionDnsJson);
+const optimizeExecutionSettings = decodeDesktopOptimizeRunResult(optimizeExecutionSettingsJson);
+const optimizeAudit = decodeDesktopOptimizeAuditResult(optimizeAuditJson);
+const optimizeRefusalGuidance = decodeCommandError(optimizeRefusalGuidanceJson);
+const optimizeRefusalStale = decodeCommandError(optimizeRefusalStaleJson);
 const cargoTargetId = "cargo.target:C:/work/app/target";
 const npmTargetId = "npm.cache.clean:global";
 const inspectOnlyTargetId = "cargo.home.inspect:C:/Users/dev/.cargo";
@@ -105,6 +127,34 @@ export const fixtureBridge: DesktopBridge = {
   },
   softwareAudit: async (operationId) => ({ ...softwareAudit, operation_id: operationId }),
   softwareCancel: async () => undefined,
+  optimizeListStart: async (operationId) => (
+    optimizeCatalogue.type === "completed"
+      ? { ...optimizeCatalogue, operation_id: operationId }
+      : { type: "canceled", operation_id: operationId }
+  ),
+  optimizePreview: async (operationId, catalogueId) => {
+    if (catalogueId.startsWith("guidance.")) throw optimizeRefusalGuidance;
+    const preview = optimizePreviewById[catalogueId as keyof typeof optimizePreviewById];
+    if (!preview) throw optimizeRefusalGuidance;
+    return { ...preview, operation_id: operationId };
+  },
+  optimizeRun: async (operationId, plan, previewDigest, confirmed) => {
+    const preview = optimizePreviewById[plan.operation_id as keyof typeof optimizePreviewById];
+    if (!confirmed || !preview || previewDigest !== preview.preview.digest) throw optimizeRefusalStale;
+    if (plan.operation_id === "dns.flush") return { ...optimizeExecutionDns, operation_id: operationId };
+    return {
+      operation_id: operationId,
+      report: {
+        ...optimizeExecutionSettings.report,
+        outcomes: [{
+          ...optimizeExecutionSettings.report.outcomes[0],
+          catalogue_id: plan.operation_id,
+        }],
+      },
+    };
+  },
+  optimizeAudit: async (operationId) => ({ ...optimizeAudit, operation_id: operationId }),
+  optimizeCancel: async () => undefined,
   scanStart: async (scanId, _options, onProgress) => {
     scanCount += 1;
     onProgress(correlatedProjectProgress(scanId));

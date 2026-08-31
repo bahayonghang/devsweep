@@ -14,6 +14,7 @@ mod analyze;
 mod format;
 mod inventory;
 mod jobs;
+mod optimize;
 mod overlays;
 mod software;
 mod targets;
@@ -23,6 +24,7 @@ use analyze::render_analyze;
 use format::*;
 use inventory::render_inventory;
 use jobs::{render_jobs_logs, scan_diagnostic_lines};
+use optimize::render_optimize;
 use overlays::render_overlay;
 use software::render_software;
 use targets::{
@@ -60,6 +62,10 @@ pub(super) fn render_app(frame: &mut Frame<'_>, app: &App) {
     }
     if app.shell.active == super::shell::ModeId::Software {
         render_software(frame, app);
+        return;
+    }
+    if app.shell.active == super::shell::ModeId::Optimize {
+        render_optimize(frame, app);
         return;
     }
     let area = frame.area();
@@ -106,7 +112,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 Span::styled(app.shell.app_title.clone(), accent_style()),
                 Span::styled(format!("  {}", app.shell.copy.workbench), muted_style()),
                 Span::styled("  |  ", muted_style()),
-                Span::styled(shell_navigation_label(app), panel_style()),
+                Span::styled("Scan ", muted_style()),
+                Span::styled(scan_health_label(app), scan_health_style(app)),
                 Span::styled("  |  ", muted_style()),
                 Span::styled("Selected ", muted_style()),
                 Span::styled(
@@ -117,8 +124,8 @@ fn render_header(frame: &mut Frame<'_>, area: Rect, app: &App) {
                     ),
                     warning_style(),
                 ),
-                Span::styled("  Scan ", muted_style()),
-                Span::styled(scan_health_label(app), scan_health_style(app)),
+                Span::styled("  |  ", muted_style()),
+                Span::styled(shell_navigation_label(app), panel_style()),
             ]),
             scan_totals_line(app, false),
         ],

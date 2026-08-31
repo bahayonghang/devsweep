@@ -173,6 +173,37 @@ mod tests {
         }
         assert!(english.contains("catalogue version 1"));
         assert!(chinese.contains("目录版本 1"));
+        assert!(english.contains("Runs here"));
+        assert!(english.contains("Opens Windows Settings"));
+        assert!(english.contains("Guidance only"));
+        assert!(chinese.contains("在此运行"));
+        assert!(chinese.contains("打开 Windows 设置"));
+        assert!(chinese.contains("仅指引"));
+        assert!(!english.contains("Execute"));
+        assert!(!english.to_lowercase().contains("completed optimization"));
+    }
+
+    #[test]
+    fn guidance_has_no_run_action_and_settings_is_not_execution() {
+        let english = list(Locale::En, catalogue_entries()).unwrap();
+        let guidance = english
+            .lines()
+            .find(|line| line.contains("guidance.drive_optimize"))
+            .unwrap();
+        assert!(guidance.contains("Guidance only"));
+        assert!(!guidance.contains("Runs here"));
+        assert!(!guidance.to_lowercase().contains("run "));
+        let settings = english
+            .lines()
+            .find(|line| line.contains("settings.search"))
+            .unwrap();
+        assert!(settings.contains("Opens Windows Settings"));
+        assert!(!settings.contains("Runs here"));
+        let dns = english
+            .lines()
+            .find(|line| line.contains("dns.flush"))
+            .unwrap();
+        assert!(dns.contains("Runs here"));
     }
 
     #[test]

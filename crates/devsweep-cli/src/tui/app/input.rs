@@ -38,6 +38,9 @@ impl App {
         if self.shell.active == ModeId::Software {
             return self.handle_software_key(key);
         }
+        if self.shell.active == ModeId::Optimize {
+            return self.handle_optimize_key(key);
+        }
 
         if matches!(self.overlay, Overlay::None)
             && self
@@ -308,6 +311,12 @@ impl App {
             self.software
                 .reduce(SoftwareAction::CancelRequested(operation_id));
         }
+        if let Some(operation_id) = self.optimize.operation_id
+            && self.shell.active == ModeId::Optimize
+        {
+            self.optimize
+                .reduce(OptimizeAction::CancelRequested(operation_id));
+        }
         let effects = self.cancel_all_active_jobs();
         if effects.is_empty() {
             return self.maybe_finish_pending_mode();
@@ -473,6 +482,106 @@ impl App {
             }
             _ => Vec::new(),
         }
+    }
+
+    pub(super) fn handle_optimize_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match key.code {
+            KeyCode::Char('q') => self.request_quit(),
+            KeyCode::Esc => {
+                if self.optimize.phase == OptimizePhase::Confirming {
+                    self.optimize.reduce(OptimizeAction::CloseConfirmation);
+                    Vec::new()
+                } else {
+                    self.request_quit()
+                }
+            }
+            KeyCode::Char('i') => {
+                if self.has_active_mutation_job() || self.optimize.operation_id.is_some() {
+                    return Vec::new();
+                }
+                let job_id = self.start_job(JobKind::Optimize, "Load Optimize catalogue");
+                self.optimize.reduce(OptimizeAction::ListStarted(job_id));
+                vec![Effect::StartOptimizeList { job_id }]
+            }
+            KeyCode::Char('v') => self.start_optimize_preview(),
+            KeyCode::Char('r') => {
+                if self.has_active_mutation_job() || self.optimize.operation_id.is_some() {
+                    return Vec::new();
+                }
+                let job_id = self.start_job(JobKind::Optimize, "Recover Optimize audit state");
+                self.optimize.reduce(OptimizeAction::AuditStarted(job_id));
+                vec![Effect::StartOptimizeAudit { job_id }]
+            }
+            KeyCode::Enter if self.optimize.phase == OptimizePhase::PreviewReady => {
+                self.optimize.reduce(OptimizeAction::OpenConfirmation);
+                Vec::new()
+            }
+            KeyCode::Enter if self.optimize.phase == OptimizePhase::Confirming => {
+                self.start_optimize_run()
+            }
+            KeyCode::Enter => {
+                self.optimize.reduce(OptimizeAction::SelectFocused);
+                Vec::new()
+            }
+            KeyCode::Char('x') => {
+                if let Some(operation_id) = self.optimize.operation_id {
+                    self.optimize
+                        .reduce(OptimizeAction::CancelRequested(operation_id));
+                }
+                self.cancel_active_job()
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.optimize.reduce(OptimizeAction::MoveCursor(1));
+                Vec::new()
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.optimize.reduce(OptimizeAction::MoveCursor(-1));
+                Vec::new()
+            }
+            KeyCode::Char(' ') => {
+                self.optimize.reduce(OptimizeAction::SelectFocused);
+                Vec::new()
+            }
+            KeyCode::Char('p') => {
+                self.language_settings.open = true;
+                self.language_settings.selected = self.shell.locale;
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn start_optimize_preview(&mut self) -> Vec<Effect> {
+        let Some(entry) = self.optimize.selected_entry().cloned() else {
+            return Vec::new();
+        };
+        if !crate::tui::modes::optimize::dispatchable(entry.action_class)
+            || self.optimize.operation_id.is_some()
+        {
+            return Vec::new();
+        }
+        let job_id = self.start_job(JobKind::Optimize, "Revalidate Optimize preview");
+        self.optimize.reduce(OptimizeAction::PreviewStarted(job_id));
+        vec![Effect::StartOptimizePreview {
+            job_id,
+            catalogue_id: entry.id.to_string(),
+        }]
+    }
+
+    fn start_optimize_run(&mut self) -> Vec<Effect> {
+        let (Some(plan), Some(preview)) =
+            (self.optimize.plan.clone(), self.optimize.preview.clone())
+        else {
+            return Vec::new();
+        };
+        let job_id = self.start_job(JobKind::Optimize, "Dispatch confirmed Optimize operation");
+        self.optimize.reduce(OptimizeAction::RunStarted(job_id));
+        vec![Effect::StartOptimizeRun {
+            job_id,
+            plan,
+            preview_digest: preview.digest,
+        }]
     }
 
     fn handle_language_settings_key(&mut self, key: KeyEvent) -> Vec<Effect> {

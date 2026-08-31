@@ -268,7 +268,7 @@ describe("desktop workflow", () => {
     expect(await screen.findByRole("tab", { name: "清理" })).toBeInTheDocument();
     const softwareTab = screen.getByRole("tab", { name: "软件" });
     expect(softwareTab).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "优化" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "优化" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "状态" })).not.toBeInTheDocument();
     await user.click(softwareTab);
     expect(screen.getByRole("region", { name: "软件" })).toBeInTheDocument();

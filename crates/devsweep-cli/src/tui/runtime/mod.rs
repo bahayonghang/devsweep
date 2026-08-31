@@ -28,9 +28,10 @@ pub(super) use devsweep_core::services::{
     ExecutorCleanService, LocalInventoryService, SweepScanService,
 };
 use workers::{
-    run_analyze_worker, run_clean_worker, run_inventory_worker, run_scan_worker,
-    run_software_audit_worker, run_software_inventory_worker, run_software_preview_worker,
-    run_software_uninstall_worker,
+    run_analyze_worker, run_clean_worker, run_inventory_worker, run_optimize_audit_worker,
+    run_optimize_list_worker, run_optimize_preview_worker, run_optimize_run_worker,
+    run_scan_worker, run_software_audit_worker, run_software_inventory_worker,
+    run_software_preview_worker, run_software_uninstall_worker,
 };
 
 struct WorkerRegistration {
@@ -331,6 +332,115 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .lock()
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Software audit start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartOptimizeList { job_id } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Optimize list start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Optimize list rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join =
+                thread::spawn(move || run_optimize_list_worker(job_id, worker_tx, worker_cancel));
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Optimize list start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartOptimizePreview {
+            job_id,
+            catalogue_id,
+        } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Optimize preview start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Optimize preview rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join = thread::spawn(move || {
+                run_optimize_preview_worker(job_id, catalogue_id, worker_tx, worker_cancel)
+            });
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Optimize preview start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartOptimizeRun {
+            job_id,
+            plan,
+            preview_digest,
+        } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Optimize run start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Optimize run rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join = thread::spawn(move || {
+                run_optimize_run_worker(job_id, plan, preview_digest, worker_tx, worker_cancel)
+            });
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Optimize run start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartOptimizeAudit { job_id } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Optimize audit start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Optimize audit rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join =
+                thread::spawn(move || run_optimize_audit_worker(job_id, worker_tx, worker_cancel));
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Optimize audit start")
                 })?
                 .insert(job_id, WorkerRegistration { cancel, join });
         }

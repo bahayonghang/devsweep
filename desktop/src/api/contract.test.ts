@@ -94,6 +94,13 @@ describe("IPC decoders", () => {
     { code: "unknown_target", target_id: "missing" },
     { code: "inspect_only_target", target_id: "inspect" },
     { code: "io", message: "disk" },
+    { code: "software_already_running" },
+    { code: "software_failed", message: "failed" },
+    { code: "optimize_already_running" },
+    { code: "optimize_failed", message: "failed" },
+    { code: "optimize_stale_authority", message: "stale" },
+    { code: "optimize_unavailable", message: "the Windows OS build query is unavailable" },
+    { code: "optimize_audit_unavailable", message: "audit" },
   ])("decodes structured error $code", (error) => {
     expect(decodeCommandError(error).code).toBe(error.code);
   });

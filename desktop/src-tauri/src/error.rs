@@ -1,5 +1,6 @@
 use devsweep_core::{
     execution::ExecutionError,
+    optimize::{MaintenanceExecutionError, OptimizeAuditError, OptimizePlanError},
     software::{SoftwareAuditError, SoftwareExecutionError, SoftwarePlanError},
 };
 use serde::Serialize;
@@ -25,6 +26,19 @@ pub(crate) enum CommandError {
         message: String,
     },
     SoftwareAuditUnavailable {
+        message: String,
+    },
+    OptimizeAlreadyRunning,
+    OptimizeFailed {
+        message: String,
+    },
+    OptimizeStaleAuthority {
+        message: String,
+    },
+    OptimizeUnavailable {
+        message: String,
+    },
+    OptimizeAuditUnavailable {
         message: String,
     },
     InvalidPlan {
@@ -67,6 +81,52 @@ impl CommandError {
     pub(crate) fn software_failed(error: anyhow::Error) -> Self {
         Self::SoftwareFailed {
             message: format!("{error:#}"),
+        }
+    }
+
+    pub(crate) fn optimize_failed(error: anyhow::Error) -> Self {
+        Self::OptimizeFailed {
+            message: format!("{error:#}"),
+        }
+    }
+
+    pub(crate) fn optimize(error: anyhow::Error) -> Self {
+        if let Some(error) = error.downcast_ref::<MaintenanceExecutionError>() {
+            return match error {
+                MaintenanceExecutionError::Plan(plan) => Self::optimize_plan(plan),
+                MaintenanceExecutionError::Audit(
+                    OptimizeAuditError::LockUnavailable(_)
+                    | OptimizeAuditError::LocalAppDataUnavailable,
+                ) => Self::OptimizeAuditUnavailable {
+                    message: error.to_string(),
+                },
+                _ => Self::OptimizeFailed {
+                    message: error.to_string(),
+                },
+            };
+        }
+        if let Some(error) = error.downcast_ref::<OptimizePlanError>() {
+            return Self::optimize_plan(error);
+        }
+        Self::optimize_failed(error)
+    }
+
+    fn optimize_plan(error: &OptimizePlanError) -> Self {
+        match error {
+            OptimizePlanError::UnsupportedPlanVersion(_)
+            | OptimizePlanError::UnsupportedCatalogueVersion(_)
+            | OptimizePlanError::DigestMismatch => Self::OptimizeStaleAuthority {
+                message: error.to_string(),
+            },
+            OptimizePlanError::PlatformUnsupported
+            | OptimizePlanError::OsBuildUnavailable
+            | OptimizePlanError::BuildUnsupported { .. }
+            | OptimizePlanError::ResolverUnavailable => Self::OptimizeUnavailable {
+                message: error.to_string(),
+            },
+            _ => Self::OptimizeFailed {
+                message: error.to_string(),
+            },
         }
     }
 

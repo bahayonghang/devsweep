@@ -62,6 +62,12 @@ impl ModeRegistration {
             id: ModeId::Software,
         }
     }
+
+    const fn optimize() -> Self {
+        Self {
+            id: ModeId::Optimize,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -155,6 +161,7 @@ impl TuiShell {
             registrations: vec![
                 ModeRegistration::clean(),
                 ModeRegistration::software(),
+                ModeRegistration::optimize(),
                 ModeRegistration::analyze(),
             ],
             active: ModeId::Clean,
@@ -257,6 +264,11 @@ mod tests {
                     accelerator: Some('s'),
                 },
                 ShellNavigationItem {
+                    id: ModeId::Optimize,
+                    label: "Optimize".to_string(),
+                    accelerator: Some('p'),
+                },
+                ShellNavigationItem {
                     id: ModeId::Analyze,
                     label: "Analyze".to_string(),
                     accelerator: Some('a'),
@@ -278,6 +290,11 @@ mod tests {
                     id: ModeId::Software,
                     label: "软件".to_string(),
                     accelerator: Some('r'),
+                },
+                ShellNavigationItem {
+                    id: ModeId::Optimize,
+                    label: "优化".to_string(),
+                    accelerator: Some('y'),
                 },
                 ShellNavigationItem {
                     id: ModeId::Analyze,

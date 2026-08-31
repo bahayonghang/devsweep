@@ -122,9 +122,20 @@ impl App {
         if self.shell.active == ModeId::Software && mode != ModeId::Software {
             self.software.reduce(SoftwareAction::Released);
         }
+        if self.shell.active == ModeId::Optimize && mode != ModeId::Optimize {
+            self.optimize.reduce(OptimizeAction::Released);
+        }
         let _ = self.shell.activate(mode);
         self.overlay = Overlay::None;
         self.filter_active = false;
+        if mode == ModeId::Optimize
+            && self.optimize.entries.is_none()
+            && self.optimize.operation_id.is_none()
+        {
+            let job_id = self.start_job(JobKind::Optimize, "Load Optimize catalogue");
+            self.optimize.reduce(OptimizeAction::ListStarted(job_id));
+            return vec![Effect::StartOptimizeList { job_id }];
+        }
         Vec::new()
     }
 
@@ -147,6 +158,7 @@ impl App {
                 JobKind::Inventory => AppLogSource::Inventory,
                 JobKind::Analyze => AppLogSource::Analyze,
                 JobKind::Software => AppLogSource::Software,
+                JobKind::Optimize => AppLogSource::Optimize,
             })
             .unwrap_or(AppLogSource::App)
     }

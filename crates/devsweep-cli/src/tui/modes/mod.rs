@@ -2,4 +2,5 @@
 
 pub(super) mod analyze;
 pub(super) mod clean;
+pub(super) mod optimize;
 pub(super) mod software;

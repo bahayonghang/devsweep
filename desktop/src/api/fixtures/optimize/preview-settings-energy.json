@@ -1,0 +1,15 @@
+{
+  "operation_id": "optimize-preview-energy",
+  "plan": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "settings.energy_recommendations"
+  },
+  "preview": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "settings.energy_recommendations",
+    "action_class": "settings_handoff",
+    "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  }
+}

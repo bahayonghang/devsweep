@@ -30,7 +30,12 @@
     "SoftwareAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_status_unavailable", "adapter_timed_out", "adapter_canceled_after_dispatch", "adapter_cancel_failed", "requery_unavailable", "requery_conflicting", "recovered_after_crash"],
     "SoftwareAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_reboot_required", "requery_present", "requery_absent", "requery_unavailable", "requery_conflicting", "canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch", "recovered_before_dispatch"],
     "SoftwareAuditRequeryResult": ["present", "absent", "unavailable", "conflicting"],
-    "SoftwareAdapterOutcome": ["success", "failure", "reboot_required", "unfinished"]
+    "SoftwareAdapterOutcome": ["success", "failure", "reboot_required", "unfinished"],
+    "MaintenanceActionClass": ["execute", "settings_handoff", "guidance"],
+    "MaintenanceExecutionOutcome": ["canceled_before_start", "succeeded", "launched", "failed", "unknown_after_dispatch"],
+    "OptimizeAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_unfinished", "canceled_before_start", "recovered_before_dispatch", "succeeded", "launched", "failed", "unknown_after_dispatch"],
+    "OptimizeAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_timed_out", "adapter_canceled_after_dispatch", "recovered_after_crash"],
+    "OptimizeAdapterOutcome": ["success", "failure", "unfinished"]
   },
   "tagged_unions": {
     "Scope": { "variants": {
@@ -85,6 +90,11 @@
       "CommandErrorSoftwareFailed": [{ "code": "software_failed", "message": "controlled software failure" }],
       "CommandErrorSoftwareStaleAuthority": [{ "code": "software_stale_authority", "message": "controlled stale authority" }],
       "CommandErrorSoftwareAuditUnavailable": [{ "code": "software_audit_unavailable", "message": "controlled audit failure" }],
+      "CommandErrorOptimizeAlreadyRunning": [{ "code": "optimize_already_running" }],
+      "CommandErrorOptimizeFailed": [{ "code": "optimize_failed", "message": "controlled optimize failure" }],
+      "CommandErrorOptimizeStaleAuthority": [{ "code": "optimize_stale_authority", "message": "controlled stale optimize authority" }],
+      "CommandErrorOptimizeUnavailable": [{ "code": "optimize_unavailable", "message": "the Windows OS build query is unavailable" }],
+      "CommandErrorOptimizeAuditUnavailable": [{ "code": "optimize_audit_unavailable", "message": "controlled optimize audit failure" }],
       "CommandErrorInvalidPlan": [{ "code": "invalid_plan", "issues": ["controlled issue"] }],
       "CommandErrorStaleConfirmation": [{ "code": "stale_confirmation", "expected_digest": "expected", "actual_digest": "actual" }],
       "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
@@ -171,6 +181,30 @@
         }
       }],
       "DesktopSoftwareInventoryResultCanceled": [{ "type": "canceled", "operation_id": "software-inventory-1" }]
+    }},
+    "DesktopOptimizeListResult": { "variants": {
+      "DesktopOptimizeListResultCompleted": [{
+        "type": "completed",
+        "operation_id": "optimize-list-1",
+        "catalogue_version": 1,
+        "entries": [
+          { "id": "dns.flush", "action_class": "execute", "build_floor": null },
+          { "id": "settings.storage_recommendations", "action_class": "settings_handoff", "build_floor": 22000 },
+          { "id": "settings.search", "action_class": "settings_handoff", "build_floor": 22000 },
+          { "id": "settings.energy_recommendations", "action_class": "settings_handoff", "build_floor": 22624 },
+          { "id": "guidance.drive_optimize", "action_class": "guidance", "build_floor": null },
+          { "id": "guidance.system_integrity", "action_class": "guidance", "build_floor": null },
+          { "id": "guidance.filesystem_check", "action_class": "guidance", "build_floor": null },
+          { "id": "guidance.network_reset", "action_class": "guidance", "build_floor": null }
+        ]
+      }],
+      "DesktopOptimizeListResultCanceled": [{ "type": "canceled", "operation_id": "optimize-list-1" }]
+    }},
+    "OptimizeAuditTransition": { "tag": "kind", "variants": {
+      "OptimizeAuditTransitionValidated": [{ "kind": "validated" }],
+      "OptimizeAuditTransitionDispatchStarted": [{ "kind": "dispatch_started" }],
+      "OptimizeAuditTransitionAdapterCompleted": [{ "kind": "adapter_completed" }],
+      "OptimizeAuditTransitionTerminal": [{ "kind": "terminal", "outcome": "unknown_after_dispatch" }]
     }}
   },
   "additional_samples": {
