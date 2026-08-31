@@ -29,6 +29,9 @@ pub(super) fn dispatch(cli: &Cli, locale: Locale) -> Result<(), ApplicationError
     if command.starts_with("software.") {
         return software::run(cli, locale);
     }
+    if command.starts_with("optimize.") {
+        return optimize::run(cli, locale);
+    }
     let message = catalogue(locale)
         .render("error.mode_unavailable", &[("command", command)], None)
         .map_err(|error| {
@@ -64,10 +67,28 @@ mod tests {
     #[test]
     fn staged_commands_fail_closed_instead_of_running_legacy_handlers() {
         let cli =
-            Cli::try_parse_from(["devsweep", "optimize", "list"]).expect("frozen command parses");
+            Cli::try_parse_from(["devsweep", "status", "snapshot"]).expect("frozen command parses");
         let error = dispatch(&cli, Locale::En).expect_err("handler is not yet wired");
         assert_eq!(error.code, "mode_unavailable");
-        assert!(error.message.contains("optimize.list"));
+        assert!(error.message.contains("status.snapshot"));
+    }
+
+    #[test]
+    fn optimize_commands_reach_the_owned_handler() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let output = temp.path().join("plan.json");
+        let cli = Cli::try_parse_from([
+            "devsweep",
+            "optimize",
+            "plan",
+            "--operation",
+            "cmd.exe /c calc",
+            "--output",
+            output.to_str().unwrap(),
+        ])
+        .expect("frozen command parses");
+        let error = dispatch(&cli, Locale::En).expect_err("hostile selection fails closed");
+        assert_eq!(error.code, "invalid_optimize_selection");
     }
 
     #[test]

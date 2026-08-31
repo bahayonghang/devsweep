@@ -15,6 +15,8 @@ pub mod filesystem;
 pub mod inventory;
 /// Cleanup plans and scan report domain models.
 pub mod model;
+/// Closed standard-user Windows maintenance catalogue and execution.
+pub mod optimize;
 /// Untrusted-plan validation and canonical plan identity.
 pub mod plan;
 /// Locale-only presentation preferences shared by interactive frontends.
