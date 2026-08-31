@@ -1,0 +1,1 @@
+{"command":"optimize.run","data":{"catalogue_version":1,"outcomes":[{"action_class":"execute","catalogue_id":"dns.flush","operation_id":"optimize-op-000001a05930db85-00005fe0-0000000000000000","outcome":"succeeded"}],"version":1},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}

@@ -1,0 +1,17 @@
+{"wall_ms":0.109,"present":true,"user_ms":93.75,"kernel_ms":140.625,"cpu_ms":234.375,"private":4640768,"threads":8}
+{"wall_ms":214.106,"present":true,"user_ms":93.75,"kernel_ms":187.5,"cpu_ms":281.25,"private":4870144,"threads":8}
+{"wall_ms":400.207,"present":true,"user_ms":125.0,"kernel_ms":375.0,"cpu_ms":500.0,"private":4722688,"threads":10}
+{"wall_ms":602.316,"present":true,"user_ms":140.625,"kernel_ms":765.625,"cpu_ms":906.25,"private":4907008,"threads":10}
+{"wall_ms":802.826,"present":true,"user_ms":140.625,"kernel_ms":1156.25,"cpu_ms":1296.875,"private":6082560,"threads":10}
+{"wall_ms":1006.186,"present":true,"user_ms":156.25,"kernel_ms":1546.875,"cpu_ms":1703.125,"private":6111232,"threads":10}
+{"wall_ms":1210.207,"present":true,"user_ms":156.25,"kernel_ms":1953.125,"cpu_ms":2109.375,"private":5537792,"threads":10}
+{"wall_ms":1412.384,"present":true,"user_ms":171.875,"kernel_ms":2343.75,"cpu_ms":2515.625,"private":6316032,"threads":10}
+{"wall_ms":1613.984,"present":true,"user_ms":218.75,"kernel_ms":2687.5,"cpu_ms":2906.25,"private":6316032,"threads":10}
+{"wall_ms":1814.161,"present":true,"user_ms":218.75,"kernel_ms":3093.75,"cpu_ms":3312.5,"private":5439488,"threads":10}
+{"wall_ms":2003.034,"present":true,"user_ms":250.0,"kernel_ms":3437.5,"cpu_ms":3687.5,"private":5554176,"threads":10}
+{"wall_ms":2206.962,"present":true,"user_ms":296.875,"kernel_ms":3796.875,"cpu_ms":4093.75,"private":6209536,"threads":10}
+{"wall_ms":2409.868,"present":true,"user_ms":328.125,"kernel_ms":4171.875,"cpu_ms":4500.0,"private":5513216,"threads":10}
+{"wall_ms":2609.802,"present":true,"user_ms":328.125,"kernel_ms":4390.625,"cpu_ms":4718.75,"private":5541888,"threads":10}
+{"wall_ms":2812.226,"present":true,"user_ms":343.75,"kernel_ms":4578.125,"cpu_ms":4921.875,"private":5226496,"threads":10}
+{"wall_ms":3014.604,"present":true,"user_ms":343.75,"kernel_ms":4781.25,"cpu_ms":5125.0,"private":14028800,"threads":10}
+{"wall_ms":3200.815,"present":false,"user_ms":0.0,"kernel_ms":0.0,"cpu_ms":0.0,"private":0,"threads":0}

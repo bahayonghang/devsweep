@@ -1,0 +1,14 @@
+fixture C:\Users\lyh\AppData\Local\Temp\devsweep-five-mode-v1\analysis-250k-v1
+warmup analyze scan
+warmup elapsed=25584.519ms exit=0 p95=198.222865932626 completeness=partial_budget
+measure #1
+run1 elapsed=25990.408ms exit=0 samples=86 p95=201.262835738612 median=182.863496057463 completeness=partial_budget
+measure #2
+run2 elapsed=25852.391ms exit=0 samples=85 p95=196.424261319066 median=183.177022274326 completeness=partial_budget
+measure #3
+run3 elapsed=24681.165ms exit=0 samples=79 p95=200.492945321564 median=184.374846354295 completeness=partial_budget
+measure #4
+run4 elapsed=24606.488ms exit=0 samples=79 p95=198.862384782193 median=186.449357868411 completeness=partial_budget
+measure #5
+run5 elapsed=24162.809ms exit=0 samples=78 p95=198.283782480469 median=185.327040450714 completeness=partial_budget
+median_of_p95s=198.862384782193 max_run_p95=201.262835738612 all_le_200=False

@@ -1,0 +1,32 @@
+{
+  "envelope_outcome": "partial",
+  "source_count": 8,
+  "entry_count": 1293,
+  "arp": 823,
+  "msi": 291,
+  "msix": 179,
+  "msi_non_manual": 0,
+  "selectable_non_msix": 0,
+  "last_used_not_exact_unknown": 0,
+  "forbidden_uninstall_quiet_icon_installed_path": [
+    false,
+    false,
+    false,
+    true
+  ],
+  "size_states": {
+    "unknown": 585,
+    "available": 707,
+    "partial": 1
+  },
+  "source_states": [
+    "arp/partial hive=current_user view=registry32",
+    "arp/partial hive=current_user view=registry64",
+    "arp/partial hive=local_machine view=registry32",
+    "arp/available hive=local_machine view=registry64",
+    "msi/available context=user_unmanaged",
+    "msi/available context=user_managed",
+    "msi/available context=machine",
+    "msix_current_user/available"
+  ]
+}

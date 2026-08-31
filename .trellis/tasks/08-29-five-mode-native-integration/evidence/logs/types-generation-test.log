@@ -1,0 +1,8 @@
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ 鉁?src/api/types-generation.test.ts (2 tests) 1771ms
+   鉁?IPC type generation > is deterministic, committed, ASCII, and type-only  878ms
+   鉁?IPC type generation > changes when a named fixture changes  892ms
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  19:32:04
+   Duration  3.21s (transform 24ms, setup 113ms, collect 19ms, tests 1.77s, environment 399ms, prepare 56ms)

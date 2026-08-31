@@ -1,0 +1,15 @@
+{"wall_ms":0.07,"present":true,"user_ms":218.75,"kernel_ms":203.125,"cpu_ms":421.875,"private":4898816,"threads":8}
+{"wall_ms":202.548,"present":true,"user_ms":296.875,"kernel_ms":218.75,"cpu_ms":515.625,"private":4751360,"threads":10}
+{"wall_ms":406.45,"present":true,"user_ms":343.75,"kernel_ms":578.125,"cpu_ms":921.875,"private":4952064,"threads":10}
+{"wall_ms":608.412,"present":true,"user_ms":343.75,"kernel_ms":984.375,"cpu_ms":1328.125,"private":5988352,"threads":10}
+{"wall_ms":811.985,"present":true,"user_ms":343.75,"kernel_ms":1390.625,"cpu_ms":1734.375,"private":5988352,"threads":10}
+{"wall_ms":1013.359,"present":true,"user_ms":343.75,"kernel_ms":1796.875,"cpu_ms":2140.625,"private":5808128,"threads":10}
+{"wall_ms":1212.242,"present":true,"user_ms":343.75,"kernel_ms":2156.25,"cpu_ms":2500.0,"private":6213632,"threads":10}
+{"wall_ms":1400.692,"present":true,"user_ms":359.375,"kernel_ms":2515.625,"cpu_ms":2875.0,"private":6221824,"threads":10}
+{"wall_ms":1601.041,"present":true,"user_ms":375.0,"kernel_ms":2890.625,"cpu_ms":3265.625,"private":5419008,"threads":10}
+{"wall_ms":1802.115,"present":true,"user_ms":390.625,"kernel_ms":3281.25,"cpu_ms":3671.875,"private":6205440,"threads":10}
+{"wall_ms":2003.229,"present":true,"user_ms":390.625,"kernel_ms":3687.5,"cpu_ms":4078.125,"private":5861376,"threads":10}
+{"wall_ms":2204.046,"present":true,"user_ms":390.625,"kernel_ms":4046.875,"cpu_ms":4437.5,"private":5607424,"threads":10}
+{"wall_ms":2404.619,"present":true,"user_ms":390.625,"kernel_ms":4250.0,"cpu_ms":4640.625,"private":5279744,"threads":10}
+{"wall_ms":2604.403,"present":true,"user_ms":390.625,"kernel_ms":4437.5,"cpu_ms":4828.125,"private":5287936,"threads":10}
+{"wall_ms":2804.892,"present":false,"user_ms":0.0,"kernel_ms":0.0,"cpu_ms":0.0,"private":0,"threads":0}

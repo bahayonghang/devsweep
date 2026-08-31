@@ -1,0 +1,17 @@
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-five-mode-native-integration
+
+  [1;33mimplement.jsonl:6: Warning: crates/devsweep-cli/tests/five_mode_contract.rs looks like a code file — implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mimplement.jsonl:7: Warning: desktop/src/app-shell/registry.ts looks like a code file — implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mimplement.jsonl:8: Warning: tools/measure-resources.ps1 is 68668 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mimplement.jsonl:12: Warning: crates/devsweep-cli/src/application/mod.rs looks like a code file — implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mimplement.jsonl:13: Warning: desktop/src-tauri/src/lib.rs looks like a code file — implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mimplement.jsonl:16: Warning: desktop/src/App.tsx looks like a code file — implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mimplement.jsonl:19: Warning: tools/measure-resources.ps1 is 68668 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mimplement.jsonl:22: Warning: tools/measure-resources.ps1 is 68668 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mimplement.jsonl:25: Warning: tools/measure-resources.ps1 is 68668 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mimplement.jsonl:28: Warning: tools/measure-resources.ps1 is 68668 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [0;32mimplement.jsonl: ✓ (30 entries)[0m
+  [0;32mcheck.jsonl: ✓ (4 entries)[0m
+
+[0;32m✓ All validations passed[0m

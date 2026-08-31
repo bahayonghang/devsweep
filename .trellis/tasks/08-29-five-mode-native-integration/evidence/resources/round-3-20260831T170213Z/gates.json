@@ -1,0 +1,130 @@
+{
+  "idle.median_cpu_le_1": {
+    "pass": true,
+    "detail": "medianCpu=0"
+  },
+  "idle.max_private_le_192mib": {
+    "pass": true,
+    "detail": "maxPrivate=7139328"
+  },
+  "idle.max_threads_le_40": {
+    "pass": true,
+    "detail": "maxThreads=36"
+  },
+  "status.snapshot.p95_le_2s": {
+    "pass": true,
+    "detail": "p95=1443.82"
+  },
+  "status.snapshot.private_le_idle_plus_64mib": {
+    "pass": true,
+    "detail": "peak=1908736 idle=7139328"
+  },
+  "status.snapshot.threads_le_idle_plus_4": {
+    "pass": true,
+    "detail": "threads=4 idle=36"
+  },
+  "status.live.median_cpu_le_5": {
+    "pass": true,
+    "detail": "median=0"
+  },
+  "status.live.p95_cpu_le_15": {
+    "pass": true,
+    "detail": "p95=7.78952091330588"
+  },
+  "status.live.private_le_idle_plus_64mib": {
+    "pass": true,
+    "detail": "peak=4501504"
+  },
+  "status.live.threads_le_idle_plus_4": {
+    "pass": true,
+    "detail": "threads=5"
+  },
+  "status.live.poststop_25_samples": {
+    "pass": true,
+    "detail": "each measured live rep has exactly 25 post-stop samples"
+  },
+  "status.live.poststop_final_five_hold": {
+    "pass": true,
+    "detail": "final five consecutive samples meet idle+0.5pp CPU and idle+1 threads"
+  },
+  "clean.median_ratio_le_1_20": {
+    "pass": true,
+    "detail": "ratio=0.453553349214376 median=18141.704 baseline=39999.052 entries=126651"
+  },
+  "clean.threads_current_recorded": {
+    "pass": true,
+    "detail": "max_threads=8; archived baseline did not record threads"
+  },
+  "clean.peak_private_recorded": {
+    "pass": true,
+    "detail": "peak_private=5718016; archived baseline did not record private"
+  },
+  "analyze.accounted_le_256mib": {
+    "pass": true,
+    "detail": "accounted=38906299"
+  },
+  "analyze.peak_private_le_512mib": {
+    "pass": false,
+    "detail": "peak=586137600"
+  },
+  "analyze.p95_cpu_le_200": {
+    "pass": false,
+    "detail": "p95cpu=203.73416515381"
+  },
+  "analyze.layout_p95_le_50ms": {
+    "pass": true,
+    "detail": "layout_p95_ms=1.28429999999999"
+  },
+  "analyze.react_commit_p95_le_100ms": {
+    "pass": true,
+    "detail": "react_commit_p95_ms=5.79999998211861 status=pass"
+  },
+  "analyze.cancel_ack_p95_le_500ms": {
+    "pass": true,
+    "detail": "p95=29 joined=True"
+  },
+  "software.p95_elapsed_le_5s": {
+    "pass": true,
+    "detail": "p95=4517.693"
+  },
+  "software.private_le_idle_plus_128mib": {
+    "pass": true,
+    "detail": "peak=13959168"
+  },
+  "software.threads_le_idle_plus_6": {
+    "pass": true,
+    "detail": "threads=10"
+  },
+  "software.no_uac": {
+    "pass": true,
+    "detail": "consent still 0"
+  },
+  "optimize.list_preview.p95_le_1s": {
+    "pass": false,
+    "detail": "p95=1236.908"
+  },
+  "optimize.list_preview.private_le_idle_plus_32mib": {
+    "pass": true,
+    "detail": "peak=0"
+  },
+  "optimize.list_preview.threads_le_idle_plus_2": {
+    "pass": true,
+    "detail": "threads=0"
+  },
+  "optimize.dns.p95_le_10s": {
+    "pass": true,
+    "detail": "p95=1175.147"
+  },
+  "optimize.settings.storage_recommendations.launch_p95_le_2s": {
+    "pass": true,
+    "detail": "p95=960.215"
+  },
+  "optimize.settings.search.launch_p95_le_2s": {
+    "pass": true,
+    "detail": "p95=958.215"
+  },
+  "optimize.settings.energy_recommendations.launch_p95_le_2s": {
+    "pass": true,
+    "detail": "p95=1380.118"
+  }
+}

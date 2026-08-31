@@ -1,0 +1,106 @@
+{"ts":"2026-08-31T15:03:37.089Z","event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"7f403806fd9f4421c50cce283c0ea56902ebe22debf716f468aa16271b2e755a"}
+{"ts":"2026-08-31T15:03:37.091Z","event":"icon_hash","path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop\\src-tauri\\icons\\icon.ico","sha256":"bd9fbd82e10bceb3f8ed7e14a2a6a690ca18184b6e42901d2c9a0ae4c5fefed9"}
+{"ts":"2026-08-31T15:03:37.137Z","event":"app_launched","pid":78268,"cdpPort":9611,"scalePercent":null,"profile":"localappdata"}
+{"ts":"2026-08-31T15:03:37.666Z","event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"BB0006E390A20FA8D30AA669FCEAA164"}
+{"ts":"2026-08-31T15:03:40.795Z","event":"locale_set","tag":"en","applied":"en"}
+{"ts":"2026-08-31T15:03:42.003Z","event":"locale_audit_en","store":null}
+{"ts":"2026-08-31T15:03:43.028Z","event":"route_en","hash":"#/clean","state":{"hash":"#/clean","hasMode":true,"status":null,"textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","Scan","Cancel","Execute"],"heading":"Clean"}}
+{"ts":"2026-08-31T15:03:43.486Z","event":"screenshot","name":"en-clean-1440"}
+{"ts":"2026-08-31T15:03:44.498Z","event":"route_en","hash":"#/software","state":{"hash":"#/software","hasMode":true,"status":"idle","textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","Refresh inventory","Refresh audit and recover pending dispatches","Review uninstall preview","Continue to confirmation","Close","Uninstall selected apps"],"heading":"Software"}}
+{"ts":"2026-08-31T15:03:44.957Z","event":"screenshot","name":"en-software-1440"}
+{"ts":"2026-08-31T15:03:45.975Z","event":"route_en","hash":"#/optimize","state":{"hash":"#/optimize","hasMode":true,"status":"idle","textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","Reload catalogue","Refresh audit history","Review preview","Continue to confirmation","Close","Run DNS flush"],"heading":"Optimize"}}
+{"ts":"2026-08-31T15:03:46.432Z","event":"screenshot","name":"en-optimize-1440"}
+{"ts":"2026-08-31T15:03:47.450Z","event":"route_en","hash":"#/analyze","state":{"hash":"#/analyze","hasMode":true,"status":"idle","textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","Analyze path"],"heading":"Analyze"}}
+{"ts":"2026-08-31T15:03:47.897Z","event":"screenshot","name":"en-analyze-1440"}
+{"ts":"2026-08-31T15:03:48.907Z","event":"route_en","hash":"#/status","state":{"hash":"#/status","hasMode":true,"status":"ready","textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","Refresh snapshot","Start live","Name","PID","CPU","Private"],"heading":"Status"}}
+{"ts":"2026-08-31T15:03:49.380Z","event":"screenshot","name":"en-status-1440"}
+{"ts":"2026-08-31T15:03:50.393Z","event":"route_en","hash":"#/protection","state":{"hash":"#/protection","hasMode":true,"status":null,"textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","Add path"],"heading":"Protection"}}
+{"ts":"2026-08-31T15:03:50.859Z","event":"screenshot","name":"en-protection-1440"}
+{"ts":"2026-08-31T15:03:51.880Z","event":"route_en","hash":"#/rules","state":{"hash":"#/rules","hasMode":true,"status":null,"textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language","rust.target","node.node_modules","node.next_cache","node.turbo","node.parcel_cache","python.venv_dot","python.venv","python.pytest_cache","python.mypy_cache","python.ruff_cache","python.tox","python.__pycache__","npm.cache.clean","pip.cache.purge","pnpm.store.prune"],"heading":"Rules"}}
+{"ts":"2026-08-31T15:03:52.334Z","event":"screenshot","name":"en-rules-1440"}
+{"ts":"2026-08-31T15:03:53.365Z","event":"route_en","hash":"#/history","state":{"hash":"#/history","hasMode":true,"status":null,"textHit":true,"buttons":["Clean","Software","Optimize","Analyze","Status","Protection","Rules","History","Language"],"heading":"History"}}
+{"ts":"2026-08-31T15:03:53.815Z","event":"screenshot","name":"en-history-1440"}
+{"ts":"2026-08-31T15:03:55.536Z","event":"width_probe","locale":"en","width":1024,"metrics":{"innerWidth":1024,"innerHeight":860,"dpr":1.25}}
+{"ts":"2026-08-31T15:03:55.603Z","event":"screenshot","name":"en-status-1024"}
+{"ts":"2026-08-31T15:03:56.312Z","event":"width_probe","locale":"en","width":800,"metrics":{"innerWidth":800,"innerHeight":860,"dpr":1.25}}
+{"ts":"2026-08-31T15:03:56.360Z","event":"screenshot","name":"en-status-800"}
+{"ts":"2026-08-31T15:03:57.069Z","event":"width_probe","locale":"en","width":390,"metrics":{"innerWidth":390,"innerHeight":860,"dpr":1.25}}
+{"ts":"2026-08-31T15:03:57.114Z","event":"screenshot","name":"en-status-390"}
+{"ts":"2026-08-31T15:03:57.426Z","event":"keyboard_focus","focused":{"tag":"BUTTON","text":"Status","aria":null}}
+{"ts":"2026-08-31T15:03:57.430Z","event":"keyboard_tab","afterTab":{"tag":"BUTTON","text":"Protection"}}
+{"ts":"2026-08-31T15:03:57.432Z","event":"start_live","live":{"clicked":true,"label":"Start live"}}
+{"ts":"2026-08-31T15:03:58.988Z","event":"screenshot","name":"en-status-live"}
+{"ts":"2026-08-31T15:04:01.212Z","event":"leave_live_to_clean","leftLive":{"hash":"#/clean","statusMode":false}}
+{"ts":"2026-08-31T15:04:01.256Z","event":"screenshot","name":"en-clean-after-live-leave"}
+{"ts":"2026-08-31T15:04:08.405Z","event":"software_inventory","softwareState":{"status":"ready","rows":0,"text":"DevSweep\nCleanup plan workbench\nClean\nSoftware\nOptimize\nAnalyze\nStatus\nProtection\nRules\nHistory\nLanguage\nHelp\nSoftware\nRefresh inventory\nSearch software\nSort\nName\nSize evidence\nEligibility\nSource\nRefresh audit and recover pending dispatches\n\nSoftware inventory: 1293 entries; 86 selectable; 1207 manual.\n\nSelect all eligible\nWindows Installer (MSI) · Machine\nUnknown\nMSI uninstall is manual in Software V1\nUnknown — no supported exact source\nExact identity\n${{arpDisplayName}}\nRegistry (ARP) · Machin"}}
+{"ts":"2026-08-31T15:04:08.439Z","event":"screenshot","name":"en-software-inventory"}
+{"ts":"2026-08-31T15:04:08.440Z","event":"software_uninstall","status":"UNVERIFIED","reason":"no confirmed disposable current-user MSIX identity in task docs"}
+{"ts":"2026-08-31T15:04:09.510Z","event":"screenshot","name":"en-optimize-catalogue"}
+{"ts":"2026-08-31T15:04:09.918Z","event":"reduced_motion","reduced":{"reduced":true}}
+{"ts":"2026-08-31T15:04:09.950Z","event":"screenshot","name":"en-optimize-reduced-motion"}
+{"ts":"2026-08-31T15:04:10.368Z","event":"high_contrast","hc":{"forced":true,"contrast":true}}
+{"ts":"2026-08-31T15:04:10.401Z","event":"screenshot","name":"en-optimize-high-contrast"}
+{"ts":"2026-08-31T15:04:10.409Z","event":"axtree_captured","nodes":81}
+{"ts":"2026-08-31T15:04:11.421Z","event":"status_capability_unsupported","capability":{"note":"Status snapshot snapshot-1788188650944-4\n\nSampled at 1788188650944 UTC ms\n\n24 logical processors\n\nStatus V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero.","groups":["Status snapshot snapshot-1788188650944-4Sampled at 1788188650944 UTC ms24 logical processorsStatus V1 does not include GPU, VRAM, thermal, fan, SMART, or physical-disk activity. Those capabilities are unsupported, not shown as zero.","CPUCPU: 6.43%","Memory usedMemory: 39.6 GiB used of 63.5 GiB (23.8 GiB available)","Power: AC online Battery: 98.00%; -s remaining","C:\\: 495.9 GiB free of 1.9 TiB","D:\\: 612.3 GiB free of 1.9 TiB","vSwitch (Default Switch)-Hyper-V Virtual Switch Extension Filter-0000: rx 0 B/s, tx 0 B/s","vEthernet (Default Switch)-WFP Native MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","vEthernet (Default Switch)-QoS Packet Scheduler-0000: rx 0 B/s, tx 0 B/s","vEthernet (Default Switch)-WFP 802.3 MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","vSwitch (WSL (Hyper-V firewall))-Hyper-V Virtual Switch Extension Filter-0000: rx 0 B/s, tx 0 B/s","vSwitch (WSL (Hyper-V firewall))-Virtual Filtering Platform VMSwitch Extension-0000: rx 0 B/s, tx 0 B/s","以太网 4-WFP Native MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","以太网 4-QoS Packet Scheduler-0000: rx 0 B/s, tx 0 B/s","以太网 4-WFP 802.3 MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","vEthernet (WSL (Hyper-V firewall))-WFP Native MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","vEthernet (WSL (Hyper-V firewall))-QoS Packet Scheduler-0000: rx 0 B/s, tx 0 B/s","vEthernet (WSL (Hyper-V firewall))-WFP 802.3 MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","以太网-WFP Native MAC Layer LightWeight Filter-0000: rx 0 B/s, tx 0 B/s","以太网-QoS Packet Scheduler-0000: rx 0 B/s, tx 0 B/s"],"textHit":true}}
+{"ts":"2026-08-31T15:04:11.469Z","event":"screenshot","name":"en-status-capability"}
+{"ts":"2026-08-31T15:04:12.480Z","event":"software_capability_states","softwareCapability":{"msi":true,"registry":false,"snippet":"DevSweep Cleanup plan workbench Clean Software Optimize Analyze Status Protection Rules History Language Help Software Refresh inventory Search software Sort Name Size evidence Eligibility Source Refresh audit and recover pending dispatches No software inventory Inventory is read-only. Only exact eligible current-user MSIX apps can be selected later. 0 selected | reported estimate 0 B | measured package 0 B | partial at least 0 B | 0 unknown Review uninstall preview Continue to confirmation"}}
+{"ts":"2026-08-31T15:04:12.515Z","event":"screenshot","name":"en-software-capability"}
+{"ts":"2026-08-31T15:04:13.530Z","event":"optimize_capability_guidance","optimizeCapability":{"details":[],"textHit":true}}
+{"ts":"2026-08-31T15:04:13.560Z","event":"screenshot","name":"en-optimize-capability"}
+{"ts":"2026-08-31T15:04:14.615Z","event":"screenshot","name":"en-analyze-empty"}
+{"ts":"2026-08-31T15:04:14.618Z","event":"analyze_cancel_fill","filled":true,"analyzeFixture":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\native\\analyze-cancel-fixture"}
+{"ts":"2026-08-31T15:04:14.659Z","event":"analyze_cancel","started":true,"joined":true,"joinStatus":"complete","elapsed_ms":38}
+{"ts":"2026-08-31T15:04:14.704Z","event":"screenshot","name":"en-analyze-canceled"}
+{"ts":"2026-08-31T15:04:15.624Z","event":"locale_set","tag":"zh-CN","applied":"en"}
+{"ts":"2026-08-31T15:04:16.833Z","event":"locale_audit_zh","store":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"ts":"2026-08-31T15:04:17.845Z","event":"route_zh","hash":"#/clean","state":{"hash":"#/clean","hasMode":true,"status":null,"textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","扫描","取消","执行"],"heading":"清理"}}
+{"ts":"2026-08-31T15:04:18.291Z","event":"screenshot","name":"zh-clean-1440"}
+{"ts":"2026-08-31T15:04:19.314Z","event":"route_zh","hash":"#/software","state":{"hash":"#/software","hasMode":true,"status":"idle","textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","刷新软件清单","刷新审计并恢复未决派发","审阅卸载预览","进入二次确认","关闭","卸载所选应用"],"heading":"软件"}}
+{"ts":"2026-08-31T15:04:19.773Z","event":"screenshot","name":"zh-software-1440"}
+{"ts":"2026-08-31T15:04:20.788Z","event":"route_zh","hash":"#/optimize","state":{"hash":"#/optimize","hasMode":true,"status":"idle","textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","重新加载目录","刷新审计记录","审阅预览","进入二次确认","关闭","运行 DNS 刷新"],"heading":"优化"}}
+{"ts":"2026-08-31T15:04:21.240Z","event":"screenshot","name":"zh-optimize-1440"}
+{"ts":"2026-08-31T15:04:22.263Z","event":"route_zh","hash":"#/analyze","state":{"hash":"#/analyze","hasMode":true,"status":"idle","textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","分析路径"],"heading":"分析"}}
+{"ts":"2026-08-31T15:04:22.711Z","event":"screenshot","name":"zh-analyze-1440"}
+{"ts":"2026-08-31T15:04:23.721Z","event":"route_zh","hash":"#/status","state":{"hash":"#/status","hasMode":true,"status":"ready","textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","刷新快照","开始实时","名称","PID","CPU","专用"],"heading":"状态"}}
+{"ts":"2026-08-31T15:04:24.218Z","event":"screenshot","name":"zh-status-1440"}
+{"ts":"2026-08-31T15:04:25.241Z","event":"route_zh","hash":"#/protection","state":{"hash":"#/protection","hasMode":true,"status":null,"textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","添加路径"],"heading":"保护"}}
+{"ts":"2026-08-31T15:04:25.690Z","event":"screenshot","name":"zh-protection-1440"}
+{"ts":"2026-08-31T15:04:26.704Z","event":"route_zh","hash":"#/rules","state":{"hash":"#/rules","hasMode":true,"status":null,"textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言","rust.target","node.node_modules","node.next_cache","node.turbo","node.parcel_cache","python.venv_dot","python.venv","python.pytest_cache","python.mypy_cache","python.ruff_cache","python.tox","python.__pycache__","npm.cache.clean","pip.cache.purge","pnpm.store.prune"],"heading":"规则"}}
+{"ts":"2026-08-31T15:04:27.150Z","event":"screenshot","name":"zh-rules-1440"}
+{"ts":"2026-08-31T15:04:28.177Z","event":"route_zh","hash":"#/history","state":{"hash":"#/history","hasMode":true,"status":null,"textHit":true,"buttons":["清理","软件","优化","分析","状态","保护","规则","历史","语言"],"heading":"历史"}}
+{"ts":"2026-08-31T15:04:28.619Z","event":"screenshot","name":"zh-history-1440"}
+{"ts":"2026-08-31T15:04:28.622Z","event":"sleep_resume","status":"UNVERIFIED","reason":"host sleep/resume is not reproducible in this agent session"}
+{"ts":"2026-08-31T15:04:31.736Z","event":"force_kill_after_path_pid_match","pid":78268,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:04:31.773Z","event":"app_launched","pid":48836,"cdpPort":9612,"scalePercent":null,"profile":"localappdata-restart"}
+{"ts":"2026-08-31T15:04:32.278Z","event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"8B4E6D902915CE97C788F0FB928F7749"}
+{"ts":"2026-08-31T15:04:37.455Z","event":"force_kill_after_path_pid_match","pid":48836,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:04:37.493Z","event":"app_launched","pid":65720,"cdpPort":9613,"scalePercent":null,"profile":"localappdata-restart"}
+{"ts":"2026-08-31T15:04:38.007Z","event":"cdp_target","url":"about:blank","title":"","id":"D1B1852664BB1BF82EBE90A3D736C829"}
+{"ts":"2026-08-31T15:04:41.251Z","event":"restart_relaunch","restarted":{"hash":"#/status","lang":"en","text":"DevSweep\n清理计划工作区\n清理\n软件\n优化\n分析\n状态\n保护\n规则\n历史\n语言\n帮助\n状态\n刷新快照\n开始实时\n实时间隔\n1 秒\n2 秒\n5 秒\n10 秒\n30 秒\n60 秒\n\n状态快照 snapshot-1788188680579-1\n\n采样于 1788188680579 UTC 毫秒\n\n24 个逻辑处理器\n\nStatus V1 不包含 GPU、显存、温度、风扇、SMART 或物理磁盘活动。这些能力为不受支持，不会显示为零。\n\nCPU\n\nCPU：16.78%\n\n已用内存\n\n内存：已用 39.4 GiB / 总计 63.5 GiB（可用 24.1 GiB）\n\n电源：交流电 在线 电池：98.00%；剩余 - 秒\n\nC:\\：可用 495.9 GiB / 总计 1.9 TiB\n\nD:\\：可用 612.3 GiB / 总计 1.9 TiB\n\nvSwitch (Default Switch","storeHint":true}}
+{"ts":"2026-08-31T15:04:41.286Z","event":"screenshot","name":"restart-status"}
+{"ts":"2026-08-31T15:04:44.540Z","event":"force_kill_after_path_pid_match","pid":65720,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:04:44.612Z","event":"app_launched","pid":44516,"cdpPort":9720,"scalePercent":100,"profile":"localappdata-dpi-100"}
+{"ts":"2026-08-31T15:04:45.132Z","event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"B75B33748E6E7F537900948A6B18464D"}
+{"ts":"2026-08-31T15:04:47.860Z","event":"locale_set","tag":"en","applied":"en"}
+{"ts":"2026-08-31T15:04:50.130Z","event":"screenshot","name":"dpi-100-en-status"}
+{"ts":"2026-08-31T15:04:50.132Z","event":"dpi_probe","scalePercent":100,"dpr":1,"inner":[1000,750]}
+{"ts":"2026-08-31T15:04:53.350Z","event":"force_kill_after_path_pid_match","pid":44516,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:04:53.396Z","event":"app_launched","pid":50120,"cdpPort":9745,"scalePercent":125,"profile":"localappdata-dpi-125"}
+{"ts":"2026-08-31T15:04:53.908Z","event":"cdp_target","url":"about:blank","title":"","id":"8A624BEA291DD447A3BBD6E87F18CB05"}
+{"ts":"2026-08-31T15:04:56.692Z","event":"locale_set","tag":"en","applied":"en"}
+{"ts":"2026-08-31T15:04:58.946Z","event":"screenshot","name":"dpi-125-en-status"}
+{"ts":"2026-08-31T15:04:58.948Z","event":"dpi_probe","scalePercent":125,"dpr":1.25,"inner":[800,600]}
+{"ts":"2026-08-31T15:05:02.341Z","event":"force_kill_after_path_pid_match","pid":50120,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:05:02.374Z","event":"app_launched","pid":11328,"cdpPort":9770,"scalePercent":150,"profile":"localappdata-dpi-150"}
+{"ts":"2026-08-31T15:05:02.877Z","event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"65FECFF1D4F62591C82863F0DFFD8AAB"}
+{"ts":"2026-08-31T15:05:05.602Z","event":"locale_set","tag":"en","applied":"en"}
+{"ts":"2026-08-31T15:05:07.870Z","event":"screenshot","name":"dpi-150-en-status"}
+{"ts":"2026-08-31T15:05:07.871Z","event":"dpi_probe","scalePercent":150,"dpr":1.5,"inner":[667,500]}
+{"ts":"2026-08-31T15:05:11.421Z","event":"force_kill_after_path_pid_match","pid":11328,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:05:11.466Z","event":"app_launched","pid":68664,"cdpPort":9820,"scalePercent":200,"profile":"localappdata-dpi-200"}
+{"ts":"2026-08-31T15:05:11.978Z","event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"97A58F1009C13244CB2CCDB971FD9F57"}
+{"ts":"2026-08-31T15:05:14.705Z","event":"locale_set","tag":"en","applied":"en"}
+{"ts":"2026-08-31T15:05:16.954Z","event":"screenshot","name":"dpi-200-en-status"}
+{"ts":"2026-08-31T15:05:16.955Z","event":"dpi_probe","scalePercent":200,"dpr":2,"inner":[500,375]}
+{"ts":"2026-08-31T15:05:20.470Z","event":"force_kill_after_path_pid_match","pid":68664,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"ts":"2026-08-31T15:05:20.471Z","event":"done","matrix":{"english_chinese":"PASS","keyboard_ax":"PASS","reduced_motion_high_contrast":"PASS","widths_390_800_1024_1440":"PASS","device_scale_100_125_150_200":"PASS","cancellation_navigation_exit":"PASS","app_restart":"PASS","taskbar_window_icon":"PASS","capability_unsupported":"PASS","sleep_resume":"UNVERIFIED","software_inventory":"PASS","software_uninstall":"UNVERIFIED","clean_recycle_fixture":"PASS"}}

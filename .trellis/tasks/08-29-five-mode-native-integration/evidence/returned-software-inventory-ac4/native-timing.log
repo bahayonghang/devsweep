@@ -1,0 +1,16 @@
+exe=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep.exe size=5254656
+warmup software inventory --source all --format json
+warmup elapsed_ms=4033.795 exit=0 output_exists=True
+measure #1
+run1 elapsed_ms=4379.214 exit=0 output_exists=True
+measure #2
+run2 elapsed_ms=3941.491 exit=0 output_exists=True
+measure #3
+run3 elapsed_ms=4225.933 exit=0 output_exists=True
+measure #4
+run4 elapsed_ms=3935.93 exit=0 output_exists=True
+measure #5
+run5 elapsed_ms=4087.308 exit=0 output_exists=True
+raw_ms=4379.214, 3941.491, 4225.933, 3935.93, 4087.308
+median_ms=4087.308 p95_ms=4379.214 target_le=5000 pass=True
+exits=0, 0, 0, 0, 0

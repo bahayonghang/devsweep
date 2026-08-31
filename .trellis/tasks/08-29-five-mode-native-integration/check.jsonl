@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit final cross-domain correctness, security, tests, logs, and generated state."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit final bilingual/native UI, lifecycle, accessibility, and packaging evidence."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/prd.md", "reason": "Trace every parent acceptance clause to final recursive evidence."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/prd.md", "reason": "Verify full-product gates, resource matrix, documentation, and local-only boundary."}

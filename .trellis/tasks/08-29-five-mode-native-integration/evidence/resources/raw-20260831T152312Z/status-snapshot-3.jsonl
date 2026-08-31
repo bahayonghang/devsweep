@@ -1,0 +1,4 @@
+{"wall_ms":0.049,"present":true,"user_ms":31.25,"kernel_ms":140.625,"cpu_ms":171.875,"private":7806976,"threads":34}
+{"wall_ms":216.253,"present":true,"user_ms":31.25,"kernel_ms":156.25,"cpu_ms":187.5,"private":7151616,"threads":34}
+{"wall_ms":402.075,"present":true,"user_ms":31.25,"kernel_ms":156.25,"cpu_ms":187.5,"private":7151616,"threads":34}
+{"wall_ms":600.792,"present":true,"user_ms":31.25,"kernel_ms":156.25,"cpu_ms":187.5,"private":6422528,"threads":34}

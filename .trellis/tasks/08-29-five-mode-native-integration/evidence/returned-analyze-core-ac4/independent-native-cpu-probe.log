@@ -1,0 +1,16 @@
+fixture C:\Users\lyh\AppData\Local\Temp\devsweep-five-mode-v1\analysis-250k-v1
+cli sha256=46387a57944641fe4dde99353a69fe0b3c6d0627777cb044cc19129d92d0d43b bytes=5255168
+warmup analyze scan
+warmup pid=61556 elapsed=25497.555ms exit=0 p95=192.151015325965 completeness=partial_budget
+measure #1
+run1 pid=49752 elapsed=25018.538ms exit=0 samples=82 p95=187.972751469947 median=172.673739383032 completeness=partial_budget
+measure #2
+run2 pid=44980 elapsed=24846.884ms exit=0 samples=80 p95=189.911880887268 median=171.112692952895 completeness=partial_budget
+measure #3
+run3 pid=76108 elapsed=25072.012ms exit=0 samples=82 p95=189.777327935222 median=176.497311101835 completeness=partial_budget
+measure #4
+run4 pid=77804 elapsed=25013.951ms exit=0 samples=81 p95=189.914766252905 median=172.577389977208 completeness=partial_budget
+measure #5
+run5 pid=10956 elapsed=24376.697ms exit=0 samples=78 p95=191.678279814713 median=172.929799724234 completeness=partial_budget
+median_of_p95s=189.911880887268 walk_window_p95=191.678279814713 max_run_p95=191.678279814713 all_le_200=True
+measured_pids=49752,44980,76108,77804,10956

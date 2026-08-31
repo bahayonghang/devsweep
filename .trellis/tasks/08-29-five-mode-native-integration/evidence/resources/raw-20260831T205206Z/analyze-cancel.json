@@ -1,0 +1,45 @@
+{
+  "runs": [
+    {
+      "label": "analyze-cancel-1",
+      "started": true,
+      "joined": true,
+      "elapsed_ms": 13.0,
+      "status": "canceled",
+      "filled": true
+    },
+    {
+      "label": "analyze-cancel-2",
+      "started": true,
+      "joined": true,
+      "elapsed_ms": 13.0,
+      "status": "canceled",
+      "filled": true
+    },
+    {
+      "label": "analyze-cancel-3",
+      "started": true,
+      "joined": true,
+      "elapsed_ms": 13.0,
+      "status": "canceled",
+      "filled": true
+    },
+    {
+      "label": "analyze-cancel-4",
+      "started": true,
+      "joined": true,
+      "elapsed_ms": 12.0,
+      "status": "canceled",
+      "filled": true
+    },
+    {
+      "label": "analyze-cancel-5",
+      "started": true,
+      "joined": true,
+      "elapsed_ms": 13.0,
+      "status": "canceled",
+      "filled": true
+    }
+  ],
+  "p95_ms": 13.0
+}

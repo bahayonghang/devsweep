@@ -1,0 +1,17 @@
+{"wall_ms":0.078,"present":true,"user_ms":93.75,"kernel_ms":171.875,"cpu_ms":265.625,"private":4616192,"threads":8}
+{"wall_ms":205.526,"present":true,"user_ms":156.25,"kernel_ms":187.5,"cpu_ms":343.75,"private":4882432,"threads":8}
+{"wall_ms":408.062,"present":true,"user_ms":218.75,"kernel_ms":375.0,"cpu_ms":593.75,"private":4608000,"threads":10}
+{"wall_ms":609.872,"present":true,"user_ms":234.375,"kernel_ms":765.625,"cpu_ms":1000.0,"private":4866048,"threads":10}
+{"wall_ms":813.03,"present":true,"user_ms":234.375,"kernel_ms":1171.875,"cpu_ms":1406.25,"private":6078464,"threads":10}
+{"wall_ms":1016.676,"present":true,"user_ms":250.0,"kernel_ms":1562.5,"cpu_ms":1812.5,"private":6082560,"threads":10}
+{"wall_ms":1202.41,"present":true,"user_ms":265.625,"kernel_ms":1921.875,"cpu_ms":2187.5,"private":5824512,"threads":10}
+{"wall_ms":1403.141,"present":true,"user_ms":281.25,"kernel_ms":2296.875,"cpu_ms":2578.125,"private":6262784,"threads":10}
+{"wall_ms":1605.213,"present":true,"user_ms":312.5,"kernel_ms":2671.875,"cpu_ms":2984.375,"private":6266880,"threads":10}
+{"wall_ms":1806.963,"present":true,"user_ms":328.125,"kernel_ms":3062.5,"cpu_ms":3390.625,"private":6275072,"threads":10}
+{"wall_ms":2008.043,"present":true,"user_ms":343.75,"kernel_ms":3453.125,"cpu_ms":3796.875,"private":6275072,"threads":10}
+{"wall_ms":2209.842,"present":true,"user_ms":343.75,"kernel_ms":3859.375,"cpu_ms":4203.125,"private":5513216,"threads":10}
+{"wall_ms":2428.213,"present":true,"user_ms":390.625,"kernel_ms":4250.0,"cpu_ms":4640.625,"private":5574656,"threads":10}
+{"wall_ms":2600.276,"present":true,"user_ms":406.25,"kernel_ms":4421.875,"cpu_ms":4828.125,"private":5578752,"threads":10}
+{"wall_ms":2802.605,"present":true,"user_ms":406.25,"kernel_ms":4625.0,"cpu_ms":5031.25,"private":5218304,"threads":10}
+{"wall_ms":3004.592,"present":true,"user_ms":406.25,"kernel_ms":4828.125,"cpu_ms":5234.375,"private":5386240,"threads":10}
+{"wall_ms":3207.598,"present":false,"user_ms":0.0,"kernel_ms":0.0,"cpu_ms":0.0,"private":0,"threads":0}

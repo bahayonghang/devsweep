@@ -1,0 +1,1540 @@
+{
+  "protocol": "five-mode-v1",
+  "host": {
+    "protocol": "five-mode-v1",
+    "recorded_at_utc": "2026-08-31T17:32:36.4476168Z",
+    "cpu_name": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logical_cores": 24,
+    "ram_bytes": 68143853568,
+    "arch": "AMD64",
+    "windows_caption": "Microsoft Windows 11 专业版",
+    "windows_build": "26200",
+    "power_plan": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)\r\nbinary: rustc\r\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\r\ncommit-date: 2026-08-18\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.98.0\r\nLLVM version: 22.1.8",
+    "node": "v26.7.0",
+    "commit": "fac3e8b63c9af77a230a6af2ad3966f49d0f8022",
+    "cli_exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+    "cli_sha256": "efbed4371a85a52a73ee324cd8cf790641d0bb6cd66895ef8e431702e03abbc0",
+    "desktop_exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+    "desktop_sha256": "6205b473aa97f5259adf7ae072752d1fe6ae9aa26844e0b487cbd06b18a99072",
+    "defender": {
+      "AMServiceEnabled": false,
+      "AntivirusEnabled": false,
+      "RealTimeProtectionEnabled": false,
+      "NisEnabled": false
+    },
+    "locale": "zh-CN",
+    "integrity": "Mandatory Label\\Medium Mandatory Level Label            S-1-16-8192                                                                                      ",
+    "consent_count": 0,
+    "user": "lyh",
+    "fixture_digests": {
+      "analysis_250k_v1_root": "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-five-mode-v1\\analysis-250k-v1",
+      "analysis_250k_v1_manifest_sha256": "288b3d4f0c2c2d12f401e44be6947cd75b02e350883a5c956d647b104287ab01",
+      "clean_scan_root": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+      "clean_scan_entry_count": 126787,
+      "clean_scan_command": "clean scan --root <repo> --scope projects --format json",
+      "clean_comparability": "same host 24-core/26200 + same absolute repo root + projects scope; entry count is recorded and not required to equal 110393"
+    }
+  },
+  "idle": {
+    "max_threads": 35.0,
+    "window": "release desktop with no WEBVIEW2 --remote-debugging-port; five 30s settle + 60s sample reps",
+    "runs": [
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 0.0,
+        "peak_private": 5840896.0,
+        "max_threads": 32.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\idle-1.jsonl"
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 0.0,
+        "peak_private": 5840896.0,
+        "max_threads": 32.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\idle-2.jsonl"
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 0.0,
+        "peak_private": 5951488.0,
+        "max_threads": 35.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\idle-3.jsonl"
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 0.0,
+        "peak_private": 5922816.0,
+        "max_threads": 34.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\idle-4.jsonl"
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 0.0,
+        "peak_private": 5877760.0,
+        "max_threads": 29.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\idle-5.jsonl"
+      }
+    ],
+    "median_cpu": 0.0,
+    "process": "devsweep-desktop no remote-debug",
+    "max_private": 5951488.0
+  },
+  "status_snapshot": {
+    "max_threads": 4.0,
+    "p95_ms": 841.082,
+    "peak_private": 1916928.0,
+    "window": "CLI status snapshot --process-limit 15 --format json; five reps; no WebView2 remote-debug",
+    "latencies_ms": [
+      841.082,
+      746.09,
+      798.908,
+      802.048,
+      790.31
+    ]
+  },
+  "status_live": {
+    "max_threads": 5.0,
+    "window": "CLI status live --interval 2 --process-limit 15 --format ndjson; 30s settle + 60s sample; post-stop 25/5.0s",
+    "runs": [
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 7.755728070523768,
+        "peak_private": 4460544.0,
+        "max_threads": 5.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\live-1.jsonl",
+        "pid": 56404,
+        "window": "CLI status live --interval 2 --process-limit 15 --format ndjson; no WebView2 remote-debug",
+        "post_samples": 25,
+        "post_hold": true,
+        "final_five": [
+          {
+            "wall_ms": 4016.228,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4200.249,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4414.286,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4613.203,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4815.126,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          }
+        ]
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 7.770384515923595,
+        "peak_private": 4460544.0,
+        "max_threads": 5.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\live-2.jsonl",
+        "pid": 53940,
+        "window": "CLI status live --interval 2 --process-limit 15 --format ndjson; no WebView2 remote-debug",
+        "post_samples": 25,
+        "post_hold": true,
+        "final_five": [
+          {
+            "wall_ms": 4013.434,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4214.321,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4401.309,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4602.445,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4804.89,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          }
+        ]
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 7.796789469219584,
+        "peak_private": 3964928.0,
+        "max_threads": 5.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\live-3.jsonl",
+        "pid": 81592,
+        "window": "CLI status live --interval 2 --process-limit 15 --format ndjson; no WebView2 remote-debug",
+        "post_samples": 25,
+        "post_hold": true,
+        "final_five": [
+          {
+            "wall_ms": 4002.971,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4205.388,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4407.03,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4609.605,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4811.49,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          }
+        ]
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 7.77866281674733,
+        "peak_private": 3964928.0,
+        "max_threads": 2.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\live-4.jsonl",
+        "pid": 74244,
+        "window": "CLI status live --interval 2 --process-limit 15 --format ndjson; no WebView2 remote-debug",
+        "post_samples": 25,
+        "post_hold": true,
+        "final_five": [
+          {
+            "wall_ms": 4006.988,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4208.892,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4410.45,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4610.658,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4827.414,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          }
+        ]
+      },
+      {
+        "samples": 300,
+        "present": 300,
+        "cpu_median": 0.0,
+        "cpu_p95": 7.782149616495712,
+        "peak_private": 4354048.0,
+        "max_threads": 2.0,
+        "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\live-5.jsonl",
+        "pid": 32000,
+        "window": "CLI status live --interval 2 --process-limit 15 --format ndjson; no WebView2 remote-debug",
+        "post_samples": 25,
+        "post_hold": true,
+        "final_five": [
+          {
+            "wall_ms": 4013.853,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4202.452,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4406.022,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4606.246,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          },
+          {
+            "wall_ms": 4808.228,
+            "present": false,
+            "user_ms": 0.0,
+            "kernel_ms": 0.0,
+            "cpu_ms": 0.0,
+            "private": 0,
+            "threads": 0
+          }
+        ]
+      }
+    ],
+    "median_cpu": 0.0,
+    "p95_cpu": 7.796789469219584,
+    "peak_private": 4460544.0
+  },
+  "clean": {
+    "comparable": true,
+    "note": "archived two-worker median 39999.052 ms on 24-core Windows build 26200; current live root=D:\\Documents\\Code\\Rust\\Exp\\devsweep entries=126787 (not required to equal 110393); command=clean scan --root <repo> --scope projects --format json; archived private not recorded",
+    "result": {
+      "name": "clean-scan-projects",
+      "runs": [
+        {
+          "run": 1,
+          "elapsed_ms": 13984.257,
+          "exit": 0,
+          "pid": 74804,
+          "peak_private": 5513216.0,
+          "max_threads": 8.0,
+          "cpu_p95": 202.4639551863164,
+          "cpu_median": 101.66049345422579,
+          "tree": [
+            {
+              "pid": 74804,
+              "parent": 52832,
+              "name": "devsweep.exe",
+              "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+              "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" clean scan --root D:\\Documents\\Code\\Rust\\Exp\\devsweep --scope projects --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run1-stdout.json"
+            },
+            {
+              "pid": 33784,
+              "parent": 74804,
+              "name": "conhost.exe",
+              "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+              "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+            }
+          ],
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run1-pipe.txt"
+        },
+        {
+          "run": 2,
+          "elapsed_ms": 14090.58,
+          "exit": 0,
+          "pid": 54704,
+          "peak_private": 5685248.0,
+          "max_threads": 8.0,
+          "cpu_p95": 202.53598196388148,
+          "cpu_median": 101.40937184850891,
+          "tree": [
+            {
+              "pid": 54704,
+              "parent": 52832,
+              "name": "devsweep.exe",
+              "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+              "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" clean scan --root D:\\Documents\\Code\\Rust\\Exp\\devsweep --scope projects --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run2-stdout.json"
+            },
+            {
+              "pid": 1964,
+              "parent": 54704,
+              "name": "conhost.exe",
+              "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+              "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+            }
+          ],
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run2-pipe.txt"
+        },
+        {
+          "run": 3,
+          "elapsed_ms": 14435.611,
+          "exit": 0,
+          "pid": 57108,
+          "peak_private": 5525504.0,
+          "max_threads": 8.0,
+          "cpu_p95": 201.93559932000528,
+          "cpu_median": 101.35219419704163,
+          "tree": [
+            {
+              "pid": 57108,
+              "parent": 52832,
+              "name": "devsweep.exe",
+              "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+              "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" clean scan --root D:\\Documents\\Code\\Rust\\Exp\\devsweep --scope projects --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run3-stdout.json"
+            },
+            {
+              "pid": 78036,
+              "parent": 57108,
+              "name": "conhost.exe",
+              "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+              "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+            }
+          ],
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run3-pipe.txt"
+        },
+        {
+          "run": 4,
+          "elapsed_ms": 14353.581,
+          "exit": 0,
+          "pid": 60064,
+          "peak_private": 5255168.0,
+          "max_threads": 6.0,
+          "cpu_p95": 201.6139037910842,
+          "cpu_median": 101.75532634342119,
+          "tree": [
+            {
+              "pid": 60064,
+              "parent": 52832,
+              "name": "devsweep.exe",
+              "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+              "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" clean scan --root D:\\Documents\\Code\\Rust\\Exp\\devsweep --scope projects --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run4-stdout.json"
+            },
+            {
+              "pid": 75316,
+              "parent": 60064,
+              "name": "conhost.exe",
+              "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+              "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+            }
+          ],
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run4-pipe.txt"
+        },
+        {
+          "run": 5,
+          "elapsed_ms": 14367.361,
+          "exit": 0,
+          "pid": 54108,
+          "peak_private": 5488640.0,
+          "max_threads": 6.0,
+          "cpu_p95": 201.3570847954957,
+          "cpu_median": 101.43064016778179,
+          "tree": [
+            {
+              "pid": 54108,
+              "parent": 52832,
+              "name": "devsweep.exe",
+              "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+              "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" clean scan --root D:\\Documents\\Code\\Rust\\Exp\\devsweep --scope projects --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run5-stdout.json"
+            },
+            {
+              "pid": 34124,
+              "parent": 54108,
+              "name": "conhost.exe",
+              "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+              "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+            }
+          ],
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\clean-scan-projects-run5-pipe.txt"
+        }
+      ],
+      "median_elapsed": 14353.581,
+      "p95_elapsed": 14435.611,
+      "peak_private": 5685248.0,
+      "max_threads": 8.0,
+      "p95_cpu": 202.53598196388148,
+      "exits": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "ratio": 0.3588480296983038,
+    "entry_count": 126787,
+    "baseline_median_ms": 39999.052
+  },
+  "analyze": {
+    "layout": {
+      "layout_p95_ms": 1.5859000000000094,
+      "nearest_rank": 29,
+      "layout_samples_ms": [
+        1.059899999999999,
+        1.092800000000004,
+        1.1192999999999955,
+        1.116199999999992,
+        0.9996000000000009,
+        0.9416000000000082,
+        1.0165999999999968,
+        0.9750999999999976,
+        0.9679000000000002,
+        0.8967999999999989,
+        0.914599999999993,
+        1.133499999999998,
+        0.9934999999999974,
+        1.2142999999999944,
+        1.0889000000000095,
+        1.0315999999999974,
+        1.1585000000000036,
+        0.8166000000000082,
+        1.1488999999999976,
+        1.5859000000000094,
+        1.9420999999999964,
+        1.220799999999997,
+        1.5061000000000035,
+        1.5524000000000058,
+        0.8592000000000013,
+        1.089500000000001,
+        1.127600000000001,
+        0.9017000000000053,
+        1.085800000000006,
+        0.9079000000000121
+      ],
+      "rectangle_count": 513,
+      "fixture_children_sha256": "sha256:42685e0971165c2b59362cb44f251d4699e282bc647fd2f407d85559830ef37f",
+      "pass": true
+    },
+    "peak_cpu_window": "five desktop IPC Analyze reps on analysis-250k-v1 until data-status=complete; Stopwatch wall_ms; main desktop PID; CDP used only to poll complete",
+    "accounted_window": "CLI analyze scan --format json --output file; not used for 512 MiB / 200% gates",
+    "accounted_owned_bytes": 38906299,
+    "result": {
+      "name": "analyze-250k-desktop-ipc-five",
+      "window": "five desktop IPC reps until data-status=complete; Stopwatch CPU%; main PID; no CLI JSON for 512/200",
+      "runs": [
+        {
+          "label": "analyze-250k-desktop-1",
+          "started": true,
+          "filled": true,
+          "startClicked": true,
+          "status": "partial",
+          "elapsed_ms": 600158.905,
+          "samples": 3000,
+          "peak_private": 274391040.0,
+          "max_threads": 44.0,
+          "cdp_max_threads": 44.0,
+          "cpu_p95": 0.0,
+          "cpu_median": 0.0,
+          "window": "desktop Analyze IPC until data-status=complete; Stopwatch wall_ms; main desktop PID; CDP poll only; partial is not terminal",
+          "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\analyze-250k-desktop-1.jsonl"
+        },
+        {
+          "label": "analyze-250k-desktop-2",
+          "started": true,
+          "filled": true,
+          "startClicked": true,
+          "status": "partial",
+          "elapsed_ms": 600148.986,
+          "samples": 3000,
+          "peak_private": 361709568.0,
+          "max_threads": 42.0,
+          "cdp_max_threads": 42.0,
+          "cpu_p95": 0.0,
+          "cpu_median": 0.0,
+          "window": "desktop Analyze IPC until data-status=complete; Stopwatch wall_ms; main desktop PID; CDP poll only; partial is not terminal",
+          "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\analyze-250k-desktop-2.jsonl"
+        },
+        {
+          "label": "analyze-250k-desktop-3",
+          "started": true,
+          "filled": true,
+          "startClicked": true,
+          "status": "partial",
+          "elapsed_ms": 600165.578,
+          "samples": 3000,
+          "peak_private": 274870272.0,
+          "max_threads": 42.0,
+          "cdp_max_threads": 42.0,
+          "cpu_p95": 0.0,
+          "cpu_median": 0.0,
+          "window": "desktop Analyze IPC until data-status=complete; Stopwatch wall_ms; main desktop PID; CDP poll only; partial is not terminal",
+          "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\analyze-250k-desktop-3.jsonl"
+        },
+        {
+          "label": "analyze-250k-desktop-4",
+          "started": true,
+          "filled": true,
+          "startClicked": true,
+          "status": "partial",
+          "elapsed_ms": 600161.34,
+          "samples": 3000,
+          "peak_private": 277139456.0,
+          "max_threads": 42.0,
+          "cdp_max_threads": 42.0,
+          "cpu_p95": 0.0,
+          "cpu_median": 0.0,
+          "window": "desktop Analyze IPC until data-status=complete; Stopwatch wall_ms; main desktop PID; CDP poll only; partial is not terminal",
+          "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\analyze-250k-desktop-4.jsonl"
+        },
+        {
+          "label": "analyze-250k-desktop-5",
+          "started": true,
+          "filled": true,
+          "startClicked": true,
+          "status": "partial",
+          "elapsed_ms": 600159.69,
+          "samples": 3000,
+          "peak_private": 190545920.0,
+          "max_threads": 42.0,
+          "cdp_max_threads": 42.0,
+          "cpu_p95": 0.0,
+          "cpu_median": 0.0,
+          "window": "desktop Analyze IPC until data-status=complete; Stopwatch wall_ms; main desktop PID; CDP poll only; partial is not terminal",
+          "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\analyze-250k-desktop-5.jsonl"
+        }
+      ],
+      "peak_private": 361709568.0,
+      "max_threads": 44.0,
+      "p95_cpu": 0.0,
+      "median_elapsed": 600159.69,
+      "p95_elapsed": 600165.578,
+      "all_complete": false
+    },
+    "fixture": "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-five-mode-v1\\analysis-250k-v1",
+    "cancel": {
+      "runs": [
+        {
+          "label": "analyze-cancel-1",
+          "started": true,
+          "joined": true,
+          "elapsed_ms": 13.0,
+          "status": "canceled",
+          "filled": true
+        },
+        {
+          "label": "analyze-cancel-2",
+          "started": true,
+          "joined": true,
+          "elapsed_ms": 14.0,
+          "status": "canceled",
+          "filled": true
+        },
+        {
+          "label": "analyze-cancel-3",
+          "started": true,
+          "joined": true,
+          "elapsed_ms": 12.0,
+          "status": "canceled",
+          "filled": true
+        },
+        {
+          "label": "analyze-cancel-4",
+          "started": true,
+          "joined": true,
+          "elapsed_ms": 13.0,
+          "status": "canceled",
+          "filled": true
+        },
+        {
+          "label": "analyze-cancel-5",
+          "started": true,
+          "joined": true,
+          "elapsed_ms": 14.0,
+          "status": "canceled",
+          "filled": true
+        }
+      ],
+      "p95_ms": 14.0
+    },
+    "react_commit": {
+      "status": "pass",
+      "fixture": "analysis-250k-v1-equivalent-wide-directory",
+      "fixture_total_nodes": 250000,
+      "current_directory_children": 10000,
+      "fixture_generation": "250,000 represented nodes with one deterministic 10,000-file wide directory; wide child id/name/bytes match the pure-layout fixture",
+      "fixture_children_sha256": "sha256:42685e0971165c2b59362cb44f251d4699e282bc647fd2f407d85559830ef37f",
+      "warmups": 5,
+      "measured_navigations": 30,
+      "nearest_rank": 29,
+      "react_commit_samples_ms": [
+        5.700000017881393,
+        5.5,
+        5.399999976158142,
+        5.5,
+        6,
+        5.5999999940395355,
+        4.9000000059604645,
+        5.600000023841858,
+        5.0999999940395355,
+        5.5,
+        5.5,
+        4.800000011920929,
+        5,
+        5.5,
+        4.399999976158142,
+        4.5999999940395355,
+        4.4000000059604645,
+        4.5999999940395355,
+        4.700000017881393,
+        4.699999988079071,
+        4.5,
+        6.100000023841858,
+        4.5999999940395355,
+        4.100000023841858,
+        4.199999988079071,
+        4,
+        4.300000011920929,
+        4.199999988079071,
+        4.299999982118607,
+        4.0999999940395355
+      ],
+      "react_commit_p95_ms": 6,
+      "rectangle_count_max": 513,
+      "dom_elements_max": 759,
+      "limits": {
+        "rectangle_count_max": 513,
+        "dom_elements_max": 900,
+        "react_commit_p95_ms_max": 100
+      },
+      "measurement_method": "For each real SVG drill-in event, performance.now() starts immediately before dispatch. AnalyzePage's post-commit useLayoutEffect calls onPerformanceSample; the harness records performance.now() at that callback. The interval includes React event handling, selector/layout render work, and DOM commit, but excludes the following paint.",
+      "build": "Vite production benchmark build",
+      "browser_webview": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36 Edg/152.0.0.0",
+      "platform": "Win32",
+      "hardware_concurrency": 24,
+      "memory_counts": null,
+      "notes": [
+        "DOM elements are counted under #root immediately after each measured commit.",
+        "Only the 30 drill-in commits after five warm-ups are included; root-return commits are synchronization steps and are not sampled.",
+        "The harness mounts the production AnalyzePage component without React StrictMode and uses the product OperationCoordinator."
+      ]
+    }
+  },
+  "software": {
+    "name": "software-inventory",
+    "runs": [
+      {
+        "run": 1,
+        "elapsed_ms": 3121.096,
+        "exit": 0,
+        "pid": 37500,
+        "peak_private": 6127616.0,
+        "max_threads": 10.0,
+        "cpu_p95": 202.47909169748505,
+        "cpu_median": 199.0855541071656,
+        "tree": [
+          {
+            "pid": 37500,
+            "parent": 52832,
+            "name": "devsweep.exe",
+            "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+            "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" software inventory --source all --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run1-stdout.json"
+          },
+          {
+            "pid": 77052,
+            "parent": 37500,
+            "name": "conhost.exe",
+            "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+            "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ],
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run1-pipe.txt"
+      },
+      {
+        "run": 2,
+        "elapsed_ms": 3102.524,
+        "exit": 0,
+        "pid": 73020,
+        "peak_private": 6180864.0,
+        "max_threads": 10.0,
+        "cpu_p95": 202.454874365849,
+        "cpu_median": 194.4626980096976,
+        "tree": [
+          {
+            "pid": 73020,
+            "parent": 52832,
+            "name": "devsweep.exe",
+            "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+            "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" software inventory --source all --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run2-stdout.json"
+          },
+          {
+            "pid": 80384,
+            "parent": 73020,
+            "name": "conhost.exe",
+            "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+            "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ],
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run2-pipe.txt"
+      },
+      {
+        "run": 3,
+        "elapsed_ms": 3096.375,
+        "exit": 0,
+        "pid": 57728,
+        "peak_private": 6270976.0,
+        "max_threads": 10.0,
+        "cpu_p95": 201.87338501291987,
+        "cpu_median": 191.69222563008407,
+        "tree": [
+          {
+            "pid": 57728,
+            "parent": 52832,
+            "name": "devsweep.exe",
+            "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+            "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" software inventory --source all --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run3-stdout.json"
+          },
+          {
+            "pid": 34840,
+            "parent": 57728,
+            "name": "conhost.exe",
+            "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+            "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ],
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run3-pipe.txt"
+      },
+      {
+        "run": 4,
+        "elapsed_ms": 3086.283,
+        "exit": 0,
+        "pid": 37064,
+        "peak_private": 6152192.0,
+        "max_threads": 10.0,
+        "cpu_p95": 202.95147648760303,
+        "cpu_median": 199.02605832871998,
+        "tree": [
+          {
+            "pid": 37064,
+            "parent": 52832,
+            "name": "devsweep.exe",
+            "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+            "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" software inventory --source all --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run4-stdout.json"
+          },
+          {
+            "pid": 28456,
+            "parent": 37064,
+            "name": "conhost.exe",
+            "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+            "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ],
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run4-pipe.txt"
+      },
+      {
+        "run": 5,
+        "elapsed_ms": 3088.077,
+        "exit": 0,
+        "pid": 50948,
+        "peak_private": 6246400.0,
+        "max_threads": 10.0,
+        "cpu_p95": 203.540222052988,
+        "cpu_median": 194.0309257355169,
+        "tree": [
+          {
+            "pid": 50948,
+            "parent": 52832,
+            "name": "devsweep.exe",
+            "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+            "command": "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe\" software inventory --source all --format json --output D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run5-stdout.json"
+          },
+          {
+            "pid": 10960,
+            "parent": 50948,
+            "name": "conhost.exe",
+            "executable": "C:\\WINDOWS\\system32\\conhost.exe",
+            "command": "\\??\\C:\\WINDOWS\\system32\\conhost.exe 0x4"
+          }
+        ],
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\software-inventory-run5-pipe.txt"
+      }
+    ],
+    "median_elapsed": 3096.375,
+    "p95_elapsed": 3121.096,
+    "peak_private": 6270976.0,
+    "max_threads": 10.0,
+    "p95_cpu": 203.540222052988,
+    "exits": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "optimize_list": {
+    "catalogue_count": 8,
+    "window": "five optimize list runs of the closed eight-entry catalogue; DNS preview is not merged into this p95; sampling starts at process create; stdout to --output file",
+    "result": {
+      "name": "optimize-list",
+      "runs": [
+        {
+          "run": 1,
+          "elapsed_ms": 761.296,
+          "exit": 0,
+          "pid": 55596,
+          "peak_private": 0,
+          "max_threads": 0,
+          "cpu_p95": null,
+          "cpu_median": null,
+          "tree": null,
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-list-run1-pipe.txt"
+        },
+        {
+          "run": 2,
+          "elapsed_ms": 711.531,
+          "exit": 0,
+          "pid": 28032,
+          "peak_private": 0,
+          "max_threads": 0,
+          "cpu_p95": null,
+          "cpu_median": null,
+          "tree": null,
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-list-run2-pipe.txt"
+        },
+        {
+          "run": 3,
+          "elapsed_ms": 752.397,
+          "exit": 0,
+          "pid": 27760,
+          "peak_private": 0,
+          "max_threads": 0,
+          "cpu_p95": null,
+          "cpu_median": null,
+          "tree": null,
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-list-run3-pipe.txt"
+        },
+        {
+          "run": 4,
+          "elapsed_ms": 798.528,
+          "exit": 0,
+          "pid": 13284,
+          "peak_private": 0,
+          "max_threads": 0,
+          "cpu_p95": null,
+          "cpu_median": null,
+          "tree": null,
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-list-run4-pipe.txt"
+        },
+        {
+          "run": 5,
+          "elapsed_ms": 772.937,
+          "exit": 0,
+          "pid": 77848,
+          "peak_private": 0,
+          "max_threads": 0,
+          "cpu_p95": null,
+          "cpu_median": null,
+          "tree": null,
+          "stdout_bytes": 0,
+          "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-list-run5-pipe.txt"
+        }
+      ],
+      "median_elapsed": 761.296,
+      "p95_elapsed": 798.528,
+      "peak_private": 0.0,
+      "max_threads": 0.0,
+      "p95_cpu": null,
+      "exits": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "optimize_dns": {
+    "name": "optimize-dns",
+    "runs": [
+      {
+        "run": 1,
+        "elapsed_ms": 927.747,
+        "exit": 0,
+        "pid": 78776,
+        "peak_private": 0,
+        "max_threads": 0,
+        "cpu_p95": null,
+        "cpu_median": null,
+        "tree": null,
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-dns-run1-pipe.txt"
+      },
+      {
+        "run": 2,
+        "elapsed_ms": 829.066,
+        "exit": 0,
+        "pid": 82088,
+        "peak_private": 0,
+        "max_threads": 0,
+        "cpu_p95": null,
+        "cpu_median": null,
+        "tree": null,
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-dns-run2-pipe.txt"
+      },
+      {
+        "run": 3,
+        "elapsed_ms": 790.774,
+        "exit": 0,
+        "pid": 40756,
+        "peak_private": 0,
+        "max_threads": 0,
+        "cpu_p95": null,
+        "cpu_median": null,
+        "tree": null,
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-dns-run3-pipe.txt"
+      },
+      {
+        "run": 4,
+        "elapsed_ms": 834.51,
+        "exit": 0,
+        "pid": 62436,
+        "peak_private": 0,
+        "max_threads": 0,
+        "cpu_p95": null,
+        "cpu_median": null,
+        "tree": null,
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-dns-run4-pipe.txt"
+      },
+      {
+        "run": 5,
+        "elapsed_ms": 788.423,
+        "exit": 0,
+        "pid": 8344,
+        "peak_private": 0,
+        "max_threads": 0,
+        "cpu_p95": null,
+        "cpu_median": null,
+        "tree": null,
+        "stdout_bytes": 0,
+        "stdout_file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T173233Z\\optimize-dns-run5-pipe.txt"
+      }
+    ],
+    "median_elapsed": 829.066,
+    "p95_elapsed": 927.747,
+    "peak_private": 0.0,
+    "max_threads": 0.0,
+    "p95_cpu": null,
+    "exits": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "optimize_settings": [
+    {
+      "operation": "settings.storage_recommendations",
+      "runs": [
+        {
+          "run": 1,
+          "elapsed_ms": 821.21,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 18084,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 29728,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "elapsed_ms": 815.127,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 66056,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 66972,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "elapsed_ms": 907.756,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 66568,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 56444,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 4,
+          "elapsed_ms": 789.461,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 1340,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 54804,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 5,
+          "elapsed_ms": 803.313,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 71700,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 27984,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        }
+      ],
+      "p95_elapsed": 907.756
+    },
+    {
+      "operation": "settings.search",
+      "runs": [
+        {
+          "run": 1,
+          "elapsed_ms": 851.734,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 76200,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 57100,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "elapsed_ms": 803.295,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 16668,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 65744,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "elapsed_ms": 810.329,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 47164,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 72496,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 4,
+          "elapsed_ms": 882.697,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 67480,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 73752,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 5,
+          "elapsed_ms": 834.977,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 25488,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 20468,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        }
+      ],
+      "p95_elapsed": 882.697
+    },
+    {
+      "operation": "settings.energy_recommendations",
+      "runs": [
+        {
+          "run": 1,
+          "elapsed_ms": 1173.135,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 16284,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 34260,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "elapsed_ms": 1153.48,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 62908,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 40536,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "elapsed_ms": 1186.473,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 60216,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 56088,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 4,
+          "elapsed_ms": 1140.472,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 30348,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 41436,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        },
+        {
+          "run": 5,
+          "elapsed_ms": 1155.184,
+          "exit": 0,
+          "clock": "devsweep_launch_return",
+          "os_settings": [
+            {
+              "Id": 40232,
+              "ProcessName": "ApplicationFrameHost"
+            },
+            {
+              "Id": 79384,
+              "ProcessName": "SystemSettings"
+            }
+          ]
+        }
+      ],
+      "p95_elapsed": 1186.473
+    }
+  ],
+  "gates": {
+    "idle.median_cpu_le_1": {
+      "pass": true,
+      "detail": "medianCpu=0"
+    },
+    "idle.max_private_le_192mib": {
+      "pass": true,
+      "detail": "maxPrivate=5951488"
+    },
+    "idle.max_threads_le_40": {
+      "pass": true,
+      "detail": "maxThreads=35"
+    },
+    "status.snapshot.p95_le_2s": {
+      "pass": true,
+      "detail": "p95=841.082"
+    },
+    "status.snapshot.private_le_idle_plus_64mib": {
+      "pass": true,
+      "detail": "peak=1916928 idle=5951488"
+    },
+    "status.snapshot.threads_le_idle_plus_4": {
+      "pass": true,
+      "detail": "threads=4 idle=35"
+    },
+    "status.live.median_cpu_le_5": {
+      "pass": true,
+      "detail": "median=0"
+    },
+    "status.live.p95_cpu_le_15": {
+      "pass": true,
+      "detail": "p95=7.79678946921958"
+    },
+    "status.live.private_le_idle_plus_64mib": {
+      "pass": true,
+      "detail": "peak=4460544"
+    },
+    "status.live.threads_le_idle_plus_4": {
+      "pass": true,
+      "detail": "threads=5"
+    },
+    "status.live.poststop_25_samples": {
+      "pass": true,
+      "detail": "each measured live rep has exactly 25 post-stop samples"
+    },
+    "status.live.poststop_final_five_hold": {
+      "pass": true,
+      "detail": "final five consecutive samples meet idle+0.5pp CPU and idle+1 threads"
+    },
+    "clean.median_ratio_le_1_20": {
+      "pass": true,
+      "detail": "ratio=0.358848029698304 median=14353.581 baseline=39999.052 entries=126787"
+    },
+    "clean.threads_current_recorded": {
+      "pass": true,
+      "detail": "max_threads=8; archived baseline did not record threads"
+    },
+    "clean.peak_private_recorded": {
+      "pass": true,
+      "detail": "peak_private=5685248; archived baseline did not record private"
+    },
+    "analyze.accounted_le_256mib": {
+      "pass": true,
+      "detail": "accounted=38906299"
+    },
+    "analyze.peak_private_le_512mib": {
+      "pass": true,
+      "detail": "peak=361709568"
+    },
+    "analyze.p95_cpu_le_200": {
+      "pass": true,
+      "detail": "p95cpu=0"
+    },
+    "analyze.layout_p95_le_50ms": {
+      "pass": true,
+      "detail": "layout_p95_ms=1.58590000000001"
+    },
+    "analyze.react_commit_p95_le_100ms": {
+      "pass": true,
+      "detail": "react_commit_p95_ms=6 status=pass"
+    },
+    "analyze.cancel_ack_p95_le_500ms": {
+      "pass": true,
+      "detail": "p95=14 joined=True"
+    },
+    "software.p95_elapsed_le_5s": {
+      "pass": true,
+      "detail": "p95=3121.096"
+    },
+    "software.private_le_idle_plus_128mib": {
+      "pass": true,
+      "detail": "peak=6270976"
+    },
+    "software.threads_le_idle_plus_6": {
+      "pass": true,
+      "detail": "threads=10"
+    },
+    "software.no_uac": {
+      "pass": true,
+      "detail": "consent still 0"
+    },
+    "optimize.list_preview.p95_le_1s": {
+      "pass": true,
+      "detail": "p95=798.528"
+    },
+    "optimize.list_preview.private_le_idle_plus_32mib": {
+      "pass": true,
+      "detail": "peak=0"
+    },
+    "optimize.list_preview.threads_le_idle_plus_2": {
+      "pass": true,
+      "detail": "threads=0"
+    },
+    "optimize.dns.p95_le_10s": {
+      "pass": true,
+      "detail": "p95=927.747"
+    },
+    "optimize.settings.storage_recommendations.launch_p95_le_2s": {
+      "pass": true,
+      "detail": "p95=907.756"
+    },
+    "optimize.settings.search.launch_p95_le_2s": {
+      "pass": true,
+      "detail": "p95=882.697"
+    },
+    "optimize.settings.energy_recommendations.launch_p95_le_2s": {
+      "pass": true,
+      "detail": "p95=1186.473"
+    }
+  },
+  "pass": true,
+  "failures": []
+}

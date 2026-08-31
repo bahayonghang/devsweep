@@ -1,0 +1,65 @@
+=== VALIDATE .trellis/tasks/archive/2026-08/08-29-scan-resource-bounds-app-icon ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\archive\2026-08\08-29-scan-resource-bounds-app-icon
+
+  [0;32mimplement.jsonl: 鉁?(5 entries)[0m
+  [0;31mcheck.jsonl:5: File not found: .trellis/tasks/08-29-scan-resource-bounds-app-icon/prd.md[0m
+  [0;31mcheck.jsonl:6: File not found: .trellis/tasks/08-29-scan-resource-bounds-app-icon/design.md[0m
+  [0;31mcheck.jsonl:7: File not found: .trellis/tasks/08-29-scan-resource-bounds-app-icon/implement.md[0m
+  [0;31mcheck.jsonl:8: File not found: .trellis/tasks/08-29-scan-resource-bounds-app-icon/task.json[0m
+  [0;31mcheck.jsonl:9: File not found: .trellis/tasks/08-29-scan-resource-bounds-app-icon/check.jsonl[0m
+  [0;31mcheck.jsonl:10: File not found: .trellis/tasks/08-29-scan-resource-bounds-app-icon/acceptance.md[0m
+  [0;31mcheck.jsonl: 鉁?(6 errors)[0m
+
+[0;31m鉁?Validation failed (6 errors)[0m
+=== VALIDATE .trellis/tasks/archive/2026-08/08-29-analyze-mode ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\archive\2026-08\08-29-analyze-mode
+
+  [0;31mimplement.jsonl:2: File not found: .trellis/tasks/08-29-analyze-mode/design.md[0m
+  [0;31mimplement.jsonl: 鉁?(1 errors)[0m
+  [0;31mcheck.jsonl:1: File not found: .trellis/tasks/08-29-analyze-mode/prd.md[0m
+  [0;31mcheck.jsonl:2: File not found: .trellis/tasks/08-29-analyze-mode/design.md[0m
+  [0;31mcheck.jsonl:4: File not found: .trellis/tasks/08-29-analyze-mode/acceptance-review-prompt.md[0m
+  [0;31mcheck.jsonl:5: File not found: .trellis/tasks/08-29-analyze-mode/implement.md[0m
+  [0;31mcheck.jsonl:6: File not found: .trellis/tasks/08-29-analyze-mode/task.json[0m
+  [0;31mcheck.jsonl:7: File not found: .trellis/tasks/08-29-analyze-mode/check.jsonl[0m
+  [1;33mcheck.jsonl:38: Warning: .trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-report.md is 41823 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:47: Warning: .trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/just-ci-final.log is 33562 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:53: Warning: crates/devsweep-core/src/analysis/model.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:54: Warning: crates/devsweep-core/src/analysis/walker.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:54: Warning: crates/devsweep-core/src/analysis/walker.rs is 45974 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:55: Warning: crates/devsweep-core/src/analysis/tests.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:56: Warning: crates/devsweep-cli/src/application/cli.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:56: Warning: crates/devsweep-cli/src/application/cli.rs is 64728 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:57: Warning: crates/devsweep-cli/src/application/commands/mod.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:58: Warning: crates/devsweep-cli/src/application/commands/analyze.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:59: Warning: crates/devsweep-cli/src/application/presentation/mod.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:60: Warning: crates/devsweep-cli/src/application/presentation/analyze.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:61: Warning: desktop/src-tauri/src/analyze.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:62: Warning: crates/devsweep-cli/src/tui/app/jobs.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:63: Warning: crates/devsweep-cli/src/tui/app/worker.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:63: Warning: crates/devsweep-cli/src/tui/app/worker.rs is 33001 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:64: Warning: crates/devsweep-cli/src/tui/modes/analyze/mod.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:65: Warning: crates/devsweep-cli/src/tui/render/analyze.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:66: Warning: crates/devsweep-cli/src/tui/shell/mod.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:67: Warning: desktop/src/state/operation-coordinator.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:68: Warning: desktop/src/app-shell/AppShell.tsx looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:69: Warning: desktop/src/api/contract.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:69: Warning: desktop/src/api/contract.ts is 74608 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:70: Warning: desktop/src/api/bridge.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:71: Warning: desktop/src/api/fixture-bridge.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:74: Warning: desktop/src/modes/analyze/state.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:75: Warning: desktop/src/modes/analyze/selectors.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:76: Warning: desktop/src/modes/analyze/treemap.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:77: Warning: desktop/src/modes/analyze/AnalyzePage.tsx looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:78: Warning: desktop/src/modes/analyze/AnalyzePage.test.tsx looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:79: Warning: desktop/src/modes/analyze/state.test.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:80: Warning: desktop/src/modes/analyze/selectors.test.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:81: Warning: desktop/src/modes/analyze/treemap.test.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:83: Warning: desktop/src/modes/analyze/render-benchmark.tsx looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [0;31mcheck.jsonl:84: File not found: .trellis/tasks/08-29-analyze-mode/acceptance-review2-prompt.md[0m
+  [1;33mcheck.jsonl:98: Warning: desktop/src/modes/analyze/parity.test.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [0;31mcheck.jsonl: 鉁?(7 errors)[0m
+
+[0;31m鉁?Validation failed (8 errors)[0m
