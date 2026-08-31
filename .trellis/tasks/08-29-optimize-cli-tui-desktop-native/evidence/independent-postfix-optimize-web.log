@@ -1,0 +1,28 @@
+command: mise exec node@22 -- npm test -- --run src/modes/optimize src/api/contract.test.ts src/App.test.tsx
+cwd: D:\Documents\Code\Rust\Exp\devsweep\desktop
+started: 2026-08-31T14:37:57.2380154+08:00
+----- output -----
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/modes/optimize/parity.test.ts (2 tests) 4ms
+ ✓ src/modes/optimize/state.test.ts (4 tests) 3ms
+ ✓ src/api/contract.test.ts (24 tests) 6ms
+ ✓ src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 559ms
+   ✓ OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  510ms
+ ✓ src/App.test.tsx (34 tests) 4260ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  429ms
+
+ Test Files  5 passed (5)
+      Tests  67 passed (67)
+   Start at  14:37:58
+   Duration  6.27s (transform 434ms, setup 751ms, collect 1.10s, tests 4.83s, environment 2.70s, prepare 307ms)
+
+
+----- stderr -----
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run --run src/modes/optimize src/api/contract.test.ts src/App.test.tsx
+
+-----
+exit=0
+finished: 2026-08-31T14:38:04.7196429+08:00

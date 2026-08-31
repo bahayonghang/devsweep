@@ -1,0 +1,73 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"14a2e7fcb1a4ad90cafcde05273850e998f4554f69020060ae630e1db6f890f7"}
+{"event":"app_launched","pid":75636,"cdpPort":9371,"scalePercent":null,"profile":"localappdata"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"DE55102008F49A1370224E6559A29568"}
+{"event":"locale_audit_en","store":"{\"schema_version\":1,\"language\":\"en\"}"}
+{"event":"catalogue_state","tag":"en","state":{"status":"ready","rows":8,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation","noRun":["No run action","No run action","No run action","No run action"],"badges":["Runs here","Opens Windows Settings","Opens Windows Settings","Opens Windows Settings","Guidance only","Guidance only","Guidance only","Guidance only"]}}
+{"event":"width_probe","locale":"en","width":1440,"metrics":{"innerWidth":1440,"innerHeight":900,"dpr":1.25}}
+{"event":"screenshot","name":"opt-01-catalogue-en-1440"}
+{"event":"screenshot","name":"opt-02-catalogue-en-1024"}
+{"event":"width_probe","locale":"en","width":1024,"metrics":{"innerWidth":1024,"innerHeight":860,"dpr":1.25}}
+{"event":"screenshot","name":"opt-02-catalogue-en-800"}
+{"event":"width_probe","locale":"en","width":800,"metrics":{"innerWidth":800,"innerHeight":860,"dpr":1.25}}
+{"event":"screenshot","name":"opt-02-catalogue-en-390"}
+{"event":"width_probe","locale":"en","width":390,"metrics":{"innerWidth":390,"innerHeight":860,"dpr":1.25}}
+{"event":"keyboard_guidance","guidanceKb":{"checked":true,"preview":false,"summary":"Guidance shown. This is not an optimization completion.No run action","noRun":["No run action","No run action","No run action","No run action","No run action"]}}
+{"event":"screenshot","name":"opt-03-guidance-keyboard-en"}
+{"event":"screenshot","name":"opt-04-preview-search-en"}
+{"event":"confirm_dialog","dialog":{"open":true,"title":"Confirm opening Windows Settings","runDns":false,"openSettings":true}}
+{"event":"screenshot","name":"opt-05-confirm-settings-en"}
+{"event":"screenshot","name":"opt-06-reduced-motion-en"}
+{"event":"axtree_captured","nodes":292}
+{"event":"locale_audit_zh","store":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"catalogue_state","tag":"zh-CN","state":{"status":"ready","rows":8,"summary":"八项封闭操作。指引没有运行操作。设置仅打开；它们从不完成一次优化。审阅预览进入二次确认","noRun":["无运行操作","无运行操作","无运行操作","无运行操作"],"badges":["在此运行","打开 Windows 设置","打开 Windows 设置","打开 Windows 设置","仅指引","仅指引","仅指引","仅指引"]}}
+{"event":"screenshot","name":"opt-07-catalogue-zh-1440"}
+{"event":"screenshot","name":"opt-08-catalogue-zh-1024"}
+{"event":"screenshot","name":"opt-08-catalogue-zh-800"}
+{"event":"screenshot","name":"opt-08-catalogue-zh-390"}
+{"event":"force_kill_after_path_pid_match","pid":75636,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":75636}
+{"event":"app_launched","pid":66500,"cdpPort":9480,"scalePercent":100,"profile":"localappdata-dpi-100"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"BC4258ECD08E0DE9BAFD68E981D2C57B"}
+{"event":"catalogue_state","tag":"dpi-100","state":{"status":"ready","rows":8,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation","noRun":["No run action","No run action","No run action","No run action"],"badges":["Runs here","Opens Windows Settings","Opens Windows Settings","Opens Windows Settings","Guidance only","Guidance only","Guidance only","Guidance only"]}}
+{"event":"screenshot","name":"opt-dpi-100-catalogue-en"}
+{"event":"dpi_probe","scalePercent":100,"dpr":1,"inner":[1000,750]}
+{"event":"force_kill_after_path_pid_match","pid":66500,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":66500}
+{"event":"app_launched","pid":55752,"cdpPort":9505,"scalePercent":125,"profile":"localappdata-dpi-125"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"AE466D3675CF94EF3A9BEA852D44A3B8"}
+{"event":"catalogue_state","tag":"dpi-125","state":{"status":"ready","rows":8,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation","noRun":["No run action","No run action","No run action","No run action"],"badges":["Runs here","Opens Windows Settings","Opens Windows Settings","Opens Windows Settings","Guidance only","Guidance only","Guidance only","Guidance only"]}}
+{"event":"screenshot","name":"opt-dpi-125-catalogue-en"}
+{"event":"dpi_probe","scalePercent":125,"dpr":1.25,"inner":[800,600]}
+{"event":"force_kill_after_path_pid_match","pid":55752,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":55752}
+{"event":"app_launched","pid":74440,"cdpPort":9530,"scalePercent":150,"profile":"localappdata-dpi-150"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"919D6EBBE58B9393DE812B2EDA68954B"}
+{"event":"catalogue_state","tag":"dpi-150","state":{"status":"ready","rows":8,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation","noRun":["No run action","No run action","No run action","No run action"],"badges":["Runs here","Opens Windows Settings","Opens Windows Settings","Opens Windows Settings","Guidance only","Guidance only","Guidance only","Guidance only"]}}
+{"event":"screenshot","name":"opt-dpi-150-catalogue-en"}
+{"event":"dpi_probe","scalePercent":150,"dpr":1.5,"inner":[667,500]}
+{"event":"force_kill_after_path_pid_match","pid":74440,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":74440}
+{"event":"app_launched","pid":70068,"cdpPort":9580,"scalePercent":200,"profile":"localappdata-dpi-200"}
+{"event":"cdp_target","url":"http://tauri.localhost/#/clean","title":"devsweep","id":"BDADB24C5FF8B8C409D3B2B33092E754"}
+{"event":"catalogue_state","tag":"dpi-200","state":{"status":"ready","rows":8,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation","noRun":["No run action","No run action","No run action","No run action"],"badges":["Runs here","Opens Windows Settings","Opens Windows Settings","Opens Windows Settings","Guidance only","Guidance only","Guidance only","Guidance only"]}}
+{"event":"screenshot","name":"opt-dpi-200-catalogue-en"}
+{"event":"dpi_probe","scalePercent":200,"dpr":2,"inner":[500,375]}
+{"event":"force_kill_after_path_pid_match","pid":70068,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"app_closed","pid":70068}
+{"event":"done"}
+{"event":"hc_audit_exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"14a2e7fcb1a4ad90cafcde05273850e998f4554f69020060ae630e1db6f890f7"}
+{"event":"app_launched","pid":16792,"cdpPort":9375}
+{"event":"high_contrast_probe","hc":{"forced":true,"contrast":true,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation"}}
+{"event":"screenshot","name":"opt-09-high-contrast-en"}
+{"event":"audit_probe","audit":{"status":"ready","auditText":"20 audit transitions; 0 recovered terminals. Recovery never redispatches.Audit transitionsoptimize-op-000001a056801248-00013e54-0000000000000000 · validatedoptimize-op-000001a056801248-00013e54-0000000000000000 · dispatch_startedoptimize-op-000001a056801248-00013e54-0000000000000"}}
+{"event":"screenshot","name":"opt-10-audit-en"}
+{"event":"force_kill_after_path_pid_match","pid":16792,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"hc_audit_done"}
+{"event":"hc_audit_exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"14a2e7fcb1a4ad90cafcde05273850e998f4554f69020060ae630e1db6f890f7"}
+{"event":"app_launched","pid":61484,"cdpPort":9375}
+{"event":"high_contrast_probe","hc":{"forced":true,"contrast":true,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation"}}
+{"event":"screenshot","name":"opt-09-high-contrast-en"}
+{"event":"audit_probe","audit":{"status":"ready","auditText":"20 audit transitions; 0 recovered terminals. Recovery never redispatches.Audit transitionsoptimize-op-000001a056801248-00013e54-0000000000000000 · validatedoptimize-op-000001a056801248-00013e54-0000000000000000 · dispatch_startedoptimize-op-000001a056801248-00013e54-0000000000000"}}
+{"event":"screenshot","name":"opt-10-audit-en"}
+{"event":"force_kill_after_path_pid_match","pid":61484,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"hc_audit_done"}

@@ -1,0 +1,9 @@
+command: rtk cargo test -p devsweep-desktop optimize
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:23:10.7128428+08:00
+----- output -----
+cargo test: 3 passed, 32 filtered out (2 suites, 0.00s)
+
+-----
+exit=0
+finished: 2026-08-31T14:23:11.3898627+08:00

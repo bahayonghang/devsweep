@@ -1,0 +1,9 @@
+command: rtk cargo test -p devsweep-cli tui::modes::optimize
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:23:29.0288218+08:00
+----- output -----
+cargo test: 6 passed, 162 filtered out (4 suites, 0.02s)
+
+-----
+exit=0
+finished: 2026-08-31T14:23:29.6428851+08:00

@@ -1,0 +1,116 @@
+command: independent recapture of three Settings launches with empty-before identity
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:27:07.9790832+08:00
+----- output -----
+integrity=Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+consent_final=none
+search_unique=True search_visible=False search_exit=0
+storage_unique=True storage_visible=False storage_exit=0
+energy_unique=True energy_visible=False energy_exit=0
+overall_unique_new_pids=True
+NOTE: leftover SystemSettings was cleared before each launch. launched is not maintenance completion.
+
+======== settings.search ========
+operation=settings.search
+consent before=none
+before_empty=True
+plan exit=0
+
+preview exit=0
+Optimize preview: settings.search | Opens Windows Settings. Digest: sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479
+stale exit=3
+invalid_optimize_authority: optimize preview digest mismatch
+
+run exit=0
+Optimize run finished: 0 succeeded; 1 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.search | Launched (Settings page opened) | Operation optimize-op-000001a056801248-00013e54-0000000000000000
+
+-- after --
+PID=43148 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:27:09 PM MainWindowHandle=0 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+HWND=62788870 visible=False title=
+HWND=124130218 visible=False title=MSCTFIME UI
+HWND=39655562 visible=False title=Default IME
+HWND=12322586 visible=False title=Default IME
+candidate PID=43148 path_ok=True unique_new_pid=True leftover_reused=False
+CloseMainWindow PID=43148 returned=False HWND=0
+force-kill after identity re-check PID=43148 still_present=False
+visible_hwnd=False
+launched_copy=True
+claims_completion=False
+not_completion_note=True
+consent after=none
+
+
+======== settings.storage_recommendations ========
+operation=settings.storage_recommendations
+consent before=none
+before_empty=True
+plan exit=0
+
+preview exit=0
+Optimize preview: settings.storage_recommendations | Opens Windows Settings. Digest: sha256:66f87dbc9f9de4681ad4d177c652fca91c5ec8993d2c13ab87d33dab361f952e. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:66f87dbc9f9de4681ad4d177c652fca91c5ec8993d2c13ab87d33dab361f952e
+stale exit=3
+invalid_optimize_authority: optimize preview digest mismatch
+
+run exit=0
+Optimize run finished: 0 succeeded; 1 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.storage_recommendations | Launched (Settings page opened) | Operation optimize-op-000001a05680489a-00004e30-0000000000000000
+
+-- after --
+PID=27748 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:27:23 PM MainWindowHandle=0 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+HWND=99946664 visible=False title=
+HWND=18749540 visible=False title=MSCTFIME UI
+HWND=99291072 visible=False title=Default IME
+HWND=106172792 visible=False title=Default IME
+candidate PID=27748 path_ok=True unique_new_pid=True leftover_reused=False
+CloseMainWindow PID=27748 returned=False HWND=0
+force-kill after identity re-check PID=27748 still_present=False
+visible_hwnd=False
+launched_copy=True
+claims_completion=False
+not_completion_note=True
+consent after=none
+
+
+======== settings.energy_recommendations ========
+operation=settings.energy_recommendations
+consent before=none
+before_empty=True
+plan exit=0
+
+preview exit=0
+Optimize preview: settings.energy_recommendations | Opens Windows Settings. Digest: sha256:53ee66aeb8f769e9620186cdeb5b469b3a32e8d11741235af3804347ab6367b5. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:53ee66aeb8f769e9620186cdeb5b469b3a32e8d11741235af3804347ab6367b5
+stale exit=3
+invalid_optimize_authority: optimize preview digest mismatch
+
+run exit=0
+Optimize run finished: 0 succeeded; 1 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.energy_recommendations | Launched (Settings page opened) | Operation optimize-op-000001a056807ce5-0000fa04-0000000000000000
+
+-- after --
+PID=52684 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:27:36 PM MainWindowHandle=0 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+HWND=100012200 visible=False title=
+HWND=108729388 visible=False title=MSCTFIME UI
+HWND=69538358 visible=False title=Default IME
+HWND=106238328 visible=False title=Default IME
+candidate PID=52684 path_ok=True unique_new_pid=True leftover_reused=False
+CloseMainWindow PID=52684 returned=False HWND=0
+force-kill after identity re-check PID=52684 still_present=False
+visible_hwnd=False
+launched_copy=True
+claims_completion=False
+not_completion_note=True
+consent after=none
+
+-----
+exit=0
+finished: 2026-08-31T14:27:49.1377542+08:00

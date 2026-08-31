@@ -1,0 +1,22 @@
+command: native presentation summary
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:11:11.7321080+08:00
+----- output -----
+list_en_exit=0
+list_zh_exit=0
+guidance_plan_exit=6
+dns_exit=0
+search_exit=0
+storage_exit=0
+energy_exit=0
+consent_final=none
+list_en_has_runs_here=True
+list_zh_has_badge=True
+dns_has_succeeded=True
+search_has_launched=True
+storage_has_launched=True
+energy_has_launched=True
+claims_completion=False
+-----
+exit=0
+finished: 2026-08-31T14:11:11.7321080+08:00

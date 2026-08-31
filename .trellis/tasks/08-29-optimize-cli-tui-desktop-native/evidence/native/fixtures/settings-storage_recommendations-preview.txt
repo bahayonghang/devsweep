@@ -1,0 +1,2 @@
+Optimize preview: settings.storage_recommendations | Opens Windows Settings. Digest: sha256:66f87dbc9f9de4681ad4d177c652fca91c5ec8993d2c13ab87d33dab361f952e. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.

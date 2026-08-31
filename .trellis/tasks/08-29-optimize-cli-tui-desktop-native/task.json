@@ -1,0 +1,30 @@
+{
+  "id": "optimize-cli-tui-desktop-native",
+  "name": "optimize-cli-tui-desktop-native",
+  "title": "Build Optimize CLI, TUI, desktop, and native evidence",
+  "description": "Own Optimize presentation, bilingual explanations and refusals, IPC wiring, staged feedback, and native no-UAC/unsupported-OS evidence.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "Optimize CLI/TUI/Desktop presentation and standard-user native evidence; no catalogue authority",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-optimize-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "5-optimize",
+    "depends_on": "08-29-optimize-catalog-execution,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

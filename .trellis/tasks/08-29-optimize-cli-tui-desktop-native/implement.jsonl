@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Consume the shell-owned post-update five-mode desktop spec; this mode must not edit it independently."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Implement equivalent TUI catalogue, preview, confirmation, and outcomes."}
+{"file": ".trellis/tasks/08-29-optimize-catalog-execution/design.md", "reason": "Render exact action classes and outcomes from the closed catalogue."}
+{"file": ".trellis/tasks/08-29-optimize-cli-tui-desktop-native/design.md", "reason": "Keep execute, Settings, and guidance interactions visibly distinct."}
+{"note": "Implemented Optimize presentation only: bilingual CLI renderer, TUI mode+render+shell/runtime wiring, Desktop IPC/workbench/fixtures/types, docs/guide/optimize.md and docs/zh/guide/optimize.md. Did not reopen archived core catalogue/WOW64/URI/build identity."}
+{"note": "Focused gates all exit 0 under evidence/: rtk cargo test -p devsweep-cli optimize (16); rtk cargo test -p devsweep-desktop optimize (3); rtk cargo test -p devsweep-cli tui::modes::optimize (6); rtk just desktop-web-check plus underlying npm types:generate/lint/typecheck/test/build; rtk just desktop-test; rtk just desktop-build; rtk git diff --check."}
+{"note": "Native isolated LOCALAPPDATA: EN/ZH list, guidance plan exit 6, stale digest exit 3, dns.flush succeeded, all three Settings URIs launched (never completion), Medium integrity, consent.exe none, journal REDACTED_OK. Dispatch copied to evidence/dispatch-prompt.md. Implementer verification-report.md written. No commit."}

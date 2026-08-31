@@ -1,0 +1,38 @@
+command: devsweep optimize plan/preview/run settings.storage_recommendations
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:10:58.0479202+08:00
+----- output -----
+-- before --
+(no SystemSettings.exe processes)
+
+consent before=none
+== plan exit=0 ==
+
+== preview en exit=0 ==
+Optimize preview: settings.storage_recommendations | Opens Windows Settings. Digest: sha256:66f87dbc9f9de4681ad4d177c652fca91c5ec8993d2c13ab87d33dab361f952e. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:66f87dbc9f9de4681ad4d177c652fca91c5ec8993d2c13ab87d33dab361f952e
+== stale digest exit=3 ==
+invalid_optimize_authority: optimize preview digest mismatch
+
+== confirmed run en exit=0 ==
+Optimize run finished: 0 succeeded; 1 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.storage_recommendations | Launched (Settings page opened) | Operation optimize-op-000001a05671106e-0000aa20-0000000000000000
+
+-- after --
+PID=74316 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:10:45 PM HWND=0 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+
+candidate PID=74316 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe HWND=0 identity_ok=True
+HWND=91558918 visible=False title=
+HWND=15994966 visible=False title=MSCTFIME UI
+HWND=6031070 visible=False title=Default IME
+HWND=23401950 visible=False title=Default IME
+CloseMainWindow PID=74316 returned=False HWND=0
+force-kill after identity re-check PID=74316 still_present=False
+consent after=none
+NOTE: launched is not maintenance completion.
+
+-----
+exit=0
+finished: 2026-08-31T14:10:58.0489147+08:00

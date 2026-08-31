@@ -1,0 +1,17 @@
+command: devsweep --language en optimize list
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:16:30.1849920+08:00
+----- output -----
+Optimize catalogue: 8 operations; catalogue version 1.
+dns.flush | Runs here | Native System32 ipconfig.exe /flushdns, bounded to 10 seconds
+settings.storage_recommendations | Opens Windows Settings | Windows build 22000 or later; opens the fixed Settings page
+settings.search | Opens Windows Settings | Windows build 22000 or later; opens the fixed Settings page
+settings.energy_recommendations | Opens Windows Settings | Windows build 22624 or later; opens the fixed Settings page
+guidance.drive_optimize | Guidance only | Guidance only; DevSweep never dispatches it
+guidance.system_integrity | Guidance only | Guidance only; DevSweep never dispatches it
+guidance.filesystem_check | Guidance only | Guidance only; DevSweep never dispatches it
+guidance.network_reset | Guidance only | Guidance only; DevSweep never dispatches it
+
+-----
+exit=0
+finished: 2026-08-31T14:16:30.1849920+08:00
