@@ -1,0 +1,32 @@
+{
+  "id": "five-mode-native-integration",
+  "name": "five-mode-native-integration",
+  "title": "Integrate and validate the five-mode Windows product",
+  "description": "Integrate all five modes, run cross-mode safety and resource gates, validate bilingual native Windows behavior, update documentation, and prepare release evidence without publishing.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "cross-mode integration; bilingual native Windows and resource gates; docs and local release readiness; no publishing",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-09-01",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "8-integration",
+    "depends_on": "08-29-scan-resource-bounds-app-icon,08-29-bound-sizing-concurrency,08-29-generated-app-icon-integration,08-29-cli-contract-localization,08-29-desktop-shell-navigation-brand,08-29-clean-mode-workbench,08-29-analyze-mode,08-29-analyze-core-ipc,08-29-analyze-tui-desktop-treemap,08-29-protect-rules-history-surfaces,08-29-software-mode,08-29-software-inventory-plan,08-29-software-execution-audit,08-29-software-cli-tui-desktop-native,08-29-optimize-mode,08-29-optimize-catalog-execution,08-29-optimize-cli-tui-desktop-native,08-29-status-mode,08-29-status-collector-cli,08-29-status-tui-desktop-native",
+    "dependency_semantics": "implementation leaves archived; each of the five coordination parents has a task-owned acceptance.md with recursive overall PASS from archived artifacts plus product commit history, and remains unarchived until final integration completes",
+    "native_evidence_approval": "task-owned temporary Recycle Bin fixtures only; fixed DNS flush and frozen Settings URI launches without settings changes; exact disposable current-user MSIX target requires task-stage user confirmation and no install/signing; display scaling is user-operated only",
+    "approval_state": "awaiting_parent_approval"
+  }
+}
