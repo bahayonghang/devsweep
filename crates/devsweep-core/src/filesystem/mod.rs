@@ -20,4 +20,5 @@ pub(crate) use reparse::{
 pub(crate) use sizing::estimate_tree_with_budget_and_cancel_and_probe;
 pub(crate) use sizing::{
     DEFAULT_SIZE_ENTRY_BUDGET, SizeEstimate, estimate_tree_with_budget_and_cancel,
+    estimate_trees_with_budget_and_cancel,
 };

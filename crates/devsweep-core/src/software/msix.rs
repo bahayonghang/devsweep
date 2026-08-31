@@ -33,18 +33,25 @@ fn windows_inventory(
     cancel: Option<Arc<FlagCancelObserver>>,
 ) -> SourceInventory {
     let source = SoftwareSourceId::MsixCurrentUser;
-    let result = run_joined_mta(move || enumerate_on_mta(observed_at_unix_ms, cancel.as_ref()))
-        .unwrap_or_else(MtaResult::failed);
+    let sizing_cancel = cancel.clone();
+    let result =
+        run_joined_mta(move || enumerate_on_mta(cancel.as_ref())).unwrap_or_else(MtaResult::failed);
     let complete = result.state == SoftwareSourceState::Available;
     let evidence = if complete {
         SoftwareSourceEvidence::available(source.clone())
     } else {
         SoftwareSourceEvidence::unavailable(source.clone(), result.state, result.reason_code)
     };
+    let sizes = measure_msix_installed_paths(
+        &result.packages,
+        observed_at_unix_ms,
+        sizing_cancel.as_ref(),
+    );
     let observations = result
         .packages
         .into_iter()
-        .map(|package| {
+        .zip(sizes)
+        .map(|(package, size)| {
             let protected = super::is_protected_product(
                 package.display_name.as_deref(),
                 package.publisher.as_deref(),
@@ -58,7 +65,7 @@ fn windows_inventory(
                 publisher: package.publisher,
                 version: Some(package.version),
                 provenance: vec![source.clone()],
-                size: package.size,
+                size,
                 flags: EligibilityFlags {
                     protected,
                     source_incomplete: !complete,
@@ -123,7 +130,7 @@ where
 struct MtaResult {
     state: SoftwareSourceState,
     reason_code: &'static str,
-    packages: Vec<MsixPackage>,
+    packages: Vec<EnumeratedMsixPackage>,
 }
 
 #[cfg(windows)]
@@ -138,12 +145,12 @@ impl MtaResult {
 }
 
 #[cfg(windows)]
-struct MsixPackage {
+struct EnumeratedMsixPackage {
     package_full_name: String,
     display_name: Option<String>,
     publisher: Option<String>,
     version: String,
-    size: SoftwareSizeEvidence,
+    installed_path: Option<String>,
     hidden: bool,
     system: bool,
     dependency: bool,
@@ -152,18 +159,72 @@ struct MsixPackage {
 }
 
 #[cfg(windows)]
-fn enumerate_on_mta(
+fn measure_msix_installed_paths(
+    packages: &[EnumeratedMsixPackage],
     observed_at_unix_ms: u64,
     cancel: Option<&Arc<FlagCancelObserver>>,
-) -> MtaResult {
-    use std::{collections::BTreeSet, path::Path};
+) -> Vec<SoftwareSizeEvidence> {
+    use std::path::PathBuf;
+
+    use crate::filesystem::{DEFAULT_SIZE_ENTRY_BUDGET, estimate_trees_with_budget_and_cancel};
+
+    let mut evidence = vec![
+        SoftwareSizeEvidence::Unknown {
+            reason_code: "installed_path_unavailable".to_string(),
+        };
+        packages.len()
+    ];
+    let mut paths = Vec::new();
+    let mut indices = Vec::new();
+    for (index, package) in packages.iter().enumerate() {
+        if let Some(path) = package.installed_path.as_deref() {
+            indices.push(index);
+            paths.push(PathBuf::from(path));
+        }
+    }
+    let estimates =
+        estimate_trees_with_budget_and_cancel(&paths, DEFAULT_SIZE_ENTRY_BUDGET, cancel);
+    for (index, estimate) in indices.into_iter().zip(estimates) {
+        evidence[index] = size_from_installed_estimate(estimate, observed_at_unix_ms);
+    }
+    evidence
+}
+
+#[cfg(windows)]
+fn size_from_installed_estimate(
+    estimate: crate::filesystem::SizeEstimate,
+    observed_at_unix_ms: u64,
+) -> SoftwareSizeEvidence {
+    match (estimate.logical_bytes, estimate.complete) {
+        (Some(value_bytes), true) => SoftwareSizeEvidence::Available {
+            value_bytes,
+            basis: SoftwareSizeBasis::MeasuredInstalledLocation,
+            source_code: SoftwareSizeSourceCode::MsixInstalledPath,
+            observed_at_unix_ms,
+        },
+        (Some(lower_bound_bytes), false) => SoftwareSizeEvidence::Partial {
+            lower_bound_bytes,
+            basis: SoftwareSizeBasis::MeasuredInstalledLocation,
+            source_code: SoftwareSizeSourceCode::MsixInstalledPath,
+            reason_code: "bounded_walk_incomplete".to_string(),
+            observed_at_unix_ms,
+        },
+        (None, _) => SoftwareSizeEvidence::Unknown {
+            reason_code: "installed_path_measurement_unavailable".to_string(),
+        },
+    }
+}
+
+#[cfg(windows)]
+fn enumerate_on_mta(cancel: Option<&Arc<FlagCancelObserver>>) -> MtaResult {
+    use std::collections::BTreeSet;
 
     use windows::{
         ApplicationModel::PackageSignatureKind, Management::Deployment::PackageManager,
         core::HSTRING,
     };
 
-    use crate::{filesystem::estimate_tree_with_budget_and_cancel, process::CancelObserver};
+    use crate::process::CancelObserver;
 
     if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
         return MtaResult::failed("canceled");
@@ -258,47 +319,17 @@ fn enumerate_on_mta(
     let packages = raw
         .into_iter()
         .map(|package| {
-            let size = match package.installed_path.as_deref() {
-                Some(path) => {
-                    let estimate = estimate_tree_with_budget_and_cancel(
-                        Path::new(path),
-                        crate::filesystem::DEFAULT_SIZE_ENTRY_BUDGET,
-                        cancel,
-                    );
-                    match (estimate.logical_bytes, estimate.complete) {
-                        (Some(value_bytes), true) => SoftwareSizeEvidence::Available {
-                            value_bytes,
-                            basis: SoftwareSizeBasis::MeasuredInstalledLocation,
-                            source_code: SoftwareSizeSourceCode::MsixInstalledPath,
-                            observed_at_unix_ms,
-                        },
-                        (Some(lower_bound_bytes), false) => SoftwareSizeEvidence::Partial {
-                            lower_bound_bytes,
-                            basis: SoftwareSizeBasis::MeasuredInstalledLocation,
-                            source_code: SoftwareSizeSourceCode::MsixInstalledPath,
-                            reason_code: "bounded_walk_incomplete".to_string(),
-                            observed_at_unix_ms,
-                        },
-                        (None, _) => SoftwareSizeEvidence::Unknown {
-                            reason_code: "installed_path_measurement_unavailable".to_string(),
-                        },
-                    }
-                }
-                None => SoftwareSizeEvidence::Unknown {
-                    reason_code: "installed_path_unavailable".to_string(),
-                },
-            };
             let dependency = package.framework
                 || package.resource
                 || package.optional
                 || dependency_names.contains(&package.full_name);
             let hidden = package.display_name.is_none();
-            MsixPackage {
+            EnumeratedMsixPackage {
                 package_full_name: package.full_name,
                 display_name: package.display_name,
                 publisher: package.publisher,
                 version: package.version,
-                size,
+                installed_path: package.installed_path,
                 hidden,
                 system: package.system,
                 dependency,

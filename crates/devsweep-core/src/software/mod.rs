@@ -3,7 +3,7 @@
 //! This domain never creates a [`crate::model::CleanupPlan`] and never reads or
 //! executes vendor uninstall command fields.
 
-use std::{collections::BTreeMap, sync::Arc, time::SystemTime};
+use std::{collections::BTreeMap, sync::Arc, thread, time::SystemTime};
 
 use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
@@ -50,35 +50,106 @@ pub fn inventory_software(
     cancel: Option<&Arc<FlagCancelObserver>>,
 ) -> Result<SoftwareInventoryV1> {
     let observed_at_unix_ms = unix_ms(SystemTime::now());
+    let collected = match source {
+        SoftwareInventorySource::All => {
+            overlapped_all_sources(observed_at_unix_ms, cancel.cloned())
+        }
+        SoftwareInventorySource::Arp => arp::inventory(observed_at_unix_ms),
+        SoftwareInventorySource::Msi => msi::inventory(observed_at_unix_ms),
+        SoftwareInventorySource::Msix => msix::inventory(observed_at_unix_ms, cancel.cloned()),
+    };
+    assemble_inventory(
+        observed_at_unix_ms,
+        collected.evidence,
+        collected.observations,
+    )
+}
+
+fn overlapped_all_sources(
+    observed_at_unix_ms: u64,
+    cancel: Option<Arc<FlagCancelObserver>>,
+) -> SourceInventory {
+    let arp_job = spawn_source("devsweep-software-arp", move || {
+        arp::inventory(observed_at_unix_ms)
+    });
+    let msi_job = spawn_source("devsweep-software-msi", move || {
+        msi::inventory(observed_at_unix_ms)
+    });
+    let msix = msix::inventory(observed_at_unix_ms, cancel);
+    let arp = finish_source(
+        arp_job,
+        || arp::inventory(observed_at_unix_ms),
+        failed_arp_inventory,
+    );
+    let msi = finish_source(
+        msi_job,
+        || msi::inventory(observed_at_unix_ms),
+        failed_msi_inventory,
+    );
+    let mut merged = arp;
+    merged.evidence.extend(msi.evidence);
+    merged.observations.extend(msi.observations);
+    merged.evidence.extend(msix.evidence);
+    merged.observations.extend(msix.observations);
+    merged
+}
+
+fn spawn_source(
+    name: &str,
+    job: impl FnOnce() -> SourceInventory + Send + 'static,
+) -> Option<thread::JoinHandle<SourceInventory>> {
+    thread::Builder::new()
+        .name(name.to_string())
+        .spawn(job)
+        .ok()
+}
+
+fn finish_source(
+    job: Option<thread::JoinHandle<SourceInventory>>,
+    fallback: impl FnOnce() -> SourceInventory,
+    panicked: impl FnOnce() -> SourceInventory,
+) -> SourceInventory {
+    match job {
+        Some(handle) => handle.join().unwrap_or_else(|_| panicked()),
+        None => fallback(),
+    }
+}
+
+fn failed_arp_inventory() -> SourceInventory {
     let mut evidence = Vec::new();
-    let mut observations = Vec::new();
+    for hive in [RegistryHive::CurrentUser, RegistryHive::LocalMachine] {
+        for view in [RegistryView::Registry32, RegistryView::Registry64] {
+            evidence.push(SoftwareSourceEvidence::unavailable(
+                SoftwareSourceId::Arp { hive, view },
+                SoftwareSourceState::Partial,
+                "source_worker_panicked",
+            ));
+        }
+    }
+    SourceInventory {
+        evidence,
+        observations: Vec::new(),
+    }
+}
 
-    if matches!(
-        source,
-        SoftwareInventorySource::All | SoftwareInventorySource::Arp
-    ) {
-        let result = arp::inventory(observed_at_unix_ms);
-        evidence.extend(result.evidence);
-        observations.extend(result.observations);
+fn failed_msi_inventory() -> SourceInventory {
+    SourceInventory {
+        evidence: [
+            MsiContext::UserUnmanaged,
+            MsiContext::UserManaged,
+            MsiContext::Machine,
+        ]
+        .into_iter()
+        .map(|context| {
+            SoftwareSourceEvidence::unavailable(
+                SoftwareSourceId::Msi { context },
+                SoftwareSourceState::Partial,
+                "source_worker_panicked",
+            )
+        })
+        .collect(),
+        observations: Vec::new(),
     }
-    if matches!(
-        source,
-        SoftwareInventorySource::All | SoftwareInventorySource::Msi
-    ) {
-        let result = msi::inventory(observed_at_unix_ms);
-        evidence.extend(result.evidence);
-        observations.extend(result.observations);
-    }
-    if matches!(
-        source,
-        SoftwareInventorySource::All | SoftwareInventorySource::Msix
-    ) {
-        let result = msix::inventory(observed_at_unix_ms, cancel.cloned());
-        evidence.extend(result.evidence);
-        observations.extend(result.observations);
-    }
-
-    assemble_inventory(observed_at_unix_ms, evidence, observations)
 }
 
 pub(crate) struct SourceInventory {

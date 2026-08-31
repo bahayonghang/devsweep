@@ -274,6 +274,25 @@ fn exact_duplicate_merging_is_order_independent_and_preserves_refusals() {
 }
 
 #[test]
+fn source_worker_panic_fallbacks_keep_sibling_sources_intact() {
+    let arp = super::failed_arp_inventory();
+    assert!(arp.observations.is_empty());
+    assert_eq!(arp.evidence.len(), 4);
+    assert!(arp.evidence.iter().all(|evidence| {
+        evidence.state == SoftwareSourceState::Partial
+            && evidence.reason_code.as_deref() == Some("source_worker_panicked")
+    }));
+
+    let msi = super::failed_msi_inventory();
+    assert!(msi.observations.is_empty());
+    assert_eq!(msi.evidence.len(), 3);
+    assert!(msi.evidence.iter().all(|evidence| {
+        evidence.state == SoftwareSourceState::Partial
+            && evidence.reason_code.as_deref() == Some("source_worker_panicked")
+    }));
+}
+
+#[test]
 fn reported_kib_uses_checked_integer_arithmetic() {
     assert!(matches!(
         reported_size(Some(2), SoftwareSizeSourceCode::ArpEstimatedSizeKib, 1),

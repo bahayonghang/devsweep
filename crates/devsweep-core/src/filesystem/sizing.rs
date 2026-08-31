@@ -1,6 +1,6 @@
 use std::{
     fs,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, OnceLock},
     time::SystemTime,
 };
@@ -120,6 +120,52 @@ pub(crate) fn estimate_tree_with_budget_and_cancel_and_probe(
         probe,
         production_root_execution_mode(),
     )
+}
+
+/// Sizes many independent roots on the existing two-worker pool.
+///
+/// Walks queue on [`SIZE_WALK_POOL`]; this does not create another Rayon pool
+/// or raise the worker ceiling. Each root stays bounded, cancelable, and
+/// no-follow.
+pub(crate) fn estimate_trees_with_budget_and_cancel(
+    paths: &[PathBuf],
+    entry_budget: usize,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Vec<SizeEstimate> {
+    if paths.is_empty() {
+        return Vec::new();
+    }
+    let probe = SystemPathReparseProbe;
+    match production_root_execution_mode() {
+        RootExecutionMode::Dedicated(pool) => pool.install(|| {
+            paths
+                .par_iter()
+                .map(|path| {
+                    estimate_tree_with_limits_and_mode_and_probe(
+                        path,
+                        entry_budget,
+                        64,
+                        cancel,
+                        &probe,
+                        RootExecutionMode::Dedicated(pool),
+                    )
+                })
+                .collect()
+        }),
+        RootExecutionMode::SerialFallback => paths
+            .iter()
+            .map(|path| {
+                estimate_tree_with_limits_and_mode_and_probe(
+                    path,
+                    entry_budget,
+                    64,
+                    cancel,
+                    &probe,
+                    RootExecutionMode::SerialFallback,
+                )
+            })
+            .collect(),
+    }
 }
 
 fn estimate_tree_with_limits_and_mode_and_probe(
@@ -523,6 +569,29 @@ mod tests {
         assert!(estimate.complete, "warnings: {:?}", estimate.warnings);
         assert_eq!(probe.peak.load(Ordering::SeqCst), SIZE_WALK_WORKERS);
         assert!(probe.peak.load(Ordering::SeqCst) <= SIZE_WALK_WORKERS);
+    }
+
+    #[test]
+    fn estimate_trees_preserve_order_and_match_single_root_walks() {
+        let fixture = Fixture::new();
+        fixture.file("left/a.txt", "aa");
+        fixture.file("right/b.txt", "bbbb");
+        let paths = vec![fixture.path("left"), fixture.path("right")];
+        let estimates =
+            estimate_trees_with_budget_and_cancel(&paths, DEFAULT_SIZE_ENTRY_BUDGET, None);
+        assert_eq!(estimates.len(), 2);
+        assert_eq!(
+            estimates[0].logical_bytes,
+            estimate_tree(&paths[0]).logical_bytes
+        );
+        assert_eq!(
+            estimates[1].logical_bytes,
+            estimate_tree(&paths[1]).logical_bytes
+        );
+        assert!(estimates.iter().all(|estimate| estimate.complete));
+        assert!(
+            estimate_trees_with_budget_and_cancel(&[], DEFAULT_SIZE_ENTRY_BUDGET, None).is_empty()
+        );
     }
 
     #[test]
