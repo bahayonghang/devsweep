@@ -37,6 +37,14 @@ static ANALYZE_JOB: Mutex<()> = Mutex::new(());
 
 const WORK_ITEM_BYTES: u64 = 96;
 const OBJECT_ID_ENTRY_BYTES: u64 = 48;
+/// Wall-time gap between coarse worker parks. Per-node `Sleep(1)` would inflate
+/// in-memory cancel tests; a 10 ms cadence still appears in every 200 ms CPU
+/// sample window used by the five-mode walk-window p95 gate.
+const WORKER_PARK_INTERVAL: Duration = Duration::from_millis(10);
+/// Cooperative park so two dedicated workers plus coordinator stay at
+/// process CPU p95 <= 200% (100% = one logical core). Windows may round this
+/// up to the timer tick; cancel is checked immediately before parking.
+const WORKER_PARK: Duration = Duration::from_millis(1);
 
 #[derive(Clone, Copy)]
 enum RootExecutionMode<'a> {
@@ -939,20 +947,36 @@ fn schedule_children(
     }
 }
 
+fn request_worker_cancel(mutex: &Mutex<WalkState>, condvar: &Condvar) {
+    let mut state = mutex
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    state.stop = StopReason::Canceled;
+    state.work.clear();
+    condvar.notify_all();
+}
+
+fn maybe_park_busy_worker(last_park: &mut Instant, cancel: &dyn CancelObserver) {
+    if cancel.is_cancel_requested() {
+        return;
+    }
+    if last_park.elapsed() < WORKER_PARK_INTERVAL {
+        return;
+    }
+    std::thread::sleep(WORKER_PARK);
+    *last_park = Instant::now();
+}
+
 fn worker_loop(
     mutex: &Mutex<WalkState>,
     condvar: &Condvar,
     fs: &dyn AnalyzeFs,
     cancel: &dyn CancelObserver,
 ) {
+    let mut last_park = Instant::now();
     loop {
         if cancel.is_cancel_requested() {
-            let mut state = mutex
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.stop = StopReason::Canceled;
-            state.work.clear();
-            condvar.notify_all();
+            request_worker_cancel(mutex, condvar);
             return;
         }
         let item = {
@@ -977,6 +1001,7 @@ fn worker_loop(
             }
         };
         process_item(mutex, condvar, fs, cancel, item);
+        maybe_park_busy_worker(&mut last_park, cancel);
     }
 }
 

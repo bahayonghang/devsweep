@@ -569,7 +569,6 @@ fn native_live_churn_distinguishes_deleted_and_growing_files_and_denied_branch()
             atomic::{AtomicBool, Ordering},
         },
         thread,
-        time::Duration,
     };
 
     const STABLE_DIRECTORIES: u32 = 60;
@@ -613,11 +612,14 @@ fn native_live_churn_distinguishes_deleted_and_growing_files_and_denied_branch()
         .expect("deny read attributes");
 
     let stop = Arc::new(AtomicBool::new(false));
+    let listed_deleted = Arc::new(AtomicBool::new(false));
     let mutator_stop = Arc::clone(&stop);
+    let mutator_listed = Arc::clone(&listed_deleted);
     let mutator = thread::spawn(move || {
-        // The z-* directories are enumerated after the stable directory set;
-        // their children are queued behind the 6,000 stable files.
-        thread::sleep(Duration::from_millis(25));
+        while !mutator_listed.load(Ordering::Relaxed) {
+            thread::yield_now();
+        }
+        // z-* children are queued behind the 6,000 stable files after listing.
         for path in deleted_paths {
             let _ = fs::remove_file(path);
         }
@@ -637,7 +639,34 @@ fn native_live_churn_distinguishes_deleted_and_growing_files_and_denied_branch()
         logical_bytes
     });
 
-    let outcome = analyze_path(&root, None, None);
+    struct SignalOnDir {
+        inner: super::walker::NativeFs,
+        listed: Arc<AtomicBool>,
+    }
+    impl super::walker::AnalyzeFs for SignalOnDir {
+        fn metadata(&self, path: &Path) -> Result<super::walker::EntryMeta, super::walker::FsFail> {
+            self.inner.metadata(path)
+        }
+        fn read_dir(
+            &self,
+            path: &Path,
+        ) -> Result<Vec<super::walker::DirChild>, super::walker::FsFail> {
+            let children = self.inner.read_dir(path)?;
+            if path.file_name().is_some_and(|name| name == "z-deleted") {
+                self.listed.store(true, Ordering::Relaxed);
+            }
+            Ok(children)
+        }
+        fn volume_id(&self, path: &Path) -> Result<String, super::walker::FsFail> {
+            self.inner.volume_id(path)
+        }
+    }
+
+    let fs = SignalOnDir {
+        inner: super::walker::NativeFs::default(),
+        listed: Arc::clone(&listed_deleted),
+    };
+    let outcome = analyze_with_fs(&root, &fs, None, None);
     stop.store(true, Ordering::Relaxed);
     let final_growth_bytes = mutator.join().expect("mutator join");
     let outcome = outcome.expect("native churn analyze");
