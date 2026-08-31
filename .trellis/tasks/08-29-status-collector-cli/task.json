@@ -1,0 +1,30 @@
+{
+  "id": "status-collector-cli",
+  "name": "status-collector-cli",
+  "title": "Implement Status collectors and CLI contracts",
+  "description": "Own bounded Win32 snapshots, availability states, sampling scheduler, process budgets, cancellation, JSON/NDJSON, broken-pipe handling, and resource tests.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "bounded read-only Win32 metric collectors; scheduler; JSON/NDJSON CLI; no UI or persistence",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-status-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "6-status",
+    "depends_on": "08-29-cli-contract-localization",
+    "approval_state": "awaiting_parent_approval"
+  }
+}
