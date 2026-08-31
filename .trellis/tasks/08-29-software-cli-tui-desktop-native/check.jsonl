@@ -1,0 +1,23 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit Software state, identity, accessibility, responsiveness, and native evidence."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Audit TUI selection, preview, confirmation, cancellation, and outcomes."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/prd.md", "reason": "Trace parity, truthfulness, bilingual UI, no-UAC, and native criteria."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/prd.md", "reason": "Independent check traced AC1-AC4 against implementation, fixtures, and native evidence."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/design.md", "reason": "Verified terminal reducer closure, identity-only selection, evidence-labelling, and renderer ownership against the design."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/implement.md", "reason": "Re-ran step gates and adjudicated step-3 native coverage minus the sanctioned UNVERIFIED set."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Checked workbench against state-management invariants, locale store, render-budget/native evidence protocol."}
+{"file": "desktop/src-tauri/src/software.rs", "reason": "Audited single-flight, operation-id scoping, stale-result rejection, audit recovery, partial/argv/path wire test."}
+{"file": "desktop/src-tauri/src/error.rs", "reason": "Audited structured Software error mapping and stale-authority classification."}
+{"file": "crates/devsweep-cli/src/tui/modes/software/mod.rs", "reason": "Audited phase machine guards, selectable() closure, preview/uninstall identity matching, audit recovery."}
+{"file": "crates/devsweep-cli/src/tui/runtime/mod.rs", "reason": "Audited worker-registry single-flight and join for all four Software effects."}
+{"file": "crates/devsweep-cli/src/tui/app/worker.rs", "reason": "Audited job-gated translation of Software worker events; stale events logged and ignored."}
+{"file": "crates/devsweep-cli/src/application/presentation/software.rs", "reason": "Audited bilingual catalogue renderer over typed outcomes; no fabricated evidence."}
+{"file": "crates/devsweep-cli/src/application/commands/software/execution.rs", "reason": "Confirmed human-output change is presentation-only; parser grammar diff empty."}
+{"file": "desktop/src/api/contract.ts", "reason": "Audited strict decoders: exact fields, eligibility pairing, strict last-used unknown, five-outcome closure, plan/preview cross-check."}
+{"file": "desktop/src/modes/software/state.ts", "reason": "Audited reducer: stale rejection, selection invalidation, unknown-after-dispatch preservation, audit op matching."}
+{"file": "desktop/src/modes/software/SoftwareWorkbench.tsx", "reason": "Audited coordinator lifecycle, second confirmation, accessible list; fixed locale-store bypass."}
+{"file": "resources/i18n/en.json", "reason": "Added software.v1 action.select_all/clear_selection, results.title, audit.transitions keys (fix 1)."}
+{"file": "resources/i18n/zh-CN.json", "reason": "Added matching zh-CN keys preserving catalogue parity (fix 1)."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-evidence.md", "reason": "Corrected arpDisplayName literal, added adjudication, made confirmation-dialog native-capture boundary explicit (fix 2)."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-20260831/capture-log.jsonl", "reason": "Authenticity audit: exe hash matches current binary, 5 launches/closes, DPI probes, locale store audits, 44,045-node axtree."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-20260831/software-inventory-all.json", "reason": "Independent parity probe: 1,293 real entries satisfy strict TS decoder invariants; fixture key-union shapes equal; no argv/UninstallString/installed_path."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/independent-check-report.md", "reason": "Final verdict PASS per AC1-AC4 with commands, exit codes, fixes, adjudication, and blockers."}

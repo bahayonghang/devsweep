@@ -126,6 +126,25 @@ export interface CommandErrorScanFailed {
     message: string;
 }
 
+export interface CommandErrorSoftwareAlreadyRunning {
+    code: "software_already_running";
+}
+
+export interface CommandErrorSoftwareAuditUnavailable {
+    code:    "software_audit_unavailable";
+    message: string;
+}
+
+export interface CommandErrorSoftwareFailed {
+    code:    "software_failed";
+    message: string;
+}
+
+export interface CommandErrorSoftwareStaleAuthority {
+    code:    "software_stale_authority";
+    message: string;
+}
+
 export interface CommandErrorStaleConfirmation {
     actual_digest:   string;
     code:            "stale_confirmation";
@@ -293,6 +312,152 @@ export interface DesktopScanResultCompleted {
     type:    "completed";
 }
 
+export interface DesktopSoftwareAuditResult {
+    operation_id: string;
+    records:      SoftwareAuditRecordV1[];
+    recovered:    SoftwareActionOutcomeV1[];
+}
+
+export interface SoftwareAuditRecordV1 {
+    adapter_outcome?:      SoftwareAdapterOutcome;
+    domain:                string;
+    error_code?:           SoftwareAuditErrorCode;
+    identity:              SoftwareIdentity;
+    installed_state?:      Software;
+    inventory_fingerprint: string;
+    irreversible:          boolean;
+    operation_id:          string;
+    preview_digest:        string;
+    reboot_evidence:       SoftwareRebootEvidence;
+    requery_result?:       Software;
+    schema_version:        number;
+    status_code:           SoftwareAuditStatusCode;
+    timestamp_unix_ms:     number;
+    transition:            SoftwareAuditTransition;
+}
+
+export type SoftwareAdapterOutcome = "failure" | "reboot_required" | "success" | "unfinished";
+
+export type SoftwareAuditErrorCode = "adapter_cancel_failed" | "adapter_canceled_after_dispatch" | "adapter_dispatch_failed" | "adapter_operation_failed" | "adapter_status_unavailable" | "adapter_timed_out" | "recovered_after_crash" | "requery_conflicting" | "requery_unavailable";
+
+export type Software = "absent" | "conflicting" | "present" | "unavailable";
+
+export type SoftwareRebootEvidence = "none" | "required";
+
+export type SoftwareAuditStatusCode = "adapter_failed" | "adapter_reboot_required" | "adapter_succeeded" | "canceled_before_start" | "dispatch_started" | "failed" | "reboot_required" | "recovered_before_dispatch" | "removed" | "requery_absent" | "requery_conflicting" | "requery_present" | "requery_unavailable" | "still_present" | "unknown_after_dispatch" | "validated";
+
+export interface SoftwareActionOutcomeV1 {
+    error_code?:      SoftwareAuditErrorCode;
+    installed_state?: Software;
+    irreversible:     boolean;
+    operation_id:     string;
+    outcome:          SoftwareExecutionOutcome;
+    reboot_evidence:  SoftwareRebootEvidence;
+    software_id:      string;
+}
+
+export type SoftwareExecutionOutcome = "canceled_before_start" | "failed" | "reboot_required" | "removed" | "still_present" | "unknown_after_dispatch";
+
+export interface SoftwareInventoryV1 {
+    entries:             SoftwareEntryV1[];
+    fingerprint:         string;
+    observed_at_unix_ms: number;
+    sources:             SoftwareSourceEvidence[];
+    version:             number;
+}
+
+export interface SoftwareEntryV1 {
+    display_name?: string;
+    eligibility:   SoftwareEligibility;
+    id:            string;
+    identity:      SoftwareIdentity;
+    last_used:     SoftwareLastUsedEvidence;
+    provenance:    SoftwareSourceId[];
+    publisher?:    string;
+    scope:         SoftwareScope;
+    size:          SoftwareSizeEvidence;
+    version?:      string;
+}
+
+export interface SoftwareEligibility {
+    reason: SoftwareEligibilityReason;
+    state:  SoftwareEligibilityState;
+}
+
+export type SoftwareEligibilityReason = "conflicting_identity" | "dependency_package" | "eligible_current_user_msix" | "hidden_entry" | "msi_execution_not_supported_v1" | "no_remove" | "protected_product" | "registry_only_manual" | "source_incomplete" | "stub_package" | "system_or_update" | "unhealthy_package" | "unsupported_source";
+
+export type SoftwareEligibilityState = "manual" | "selectable";
+
+export interface SoftwareLastUsedEvidence {
+    reason_code: string;
+    state:       "unknown";
+}
+
+export type SoftwareScope = "current_user" | "machine";
+
+export interface SoftwareSourceEvidence {
+    reason_code?: string;
+    source:       SoftwareSourceId;
+    state:        SoftwareSourceState;
+}
+
+export type SoftwareSourceState = "available" | "partial" | "permission" | "unsupported";
+
+export interface DesktopSoftwareInventoryResultCanceled {
+    operation_id: string;
+    type:         "canceled";
+}
+
+export interface DesktopSoftwareInventoryResultCompleted {
+    inventory:    SoftwareInventoryV1;
+    operation_id: string;
+    type:         "completed";
+}
+
+export interface DesktopSoftwarePreviewResult {
+    operation_id: string;
+    plan:         SoftwareSelectionPlanV1;
+    preview:      SoftwarePreviewV1;
+}
+
+export interface SoftwareSelectionPlanV1 {
+    expires_at_unix_ms:            number;
+    inventory_fingerprint:         string;
+    inventory_observed_at_unix_ms: number;
+    selected_ids:                  string[];
+    version:                       number;
+}
+
+export interface SoftwarePreviewV1 {
+    digest:                string;
+    inventory_fingerprint: string;
+    irreversible:          boolean;
+    selected:              SoftwarePreviewItemV1[];
+    version:               number;
+}
+
+export interface SoftwarePreviewItemV1 {
+    action_class:   SoftwareActionClass;
+    eligibility:    SoftwareEligibilityReason;
+    id:             string;
+    identity:       SoftwareIdentity;
+    scope:          SoftwareScope;
+    strategy_token: string;
+}
+
+export type SoftwareActionClass = "remove_current_user_msix";
+
+export interface DesktopSoftwareUninstallResult {
+    operation_id: string;
+    report:       SoftwareExecutionReportV1;
+}
+
+export interface SoftwareExecutionReportV1 {
+    irreversible: boolean;
+    outcomes:     SoftwareActionOutcomeV1[];
+    version:      number;
+}
+
 export interface DryRunOutcome {
     digest: string;
     report: ExecutionReport;
@@ -350,6 +515,8 @@ export interface EvidenceUserConfigured {
     type: "user_configured";
 }
 
+export type MsiContext = "machine" | "user_managed" | "user_unmanaged";
+
 export interface OutcomeStatusFailed {
     message: string;
     type:    "failed";
@@ -363,6 +530,10 @@ export interface OutcomeStatusSkipped {
 export interface OutcomeStatusSucceeded {
     type: "succeeded";
 }
+
+export type RegistryHive = "current_user" | "local_machine";
+
+export type RegistryView = "registry32" | "registry64";
 
 export interface ScanOptions {
     include_global:   boolean;
@@ -404,6 +575,88 @@ export interface ScopeProject {
     type: "project";
 }
 
+export interface SoftwareAuditTransitionAdapterCompleted {
+    kind: "adapter_completed";
+}
+
+export interface SoftwareAuditTransitionDispatchStarted {
+    kind: "dispatch_started";
+}
+
+export interface SoftwareAuditTransitionRequeryObserved {
+    kind: "requery_observed";
+}
+
+export interface SoftwareAuditTransitionTerminal {
+    kind:    "terminal";
+    outcome: string;
+}
+
+export interface SoftwareAuditTransitionValidated {
+    kind: "validated";
+}
+
+export interface SoftwareIdentityArp {
+    hive:   string;
+    source: "arp";
+    subkey: string;
+    view:   string;
+}
+
+export interface SoftwareIdentityMsi {
+    context:      string;
+    product_code: string;
+    source:       "msi";
+}
+
+export interface SoftwareIdentityMsix {
+    package_full_name: string;
+    source:            "msix";
+}
+
+export type SoftwareLastUsedReason = "no_supported_exact_source";
+
+export type SoftwareSizeBasis = "measured_installed_location" | "reported_estimate";
+
+export interface SoftwareSizeEvidenceAvailable {
+    basis:               string;
+    observed_at_unix_ms: number;
+    source_code:         string;
+    state:               "available";
+    value_bytes:         number;
+}
+
+export interface SoftwareSizeEvidencePartial {
+    basis:               string;
+    lower_bound_bytes:   number;
+    observed_at_unix_ms: number;
+    reason_code:         string;
+    source_code:         string;
+    state:               "partial";
+}
+
+export interface SoftwareSizeEvidenceUnknown {
+    reason_code: string;
+    state:       "unknown";
+}
+
+export type SoftwareSizeSourceCode = "arp_estimated_size_kib" | "msi_estimated_size_kib" | "msix_installed_path";
+
+export interface SoftwareSourceIdArp {
+    hive:   string;
+    source: "arp";
+    view:   string;
+}
+
+export interface SoftwareSourceIdMsi {
+    context: string;
+    source:  "msi";
+}
+
+export interface SoftwareSourceIdMsixCurrentUser {
+    source: "msix_current_user";
+}
+
 export type Scope = ScopeGlobal | ScopeProject;
 export type Evidence = EvidenceKnownCacheDir | EvidenceMarkerFile | EvidenceOfficialCommand | EvidenceRuleMatched | EvidenceUserConfigured;
 export type CleanupIntent = CleanupIntentInspectOnly | CleanupIntentRunBuiltInAction | CleanupIntentTrashProjectArtifact;
@@ -411,6 +664,11 @@ export type ScanProcessStatus = ScanProcessStatusCanceled | ScanProcessStatusExi
 export type ActionKind = ActionKindCommand | ActionKindInspectOnly | ActionKindMoveToTrash | ActionKindPermanentDelete;
 export type CapacityEstimate = CapacityEstimatePartial | CapacityEstimateUnknown | CapacityEstimateVerified;
 export type OutcomeStatus = OutcomeStatusFailed | OutcomeStatusSkipped | OutcomeStatusSucceeded;
-export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
+export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorUnknownTarget;
 export type DesktopScanResult = DesktopScanResultCanceled | DesktopScanResultCompleted;
 export type DesktopAnalyzeResult = DesktopAnalyzeResultCanceled | DesktopAnalyzeResultCompleted;
+export type SoftwareSourceId = SoftwareSourceIdArp | SoftwareSourceIdMsi | SoftwareSourceIdMsixCurrentUser;
+export type SoftwareIdentity = SoftwareIdentityArp | SoftwareIdentityMsi | SoftwareIdentityMsix;
+export type SoftwareSizeEvidence = SoftwareSizeEvidenceAvailable | SoftwareSizeEvidencePartial | SoftwareSizeEvidenceUnknown;
+export type SoftwareAuditTransition = SoftwareAuditTransitionAdapterCompleted | SoftwareAuditTransitionDispatchStarted | SoftwareAuditTransitionRequeryObserved | SoftwareAuditTransitionTerminal | SoftwareAuditTransitionValidated;
+export type DesktopSoftwareInventoryResult = DesktopSoftwareInventoryResultCanceled | DesktopSoftwareInventoryResultCompleted;

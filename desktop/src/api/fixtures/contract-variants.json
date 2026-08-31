@@ -12,7 +12,25 @@
     "AnalyzeNodeKind": ["file", "directory", "reparse"],
     "AnalyzeEvidence": ["complete", "incomplete", "unknown"],
     "AnalyzeCompleteness": ["complete", "partial_budget", "canceled"],
-    "AnalyzeWarningClass": ["partial_budget", "access_denied", "io_error", "churn", "cycle", "reparse", "duplicate_link"]
+    "AnalyzeWarningClass": ["partial_budget", "access_denied", "io_error", "churn", "cycle", "reparse", "duplicate_link"],
+    "RegistryHive": ["current_user", "local_machine"],
+    "RegistryView": ["registry32", "registry64"],
+    "MsiContext": ["user_unmanaged", "user_managed", "machine"],
+    "SoftwareSourceState": ["available", "partial", "permission", "unsupported"],
+    "SoftwareScope": ["current_user", "machine"],
+    "SoftwareEligibilityState": ["selectable", "manual"],
+    "SoftwareEligibilityReason": ["protected_product", "source_incomplete", "conflicting_identity", "no_remove", "hidden_entry", "system_or_update", "dependency_package", "stub_package", "unhealthy_package", "msi_execution_not_supported_v1", "registry_only_manual", "unsupported_source", "eligible_current_user_msix"],
+    "SoftwareSizeBasis": ["reported_estimate", "measured_installed_location"],
+    "SoftwareSizeSourceCode": ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path"],
+    "SoftwareLastUsedReason": ["no_supported_exact_source"],
+    "SoftwareActionClass": ["remove_current_user_msix"],
+    "SoftwareExecutionOutcome": ["canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch"],
+    "SoftwareInstalledState": ["present", "absent", "unavailable", "conflicting"],
+    "SoftwareRebootEvidence": ["none", "required"],
+    "SoftwareAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_status_unavailable", "adapter_timed_out", "adapter_canceled_after_dispatch", "adapter_cancel_failed", "requery_unavailable", "requery_conflicting", "recovered_after_crash"],
+    "SoftwareAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_reboot_required", "requery_present", "requery_absent", "requery_unavailable", "requery_conflicting", "canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch", "recovered_before_dispatch"],
+    "SoftwareAuditRequeryResult": ["present", "absent", "unavailable", "conflicting"],
+    "SoftwareAdapterOutcome": ["success", "failure", "reboot_required", "unfinished"]
   },
   "tagged_unions": {
     "Scope": { "variants": {
@@ -63,6 +81,10 @@
       "CommandErrorScanFailed": [{ "code": "scan_failed", "message": "controlled failure" }],
       "CommandErrorAnalyzeAlreadyRunning": [{ "code": "analyze_already_running" }],
       "CommandErrorAnalyzeFailed": [{ "code": "analyze_failed", "message": "controlled analyze failure" }],
+      "CommandErrorSoftwareAlreadyRunning": [{ "code": "software_already_running" }],
+      "CommandErrorSoftwareFailed": [{ "code": "software_failed", "message": "controlled software failure" }],
+      "CommandErrorSoftwareStaleAuthority": [{ "code": "software_stale_authority", "message": "controlled stale authority" }],
+      "CommandErrorSoftwareAuditUnavailable": [{ "code": "software_audit_unavailable", "message": "controlled audit failure" }],
       "CommandErrorInvalidPlan": [{ "code": "invalid_plan", "issues": ["controlled issue"] }],
       "CommandErrorStaleConfirmation": [{ "code": "stale_confirmation", "expected_digest": "expected", "actual_digest": "actual" }],
       "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
@@ -110,6 +132,45 @@
           "accounted_owned_bytes": 0
         }
       }]
+    }},
+    "SoftwareSourceId": { "tag": "source", "variants": {
+      "SoftwareSourceIdArp": [{ "source": "arp", "hive": "current_user", "view": "registry64" }],
+      "SoftwareSourceIdMsi": [{ "source": "msi", "context": "user_unmanaged" }],
+      "SoftwareSourceIdMsixCurrentUser": [{ "source": "msix_current_user" }]
+    }},
+    "SoftwareIdentity": { "tag": "source", "variants": {
+      "SoftwareIdentityArp": [{ "source": "arp", "hive": "current_user", "view": "registry64", "subkey": "Fixture" }],
+      "SoftwareIdentityMsi": [{ "source": "msi", "product_code": "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}", "context": "user_unmanaged" }],
+      "SoftwareIdentityMsix": [{ "source": "msix", "package_full_name": "Fixture_1.0.0.0_x64__publisher" }]
+    }},
+    "SoftwareSizeEvidence": { "tag": "state", "variants": {
+      "SoftwareSizeEvidenceAvailable": [{ "state": "available", "value_bytes": 1024, "basis": "reported_estimate", "source_code": "arp_estimated_size_kib", "observed_at_unix_ms": 1 }],
+      "SoftwareSizeEvidencePartial": [{ "state": "partial", "lower_bound_bytes": 512, "basis": "measured_installed_location", "source_code": "msix_installed_path", "reason_code": "controlled_partial", "observed_at_unix_ms": 1 }],
+      "SoftwareSizeEvidenceUnknown": [{ "state": "unknown", "reason_code": "not_reported" }]
+    }},
+    "SoftwareLastUsedEvidence": { "tag": "state", "variants": {
+      "SoftwareLastUsedEvidenceUnknown": [{ "state": "unknown", "reason_code": "no_supported_exact_source" }]
+    }},
+    "SoftwareAuditTransition": { "tag": "kind", "variants": {
+      "SoftwareAuditTransitionValidated": [{ "kind": "validated" }],
+      "SoftwareAuditTransitionDispatchStarted": [{ "kind": "dispatch_started" }],
+      "SoftwareAuditTransitionAdapterCompleted": [{ "kind": "adapter_completed" }],
+      "SoftwareAuditTransitionRequeryObserved": [{ "kind": "requery_observed" }],
+      "SoftwareAuditTransitionTerminal": [{ "kind": "terminal", "outcome": "unknown_after_dispatch" }]
+    }},
+    "DesktopSoftwareInventoryResult": { "variants": {
+      "DesktopSoftwareInventoryResultCompleted": [{
+        "type": "completed",
+        "operation_id": "software-inventory-1",
+        "inventory": {
+          "version": 1,
+          "observed_at_unix_ms": 1,
+          "sources": [],
+          "entries": [],
+          "fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      }],
+      "DesktopSoftwareInventoryResultCanceled": [{ "type": "canceled", "operation_id": "software-inventory-1" }]
     }}
   },
   "additional_samples": {
@@ -183,6 +244,26 @@
         "evidence": "unknown",
         "warnings": ["churn", "duplicate_link"],
         "mtime_ms": 1
+      }
+    ],
+    "SoftwareEntryV1": [
+      {
+        "id": "software:v1:msix:no-display-name",
+        "identity": { "source": "msix", "package_full_name": "NoDisplay_1.0.0.0_x64__publisher" },
+        "scope": "current_user",
+        "provenance": [{ "source": "msix_current_user" }],
+        "eligibility": { "state": "manual", "reason": "hidden_entry" },
+        "size": { "state": "unknown", "reason_code": "not_reported" },
+        "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+      }
+    ],
+    "SoftwareActionOutcomeV1": [
+      {
+        "operation_id": "core-canceled",
+        "software_id": "software:v1:msix:canceled",
+        "outcome": "canceled_before_start",
+        "reboot_evidence": "none",
+        "irreversible": true
       }
     ]
   }

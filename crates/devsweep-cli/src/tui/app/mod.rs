@@ -23,6 +23,7 @@ use super::display::{
 };
 use super::{
     modes::analyze::{AnalyzeAction, AnalyzeModeState, AnalyzeSort},
+    modes::software::{SoftwareAction, SoftwareModeState, SoftwarePhase},
     shell::{ModeId, ShellComposition},
 };
 use crate::i18n::Locale;
@@ -47,6 +48,7 @@ pub(super) struct App {
     pub(super) shell: ShellComposition,
     pub(super) language_settings: LanguageSettingsState,
     pub(super) analyze: AnalyzeModeState,
+    pub(super) software: SoftwareModeState,
     pub(super) pending_mode: Option<ModeId>,
     pub(super) targets: Vec<CleanTarget>,
     pub(super) scan_health: ScanHealth,
@@ -139,6 +141,7 @@ impl App {
             shell,
             language_settings: LanguageSettingsState::closed(locale),
             analyze: AnalyzeModeState::default(),
+            software: SoftwareModeState::default(),
             pending_mode: None,
             targets: plan.targets,
             scan_health,
@@ -447,6 +450,7 @@ pub(super) enum JobKind {
     Inventory,
     Clean,
     Analyze,
+    Software,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -511,6 +515,7 @@ pub(super) enum AppLogSource {
     Clean,
     Audit,
     Analyze,
+    Software,
 }
 
 pub(super) fn cleanup_progress_for_plan(job_id: JobId, plan: &CleanupPlan) -> CleanupProgress {

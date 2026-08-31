@@ -8,6 +8,7 @@ import executionJson from "./api/fixtures/execution-report.json";
 import progressJson from "./api/fixtures/scan-progress.json";
 import { decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./api/contract";
 import type { DesktopBridge } from "./api/bridge";
+import { fixtureBridge } from "./api/fixture-bridge";
 import type { DesktopScanProgress, DesktopScanResult, ExecutionReport } from "./api/types.gen";
 import { App } from "./App";
 import { formatBytes } from "./components/format";
@@ -23,6 +24,7 @@ const progress = decodeDesktopScanProgress(progressJson);
 
 function fakeBridge(overrides: Partial<DesktopBridge> = {}): DesktopBridge {
   return {
+    ...fixtureBridge,
     analyzeStart: vi.fn().mockRejectedValue({ code: "analyze_failed", message: "Analyze is not exercised by this Clean fixture" }),
     analyzeCancel: vi.fn().mockResolvedValue(undefined),
     scanStart: vi.fn().mockImplementation(async (scanId: string, _options, onProgress: (progress: DesktopScanProgress) => void) => {
@@ -264,7 +266,12 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge()} presentationSettings={presentationSettings} userLocales={["en-US"]} />);
 
     expect(await screen.findByRole("tab", { name: "清理" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "软件" })).not.toBeInTheDocument();
+    const softwareTab = screen.getByRole("tab", { name: "软件" });
+    expect(softwareTab).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "优化" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "状态" })).not.toBeInTheDocument();
+    await user.click(softwareTab);
+    expect(screen.getByRole("region", { name: "软件" })).toBeInTheDocument();
     expect(document.querySelector(".shell-brand-icon")).toHaveAttribute("src", "/src/assets/devsweep-icon-master.png");
     await user.click(screen.getByRole("button", { name: "语言" }));
     await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");

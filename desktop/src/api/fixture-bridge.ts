@@ -5,7 +5,11 @@ import twoTargetDryRunJson from "./fixtures/dry-run-outcome-two-targets.json";
 import executionJson from "./fixtures/execution-report.json";
 import analyzeCompleteJson from "./fixtures/analyze/complete.json";
 import analyzeProgressJson from "./fixtures/analyze/progress.json";
-import { decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./contract";
+import softwareInventoryJson from "./fixtures/software/inventory.json";
+import softwarePreviewJson from "./fixtures/software/preview.json";
+import softwareExecutionJson from "./fixtures/software/execution-five-terminal.json";
+import softwareAuditJson from "./fixtures/software/audit-restart.json";
+import { decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory } from "./contract";
 import type { DesktopBridge } from "./bridge";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
 
@@ -16,6 +20,10 @@ const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
 const execution = decodeExecutionReport(executionJson);
 const analyzeComplete = decodeDesktopAnalyzeResult(analyzeCompleteJson);
 const analyzeProgress = decodeDesktopAnalyzeProgress(analyzeProgressJson);
+const softwareInventory = decodeSoftwareInventory(softwareInventoryJson);
+const softwarePreview = decodeDesktopSoftwarePreviewResult(softwarePreviewJson);
+const softwareExecution = decodeDesktopSoftwareUninstallResult(softwareExecutionJson);
+const softwareAudit = decodeDesktopSoftwareAuditResult(softwareAuditJson);
 const cargoTargetId = "cargo.target:C:/work/app/target";
 const npmTargetId = "npm.cache.clean:global";
 const inspectOnlyTargetId = "cargo.home.inspect:C:/Users/dev/.cargo";
@@ -81,6 +89,22 @@ export const fixtureBridge: DesktopBridge = {
       pendingAnalyzeCancellation = undefined;
     }
   },
+  softwareInventoryStart: async (operationId) => ({ type: "completed", operation_id: operationId, inventory: softwareInventory }),
+  softwarePreview: async (operationId, _inventory, selectedIds) => {
+    if (selectedIds.join("\n") !== softwarePreview.plan.selected_ids.join("\n")) {
+      throw { code: "software_stale_authority", message: "Controlled fixture selection differs" };
+    }
+    return { ...softwarePreview, operation_id: operationId };
+  },
+  softwareUninstall: async (operationId, plan, previewDigest, confirmed) => {
+    if (!confirmed || previewDigest !== softwarePreview.preview.digest
+      || plan.selected_ids.join("\n") !== softwarePreview.plan.selected_ids.join("\n")) {
+      throw { code: "software_stale_authority", message: "Controlled fixture preview is stale" };
+    }
+    return { ...softwareExecution, operation_id: operationId };
+  },
+  softwareAudit: async (operationId) => ({ ...softwareAudit, operation_id: operationId }),
+  softwareCancel: async () => undefined,
   scanStart: async (scanId, _options, onProgress) => {
     scanCount += 1;
     onProgress(correlatedProjectProgress(scanId));

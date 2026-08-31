@@ -18,6 +18,9 @@
 # Task directory runtime files
 .plan-log
 
+# Local plan review reports
+reviews/
+
 # Atomic update temp files
 *.tmp
 
@@ -30,3 +33,7 @@
 # Python cache
 **/__pycache__/
 **/*.pyc
+
+# Large task-evidence artifacts stay local-only (recorded by hash in evidence indexes)
+**/evidence/**/axtree/
+**/evidence/**/*.json.gz

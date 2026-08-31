@@ -104,25 +104,10 @@ fn emit_preview(
 ) -> Result<(), ApplicationError> {
     match cli.result_format() {
         ResultFormat::Human => {
-            let mut text = match locale {
-                Locale::En => format!(
-                    "Software preview: {} exact current-user MSIX package(s). Digest: {}. Uninstall is irreversible from DevSweep's perspective.",
-                    preview.selected.len(),
-                    preview.digest
-                ),
-                Locale::ZhCn => format!(
-                    "软件预览：{} 个精确的当前用户 MSIX 包。摘要：{}。从 DevSweep 的角度看，卸载不可逆。",
-                    preview.selected.len(),
-                    preview.digest
-                ),
-            };
-            for item in &preview.selected {
-                let identity = serde_json::to_string(&item.identity).map_err(|error| {
-                    ApplicationError::failed("output_serialize_failed", error.to_string())
+            let text = super::super::super::presentation::software::preview(locale, preview)
+                .map_err(|error| {
+                    ApplicationError::failed("catalogue_render_failed", error.to_string())
                 })?;
-                text.push('\n');
-                text.push_str(&identity);
-            }
             write_human(cli, &text)
         }
         _ => write_envelope(
@@ -154,26 +139,10 @@ fn emit_execution(
     };
     match cli.result_format() {
         ResultFormat::Human => {
-            let removed = report
-                .outcomes
-                .iter()
-                .filter(|item| item.outcome == SoftwareExecutionOutcome::Removed)
-                .count();
-            let reboot = report
-                .outcomes
-                .iter()
-                .filter(|item| item.outcome == SoftwareExecutionOutcome::RebootRequired)
-                .count();
-            let text = match locale {
-                Locale::En => format!(
-                    "Software uninstall finished: {removed} removed, {reboot} require reboot, {} other terminal result(s). Every action is irreversible from DevSweep's perspective.",
-                    report.outcomes.len().saturating_sub(removed + reboot)
-                ),
-                Locale::ZhCn => format!(
-                    "软件卸载已结束：{removed} 个已移除，{reboot} 个需要重启，{} 个为其他终态。从 DevSweep 的角度看，每项操作均不可逆。",
-                    report.outcomes.len().saturating_sub(removed + reboot)
-                ),
-            };
+            let text = super::super::super::presentation::software::execution(locale, report)
+                .map_err(|error| {
+                    ApplicationError::failed("catalogue_render_failed", error.to_string())
+                })?;
             write_human(cli, &text)
         }
         _ => write_envelope(

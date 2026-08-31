@@ -21,6 +21,10 @@ const rootFixtures = {
   ExecutionReport: ["execution-report.json", "clean/execution-report.json"],
   AnalyzeSnapshotV1: ["analyze/snapshot.json"],
   DesktopAnalyzeProgress: ["analyze/progress.json"],
+  SoftwareInventoryV1: ["software/inventory.json", "software/inventory-partial.json", "software/all-msi-manual.json"],
+  DesktopSoftwarePreviewResult: ["software/preview.json"],
+  DesktopSoftwareUninstallResult: ["software/execution-five-terminal.json"],
+  DesktopSoftwareAuditResult: ["software/audit-restart.json"],
 };
 
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,
@@ -54,6 +58,27 @@ const references = {
   DesktopAnalyzeProgress: { changed_nodes: ["AnalyzeNodeV1"] },
   DesktopAnalyzeResultCompleted: { snapshot: "AnalyzeSnapshotV1" },
   DesktopAnalyzeResultCanceled: { snapshot: "AnalyzeSnapshotV1" },
+  SoftwareInventoryV1: { sources: ["SoftwareSourceEvidence"], entries: ["SoftwareEntryV1"] },
+  SoftwareSourceEvidence: { source: "SoftwareSourceId", state: "SoftwareSourceState" },
+  SoftwareEntryV1: {
+    identity: "SoftwareIdentity", scope: "SoftwareScope", provenance: ["SoftwareSourceId"],
+    eligibility: "SoftwareEligibility", size: "SoftwareSizeEvidence", last_used: "SoftwareLastUsedEvidence",
+  },
+  SoftwareEligibility: { state: "SoftwareEligibilityState", reason: "SoftwareEligibilityReason" },
+  SoftwareLastUsedEvidence: { reason_code: "SoftwareLastUsedReason" },
+  SoftwarePreviewV1: { selected: ["SoftwarePreviewItemV1"] },
+  SoftwarePreviewItemV1: { identity: "SoftwareIdentity", action_class: "SoftwareActionClass", scope: "SoftwareScope", eligibility: "SoftwareEligibilityReason" },
+  SoftwareExecutionReportV1: { outcomes: ["SoftwareActionOutcomeV1"] },
+  SoftwareActionOutcomeV1: { outcome: "SoftwareExecutionOutcome", installed_state: "SoftwareInstalledState", reboot_evidence: "SoftwareRebootEvidence", error_code: "SoftwareAuditErrorCode" },
+  DesktopSoftwarePreviewResult: { plan: "SoftwareSelectionPlanV1", preview: "SoftwarePreviewV1" },
+  DesktopSoftwareUninstallResult: { report: "SoftwareExecutionReportV1" },
+  DesktopSoftwareAuditResult: { recovered: ["SoftwareActionOutcomeV1"], records: ["SoftwareAuditRecordV1"] },
+  SoftwareAuditRecordV1: {
+    identity: "SoftwareIdentity", transition: "SoftwareAuditTransition", status_code: "SoftwareAuditStatusCode",
+    error_code: "SoftwareAuditErrorCode", reboot_evidence: "SoftwareRebootEvidence",
+    installed_state: "SoftwareInstalledState", requery_result: "SoftwareAuditRequeryResult", adapter_outcome: "SoftwareAdapterOutcome",
+  },
+  DesktopSoftwareInventoryResultCompleted: { inventory: "SoftwareInventoryV1" },
 };
 
 function addSample(samples, name, value) {

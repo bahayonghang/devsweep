@@ -1,0 +1,26 @@
+{
+  "operation_id": "software-preview-1",
+  "plan": {
+    "version": 1,
+    "inventory_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "inventory_observed_at_unix_ms": 1788100000000,
+    "expires_at_unix_ms": 1788100900000,
+    "selected_ids": ["software:v1:msix:eligible-contoso"]
+  },
+  "preview": {
+    "version": 1,
+    "inventory_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "irreversible": true,
+    "selected": [
+      {
+        "id": "software:v1:msix:eligible-contoso",
+        "identity": { "source": "msix", "package_full_name": "Contoso.Tools_1.0.0.0_x64__8wekyb3d8bbwe" },
+        "action_class": "remove_current_user_msix",
+        "scope": "current_user",
+        "eligibility": "eligible_current_user_msix",
+        "strategy_token": "software-token:sha256:4444444444444444444444444444444444444444444444444444444444444444"
+      }
+    ],
+    "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  }
+}

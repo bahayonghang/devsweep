@@ -27,7 +27,11 @@ use devsweep_core::services::{CleanService, InventoryService, ScanService};
 pub(super) use devsweep_core::services::{
     ExecutorCleanService, LocalInventoryService, SweepScanService,
 };
-use workers::{run_analyze_worker, run_clean_worker, run_inventory_worker, run_scan_worker};
+use workers::{
+    run_analyze_worker, run_clean_worker, run_inventory_worker, run_scan_worker,
+    run_software_audit_worker, run_software_inventory_worker, run_software_preview_worker,
+    run_software_uninstall_worker,
+};
 
 struct WorkerRegistration {
     cancel: Arc<FlagCancelObserver>,
@@ -207,6 +211,129 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .insert(job_id, WorkerRegistration { cancel, join });
         }
+        Effect::StartSoftwareInventory { job_id } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Software inventory start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Software inventory rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join = thread::spawn(move || {
+                run_software_inventory_worker(job_id, worker_tx, worker_cancel)
+            });
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Software inventory start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartSoftwarePreview {
+            job_id,
+            inventory,
+            selected_ids,
+        } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Software preview start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Software preview rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join = thread::spawn(move || {
+                run_software_preview_worker(
+                    job_id,
+                    inventory,
+                    selected_ids,
+                    worker_tx,
+                    worker_cancel,
+                )
+            });
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Software preview start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartSoftwareUninstall {
+            job_id,
+            plan,
+            preview_digest,
+        } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Software uninstall start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Software uninstall rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join = thread::spawn(move || {
+                run_software_uninstall_worker(
+                    job_id,
+                    plan,
+                    preview_digest,
+                    worker_tx,
+                    worker_cancel,
+                )
+            });
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Software uninstall start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
+        Effect::StartSoftwareAudit { job_id } => {
+            if !worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned before Software audit start")
+                })?
+                .is_empty()
+            {
+                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                    job_id,
+                    message: "Software audit rejected: prior work has not joined".to_string(),
+                });
+                return Ok(());
+            }
+            let cancel = Arc::new(FlagCancelObserver::new());
+            let worker_cancel = Arc::clone(&cancel);
+            let join =
+                thread::spawn(move || run_software_audit_worker(job_id, worker_tx, worker_cancel));
+            worker_registry
+                .lock()
+                .map_err(|_| {
+                    anyhow::anyhow!("worker registry lock poisoned after Software audit start")
+                })?
+                .insert(job_id, WorkerRegistration { cancel, join });
+        }
         Effect::StartClean {
             job_id,
             plan,
@@ -267,6 +394,10 @@ fn join_terminal_worker(event: &WorkerEvent, worker_registry: &WorkerRegistry) -
     let job_id = match event {
         WorkerEvent::CleanFinished { job_id, .. }
         | WorkerEvent::AnalyzeFinished { job_id, .. }
+        | WorkerEvent::SoftwareInventoryFinished { job_id, .. }
+        | WorkerEvent::SoftwarePreviewFinished { job_id, .. }
+        | WorkerEvent::SoftwareUninstallFinished { job_id, .. }
+        | WorkerEvent::SoftwareAuditFinished { job_id, .. }
         | WorkerEvent::JobFailed { job_id, .. }
         | WorkerEvent::JobCanceled { job_id }
         | WorkerEvent::ScanFinished { job_id, .. }

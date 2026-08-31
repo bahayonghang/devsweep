@@ -10,6 +10,10 @@ import type {
   DesktopAnalyzeResult,
   DesktopScanProgress,
   DesktopScanResult,
+  DesktopSoftwareAuditResult,
+  DesktopSoftwareInventoryResult,
+  DesktopSoftwarePreviewResult,
+  DesktopSoftwareUninstallResult,
   DryRunOutcome,
   Evidence,
   ExecutionReport,
@@ -18,6 +22,20 @@ import type {
   ScanPreviewTarget,
   ScanReport,
   Scope,
+  SoftwareActionOutcomeV1,
+  SoftwareAuditRecordV1,
+  SoftwareAuditTransition,
+  SoftwareEntryV1,
+  SoftwareExecutionReportV1,
+  SoftwareIdentity,
+  SoftwareInventoryV1,
+  SoftwareLastUsedEvidence,
+  SoftwarePreviewItemV1,
+  SoftwarePreviewV1,
+  SoftwareSelectionPlanV1,
+  SoftwareSizeEvidence,
+  SoftwareSourceEvidence,
+  SoftwareSourceId,
   UntrustedTarget,
 } from "./types.gen";
 
@@ -152,6 +170,316 @@ export function decodeDesktopAnalyzeResult(value: unknown): DesktopAnalyzeResult
     type,
     operation_id: nonEmptyString(input.operation_id, "analyze result.operation_id"),
     snapshot: decodeAnalyzeSnapshot(input.snapshot),
+  };
+}
+
+const SOFTWARE_ELIGIBILITY_REASONS = [
+  "protected_product", "source_incomplete", "conflicting_identity", "no_remove",
+  "hidden_entry", "system_or_update", "dependency_package", "stub_package",
+  "unhealthy_package", "msi_execution_not_supported_v1", "registry_only_manual",
+  "unsupported_source", "eligible_current_user_msix",
+] as const;
+const SOFTWARE_OUTCOMES = [
+  "canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch",
+] as const;
+const SOFTWARE_ERROR_CODES = [
+  "adapter_dispatch_failed", "adapter_operation_failed", "adapter_status_unavailable", "adapter_timed_out",
+  "adapter_canceled_after_dispatch", "adapter_cancel_failed", "requery_unavailable", "requery_conflicting", "recovered_after_crash",
+] as const;
+const SOFTWARE_STATUS_CODES = [
+  "validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_reboot_required",
+  "requery_present", "requery_absent", "requery_unavailable", "requery_conflicting",
+  "canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch", "recovered_before_dispatch",
+] as const;
+const SOFTWARE_INSTALLED_STATES = ["present", "absent", "unavailable", "conflicting"] as const;
+const SHA256 = /^sha256:[0-9a-f]{64}$/;
+const SOFTWARE_TOKEN = /^software-token:sha256:[0-9a-f]{64}$/;
+
+function digest(value: unknown, name: string): string {
+  const decoded = string(value, name);
+  if (!SHA256.test(decoded)) throw new Error(`Invalid ${name}`);
+  return decoded;
+}
+
+function optionalString(value: unknown, name: string): string | undefined {
+  return value === undefined ? undefined : string(value, name);
+}
+
+function decodeSoftwareSourceId(value: unknown): SoftwareSourceId {
+  const input = record(value, "software source identity");
+  const source = oneOf(input.source, ["arp", "msi", "msix_current_user"] as const, "software source identity.source");
+  if (source === "arp") {
+    exact(input, ["source", "hive", "view"], "software source identity");
+    return {
+      source,
+      hive: oneOf(input.hive, ["current_user", "local_machine"] as const, "software source identity.hive"),
+      view: oneOf(input.view, ["registry32", "registry64"] as const, "software source identity.view"),
+    };
+  }
+  if (source === "msi") {
+    exact(input, ["source", "context"], "software source identity");
+    return { source, context: oneOf(input.context, ["user_unmanaged", "user_managed", "machine"] as const, "software source identity.context") };
+  }
+  exact(input, ["source"], "software source identity");
+  return { source };
+}
+
+function decodeSoftwareIdentity(value: unknown): SoftwareIdentity {
+  const input = record(value, "software identity");
+  const source = oneOf(input.source, ["arp", "msi", "msix"] as const, "software identity.source");
+  if (source === "arp") {
+    exact(input, ["source", "hive", "view", "subkey"], "software identity");
+    return {
+      source,
+      hive: oneOf(input.hive, ["current_user", "local_machine"] as const, "software identity.hive"),
+      view: oneOf(input.view, ["registry32", "registry64"] as const, "software identity.view"),
+      subkey: nonEmptyString(input.subkey, "software identity.subkey"),
+    };
+  }
+  if (source === "msi") {
+    exact(input, ["source", "product_code", "context"], "software identity");
+    return {
+      source,
+      product_code: nonEmptyString(input.product_code, "software identity.product_code"),
+      context: oneOf(input.context, ["user_unmanaged", "user_managed", "machine"] as const, "software identity.context"),
+    };
+  }
+  exact(input, ["source", "package_full_name"], "software identity");
+  return { source, package_full_name: nonEmptyString(input.package_full_name, "software identity.package_full_name") };
+}
+
+function decodeSoftwareSize(value: unknown): SoftwareSizeEvidence {
+  const input = record(value, "software size evidence");
+  const state = oneOf(input.state, ["available", "partial", "unknown"] as const, "software size evidence.state");
+  if (state === "unknown") {
+    exact(input, ["state", "reason_code"], "software size evidence");
+    return { state, reason_code: nonEmptyString(input.reason_code, "software size evidence.reason_code") };
+  }
+  const basis = oneOf(input.basis, ["reported_estimate", "measured_installed_location"] as const, "software size evidence.basis");
+  const source_code = oneOf(input.source_code, ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path"] as const, "software size evidence.source_code");
+  if (state === "partial") {
+    exact(input, ["state", "lower_bound_bytes", "basis", "source_code", "reason_code", "observed_at_unix_ms"], "software size evidence");
+    if (basis !== "measured_installed_location" || source_code !== "msix_installed_path") throw new Error("Invalid software partial size basis");
+    return {
+      state,
+      lower_bound_bytes: unsignedInteger(input.lower_bound_bytes, "software size evidence.lower_bound_bytes"),
+      basis,
+      source_code,
+      reason_code: nonEmptyString(input.reason_code, "software size evidence.reason_code"),
+      observed_at_unix_ms: unsignedInteger(input.observed_at_unix_ms, "software size evidence.observed_at_unix_ms"),
+    };
+  }
+  exact(input, ["state", "value_bytes", "basis", "source_code", "observed_at_unix_ms"], "software size evidence");
+  if ((basis === "measured_installed_location") !== (source_code === "msix_installed_path")) throw new Error("Invalid software available size basis");
+  return {
+    state,
+    value_bytes: unsignedInteger(input.value_bytes, "software size evidence.value_bytes"),
+    basis,
+    source_code,
+    observed_at_unix_ms: unsignedInteger(input.observed_at_unix_ms, "software size evidence.observed_at_unix_ms"),
+  };
+}
+
+function decodeSoftwareLastUsed(value: unknown): SoftwareLastUsedEvidence {
+  const input = record(value, "software last-used evidence");
+  exact(input, ["state", "reason_code"], "software last-used evidence");
+  if (input.state !== "unknown" || input.reason_code !== "no_supported_exact_source") throw new Error("Invalid software last-used evidence");
+  return { state: "unknown", reason_code: "no_supported_exact_source" };
+}
+
+function decodeSoftwareSourceEvidence(value: unknown): SoftwareSourceEvidence {
+  const input = record(value, "software source evidence");
+  exact(input, input.reason_code === undefined ? ["source", "state"] : ["source", "state", "reason_code"], "software source evidence");
+  const state = oneOf(input.state, ["available", "partial", "permission", "unsupported"] as const, "software source evidence.state");
+  const reason_code = optionalString(input.reason_code, "software source evidence.reason_code");
+  if ((state === "available") !== (reason_code === undefined)) throw new Error("Invalid software source evidence reason");
+  return { source: decodeSoftwareSourceId(input.source), state, ...(reason_code === undefined ? {} : { reason_code }) };
+}
+
+function decodeSoftwareEntry(value: unknown): SoftwareEntryV1 {
+  const input = record(value, "software entry");
+  exact(input, ["id", "identity", "scope", "display_name", "publisher", "version", "provenance", "eligibility", "size", "last_used"].filter((key) => input[key] !== undefined), "software entry");
+  const identity = decodeSoftwareIdentity(input.identity);
+  const scope = oneOf(input.scope, ["current_user", "machine"] as const, "software entry.scope");
+  const eligibilityInput = record(input.eligibility, "software eligibility");
+  exact(eligibilityInput, ["state", "reason"], "software eligibility");
+  const eligibility = {
+    state: oneOf(eligibilityInput.state, ["selectable", "manual"] as const, "software eligibility.state"),
+    reason: oneOf(eligibilityInput.reason, SOFTWARE_ELIGIBILITY_REASONS, "software eligibility.reason"),
+  };
+  if ((eligibility.state === "selectable") !== (eligibility.reason === "eligible_current_user_msix")) throw new Error("Invalid software eligibility pairing");
+  if (eligibility.state === "selectable" && (identity.source !== "msix" || scope !== "current_user")) throw new Error("Invalid selectable software identity");
+  return {
+    id: nonEmptyString(input.id, "software entry.id"),
+    identity,
+    scope,
+    ...(input.display_name === undefined ? {} : { display_name: string(input.display_name, "software entry.display_name") }),
+    ...(input.publisher === undefined ? {} : { publisher: string(input.publisher, "software entry.publisher") }),
+    ...(input.version === undefined ? {} : { version: string(input.version, "software entry.version") }),
+    provenance: array(input.provenance, "software entry.provenance", decodeSoftwareSourceId),
+    eligibility,
+    size: decodeSoftwareSize(input.size),
+    last_used: decodeSoftwareLastUsed(input.last_used),
+  };
+}
+
+export function decodeSoftwareInventory(value: unknown): SoftwareInventoryV1 {
+  const input = record(value, "software inventory");
+  exact(input, ["version", "observed_at_unix_ms", "sources", "entries", "fingerprint"], "software inventory");
+  const inventory = {
+    version: unsignedInteger(input.version, "software inventory.version"),
+    observed_at_unix_ms: unsignedInteger(input.observed_at_unix_ms, "software inventory.observed_at_unix_ms"),
+    sources: array(input.sources, "software inventory.sources", decodeSoftwareSourceEvidence),
+    entries: array(input.entries, "software inventory.entries", decodeSoftwareEntry),
+    fingerprint: digest(input.fingerprint, "software inventory.fingerprint"),
+  };
+  if (inventory.version !== 1) throw new Error("Unsupported software inventory version");
+  if (new Set(inventory.entries.map((entry) => entry.id)).size !== inventory.entries.length) throw new Error("Duplicate software inventory identity");
+  return inventory;
+}
+
+export function decodeDesktopSoftwareInventoryResult(value: unknown): DesktopSoftwareInventoryResult {
+  const input = record(value, "desktop software inventory result");
+  const type = oneOf(input.type, ["completed", "canceled"] as const, "software inventory result.type");
+  exact(input, type === "completed" ? ["type", "operation_id", "inventory"] : ["type", "operation_id"], "desktop software inventory result");
+  const operation_id = nonEmptyString(input.operation_id, "software inventory result.operation_id");
+  return type === "completed" ? { type, operation_id, inventory: decodeSoftwareInventory(input.inventory) } : { type, operation_id };
+}
+
+function decodeSoftwarePlan(value: unknown): SoftwareSelectionPlanV1 {
+  const input = record(value, "software selection plan");
+  exact(input, ["version", "inventory_fingerprint", "inventory_observed_at_unix_ms", "expires_at_unix_ms", "selected_ids"], "software selection plan");
+  const selected_ids = array(input.selected_ids, "software selection plan.selected_ids", (item) => nonEmptyString(item, "software selection plan.selected_id"));
+  const plan = {
+    version: unsignedInteger(input.version, "software selection plan.version"),
+    inventory_fingerprint: digest(input.inventory_fingerprint, "software selection plan.inventory_fingerprint"),
+    inventory_observed_at_unix_ms: unsignedInteger(input.inventory_observed_at_unix_ms, "software selection plan.inventory_observed_at_unix_ms"),
+    expires_at_unix_ms: unsignedInteger(input.expires_at_unix_ms, "software selection plan.expires_at_unix_ms"),
+    selected_ids,
+  };
+  if (plan.version !== 1 || selected_ids.length === 0 || new Set(selected_ids).size !== selected_ids.length || plan.expires_at_unix_ms < plan.inventory_observed_at_unix_ms) throw new Error("Invalid software selection plan invariant");
+  return plan;
+}
+
+function decodeSoftwarePreviewItem(value: unknown): SoftwarePreviewItemV1 {
+  const input = record(value, "software preview item");
+  exact(input, ["id", "identity", "action_class", "scope", "eligibility", "strategy_token"], "software preview item");
+  const identity = decodeSoftwareIdentity(input.identity);
+  const strategy_token = string(input.strategy_token, "software preview item.strategy_token");
+  if (!SOFTWARE_TOKEN.test(strategy_token)) throw new Error("Invalid software preview strategy token");
+  if (identity.source !== "msix") throw new Error("Invalid software preview identity");
+  return {
+    id: nonEmptyString(input.id, "software preview item.id"), identity,
+    action_class: oneOf(input.action_class, ["remove_current_user_msix"] as const, "software preview item.action_class"),
+    scope: oneOf(input.scope, ["current_user"] as const, "software preview item.scope"),
+    eligibility: oneOf(input.eligibility, ["eligible_current_user_msix"] as const, "software preview item.eligibility"),
+    strategy_token,
+  };
+}
+
+function decodeSoftwarePreview(value: unknown): SoftwarePreviewV1 {
+  const input = record(value, "software preview");
+  exact(input, ["version", "inventory_fingerprint", "irreversible", "selected", "digest"], "software preview");
+  const preview = {
+    version: unsignedInteger(input.version, "software preview.version"),
+    inventory_fingerprint: digest(input.inventory_fingerprint, "software preview.inventory_fingerprint"),
+    irreversible: boolean(input.irreversible, "software preview.irreversible"),
+    selected: array(input.selected, "software preview.selected", decodeSoftwarePreviewItem),
+    digest: digest(input.digest, "software preview.digest"),
+  };
+  if (preview.version !== 1 || !preview.irreversible || preview.selected.length === 0 || new Set(preview.selected.map((item) => item.id)).size !== preview.selected.length) throw new Error("Invalid software preview invariant");
+  return preview;
+}
+
+export function decodeDesktopSoftwarePreviewResult(value: unknown): DesktopSoftwarePreviewResult {
+  const input = record(value, "desktop software preview result");
+  exact(input, ["operation_id", "plan", "preview"], "desktop software preview result");
+  const plan = decodeSoftwarePlan(input.plan);
+  const preview = decodeSoftwarePreview(input.preview);
+  if (plan.inventory_fingerprint !== preview.inventory_fingerprint || plan.selected_ids.join("\n") !== preview.selected.map((item) => item.id).join("\n")) throw new Error("Software preview does not match its selection plan");
+  return { operation_id: nonEmptyString(input.operation_id, "software preview result.operation_id"), plan, preview };
+}
+
+function decodeSoftwareOutcome(value: unknown): SoftwareActionOutcomeV1 {
+  const input = record(value, "software action outcome");
+  exact(input, ["operation_id", "software_id", "outcome", "installed_state", "reboot_evidence", "error_code", "irreversible"].filter((key) => input[key] !== undefined), "software action outcome");
+  const outcome = oneOf(input.outcome, SOFTWARE_OUTCOMES, "software action outcome.outcome");
+  const irreversible = boolean(input.irreversible, "software action outcome.irreversible");
+  if (!irreversible) throw new Error("Software action must be irreversible");
+  const installed_state = input.installed_state === undefined ? undefined : oneOf(input.installed_state, SOFTWARE_INSTALLED_STATES, "software action outcome.installed_state");
+  const error_code = input.error_code === undefined ? undefined : oneOf(input.error_code, SOFTWARE_ERROR_CODES, "software action outcome.error_code");
+  return {
+    operation_id: nonEmptyString(input.operation_id, "software action outcome.operation_id"),
+    software_id: nonEmptyString(input.software_id, "software action outcome.software_id"),
+    outcome,
+    ...(installed_state === undefined ? {} : { installed_state }),
+    reboot_evidence: oneOf(input.reboot_evidence, ["none", "required"] as const, "software action outcome.reboot_evidence"),
+    ...(error_code === undefined ? {} : { error_code }),
+    irreversible,
+  };
+}
+
+function decodeSoftwareExecutionReport(value: unknown): SoftwareExecutionReportV1 {
+  const input = record(value, "software execution report");
+  exact(input, ["version", "irreversible", "outcomes"], "software execution report");
+  const report = {
+    version: unsignedInteger(input.version, "software execution report.version"),
+    irreversible: boolean(input.irreversible, "software execution report.irreversible"),
+    outcomes: array(input.outcomes, "software execution report.outcomes", decodeSoftwareOutcome),
+  };
+  if (report.version !== 1 || !report.irreversible || new Set(report.outcomes.map((item) => item.operation_id)).size !== report.outcomes.length) throw new Error("Invalid software execution report invariant");
+  return report;
+}
+
+export function decodeDesktopSoftwareUninstallResult(value: unknown): DesktopSoftwareUninstallResult {
+  const input = record(value, "desktop software uninstall result");
+  exact(input, ["operation_id", "report"], "desktop software uninstall result");
+  return { operation_id: nonEmptyString(input.operation_id, "software uninstall result.operation_id"), report: decodeSoftwareExecutionReport(input.report) };
+}
+
+function decodeSoftwareAuditTransition(value: unknown): SoftwareAuditTransition {
+  const input = record(value, "software audit transition");
+  const kind = oneOf(input.kind, ["validated", "dispatch_started", "adapter_completed", "requery_observed", "terminal"] as const, "software audit transition.kind");
+  exact(input, kind === "terminal" ? ["kind", "outcome"] : ["kind"], "software audit transition");
+  return kind === "terminal" ? { kind, outcome: oneOf(input.outcome, SOFTWARE_OUTCOMES, "software audit transition.outcome") } : { kind };
+}
+
+function decodeSoftwareAuditRecord(value: unknown): SoftwareAuditRecordV1 {
+  const input = record(value, "software audit record");
+  exact(input, ["schema_version", "domain", "operation_id", "timestamp_unix_ms", "identity", "inventory_fingerprint", "preview_digest", "transition", "status_code", "error_code", "reboot_evidence", "installed_state", "requery_result", "adapter_outcome", "irreversible"].filter((key) => input[key] !== undefined), "software audit record");
+  const schema_version = unsignedInteger(input.schema_version, "software audit record.schema_version");
+  const domain = string(input.domain, "software audit record.domain");
+  const irreversible = boolean(input.irreversible, "software audit record.irreversible");
+  if (schema_version !== 1 || domain !== "software" || !irreversible) throw new Error("Invalid software audit record invariant");
+  const installed_state = input.installed_state === undefined ? undefined : oneOf(input.installed_state, SOFTWARE_INSTALLED_STATES, "software audit record.installed_state");
+  const requery_result = input.requery_result === undefined ? undefined : oneOf(input.requery_result, SOFTWARE_INSTALLED_STATES, "software audit record.requery_result");
+  const error_code = input.error_code === undefined ? undefined : oneOf(input.error_code, SOFTWARE_ERROR_CODES, "software audit record.error_code");
+  const adapter_outcome = input.adapter_outcome === undefined ? undefined : oneOf(input.adapter_outcome, ["success", "failure", "reboot_required", "unfinished"] as const, "software audit record.adapter_outcome");
+  return {
+    schema_version, domain,
+    operation_id: nonEmptyString(input.operation_id, "software audit record.operation_id"),
+    timestamp_unix_ms: unsignedInteger(input.timestamp_unix_ms, "software audit record.timestamp_unix_ms"),
+    identity: decodeSoftwareIdentity(input.identity),
+    inventory_fingerprint: digest(input.inventory_fingerprint, "software audit record.inventory_fingerprint"),
+    preview_digest: digest(input.preview_digest, "software audit record.preview_digest"),
+    transition: decodeSoftwareAuditTransition(input.transition),
+    status_code: oneOf(input.status_code, SOFTWARE_STATUS_CODES, "software audit record.status_code"),
+    ...(error_code === undefined ? {} : { error_code }),
+    reboot_evidence: oneOf(input.reboot_evidence, ["none", "required"] as const, "software audit record.reboot_evidence"),
+    ...(installed_state === undefined ? {} : { installed_state }),
+    ...(requery_result === undefined ? {} : { requery_result }),
+    ...(adapter_outcome === undefined ? {} : { adapter_outcome }),
+    irreversible,
+  };
+}
+
+export function decodeDesktopSoftwareAuditResult(value: unknown): DesktopSoftwareAuditResult {
+  const input = record(value, "desktop software audit result");
+  exact(input, ["operation_id", "recovered", "records"], "desktop software audit result");
+  return {
+    operation_id: nonEmptyString(input.operation_id, "software audit result.operation_id"),
+    recovered: array(input.recovered, "software audit result.recovered", decodeSoftwareOutcome),
+    records: array(input.records, "software audit result.records", decodeSoftwareAuditRecord),
   };
 }
 

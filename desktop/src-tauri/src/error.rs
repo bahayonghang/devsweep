@@ -1,4 +1,7 @@
-use devsweep_core::execution::ExecutionError;
+use devsweep_core::{
+    execution::ExecutionError,
+    software::{SoftwareAuditError, SoftwareExecutionError, SoftwarePlanError},
+};
 use serde::Serialize;
 
 use devsweep_core::{execution::ConfirmationDigest, model::TargetId};
@@ -12,6 +15,16 @@ pub(crate) enum CommandError {
     },
     AnalyzeAlreadyRunning,
     AnalyzeFailed {
+        message: String,
+    },
+    SoftwareAlreadyRunning,
+    SoftwareFailed {
+        message: String,
+    },
+    SoftwareStaleAuthority {
+        message: String,
+    },
+    SoftwareAuditUnavailable {
         message: String,
     },
     InvalidPlan {
@@ -48,6 +61,50 @@ impl CommandError {
     pub(crate) fn analyze_failed(error: anyhow::Error) -> Self {
         Self::AnalyzeFailed {
             message: format!("{error:#}"),
+        }
+    }
+
+    pub(crate) fn software_failed(error: anyhow::Error) -> Self {
+        Self::SoftwareFailed {
+            message: format!("{error:#}"),
+        }
+    }
+
+    pub(crate) fn software(error: anyhow::Error) -> Self {
+        if let Some(error) = error.downcast_ref::<SoftwareExecutionError>() {
+            return match error {
+                SoftwareExecutionError::Plan(plan) => Self::software_plan(plan),
+                SoftwareExecutionError::Audit(
+                    SoftwareAuditError::LockUnavailable(_)
+                    | SoftwareAuditError::LocalAppDataUnavailable,
+                ) => Self::SoftwareAuditUnavailable {
+                    message: error.to_string(),
+                },
+                _ => Self::SoftwareFailed {
+                    message: error.to_string(),
+                },
+            };
+        }
+        if let Some(error) = error.downcast_ref::<SoftwarePlanError>() {
+            return Self::software_plan(error);
+        }
+        Self::software_failed(error)
+    }
+
+    fn software_plan(error: &SoftwarePlanError) -> Self {
+        match error {
+            SoftwarePlanError::UnsupportedInventoryVersion(_)
+            | SoftwarePlanError::UnsupportedPlanVersion(_)
+            | SoftwarePlanError::InvalidFingerprint
+            | SoftwarePlanError::InventoryFingerprintMismatch
+            | SoftwarePlanError::InventoryExpired
+            | SoftwarePlanError::StaleSelection(_)
+            | SoftwarePlanError::DigestMismatch => Self::SoftwareStaleAuthority {
+                message: error.to_string(),
+            },
+            _ => Self::SoftwareFailed {
+                message: error.to_string(),
+            },
         }
     }
 

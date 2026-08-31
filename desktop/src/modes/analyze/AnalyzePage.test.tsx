@@ -7,6 +7,7 @@ import snapshotFixture from "../../api/fixtures/analyze/snapshot.json";
 import progressFixture from "../../api/fixtures/analyze/progress.json";
 import { decodeAnalyzeSnapshot, decodeDesktopAnalyzeProgress } from "../../api/contract";
 import type { DesktopBridge } from "../../api/bridge";
+import { fixtureBridge } from "../../api/fixture-bridge";
 import type { DesktopAnalyzeResult } from "../../api/types.gen";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { AnalyzePage } from "./AnalyzePage";
@@ -18,6 +19,7 @@ const progress = decodeDesktopAnalyzeProgress(progressFixture);
 
 function bridge(): DesktopBridge {
   return {
+    ...fixtureBridge,
     analyzeStart: vi.fn().mockImplementation(async (operationId, _root, onProgress) => {
       onProgress({ ...progress, operation_id: operationId });
       return { type: "completed", operation_id: operationId, snapshot };

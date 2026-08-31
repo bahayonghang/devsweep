@@ -1,0 +1,22 @@
+Implemented the requested single-test repair.
+
+Files changed:
+
+- `desktop/src/App.test.tsx`
+  - Software (`软件`) tab is asserted present.
+  - Software tab is opened and its workbench region is asserted present.
+  - Optimize (`优化`) and Status (`状态`) tabs are asserted absent.
+  - All other test behavior remains intact.
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/implement.jsonl`
+  - Appended one repair context line.
+- Evidence logs added:
+  - `evidence/repair-desktop-lint.log`
+  - `evidence/repair-desktop-typecheck.log`
+
+Validation:
+
+- `npm --prefix desktop run lint` — exit code `0`
+- `npm --prefix desktop run typecheck` — exit code `0`
+- Vitest was not run because of the documented sandbox `EPERM`; the main session still needs to run the full gate.
+
+Repair-owned source delta: 6 insertions, 1 deletion. Two pre-existing `fixtureBridge` additions in `App.test.tsx` were preserved unchanged. No commits or pushes were made.

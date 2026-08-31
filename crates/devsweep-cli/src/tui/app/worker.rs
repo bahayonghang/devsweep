@@ -210,6 +210,103 @@ impl App {
                     format!("Analyze finished with {completeness:?}"),
                 );
             }
+            WorkerEvent::SoftwareInventoryFinished { job_id, inventory } => {
+                let count = inventory.entries.len();
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!("Inventoried {count} software entries"),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Software inventory completion");
+                    return Vec::new();
+                }
+                self.software
+                    .reduce(SoftwareAction::InventoryFinished { job_id, inventory });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Software,
+                    job_id,
+                    format!("Software inventory finished: {count} entries"),
+                );
+            }
+            WorkerEvent::SoftwarePreviewFinished {
+                job_id,
+                plan,
+                preview,
+            } => {
+                let count = preview.selected.len();
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!("Previewed {count} exact software identities"),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Software preview completion");
+                    return Vec::new();
+                }
+                self.software.reduce(SoftwareAction::PreviewFinished {
+                    job_id,
+                    plan,
+                    preview,
+                });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Software,
+                    job_id,
+                    format!("Software preview finished: {count} identities"),
+                );
+            }
+            WorkerEvent::SoftwareUninstallFinished { job_id, report } => {
+                let failed = report.outcomes.iter().any(|outcome| {
+                    matches!(
+                        outcome.outcome,
+                        devsweep_core::software::SoftwareExecutionOutcome::Failed
+                            | devsweep_core::software::SoftwareExecutionOutcome::UnknownAfterDispatch
+                    )
+                });
+                if !self.transition_job(
+                    job_id,
+                    if failed {
+                        JobStatus::Failed
+                    } else {
+                        JobStatus::Succeeded
+                    },
+                    format!("{} closed Software outcome(s)", report.outcomes.len()),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Software uninstall completion");
+                    return Vec::new();
+                }
+                self.software
+                    .reduce(SoftwareAction::UninstallFinished { job_id, report });
+                self.log_job(
+                    if failed {
+                        AppLogLevel::Warning
+                    } else {
+                        AppLogLevel::Info
+                    },
+                    AppLogSource::Software,
+                    job_id,
+                    "Software uninstall reached closed terminal outcomes",
+                );
+            }
+            WorkerEvent::SoftwareAuditFinished { job_id, report } => {
+                let count = report.outcomes.len();
+                if !self.transition_job(
+                    job_id,
+                    JobStatus::Succeeded,
+                    format!("Recovered {count} Software audit outcome(s)"),
+                ) {
+                    self.log_ignored_worker_event(job_id, "Software audit completion");
+                    return Vec::new();
+                }
+                self.software
+                    .reduce(SoftwareAction::AuditFinished { job_id, report });
+                self.log_job(
+                    AppLogLevel::Info,
+                    AppLogSource::Software,
+                    job_id,
+                    "Software audit recovery completed without redispatch",
+                );
+            }
             WorkerEvent::CleanFinished { job_id, report } => {
                 let status = if report.failed == 0 {
                     JobStatus::Succeeded
@@ -249,6 +346,10 @@ impl App {
                     .jobs
                     .iter()
                     .any(|job| job.id == job_id && job.kind == JobKind::Analyze);
+                let software_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Software);
                 if !self.transition_job(job_id, JobStatus::Failed, message.clone()) {
                     self.log_ignored_worker_event(job_id, "job failure");
                     return Vec::new();
@@ -256,6 +357,12 @@ impl App {
                 if analyze_job {
                     self.analyze.reduce(AnalyzeAction::Failed {
                         operation_id: job_id,
+                        message: message.clone(),
+                    });
+                }
+                if software_job {
+                    self.software.reduce(SoftwareAction::Failed {
+                        job_id,
                         message: message.clone(),
                     });
                 }
@@ -272,6 +379,10 @@ impl App {
                     .jobs
                     .iter()
                     .any(|job| job.id == job_id && job.kind == JobKind::Analyze);
+                let software_job = self
+                    .jobs
+                    .iter()
+                    .any(|job| job.id == job_id && job.kind == JobKind::Software);
                 if !self.transition_job(job_id, JobStatus::Canceled, "Canceled") {
                     self.log_ignored_worker_event(job_id, "job cancellation");
                     return Vec::new();
@@ -280,6 +391,9 @@ impl App {
                     self.analyze.reduce(AnalyzeAction::Canceled {
                         operation_id: job_id,
                     });
+                }
+                if software_job {
+                    self.software.reduce(SoftwareAction::Canceled(job_id));
                 }
                 if self.cleanup_progress_matches(job_id) {
                     self.cleanup_progress = None;

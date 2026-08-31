@@ -1,0 +1,551 @@
+Reading additional input from stdin...
+OpenAI Codex v0.151.0
+--------
+workdir: D:\Documents\Code\Rust\Exp\devsweep
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: concise
+session id: 01a05549-b540-7a30-b49f-af1556f27619
+--------
+user
+You are a relay dispatcher and nothing else. Read the file .trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/dispatch-prompt.md and spawn the subagent named trellis-implement (defined in .codex/agents/trellis-implement.toml) via your spawn_subagent tool, passing the ENTIRE file content verbatim as its dispatch prompt (it begins with 'Active task:'). Do not edit, truncate, or summarize it. Wait for the subagent to finish, then relay its final report verbatim as your own final message. Do not modify any files yourself, do not run any builds, tests, or checks yourself. If the spawn fails with a thread-inheritance error, retry the same spawn without conversation inheritance, as your tooling suggests.
+hook: SessionStart
+hook: SessionStart Completed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+**Preparing to relay and spawn subagent**
+**Clarifying skill loading and relay requirements**
+codex
+I’m loading the required Trellis session routing, then I’ll dispatch the prompt unchanged to `trellis-implement` and wait.
+exec
+"C:\\Program Files\\PowerShell\\7\\pwsh.exe" -Command "Get-Content -Raw -LiteralPath 'C:\\Users\\lyh\\.agents\\skills\\trellis-start\\SKILL.md'" in D:\Documents\Code\Rust\Exp\devsweep
+ exited 1 in 193ms:
+Get-Content: 
+Line |
+   2 |  Get-Content -Raw -LiteralPath 'C:\Users\lyh\.agents\skills\trellis-st …
+     |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot find path 'C:\Users\lyh\.agents\skills\trellis-start\SKILL.md' because it does not exist.
+
+**Reading skill path file**
+exec
+"C:\\Program Files\\PowerShell\\7\\pwsh.exe" -Command "Get-Content -Raw -LiteralPath 'D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.agents\\skills\\trellis-start\\SKILL.md'" in D:\Documents\Code\Rust\Exp\devsweep
+ succeeded in 139ms:
+---
+name: trellis-start
+description: "Initializes an AI development session by reading workflow guides, developer identity, git status, active tasks, and project guidelines from .trellis/. Classifies incoming tasks and routes to brainstorm, direct edit, or task workflow. Use when beginning a new coding session, resuming work, starting a new task, or re-establishing project context."
+---
+
+# Start Session
+
+Initialize a Trellis-managed development session. This platform has no session-start hook, so manually load the equivalent compact context by following these steps.
+
+---
+
+## Step 1: Current state
+Identity, git status, current task, active tasks, journal location.
+
+```bash
+python ./.trellis/scripts/get_context.py
+```
+
+If this output includes a line beginning `Trellis update available:`, copy the full line verbatim when summarizing session context. Do not shorten operational command hints.
+
+## Step 2: Workflow overview
+Compact Phase Index, request triage rules, planning artifact contract, and the step-detail command.
+
+```bash
+python ./.trellis/scripts/get_context.py --mode phase
+```
+
+Full guide in `.trellis/workflow.md` (read on demand).
+
+## Step 3: Guideline indexes
+Discover packages + spec layers, then read each relevant index file.
+
+```bash
+python ./.trellis/scripts/get_context.py --mode packages
+cat .trellis/spec/guides/index.md
+cat .trellis/spec/<package>/<layer>/index.md   # for each relevant layer
+```
+
+Index files list the specific guideline docs to read when you actually start coding.
+
+## Step 4: Decide next action
+From Step 1 you know the current task and status. Check the task directory:
+
+- **Active task status `planning` + no `prd.md`** → Phase 1.1. Load the `trellis-brainstorm` skill.
+- **Active task status `planning` + `prd.md` exists** → stay in Phase 1. Lightweight tasks can be PRD-only; complex tasks need `design.md` + `implement.md`. Load the relevant Phase 1 step detail before `task.py start`.
+- **Active task status `in_progress`** → Phase 2 step 2.1. Load the step detail:
+  ```bash
+  python ./.trellis/scripts/get_context.py --mode phase --step 2.1 --platform codex
+  ```
+- **No active task** → classify first. For simple conversation / small task, ask only whether this turn should create a Trellis task. For complex work, ask whether you may create a Trellis task and enter planning. If the user says no, skip Trellis for this session.
+
+---
+
+## Skill routing (quick reference)
+
+| User intent | Skill |
+|---|---|
+| New feature / unclear requirements | `trellis-brainstorm` |
+| About to write code | `trellis-before-dev` |
+| Done coding / quality check | `trellis-check` |
+| Stuck / fixed same bug multiple times | `trellis-break-loop` |
+| Learned something worth capturing | `trellis-update-spec` |
+
+Full rules + anti-rationalization table in `.trellis/workflow.md`.
+
+
+**Preparing to read prompt file**
+exec
+"C:\\Program Files\\PowerShell\\7\\pwsh.exe" -Command "Get-Content -Raw -LiteralPath '.trellis\\tasks\\08-29-software-cli-tui-desktop-native\\evidence\\dispatch-prompt.md'" in D:\Documents\Code\Rust\Exp\devsweep
+ succeeded in 142ms:
+Active task: .trellis/tasks/08-29-software-cli-tui-desktop-native
+
+You are the trellis-implement sub-agent for this task in repo D:\Documents\Code\Rust\Exp\devsweep (Windows, Git Bash shell, branch `dev`). Standing constraints: no commit/push; protected dirty files (`.trellis/.gitignore`, `README.md`, `justfile`) untouched; no sub-agents; no parser-grammar edits (`cli.rs`); no new dependencies; no core-domain changes (core defects return to the owning child); program/argv separation; no real package removal.
+
+## Read context first
+`.trellis/tasks/08-29-software-cli-tui-desktop-native/implement.jsonl` → `prd.md` → `design.md` → `implement.md` (authoritative). Specs: `.trellis/spec/backend/index.md`, `.trellis/spec/frontend/index.md`, `.trellis/spec/desktop-frontend/index.md` (+ referenced guides; note the render-budget/native evidence protocol section). Reuse surface: `crates/devsweep-cli/src/tui/modes/` (analyze + clean are templates), `desktop/src/modes/` (analyze is the template: state/selectors/reducer + tests + styles), `desktop/src/api/` (bridge, decoders, fixtures, `generate-types.mjs`), `desktop/src/app-shell/AppShell.tsx` (software route already exists in MODE_IDS), `desktop/src/App.tsx` (modes registry — register the new SoftwareWorkbench like AnalyzePage).
+
+## Core contracts you consume (already merged)
+Core Software V1: `crates/devsweep-core/src/software/` (inventory with ordered refusal matrix + size/last-used evidence unions; plan with preview token/digest; execution with `ValidatedSoftwareAction`, confirmed-at-core boundary, audit JSONL, closed terminal set removed|reboot_required|still_present|failed|unknown_after_dispatch). CLI handlers already wired: `software inventory|plan|preview|uninstall` (see `crates/devsweep-cli/src/application/commands/software/`). Tauri commands exist for clean/analyze in `desktop/src-tauri/src/` — you must add the Software Tauri IPC commands (inventory/preview/uninstall/audit per design) with operation-id scoping and stale-event rejection, register them, and regenerate TS types + fixtures.
+
+## Deliverables (summary; implement.md/design are authoritative)
+1. Typed Tauri IPC for software inventory/preview/uninstall/audit over frozen DTOs; generated decoders/fixtures; bilingual CLI human renderer updates if the design requires them (parser untouched).
+2. TUI Software mode (`crates/devsweep-cli/src/tui/modes/software/` + render + registration): loading/ready/selecting/previewing/preview-ready/confirming/uninstalling/terminal/unknown states, exact-id rows, manual/unselectable entries, labelled estimated/lower-bound/unknown size, explicit last-used unknown, sticky summary, explicit irreversibility, closed terminals, crash/restart without redispatch, stale-event rejection, cancel/join via shell.
+3. Desktop SoftwareWorkbench (`desktop/src/modes/software/` per design change list + registration): same state machine over typed IPC, accessible list canonical, bilingual, responsive, reduced-motion/contrast, no cleanup authority beyond the frozen software flow.
+4. Parity: tagged identities, refusal reasons, digests, outcomes, machine fixtures match across CLI/TUI/desktop; rejection of execution `partial`; strict last-used unknown; all-MSI/manual refusal rendered.
+5. Gates: `cargo test -p devsweep-cli software`, `cargo test -p devsweep-cli tui::modes::software`, `cargo test -p devsweep-desktop software` (if such tests exist by design), `just desktop-web-check`, `just desktop-build`, `git diff --check`, `just ci`. Drop `rtk ` prefixes.
+6. Native evidence per implement.md step 3: standard-user inventory/preview flows (NO uninstall of any real package — the disposable-target confirmation is separately gated; record uninstall native evidence as UNVERIFIED per the same rule the execution task used); English/Chinese dense rows + confirmation at 390/800/1024/1440 and 100/125/150/200% scale (use the established CDP capture pattern from the analyze task: launch real app binary with loopback WebView2 debugging port + per-scale device scale factor, or headless Chrome for the harness — see `.trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md` and `capture-native-analyze-round3.mjs` as the sanctioned pattern); keyboard/screen-reader paths (AX tree), long/duplicate names, partial sources. Record everything raw under `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/`.
+
+## Report back
+Per-step summary, every gate command + exit code, evidence paths, deviations/blockers with exact error text, files changed, explicit UNVERIFIED list.
+
+
+**Preparing agent spawn request**
+**Waiting before update**
+collab: Wait
+**Updating commentary note**
+codex
+`trellis-implement` is still working; I’m continuing to wait for its final report.
+collab: Wait
+**Waiting for update**
+collab: Wait
+**Waiting for more input**
+codex
+The delegated implementation is still in progress; no final report has arrived yet.
+collab: Wait
+**Resuming ongoing process**
+collab: Wait
+**Waiting before update**
+codex
+The subagent remains active. I’ll keep waiting and will return only its completed report.
+collab: Wait
+**Waiting for input**
+collab: Wait
+**Continuing with subagent task**
+codex
+No final report yet; `trellis-implement` is still running.
+collab: Wait
+**Waiting for further input**
+collab: Wait
+**Considering agent status checks**
+codex
+The implementation agent is still active; I’m continuing to hold for its final report.
+collab: Wait
+**Skipping irrelevant content**
+collab: Wait
+**Pausing for next step**
+codex
+Still waiting on the same subagent; it has not produced a final report yet.
+collab: Wait
+2026-08-31T01:01:47.590250Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+**Continuing the process**
+collab: Wait
+**Proceeding with continuation**
+codex
+`trellis-implement` remains in progress. I’ll continue waiting without intervening.
+collab: Wait
+**Continuing process**
+collab: Wait
+**Waiting to proceed**
+codex
+No final report has arrived; the delegated task is still running.
+collab: Wait
+**Continuing analysis**
+collab: Wait
+**Skipping irrelevant topic**
+codex
+The subagent is still working; I’m continuing to wait for completion.
+collab: Wait
+**Resuming task**
+collab: Wait
+**Continuing lengthy task**
+codex
+`trellis-implement` remains active and has not sent a final report.
+collab: Wait
+**Waiting before proceeding**
+collab: Wait
+**Continuing process**
+codex
+Still waiting on the delegated implementation; no final report yet.
+collab: Wait
+**Considering wait time**
+collab: Wait
+**Confirming no impact**
+codex
+The subagent is still running. I’ll continue to wait and relay its report once complete.
+collab: Wait
+**Skipping political content**
+collab: Wait
+**Skipping irrelevant content**
+codex
+No final report has arrived; `trellis-implement` remains in progress.
+collab: Wait
+**Continuing process**
+collab: Wait
+**Waiting for next input**
+codex
+The same subagent is still active; I’m continuing to wait without changing its task.
+collab: Wait
+**Pausing for next step**
+collab: Wait
+2026-08-31T01:20:01.436891Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+**Continuing commentary**
+codex
+`trellis-implement` is still running and has not yet returned its final report.
+collab: Wait
+**Waiting for action**
+collab: Wait
+**Continuing process**
+codex
+No final report yet; I’m still waiting on the delegated implementation.
+collab: Wait
+2026-08-31T01:23:10.106151Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri\src\software.rs:
+use devsweep_core::process::FlagCancelObserver;
+**Continuing analysis**
+collab: Wait
+**Continuing without changes**
+codex
+The implementation subagent remains active; I’ll continue waiting for its completed report.
+collab: Wait
+**Continuing process**
+collab: Wait
+**Skipping politics content**
+codex
+Still no final report from `trellis-implement`; it remains in progress.
+collab: Wait
+**Continuing the process**
+collab: Wait
+**Continuing to wait for subagent completion**
+codex
+`trellis-implement` is still running. I’m continuing to hold for its final report.
+collab: Wait
+**Continuing without changes**
+collab: Wait
+**Verifying active agents**
+codex
+No completed report has arrived yet; I’m continuing to wait.
+**Waiting to proceed**
+collab: Wait
+**Skipping political topics**
+collab: Wait
+**Confirming no relation**
+codex
+The subagent remains active; I’m still waiting for its final report.
+collab: Wait
+**Skipping irrelevant content**
+collab: Wait
+**Confirming unrelated information**
+codex
+`trellis-implement` is still in progress; no final report yet.
+collab: Wait
+**Continuing process**
+collab: Wait
+**Continuing process**
+codex
+The delegated task remains active. I’ll keep waiting for the completed report.
+collab: Wait
+**Continuing processing**
+collab: Wait
+**Skipping irrelevant content**
+codex
+No final report has arrived; `trellis-implement` remains active.
+collab: Wait
+**Waiting for next input**
+collab: Wait
+**Skipping irrelevant content**
+codex
+The subagent is still working; I’m continuing to wait without intervening.
+collab: Wait
+**Skipping political content**
+collab: Wait
+**Continuing process**
+codex
+`trellis-implement` remains in progress; I’m still waiting for its final report.
+collab: Wait
+**Skipping irrelevant content**
+collab: Wait
+**Relaying final report verbatim**
+codex
+Implementation is complete; no commit/push was performed, and no uninstall was dispatched.
+
+## Per-step result
+
+1. Typed IPC and presentation
+   - Added Tauri inventory/preview/uninstall/audit/cancel commands with operation-ID scoping, single-flight coordination, stale-result rejection, audit recovery, and typed DTOs.
+   - Added strict TypeScript decoders and generated fixtures/types.
+   - Updated bilingual CLI human rendering for exact identities, eligibility/refusal reasons, size evidence, last-used unknown, digests, irreversibility, and terminal outcomes.
+   - Parser grammar and core domain were not changed.
+
+2. TUI Software mode
+   - Added loading, ready/selecting, previewing/preview-ready, confirming, uninstalling, terminal, unknown, and canceling states.
+   - Added exact-ID rows, disabled manual entries, sticky summary, size/last-used evidence, second confirmation, closed outcomes, stale-event rejection, audit recovery without redispatch, and shell cancel/join integration.
+   - Added English/Chinese 100-column render tests and reducer/runtime tests.
+
+3. Desktop SoftwareWorkbench
+   - Registered the Software route and added the complete reducer/selectors/workbench/styles/test package.
+   - Added accessible canonical list semantics, disabled refusal checkboxes, exact identities, search/sort, sticky totals, two-step confirmation, audit recovery, bilingual rendering, responsive layout, reduced-motion, and forced-colors support.
+   - Existing Analyze mocks were extended only to satisfy the expanded typed bridge.
+
+4. Parity and documentation
+   - Fixtures cover all thirteen refusal reasons, ARP/MSI/MSIX identities, duplicate/long names, partial sources, all-MSI manual refusal, size evidence variants, strict last-used unknown, five post-dispatch terminals, and restart audit recovery.
+   - Both Rust and TypeScript reject execution outcome `partial`.
+   - Added English and Chinese Software guides.
+
+5. Native evidence
+   - Standard-user inventory succeeded:
+     - All sources: 1,293 entries, 86 selectable, 1,207 manual; truthful `partial` envelope.
+     - MSIX: 179 entries, 86 selectable, 93 manual; `succeeded`.
+     - Every last-used value remained explicitly unknown.
+   - Medium-integrity token `S-1-16-8192` was verified.
+   - Non-destructive plan and bilingual preview succeeded for VP9 Video Extensions. Digest:
+     `sha256:4fdcf3cb163849a0e37a1bac6b108e4430b215707a1edae0e3c23bb54347ed46`.
+   - No uninstall command was run.
+
+## Gates
+
+Passed:
+
+- `cargo check -p devsweep-cli` — exit 0
+- `cargo check -p devsweep-desktop` — exit 0
+- `cargo test -p devsweep-cli software` — exit 0; 13 matching tests
+- `cargo test -p devsweep-cli tui::modes::software` — exit 0; 4 tests
+- `cargo test -p devsweep-desktop software` — exit 0; 2 tests
+- `cargo test -p devsweep-cli --lib` — exit 0
+- `cargo test -p devsweep-desktop --lib` — exit 0; 30 passed, 2 ignored
+- `npm run types:generate` — exit 0
+- `npm run lint` — exit 0
+- `npm run typecheck` — exit 0
+- Evidence-only in-process Software Vitest suite — exit 0; 3 files, 8 tests
+- `git diff --check` — exit 0; LF/CRLF notices only
+- `just ci` — final exit 0; formatting, offline resolution, checks, workspace tests, and Clippy passed
+
+Failed or blocked:
+
+- Initial `just ci` — exit 1 due to two identical Clippy branches; repaired before the successful final run.
+- Standard `npm test` — exit 1 before discovery:
+  ```text
+  Error: spawn EPERM
+      at ChildProcess.spawn (node:internal/child_process:457:11)
+  ```
+- `just desktop-web-check` — exit 1 after generation/lint/type-check passed; Vitest/Vite hit the same `spawn EPERM`.
+- `just desktop-build` — exit 1 in Tauri `beforeBuildCommand`; `npm run build` hit the same `spawn EPERM`.
+- Initial inventory invocation without `--bin` — exit 1:
+  ```text
+  error: cargo run could not determine which binary to run... available binaries: devsweep, process_fixture
+  ```
+  Corrected command exited 0.
+- Native process-tree query:
+  ```text
+  Get-CimInstance Win32_Process: Access denied
+  ```
+
+Full gate record: `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/gate-summary.md`.
+
+## Evidence
+
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-evidence.md`
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-20260831/integrity.txt`
+- `software-inventory-all.json`
+- `software-inventory-msix.json`
+- `software-plan-vp9.json`
+- `software-preview-vp9.json`
+- `software-preview-vp9-en.txt`
+- `software-preview-vp9-zh-CN.txt`
+- `vite-sandbox-shim.cjs`
+- `vitest.sandbox.config.mjs`
+
+## Files changed
+
+- CLI/TUI:
+  - `crates/devsweep-cli/src/application/commands/software/execution.rs`
+  - `crates/devsweep-cli/src/application/presentation/software.rs`
+  - `crates/devsweep-cli/src/tui/app/{events,input,jobs,mod,worker}.rs`
+  - `crates/devsweep-cli/src/tui/modes/mod.rs`
+  - `crates/devsweep-cli/src/tui/modes/software/{mod,tests}.rs`
+  - `crates/devsweep-cli/src/tui/render/{jobs,mod,software}.rs`
+  - `crates/devsweep-cli/src/tui/runtime/{mod,workers}.rs`
+  - `crates/devsweep-cli/src/tui/shell/mod.rs`
+- Tauri:
+  - `desktop/src-tauri/Cargo.toml`
+  - `desktop/src-tauri/src/{error,lib,software}.rs`
+- Desktop:
+  - `desktop/scripts/generate-types.mjs`
+  - `desktop/src/{App,App.test}.tsx`
+  - `desktop/src/api/{bridge,contract,fixture-bridge,types.gen}.ts`
+  - `desktop/src/api/fixtures/contract-variants.json`
+  - `desktop/src/api/fixtures/software/*`
+  - `desktop/src/components/ErrorBanner.tsx`
+  - `desktop/src/modes/software/*`
+  - Analyze test/benchmark bridge mocks
+- Documentation/i18n:
+  - `docs/guide/software.md`
+  - `docs/zh/guide/software.md`
+  - `resources/i18n/{en,zh-CN}.json`
+- Task evidence files listed above.
+
+The pre-existing dirty `.trellis/.gitignore`, `README.md`, `justfile`, and `crates/devsweep-cli/tests/cli_contract.rs` changes were preserved. Other unrelated untracked task directories were untouched. Existing dirty i18n files were extended only with scoped Software keys.
+
+## Explicitly UNVERIFIED
+
+- Current-build native desktop captures at 390/800/1024/1440 CSS pixels and 100/125/150/200% scale.
+- Native reduced-motion, high-contrast, keyboard-focus, and full accessibility-tree evidence.
+- Native visual states for long/duplicate names, partial sources, cancel/timeout/unknown, and restart audit.
+- Live interactive TUI keyboard capture beyond TestBackend/runtime tests.
+- Process-tree and no-UAC observation.
+- Real uninstall, post-state, reboot, timeout/cancel/unknown-after-dispatch, crash/restart replay, and proof of no redispatch.
+- Free-space recovery and activity/last-used claims.
+tokens used
+92,211
+Implementation is complete; no commit/push was performed, and no uninstall was dispatched.
+
+## Per-step result
+
+1. Typed IPC and presentation
+   - Added Tauri inventory/preview/uninstall/audit/cancel commands with operation-ID scoping, single-flight coordination, stale-result rejection, audit recovery, and typed DTOs.
+   - Added strict TypeScript decoders and generated fixtures/types.
+   - Updated bilingual CLI human rendering for exact identities, eligibility/refusal reasons, size evidence, last-used unknown, digests, irreversibility, and terminal outcomes.
+   - Parser grammar and core domain were not changed.
+
+2. TUI Software mode
+   - Added loading, ready/selecting, previewing/preview-ready, confirming, uninstalling, terminal, unknown, and canceling states.
+   - Added exact-ID rows, disabled manual entries, sticky summary, size/last-used evidence, second confirmation, closed outcomes, stale-event rejection, audit recovery without redispatch, and shell cancel/join integration.
+   - Added English/Chinese 100-column render tests and reducer/runtime tests.
+
+3. Desktop SoftwareWorkbench
+   - Registered the Software route and added the complete reducer/selectors/workbench/styles/test package.
+   - Added accessible canonical list semantics, disabled refusal checkboxes, exact identities, search/sort, sticky totals, two-step confirmation, audit recovery, bilingual rendering, responsive layout, reduced-motion, and forced-colors support.
+   - Existing Analyze mocks were extended only to satisfy the expanded typed bridge.
+
+4. Parity and documentation
+   - Fixtures cover all thirteen refusal reasons, ARP/MSI/MSIX identities, duplicate/long names, partial sources, all-MSI manual refusal, size evidence variants, strict last-used unknown, five post-dispatch terminals, and restart audit recovery.
+   - Both Rust and TypeScript reject execution outcome `partial`.
+   - Added English and Chinese Software guides.
+
+5. Native evidence
+   - Standard-user inventory succeeded:
+     - All sources: 1,293 entries, 86 selectable, 1,207 manual; truthful `partial` envelope.
+     - MSIX: 179 entries, 86 selectable, 93 manual; `succeeded`.
+     - Every last-used value remained explicitly unknown.
+   - Medium-integrity token `S-1-16-8192` was verified.
+   - Non-destructive plan and bilingual preview succeeded for VP9 Video Extensions. Digest:
+     `sha256:4fdcf3cb163849a0e37a1bac6b108e4430b215707a1edae0e3c23bb54347ed46`.
+   - No uninstall command was run.
+
+## Gates
+
+Passed:
+
+- `cargo check -p devsweep-cli` — exit 0
+- `cargo check -p devsweep-desktop` — exit 0
+- `cargo test -p devsweep-cli software` — exit 0; 13 matching tests
+- `cargo test -p devsweep-cli tui::modes::software` — exit 0; 4 tests
+- `cargo test -p devsweep-desktop software` — exit 0; 2 tests
+- `cargo test -p devsweep-cli --lib` — exit 0
+- `cargo test -p devsweep-desktop --lib` — exit 0; 30 passed, 2 ignored
+- `npm run types:generate` — exit 0
+- `npm run lint` — exit 0
+- `npm run typecheck` — exit 0
+- Evidence-only in-process Software Vitest suite — exit 0; 3 files, 8 tests
+- `git diff --check` — exit 0; LF/CRLF notices only
+- `just ci` — final exit 0; formatting, offline resolution, checks, workspace tests, and Clippy passed
+
+Failed or blocked:
+
+- Initial `just ci` — exit 1 due to two identical Clippy branches; repaired before the successful final run.
+- Standard `npm test` — exit 1 before discovery:
+  ```text
+  Error: spawn EPERM
+      at ChildProcess.spawn (node:internal/child_process:457:11)
+  ```
+- `just desktop-web-check` — exit 1 after generation/lint/type-check passed; Vitest/Vite hit the same `spawn EPERM`.
+- `just desktop-build` — exit 1 in Tauri `beforeBuildCommand`; `npm run build` hit the same `spawn EPERM`.
+- Initial inventory invocation without `--bin` — exit 1:
+  ```text
+  error: cargo run could not determine which binary to run... available binaries: devsweep, process_fixture
+  ```
+  Corrected command exited 0.
+- Native process-tree query:
+  ```text
+  Get-CimInstance Win32_Process: Access denied
+  ```
+
+Full gate record: `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/gate-summary.md`.
+
+## Evidence
+
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-evidence.md`
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-20260831/integrity.txt`
+- `software-inventory-all.json`
+- `software-inventory-msix.json`
+- `software-plan-vp9.json`
+- `software-preview-vp9.json`
+- `software-preview-vp9-en.txt`
+- `software-preview-vp9-zh-CN.txt`
+- `vite-sandbox-shim.cjs`
+- `vitest.sandbox.config.mjs`
+
+## Files changed
+
+- CLI/TUI:
+  - `crates/devsweep-cli/src/application/commands/software/execution.rs`
+  - `crates/devsweep-cli/src/application/presentation/software.rs`
+  - `crates/devsweep-cli/src/tui/app/{events,input,jobs,mod,worker}.rs`
+  - `crates/devsweep-cli/src/tui/modes/mod.rs`
+  - `crates/devsweep-cli/src/tui/modes/software/{mod,tests}.rs`
+  - `crates/devsweep-cli/src/tui/render/{jobs,mod,software}.rs`
+  - `crates/devsweep-cli/src/tui/runtime/{mod,workers}.rs`
+  - `crates/devsweep-cli/src/tui/shell/mod.rs`
+- Tauri:
+  - `desktop/src-tauri/Cargo.toml`
+  - `desktop/src-tauri/src/{error,lib,software}.rs`
+- Desktop:
+  - `desktop/scripts/generate-types.mjs`
+  - `desktop/src/{App,App.test}.tsx`
+  - `desktop/src/api/{bridge,contract,fixture-bridge,types.gen}.ts`
+  - `desktop/src/api/fixtures/contract-variants.json`
+  - `desktop/src/api/fixtures/software/*`
+  - `desktop/src/components/ErrorBanner.tsx`
+  - `desktop/src/modes/software/*`
+  - Analyze test/benchmark bridge mocks
+- Documentation/i18n:
+  - `docs/guide/software.md`
+  - `docs/zh/guide/software.md`
+  - `resources/i18n/{en,zh-CN}.json`
+- Task evidence files listed above.
+
+The pre-existing dirty `.trellis/.gitignore`, `README.md`, `justfile`, and `crates/devsweep-cli/tests/cli_contract.rs` changes were preserved. Other unrelated untracked task directories were untouched. Existing dirty i18n files were extended only with scoped Software keys.
+
+## Explicitly UNVERIFIED
+
+- Current-build native desktop captures at 390/800/1024/1440 CSS pixels and 100/125/150/200% scale.
+- Native reduced-motion, high-contrast, keyboard-focus, and full accessibility-tree evidence.
+- Native visual states for long/duplicate names, partial sources, cancel/timeout/unknown, and restart audit.
+- Live interactive TUI keyboard capture beyond TestBackend/runtime tests.
+- Process-tree and no-UAC observation.
+- Real uninstall, post-state, reboot, timeout/cancel/unknown-after-dispatch, crash/restart replay, and proof of no redispatch.
+- Free-space recovery and activity/last-used claims.

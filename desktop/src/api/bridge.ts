@@ -1,10 +1,15 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDryRunOutcome, decodeExecutedReport, reportMatchesSelection } from "./contract";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult, DryRunOutcome, ExecutionReport, ScanOptions, UntrustedPlan } from "./types.gen";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDryRunOutcome, decodeExecutedReport, reportMatchesSelection } from "./contract";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DryRunOutcome, ExecutionReport, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, UntrustedPlan } from "./types.gen";
 
 export interface DesktopBridge {
   analyzeStart(operationId: string, root: string, onProgress: (progress: DesktopAnalyzeProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopAnalyzeResult>;
   analyzeCancel(operationId: string): Promise<void>;
+  softwareInventoryStart(operationId: string): Promise<DesktopSoftwareInventoryResult>;
+  softwarePreview(operationId: string, inventory: SoftwareInventoryV1, selectedIds: string[]): Promise<DesktopSoftwarePreviewResult>;
+  softwareUninstall(operationId: string, plan: SoftwareSelectionPlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopSoftwareUninstallResult>;
+  softwareAudit(operationId: string): Promise<DesktopSoftwareAuditResult>;
+  softwareCancel(operationId: string): Promise<void>;
   scanStart(scanId: string, options: ScanOptions, onProgress: (progress: DesktopScanProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopScanResult>;
   scanCancel(scanId: string): Promise<void>;
   planDryRun(plan: UntrustedPlan, selectedIds: string[]): Promise<DryRunOutcome>;
@@ -34,6 +39,27 @@ export const tauriBridge: DesktopBridge = {
     return result;
   },
   analyzeCancel: async (operationId) => { try { await invoke("analyze_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
+  softwareInventoryStart: async (operationId) => {
+    const result = await call("software_inventory_start", { operationId }, decodeDesktopSoftwareInventoryResult);
+    if (result.operation_id !== operationId) throw new Error("Software inventory result does not match the active operation");
+    return result;
+  },
+  softwarePreview: async (operationId, inventory, selectedIds) => {
+    const result = await call("software_preview", { operationId, inventory, selectedIds }, decodeDesktopSoftwarePreviewResult);
+    if (result.operation_id !== operationId) throw new Error("Software preview result does not match the active operation");
+    return result;
+  },
+  softwareUninstall: async (operationId, plan, previewDigest, confirmed) => {
+    const result = await call("software_uninstall", { operationId, plan, previewDigest, confirmed }, decodeDesktopSoftwareUninstallResult);
+    if (result.operation_id !== operationId) throw new Error("Software uninstall result does not match the active operation");
+    return result;
+  },
+  softwareAudit: async (operationId) => {
+    const result = await call("software_audit", { operationId }, decodeDesktopSoftwareAuditResult);
+    if (result.operation_id !== operationId) throw new Error("Software audit result does not match the active operation");
+    return result;
+  },
+  softwareCancel: async (operationId) => { try { await invoke("software_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
   scanStart: async (scanId, options, onProgress, onProgressError) => {
     const channel = new Channel<unknown>((value) => {
       try { onProgress(decodeDesktopScanProgress(value)); }

@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "observed_at_unix_ms": 1788100000000,
+  "sources": [
+    { "source": { "source": "arp", "hive": "current_user", "view": "registry64" }, "state": "available" },
+    { "source": { "source": "msi", "context": "user_unmanaged" }, "state": "available" },
+    { "source": { "source": "msix_current_user" }, "state": "available" }
+  ],
+  "entries": [
+    {
+      "id": "software:v1:msix:eligible-contoso",
+      "identity": { "source": "msix", "package_full_name": "Contoso.Tools_1.0.0.0_x64__8wekyb3d8bbwe" },
+      "scope": "current_user",
+      "display_name": "Contoso Tools",
+      "publisher": "Contoso",
+      "version": "1.0.0.0",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "selectable", "reason": "eligible_current_user_msix" },
+      "size": { "state": "available", "value_bytes": 268435456, "basis": "measured_installed_location", "source_code": "msix_installed_path", "observed_at_unix_ms": 1788100000000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:protected",
+      "identity": { "source": "msix", "package_full_name": "DevSweep_1.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "DevSweep",
+      "publisher": "DevSweep",
+      "version": "1.0.0.0",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "protected_product" },
+      "size": { "state": "unknown", "reason_code": "protected_product" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:source-incomplete",
+      "identity": { "source": "msix", "package_full_name": "Partial.Graph_2.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "Partial Graph",
+      "publisher": "Fixture",
+      "version": "2.0.0.0",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "source_incomplete" },
+      "size": { "state": "partial", "lower_bound_bytes": 4096, "basis": "measured_installed_location", "source_code": "msix_installed_path", "reason_code": "entry_budget_exhausted", "observed_at_unix_ms": 1788100000000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:conflict",
+      "identity": { "source": "msix", "package_full_name": "Conflict.Identity_1.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "Conflicting Identity",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "conflicting_identity" },
+      "size": { "state": "unknown", "reason_code": "conflicting_identity" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:arp:no-remove",
+      "identity": { "source": "arp", "hive": "current_user", "view": "registry64", "subkey": "NoRemoveFixture" },
+      "scope": "current_user",
+      "display_name": "Managed by policy",
+      "publisher": "Fixture",
+      "provenance": [{ "source": "arp", "hive": "current_user", "view": "registry64" }],
+      "eligibility": { "state": "manual", "reason": "no_remove" },
+      "size": { "state": "available", "value_bytes": 1024000, "basis": "reported_estimate", "source_code": "arp_estimated_size_kib", "observed_at_unix_ms": 1788100000000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:arp:hidden",
+      "identity": { "source": "arp", "hive": "current_user", "view": "registry64", "subkey": "HiddenFixture" },
+      "scope": "current_user",
+      "display_name": "Hidden component",
+      "provenance": [{ "source": "arp", "hive": "current_user", "view": "registry64" }],
+      "eligibility": { "state": "manual", "reason": "hidden_entry" },
+      "size": { "state": "unknown", "reason_code": "not_reported" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:system-update",
+      "identity": { "source": "msix", "package_full_name": "System.Update_1.0.0.0_neutral__publisher" },
+      "scope": "current_user",
+      "display_name": "System Update",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "system_or_update" },
+      "size": { "state": "unknown", "reason_code": "system_component" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:dependency",
+      "identity": { "source": "msix", "package_full_name": "Framework.Dependency_1.0.0.0_neutral__publisher" },
+      "scope": "current_user",
+      "display_name": "Framework Dependency",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "dependency_package" },
+      "size": { "state": "available", "value_bytes": 8192, "basis": "measured_installed_location", "source_code": "msix_installed_path", "observed_at_unix_ms": 1788100000000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:stub",
+      "identity": { "source": "msix", "package_full_name": "Stub.Package_1.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "Stub Package",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "stub_package" },
+      "size": { "state": "unknown", "reason_code": "stub_package" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:unhealthy",
+      "identity": { "source": "msix", "package_full_name": "Unhealthy.Package_1.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "Unhealthy Package",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "unhealthy_package" },
+      "size": { "state": "unknown", "reason_code": "package_unhealthy" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msi:user-unmanaged",
+      "identity": { "source": "msi", "product_code": "{11111111-1111-1111-1111-111111111111}", "context": "user_unmanaged" },
+      "scope": "current_user",
+      "display_name": "Contoso Tools",
+      "publisher": "Contoso",
+      "version": "1.0.0",
+      "provenance": [{ "source": "msi", "context": "user_unmanaged" }],
+      "eligibility": { "state": "manual", "reason": "msi_execution_not_supported_v1" },
+      "size": { "state": "available", "value_bytes": 52428800, "basis": "reported_estimate", "source_code": "msi_estimated_size_kib", "observed_at_unix_ms": 1788100000000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:arp:registry-only",
+      "identity": { "source": "arp", "hive": "local_machine", "view": "registry32", "subkey": "RegistryOnlyFixture" },
+      "scope": "machine",
+      "display_name": "Registry-only product",
+      "publisher": "Fixture",
+      "provenance": [{ "source": "arp", "hive": "local_machine", "view": "registry32" }],
+      "eligibility": { "state": "manual", "reason": "registry_only_manual" },
+      "size": { "state": "unknown", "reason_code": "not_reported" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msix:unsupported",
+      "identity": { "source": "msix", "package_full_name": "Unsupported.Package_1.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "A deliberately very long application name used to prove that exact identities remain accessible without truncating refusal or authority text",
+      "publisher": "Fixture",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "unsupported_source" },
+      "size": { "state": "unknown", "reason_code": "unsupported_host_capability" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    }
+  ],
+  "fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+}

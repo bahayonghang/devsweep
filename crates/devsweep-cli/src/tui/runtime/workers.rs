@@ -3,6 +3,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc::Sender,
 };
+use std::time::SystemTime;
 
 use anyhow::Context;
 
@@ -17,8 +18,15 @@ use crate::tui::{
     app::{JobId, WorkerEvent},
     display::compact_target_id,
 };
-use devsweep_core::analysis::analyze_path;
 use devsweep_core::services::{CleanService, InventoryService, ScanService, ScanServiceRunOutcome};
+use devsweep_core::{
+    analysis::analyze_path,
+    software::{
+        SOFTWARE_EXECUTION_VERSION, SoftwareExecutionReportV1, SoftwareExecutionRequest,
+        SoftwareExecutor, SoftwareInventorySource, SoftwareInventoryV1, SoftwareSelectionPlanV1,
+        build_selection_plan, inventory_software, preview_selection_plan_live,
+    },
+};
 
 pub(super) fn run_analyze_worker(
     job_id: JobId,
@@ -52,6 +60,142 @@ pub(super) fn run_analyze_worker(
             });
         }
     }
+}
+
+pub(super) fn run_software_inventory_worker(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let result = inventory_software(SoftwareInventorySource::All, Some(&cancel));
+    match result {
+        Ok(_inventory) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Ok(inventory) => {
+            let _ = worker_tx.send(WorkerEvent::SoftwareInventoryFinished { job_id, inventory });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+pub(super) fn run_software_preview_worker(
+    job_id: JobId,
+    inventory: SoftwareInventoryV1,
+    selected_ids: Vec<String>,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let result = (|| {
+        let plan = build_selection_plan(&inventory, &selected_ids, unix_ms_now())?;
+        if cancel.is_cancel_requested() {
+            return Ok(None);
+        }
+        let live = inventory_software(SoftwareInventorySource::Msix, Some(&cancel))?;
+        if cancel.is_cancel_requested() {
+            return Ok(None);
+        }
+        let preview = preview_selection_plan_live(&plan, &live, unix_ms_now())?;
+        Ok::<_, anyhow::Error>(Some((plan, preview)))
+    })();
+    match result {
+        Ok(Some((plan, preview))) => {
+            let _ = worker_tx.send(WorkerEvent::SoftwarePreviewFinished {
+                job_id,
+                plan,
+                preview,
+            });
+        }
+        Ok(None) => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(_) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+pub(super) fn run_software_uninstall_worker(
+    job_id: JobId,
+    plan: SoftwareSelectionPlanV1,
+    preview_digest: String,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    let result = SoftwareExecutor::default().execute(SoftwareExecutionRequest {
+        plan: &plan,
+        expected_preview_digest: &preview_digest,
+        confirmed: true,
+        cancel: Some(Arc::clone(&cancel)),
+    });
+    match result {
+        Ok(report) => {
+            let _ = worker_tx.send(WorkerEvent::SoftwareUninstallFinished { job_id, report });
+        }
+        Err(_error) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+pub(super) fn run_software_audit_worker(
+    job_id: JobId,
+    worker_tx: Sender<WorkerEvent>,
+    cancel: Arc<FlagCancelObserver>,
+) {
+    if cancel.is_cancel_requested() {
+        let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        return;
+    }
+    match SoftwareExecutor::default().recover_startup() {
+        Ok(_outcomes) if cancel.is_cancel_requested() => {
+            let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
+        }
+        Ok(outcomes) => {
+            let _ = worker_tx.send(WorkerEvent::SoftwareAuditFinished {
+                job_id,
+                report: SoftwareExecutionReportV1 {
+                    version: SOFTWARE_EXECUTION_VERSION,
+                    irreversible: true,
+                    outcomes,
+                },
+            });
+        }
+        Err(error) => {
+            let _ = worker_tx.send(WorkerEvent::JobFailed {
+                job_id,
+                message: error.to_string(),
+            });
+        }
+    }
+}
+
+fn unix_ms_now() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map_or(0, |duration| {
+            u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 pub(super) fn run_scan_worker<S: ScanService>(

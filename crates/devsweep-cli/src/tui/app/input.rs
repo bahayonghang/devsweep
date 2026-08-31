@@ -35,6 +35,9 @@ impl App {
         if self.shell.active == ModeId::Analyze {
             return self.handle_analyze_key(key);
         }
+        if self.shell.active == ModeId::Software {
+            return self.handle_software_key(key);
+        }
 
         if matches!(self.overlay, Overlay::None)
             && self
@@ -299,6 +302,12 @@ impl App {
             self.analyze
                 .reduce(AnalyzeAction::CancelRequested { operation_id });
         }
+        if let Some(operation_id) = self.software.operation_id
+            && self.shell.active == ModeId::Software
+        {
+            self.software
+                .reduce(SoftwareAction::CancelRequested(operation_id));
+        }
         let effects = self.cancel_all_active_jobs();
         if effects.is_empty() {
             return self.maybe_finish_pending_mode();
@@ -353,6 +362,107 @@ impl App {
                     AnalyzeSort::Kind => AnalyzeSort::SizeDescending,
                 };
                 self.analyze.reduce(AnalyzeAction::SortChanged(next));
+                Vec::new()
+            }
+            KeyCode::Char('p') => {
+                self.language_settings.open = true;
+                self.language_settings.selected = self.shell.locale;
+                self.language_settings.failure = None;
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    pub(super) fn handle_software_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match key.code {
+            KeyCode::Char('q') => self.request_quit(),
+            KeyCode::Esc => {
+                if self.software.phase == SoftwarePhase::Confirming {
+                    self.software.reduce(SoftwareAction::CloseConfirmation);
+                    Vec::new()
+                } else {
+                    self.request_quit()
+                }
+            }
+            KeyCode::Char('i') => {
+                if self.has_active_mutation_job() || self.software.operation_id.is_some() {
+                    return Vec::new();
+                }
+                let job_id = self.start_job(JobKind::Software, "Inventory installed software");
+                self.software
+                    .reduce(SoftwareAction::InventoryStarted(job_id));
+                vec![Effect::StartSoftwareInventory { job_id }]
+            }
+            KeyCode::Char('v') => {
+                let Some(inventory) = self.software.inventory.clone() else {
+                    return Vec::new();
+                };
+                if self.software.selected_ids.is_empty() || self.software.operation_id.is_some() {
+                    return Vec::new();
+                }
+                let selected_ids = self.software.selected_ids.iter().cloned().collect();
+                let job_id = self.start_job(JobKind::Software, "Revalidate Software preview");
+                self.software.reduce(SoftwareAction::PreviewStarted(job_id));
+                vec![Effect::StartSoftwarePreview {
+                    job_id,
+                    inventory,
+                    selected_ids,
+                }]
+            }
+            KeyCode::Char('r') => {
+                if self.has_active_mutation_job() || self.software.operation_id.is_some() {
+                    return Vec::new();
+                }
+                let job_id = self.start_job(JobKind::Software, "Recover Software audit state");
+                self.software.reduce(SoftwareAction::AuditStarted(job_id));
+                vec![Effect::StartSoftwareAudit { job_id }]
+            }
+            KeyCode::Enter if self.software.phase == SoftwarePhase::PreviewReady => {
+                self.software.reduce(SoftwareAction::OpenConfirmation);
+                Vec::new()
+            }
+            KeyCode::Enter if self.software.phase == SoftwarePhase::Confirming => {
+                let (Some(plan), Some(preview)) =
+                    (self.software.plan.clone(), self.software.preview.clone())
+                else {
+                    return Vec::new();
+                };
+                let job_id =
+                    self.start_job(JobKind::Software, "Uninstall confirmed Software selection");
+                self.software
+                    .reduce(SoftwareAction::UninstallStarted(job_id));
+                vec![Effect::StartSoftwareUninstall {
+                    job_id,
+                    plan,
+                    preview_digest: preview.digest,
+                }]
+            }
+            KeyCode::Char('x') => {
+                if let Some(operation_id) = self.software.operation_id {
+                    self.software
+                        .reduce(SoftwareAction::CancelRequested(operation_id));
+                }
+                self.cancel_active_job()
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.software.reduce(SoftwareAction::MoveCursor(1));
+                Vec::new()
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.software.reduce(SoftwareAction::MoveCursor(-1));
+                Vec::new()
+            }
+            KeyCode::Char(' ') => {
+                self.software.reduce(SoftwareAction::ToggleFocused);
+                Vec::new()
+            }
+            KeyCode::Char('a') => {
+                self.software.reduce(SoftwareAction::SelectAll);
+                Vec::new()
+            }
+            KeyCode::Char('/') => {
+                self.filter_active = true;
                 Vec::new()
             }
             KeyCode::Char('p') => {
@@ -424,6 +534,23 @@ impl App {
                     let mut query = self.analyze.query.clone();
                     query.push(ch);
                     self.analyze.reduce(AnalyzeAction::QueryChanged(query));
+                }
+                _ => {}
+            }
+            return Vec::new();
+        }
+        if self.shell.active == ModeId::Software {
+            match key.code {
+                KeyCode::Esc | KeyCode::Enter => self.filter_active = false,
+                KeyCode::Backspace => {
+                    let mut query = self.software.query.clone();
+                    query.pop();
+                    self.software.reduce(SoftwareAction::QueryChanged(query));
+                }
+                KeyCode::Char(ch) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    let mut query = self.software.query.clone();
+                    query.push(ch);
+                    self.software.reduce(SoftwareAction::QueryChanged(query));
                 }
                 _ => {}
             }

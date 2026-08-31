@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "observed_at_unix_ms": 1788100001000,
+  "sources": [
+    { "source": { "source": "arp", "hive": "local_machine", "view": "registry32" }, "state": "permission", "reason_code": "access_denied" },
+    { "source": { "source": "msi", "context": "machine" }, "state": "unsupported", "reason_code": "host_capability_unavailable" },
+    { "source": { "source": "msix_current_user" }, "state": "partial", "reason_code": "dependency_graph_incomplete" }
+  ],
+  "entries": [
+    {
+      "id": "software:v1:msix:partial-only",
+      "identity": { "source": "msix", "package_full_name": "Partial.Only_1.0.0.0_x64__publisher" },
+      "scope": "current_user",
+      "display_name": "Partial source package",
+      "provenance": [{ "source": "msix_current_user" }],
+      "eligibility": { "state": "manual", "reason": "source_incomplete" },
+      "size": { "state": "partial", "lower_bound_bytes": 1024, "basis": "measured_installed_location", "source_code": "msix_installed_path", "reason_code": "directory_read_failed", "observed_at_unix_ms": 1788100001000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    }
+  ],
+  "fingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+}

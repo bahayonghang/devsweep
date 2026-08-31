@@ -1,0 +1,55 @@
+{
+  "operation_id": "software-audit-1",
+  "recovered": [
+    { "operation_id": "core-crash", "software_id": "software:v1:msix:crash", "outcome": "unknown_after_dispatch", "installed_state": "unavailable", "reboot_evidence": "none", "error_code": "recovered_after_crash", "irreversible": true }
+  ],
+  "records": [
+    {
+      "schema_version": 1,
+      "domain": "software",
+      "operation_id": "core-crash",
+      "timestamp_unix_ms": 1788100003000,
+      "identity": { "source": "msix", "package_full_name": "Crash.Package_1.0.0.0_x64__publisher" },
+      "inventory_fingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "preview_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "transition": { "kind": "dispatch_started" },
+      "status_code": "dispatch_started",
+      "reboot_evidence": "none",
+      "irreversible": true
+    },
+    {
+      "schema_version": 1,
+      "domain": "software",
+      "operation_id": "core-crash",
+      "timestamp_unix_ms": 1788100004000,
+      "identity": { "source": "msix", "package_full_name": "Crash.Package_1.0.0.0_x64__publisher" },
+      "inventory_fingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "preview_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "transition": { "kind": "requery_observed" },
+      "status_code": "requery_unavailable",
+      "error_code": "requery_unavailable",
+      "reboot_evidence": "none",
+      "installed_state": "unavailable",
+      "requery_result": "unavailable",
+      "adapter_outcome": "unfinished",
+      "irreversible": true
+    },
+    {
+      "schema_version": 1,
+      "domain": "software",
+      "operation_id": "core-crash",
+      "timestamp_unix_ms": 1788100005000,
+      "identity": { "source": "msix", "package_full_name": "Crash.Package_1.0.0.0_x64__publisher" },
+      "inventory_fingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+      "preview_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "transition": { "kind": "terminal", "outcome": "unknown_after_dispatch" },
+      "status_code": "unknown_after_dispatch",
+      "error_code": "recovered_after_crash",
+      "reboot_evidence": "none",
+      "installed_state": "unavailable",
+      "requery_result": "unavailable",
+      "adapter_outcome": "unfinished",
+      "irreversible": true
+    }
+  ]
+}

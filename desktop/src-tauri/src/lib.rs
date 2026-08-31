@@ -3,18 +3,25 @@ mod clean;
 mod commands;
 mod error;
 mod scan;
+mod software;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(scan::ScanCoordinator::default())
         .manage(analyze::AnalyzeCoordinator::default())
+        .manage(software::SoftwareCoordinator::default())
         .manage(commands::PresentationSettingsCoordinator::default())
         .invoke_handler(tauri::generate_handler![
             commands::scan_start,
             commands::scan_cancel,
             analyze::analyze_start,
             analyze::analyze_cancel,
+            software::software_inventory_start,
+            software::software_preview,
+            software::software_uninstall,
+            software::software_audit,
+            software::software_cancel,
             clean::plan_dry_run,
             clean::plan_execute,
             commands::protection_list_get,

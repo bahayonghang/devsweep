@@ -17,6 +17,7 @@ import {
 } from "./lifecycle";
 import { CleanWorkbench } from "./modes/clean";
 import { AnalyzePage } from "./modes/analyze";
+import { SoftwareWorkbench } from "./modes/software";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
 
@@ -187,6 +188,7 @@ export function App({
 
   const modes: readonly ModeRegistration[] = [
     { id: "clean", render: () => <CleanWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
+    { id: "software", render: () => <SoftwareWorkbench bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
     { id: "analyze", render: () => <AnalyzePage bridge={bridge} coordinator={coordinator} locale={presentation.locale} /> },
   ];
   return <AppShell

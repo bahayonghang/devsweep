@@ -1,0 +1,39 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"b9edd974010d38fb7a5ca294ea7d65a908971e3f751ce80a29523740277f597a"}
+{"event":"app_launched","pid":82600,"cdpPort":9360,"scalePercent":null,"profile":"localappdata"}
+{"event":"locale_audit_en","store":null}
+{"event":"inventory_state","tag":"en","state":{"status":"ready","rows":1293,"summary":"0 selected | reported estimate 0 B | measured package 0 B | partial at least 0 B | 0 unknownReview uninstall previewContinue to confirmation"}}
+{"event":"screenshot","name":"sw-01-inventory-en-1440"}
+{"event":"screenshot","name":"sw-02-inventory-en-1024"}
+{"event":"screenshot","name":"sw-02-inventory-en-800"}
+{"event":"screenshot","name":"sw-02-inventory-en-390"}
+{"event":"keyboard_select","kb":{"checked":false,"active":""}}
+{"event":"screenshot","name":"sw-03-keyboard-select-en"}
+{"event":"search_narrowed","narrowed":1293}
+{"event":"screenshot","name":"sw-04-search-en"}
+{"event":"axtree_captured","nodes":44045}
+{"event":"locale_audit_zh","store":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"inventory_state","tag":"zh-CN","state":{"status":"ready","rows":1293,"summary":"已选 0 个 | 报告估算 0 B | 实测安装包 0 B | 部分结果至少 0 B | 0 个未知审阅卸载预览进入二次确认"}}
+{"event":"screenshot","name":"sw-05-inventory-zh-1440"}
+{"event":"screenshot","name":"sw-06-inventory-zh-390"}
+{"event":"app_closed","pid":82600}
+{"event":"app_launched","pid":63604,"cdpPort":9370,"scalePercent":100,"profile":"localappdata-dpi-100"}
+{"event":"inventory_state","tag":"dpi-100","state":{"status":"ready","rows":1293,"summary":"0 selected | reported estimate 0 B | measured package 0 B | partial at least 0 B | 0 unknownReview uninstall previewContinue to confirmation"}}
+{"event":"screenshot","name":"sw-dpi-100-inventory-en-1440"}
+{"event":"dpi_probe","scalePercent":100,"dpr":1,"inner":[1000,750]}
+{"event":"app_closed","pid":63604}
+{"event":"app_launched","pid":63860,"cdpPort":9373,"scalePercent":125,"profile":"localappdata-dpi-125"}
+{"event":"inventory_state","tag":"dpi-125","state":{"status":"ready","rows":1293,"summary":"0 selected | reported estimate 0 B | measured package 0 B | partial at least 0 B | 0 unknownReview uninstall previewContinue to confirmation"}}
+{"event":"screenshot","name":"sw-dpi-125-inventory-en-1440"}
+{"event":"dpi_probe","scalePercent":125,"dpr":1.25,"inner":[800,600]}
+{"event":"app_closed","pid":63860}
+{"event":"app_launched","pid":26916,"cdpPort":9375,"scalePercent":150,"profile":"localappdata-dpi-150"}
+{"event":"inventory_state","tag":"dpi-150","state":{"status":"ready","rows":1293,"summary":"0 selected | reported estimate 0 B | measured package 0 B | partial at least 0 B | 0 unknownReview uninstall previewContinue to confirmation"}}
+{"event":"screenshot","name":"sw-dpi-150-inventory-en-1440"}
+{"event":"dpi_probe","scalePercent":150,"dpr":1.5,"inner":[667,500]}
+{"event":"app_closed","pid":26916}
+{"event":"app_launched","pid":67128,"cdpPort":9380,"scalePercent":200,"profile":"localappdata-dpi-200"}
+{"event":"inventory_state","tag":"dpi-200","state":{"status":"ready","rows":1293,"summary":"0 selected | reported estimate 0 B | measured package 0 B | partial at least 0 B | 0 unknownReview uninstall previewContinue to confirmation"}}
+{"event":"screenshot","name":"sw-dpi-200-inventory-en-1440"}
+{"event":"dpi_probe","scalePercent":200,"dpr":2,"inner":[500,375]}
+{"event":"app_closed","pid":67128}
+{"event":"done"}

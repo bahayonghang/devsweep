@@ -1,0 +1,88 @@
+=== cargo test -p devsweep-cli tui::modes::software ===
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.24s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-c73006d8acebc199.exe)
+
+running 4 tests
+test tui::modes::software::tests::restart_audit_accepts_only_matching_operation_and_preserves_unknown ... ok
+test tui::modes::software::tests::exact_manual_identity_never_enters_selection ... ok
+test tui::modes::software::tests::stale_preview_is_rejected_and_selection_invalidates_authority ... ok
+test tui::modes::software::tests::bilingual_test_backend_keeps_manual_unknown_and_irreversible_copy_visible ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 136 filtered out; finished in 0.01s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-b8344168a9e83e7b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-81a5d9406bdd73f7.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-3701fee7812062de.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+EXIT:0
+=== cargo test -p devsweep-desktop software ===
+warning: linker stdout: 正在创建库 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.lib 和对象 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.exp
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `devsweep-desktop` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.58s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_desktop_lib-88e0272cd2078c64.exe)
+
+running 2 tests
+test software::tests::concurrent_software_operations_and_stale_cancel_are_bounded ... ok
+test software::tests::software_execution_wire_rejects_partial_and_keeps_five_terminals ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 30 filtered out; finished in 0.00s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep_desktop-750b0f332722a27b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+EXIT:0
+=== cargo fmt --all -- --check ===
+EXIT:0
+=== git diff --check ===
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/software/execution.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/presentation/software.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/events.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/input.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/jobs.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/worker.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/modes/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/jobs.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/runtime/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/runtime/workers.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/shell/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/tests/cli_contract.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/scripts/generate-types.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/Cargo.toml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/error.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/lib.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.test.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/bridge.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/contract.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/fixture-bridge.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/fixtures/contract-variants.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/types.gen.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/components/ErrorBanner.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/modes/analyze/AnalyzePage.test.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/modes/analyze/render-benchmark.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/en.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it
+EXIT:0

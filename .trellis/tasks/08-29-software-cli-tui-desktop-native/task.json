@@ -1,0 +1,30 @@
+{
+  "id": "software-cli-tui-desktop-native",
+  "name": "software-cli-tui-desktop-native",
+  "title": "Build Software CLI, TUI, desktop, and native evidence",
+  "description": "Own Software presentation, selection/detail hierarchy, bilingual output, IPC wiring, machine-scope refusals, and no-UAC native acceptance.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "Software CLI/TUI/Desktop presentation and standard-user native evidence; no inventory or executor authority",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-software-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "4-software",
+    "depends_on": "08-29-software-execution-audit,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

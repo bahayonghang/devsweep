@@ -56,6 +56,12 @@ impl ModeRegistration {
             id: ModeId::Analyze,
         }
     }
+
+    const fn software() -> Self {
+        Self {
+            id: ModeId::Software,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -146,7 +152,11 @@ impl TuiShell {
     fn with_locale(locale: Locale) -> Self {
         Self {
             locale,
-            registrations: vec![ModeRegistration::clean(), ModeRegistration::analyze()],
+            registrations: vec![
+                ModeRegistration::clean(),
+                ModeRegistration::software(),
+                ModeRegistration::analyze(),
+            ],
             active: ModeId::Clean,
         }
     }
@@ -242,6 +252,11 @@ mod tests {
                     accelerator: Some('c'),
                 },
                 ShellNavigationItem {
+                    id: ModeId::Software,
+                    label: "Software".to_string(),
+                    accelerator: Some('s'),
+                },
+                ShellNavigationItem {
                     id: ModeId::Analyze,
                     label: "Analyze".to_string(),
                     accelerator: Some('a'),
@@ -258,6 +273,11 @@ mod tests {
                     id: ModeId::Clean,
                     label: "清理".to_string(),
                     accelerator: None,
+                },
+                ShellNavigationItem {
+                    id: ModeId::Software,
+                    label: "软件".to_string(),
+                    accelerator: Some('r'),
                 },
                 ShellNavigationItem {
                     id: ModeId::Analyze,

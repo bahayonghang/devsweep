@@ -1,0 +1,130 @@
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+generated src/api/types.gen.ts from 19 named fixture files
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+
+[1m[46m RUN [49m[22m [36mv3.2.7 [39m[90mD:/Documents/Code/Rust/Exp/devsweep/desktop[39m
+
+ [32m✓[39m src/styles.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/modes/analyze/selectors.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/modes/analyze/treemap.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m src/modes/analyze/parity.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/modes/clean/reducer.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/modes/software/parity.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/modes/analyze/state.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/state/app-state.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/i18n/index.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/app-shell/operation-coordinator.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m src/lifecycle.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m src/api/contract.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/api/fixture-bridge.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/api/bridge.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/pages/ScanPage.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 118[2mms[22m[39m
+ [32m✓[39m src/components/TargetTable.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 119[2mms[22m[39m
+ [32m✓[39m src/modes/software/state.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/app-shell/AppShell.test.tsx [2m([22m[2m15 tests[22m[2m)[22m[33m 1040[2mms[22m[39m
+ [32m✓[39m src/modes/software/SoftwareWorkbench.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 508[2mms[22m[39m
+   [33m[2m✓[22m[39m SoftwareWorkbench[2m > [22mrenders manual rows, exact identity detail, preview, and second confirmation [33m 436[2mms[22m[39m
+ [32m✓[39m src/api/types-generation.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 1553[2mms[22m[39m
+   [33m[2m✓[22m[39m IPC type generation[2m > [22mis deterministic, committed, ASCII, and type-only [33m 821[2mms[22m[39m
+   [33m[2m✓[22m[39m IPC type generation[2m > [22mchanges when a named fixture changes [33m 732[2mms[22m[39m
+ [32m✓[39m src/modes/analyze/AnalyzePage.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1531[2mms[22m[39m
+   [33m[2m✓[22m[39m AnalyzePage[2m > [22mrestores the focused directory on its canonical 200-row parent page [33m 623[2mms[22m[39m
+   [33m[2m✓[22m[39m AnalyzePage[2m > [22mcovers empty/loading/canceling/canceled/partial/error/complete copy in 'zh-CN' [33m 310[2mms[22m[39m
+ [31m❯[39m src/App.test.tsx [2m([22m[2m34 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 4129[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22muses canonical IEC byte units at exact boundaries[32m 5[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mzh-CN Clean workbench does not show English Projects Scan Search Ready[32m 134[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mkeeps the shell absent while presentation settings are loading[32m 9[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mfails load closed without an OS or English locale fallback[32m 23[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mgates a ready shell immediately when the settings bridge identity changes[32m 30[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mrejects an old load settlement after the settings bridge changes[32m 18[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mrejects an old save settlement while a replacement store is loading[32m 153[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mgates a user-locale identity change until its new load succeeds[32m 32[2mms[22m[39m
+[31m   [31m×[31m desktop workflow[2m > [22mloads and persists the shared language setting without registering unavailable modes[39m[32m 22[2mms[22m[39m
+[31m     → [2mexpect([22m[31melement[31m[2m).not.toBeInTheDocument()[22m
+
+[31mexpected document not to contain element, found <button
+  aria-controls="mode-panel"
+  aria-selected="false"
+  role="tab"
+  tabindex="-1"
+  title="Alt+R"
+  type="button"
+>
+  软件
+</button> instead[31m[39m
+   [32m✓[39m desktop workflow[2m > [22mkeeps the prior locale visible until a matching save response succeeds[32m 168[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mpreserves the prior locale and selection when save rejects[32m 127[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mpreserves the prior locale when the save response tag mismatches[32m 139[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mignores pending load and save settlement after unmount[32m 148[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mkeeps scan IPC arguments locale-neutral across presentation changes[32m 280[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mkeeps a canceled preview read-only and replaces it on rescan[32m 217[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mdistinguishes an active empty scan from a completed empty report[32m 93[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22moffers an explicit return to the previous completed report after a stopped rescan[32m 210[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mrequests cancellation on a malformed progress payload and waits for the terminal result[32m 117[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mgroups cumulative preview rows by scope without announcing the table[32m 88[2mms[22m[39m
+   [33m[2m✓[22m[39m desktop workflow[2m > [22minvalidates a dry run after selection changes, then confirms and reports execution [33m 487[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mdisables conflicting scan controls during dry run and execution[32m 233[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mrenders recovery copy for undefined[32m 75[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mrenders recovery copy for undefined[32m 63[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mrenders recovery copy for undefined[32m 65[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22morders real bridge scan, dry-run, and execute starts after old cancel and join[32m 291[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mdoes not invoke a real bridge service when the coordinator is closed or cancellation fails[32m 141[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mreleases coordinator ownership after a sync bridge start failure[32m 91[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mreleases coordinator ownership after a async bridge start failure[32m 77[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mcloses an active App operation on unmount without survivors or unhandled rejection (cancel rejects: false)[32m 154[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mcloses an active App operation on unmount without survivors or unhandled rejection (cancel rejects: true)[32m 155[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mawaits the real App close listener drain before Tauri owns last-window destroy (cancel rejects: false)[32m 4[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mawaits the real App close listener drain before Tauri owns last-window destroy (cancel rejects: true)[32m 3[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22munlistens a late native close registration and reuses the unmount drain[32m 71[2mms[22m[39m
+   [32m✓[39m desktop workflow[2m > [22mprojects the exact debug one-shot route fault through the real App shell[32m 204[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/App.test.tsx[2m > [22mdesktop workflow[2m > [22mloads and persists the shared language setting without registering unavailable modes
+[31m[1mError[22m: [2mexpect([22m[31melement[31m[2m).not.toBeInTheDocument()[22m
+
+[31mexpected document not to contain element, found <button
+  aria-controls="mode-panel"
+  aria-selected="false"
+  role="tab"
+  tabindex="-1"
+  title="Alt+R"
+  type="button"
+>
+  软件
+</button> instead[31m[39m
+[36m [2m❯[22m src/App.test.tsx:[2m269:59[22m[39m
+    [90m267| [39m
+    [90m268| [39m    expect(await screen.findByRole("tab", { name: "清理" })).toBeInTheDo…
+    [90m269| [39m    expect(screen.queryByRole("tab", { name: "软件" })).not.toBeInTheDoc…
+    [90m   | [39m                                                          [31m^[39m
+    [90m270| [39m    expect(document.querySelector(".shell-brand-icon")).toHaveAttribut…
+    [90m271| [39m    [35mawait[39m user[33m.[39m[34mclick[39m(screen[33m.[39m[34mgetByRole[39m([32m"button"[39m[33m,[39m { name[33m:[39m [32m"语言"[39m }))[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m21 passed[39m[22m[90m (22)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m129 passed[39m[22m[90m (130)[39m
+[2m   Start at [22m 09:57:04
+[2m   Duration [22m 7.41s[2m (transform 11.01s, setup 3.54s, collect 17.92s, tests 9.19s, environment 15.90s, prepare 2.05s)[22m
+
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+[36mvite v7.3.6 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 82 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                                [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:  0.26 kB[22m
+[2mdist/[22m[32massets/devsweep-icon-master-Bn2Ejx_Y.png  [39m[1m[2m956.58 kB[22m[1m[22m
+[2mdist/[22m[35massets/index-Delf9yZz.css                 [39m[1m[2m 21.51 kB[22m[1m[22m[2m │ gzip:  5.27 kB[22m
+[2mdist/[22m[36massets/index-BRQ1H1js.js                  [39m[1m[2m375.33 kB[22m[1m[22m[2m │ gzip: 99.35 kB[22m
+[32m✓ built in 538ms[39m

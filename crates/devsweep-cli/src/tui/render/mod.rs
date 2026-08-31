@@ -15,6 +15,7 @@ mod format;
 mod inventory;
 mod jobs;
 mod overlays;
+mod software;
 mod targets;
 mod theme;
 
@@ -23,6 +24,7 @@ use format::*;
 use inventory::render_inventory;
 use jobs::{render_jobs_logs, scan_diagnostic_lines};
 use overlays::render_overlay;
+use software::render_software;
 use targets::{
     render_categories, render_compact_summary, render_details_panel, render_rules, render_targets,
     selected_details_lines,
@@ -54,6 +56,10 @@ struct FooterAction {
 pub(super) fn render_app(frame: &mut Frame<'_>, app: &App) {
     if app.shell.active == super::shell::ModeId::Analyze {
         render_analyze(frame, app);
+        return;
+    }
+    if app.shell.active == super::shell::ModeId::Software {
+        render_software(frame, app);
         return;
     }
     let area = frame.area();

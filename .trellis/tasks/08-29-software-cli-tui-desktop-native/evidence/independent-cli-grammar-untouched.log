@@ -1,0 +1,4 @@
+=== git diff --stat -- crates/devsweep-cli/src/application/cli.rs (must be empty) ===
+EXIT:0
+=== git status --porcelain -- crates/devsweep-cli/src/application/cli.rs (must be empty) ===
+EXIT:0

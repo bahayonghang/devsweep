@@ -119,6 +119,9 @@ impl App {
         if self.shell.active == ModeId::Analyze && mode != ModeId::Analyze {
             self.analyze.reduce(AnalyzeAction::Release);
         }
+        if self.shell.active == ModeId::Software && mode != ModeId::Software {
+            self.software.reduce(SoftwareAction::Released);
+        }
         let _ = self.shell.activate(mode);
         self.overlay = Overlay::None;
         self.filter_active = false;
@@ -143,6 +146,7 @@ impl App {
                 JobKind::Clean => AppLogSource::Clean,
                 JobKind::Inventory => AppLogSource::Inventory,
                 JobKind::Analyze => AppLogSource::Analyze,
+                JobKind::Software => AppLogSource::Software,
             })
             .unwrap_or(AppLogSource::App)
     }

@@ -1,0 +1,10 @@
+desktop-516bf74\lyh
+Mandatory Label\Medium Mandatory Level Label  S-1-16-8192
+
+Command evidence:
+C:\Windows\System32\whoami.exe
+C:\Windows\System32\whoami.exe /groups
+
+Both commands exited 0. The first unqualified `whoami` attempt resolved to the
+Git for Windows executable and failed with `CreateFileMapping ... Win32 error 5`;
+the explicit Windows system binary above is the authoritative observation.

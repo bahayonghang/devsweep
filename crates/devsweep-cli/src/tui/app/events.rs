@@ -7,7 +7,12 @@ use crate::{
     model::{CleanupPlan, ScanHealth, TargetId},
     scan::ScanPhase,
 };
-use devsweep_core::analysis::{AnalyzeProgressV1, AnalyzeRunOutcome};
+use devsweep_core::{
+    analysis::{AnalyzeProgressV1, AnalyzeRunOutcome},
+    software::{
+        SoftwareExecutionReportV1, SoftwareInventoryV1, SoftwarePreviewV1, SoftwareSelectionPlanV1,
+    },
+};
 
 pub(in crate::tui) type JobId = u64;
 
@@ -26,6 +31,22 @@ pub(in crate::tui) enum Effect {
         job_id: JobId,
     },
     StartInventory {
+        job_id: JobId,
+    },
+    StartSoftwareInventory {
+        job_id: JobId,
+    },
+    StartSoftwarePreview {
+        job_id: JobId,
+        inventory: SoftwareInventoryV1,
+        selected_ids: Vec<String>,
+    },
+    StartSoftwareUninstall {
+        job_id: JobId,
+        plan: SoftwareSelectionPlanV1,
+        preview_digest: String,
+    },
+    StartSoftwareAudit {
         job_id: JobId,
     },
     StartClean {
@@ -69,6 +90,23 @@ pub(in crate::tui) enum WorkerEvent {
     AnalyzeFinished {
         job_id: JobId,
         outcome: AnalyzeRunOutcome,
+    },
+    SoftwareInventoryFinished {
+        job_id: JobId,
+        inventory: SoftwareInventoryV1,
+    },
+    SoftwarePreviewFinished {
+        job_id: JobId,
+        plan: SoftwareSelectionPlanV1,
+        preview: SoftwarePreviewV1,
+    },
+    SoftwareUninstallFinished {
+        job_id: JobId,
+        report: SoftwareExecutionReportV1,
+    },
+    SoftwareAuditFinished {
+        job_id: JobId,
+        report: SoftwareExecutionReportV1,
     },
     JobProgress {
         job_id: JobId,
