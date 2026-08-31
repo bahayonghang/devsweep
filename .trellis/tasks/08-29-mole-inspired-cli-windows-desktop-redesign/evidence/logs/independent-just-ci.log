@@ -1,0 +1,650 @@
+cargo fmt --all -- --check
+cargo update --offline --package devsweep-core --package devsweep-cli
+     Locking 0 packages to latest Rust 1.88.0 compatible versions
+note: pass `--verbose` to see 62 unchanged dependencies behind latest
+cargo check --workspace --locked --all-targets
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s
+cargo test --workspace --locked --all-targets
+   Compiling devsweep-desktop v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.93s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-9dd395f060ec21fc.exe)
+
+running 183 tests
+test application::commands::optimize::tests::plan_error_mapping_is_typed_by_exit_class ... ok
+test application::cli::tests::repeated_roots_and_selections_preserve_command_line_order ... ok
+test application::cli::tests::rescan_requires_one_project_containing_root ... ok
+test application::cli::tests::removed_roots_are_unknown_commands ... ok
+test application::cli::tests::cli_definition_is_valid ... ok
+test application::cli::tests::semantic_validation_rejects_machine_language_and_path_collisions ... ok
+test application::cli::tests::built_tree_and_real_parser_preserve_inherited_language_semantics ... ok
+test application::cli::tests::english_and_chinese_references_exactly_match_the_clap_manifest ... ok
+test application::commands::software::execution::tests::emitted_failure_uses_one_machine_document_and_preserves_failed_exit ... ok
+{"command":"clean.rules.show","data":{"ecosystem":"rust","id":"rust.target","inspect_only":false,"platform_applicability":"all","rationale":"Rust build directory (target/) via cargo clean","risk":"low","safety_class":"command","scope":"project","source":"shipped_registry"},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::rules::tests::rules_show_known_id_is_inspect_only ... ok
+{"command":"clean.rules.list","data":{"count":29,"inspect_only":true,"rules":[{"ecosystem":"rust","id":"rust.target","inspect_only":false,"platform_applicability":"all","rationale":"Rust build directory (target/) via cargo clean","risk":"low","safety_class":"command","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.node_modules","inspect_only":false,"platform_applicability":"all","rationale":"Node dependency directory","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.next_cache","inspect_only":false,"platform_applicability":"all","rationale":"Next.js build cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.turbo","inspect_only":false,"platform_applicability":"all","rationale":"Turborepo cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.parcel_cache","inspect_only":false,"platform_applicability":"all","rationale":"Parcel cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.venv_dot","inspect_only":false,"platform_applicability":"all","rationale":"Python virtualenv (.venv)","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.venv","inspect_only":false,"platform_applicability":"all","rationale":"Python virtualenv (venv)","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.pytest_cache","inspect_only":false,"platform_applicability":"all","rationale":"pytest cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.mypy_cache","inspect_only":false,"platform_applicability":"all","rationale":"mypy cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.ruff_cache","inspect_only":false,"platform_applicability":"all","rationale":"Ruff cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.tox","inspect_only":false,"platform_applicability":"all","rationale":"tox environments","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.__pycache__","inspect_only":false,"platform_applicability":"all","rationale":"Python __pycache__ directories","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"npm.cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"npm cache via npm cache clean --force","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"python","id":"pip.cache.purge","inspect_only":false,"platform_applicability":"all","rationale":"pip cache via pip cache purge","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"pnpm.store.prune","inspect_only":false,"platform_applicability":"all","rationale":"pnpm store via pnpm store prune","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"yarn.cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"yarn cache via yarn cache clean (see classic/modern variants)","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"yarn.cache.clean.classic","inspect_only":false,"platform_applicability":"all","rationale":"yarn classic cache via yarn cache clean","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"yarn.cache.clean.modern","inspect_only":false,"platform_applicability":"all","rationale":"yarn berry cache via yarn cache clean --mirror","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"rust","id":"cargo.home.inspect","inspect_only":true,"platform_applicability":"all","rationale":"Cargo home (~/.cargo) 鈥?inspect only, never auto-deleted","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"go.mod_cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"Go module cache via go clean -modcache","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"gradle.caches","inspect_only":false,"platform_applicability":"all","rationale":"gradle caches","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"gradle.wrapper_dists","inspect_only":false,"platform_applicability":"all","rationale":"gradle wrapper distributions","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"maven.repository","inspect_only":true,"platform_applicability":"all","rationale":"maven local repository","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"go.mod_cache","inspect_only":true,"platform_applicability":"all","rationale":"go module cache","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"ivy.cache","inspect_only":false,"platform_applicability":"all","rationale":"ivy cache","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"nuget.packages","inspect_only":false,"platform_applicability":"all","rationale":"NuGet global packages","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"jetbrains.caches","inspect_only":true,"platform_applicability":"os_native","rationale":"JetBrains IDE caches (vendor root inspect)","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"huggingface.hub","inspect_only":true,"platform_applicability":"os_native","rationale":"HuggingFace hub models","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"docker","id":"docker","inspect_only":true,"platform_applicability":"all","rationale":"Docker prune 鈥?planned, not yet scanned","risk":"high","safety_class":"deferred","scope":"global","source":"shipped_registry"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::rules::tests::rules_list_is_inspect_only_and_matches_the_shipped_registry ... ok
+test application::cli::tests::defaults_ranges_conflicts_and_authority_syntax_are_frozen ... ok
+test application::cli::tests::every_frozen_root_and_nested_shape_parses ... ok
+test application::commands::software::inventory::tests::truthful_last_used_shape_is_not_relabelled_by_the_cli ... ok
+test application::commands::status::tests::broken_pipe_classifier_is_success ... ok
+test application::commands::status::tests::coordinator_refusal_is_unavailable ... ok
+test application::commands::rules::tests::rules_show_unknown_id_fails_closed ... ok
+test application::commands::tests::frozen_module_tree_is_compiler_registered ... ok
+{"command":"history.list","data":{"operations":[],"stores":[{"domain":"clean","reason_code":null,"state":"empty"},{"domain":"software","reason_code":null,"state":"empty"},{"domain":"optimize","reason_code":null,"state":"empty"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+{"command":"clean.preview","data":{"digest":"sha256:f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","report":{"attempted":0,"audit_log":null,"confirmation_digest":"f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","dry_run":true,"estimated_recoverable":{"partial_lower_bound_bytes":0,"unknown_target_count":0,"verified_bytes":0},"failed":0,"failures":[],"notes":[],"outcomes":[],"selected":0,"skipped":0,"succeeded":0}},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::tests::history_commands_reach_the_owned_handler ... ok
+test application::cli::tests::set_true_flags_are_value_less_in_real_parser_and_chinese_help ... ok
+test application::commands::clean::tests::stale_execute_is_invalid_authority ... ok
+test application::commands::optimize::tests::plan_writes_versioned_single_id_json_and_rejects_selections ... ok
+test application::commands::tests::software_commands_reach_the_owned_handler ... ok
+test application::output::tests::broken_pipe_cancels_and_joins_without_another_write ... ok
+test application::output::tests::machine_error_envelope_has_stable_locale_neutral_fields ... ok
+test application::output::tests::non_broken_write_failure_records_producer_error_and_joins ... ok
+test application::commands::clean::tests::preview_empty_plan_is_dry_run ... ok
+test application::commands::clean::tests::plan_rejects_inspect_only_selection ... ok
+test application::commands::tests::optimize_commands_reach_the_owned_handler ... ok
+{"command":"history.list","data":{"operations":[{"domain":"clean","first_timestamp_unix_ms":1711929600000,"last_timestamp_unix_ms":1711929600000,"operation_id":"op-protect-v1-fixture","outcome_code":"committed","partial":false,"stable_codes":["committed"],"unknown":false,"unsupported":false}],"stores":[{"domain":"clean","reason_code":null,"state":"available"},{"domain":"software","reason_code":null,"state":"empty"},{"domain":"optimize","reason_code":null,"state":"empty"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::optimize::tests::hostile_plan_fields_fail_closed_without_echoing_payloads ... ok
+test application::commands::optimize::tests::execution_machine_document_never_claims_settings_completion ... ok
+test application::presentation::optimize::tests::guidance_has_no_run_action_and_settings_is_not_execution ... ok
+test application::commands::software::execution::tests::hostile_plan_fields_fail_closed_before_any_live_or_adapter_call ... ok
+test application::commands::software::inventory::tests::hostile_inventory_fields_cannot_enter_a_saved_plan ... ok
+test application::commands::software::execution::tests::execution_machine_document_never_uses_partial_or_reversible ... ok
+test application::presentation::tests::renderer_tree_is_frozen_without_domain_implementations ... ok
+test application::presentation::clean::tests::empty_scan_is_truthful_in_both_locales ... ok
+test application::presentation::software::tests::software_inventory_summary_is_bilingual ... ok
+test application::presentation::analyze::tests::bilingual_snapshots_use_owned_renderer ... ok
+test application::presentation::status::tests::bilingual_snapshot_keeps_privacy_and_availability ... ok
+test application::presentation::optimize::tests::preview_and_execution_state_launched_is_not_completion ... ok
+test application::presentation::optimize::tests::catalogue_is_bilingual_and_lists_all_eight_rows ... ok
+test application::tests::bare_invocation_requires_both_terminal_streams ... ok
+test application::tests::non_interactive_resolution_remains_explicit_then_os_then_english ... ok
+test i18n::tests::binary_formatter_covers_boundaries_without_floating_point ... ok
+test i18n::tests::canonical_shell_v1_namespace_has_exact_copy_and_closed_metadata ... ok
+test i18n::tests::human_golden_fixtures_are_owned_by_the_canonical_catalogues ... ok
+test i18n::tests::locale_resolution_and_presentation_tag_boundary_are_closed ... ok
+test application::tests::human_live_requires_stdout_tty_but_ndjson_does_not ... ok
+test i18n::tests::long_user_data_is_returned_in_full_by_the_catalogue ... ok
+test i18n::tests::plural_selection_and_interpolation_are_locale_specific_and_injection_safe ... ok
+test application::tests::chinese_help_detection_requires_an_explicit_supported_flag ... ok
+test application::tests::shipped_roots_are_registered_without_compatibility_aliases ... ok
+test i18n::tests::shell_metadata_facade_exposes_exact_locale_specific_contracts ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes ... ok
+test tui::app::tests::cancellation_key_requests_active_job_cancellation ... ok
+test tui::app::tests::cancelling_job_ignores_late_progress_events ... ok
+test tui::app::tests::chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit ... ok
+test tui::app::tests::byte_summaries_count_duplicate_paths_once ... ok
+test tui::app::tests::accepted_confirmation_keeps_explicit_fresh_target_selection ... ok
+test tui::app::tests::accepted_confirmation_executes_its_frozen_manifest ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+test tui::app::tests::completed_scan_keeps_partial_health_and_capacity_totals_in_state ... ok
+test tui::app::tests::completed_scan_replaces_preview_and_reapplies_final_defaults ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test tui::app::tests::language_save_failure_stays_visible_without_changing_the_session_locale ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::quit_during_active_job_opens_confirm_instead_of_detaching ... ok
+test tui::app::tests::pycache_groups_collapse_without_changing_target_selection_or_identity ... ok
+test tui::app::tests::replacement_scan_waits_for_cancel_terminal_and_rejects_stale_results ... ok
+test tui::app::tests::scan_progress_applies_latest_cumulative_partial_plan ... ok
+test tui::app::tests::startup_default_selection_follows_selected_by_default_even_for_self_targets ... ok
+test tui::app::tests::startup_effects_request_an_initial_scan ... ok
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+test i18n::tests::catalogue_schema_rejects_unknown_fields_and_duplicate_placeholders ... ok
+test tui::app::tests::terminal_jobs_ignore_late_worker_events ... ok
+test tui::app::tests::update_keeps_scan_preview_read_only_then_restores_completed_selection ... ok
+test tui::app::tests::worker_events_update_jobs_and_targets ... ok
+test tui::display::tests::command_preview_quotes_and_sanitizes_argv ... ok
+test tui::display::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::modes::analyze::tests::bars_are_proportional_lower_bounds_and_never_invent_unknown_area ... ok
+test tui::app::tests::viewport_keeps_selection_visible_for_long_lists ... ok
+test tui::modes::analyze::tests::cli_generated_fixture_matches_tui_reducer_totals_evidence_and_warnings ... ok
+test tui::modes::analyze::tests::keyboard_drill_down_and_up_restore_the_directory_anchor ... ok
+test i18n::tests::embedded_catalogues_have_exact_schema_parity ... ok
+test tui::modes::analyze::tests::leaving_analyze_requests_cancel_and_releases_state_only_after_terminal_join_event ... ok
+test application::output::tests::output_files_use_exclusive_create_new_without_truncation ... ok
+test tui::modes::analyze::tests::projection_keeps_only_frozen_analyze_snapshot_data ... ok
+test tui::modes::analyze::tests::stale_progress_and_terminal_events_are_rejected ... ok
+test tui::modes::analyze::tests::paging_breadcrumbs_focus_and_viewport_are_bounded ... ok
+test tui::modes::analyze::tests::viewport_scrolls_to_keep_the_keyboard_cursor_visible ... ok
+test tui::modes::clean::tests::execute_requires_preview_and_second_confirmation ... ok
+test tui::modes::clean::tests::inspect_only_never_selects_and_selection_invalidates_preview ... ok
+test tui::modes::clean::tests::no_selection_during_scan_and_stale_events_are_ignored ... ok
+test tui::app::tests::scan_progress_shows_project_targets_before_global_scan_finishes ... ok
+test i18n::tests::duplicate_accelerators_are_rejected_within_one_group ... ok
+test tui::modes::optimize::tests::cancel_and_failed_events_reject_mismatched_ids ... ok
+test tui::modes::optimize::tests::catalogue_rows_are_the_closed_eight_and_guidance_cannot_preview ... ok
+test tui::modes::optimize::tests::confirmation_is_required_and_settings_launch_is_not_completion ... ok
+test tui::app::tests::finished_cleanup_progress_stays_visible_until_dismissed ... ok
+test tui::modes::optimize::tests::only_dns_enters_running_and_unknown_after_dispatch_is_preserved ... ok
+test tui::modes::optimize::tests::stale_preview_and_stale_run_are_rejected ... ok
+test tui::modes::software::tests::exact_manual_identity_never_enters_selection ... ok
+test tui::modes::software::tests::restart_audit_accepts_only_matching_operation_and_preserves_unknown ... ok
+test application::commands::software::execution::tests::preview_machine_document_is_locale_invariant_and_irreversible ... ok
+test application::commands::optimize::tests::list_documents_are_locale_invariant_and_closed ... ok
+test tui::modes::software::tests::stale_preview_is_rejected_and_selection_invalidates_authority ... ok
+test application::commands::history::tests::history_list_reads_only_fixed_v1_stores_and_cannot_replay ... ok
+test tui::modes::status::tests::interval_change_is_local_until_a_new_live_operation ... ok
+test tui::modes::status::tests::serde_rejects_unknown_status_event_variant_from_fixture ... ok
+test tui::modes::status::tests::exact_sequence_rejects_duplicate_and_nonmonotonic_events ... ok
+test tui::modes::status::tests::leave_close_and_pause_clear_ephemeral_live_state ... ok
+test application::commands::software::inventory::tests::software_inventory_json_is_locale_invariant_and_preserves_partial_evidence ... ok
+test tui::modes::status::tests::canonical_snapshot_keeps_privacy_partial_and_no_battery ... ok
+test tui::modes::status::tests::process_sort_and_churn_keep_privacy_and_truncation_flags ... ok
+test tui::modes::status::tests::live_opt_in_skip_stale_terminal_and_broken_pipe ... ok
+test application::cli::tests::every_clap_context_has_complete_contextual_chinese_help ... ok
+test tui::modes::status::tests::unknown_event_and_unknown_fields_are_rejected_at_the_wire ... ok
+test tui::render::tests::display_hygiene_quotes_argv_and_strips_controls ... ok
+test tui::render::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::modes::analyze::tests::test_backend_renders_only_viewport_rows_with_bilingual_evidence_copy ... ok
+test tui::app::tests::scan_updates_invalidate_open_confirmation_and_block_enter ... ok
+test tui::app::tests::rejected_confirmation_shows_inline_feedback ... ok
+test application::commands::analyze::tests::scan_json_is_locale_invariant_and_has_no_cleanup_plan ... ok
+test application::commands::history::tests::history_show_missing_id_fails_without_replay ... ok
+test application::commands::analyze::tests::scan_human_uses_owned_renderer_in_both_locales ... ok
+test tui::modes::software::tests::bilingual_test_backend_keeps_manual_unknown_and_irreversible_copy_visible ... ok
+test tui::render::tests::cleaned_target_renders_as_tombstone ... ok
+test tui::render::tests::narrow_footer_keeps_primary_actions_visible ... ok
+test application::commands::optimize::tests::preview_is_locale_invariant_or_fails_closed_off_windows ... ok
+test tui::render::tests::inventory_tab_renders_read_only_observations_health_and_inspection ... ok
+test tui::render::tests::accepted_irreversible_confirmation_renders_initial_progress ... ok
+test tui::render::tests::presentation_save_failure_renders_only_canonical_locale_copy ... ok
+test tui::render::tests::partial_scan_health_renders_truthful_totals_and_diagnostics ... ok
+test tui::render::tests::invalidated_confirmation_renders_reconfirmation_state ... ok
+test tui::render::tests::target_details_show_freshness_guard_evidence ... ok
+test tui::render::tests::render_path_does_not_mutate_app_state ... ok
+test tui::runtime::tests::cancel_effect_does_not_fabricate_a_cancellation_event ... ok
+test tui::render::tests::cleanup_progress_updates_job_and_renders_modal ... ok
+test tui::render::tests::target_details_show_typed_sizing_warnings ... ok
+test tui::render::tests::cleanup_progress_renders_mixed_target_results ... ok
+test tui::render::tests::representative_state_renders_at_degraded_supported_size ... ok
+test tui::runtime::tests::clean_worker_translates_execution_progress ... ok
+test tui::render::tests::confirmation_and_dry_run_show_selected_targets_across_scopes ... ok
+test tui::runtime::tests::inventory_worker_emits_read_only_report_events ... ok
+test tui::modes::status::tests::chart_caps_at_sixty_gaps_missing_samples_and_drops_on_leave ... ok
+test tui::runtime::tests::clean_worker_reports_finish_and_failure ... ok
+test tui::runtime::tests::presentation_effect_returns_typed_success_and_failure_without_stdout ... ok
+test tui::runtime::tests::duplicate_clean_dispatch_starts_only_one_worker ... ok
+test tui::runtime::tests::scan_worker_does_not_promote_an_explicitly_canceled_scan ... ok
+test tui::runtime::tests::confirmed_digest_must_match_the_revalidated_snapshot ... ok
+test tui::shell::tests::corrupt_persisted_store_fails_closed_at_every_precedence_level ... ok
+test tui::runtime::tests::scan_worker_emits_started_progress_finished ... ok
+test tui::runtime::tests::scan_worker_reports_failure_as_job_failed ... ok
+test tui::shell::tests::exhaustive_stable_tag_mapping_round_trips ... ok
+test tui::shell::tests::frozen_mode_identity_is_complete_but_unregistered_modes_are_absent ... ok
+test tui::support::tests::help_overflow_opens_support_from_analyze_without_a_sixth_mode ... ok
+test tui::render::tests::pycache_group_renders_collapsed_and_expanded_target_paths ... ok
+test tui::shell::tests::locale_precedence_is_explicit_then_persisted_then_os_then_english ... ok
+test tui::modes::status::tests::tui_renders_snapshot_cards_text_chart_alternative_and_chinese ... ok
+test tui::runtime::tests::scan_dispatch_is_refused_until_prior_worker_terminal_is_joined ... ok
+test tui::terminal::tests::partial_enter_failure_restores_completed_steps ... ok
+test tui::terminal::tests::drop_restores_session ... ok
+test tui::terminal::tests::restore_continues_after_first_failure ... ok
+test tui::render::tests::representative_state_renders_with_targets_details_and_jobs ... ok
+test tui::render::tests::rendered_paths_hide_windows_verbatim_prefixes ... ok
+test tui::render::tests::footer_renders_contextual_key_actions ... ok
+test tui::render::tests::representative_state_renders_at_full_supported_size ... ok
+test tui::support::tests::support_overlay_renders_chinese_protection_copy ... ok
+test tui::render::tests::rules_tab_lists_catalogue_entries ... ok
+test tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state ... ok
+test application::output::tests::closed_os_pipe_is_classified_as_graceful_broken_pipe ... ok
+test tui::support::tests::support_overlay_is_not_a_sixth_mode_and_history_cannot_replay ... ok
+test tui::modes::optimize::tests::bilingual_test_backend_keeps_badges_and_never_claims_settings_completion ... ok
+test tui::render::tests::smoke_renders_dashboard_details_confirm_and_jobs_logs_states ... ok
+{"command":"clean.protect.add","data":{"action":"add","changed":true,"display_path":"C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmpnwhJ85\\keep-cli","error_code":null,"identity_sha256":"b111b82c49811a5e199eff09e0ac226ea2cb6b4ef0175c1cd6d1f84a24327a0b","operation_id":"protect-1788214949558-71500","outcome_code":"committed"},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+{"command":"clean.protect.remove","data":{"action":"remove","changed":true,"display_path":"C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmpnwhJ85\\keep-cli","error_code":null,"identity_sha256":"b111b82c49811a5e199eff09e0ac226ea2cb6b4ef0175c1cd6d1f84a24327a0b","operation_id":"protect-1788214949575-71500","outcome_code":"committed"},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit ... ok
+test application::commands::protect::tests::protect_corrupt_store_is_unavailable_and_preserves_bytes ... ok
+{"command":"clean.protect.list","data":{"count":0,"paths":[]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::protect::tests::protect_list_empty_json_has_no_raw_audit_path ... ok
+{"command":"status.snapshot","data":{"cpu":{"age_ms":0,"sampled_at_unix_ms":1788214950070,"state":"available","value":{"system_utilization_basis_points":1582}},"logical_processor_count":24,"memory":{"age_ms":0,"sampled_at_unix_ms":1788214950074,"state":"available","value":{"available_bytes":24149737472,"total_bytes":68143853568,"used_bytes":43994116096}},"network":{"age_ms":0,"sampled_at_unix_ms":1788214950074,"state":"available","value":{"interfaces":[{"interface_luid":"1688849860263936","name":"vSwitch (Default Switch)-Hyper-V Virtual Switch Extension Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849877041152","name":"vEthernet (Default Switch)-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849893818368","name":"vEthernet (Default Switch)-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849910595584","name":"vEthernet (Default Switch)-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849927372800","name":"vSwitch (WSL (Hyper-V firewall))-Hyper-V Virtual Switch Extension Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849944150016","name":"vSwitch (WSL (Hyper-V firewall))-Virtual Filtering Platform VMSwitch Extension-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849960927232","name":"浠ュお缃?4-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849977704448","name":"浠ュお缃?4-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849994481664","name":"浠ュお缃?4-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850011258880","name":"vEthernet (WSL (Hyper-V firewall))-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850028036096","name":"vEthernet (WSL (Hyper-V firewall))-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850044813312","name":"vEthernet (WSL (Hyper-V firewall))-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850061590528","name":"浠ュお缃?WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850078367744","name":"浠ュお缃?QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850095144960","name":"浠ュお缃?WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850111922176","name":"鏈湴杩炴帴* 4-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850128699392","name":"鏈湴杩炴帴* 4-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850145476608","name":"鏈湴杩炴帴* 5-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850162253824","name":"鏈湴杩炴帴* 5-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850179031040","name":"鏈湴杩炴帴* 3-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850195808256","name":"鏈湴杩炴帴* 3-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399616077824","name":"钃濈墮缃戠粶杩炴帴","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399632855040","name":"浠ュお缃?,"rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399649632256","name":"浠ュお缃?鍐呮牳璋冭瘯鍣?","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399666409472","name":"鏈湴杩炴帴* 3","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399683186688","name":"鏈湴杩炴帴* 4","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399699963904","name":"鏈湴杩炴帴* 5","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399716741120","name":"vSwitch (Default Switch)","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399733518336","name":"浠ュお缃?4","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399750295552","name":"vEthernet (Default Switch)","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399767072768","name":"vSwitch (WSL (Hyper-V firewall))","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399783849984","name":"vEthernet (WSL (Hyper-V firewall))","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"6474474220158976","name":"鏈湴杩炴帴* 6","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"6755399441055744","name":"Loopback Pseudo-Interface 1","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918173765664768","name":"鏈湴杩炴帴-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918173782441984","name":"鏈湴杩炴帴-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918173799219200","name":"鏈湴杩炴帴-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918723521478656","name":"Meta","rx_bytes_per_second":6296,"tx_bytes_per_second":60568},{"interface_luid":"14918723538255872","name":"鏈湴杩炴帴","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723346456576","name":"WLAN-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":11782,"tx_bytes_per_second":70620},{"interface_luid":"19984723363233792","name":"WLAN-Virtual WiFi Filter Driver-0000","rx_bytes_per_second":11782,"tx_bytes_per_second":70620},{"interface_luid":"19984723380011008","name":"WLAN-Native WiFi Filter Driver-0000","rx_bytes_per_second":11782,"tx_bytes_per_second":70620},{"interface_luid":"19984723396788224","name":"WLAN-QoS Packet Scheduler-0000","rx_bytes_per_second":11782,"tx_bytes_per_second":70620},{"interface_luid":"19984723413565440","name":"WLAN-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":11782,"tx_bytes_per_second":70620},{"interface_luid":"19984723430342656","name":"鏈湴杩炴帴* 9-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723447119872","name":"鏈湴杩炴帴* 9-Native WiFi Filter Driver-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723463897088","name":"鏈湴杩炴帴* 9-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723480674304","name":"鏈湴杩炴帴* 9-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723497451520","name":"鏈湴杩炴帴* 10-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723514228736","name":"鏈湴杩炴帴* 10-Native WiFi Filter Driver-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723531005952","name":"鏈湴杩炴帴* 10-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723547783168","name":"鏈湴杩炴帴* 10-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19985273102270464","name":"WLAN","rx_bytes_per_second":11782,"tx_bytes_per_second":70620},{"interface_luid":"19985273119047680","name":"鏈湴杩炴帴* 9","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19985273135824896","name":"鏈湴杩炴帴* 10","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873767409942528","name":"Teredo Tunneling Pseudo-Interface","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873767426719744","name":"Microsoft IP-HTTPS Platform Interface","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873767443496960","name":"6to4 Adapter","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771704909824","name":"鏈湴杩炴帴* 1","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771721687040","name":"鏈湴杩炴帴* 2","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771738464256","name":"鏈湴杩炴帴* 7","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771755241472","name":"鏈湴杩炴帴* 8","rx_bytes_per_second":0,"tx_bytes_per_second":0}],"interval_ms":500}},"power":{"age_ms":0,"sampled_at_unix_ms":1788214950075,"state":"available","value":{"ac_state":"online","battery_present":true,"charge_basis_points":9800,"remaining_seconds":null}},"processes":{"age_ms":0,"reason_codes":["process_limit","process_access_denied"],"sampled_at_unix_ms":1788214950082,"state":"partial","value":{"budget_exhausted":false,"detail_budget_ms":150,"enumerated_count":637,"enumeration_ceiling":4096,"items":[{"cpu_basis_points_of_one_logical_core":2187,"name":"pwsh.exe","pid":47624,"private_bytes":47783936,"read_bytes_per_second":2628,"write_bytes_per_second":2872},{"cpu_basis_points_of_one_logical_core":1250,"name":"Everything.exe","pid":26572,"private_bytes":1124691968,"read_bytes_per_second":74768,"write_bytes_per_second":4896},{"cpu_basis_points_of_one_logical_core":937,"name":"devsweep-9dd395f060ec21fc.exe","pid":71500,"private_bytes":7852032,"read_bytes_per_second":5954,"write_bytes_per_second":4688},{"cpu_basis_points_of_one_logical_core":625,"name":"Cursor.exe","pid":81124,"private_bytes":1209954304,"read_bytes_per_second":35808,"write_bytes_per_second":2048},{"cpu_basis_points_of_one_logical_core":625,"name":"Antigravity IDE.exe","pid":37484,"private_bytes":293941248,"read_bytes_per_second":3360,"write_bytes_per_second":2016},{"cpu_basis_points_of_one_logical_core":625,"name":"residential-monitor.exe","pid":57056,"private_bytes":49975296,"read_bytes_per_second":11699072,"write_bytes_per_second":965264},{"cpu_basis_points_of_one_logical_core":625,"name":"msedgewebview2.exe","pid":69752,"private_bytes":25153536,"read_bytes_per_second":14336,"write_bytes_per_second":16352},{"cpu_basis_points_of_one_logical_core":312,"name":"Quicker.exe","pid":9532,"private_bytes":2632982528,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":312,"name":"Zed.exe","pid":57760,"private_bytes":2015617024,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":312,"name":"explorer.exe","pid":14360,"private_bytes":1593004032,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":312,"name":"Antigravity IDE.exe","pid":47236,"private_bytes":871833600,"read_bytes_per_second":54320,"write_bytes_per_second":5728},{"cpu_basis_points_of_one_logical_core":312,"name":"Weixin.exe","pid":69560,"private_bytes":632827904,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":312,"name":"Cursor.exe","pid":83316,"private_bytes":611594240,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":312,"name":"Tabbit Browser.exe","pid":36544,"private_bytes":543633408,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":312,"name":"Cursor.exe","pid":65128,"private_bytes":420409344,"read_bytes_per_second":0,"write_bytes_per_second":0}],"requested_limit":15,"returned_count":15,"truncated_by_limit":true}},"sample_window_ms":500,"sampled_at_unix_ms":1788214950070,"snapshot_id":"snapshot-1788214950070-2","unsupported_capabilities":[{"code":"gpu_utilization","reason_code":"not_supported_v1","state":"unsupported"},{"code":"vram","reason_code":"not_supported_v1","state":"unsupported"},{"code":"thermal","reason_code":"not_supported_v1","state":"unsupported"},{"code":"fan","reason_code":"not_supported_v1","state":"unsupported"},{"code":"smart","reason_code":"not_supported_v1","state":"unsupported"},{"code":"physical_disk_activity","reason_code":"not_supported_v1","state":"unsupported"}],"volumes":{"age_ms":0,"sampled_at_unix_ms":1788214950074,"state":"available","value":{"complete":true,"items":[{"available_bytes":528267427840,"mount_points":["C:\\"],"total_bytes":2047264944128,"volume_id":"\\\\?\\Volume{8b53c71d-e130-4d26-b010-e0dfffd1bdb0}"},{"available_bytes":655742054400,"mount_points":["D:\\"],"total_bytes":2048405794816,"volume_id":"\\\\?\\Volume{900b2658-0000-0000-0000-100000000000}"}]}}},"error":null,"outcome":"partial","schema_version":1,"warnings":["process_limit","process_access_denied"]}
+test application::commands::tests::status_commands_reach_the_owned_handler ... ok
+test application::commands::status::tests::snapshot_json_is_locale_invariant_and_privacy_limited ... ok
+
+test result: ok. 183 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.12s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-85765634e684ab1e.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-ed303a2995ea30bd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-75ccf4103f863faf.exe)
+
+running 12 tests
+test reference_and_migration_documents_cover_the_breaking_surface ... ok
+test status_wire_fixtures_are_closed_typed_and_cli_tauri_exact ... ok
+test explicit_chinese_language_localizes_human_errors_only ... ok
+test legacy_audit_paths_are_not_accepted_discovered_or_modified ... ok
+test bare_redirected_invocation_and_human_live_name_the_tty_contract ... ok
+test language_is_rejected_for_machine_and_plan_outputs ... ok
+test dash_file_sentinels_and_same_input_output_are_rejected ... ok
+test create_new_refuses_collisions_without_changing_existing_bytes ... ok
+test help_exposes_only_the_frozen_roots_in_english_and_chinese ... ok
+test removed_roots_and_authority_omissions_are_usage_exit_two ... ok
+test every_legacy_migration_fixture_is_rejected_without_conversion ... ok
+test json_and_ndjson_are_locale_neutral_and_keep_diagnostics_off_stderr ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.02s
+
+     Running tests\five_mode_contract.rs (target\debug\deps\five_mode_contract-2b6add409e377ac4.exe)
+
+running 7 tests
+test mixed_audit_versions_are_preserved_and_never_read_as_v1 ... ok
+test locale_switch_localizes_human_copy_and_leaves_machine_documents_invariant ... ok
+test cancellation_joins_status_live_and_leaves_no_producer_after_broken_pipe ... ok
+test coordinator_contract_keeps_one_mutating_command_and_separate_digests ... ok
+test preview_digest_mismatch_is_stale_authority_before_side_effects ... ok
+test partial_and_unavailable_states_stay_truthful ... ok
+test shipped_modes_are_reachable_and_removed_roots_stay_unknown ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.28s
+
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-b55684792db80d2d.exe)
+
+running 327 tests
+test analysis::model::tests::snapshot_dto_has_no_cleanup_fields ... ok
+test cargo_metadata::tests::cargo_metadata_parser_reads_workspace_and_target ... ok
+test analysis::tests::source_has_no_cleanup_plan_conversion ... ok
+test analysis::walker::native_metadata_tests::permission_denied_unverified_open_maps_to_access_denied_path ... ok
+test cargo_metadata::tests::cargo_metadata_parser_collects_only_explicit_workspace_member_manifests ... ok
+test cargo_metadata::tests::truncated_cargo_metadata_is_classified_before_json_parsing ... ok
+test execution::audit::tests::fixed_v1_path_never_selects_appdata_or_a_fallback ... ok
+test execution::audit::tests::history_handoff_fixtures_cannot_recover_executable_text ... ok
+test execution::safety::protections::tests::protection_identity_hash_never_embeds_raw_path ... ok
+test execution::safety::protections::tests::protection_pre_mutation_audit_failure_blocks_store ... ok
+test execution::safety::protections::tests::protection_missing_add_target_is_refused_before_persist ... ok
+test execution::audit::tests::unknown_version_and_corrupt_bytes_are_preserved ... ok
+test execution::safety::protections::tests::protection_store_preserves_corrupt_and_unknown_bytes ... ok
+test execution::safety::protections::tests::protection_audit_sink_accepts_valid_records ... ok
+test execution::safety::protections::tests::protection_post_replace_audit_failure_is_unknown_without_rollback ... ok
+test execution::audit::tests::legacy_appdata_journal_is_never_discovered ... ok
+test execution::audit::tests::execution_and_protection_records_are_redacted ... ok
+test execution::safety::tests::unavailable_protection_store_denies_all_path_cleanup ... ok
+test execution::safety::protections::tests::protection_replace_rejects_invalid_snapshot ... ok
+test execution::safety::tests::user_protection_immediately_denies_cleanup_of_the_protected_path ... ok
+test execution::safety::tests::current_exe_lookup_failure_is_fail_closed ... ok
+test execution::safety::protections::tests::protection_duplicate_add_is_idempotent ... ok
+test execution::tests::cancel_flag_stops_later_targets_before_dispatch ... ok
+test execution::safety::protections::tests::protection_add_remove_is_canonical_and_reparse_safe_for_display ... ok
+test execution::safety::tests::allows_legal_descendants_under_home_and_scan_root ... ok
+test execution::safety::tests::denies_exact_nodes_and_protected_subtrees_with_categories ... ok
+test execution::tests::confirmation_digest_is_stable_and_sensitive_to_manifest_and_selection ... ok
+test execution::safety::tests::ancestor_symlink_replacement_is_denied ... ok
+test execution::tests::dry_run_does_not_call_command_or_trash_runners ... ok
+test execution::tests::duplicate_selection_is_deduplicated_and_noted ... ok
+test execution::tests::empty_selection_executes_nothing ... ok
+test execution::safety::protections::tests::protection_concurrent_writers_do_not_lose_updates ... ok
+test execution::tests::inspect_only_selection_is_rejected_before_audit_or_runner_calls ... ok
+test execution::tests::execution_report_round_trips_with_outcomes_and_capacity_confidence ... ok
+test execution::safety::tests::toctou_rejects_renamed_recreated_target_and_missing_marker ... ok
+test execution::safety::tests::cloud_files_reparse_tags_deny_target_marker_and_ancestor ... ok
+test execution::tests::authorization_denial_is_audited_before_later_target_dispatch ... ok
+test execution::tests::permanent_delete_action_is_rejected_before_execution ... ok
+test execution::tests::cancel_is_passed_into_command_runner_for_in_flight_termination ... ok
+test execution::tests::legacy_journal_bytes_fail_closed_and_are_preserved ... ok
+test execution::tests::stale_confirmation_rejects_before_audit_or_side_effects ... ok
+test execution::tests::command_action_uses_program_and_argv_without_shell_composition ... ok
+test execution::tests::audit_records_success_and_failure_while_job_continues ... ok
+test execution::safety::tests::user_protection_list_persists_canonical_entries_atomically ... ok
+test execution::tests::explicit_selection_drives_execution ... ok
+test execution::tests::unknown_ids_in_selection_are_rejected_atomically ... ok
+test filesystem::containment::tests::path_contains_path_handles_existing_and_missing_children ... ok
+test filesystem::identity::tests::captures_stable_identity_for_existing_directory ... ok
+test filesystem::identity::tests::normalizes_lexical_dot_segments_without_filesystem_access ... ok
+test filesystem::identity::tests::normalizes_windows_case_separators_and_verbatim_prefixes ... ok
+test filesystem::identity::tests::rejects_relative_paths_and_root_escapes ... ok
+test execution::tests::process_command_runner_sanitizes_control_chars_on_failure ... ok
+test execution::tests::observed_execution_progress_reports_success_and_failure_outcomes ... ok
+test execution::tests::safety_skip_audit_failure_halts_before_later_side_effects ... ok
+test filesystem::sizing::tests::dedicated_pool_enforces_the_worker_ceiling ... ok
+test execution::tests::once_ledger_rejects_a_duplicate_fingerprint_before_second_runner_call ... ok
+test execution::tests::started_sync_failure_blocks_side_effect ... ok
+test filesystem::sizing::tests::dedicated_and_serial_modes_preserve_fresh_root_child_budgets ... ok
+test filesystem::sizing::tests::estimate_tree_counts_file_bytes_and_latest_mtime ... ok
+test filesystem::sizing::tests::estimate_tree_does_not_follow_symlinked_directories ... ok
+test execution::tests::terminal_audit_failure_reports_unknown_after_side_effect ... ok
+test execution::tests::target_containing_running_executable_is_skipped_before_command_runs ... ok
+test filesystem::sizing::tests::estimate_tree_fails_closed_when_reparse_probe_cannot_verify_root ... ok
+test filesystem::sizing::tests::estimate_tree_does_not_follow_windows_reparse_points ... ok
+test filesystem::sizing::tests::estimate_tree_marks_missing_path_unknown ... ok
+test filesystem::sizing::tests::estimate_tree_excludes_injected_cloud_files_reparse_child ... ok
+test filesystem::sizing::tests::estimate_tree_fails_closed_when_reparse_probe_is_unsupported ... ok
+test filesystem::sizing::tests::path_probe_treats_a_nonzero_tag_as_reparse_without_the_attribute_bit ... ok
+test filesystem::sizing::tests::estimate_tree_marks_empty_directory_complete_zero ... ok
+test filesystem::sizing::tests::dedicated_and_serial_modes_cancel_mid_walk_without_deadlock ... ok
+test filesystem::sizing::tests::estimate_trees_preserve_order_and_match_single_root_walks ... ok
+test history::tests::history_reader_cannot_reconstruct_executable_argv ... ok
+test execution::tests::trash_action_uses_only_path_from_cleanup_plan ... ok
+test history::tests::history_reader_marks_corrupt_clean_store_unavailable ... ok
+test inventory::pnpm::tests::orphan_finding_requires_complete_non_candidate_reference_evidence ... ok
+test history::tests::history_show_missing_id_is_not_found_when_stores_are_readable ... ok
+test inventory::tests::canceled_inventory_returns_partial_read_only_report ... ok
+test inventory::tests::inventory_json_has_no_cleanup_authority_fields ... ok
+test history::tests::history_reader_opens_only_the_three_fixed_v1_stores ... ok
+test execution::tests::observed_execution_reports_per_target_progress ... ok
+test model::plan::tests::default_selected_ids_returns_default_selected_targets_in_plan_order ... ok
+test filesystem::sizing::tests::low_max_depth_is_incomplete_in_both_root_modes ... ok
+test model::plan::tests::empty_plan_has_versioned_shape ... ok
+test model::scan::tests::diagnostics_force_partial_scan_health ... ok
+test history::tests::history_reader_redacts_protection_mutations_without_raw_paths ... ok
+test model::plan::tests::untrusted_target_round_trips_through_json_without_executable_fields ... ok
+test model::scan::tests::embedded_plan_rejects_untrusted_executable_fields ... ok
+test model::scan::tests::incomplete_target_warnings_are_typed_and_make_a_report_partial ... ok
+test model::scan::tests::scan_report_rejects_untrusted_executable_fields ... ok
+test model::scan::tests::scan_totals_keep_verified_partial_and_unknown_observations_separate ... ok
+test model::scan::tests::scan_report_round_trips_with_structured_health ... ok
+test optimize::tests::audit::fixed_path_requires_local_app_data ... ok
+test inventory::tests::inventory_skips_injected_cloud_files_reparse_root_without_an_observation ... ok
+test history::tests::history_reader_tolerates_mixed_versions_and_rejects_unknown_schema ... ok
+test inventory::tests::inventory_estimation_uses_the_injected_reparse_probe_for_nested_children ... ok
+test optimize::tests::authorizer::changed_preflight_produces_a_different_digest_and_fails_the_old_one ... ok
+test optimize::tests::authorizer::digest_binds_catalogue_version_id_class_and_identity ... ok
+test optimize::tests::authorizer::digest_validation_rejects_mismatch_and_foreign_digest ... ok
+test optimize::tests::audit::exclusive_lock_conflict_does_not_modify_journal ... ok
+test optimize::tests::authorizer::dry_run_and_execute_resolve_byte_equivalent_identities ... ok
+test optimize::tests::authorizer::guidance_cannot_resolve_any_dispatch_identity ... ok
+test optimize::tests::authorizer::unsupported_preflight_states_are_typed_failures ... ok
+test optimize::tests::authorizer::preview_documents_never_leak_resolved_identities ... ok
+test optimize::tests::authorizer::versioned_headers_fail_closed ... ok
+test optimize::tests::catalogue::action_class_serialization_is_closed ... ok
+test optimize::tests::catalogue::exactly_eight_rows_in_frozen_order ... ok
+test optimize::tests::catalogue::guidance_rows_never_plan ... ok
+test optimize::tests::catalogue::hostile_plan_fields_fail_closed_at_decode ... ok
+test optimize::tests::catalogue::plans_carry_only_version_catalogue_and_one_id ... ok
+test optimize::tests::catalogue::settings_handoffs_are_the_exact_frozen_literals ... ok
+test optimize::tests::catalogue::unknown_and_rejected_categories_cannot_resolve ... ok
+test inventory::tests::inventory_reports_read_only_top_level_observations ... ok
+test optimize::tests::audit::catalogue_identity_must_be_closed_and_consistent ... ok
+test optimize::tests::audit::journal_is_durable_redacted_and_rejects_unknown_versions ... ok
+test optimize::tests::execution::confirmation_is_required ... ok
+processed file: C:\Users\lyh\AppData\Local\Temp\.tmpqRjAWq\root/denied
+Successfully processed 1 files; Failed processing 0 files
+test optimize::tests::audit::terminal_must_match_accumulated_adapter_evidence ... ok
+test filesystem::sizing::tests::estimate_tree_marks_denied_child_incomplete ... ok
+test optimize::tests::audit::happy_trail_is_monotonic_and_terminal_is_closed ... ok
+test execution::tests::trash_failure_reports_target_and_continues_remaining_targets ... ok
+test optimize::tests::execution::audit_records_stay_redacted ... ok
+test optimize::tests::execution::cancel_after_dispatch_is_unknown ... ok
+test optimize::tests::execution::cancel_before_dispatch_is_canceled_without_a_call ... ok
+test optimize::tests::execution::terminal_classification_is_exhaustive_and_closed ... ok
+test optimize::tests::execution::confirmed_dns_success_writes_the_full_audit_trail ... ok
+test optimize::tests::windows::build_query_is_manifest_independent_and_monotonic ... ok
+test optimize::tests::execution::digest_mismatch_fails_before_dispatch_without_touching_the_journal ... ok
+test optimize::tests::windows::dns_flush_request_is_program_plus_exact_fixed_argv ... ok
+test optimize::tests::windows::execute_resolution_is_windows_only ... ok
+test filesystem::sizing::tests::parallel_estimate_matches_serial_reference ... ok
+test optimize::tests::windows::identity_checks_reject_hostile_paths ... ok
+test optimize::tests::windows::native_settings_shell_execute_probe ... ignored, native Settings ShellExecuteExW probe
+test optimize::tests::windows::process_status_mapping_is_closed ... ok
+test optimize::tests::windows::resolved_ipconfig_identity_is_native_system32_not_syswow64 ... ok
+test optimize::tests::windows::settings_resolution_requires_a_real_build_answer ... ok
+test plan::tests::digest_binds_the_reconstructed_provider_command ... ok
+test plan::tests::digest_changes_when_a_validated_target_changes ... ok
+test plan::tests::equivalent_target_order_has_the_same_digest ... ok
+test plan::tests::json_dto_rejects_arbitrary_action_fields ... ok
+test plan::tests::nested_plan_facts_reject_unknown_fields ... ok
+test plan::tests::provider_aliases_cannot_bypass_logical_fingerprint_deduplication ... ok
+test plan::tests::provider_commands_use_trusted_logical_footprints_for_deduplication ... ok
+test plan::tests::rejects_duplicate_equivalent_fingerprints ... ok
+test plan::tests::rejects_path_mismatches_before_action_reconstruction ... ok
+test plan::tests::rejects_paths_that_escape_the_declared_project_scope ... ok
+test plan::tests::rejects_relative_paths_before_registry_resolution ... ok
+test plan::tests::rejects_risk_and_reversibility_that_drift_from_the_registry ... ok
+test plan::tests::rejects_selected_inspect_only_intents ... ok
+test plan::tests::rejects_unknown_plan_versions ... ok
+test plan::tests::rejects_unknown_rules_and_actions ... ok
+test plan::tests::rejects_v1_with_rescan_guidance ... ok
+test plan::tests::rejects_windows_case_separator_and_trailing_separator_duplicates ... ok
+test plan::tests::sizing_warnings_are_observational_and_do_not_change_cleanup_authority ... ok
+test plan::tests::typed_intents_reject_arbitrary_programs_and_arguments ... ok
+test optimize::tests::windows::dispatch_runs_the_exact_request_without_a_shell ... ok
+test optimize::tests::windows::native_ipconfig_flushdns_dispatch_succeeds ... ok
+test filesystem::sizing::tests::estimate_tree_stops_promptly_when_cancel_is_requested ... ok
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+test presentation_settings::tests::fixed_windows_path_never_selects_a_fallback_root ... ok
+test presentation_settings::tests::missing_file_means_no_explicit_choice ... ok
+test presentation_settings::tests::dropped_abnormal_owner_releases_kernel_lock_even_when_name_remains ... ok
+test presentation_settings::tests::windows_exclusive_sidecar_errors_are_bounded_lock_contention ... ok
+test optimize::tests::execution::one_operation_permit_serializes_concurrent_runs ... ok
+test optimize::tests::execution::settings_success_is_only_launched ... ok
+test presentation_settings::tests::exact_v1_bytes_and_closed_tags_round_trip ... ok
+test presentation_settings::tests::corrupt_unknown_and_newer_documents_are_preserved_byte_for_byte ... ok
+test presentation_settings::tests::post_commit_cleanup_failure_is_success_and_next_transaction_recovers ... ok
+test optimize::tests::execution::adapter_failure_and_unfinished_map_to_failed_and_unknown ... ok
+test process::tests::injected_cancel_observer_yields_canceled ... ok
+test optimize::tests::execution::stale_catalogue_version_fails_before_dispatch ... ok
+test optimize::tests::execution::unsupported_preflight_fails_before_dispatch ... ok
+test optimize::tests::execution::lock_conflict_fails_closed_and_preserves_bytes ... ok
+test optimize::tests::execution::recovery_never_redispatches_pending_operations ... ok
+test process::tests::not_found_program_returns_typed_status ... ok
+test process::tests::sanitize_strips_control_sequences_and_marks_truncation ... ok
+test rules::tests::catalogue_covers_all_declared_docs ... ok
+test rules::tests::catalogue_has_no_empty_fields ... ok
+test rules::tests::catalogue_ids_are_unique ... ok
+test rules::tests::global_cache_rules_are_unique_and_cover_new_ecosystems ... ok
+test rules::tests::maven_jetbrains_and_go_are_not_whole_tree_trash ... ok
+test rules::tests::os_cache_roots_are_platform_specific ... ok
+test rules::tests::project_dir_rules_filter_by_marker ... ok
+test rules::tests::provider_docs_include_yarn_classic_and_modern_variants ... ok
+test rules::tests::rule_projections_match_the_authoritative_registry_and_are_inspect_only ... ok
+test rules::tests::trash_rules_are_reversible_by_design_and_inspect_rules_are_high_risk ... ok
+test process::tests::explicit_cwd_is_honored ... ok
+test scan::global::tests::cargo_home_is_inspect_only ... ok
+test scan::global::tests::classic_yarn_uses_classic_cache_clean_command ... ok
+test scan::global::tests::command_providers_emit_official_actions_when_tools_are_available ... ok
+test scan::global::tests::known_cache_inspect_rule_is_noop ... ok
+test scan::global::tests::known_cache_targets_emit_trash_for_present_dirs ... ok
+test scan::global::tests::known_cache_targets_publish_each_completed_target_before_the_helper_finishes ... ok
+test scan::global::tests::missing_command_providers_are_non_fatal ... ok
+test scan::global::tests::missing_home_dir_emits_no_known_cache_targets ... ok
+test scan::global::tests::npm_cache_path_emits_one_cleanup_target ... ok
+test scan::global::tests::provider_scan_returns_all_discovered_targets ... ok
+test scan::project::tests::cache_named_directory_still_discovers_nested_projects ... ok
+test scan::project::tests::cargo_metadata_cache_entry_limit_prevents_unbounded_failure_growth ... ok
+test scan::project::tests::cargo_metadata_failures_are_replayed_only_for_the_exact_manifest ... ok
+test process::tests::neutral_cwd_is_not_caller_project_dir ... ok
+test scan::project::tests::cargo_workspace_member_resolution_is_reused_once_per_scan ... ok
+test scan::project::tests::dedupe_targets_keeps_same_footprint_with_distinct_actions ... ok
+test scan::project::tests::dedupe_targets_removes_nested_cleanup_paths ... ok
+test scan::project::tests::dedupe_targets_merges_evidence_for_exact_footprint_and_action ... ok
+test scan::project::tests::ordinary_target_sizing_observes_cancellation ... ok
+test scan::project::tests::reviewed_rescan_honors_cancellation_and_deselects_an_incomplete_target ... ok
+test scan::project::tests::reviewed_rescan_rejects_an_injected_cloud_files_target ... ok
+test scan::project::tests::project_scanner_reports_targets_as_they_are_constructed ... ok
+test scan::project::tests::reviewed_rescan_replaces_only_the_selected_target_observation ... ok
+test process::tests::noop_cancel_preserves_success_path ... ok
+test scan::project::tests::scan_roots_collapses_case_and_separator_equivalent_roots ... ok
+test process::tests::non_utf8_and_nonzero_exit_are_typed_without_panic ... ok
+test scan::project::tests::scan_roots_keeps_sibling_cache_targets_after_dedupe ... ok
+test scan::project::tests::scan_roots_reduces_duplicate_and_nested_roots ... ok
+test scan::project::tests::scanner_does_not_follow_symlinked_project_directories ... ok
+test process::tests::cancel_during_run_terminates_and_returns_canceled ... ok
+test scan::project::tests::scanner_output_has_plan_contract_fields_and_keeps_files ... ok
+test scan::project::tests::scanner_ignores_markerless_cleanup_names ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_child ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_marker ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_root ... ok
+test scan::project::tests::scanner_skips_injected_cloud_files_reparse_target ... ok
+test scan::project::tests::scanner_skips_windows_reparse_point_directories ... ok
+test scan::project::tests::truncated_cargo_metadata_failure_reaches_scan_health_with_process_metadata ... ok
+test scan::project::tests::unproven_nested_manifest_runs_its_own_cargo_metadata_probe ... ok
+test scan::project::tests::unreadable_root_remains_a_hard_error ... ok
+test scan::ranking::tests::equal_sizes_use_score_age_and_id_tie_breakers ... ok
+test scan::ranking::tests::freshness_guard_deselects_recent_default_targets_once ... ok
+test scan::ranking::tests::freshness_guard_preserves_stale_and_unselected_targets ... ok
+test scan::ranking::tests::incomplete_size_is_not_selected_by_default ... ok
+test scan::ranking::tests::score_is_size_mib_times_age_days ... ok
+test scan::ranking::tests::score_returns_zero_for_missing_or_future_mtime ... ok
+test scan::ranking::tests::sorts_targets_by_size_descending ... ok
+test scan::tests::cancellation_requested_during_global_scan_is_not_promoted ... ok
+test scan::tests::explicit_terminal_outcome_does_not_promote_canceled_work ... ok
+test scan::tests::full_scan_applies_freshness_guard_exactly_once ... ok
+test scan::tests::full_scan_merges_and_ranks_once ... ok
+test scan::tests::full_scan_report_preserves_health_and_separates_size_totals ... ok
+test scan::tests::partial_plans_are_cumulative_and_ranked ... ok
+test scan::tests::preview_projection_omits_cleanup_authority_and_rejects_duplicate_ids ... ok
+test scan::tests::progress_events_follow_staged_sequence ... ok
+test scan::tests::scan_options_skip_phases ... ok
+test scan::tests::scan_request_and_progress_types_round_trip_with_snake_case_json ... ok
+test software::arp::tests::adapter_allowlist_contains_no_command_or_icon_fields ... ok
+test software::audit::tests::exclusive_lock_conflict_does_not_modify_journal ... ok
+test software::audit::tests::fixed_path_requires_local_app_data ... ok
+test software::audit::tests::journal_is_durable_redacted_and_rejects_unknown_version ... ok
+test software::audit::tests::terminal_must_match_accumulated_adapter_and_requery_evidence ... ok
+test software::audit::tests::transition_machine_is_monotonic_and_terminal_is_closed ... ok
+test software::execution::msix::tests::documented_reboot_codes_are_closed ... ok
+test software::execution::msix::tests::exact_absent_hresult_table_is_closed ... ok
+test software::execution::tests::all_msi_manual_and_digest_mismatch_reach_no_adapter ... ok
+test software::execution::tests::audit_lock_failure_occurs_before_adapter_call ... ok
+test software::execution::tests::cancellation_before_dispatch_is_closed_and_calls_no_adapter ... ok
+processed file: C:\Users\lyh\AppData\Local\Temp\.tmpkpmLvy\app/secret
+Successfully processed 1 files; Failed processing 0 files
+test scan::project::tests::unreadable_nested_child_keeps_sibling_targets_and_is_partial ... ok
+test scan::project::tests::rust_target_uses_cargo_clean_with_manifest_path ... ok
+test process::tests::job_deadline_can_beat_per_command_timeout ... ok
+test software::execution::tests::missing_confirmation_fails_before_audit_and_adapter ... ok
+test scan::project::tests::scan_honors_cancel_flag_without_full_tree_walk ... ok
+test software::execution::tests::msi_registry_machine_manual_stale_and_malformed_identities_have_no_constructor ... ok
+test software::execution::tests::opaque_action_is_constructed_only_from_live_exact_current_user_msix ... ok
+test software::execution::tests::crashes_before_and_after_dispatch_recover_without_removal_retry ... ok
+test scan::project::tests::scanner_finds_marker_backed_project_targets ... ok
+test software::execution::tests::one_conflicting_identity_observation_remains_fail_closed ... ok
+test software::execution::tests::terminal_evidence_table_is_exact_and_has_no_partial_state ... ok
+test software::inventory_tests::denied_or_partial_sources_do_not_erase_complete_siblings ... ok
+test software::inventory_tests::exact_duplicate_merging_is_order_independent_and_preserves_refusals ... ok
+test software::inventory_tests::exact_identity_conflicts_do_not_fuzzy_merge_duplicate_display_names ... ok
+test software::inventory_tests::inventory_order_and_fingerprint_are_deterministic ... ok
+test software::inventory_tests::refusal_matrix_uses_the_exact_first_matching_priority ... ok
+test software::inventory_tests::reported_kib_uses_checked_integer_arithmetic ... ok
+test software::inventory_tests::source_worker_panic_fallbacks_keep_sibling_sources_intact ... ok
+test software::model::tests::last_used_wire_is_closed_to_truthful_unknown ... ok
+test software::model::tests::size_wire_distinguishes_all_v1_states_in_integer_bytes ... ok
+test software::msi::tests::all_msi_contexts_are_explicit_and_never_infer_execution_support ... ok
+test software::plan::tests::hostile_display_observations_never_enter_the_selection_plan ... ok
+test software::plan::tests::preview_digest_is_stable_and_contains_only_opaque_strategy_tokens ... ok
+test software::plan::tests::removed_changed_reinstalled_and_expired_plans_fail_closed ... ok
+test process::tests::hung_child_times_out_within_policy ... ok
+test status::network::tests::interface_churn_and_reset_are_partial_not_negative ... ok
+test status::network::tests::rates_use_integer_byte_deltas ... ok
+test status::network::tests::total_churn_is_unavailable_not_zero_rates ... ok
+test status::network::tests::zero_elapsed_and_sleep_gap_do_not_synthesize_rates ... ok
+test status::process::tests::access_denial_is_partial_not_zero_rows_as_available ... ok
+test status::process::tests::ceiling_and_budget_flags_are_exact ... ok
+test status::process::tests::pair_delta_skips_reset_and_zero_window ... ok
+test status::process::tests::process_dto_omits_sensitive_fields ... ok
+test status::process::tests::requested_limit_is_clamped_to_one_hundred ... ok
+test status::process::tests::truncation_metadata_is_set_before_sorting_and_limit ... ok
+test status::sampler::tests::cancel_joins_and_stops_without_backfill ... ok
+test status::sampler::tests::channel_close_stops_producer ... ok
+test status::sampler::tests::coordinator_refuses_a_second_live_session ... ok
+test status::sampler::tests::fake_time_snapshot_cadence_is_five_hundred_ms ... ok
+test status::sampler::tests::one_in_flight_skips_and_does_not_backfill ... ok
+test status::sampler::tests::snapshot_window_and_interval_clamps ... ok
+test status::system::tests::cpu_busy_fraction_uses_kernel_minus_idle ... ok
+test status::system::tests::cpu_zero_elapsed_and_reset_are_not_zero_utilization ... ok
+test status::system::tests::memory_rejects_zero_total_and_inconsistent_available ... ok
+test status::system::tests::missing_battery_is_present_false_with_null_charge ... ok
+test status::system::tests::non_fixed_volume_types_are_excluded ... ok
+test status::system::tests::sleep_gap_threshold_is_four_times_expected_or_ten_seconds ... ok
+test status::tests::availability_union_covers_all_five_states ... ok
+test status::tests::live_events_are_internally_tagged_with_sequence ... ok
+test status::tests::snapshot_round_trips_without_field_loss_or_rename ... ok
+test status::tests::static_capabilities_are_unsupported_not_zero ... ok
+test scan::global::tests::provider_probe_timeout_does_not_abort_later_providers ... ok
+test software::execution::tests::process_single_flight_serializes_concurrent_adapters ... ok
+test process::tests::endless_stderr_is_capped_with_truncation_mark ... ok
+test software::execution::tests::recovery_uses_last_identity_only_requery_observation ... ok
+test process::tests::endless_stdout_is_capped_with_truncation_mark ... ok
+test software::execution::tests::post_dispatch_cancel_or_timeout_never_reports_canceled ... ok
+test software::execution::tests::executor_covers_removed_reboot_present_failure_success_and_unknown_fixtures ... ok
+test software::execution::tests::executor_private_live_source_rejects_non_msix_machine_protected_and_malformed_authority ... ok
+test process::tests::hung_child_and_grandchild_are_terminated ... ok
+test analysis::tests::byte_cap_attempt_returns_partial_budget ... ok
+test analysis::tests::cancel_joins_and_marks_canceled ... ok
+test analysis::tests::churn_and_cycle_are_distinguishable ... ok
+test analysis::tests::fake_sparse_file_reports_logical_size_without_real_content ... ok
+test analysis::tests::complete_snapshot_reconciles_parent_child_totals ... ok
+test analysis::tests::serial_fallback_matches_two_worker_totals ... ok
+test analysis::tests::native_sparse_file_reports_complete_logical_size ... ok
+test analysis::tests::progress_queue_replaces_unsent_batches ... ok
+test analysis::tests::native_reparse_is_a_leaf ... ok
+test analysis::tests::analysis_250k_v1_stores_exact_node_ceiling ... ok
+test analysis::tests::analysis_250k_overflow_returns_partial_budget ... ok
+test analysis::tests::native_live_churn_distinguishes_deleted_and_growing_files_and_denied_branch ... ok
+test execution::audit::tests::lock_failure_leaves_journal_unmodified ... ok
+test software::windows::current_process_sid_is_exact_and_mta_worker_joins ... ok
+
+test result: ok. 326 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 6.68s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-5a7aa48b93679573.exe)
+
+running 1 test
+test external_crate_can_use_the_supported_core_surface ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\lib.rs (target\debug\deps\devsweep_desktop_lib-713823eb8ec71f30.exe)
+
+running 41 tests
+test commands::tests::job_object_fixture_child ... ignored, process fixture entrypoint
+test commands::tests::job_object_fixture_grandchild ... ignored, process fixture entrypoint
+test analyze::tests::analyze_result_serializes_without_cleanup_intent ... ok
+test analyze::tests::stale_progress_sequences_are_discarded ... ok
+test analyze::tests::concurrent_analyze_is_rejected ... ok
+test clean::tests::empty_plan_dry_run_does_not_require_audit ... ok
+test commands::tests::debug_native_fault_mode_is_exact_and_closed ... ok
+test clean::tests::stale_digest_is_structured ... ok
+test clean::tests::unknown_target_is_structured ... ok
+test commands::tests::empty_plan_dry_run_accepts_matching_digest ... ok
+test analyze::tests::cancel_joins_before_terminal_result ... ok
+test commands::tests::invalid_plan_is_structured ... ok
+test commands::tests::presentation_setting_ipc_payload_is_locale_only_and_closed ... ok
+test commands::tests::protection_list_set_cannot_bypass_confirm_lock_or_audit ... ok
+test commands::tests::protection_store_round_trips_paths ... ok
+test commands::tests::changed_selection_rejects_previous_digest ... ok
+test commands::tests::unknown_target_is_structured ... ok
+test error::tests::execution_errors_keep_typed_target_identity ... ok
+test optimize::tests::concurrent_optimize_operations_and_stale_cancel_are_bounded ... ok
+test optimize::tests::list_wire_is_the_closed_eight_and_omits_executable_facts ... ok
+test optimize::tests::run_wire_keeps_launched_distinct_from_completion ... ok
+test error::tests::command_errors_serialize_as_stable_tagged_payloads ... ok
+test commands::tests::inspect_only_target_is_structured ... ok
+test commands::tests::stale_digest_is_structured ... ok
+test scan::tests::concurrent_scan_is_rejected_immediately ... ok
+test scan::tests::ipc_progress_projects_display_facts_without_cleanup_authority ... ok
+test scan::tests::preview_delivery_coalesces_bursts_and_flushes_the_latest_snapshot ... ok
+test scan::tests::scan_job_forwards_every_progress_event ... ok
+test scan::tests::preview_projection_failure_stops_delivery_and_fails_closed ... ok
+test scan::tests::worker_owned_coordinator_releases_shared_slot ... ok
+test scan::tests::scan_failure_flushes_the_latest_pending_preview ... ok
+test software::tests::concurrent_software_operations_and_stale_cancel_are_bounded ... ok
+test status::tests::concurrent_status_is_rejected ... ok
+test support::tests::rules_list_is_inspect_only_and_cannot_execute ... ok
+test support::tests::history_show_payload_has_no_replay_fields ... ok
+test software::tests::software_execution_wire_rejects_partial_and_keeps_five_terminals ... ok
+test tests::capability_grants_only_event_subscription_and_last_window_destroy ... ok
+test tests::invoke_handler_registers_every_accepted_mode_and_no_alias ... ok
+test support::tests::protection_mutation_requires_confirm ... ok
+test scan::tests::cancellation_is_idempotent_and_stops_fixture_within_five_seconds ... ok
+test commands::tests::process_command_runner_terminates_tree_inside_desktop_process ... ok
+
+test result: ok. 39 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep_desktop-a41b0ad7bbe4bada.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo clippy --workspace --locked --all-targets -- -D warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.65s
+ci complete
