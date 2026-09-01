@@ -1,0 +1,4 @@
+{"file": "AGENTS.md", "reason": "Add the inspect-advise routing subsection outside the Trellis managed block."}
+{"file": "code_map.md", "reason": "Add the tracked skills/devsweep-inspect navigation entry."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/prd.md", "reason": "Discovery must stay recommend-only and must not duplicate SKILL.md."}
+{"file": ".trellis/tasks/09-01-inspect-skill-discovery/prd.md", "reason": "Child requirements for AGENTS.md, code_map.md, and docs pointer."}

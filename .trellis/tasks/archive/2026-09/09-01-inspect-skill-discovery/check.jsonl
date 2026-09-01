@@ -1,0 +1,3 @@
+{"file": "AGENTS.md", "reason": "Verify the Trellis managed block is unchanged and the new pointer is outside it."}
+{"file": "code_map.md", "reason": "Verify the skills path is listed without claiming .agents/ is tracked."}
+{"file": ".trellis/tasks/09-01-inspect-skill-discovery/prd.md", "reason": "Verify no second SKILL.md and no .grok/skills copy."}
