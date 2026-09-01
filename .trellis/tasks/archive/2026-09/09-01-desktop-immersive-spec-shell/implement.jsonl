@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Completion checklist still requires gray-green non-hero chrome."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Visual System is the clause this child must rewrite before AppShell edits."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Shell must keep coordinator and routing invariants."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/design.md", "reason": "Parent shell composition, tokens, and catalogue rule."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/research/mole-fit-visual-audit.md", "reason": "Reject Mole photographs, hamster, and traffic lights."}
+{"file": "docs/provenance.md", "reason": "No Mole assets in production."}

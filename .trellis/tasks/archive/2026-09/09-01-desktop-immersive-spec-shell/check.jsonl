@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Confirm immersive Visual System landed and still forbids Mole assets."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Confirm completion checklist no longer requires non-hero gray-green only."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Confirm routing and coordinator text was not weakened."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/design.md", "reason": "Confirm capsule, disclosure, and token rules match."}
+{"file": "docs/provenance.md", "reason": "Confirm no Mole asset shipped."}
