@@ -1,0 +1,6 @@
+{"file": "CONTEXT.md", "reason": "Domain terms the skill output must use: Cleanup Target, Scan Report, Cleanup Plan, Estimated Recoverable, Inspect Only."}
+{"file": "docs/reference/cli.md", "reason": "Canonical five-mode inspect and execute command surface."}
+{"file": "docs/guide/safety-model.md", "reason": "Dry-run default, untrusted plans, and explicit non-goals."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/prd.md", "reason": "Parent requirements and recommend-only boundary."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/design.md", "reason": "Package vs discovery ownership and CLI data flow."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/research/prior-art-research.md", "reason": "Keep/adapt/reject/invent from inspected cleanup skills."}

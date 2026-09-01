@@ -1,0 +1,29 @@
+{
+  "id": "inspect-advise-skill",
+  "name": "inspect-advise-skill",
+  "title": "Agent CLI inspect-and-advise skill",
+  "description": "Create a Production agent skill that uses the DevSweep CLI to inspect this machine and recommend cleanup or optimization without executing side effects.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-01",
+  "completedAt": "2026-09-01",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-01-inspect-skill-package",
+    "09-01-inspect-skill-discovery"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

@@ -1,0 +1,5 @@
+{"file": "CONTEXT.md", "reason": "Reject synonym drift in the recommendation report."}
+{"file": "docs/reference/cli.md", "reason": "Confirm the skill does not invent retired scan/clean flags."}
+{"file": "AGENTS.md", "reason": "Safety contracts the skill must not violate."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/prd.md", "reason": "Parent acceptance criteria for integration review."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/research/prior-art-research.md", "reason": "Handoff must name inspected skills and missing evidence."}

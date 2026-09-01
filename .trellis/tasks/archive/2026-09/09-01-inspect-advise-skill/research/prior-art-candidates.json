@@ -1,0 +1,757 @@
+{
+  "ok": true,
+  "complete": false,
+  "researched_at": "2026-09-01",
+  "queries": [
+    "disk cleanup inspect recommend agent",
+    "developer cache cleanup skill",
+    "safe dry-run file deletion agent",
+    "disk usage analyze recommend"
+  ],
+  "metric_semantics": {
+    "skills_sh_installs": "ecosystem install telemetry; not ratings or correctness",
+    "skillsmp_repo_stars": "GitHub repository stars; not installs, ratings, or skill-specific quality",
+    "cross_catalog_score": "not calculated; metrics remain separate"
+  },
+  "query_runs": [
+    {
+      "query": "disk cleanup inspect recommend agent",
+      "skills_sh": "not_run",
+      "skillsmp": "ok",
+      "skillsmp_candidates": 9
+    },
+    {
+      "query": "developer cache cleanup skill",
+      "skills_sh": "not_run",
+      "skillsmp": "ok",
+      "skillsmp_candidates": 9
+    },
+    {
+      "query": "safe dry-run file deletion agent",
+      "skills_sh": "not_run",
+      "skillsmp": "ok",
+      "skillsmp_candidates": 8
+    },
+    {
+      "query": "disk usage analyze recommend",
+      "skills_sh": "not_run",
+      "skillsmp": "ok",
+      "skillsmp_candidates": 9
+    }
+  ],
+  "candidate_family_count": 26,
+  "candidates": [
+    {
+      "family_key": "openclaw/openclaw:healthcheck",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "healthcheck",
+        "author": "openclaw",
+        "description": "Audit/harden OpenClaw hosts: SSH, firewall, updates, exposure, backups, disk encryption, gateway security.",
+        "content_language": "en",
+        "github_url": "https://github.com/openclaw/openclaw/tree/main/skills/healthcheck",
+        "skillsmp_url": "https://skillsmp.com/creators/openclaw/openclaw/skills-healthcheck",
+        "repo_stars": 388044,
+        "catalog_updated_at": "2026-05-17T10:50:27+00:00",
+        "source_key": "openclaw/openclaw:skills/healthcheck",
+        "family_key": "openclaw/openclaw:healthcheck",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "openclaw/openclaw:openclaw-ci-limits",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "openclaw-ci-limits",
+        "author": "openclaw",
+        "description": "Manage OpenClaw GitHub Actions and Blacksmith CI capacity, runner-registration budgets, fanout caps, main-push single-flight, shard sizing, hosted-runner offload, queue health, and safe ramp-down/ramp-up changes. Use when tuning `.github/workflows/*`, `docs/ci.md`, CI runner labels, matrix `max-parallel`, ClawSweeper/Blacksmith burst protection, CodeQL runner placement, or investigating slow/queued OpenClaw CI.",
+        "content_language": "en",
+        "github_url": "https://github.com/openclaw/openclaw/tree/main/.agents/skills/openclaw-ci-limits",
+        "skillsmp_url": "https://skillsmp.com/creators/openclaw/openclaw/agents-skills-openclaw-ci-limits",
+        "repo_stars": 388044,
+        "catalog_updated_at": "2026-08-16T22:30:04+00:00",
+        "source_key": "openclaw/openclaw:.agents/skills/openclaw-ci-limits",
+        "family_key": "openclaw/openclaw:openclaw-ci-limits",
+        "aliases": [],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "openclaw/openclaw:openclaw-testing",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "openclaw-testing",
+        "author": "openclaw",
+        "description": "Choose, run, rerun, or debug OpenClaw tests, CI checks, Docker E2E lanes, release validation, and the cheapest safe verification path.",
+        "content_language": "en",
+        "github_url": "https://github.com/openclaw/openclaw/tree/main/.agents/skills/openclaw-testing",
+        "skillsmp_url": "https://skillsmp.com/creators/openclaw/openclaw/agents-skills-openclaw-testing",
+        "repo_stars": 388044,
+        "catalog_updated_at": "2026-08-29T03:58:50+00:00",
+        "source_key": "openclaw/openclaw:.agents/skills/openclaw-testing",
+        "family_key": "openclaw/openclaw:openclaw-testing",
+        "aliases": [],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:agent-architecture-audit",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "agent-architecture-audit",
+        "author": "affaan-m",
+        "description": "Full-stack diagnostic for agent and LLM applications. Audits the 12-layer agent stack for wrapper regression, memory pollution, tool discipline failures, hidden repair loops, and rendering corruption. Produces severity-ranked findings with code-first fixes. Essential for developers building agent applications, autonomous loops, or any LLM-powered feature. Use when an agent or LLM feature misbehaves and the failing layer is unknown, or before shipping an agent stack.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/agent-architecture-audit",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-agent-architecture-audit",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-12T03:58:14+00:00",
+        "source_key": "affaan-m/ecc:skills/agent-architecture-audit",
+        "family_key": "affaan-m/ecc:agent-architecture-audit",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:angular-developer",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "angular-developer",
+        "author": "affaan-m",
+        "description": "Generates Angular code and provides architectural guidance. Trigger when creating projects, components, or services, or for best practices on reactivity (signals, linkedSignal, resource), forms, dependency injection, routing, SSR, accessibility (ARIA), animations, styling (component styles, Tailwind CSS), testing, or CLI tooling.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/angular-developer",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-angular-developer",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-11T12:12:21+00:00",
+        "source_key": "affaan-m/ecc:skills/angular-developer",
+        "family_key": "affaan-m/ecc:angular-developer",
+        "aliases": [
+          {
+            "language": "ja",
+            "github_url": "https://github.com/affaan-m/ECC/tree/main/docs/ja-JP/skills/angular-developer"
+          }
+        ],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:architecture-decision-records",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "architecture-decision-records",
+        "author": "affaan-m",
+        "description": "Capture architectural decisions made during Claude Code sessions as structured ADRs. Auto-detects decision moments, records context, alternatives considered, and rationale. Maintains an ADR log so future developers understand why the codebase is shaped the way it is.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/architecture-decision-records",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-architecture-decision-records",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-11T12:12:21+00:00",
+        "source_key": "affaan-m/ecc:skills/architecture-decision-records",
+        "family_key": "affaan-m/ecc:architecture-decision-records",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:brand-discovery",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "brand-discovery",
+        "author": "affaan-m",
+        "description": "Use when a brand needs to discover or articulate its identity through structured multi-session interviews. Covers purpose, positioning, audience, personality, voice, narrative, and founder-brand tension across 8 modules using laddering, 5 Whys, and projective techniques. Produces a resumable session with disk-persisted state and a master brandbook (90_SYNTHESIS.md).",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/brand-discovery",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-brand-discovery",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-15T18:21:28+00:00",
+        "source_key": "affaan-m/ecc:skills/brand-discovery",
+        "family_key": "affaan-m/ecc:brand-discovery",
+        "aliases": [
+          {
+            "language": "en",
+            "github_url": "https://github.com/affaan-m/ECC/tree/main/.agents/skills/brand-discovery"
+          }
+        ],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:cisco-ios-patterns",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "cisco-ios-patterns",
+        "author": "affaan-m",
+        "description": "Cisco IOS and IOS-XE review patterns for show commands, config hierarchy, wildcard masks, ACL placement, interface hygiene, and safe change-window verification. Use when reading, writing, or reviewing Cisco IOS / IOS-XE configuration or planning a change window.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/cisco-ios-patterns",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-cisco-ios-patterns",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-12T03:58:14+00:00",
+        "source_key": "affaan-m/ecc:skills/cisco-ios-patterns",
+        "family_key": "affaan-m/ecc:cisco-ios-patterns",
+        "aliases": [],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:cpp-coding-standards",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "cpp-coding-standards",
+        "author": "affaan-m",
+        "description": "C++ coding standards based on the C++ Core Guidelines (isocpp.github.io). Use when writing, reviewing, or refactoring C++ code to enforce modern, safe, and idiomatic practices.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/.kiro/skills/cpp-coding-standards",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/kiro-skills-cpp-coding-standards",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-07T05:26:37+00:00",
+        "source_key": "affaan-m/ecc:.kiro/skills/cpp-coding-standards",
+        "family_key": "affaan-m/ecc:cpp-coding-standards",
+        "aliases": [],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:delivery-gate",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "delivery-gate",
+        "author": "affaan-m",
+        "description": "Stop hook that blocks Claude from finishing until quality checks pass. Detects rationalization patterns (surface text heuristics), stale learning logs (filesystem mtime), and low disk space. Complements self-audit by mechanically enforcing learning capture habits. Use when Claude should be mechanically blocked from declaring work finished before quality checks and learning capture actually pass.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/delivery-gate",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-delivery-gate",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-12T03:58:14+00:00",
+        "source_key": "affaan-m/ecc:skills/delivery-gate",
+        "family_key": "affaan-m/ecc:delivery-gate",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:dev-team",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "dev-team",
+        "author": "affaan-m",
+        "description": "Simulate a collaborative dev team session where multiple role-based personas (PM, Architect, Developer, QA) respond to the same problem together in one session. Use when designing a feature, reviewing a proposal, or onboarding a new initiative and you want multi-role perspective without switching agents manually.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/dev-team",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-dev-team",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-11T16:17:03+00:00",
+        "source_key": "affaan-m/ecc:skills/dev-team",
+        "family_key": "affaan-m/ecc:dev-team",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:flox-environments",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "flox-environments",
+        "author": "affaan-m",
+        "description": "Create reproducible, cross-platform (macOS/Linux) development environments with Flox, a declarative Nix-based environment manager. Use when setting up project toolchains for any language, installing system-level dependencies (compilers, databases, native libs like openssl/BLAS), pinning exact package versions for a team, running local services (PostgreSQL, Redis, Kafka), onboarding developers with one command, or solving 'works on my machine' problems — including agent/vibe-coding setups that need project-scoped tools without sudo. Also use when the user mentions .flox/, manifest.toml, flox activate, or FloxHub.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/flox-environments",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-flox-environments",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-16T06:15:43+00:00",
+        "source_key": "affaan-m/ecc:skills/flox-environments",
+        "family_key": "affaan-m/ecc:flox-environments",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:netmiko-ssh-automation",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "netmiko-ssh-automation",
+        "author": "affaan-m",
+        "description": "Safe Python Netmiko patterns for read-only collection, bounded batch SSH, TextFSM parsing, guarded config changes, timeouts, and network automation error handling. Use when automating network device access with Python Netmiko, whether collecting state or pushing guarded config changes.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/netmiko-ssh-automation",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-netmiko-ssh-automation",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-12T03:58:14+00:00",
+        "source_key": "affaan-m/ecc:skills/netmiko-ssh-automation",
+        "family_key": "affaan-m/ecc:netmiko-ssh-automation",
+        "aliases": [],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:perl-security",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "perl-security",
+        "author": "affaan-m",
+        "description": "Comprehensive Perl security covering taint mode, input validation, safe process execution, DBI parameterized queries, web security (XSS/SQLi/CSRF), and perlcritic security policies. Use when reviewing Perl input handling, process execution, DBI queries, or web-facing code.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/perl-security",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-perl-security",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-12T03:58:14+00:00",
+        "source_key": "affaan-m/ecc:skills/perl-security",
+        "family_key": "affaan-m/ecc:perl-security",
+        "aliases": [],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:rust-patterns",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "rust-patterns",
+        "author": "affaan-m",
+        "description": "Idiomatic Rust patterns, ownership, error handling, traits, concurrency, and best practices for building safe, performant applications.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/.kiro/skills/rust-patterns",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/kiro-skills-rust-patterns",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-07T05:26:37+00:00",
+        "source_key": "affaan-m/ecc:.kiro/skills/rust-patterns",
+        "family_key": "affaan-m/ecc:rust-patterns",
+        "aliases": [
+          {
+            "language": "tur",
+            "github_url": "https://github.com/affaan-m/ECC/tree/main/docs/tr/skills/rust-patterns"
+          }
+        ],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:swift-actor-persistence",
+      "queries": [
+        "safe dry-run file deletion agent"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "swift-actor-persistence",
+        "author": "affaan-m",
+        "description": "Thread-safe data persistence in Swift using actors — in-memory cache with file-backed storage, eliminating data races by design. Use when persisting data in Swift and a data race or thread-safety problem needs designing out.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/swift-actor-persistence",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-swift-actor-persistence",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-08-12T03:58:14+00:00",
+        "source_key": "affaan-m/ecc:skills/swift-actor-persistence",
+        "family_key": "affaan-m/ecc:swift-actor-persistence",
+        "aliases": [
+          {
+            "language": "en",
+            "github_url": "https://github.com/affaan-m/ECC/tree/main/.kiro/skills/swift-actor-persistence"
+          }
+        ],
+        "query": "safe dry-run file deletion agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "deepseek-ai/deepseek-harness:dsh-doc",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "dsh-doc",
+        "author": "deepseek-ai",
+        "description": "Create, restructure, review, audit, or migrate DeepSeek Harness Markdown documentation, package READMEs, and the documentation website using audience-first hierarchy, kind-mapped YAML metadata, bilingual line alignment, summary/contents navigation, progressive user-to-developer detail, executed-operation fact-checking, and repository validation. Use for new or revised DSH docs, docs-tree organization, documentation-quality audits and budgets, website page publishing, and bilingual documentation structure changes.",
+        "content_language": "en",
+        "github_url": "https://github.com/deepseek-ai/deepseek-harness/tree/master/.agents/skills/dsh-doc",
+        "skillsmp_url": "https://skillsmp.com/creators/deepseek-ai/deepseek-harness/agents-skills-dsh-doc",
+        "repo_stars": 204429,
+        "catalog_updated_at": "2026-08-25T15:47:20+00:00",
+        "source_key": "deepseek-ai/deepseek-harness:.agents/skills/dsh-doc",
+        "family_key": "deepseek-ai/deepseek-harness:dsh-doc",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "microsoft/vscode:otel",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "otel",
+        "author": "microsoft",
+        "description": "OpenTelemetry instrumentation for the Copilot Chat extension — covers the four agent execution paths, the IOTelService abstraction, span/metric/event conventions, and the relationship between code and the user/developer monitoring docs. Use when adding/changing OTel spans, metrics, or events; instrumenting a new agent surface; touching the Copilot CLI bridge or Claude span emission; or updating `extensions/copilot/docs/monitoring/agent_monitoring*.md`.",
+        "content_language": "en",
+        "github_url": "https://github.com/microsoft/vscode/tree/main/.github/skills/otel",
+        "skillsmp_url": "https://skillsmp.com/creators/microsoft/vscode/github-skills-otel",
+        "repo_stars": 190056,
+        "catalog_updated_at": "2026-05-24T06:40:57+00:00",
+        "source_key": "microsoft/vscode:.github/skills/otel",
+        "family_key": "microsoft/vscode:otel",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "shubhamsaboo/awesome-llm-apps:project-graveyard",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "project-graveyard",
+        "author": "Shubhamsaboo",
+        "description": "Scans the developer's machine for dead side projects, autopsies each one from its git history (died at the payments wall, killed by a newer project, finished but never shipped), surfaces their personal death patterns, and picks the corpse most worth resurrecting — then helps ship it. Use when the user mentions abandoned, unfinished, or old side projects, asks \"what should I finish\", wants to revive or resurrect a project, says \"run the graveyard\", wonders why they never finish anything, or is about to start a new project that sounds like one they already built. Runs entirely locally.",
+        "content_language": "en",
+        "github_url": "https://github.com/Shubhamsaboo/awesome-llm-apps/tree/main/agent_skills/project-graveyard",
+        "skillsmp_url": "https://skillsmp.com/creators/shubhamsaboo/awesome-llm-apps/agent-skills-project-graveyard",
+        "repo_stars": 135211,
+        "catalog_updated_at": "2026-07-23T03:24:58+00:00",
+        "source_key": "shubhamsaboo/awesome-llm-apps:agent_skills/project-graveyard",
+        "family_key": "shubhamsaboo/awesome-llm-apps:project-graveyard",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "garrytan/gstack:autoplan",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "autoplan",
+        "author": "garrytan",
+        "description": "Auto-review pipeline — reads the full CEO, design, eng, and DX review skills from disk and runs them sequentially with auto-decisions using 6 decision principles. (gstack)",
+        "content_language": "en",
+        "github_url": "https://github.com/garrytan/gstack/tree/main/autoplan",
+        "skillsmp_url": "https://skillsmp.com/creators/garrytan/gstack/autoplan",
+        "repo_stars": 130419,
+        "catalog_updated_at": "2026-08-29T17:10:35+00:00",
+        "source_key": "garrytan/gstack:autoplan",
+        "family_key": "garrytan/gstack:autoplan",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "garrytan/gstack:devex-review",
+      "queries": [
+        "developer cache cleanup skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "devex-review",
+        "author": "garrytan",
+        "description": "Live developer experience audit. (gstack)",
+        "content_language": "en",
+        "github_url": "https://github.com/garrytan/gstack/tree/main/devex-review",
+        "skillsmp_url": "https://skillsmp.com/creators/garrytan/gstack/devex-review",
+        "repo_stars": 130419,
+        "catalog_updated_at": "2026-08-29T17:10:35+00:00",
+        "source_key": "garrytan/gstack:devex-review",
+        "family_key": "garrytan/gstack:devex-review",
+        "aliases": [],
+        "query": "developer cache cleanup skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "garrytan/gstack:skillify",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "skillify",
+        "author": "garrytan",
+        "description": "Codify the most recent successful /scrape flow into a permanent browser-skill on disk. (gstack)",
+        "content_language": "en",
+        "github_url": "https://github.com/garrytan/gstack/tree/main/skillify",
+        "skillsmp_url": "https://skillsmp.com/creators/garrytan/gstack/skillify",
+        "repo_stars": 130419,
+        "catalog_updated_at": "2026-08-29T17:10:35+00:00",
+        "source_key": "garrytan/gstack:skillify",
+        "family_key": "garrytan/gstack:skillify",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "calesthio/openmontage:media-use",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "media-use",
+        "author": "calesthio",
+        "description": "Agent Media OS — resolve any media need (BGM, SFX, image, icon) into a frozen local file + ledger record. One verb (`resolve`) handles the full cascade — project cache, global cache, HeyGen catalog search, freeze, register. Keeps search noise on disk, hands the agent a path. Use when a composition needs background music, sound effects, images, or icons.",
+        "content_language": "en",
+        "github_url": "https://github.com/calesthio/OpenMontage/tree/main/.agents/skills/media-use",
+        "skillsmp_url": "https://skillsmp.com/creators/calesthio/openmontage/agents-skills-media-use",
+        "repo_stars": 54396,
+        "catalog_updated_at": "2026-06-27T21:00:00+00:00",
+        "source_key": "calesthio/openmontage:.agents/skills/media-use",
+        "family_key": "calesthio/openmontage:media-use",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "bmad-code-org/bmad-method:missing-trigger",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "missing-trigger",
+        "author": "bmad-code-org",
+        "description": "Generates a thing and writes it to disk for the user.",
+        "content_language": "en",
+        "github_url": "https://github.com/bmad-code-org/BMAD-METHOD/tree/main/test/fixtures/validate-skills/missing-trigger",
+        "skillsmp_url": "https://skillsmp.com/creators/bmad-code-org/bmad-method/test-fixtures-validate-skills-missing-trigger",
+        "repo_stars": 52462,
+        "catalog_updated_at": "2026-06-24T06:55:34+00:00",
+        "source_key": "bmad-code-org/bmad-method:test/fixtures/validate-skills/missing-trigger",
+        "family_key": "bmad-code-org/bmad-method:missing-trigger",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "bmad-code-org/bmad-method:with-trigger",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "with-trigger",
+        "author": "bmad-code-org",
+        "description": "Generates a thing and writes it to disk. Use when the user asks to scaffold a thing.",
+        "content_language": "en",
+        "github_url": "https://github.com/bmad-code-org/BMAD-METHOD/tree/main/test/fixtures/validate-skills/with-trigger",
+        "skillsmp_url": "https://skillsmp.com/creators/bmad-code-org/bmad-method/test-fixtures-validate-skills-with-trigger",
+        "repo_stars": 52462,
+        "catalog_updated_at": "2026-06-24T06:55:34+00:00",
+        "source_key": "bmad-code-org/bmad-method:test/fixtures/validate-skills/with-trigger",
+        "family_key": "bmad-code-org/bmad-method:with-trigger",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "prisma/prisma:prisma-8-extension-upgrade",
+      "queries": [
+        "disk cleanup inspect recommend agent",
+        "disk usage analyze recommend"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "prisma-8-extension-upgrade",
+        "author": "prisma",
+        "description": "Upgrade Prisma Next in your extension. Bumps every `@internal/*` dependency to the requested target (or npm `latest`), runs the per-transition upgrade instructions for the extension SPI (middleware lifecycle, codec / migration-tools / framework-components churn, seed-migration on-disk shape), verifies the pins are correctly exact via `prisma-8-check-pins`, runs the extension's own typecheck and tests, and commits each minor step on its own. Use when the user asks to \"upgrade Prisma Next\" in an extension package, or to update an extension's `@internal/*` deps to a new minor.",
+        "content_language": "en",
+        "github_url": "https://github.com/prisma/prisma/tree/main/skills/prisma-8-extension-upgrade",
+        "skillsmp_url": "https://skillsmp.com/creators/prisma/prisma/skills-prisma-8-extension-upgrade",
+        "repo_stars": 47562,
+        "catalog_updated_at": "2026-08-21T14:33:31+00:00",
+        "source_key": "prisma/prisma:skills/prisma-8-extension-upgrade",
+        "family_key": "prisma/prisma:prisma-8-extension-upgrade",
+        "aliases": [],
+        "query": "disk cleanup inspect recommend agent"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    }
+  ],
+  "missing_evidence": [],
+  "next_steps": [
+    "shortlist by job relevance and role coverage, not combined popularity",
+    "open canonical GitHub source and inspect SKILL.md before adoption",
+    "verify license, maintenance, permissions, security, duplication, and rating evidence",
+    "write keep/adapt/reject/invent synthesis before authoring"
+  ]
+}
