@@ -49,8 +49,11 @@ This repo uses a single-context domain-doc layout. See
 
 When the user asks to inspect this machine, recommend cleanup, or give
 optimization advice, read `skills/devsweep-inspect/SKILL.md` and follow it.
-The skill is recommend-only. Do not run `clean execute`, `optimize run`, or
-`software uninstall` from that workflow.
+Call the globally installed `devsweep` binary; do not `cargo run` this
+repository as the cleaner. Inspect stays recommend-only until the user
+confirms a displayed cleanup list. After that confirmation, the skill may
+run `clean execute` with a live preview digest and `--confirm`. Do not run
+`optimize run` or `software uninstall` from that workflow.
 
 ## Trellis And Codex
 

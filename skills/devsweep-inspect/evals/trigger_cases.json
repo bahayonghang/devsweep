@@ -5,7 +5,8 @@
     "cleanup_advice",
     "dev_cache",
     "optimize",
-    "devsweep"
+    "devsweep",
+    "confirmed_clean"
   ],
   "positive_concepts": {
     "inspect": [
@@ -19,7 +20,8 @@
       "清理建议",
       "cleanup advice",
       "recommend cleanup",
-      "释放空间"
+      "释放空间",
+      "清理"
     ],
     "dev_cache": [
       "开发缓存",
@@ -32,18 +34,25 @@
     "devsweep": [
       "devsweep",
       "DevSweep CLI"
+    ],
+    "confirmed_clean": [
+      "帮我清理",
+      "执行清理",
+      "确认后清理",
+      "确认清理",
+      "clean selected",
+      "clean execute"
     ]
   },
   "negative_patterns": [
-    "clean execute",
-    "执行清理",
     "software uninstall",
     "卸载这个",
     "rm -rf",
     "remove-item",
     "just ci",
     "tui layout",
-    "commit message"
+    "commit message",
+    "cargo run"
   ],
   "should_trigger": [
     {
@@ -69,6 +78,18 @@
     {
       "text": "本机开发缓存太大，先给我清理建议和释放空间估计",
       "family": "cn_cache_space"
+    },
+    {
+      "text": "帮我清理风险为low和medium的路径",
+      "family": "cn_clean_request"
+    },
+    {
+      "text": "确认清理这些 Cleanup Target",
+      "family": "cn_confirm_list"
+    },
+    {
+      "text": "执行清理，run clean execute now",
+      "family": "execute_request"
     }
   ],
   "should_not_trigger": [
@@ -91,16 +112,16 @@
   ],
   "near_neighbor": [
     {
-      "text": "执行清理，run clean execute now",
-      "family": "execute_request"
-    },
-    {
       "text": "卸载这个 MSIX，software uninstall",
       "family": "uninstall_request"
     },
     {
       "text": "rm -rf node_modules and Remove-Item the cache",
       "family": "shell_delete"
+    },
+    {
+      "text": "cargo run --locked -p devsweep-cli --bin devsweep -- clean execute",
+      "family": "repo_binary"
     }
   ]
 }

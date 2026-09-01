@@ -1,12 +1,14 @@
 interface:
-  display_name: "DevSweep inspect and advise"
-  short_description: "Inspect this machine with the DevSweep CLI and recommend cleanup or optimization without executing side effects"
-  default_prompt: "Inspect this machine with the DevSweep CLI. Return cleanup advice and optimization advice as a recommendation report that uses Cleanup Target, Scan Report, Cleanup Plan, Estimated Recoverable, and Inspect Only. Do not run clean execute, optimize run, software uninstall, or shell deletion."
+  display_name: "DevSweep inspect and confirmed clean"
+  short_description: "Inspect this machine with the globally installed DevSweep CLI, recommend cleanup, and execute only after a displayed list is confirmed"
+  default_prompt: "Inspect this machine with the globally installed DevSweep CLI. Return cleanup advice as a recommendation report that uses Cleanup Target, Scan Report, Cleanup Plan, Estimated Recoverable, and Inspect Only. Call PATH devsweep.exe, never cargo run of this repository. If the user asked to clean, display the selectable list and wait for confirmation before clean execute."
   examples:
     - "检查本机，给出磁盘清理建议"
     - "看看开发缓存占了多少空间"
     - "recommend cleanup for this machine, inspect disk space first"
     - "给出优化建议，先不要执行"
+    - "帮我清理风险为 low 和 medium 的路径"
+    - "确认清理这些目标"
 compatibility:
   canonical_format: "agent-skills"
   adapter_targets:
@@ -27,9 +29,9 @@ compatibility:
     generated_public_claims: "evidence-bound"
   permissions:
     network: "none required"
-    file_write: "optional new observation or untrusted plan JSON via DevSweep --output create-new"
-    subprocess: "DevSweep inspect commands only; cargo run for the repo binary"
-    interactive: "avoid"
+    file_write: "optional new observation, ids, untrusted plan, preview, or execution JSON via DevSweep --output create-new"
+    subprocess: "globally installed DevSweep CLI plus this skill's Python helpers; never cargo run of this repo"
+    interactive: "required for cleanup confirmation; avoid for inspect-only advice"
   degradation:
     openai: "neutral-source"
     claude: "neutral-source"
@@ -47,6 +49,7 @@ gates:
     - "prior-art research report"
     - "creation handoff"
     - "root-only discoverable SKILL.md entrypoint"
-    - "recommend-only execute boundary"
+    - "list-and-wait before clean execute"
+    - "global binary resolver"
   library: []
   governed: []

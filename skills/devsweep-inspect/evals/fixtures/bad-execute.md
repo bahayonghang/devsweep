@@ -3,7 +3,6 @@
 This file exists only to fail the output checker.
 
 ```text
-devsweep clean execute --plan plan.json --preview-digest sha256:dead --confirm
 rm -rf node_modules
 Remove-Item -Recurse D:\cache
 software uninstall --plan software.json --preview-digest sha256:dead --confirm

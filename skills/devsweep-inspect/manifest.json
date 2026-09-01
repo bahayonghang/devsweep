@@ -1,13 +1,13 @@
 {
   "name": "devsweep-inspect",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "owner": "bahayonghang",
   "updated_at": "2026-09-01",
   "status": "active",
   "maturity_tier": "production",
   "lifecycle_stage": "production",
   "context_budget_tier": "production",
-  "upstream_inspiration": "avdlee/xcode-disk-cleanup-agent-skill; orzcls/win-disk-cleaner; az9713/claude-skill-disk-cleanup; heyzgj/storage-cleanup-skill; thearmagan/skills@dry-run-first",
+  "upstream_inspiration": "avdlee/xcode-disk-cleanup-agent-skill; orzcls/win-disk-cleaner; az9713/claude-skill-disk-cleanup; heyzgj/storage-cleanup-skill; thearmagan/skills@dry-run-first; affaan-m/ECC@config-gc; vinta/awesome-python@preview-verdicts",
   "target_platforms": [
     "openai",
     "claude",
@@ -15,21 +15,24 @@
     "agent-skills-compatible"
   ],
   "intent": {
-    "job_to_be_done": "Inspect this machine with the DevSweep CLI and return evidence-backed cleanup and optimization advice without side effects.",
+    "job_to_be_done": "Inspect this machine with the globally installed DevSweep CLI, recommend cleanup, and execute a confirmed Cleanup Plan without using this repository as the cleaner.",
     "target_users": [
       "coding agents working in the DevSweep repository",
-      "developers who ask an agent to inspect disk space or developer caches"
+      "developers who ask an agent to inspect disk space or clean developer caches"
     ],
     "inputs": [
-      "natural-language inspect or advice request",
-      "optional scan roots and scope"
+      "natural-language inspect, advice, or cleanup request",
+      "optional scan roots, scope, and risk filter",
+      "explicit confirmation of a displayed Cleanup Target list"
     ],
     "outputs": [
       "recommendation report using CONTEXT.md terms",
-      "optional new observation JSON or untrusted Cleanup Plan file"
+      "selectable cleanup list that waits for confirmation",
+      "optional new observation, plan, preview, or execution JSON"
     ],
     "exclusions": [
-      "clean execute",
+      "same-turn clean execute before a displayed list is confirmed",
+      "cargo run of this repository as the cleaner",
       "optimize run",
       "software uninstall",
       "protection list mutation",

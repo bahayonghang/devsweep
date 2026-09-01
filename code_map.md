@@ -105,7 +105,8 @@ remains read-only and backend discovery layers remain non-mutating.
 ## Agent skill packages
 
 - `skills/devsweep-inspect/` - Production agent skill that inspects with the
-  DevSweep CLI and returns cleanup or optimization advice. Recommend-only.
+  globally installed DevSweep CLI, recommends cleanup, and may execute a
+  confirmed Cleanup Plan. Recommend-only until the user confirms a displayed list.
 
 ## Specs And Workflow
 

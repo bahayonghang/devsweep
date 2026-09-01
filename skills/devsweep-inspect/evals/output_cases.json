@@ -1,15 +1,14 @@
 {
   "forbidden_patterns": [
-    "clean execute --",
-    "optimize run --",
-    "software uninstall --",
+    "cargo run --locked -p devsweep-cli",
+    "target\\debug\\devsweep",
+    "target\\release\\devsweep",
     "rm -rf",
     "Remove-Item"
   ],
   "required_terms": [
     "Cleanup Target",
     "Scan Report",
-    "Cleanup Plan",
     "Estimated Recoverable",
     "Inspect Only"
   ],
@@ -17,12 +16,22 @@
     {
       "path": "evals/fixtures/sample-recommendation.md",
       "expect": "pass",
-      "notes": "Recorded fixture for a recommend-only report."
+      "notes": "Inspect-only report uses the global binary and omits execute argv."
+    },
+    {
+      "path": "evals/fixtures/confirmation-list.md",
+      "expect": "pass",
+      "notes": "Cleanup confirmation list waits; no execute argv."
     },
     {
       "path": "evals/fixtures/bad-execute.md",
       "expect": "fail",
-      "notes": "Negative fixture: execute argv must fail the checker."
+      "notes": "Negative fixture: shell deletion must fail the checker."
+    },
+    {
+      "path": "evals/fixtures/bad-cargo-run.md",
+      "expect": "fail",
+      "notes": "Negative fixture: cargo run of this repo must fail the checker."
     }
   ]
 }

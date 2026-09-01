@@ -1,13 +1,21 @@
 {
   "ok": true,
   "summary": {
-    "total": 2,
-    "passed": 2
+    "total": 4,
+    "passed": 4
   },
   "failures": [],
   "results": [
     {
       "path": "evals/fixtures/sample-recommendation.md",
+      "expect": "pass",
+      "passed": true,
+      "ok": true,
+      "missing_required": [],
+      "forbidden_hits": []
+    },
+    {
+      "path": "evals/fixtures/confirmation-list.md",
       "expect": "pass",
       "passed": true,
       "ok": true,
@@ -22,16 +30,29 @@
       "missing_required": [
         "Cleanup Target",
         "Scan Report",
-        "Cleanup Plan",
         "Estimated Recoverable",
         "Inspect Only"
       ],
       "forbidden_hits": [
-        "clean execute --",
-        "optimize run --",
-        "software uninstall --",
         "rm -rf",
         "Remove-Item"
+      ]
+    },
+    {
+      "path": "evals/fixtures/bad-cargo-run.md",
+      "expect": "fail",
+      "passed": true,
+      "ok": false,
+      "missing_required": [
+        "Cleanup Target",
+        "Scan Report",
+        "Estimated Recoverable",
+        "Inspect Only"
+      ],
+      "forbidden_hits": [
+        "cargo run --locked -p devsweep-cli",
+        "target\\debug\\devsweep",
+        "target\\release\\devsweep"
       ]
     }
   ]

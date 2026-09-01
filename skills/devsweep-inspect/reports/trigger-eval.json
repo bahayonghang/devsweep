@@ -3,6 +3,7 @@
   "threshold": 0.34,
   "description_concepts": [
     "cleanup_advice",
+    "confirmed_clean",
     "dev_cache",
     "devsweep",
     "inspect",
@@ -10,8 +11,8 @@
   ],
   "missing_description_concepts": [],
   "summary": {
-    "total": 13,
-    "passed": 13,
+    "total": 16,
+    "passed": 16,
     "false_positive": 0,
     "false_negative": 0,
     "pass_rate": 1.0
@@ -98,6 +99,45 @@
           "dev_cache"
         ],
         "negative_pattern": null
+      },
+      {
+        "prompt": "帮我清理风险为low和medium的路径",
+        "family": "cn_clean_request",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "cleanup_advice",
+          "confirmed_clean"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "确认清理这些 Cleanup Target",
+        "family": "cn_confirm_list",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "cleanup_advice",
+          "confirmed_clean"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "执行清理，run clean execute now",
+        "family": "execute_request",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "cleanup_advice",
+          "confirmed_clean"
+        ],
+        "negative_pattern": null
       }
     ],
     "should_not_trigger": [
@@ -144,16 +184,6 @@
     ],
     "near_neighbor": [
       {
-        "prompt": "执行清理，run clean execute now",
-        "family": "execute_request",
-        "expected_trigger": false,
-        "predicted_trigger": false,
-        "passed": true,
-        "score": 0.0,
-        "matched_concepts": [],
-        "negative_pattern": "clean execute"
-      },
-      {
         "prompt": "卸载这个 MSIX，software uninstall",
         "family": "uninstall_request",
         "expected_trigger": false,
@@ -172,6 +202,19 @@
         "score": 0.0,
         "matched_concepts": [],
         "negative_pattern": "rm -rf"
+      },
+      {
+        "prompt": "cargo run --locked -p devsweep-cli --bin devsweep -- clean execute",
+        "family": "repo_binary",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "confirmed_clean",
+          "devsweep"
+        ],
+        "negative_pattern": "cargo run"
       }
     ]
   }

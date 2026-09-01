@@ -1,0 +1,524 @@
+{
+  "ok": true,
+  "complete": false,
+  "researched_at": "2026-09-01",
+  "queries": [
+    "confirm before cleanup agent skill",
+    "preview confirm execute cleanup"
+  ],
+  "metric_semantics": {
+    "skills_sh_installs": "ecosystem install telemetry; not ratings or correctness",
+    "skillsmp_repo_stars": "GitHub repository stars; not installs, ratings, or skill-specific quality",
+    "cross_catalog_score": "not calculated; metrics remain separate"
+  },
+  "query_runs": [
+    {
+      "query": "confirm before cleanup agent skill",
+      "skills_sh": "not_run",
+      "skillsmp": "ok",
+      "skillsmp_candidates": 9
+    },
+    {
+      "query": "preview confirm execute cleanup",
+      "skills_sh": "not_run",
+      "skillsmp": "ok",
+      "skillsmp_candidates": 9
+    }
+  ],
+  "candidate_family_count": 18,
+  "candidates": [
+    {
+      "family_key": "openclaw/openclaw:openclaw-ghsa-maintainer",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "openclaw-ghsa-maintainer",
+        "author": "openclaw",
+        "description": "Inspect, patch, validate, publish, or confirm OpenClaw GHSA security advisories and private-fork state.",
+        "content_language": "en",
+        "github_url": "https://github.com/openclaw/openclaw/tree/main/.agents/skills/openclaw-ghsa-maintainer",
+        "skillsmp_url": "https://skillsmp.com/creators/openclaw/openclaw/agents-skills-openclaw-ghsa-maintainer",
+        "repo_stars": 388044,
+        "catalog_updated_at": "2026-05-28T15:30:39+00:00",
+        "source_key": "openclaw/openclaw:.agents/skills/openclaw-ghsa-maintainer",
+        "family_key": "openclaw/openclaw:openclaw-ghsa-maintainer",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "vinta/awesome-python:preview-verdicts",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "preview-verdicts",
+        "author": "vinta",
+        "description": "Generate the interactive keep/drop verdict preview (HTML page with per-row feedback controls) whenever a prune sweep, batch entry edit, or restructure needs maintainer review before touching README.md — and process the feedback JSON the maintainer pastes back.",
+        "content_language": "en",
+        "github_url": "https://github.com/vinta/awesome-python/tree/master/.claude/skills/preview-verdicts",
+        "skillsmp_url": "https://skillsmp.com/creators/vinta/awesome-python/claude-skills-preview-verdicts",
+        "repo_stars": 317137,
+        "catalog_updated_at": "2026-08-15T19:21:04+00:00",
+        "source_key": "vinta/awesome-python:.claude/skills/preview-verdicts",
+        "family_key": "vinta/awesome-python:preview-verdicts",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:config-gc",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "config-gc",
+        "author": "affaan-m",
+        "description": "Garbage collection for your Claude Code configuration. Periodically scans ~/.claude (skills, memory, hooks, permissions, MCP servers, caches) for redundant, stale, orphaned, or low-value items, then walks the user through a confirm-each-deletion cleanup. Use when the user says \"clean up my config\", \"config GC\", \"too many skills\", \"audit my setup\", \"my .claude is bloated\", or asks for a periodic config review.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/config-gc",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-config-gc",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-11T12:12:21+00:00",
+        "source_key": "affaan-m/ecc:skills/config-gc",
+        "family_key": "affaan-m/ecc:config-gc",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "affaan-m/ecc:orch-refine-code",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "orch-refine-code",
+        "author": "affaan-m",
+        "description": "Orchestrate a behavior-preserving refactor — confirm tests are green, restructure without changing behavior, keep tests green, review, and gated commit. Use when the structure should improve but behavior must not change.",
+        "content_language": "en",
+        "github_url": "https://github.com/affaan-m/ECC/tree/main/skills/orch-refine-code",
+        "skillsmp_url": "https://skillsmp.com/creators/affaan-m/ecc/skills-orch-refine-code",
+        "repo_stars": 244512,
+        "catalog_updated_at": "2026-06-11T12:12:21+00:00",
+        "source_key": "affaan-m/ecc:skills/orch-refine-code",
+        "family_key": "affaan-m/ecc:orch-refine-code",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "deepseek-ai/deepseek-harness:preview-tour",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "preview-tour",
+        "author": "deepseek-ai",
+        "description": "Inspect the bundled Preview workspace and its deterministic Session examples.",
+        "content_language": "en",
+        "github_url": "https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/.agents/skills/preview-tour",
+        "skillsmp_url": "https://skillsmp.com/creators/deepseek-ai/deepseek-harness/packages-experimental-webworker-runtime-tests-fixtures-vfs-example-workspace-agents-skills-preview-tour",
+        "repo_stars": 204429,
+        "catalog_updated_at": "2026-08-24T02:37:04+00:00",
+        "source_key": "deepseek-ai/deepseek-harness:packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/.agents/skills/preview-tour",
+        "family_key": "deepseek-ai/deepseek-harness:preview-tour",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "flutter/flutter:updating-android-sdk",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "updating-android-sdk",
+        "author": "flutter",
+        "description": "Upgrades Flutter's Android SDK dependency to a new Android API version (or preview/canary release) in packages.txt, verifies CIPD tag uniqueness, and packages/uploads the binaries using create_cipd_packages.sh across macOS, Linux, and Windows. Use whenever a user wants to pick up a new version of Android or upload Android SDK packages to CIPD.",
+        "content_language": "en",
+        "github_url": "https://github.com/flutter/flutter/tree/master/.agents/skills/updating-android-sdk",
+        "skillsmp_url": "https://skillsmp.com/creators/flutter/flutter/agents-skills-updating-android-sdk",
+        "repo_stars": 178715,
+        "catalog_updated_at": "2026-06-04T20:18:09+00:00",
+        "source_key": "flutter/flutter:.agents/skills/updating-android-sdk",
+        "family_key": "flutter/flutter:updating-android-sdk",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "vercel/next.js:deploy-release-test",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "deploy-release-test",
+        "author": "vercel",
+        "description": "Validate a commit-specific Next.js preview package and manually trigger the entire Next.js deployment test suite through the test_e2e_deploy_release.yml GitHub Actions workflow. Use only when asked to run the full deploy test suite or this workflow specifically from an internal vercel/next.js PR branch. Do not use for focused deployment-test sanity checks; run the relevant tests locally with pnpm test-deploy instead. Covers resolving the latest branch SHA, waiting for vercel-packages, preserving default workflow inputs, dispatching the workflow, and verifying the run.",
+        "content_language": "en",
+        "github_url": "https://github.com/vercel/next.js/tree/canary/.agents/skills/deploy-release-test",
+        "skillsmp_url": "https://skillsmp.com/creators/vercel/next.js/agents-skills-deploy-release-test",
+        "repo_stars": 142017,
+        "catalog_updated_at": "2026-08-27T21:34:20+00:00",
+        "source_key": "vercel/next.js:.agents/skills/deploy-release-test",
+        "family_key": "vercel/next.js:deploy-release-test",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "vercel/next.js:next-dev-loop",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "next-dev-loop",
+        "author": "vercel",
+        "description": "Verify Next.js runtime behavior after editing app code. Use this skill to confirm a change actually works in a running app — not just that it compiles or type-checks. Combines /_next/mcp (Next.js's view) with agent-browser (the browser's view). Requires a running `next dev`.",
+        "content_language": "en",
+        "github_url": "https://github.com/vercel/next.js/tree/canary/skills/next-dev-loop",
+        "skillsmp_url": "https://skillsmp.com/creators/vercel/next.js/skills-next-dev-loop",
+        "repo_stars": 142017,
+        "catalog_updated_at": "2026-08-19T18:05:34+00:00",
+        "source_key": "vercel/next.js:skills/next-dev-loop",
+        "family_key": "vercel/next.js:next-dev-loop",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "microsoft/powertoys:release-note-generation",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "release-note-generation",
+        "author": "microsoft",
+        "description": "Toolkit for generating PowerToys stable or preview release notes from GitHub milestones, commit ranges, or Azure DevOps release-candidate builds. Use when asked to create release notes, summarize milestone PRs, generate changelog, prepare a draft preview release, calculate PR deltas across main and stable, update release documentation, manage PR milestones, or prepare and validate release assets.",
+        "content_language": "en",
+        "github_url": "https://github.com/microsoft/PowerToys/tree/main/.github/skills/release-note-generation",
+        "skillsmp_url": "https://skillsmp.com/creators/microsoft/powertoys/github-skills-release-note-generation",
+        "repo_stars": 138220,
+        "catalog_updated_at": "2026-08-17T06:47:18+00:00",
+        "source_key": "microsoft/powertoys:.github/skills/release-note-generation",
+        "family_key": "microsoft/powertoys:release-note-generation",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "microsoft/powertoys:ui-tests-migration",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "ui-tests-migration",
+        "author": "microsoft",
+        "description": "Migrate and stabilize PowerToys UI tests from WinAppDriver/Selenium to Microsoft.PowerToys.UITest.Next and winappcli. Use for ports, new UITest projects, flaky CI tests, persistent local-VM validation on Hyper-V, resettable clean-baseline runs, Explorer/Shell selection, preview handlers, thumbnail providers, hotkey activation, stateful process lifecycle, composed WinUI/WebView visual baselines, or cross-window/foreground failures. Covers APIs, scaffolding, test design, diagnostics, agentic execution, and CI hardening. Keywords: UI test, UITests, UITestAutomation.Next, winappcli, WinAppDriver, Selenium, local VM, Hyper-V, checkpoint, migrate, port, flaky, CI stability, Explorer, Shell extension, WebView2.",
+        "content_language": "en",
+        "github_url": "https://github.com/microsoft/PowerToys/tree/main/.github/skills/ui-tests-migration",
+        "skillsmp_url": "https://skillsmp.com/creators/microsoft/powertoys/github-skills-ui-tests-migration",
+        "repo_stars": 138220,
+        "catalog_updated_at": "2026-08-22T00:35:13+00:00",
+        "source_key": "microsoft/powertoys:.github/skills/ui-tests-migration",
+        "family_key": "microsoft/powertoys:ui-tests-migration",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "garrytan/gstack:design-consultation",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "design-consultation",
+        "author": "garrytan",
+        "description": "Design consultation: understands your product, researches the landscape, proposes a complete design system (aesthetic, typography, color, layout, spacing, motion), and generates font+color preview... (gstack)",
+        "content_language": "en",
+        "github_url": "https://github.com/garrytan/gstack/tree/main/design-consultation",
+        "skillsmp_url": "https://skillsmp.com/creators/garrytan/gstack/design-consultation",
+        "repo_stars": 130419,
+        "catalog_updated_at": "2026-08-29T17:10:35+00:00",
+        "source_key": "garrytan/gstack:design-consultation",
+        "family_key": "garrytan/gstack:design-consultation",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "nexu-io/open-design:digital-eguide",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "digital-eguide",
+        "author": "nexu-io",
+        "description": "A two-spread digital e-guide preview — page 1 is a cover (display title,\nauthor, \"What's inside\" stats, table of contents teaser); page 2 is a\nspread (lesson body with pull-quote and a step list). Lifestyle / creator\nbrand tone. Use when the brief asks for an \"e-guide\", \"digital guide\",\n\"lookbook\", \"lead magnet\", \"creator guide\", \"playbook\", \"PDF guide\",\nor \"电子指南\".",
+        "content_language": "en",
+        "github_url": "https://github.com/nexu-io/open-design/tree/main/design-templates/digital-eguide",
+        "skillsmp_url": "https://skillsmp.com/creators/nexu-io/open-design/design-templates-digital-eguide",
+        "repo_stars": 92765,
+        "catalog_updated_at": "2026-07-27T14:02:48+00:00",
+        "source_key": "nexu-io/open-design:design-templates/digital-eguide",
+        "family_key": "nexu-io/open-design:digital-eguide",
+        "aliases": [
+          {
+            "language": "en",
+            "github_url": "https://github.com/nexu-io/open-design/tree/main/plugins/_official/examples/digital-eguide"
+          },
+          {
+            "language": "en",
+            "github_url": "https://github.com/nexu-io/open-design/tree/main/plugins/_official/examples/digital-eguide"
+          }
+        ],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "nexu-io/open-design:export-download-debugging",
+      "queries": [
+        "preview confirm execute cleanup"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "export-download-debugging",
+        "author": "nexu-io",
+        "description": "Diagnose and fix browser, preview, or Electron export/download failures, especially image export issues involving Save As, Blob/Data URLs, the File System Access API, createWritable failures, and 0 KB files.",
+        "content_language": "en",
+        "github_url": "https://github.com/nexu-io/open-design/tree/main/skills/export-download-debugging",
+        "skillsmp_url": "https://skillsmp.com/creators/nexu-io/open-design/skills-export-download-debugging",
+        "repo_stars": 92765,
+        "catalog_updated_at": "2026-05-30T04:44:00+00:00",
+        "source_key": "nexu-io/open-design:skills/export-download-debugging",
+        "family_key": "nexu-io/open-design:export-download-debugging",
+        "aliases": [],
+        "query": "preview confirm execute cleanup"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "nexu-io/open-design:wireframe-mobile-flow",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "wireframe-mobile-flow",
+        "author": "nexu-io",
+        "description": "A lo-fi multi-screen MOBILE flow wireframe — three or four phone frames\nlaid out in a row on a board, showing a connected user flow (Onboarding →\nHome feed → Item detail → Confirm). Grey-box content inside each device,\ndashed connector arrows + numbered step labels between screens, and a\ncouple of annotation callouts. Reads like an app flow pinned to a\nwhiteboard before any pixels are committed. Use when the brief asks for\n\"mobile wireframe\", \"app flow\", \"user flow wireframe\", \"lo-fi mobile\",\n\"low fidelity\", \"线框图\", \"移动端线框\", or \"App 流程\".",
+        "content_language": "en",
+        "github_url": "https://github.com/nexu-io/open-design/tree/main/design-templates/wireframe-mobile-flow",
+        "skillsmp_url": "https://skillsmp.com/creators/nexu-io/open-design/design-templates-wireframe-mobile-flow",
+        "repo_stars": 92765,
+        "catalog_updated_at": "2026-07-27T14:02:48+00:00",
+        "source_key": "nexu-io/open-design:design-templates/wireframe-mobile-flow",
+        "family_key": "nexu-io/open-design:wireframe-mobile-flow",
+        "aliases": [
+          {
+            "language": "en",
+            "github_url": "https://github.com/nexu-io/open-design/tree/main/plugins/_official/examples/wireframe-mobile-flow"
+          },
+          {
+            "language": "en",
+            "github_url": "https://github.com/nexu-io/open-design/tree/main/plugins/_official/examples/wireframe-mobile-flow"
+          }
+        ],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "lobehub/lobehub:modal",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "modal",
+        "author": "lobehub",
+        "description": "LobeHub imperative modal conventions. Use when creating or migrating modals, dialogs, popups, confirm flows, ModalHost wiring, createModal, confirmModal, useModalContext, or base-ui modal APIs.",
+        "content_language": "en",
+        "github_url": "https://github.com/lobehub/lobehub/tree/canary/.agents/skills/modal",
+        "skillsmp_url": "https://skillsmp.com/creators/lobehub/lobehub/agents-skills-modal",
+        "repo_stars": 82101,
+        "catalog_updated_at": "2026-08-05T16:40:08+00:00",
+        "source_key": "lobehub/lobehub:.agents/skills/modal",
+        "family_key": "lobehub/lobehub:modal",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "netdata/netdata:sonarqube-audit",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "sonarqube-audit",
+        "author": "netdata",
+        "description": "Triage SonarCloud findings (issues, hotspots, code smells, vulnerabilities) for this project — search what's open, mark False Positive / Won't Fix / Confirm / Safe / Acknowledged / Fixed, batch-mark whole rule families. Use when the user asks to \"review Sonar findings\", \"triage SonarCloud\", \"mark False Positive on Sonar\", or anything mentioning sonarqube/sonarcloud, S2259, S5008, code smells, security hotspots, or sonarcloud.io.",
+        "content_language": "en",
+        "github_url": "https://github.com/netdata/netdata/tree/master/.agents/skills/sonarqube-audit",
+        "skillsmp_url": "https://skillsmp.com/creators/netdata/netdata/agents-skills-sonarqube-audit",
+        "repo_stars": 80356,
+        "catalog_updated_at": "2026-08-25T11:35:06+00:00",
+        "source_key": "netdata/netdata:.agents/skills/sonarqube-audit",
+        "family_key": "netdata/netdata:sonarqube-audit",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "paperclipai/paperclip:company-creator",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "company-creator",
+        "author": "paperclipai",
+        "description": "Create agent company packages that conform to agentcompanies/v1. Use when asked to create a company, scaffold an agent team, hire agents, or turn a repo/skills collection into a company package.",
+        "content_language": "en",
+        "github_url": "https://github.com/paperclipai/paperclip/tree/master/.agents/skills/company-creator",
+        "skillsmp_url": "https://skillsmp.com/creators/paperclipai/paperclip/agents-skills-company-creator",
+        "repo_stars": 79670,
+        "catalog_updated_at": "2026-07-10T13:46:20+00:00",
+        "source_key": "paperclipai/paperclip:.agents/skills/company-creator",
+        "family_key": "paperclipai/paperclip:company-creator",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    },
+    {
+      "family_key": "thedaviddias/front-end-checklist:list-virtualization",
+      "queries": [
+        "confirm before cleanup agent skill"
+      ],
+      "skills_sh": null,
+      "skillsmp": {
+        "source": "skillsmp",
+        "name": "list-virtualization",
+        "author": "thedaviddias",
+        "description": "Use when reviewing dashboards, admin tables, search results, or feeds with many repeated items. Confirm the bottleneck is DOM or rendering cost before introducing virtualization because small lists usually do not need the added complexity.",
+        "content_language": "en",
+        "github_url": "https://github.com/thedaviddias/Front-End-Checklist/tree/main/skills/list-virtualization",
+        "skillsmp_url": "https://skillsmp.com/creators/thedaviddias/front-end-checklist/skills-list-virtualization",
+        "repo_stars": 73948,
+        "catalog_updated_at": "2026-05-29T21:54:06+00:00",
+        "source_key": "thedaviddias/front-end-checklist:skills/list-virtualization",
+        "family_key": "thedaviddias/front-end-checklist:list-virtualization",
+        "aliases": [],
+        "query": "confirm before cleanup agent skill"
+      },
+      "catalogs": [
+        "skillsmp"
+      ],
+      "requires_source_review": true
+    }
+  ],
+  "missing_evidence": [],
+  "next_steps": [
+    "shortlist by job relevance and role coverage, not combined popularity",
+    "open canonical GitHub source and inspect SKILL.md before adoption",
+    "verify license, maintenance, permissions, security, duplication, and rating evidence",
+    "write keep/adapt/reject/invent synthesis before authoring"
+  ]
+}
