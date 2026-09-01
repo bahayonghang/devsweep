@@ -1,4 +1,5 @@
 #![warn(unreachable_pub)]
+#![cfg_attr(not(windows), allow(dead_code, unused_imports))]
 
 //! Reusable scanning, planning, inventory, and cleanup execution logic.
 
