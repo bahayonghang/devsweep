@@ -1,0 +1,43 @@
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+generated src/api/types.gen.ts from 7 named fixture files
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/styles.test.ts (4 tests) 2ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 60ms
+ ✓ src/state/app-state.test.ts (10 tests) 5ms
+ ✓ src/api/contract.test.ts (14 tests) 5ms
+ ✓ src/lifecycle.test.ts (4 tests) 71ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 6ms
+ ✓ src/i18n/index.test.ts (5 tests) 7ms
+ ✓ src/api/bridge.test.ts (3 tests) 7ms
+ ✓ src/pages/ScanPage.test.tsx (1 test) 137ms
+ ✓ src/app-shell/AppShell.test.tsx (15 tests) 1092ms
+ ✓ src/api/types-generation.test.ts (2 tests) 1500ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  787ms
+   ✓ IPC type generation > changes when a named fixture changes  713ms
+ ✓ src/App.test.tsx (33 tests) 4157ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  484ms
+   ✓ desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  307ms
+ Test Files  12 passed (12)
+      Tests  100 passed (100)
+   Start at  19:38:39
+   Duration  6.88s (transform 966ms, setup 2.95s, collect 2.49s, tests 7.05s, environment 10.22s, prepare 949ms)
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 55 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB │ gzip:  0.26 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/index-CrMOQeTf.css                  13.79 kB │ gzip:  3.78 kB
+dist/assets/index-T5aFOIlo.js                  275.18 kB │ gzip: 81.74 kB
+✓ built in 575ms

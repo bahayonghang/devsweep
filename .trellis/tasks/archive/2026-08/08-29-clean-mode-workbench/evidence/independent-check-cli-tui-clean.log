@@ -1,0 +1,30 @@
+
+running 3 tests
+test tui::modes::clean::tests::no_selection_during_scan_and_stale_events_are_ignored ... ok
+test tui::modes::clean::tests::execute_requires_preview_and_second_confirmation ... ok
+test tui::modes::clean::tests::inspect_only_never_selects_and_selection_invalidates_preview ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 112 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.38s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)
+
+exit=0

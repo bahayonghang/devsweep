@@ -1,0 +1,6 @@
+{
+  "command": "just desktop-web-check",
+  "exit": 0,
+  "status": "passed",
+  "note": "ErrorBanner.tsx gained analyze_already_running and analyze_failed cases so CommandError switch is exhaustive. lint, typecheck, 106 vitest, vite build passed."
+}

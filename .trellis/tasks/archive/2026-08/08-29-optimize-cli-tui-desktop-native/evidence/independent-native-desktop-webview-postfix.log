@@ -1,0 +1,8 @@
+command: mise exec node@22 -- node ".trellis/tasks/08-29-optimize-cli-tui-desktop-native/evidence/capture-native-optimize.mjs"
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:41:32.4081700+08:00
+----- output -----
+
+-----
+exit=0
+finished: 2026-08-31T14:42:33.5595426+08:00

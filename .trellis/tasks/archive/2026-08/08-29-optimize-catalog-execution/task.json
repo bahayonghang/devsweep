@@ -1,0 +1,30 @@
+{
+  "id": "optimize-catalog-execution",
+  "name": "optimize-catalog-execution",
+  "title": "Implement Optimize catalogue, authorizer, execution, and audit",
+  "description": "Own the closed standard-user maintenance catalogue, fixed DNS refresh, Settings handoffs, preview digests, authorization, locking, outcomes, and audit.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "closed maintenance catalogue; preview authorizer; fixed DNS/Settings adapters; durable audit; no UI or elevation",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-08-31",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-optimize-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "5-optimize",
+    "depends_on": "08-29-cli-contract-localization",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

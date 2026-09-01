@@ -1,0 +1,64 @@
+COMMAND: just desktop-test
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T16:48:25.3446109+08:00
+
+
+cargo test --locked -p devsweep-desktop
+   Compiling devsweep-desktop v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.18s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_desktop_lib-f44e8dcc98a8cc3c.exe)
+
+running 36 tests
+test commands::tests::job_object_fixture_child ... ignored, process fixture entrypoint
+test commands::tests::job_object_fixture_grandchild ... ignored, process fixture entrypoint
+test analyze::tests::stale_progress_sequences_are_discarded ... ok
+test analyze::tests::concurrent_analyze_is_rejected ... ok
+test commands::tests::debug_native_fault_mode_is_exact_and_closed ... ok
+test commands::tests::invalid_plan_is_structured ... ok
+test analyze::tests::analyze_result_serializes_without_cleanup_intent ... ok
+test commands::tests::protection_store_round_trips_paths ... ok
+test commands::tests::presentation_setting_ipc_payload_is_locale_only_and_closed ... ok
+test clean::tests::stale_digest_is_structured ... ok
+test commands::tests::empty_plan_dry_run_accepts_matching_digest ... ok
+test clean::tests::empty_plan_dry_run_does_not_require_audit ... ok
+test analyze::tests::cancel_joins_before_terminal_result ... ok
+test commands::tests::stale_digest_is_structured ... ok
+test clean::tests::unknown_target_is_structured ... ok
+test commands::tests::unknown_target_is_structured ... ok
+test error::tests::command_errors_serialize_as_stable_tagged_payloads ... ok
+test error::tests::execution_errors_keep_typed_target_identity ... ok
+test commands::tests::inspect_only_target_is_structured ... ok
+test optimize::tests::concurrent_optimize_operations_and_stale_cancel_are_bounded ... ok
+test optimize::tests::list_wire_is_the_closed_eight_and_omits_executable_facts ... ok
+test optimize::tests::run_wire_keeps_launched_distinct_from_completion ... ok
+test commands::tests::changed_selection_rejects_previous_digest ... ok
+test scan::tests::concurrent_scan_is_rejected_immediately ... ok
+test scan::tests::ipc_progress_projects_display_facts_without_cleanup_authority ... ok
+test scan::tests::preview_delivery_coalesces_bursts_and_flushes_the_latest_snapshot ... ok
+test scan::tests::scan_failure_flushes_the_latest_pending_preview ... ok
+test scan::tests::preview_projection_failure_stops_delivery_and_fails_closed ... ok
+test scan::tests::scan_job_forwards_every_progress_event ... ok
+test scan::tests::worker_owned_coordinator_releases_shared_slot ... ok
+test software::tests::concurrent_software_operations_and_stale_cancel_are_bounded ... ok
+test status::tests::concurrent_status_is_rejected ... ok
+test software::tests::software_execution_wire_rejects_partial_and_keeps_five_terminals ... ok
+test tests::capability_grants_only_event_subscription_and_last_window_destroy ... ok
+test scan::tests::cancellation_is_idempotent_and_stops_fixture_within_five_seconds ... ok
+test commands::tests::process_command_runner_terminates_tree_inside_desktop_process ... ok
+
+test result: ok. 34 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep_desktop-6a85f79e02796fbf.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests devsweep_desktop_lib
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+EXIT: 0

@@ -1,0 +1,1 @@
+{"record_kind":"protection_mutation","schema_version":1,"domain":"clean","operation_id":"op-protect-v1-fixture","timestamp_epoch_ms":1711929600000,"transition":1,"outcome_code":"committed","error_code":null,"evidence":{"action":"add","identity_sha256":"64d6691b013c2612fbf849e7a22a64607da34da23a38ef21e5732c810e04301a"}}

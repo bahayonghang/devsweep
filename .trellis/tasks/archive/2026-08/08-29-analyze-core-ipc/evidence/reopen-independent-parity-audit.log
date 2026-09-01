@@ -1,0 +1,19 @@
+{
+  "command": "audit parity generator, recorded CLI fixture, and main-session Vitest evidence",
+  "checks": {
+    "cli_log_matches_checked_in_fixture": true,
+    "generator_refuses_existing_root": true,
+    "generator_exact_regular_bytes": true,
+    "generator_exact_sparse_bytes": true,
+    "generator_exact_denied_payload": true,
+    "generator_applies_deny_acl": true,
+    "desktop_main_session_19_files": true,
+    "desktop_main_session_122_tests": true,
+    "desktop_main_session_parity_passed": true
+  },
+  "generator_sha256": "3f3cd55735e0f958f1aed3ae58aba61acf49f1acf7e70342739ef44d7479ac62",
+  "fixture_file_sha256": "ae9524eacdfd5c365e1b1847d1c7b20206fd5914a7a3f9e8f7f86d9278ec2ce7",
+  "snapshot_sha256": "d14a6c33214dbb4a19527b6184411b68b02b90bec639fb9d8c94e08f7a3e1c36",
+  "note": "generator determinism is structural; frozen snapshot hash includes recorded root identity and mtimes",
+  "exit_code": 0
+}

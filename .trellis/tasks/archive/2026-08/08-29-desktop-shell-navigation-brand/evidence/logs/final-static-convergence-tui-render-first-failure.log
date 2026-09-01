@@ -1,0 +1,94 @@
+
+running 74 tests
+test tui::app::tests::chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit ... ok
+test tui::app::tests::cancellation_key_requests_active_job_cancellation ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::quit_during_active_job_opens_confirm_instead_of_detaching ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test tui::app::tests::completed_scan_replaces_preview_and_reapplies_final_defaults ... ok
+test tui::app::tests::completed_scan_keeps_partial_health_and_capacity_totals_in_state ... ok
+test tui::app::tests::replacement_scan_waits_for_cancel_terminal_and_rejects_stale_results ... ok
+test tui::app::tests::language_save_failure_stays_visible_without_changing_the_session_locale ... ok
+test tui::app::tests::cancelling_job_ignores_late_progress_events ... ok
+test tui::app::tests::pycache_groups_collapse_without_changing_target_selection_or_identity ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::startup_default_selection_follows_selected_by_default_even_for_self_targets ... ok
+test tui::app::tests::startup_effects_request_an_initial_scan ... ok
+test tui::app::tests::byte_summaries_count_duplicate_paths_once ... ok
+test tui::app::tests::scan_progress_applies_latest_cumulative_partial_plan ... ok
+test tui::app::tests::accepted_confirmation_executes_its_frozen_manifest ... ok
+test tui::app::tests::accepted_confirmation_keeps_explicit_fresh_target_selection ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+test tui::app::tests::terminal_jobs_ignore_late_worker_events ... ok
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+test tui::app::tests::update_keeps_scan_preview_read_only_then_restores_completed_selection ... ok
+test tui::render::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::app::tests::worker_events_update_jobs_and_targets ... ok
+test tui::render::tests::display_hygiene_quotes_argv_and_strips_controls ... ok
+test tui::display::tests::command_preview_quotes_and_sanitizes_argv ... ok
+test tui::display::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::app::tests::viewport_keeps_selection_visible_for_long_lists ... ok
+test tui::render::tests::target_details_show_freshness_guard_evidence ... ok
+test tui::app::tests::scan_progress_shows_project_targets_before_global_scan_finishes ... ok
+test tui::render::tests::target_details_show_typed_sizing_warnings ... ok
+test tui::runtime::tests::cancel_effect_does_not_fabricate_a_cancellation_event ... ok
+test tui::app::tests::rejected_confirmation_shows_inline_feedback ... ok
+test tui::render::tests::narrow_footer_keeps_primary_actions_visible ... ok
+test tui::runtime::tests::clean_worker_reports_finish_and_failure ... ok
+test tui::render::tests::cleaned_target_renders_as_tombstone ... ok
+test tui::runtime::tests::clean_worker_translates_execution_progress ... ok
+test tui::runtime::tests::inventory_worker_emits_read_only_report_events ... ok
+test tui::runtime::tests::presentation_effect_returns_typed_success_and_failure_without_stdout ... ok
+test tui::app::tests::scan_updates_invalidate_open_confirmation_and_block_enter ... ok
+test tui::runtime::tests::scan_worker_does_not_promote_an_explicitly_canceled_scan ... ok
+test tui::render::tests::representative_state_renders_at_degraded_supported_size ... ok
+test tui::app::tests::finished_cleanup_progress_stays_visible_until_dismissed ... ok
+test tui::runtime::tests::scan_worker_emits_started_progress_finished ... ok
+test tui::runtime::tests::confirmed_digest_must_match_the_revalidated_snapshot ... ok
+test tui::runtime::tests::duplicate_clean_dispatch_starts_only_one_worker ... ok
+test tui::runtime::tests::scan_worker_reports_failure_as_job_failed ... ok
+test tui::shell::tests::corrupt_persisted_store_fails_closed_at_every_precedence_level ... ok
+test tui::runtime::tests::scan_dispatch_is_refused_until_prior_worker_terminal_is_joined ... ok
+test tui::shell::tests::exhaustive_stable_tag_mapping_round_trips ... ok
+test tui::render::tests::inventory_tab_renders_read_only_observations_health_and_inspection ... ok
+test tui::shell::tests::frozen_mode_identity_is_complete_but_unregistered_modes_are_absent ... ok
+test tui::shell::tests::locale_precedence_is_explicit_then_persisted_then_os_then_english ... ok
+test tui::render::tests::partial_scan_health_renders_truthful_totals_and_diagnostics ... ok
+test tui::terminal::tests::drop_restores_session ... ok
+test tui::render::tests::invalidated_confirmation_renders_reconfirmation_state ... ok
+test tui::terminal::tests::partial_enter_failure_restores_completed_steps ... ok
+test tui::render::tests::render_path_does_not_mutate_app_state ... ok
+test tui::terminal::tests::restore_continues_after_first_failure ... ok
+test tui::render::tests::confirmation_and_dry_run_show_selected_targets_across_scopes ... ok
+test tui::render::tests::representative_state_renders_with_targets_details_and_jobs ... ok
+test tui::render::tests::rendered_paths_hide_windows_verbatim_prefixes ... ok
+test tui::render::tests::accepted_irreversible_confirmation_renders_initial_progress ... ok
+test tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state ... FAILED
+test tui::render::tests::representative_state_renders_at_full_supported_size ... ok
+test tui::render::tests::rules_tab_lists_catalogue_entries ... ok
+test tui::render::tests::cleanup_progress_updates_job_and_renders_modal ... ok
+test tui::render::tests::pycache_group_renders_collapsed_and_expanded_target_paths ... ok
+test tui::render::tests::cleanup_progress_renders_mixed_target_results ... ok
+test tui::render::tests::footer_renders_contextual_key_actions ... ok
+test tui::render::tests::smoke_renders_dashboard_details_confirm_and_jobs_logs_states ... ok
+
+failures:
+
+---- tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state stdout ----
+
+thread 'tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state' (79052) panicked at crates\devsweep-cli\src\tui\render\tests.rs:36:5:
+assertion failed: settings.contains("[Enter] save")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state
+
+test result: FAILED. 73 passed; 1 failed; 0 ignored; 0 measured; 33 filtered out; finished in 0.02s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+error: test failed, to rerun pass `-p devsweep-cli --lib`

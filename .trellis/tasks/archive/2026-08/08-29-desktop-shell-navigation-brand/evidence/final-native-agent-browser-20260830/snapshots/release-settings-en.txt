@@ -1,0 +1,10 @@
+- generic "DevSweepCleanup plan workbenchCleanLanguageHelpLanguage settingsLanguageEnglishSimplified Chinese" [ref=e1] clickable [onclick]
+  - tab "Clean" [ref=e5]
+  - navigation "Supporting destinations" [ref=e2]
+    - button "Language" [ref=e6]
+  - link "Help" [ref=e3]
+  - region "Language settings" [ref=e4]
+    - heading "Language settings" [level=1, ref=e7]
+    - combobox "Language" [expanded=false, ref=e8]: English
+      - option "English" [selected, ref=e9]
+      - option "Simplified Chinese" [ref=e10]

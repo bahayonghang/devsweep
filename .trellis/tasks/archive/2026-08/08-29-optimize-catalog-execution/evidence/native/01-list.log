@@ -1,0 +1,27 @@
+== devsweep optimize list (en, human) ==
+Optimize catalogue: 8 operations; catalogue version 1.
+dns.flush | Execute | Native System32 ipconfig.exe /flushdns, bounded to 10 seconds
+settings.storage_recommendations | Settings handoff | Windows build 22000 or later; opens the fixed Settings page
+settings.search | Settings handoff | Windows build 22000 or later; opens the fixed Settings page
+settings.energy_recommendations | Settings handoff | Windows build 22624 or later; opens the fixed Settings page
+guidance.drive_optimize | Guidance only | Guidance only; DevSweep never dispatches it
+guidance.system_integrity | Guidance only | Guidance only; DevSweep never dispatches it
+guidance.filesystem_check | Guidance only | Guidance only; DevSweep never dispatches it
+guidance.network_reset | Guidance only | Guidance only; DevSweep never dispatches it
+exit=0
+
+== devsweep optimize list (zh-CN, human) ==
+优化目录：8 个操作；目录版本 1。
+dns.flush | 执行 | 原生 System32 ipconfig.exe /flushdns，限时 10 秒
+settings.storage_recommendations | 设置跳转 | 需要 Windows 内部版本 22000 或更高；打开固定的设置页面
+settings.search | 设置跳转 | 需要 Windows 内部版本 22000 或更高；打开固定的设置页面
+settings.energy_recommendations | 设置跳转 | 需要 Windows 内部版本 22624 或更高；打开固定的设置页面
+guidance.drive_optimize | 仅指引 | 仅指引；DevSweep 绝不派发
+guidance.system_integrity | 仅指引 | 仅指引；DevSweep 绝不派发
+guidance.filesystem_check | 仅指引 | 仅指引；DevSweep 绝不派发
+guidance.network_reset | 仅指引 | 仅指引；DevSweep 绝不派发
+exit=0
+
+== devsweep optimize list (json) ==
+{"command":"optimize.list","data":{"catalogue_version":1,"entries":[{"action_class":"execute","build_floor":null,"id":"dns.flush"},{"action_class":"settings_handoff","build_floor":22000,"id":"settings.storage_recommendations"},{"action_class":"settings_handoff","build_floor":22000,"id":"settings.search"},{"action_class":"settings_handoff","build_floor":22624,"id":"settings.energy_recommendations"},{"action_class":"guidance","build_floor":null,"id":"guidance.drive_optimize"},{"action_class":"guidance","build_floor":null,"id":"guidance.system_integrity"},{"action_class":"guidance","build_floor":null,"id":"guidance.filesystem_check"},{"action_class":"guidance","build_floor":null,"id":"guidance.network_reset"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+exit=0

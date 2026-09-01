@@ -1,0 +1,9 @@
+{
+  "time": "2026-08-30T17:42:03.9163904+08:00",
+  "release": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "release_sha256": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "extracted_icon": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\screenshots\\release-extracted-associated-icon.png",
+  "extracted_icon_sha256": "690EA895DF7ED32E1630BFF280DAC385816B9D48CD56BB8FA3DEE436DAF8C3DC",
+  "expected_32x32": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop\\src-tauri\\icons\\32x32.png",
+  "expected_32x32_sha256": "09E39547593449C2BEC66E12541E53752548BB6A88C9F776C6ED27C2EDC7FB52"
+}

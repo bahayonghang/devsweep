@@ -1,0 +1,5 @@
+COMMAND: cargo run --locked -p devsweep-cli --bin devsweep -- software plan --inventory .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-inventory.json --select software:v1:msix:03ffd8702fd10d53af9c2a2d81d85e832ade9b368d20f7be48429d2b5ae708da --output .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-plan.json
+OUTPUT:
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.36s
+     Running `target\debug\devsweep.exe software plan --inventory .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-inventory.json --select 'software:v1:msix:03ffd8702fd10d53af9c2a2d81d85e832ade9b368d20f7be48429d2b5ae708da' --output .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-plan.json`
+EXIT_CODE: 0

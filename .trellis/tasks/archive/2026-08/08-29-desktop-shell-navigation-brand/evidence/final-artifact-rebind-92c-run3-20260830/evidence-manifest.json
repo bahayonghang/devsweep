@@ -1,0 +1,156 @@
+{
+  "generated_at": "2026-08-30T20:53:32.1838912+08:00",
+  "decision": "failed_final_run3_no_run4",
+  "tool_observed_exit_code": 1,
+  "helper_exit_code": 1,
+  "transcript": {
+    "path": "native-release/02-native-release-rebind.log",
+    "lines": 33,
+    "bytes": 4055,
+    "sha256": "C8C85959C9EC81093C35E030B407F7B56BC8FF0E1C4B4DD0221714A7C1665111"
+  },
+  "cdp": {
+    "path": "native-release/cdp-messages.jsonl",
+    "lines": 22,
+    "bytes": 8936,
+    "sha256": "D3D31C42354C66EFF322ABCF9D04CF7681B7827912330E4DF9015D7282200D78"
+  },
+  "uia": {
+    "exists": false,
+    "reason": "run3 stopped at first-close residue gate before UIA"
+  },
+  "missing_expected_outputs": [
+    "native-release/shell-tray-wnd-uia-raw.json",
+    "native-release/screenshots/release-restart-after-back.png",
+    "native-release/screenshots/release-taskbar-bound-*.png"
+  ],
+  "artifacts": [
+    {
+      "path": "target/release/devsweep-desktop.exe",
+      "bytes": 9827328,
+      "sha256": "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20"
+    },
+    {
+      "path": "target/debug/devsweep-desktop.exe",
+      "bytes": 14758912,
+      "sha256": "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5"
+    },
+    {
+      "path": "target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe",
+      "bytes": 3152372,
+      "sha256": "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328"
+    }
+  ],
+  "files": [
+    {
+      "path": "00-wrapper-command.txt",
+      "bytes": 525,
+      "lines": 1,
+      "sha256": "72F3BD818C68538963CD3CC3D987B43F1F6F4BCFFDE8C3B5871E3127A99B4E2B"
+    },
+    {
+      "path": "01-toolchain-preflight.log",
+      "bytes": 3065,
+      "lines": 36,
+      "sha256": "9828DDAD92C7FE73C339A660A0EC0A727D8D03CE9B919647CAD80A385CACBF85"
+    },
+    {
+      "path": "03-final-readonly-audit.log",
+      "bytes": 1969,
+      "lines": 35,
+      "sha256": "7DAFA43398EDAA710FA366CFC1C32B521814E5472DBD636C9F751158E0F422C5"
+    },
+    {
+      "path": "final-readonly-audit.ps1",
+      "bytes": 4173,
+      "lines": 53,
+      "sha256": "ABBF45F1B4F8494DF20A41080EE8B5CD6B8516263E6D8BDE26F6A4EF0DC5A01E"
+    },
+    {
+      "path": "generate-manifest.ps1",
+      "bytes": 3857,
+      "lines": 64,
+      "sha256": "FC35B9CF23A79B37CD66105BE8797897A25829AEA71B81A4182010A9F3B1B315"
+    },
+    {
+      "path": "native-release/02-native-release-rebind.log",
+      "bytes": 4055,
+      "lines": 33,
+      "sha256": "C8C85959C9EC81093C35E030B407F7B56BC8FF0E1C4B4DD0221714A7C1665111"
+    },
+    {
+      "path": "native-release/cdp-messages.jsonl",
+      "bytes": 8936,
+      "lines": 22,
+      "sha256": "D3D31C42354C66EFF322ABCF9D04CF7681B7827912330E4DF9015D7282200D78"
+    },
+    {
+      "path": "native-release/localappdata/DevSweep/settings/presentation-v1.json",
+      "bytes": 39,
+      "lines": 1,
+      "sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899"
+    },
+    {
+      "path": "native-release/screenshots/release-first-zh-CN.png",
+      "bytes": 14104,
+      "lines": null,
+      "sha256": "146437FC610C988C2DCF4056C1AD63E430FB76EA4666721312E94E55AA6BF3D3"
+    },
+    {
+      "path": "native-release/verification.json",
+      "bytes": 183769,
+      "lines": 4561,
+      "sha256": "64F2888CC621F898747FF6A9F806503734574E2BABFC16C8288E2D4511AA6322"
+    },
+    {
+      "path": "outer-exit.json",
+      "bytes": 2846,
+      "lines": 47,
+      "sha256": "09C8136091FA6E5A5C53884036BEE1D8E371C0F8799014C4DA85AEFE4B0D4787"
+    },
+    {
+      "path": "release-rebind-run3.ps1",
+      "bytes": 44704,
+      "lines": 747,
+      "sha256": "D0042C4C141C6A92452B97D6CF290C006FBCE6AE79A8E45EB743EF1D65DA66D2"
+    },
+    {
+      "path": "run3-wrapper.ps1",
+      "bytes": 3417,
+      "lines": 77,
+      "sha256": "89AB9B7DEE82F246A77259A0D28E988E521ECF55507B508127D23EDC10C57690"
+    },
+    {
+      "path": "toolchain-preflight.ps1",
+      "bytes": 5193,
+      "lines": 86,
+      "sha256": "1147F77A45E560EAC3169A9BD0C7828AF8075C268158D2E78292C8D1E627591B"
+    },
+    {
+      "path": "verification.md",
+      "bytes": 4705,
+      "lines": 89,
+      "sha256": "DBCE4EAFAFE229D743FAF3A1937FE60273561A1F2BC0853F74480C5F622F8106"
+    }
+  ],
+  "external_reports": [
+    {
+      "path": ".trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md",
+      "bytes": 30347,
+      "lines": 363,
+      "sha256": "935691A4FE2E805D68F0835D3A09B99293FB928E0266419F226871B4C314BD45"
+    },
+    {
+      "path": ".trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-artifact-rebind-92c-20260830/verification.md",
+      "bytes": 4864,
+      "lines": 91,
+      "sha256": "67A8A247BB37DF088D1E0891A779C35361AA7EA02B6BF1C7442D8EF361DA023B"
+    },
+    {
+      "path": ".trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-artifact-rebind-92c-run2-20260830/verification.md",
+      "bytes": 4862,
+      "lines": 85,
+      "sha256": "414963F823A3E2A26A8084E7C2EF9F4B04FA8A247FECFAA54F27AA6B6C9CE300"
+    }
+  ]
+}

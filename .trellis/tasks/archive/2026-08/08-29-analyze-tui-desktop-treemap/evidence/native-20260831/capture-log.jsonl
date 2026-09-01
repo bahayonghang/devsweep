@@ -1,0 +1,45 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"300fb42d410bb043cc3a7d246c1e2f9d84546dcb328c38fe596e6106bd6b809f"}
+{"event":"acl_deny_set","dir":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831\\fixture\\src\\locked"}
+{"event":"app_launched","pid":47424,"cdpPort":9346}
+{"event":"cdp_targets","count":1,"pageUrl":"http://tauri.localhost/#/clean"}
+{"event":"analyze_probe","probe":{"input":true,"start":["Clean","Analyze","Language","Analyze path"]}}
+{"event":"analyze_start_clicked","clicked":{"clicked":true},"rootPath":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831\\fixture"}
+{"event":"complete_state","complete":{"hasWorkspace":true,"tiles":2,"status":null,"summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/fixtured:/documents/code/rust/exp/devsweep/"}}
+{"event":"screenshot","name":"01-analyze-complete-en-1440"}
+{"event":"screenshot","name":"02-analyze-complete-en-1024"}
+{"event":"screenshot","name":"02-analyze-complete-en-800"}
+{"event":"screenshot","name":"02-analyze-complete-en-390"}
+{"event":"keyboard_drill","keyboardBefore":{"ok":true,"label":"big — 187.5 KiB — Available"},"keyboardAfter":{"focused":"BODY","crumbCount":2}}
+{"event":"screenshot","name":"03-analyze-keyboard-drill-en"}
+{"event":"screenshot","name":"04-analyze-reduced-motion-en"}
+{"event":"screenshot","name":"05-analyze-forced-colors-en"}
+{"event":"warning_probe","warningProbe":{"hasPartial":false,"hasDenied":false,"hasUnknown":true,"summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/fixtured:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/fixture"}}
+{"event":"screenshot","name":"06-analyze-partial-warnings-en"}
+{"event":"store_audit","exists":true,"content":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"screenshot","name":"07-settings-zh-CN"}
+{"event":"analyze_probe","probe":{"input":true,"start":["清理","分析","语言","分析路径"]}}
+{"event":"analyze_start_clicked","clicked":{"clicked":true},"rootPath":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831\\fixture"}
+{"event":"complete_state_zh","completeZh":{"hasWorkspace":true,"tiles":2,"status":null,"summary":"分析完成。3126 个节点；194.6 KiB。根目录：d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/fixtured:/documents/code/rust/exp/devsweep/.trellis/tasks/08-2"}}
+{"event":"screenshot","name":"08-analyze-complete-zh-1440"}
+{"event":"screenshot","name":"09-analyze-complete-zh-390"}
+{"event":"analyze_probe","probe":{"input":true,"start":["清理","分析","语言","分析路径","d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/fixture","返回上一级","打开所选目录","上一页","下一页"]}}
+{"event":"analyze_start_clicked","clicked":{"clicked":true},"rootPath":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target"}
+{"event":"canceling_state","cancelingState":{"status":"正在分析… 已表示 0 个节点。","cancelVisible":true}}
+{"event":"screenshot","name":"10-analyze-canceling-en"}
+{"event":"left_mode","leaveState":{"hash":"#/clean"}}
+{"event":"screenshot","name":"11-after-leave-mode"}
+{"event":"return_after_cancel","returnState":{"empty":true,"status":null}}
+{"event":"screenshot","name":"12-analyze-after-cancel-return"}
+{"event":"app_close","pid":47424,"exited":false}
+{"event":"forced_kill","pid":47424}
+{"event":"done"}
+{"event":"acl_deny_set","dir":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831\\fixture\\src\\locked"}
+{"event":"acl_deny_set","dir":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831\\fixture\\src\\locked"}
+{"event":"app_launched","pid":58324,"cdpPort":9347,"exe_sha256":"300fb42d410bb043cc3a7d246c1e2f9d84546dcb328c38fe596e6106bd6b809f"}
+{"event":"scan_summary","summary":"分析完成。3126 个节点；194.6 KiB。根目录：d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831/fixtured:/documents/co"}
+{"event":"drilled","drilled":{"ok":true}}
+{"event":"list_probe","listProbe":{"crumbCount":2,"listText":"无障碍目录列表列表可访问每个已表示条目。按 Enter 或使用“打开”进入所选目录；按 Backspace 返回上一级。无障碍目录列表small — 目录 — 7.1 KiB — 可用locked — 不支持的重解析点 — 0 B — 可用 — 不支持或未跟随的条目打开所选目录第 1/1 页；共 2 个匹配条目。上一页下一页","listOptions":["无障碍目录列表","small — 目录 — 7.1 KiB — 可用","locked — 不支持的重解析点 — 0 B — 可用 — 不支持或未跟随的条目"]}}
+{"event":"screenshot","name":"13-analyze-src-list-warnings-en"}
+{"event":"locked_selected","opened":{"ok":true,"label":"locked — 不支持的重解析点 — 0 B — 可用 — 不支持或未跟随的条目"}}
+{"event":"screenshot","name":"14-analyze-locked-warning-detail-en"}
+{"event":"done"}

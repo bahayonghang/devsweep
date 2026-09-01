@@ -1,0 +1,15 @@
+{
+  "time": "2026-08-30T17:36:44.2041441+08:00",
+  "pid": 45252,
+  "hwnd": "0xC615FA",
+  "release_hash": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "primary_bounds": [
+    0,
+    0,
+    2048,
+    1152
+  ],
+  "taskbar_candidate": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\screenshots\\release-taskbar-candidate.png",
+  "taskbar_crop_y": 1032,
+  "taskbar_crop_height": 120
+}

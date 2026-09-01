@@ -1,0 +1,11 @@
+{
+  "metadata_command": "cargo metadata --format-version 1 --offline --filter-platform x86_64-pc-windows-msvc",
+  "metadata_exit_code": 0,
+  "package": "windows",
+  "version": "0.56.0",
+  "license": "MIT OR Apache-2.0",
+  "rust_version": "1.62",
+  "cached_archive": "C:/Users/lyh/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/windows-0.56.0.crate",
+  "cached_archive_size_bytes": 10807828,
+  "manifest_evidence": "C:/Users/lyh/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/windows-0.56.0/Cargo.toml:14,16,23"
+}

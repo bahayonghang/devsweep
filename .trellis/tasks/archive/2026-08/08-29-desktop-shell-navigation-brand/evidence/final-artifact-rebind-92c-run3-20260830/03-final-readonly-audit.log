@@ -1,0 +1,35 @@
+**********************
+PowerShell transcript start
+Start time: 20260830205243
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -ExecutionPolicy Bypass -File .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-artifact-rebind-92c-run3-20260830/final-readonly-audit.ps1
+Process ID: 48424
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+ARTIFACT path=target/release/devsweep-desktop.exe bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 matches=True
+ARTIFACT path=target/debug/devsweep-desktop.exe bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5 matches=True
+ARTIFACT path=target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328 matches=True
+OUTER helper_exit=1 transcript_lines=33 transcript_hash=C8C85959C9EC81093C35E030B407F7B56BC8FF0E1C4B4DD0221714A7C1665111 cdp_lines=22 cdp_hash=D3D31C42354C66EFF322ABCF9D04CF7681B7827912330E4DF9015D7282200D78
+LIVE_FILES transcript_lines=33 transcript_hash=C8C85959C9EC81093C35E030B407F7B56BC8FF0E1C4B4DD0221714A7C1665111 cdp_lines=22 cdp_hash=D3D31C42354C66EFF322ABCF9D04CF7681B7827912330E4DF9015D7282200D78 valid_cdp_json=22
+RESIDUE main=0 webview=0 port9391=0 port9392=0 lock_temp=0
+› Ask Codex to do anything
+DIFF_CHECK_EXIT=0
+› Ask Codex to do anything
+TASK_VALIDATE_EXIT=0
+GIT_STATUS_EXIT=0 entries=57
+FINAL_READONLY_AUDIT=PASS
+**********************
+PowerShell transcript end
+End time: 20260830205250
+**********************

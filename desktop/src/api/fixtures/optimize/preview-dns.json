@@ -1,0 +1,15 @@
+{
+  "operation_id": "optimize-preview-1",
+  "plan": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "dns.flush"
+  },
+  "preview": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "dns.flush",
+    "action_class": "execute",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

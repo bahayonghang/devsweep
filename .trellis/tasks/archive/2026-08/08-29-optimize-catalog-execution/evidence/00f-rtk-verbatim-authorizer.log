@@ -1,0 +1,10 @@
+command: rtk cargo test -p devsweep-core optimize::authorizer
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T12:57:43.3137958+08:00
+----- output -----
+
+cargo test: 0 passed, 281 filtered out (2 suites, 0.00s)
+
+-----
+exit=0
+finished: 2026-08-31T12:57:43.7821753+08:00

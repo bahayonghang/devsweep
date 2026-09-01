@@ -1,0 +1,12 @@
+
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build

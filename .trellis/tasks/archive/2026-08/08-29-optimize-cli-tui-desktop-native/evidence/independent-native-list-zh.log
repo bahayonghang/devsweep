@@ -1,0 +1,17 @@
+command: devsweep --language zh-CN optimize list
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:52:23.8770618+08:00
+----- output -----
+优化目录：8 个操作；目录版本 1。
+dns.flush | 在此运行 | 原生 System32 ipconfig.exe /flushdns，限时 10 秒
+settings.storage_recommendations | 打开 Windows 设置 | 需要 Windows 内部版本 22000 或更高；打开固定的设置页面
+settings.search | 打开 Windows 设置 | 需要 Windows 内部版本 22000 或更高；打开固定的设置页面
+settings.energy_recommendations | 打开 Windows 设置 | 需要 Windows 内部版本 22624 或更高；打开固定的设置页面
+guidance.drive_optimize | 仅指引 | 仅指引；DevSweep 绝不派发
+guidance.system_integrity | 仅指引 | 仅指引；DevSweep 绝不派发
+guidance.filesystem_check | 仅指引 | 仅指引；DevSweep 绝不派发
+guidance.network_reset | 仅指引 | 仅指引；DevSweep 绝不派发
+
+-----
+exit=0
+finished: 2026-08-31T14:52:23.8770618+08:00

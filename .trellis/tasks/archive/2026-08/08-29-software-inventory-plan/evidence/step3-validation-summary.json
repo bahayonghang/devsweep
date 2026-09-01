@@ -1,0 +1,50 @@
+{
+  "task": "08-29-software-inventory-plan",
+  "final_status": "passed",
+  "validation": [
+    {
+      "command": "cargo test -p devsweep-cli software",
+      "exit_code": 0,
+      "log": "step3-cli-software-tests.log"
+    },
+    {
+      "command": "cargo test -p devsweep-core software",
+      "exit_code": 0,
+      "log": "step3-core-software-rerun.log"
+    },
+    {
+      "command": "cargo test -p devsweep-cli --test cli_contract explicit_chinese_language_localizes_human_errors_only",
+      "exit_code": 0,
+      "log": "step3-cli-contract-rerun.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "log": "step3-git-diff-check-final.log"
+    },
+    {
+      "command": "just ci",
+      "exit_code": 0,
+      "log": "step3-just-ci-final.log"
+    },
+    {
+      "command": "just release-archive",
+      "exit_code": 0,
+      "log": "step3-release-archive.log"
+    }
+  ],
+  "resolved_gate_failures": [
+    {
+      "command": "just ci",
+      "exit_code": 1,
+      "log": "step3-just-ci.log",
+      "exact_error": "assertion left == right failed: left Some(0), right Some(4) in explicit_chinese_language_localizes_human_errors_only"
+    },
+    {
+      "command": "just ci",
+      "exit_code": 1,
+      "log": "step3-just-ci-rerun.log",
+      "exact_error": "clippy::chunks-exact-to-as-chunks at crates/devsweep-core/src/software/arp.rs:384:18"
+    }
+  ]
+}

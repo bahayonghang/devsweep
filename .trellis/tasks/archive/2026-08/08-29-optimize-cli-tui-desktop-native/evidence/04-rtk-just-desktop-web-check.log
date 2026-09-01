@@ -1,0 +1,67 @@
+command: rtk just desktop-web-check
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:11:40.1304187+08:00
+----- output -----
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+generated src/api/types.gen.ts from 28 named fixture files
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ 鉁?src/modes/analyze/treemap.test.ts (3 tests) 10ms
+ 鉁?src/modes/analyze/parity.test.ts (1 test) 3ms
+ 鉁?src/modes/analyze/selectors.test.ts (2 tests) 3ms
+ 鉁?src/modes/software/parity.test.ts (2 tests) 3ms
+ 鉁?src/state/app-state.test.ts (10 tests) 5ms
+ 鉁?src/modes/optimize/parity.test.ts (2 tests) 3ms
+ 鉁?src/api/contract.test.ts (24 tests) 7ms
+ 鉁?src/lifecycle.test.ts (4 tests) 69ms
+ 鉁?src/i18n/index.test.ts (5 tests) 7ms
+ 鉁?src/app-shell/operation-coordinator.test.ts (6 tests) 72ms
+ 鉁?src/modes/analyze/state.test.ts (2 tests) 2ms
+ 鉁?src/modes/software/state.test.ts (4 tests) 3ms
+ 鉁?src/api/bridge.test.ts (4 tests) 7ms
+ 鉁?src/pages/ScanPage.test.tsx (2 tests) 145ms
+ 鉁?src/components/TargetTable.test.tsx (1 test) 140ms
+ 鉁?src/modes/optimize/state.test.ts (4 tests) 4ms
+ 鉁?src/api/fixture-bridge.test.ts (3 tests) 7ms
+ 鉁?src/styles.test.ts (4 tests) 2ms
+ 鉁?src/app-shell/AppShell.test.tsx (15 tests) 1012ms
+ 鉁?src/modes/clean/reducer.test.ts (1 test) 2ms
+ 鉁?src/modes/software/SoftwareWorkbench.test.tsx (2 tests) 514ms
+   鉁?SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  440ms
+ 鉁?src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 603ms
+   鉁?OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  526ms
+ 鉁?src/api/types-generation.test.ts (2 tests) 1890ms
+   鉁?IPC type generation > is deterministic, committed, ASCII, and type-only  1011ms
+   鉁?IPC type generation > changes when a named fixture changes  878ms
+ 鉁?src/modes/analyze/AnalyzePage.test.tsx (6 tests) 1567ms
+   鉁?AnalyzePage > restores the focused directory on its canonical 200-row parent page  630ms
+ 鉁?src/App.test.tsx (34 tests) 4372ms
+   鉁?desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  466ms
+   鉁?desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  317ms
+ Test Files  25 passed (25)
+      Tests  146 passed (146)
+   Start at  14:11:45
+   Duration  7.82s (transform 3.11s, setup 4.47s, collect 9.79s, tests 10.45s, environment 23.86s, prepare 2.95s)
+vite v7.3.6 building client environment for production...
+transforming...
+鉁?96 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB 鈹?gzip:   0.27 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/index-BXJwfnBU.css                  25.06 kB 鈹?gzip:   5.64 kB
+dist/assets/index-CqF6OFm_.js                  427.96 kB 鈹?gzip: 106.76 kB
+鉁?built in 617ms
+
+-----
+exit=0
+finished: 2026-08-31T14:11:56.7918463+08:00

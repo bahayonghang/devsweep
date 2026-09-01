@@ -1,0 +1,35 @@
+.support-page :focus-visible {
+  outline: 2px solid CanvasText;
+  outline-offset: 2px;
+}
+.support-page {
+  display: grid;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  color: var(--shell-text, #f1f7f3);
+  min-height: 0;
+}
+.support-page h1, .support-page h2 { margin: 0; }
+.support-page table { width: 100%; border-collapse: collapse; }
+.support-page th, .support-page td { text-align: left; padding: 8px; border-bottom: 1px solid var(--shell-border, #385044); }
+.support-page label { display: grid; gap: 4px; max-width: 480px; }
+.support-page form { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.support-page dialog { color: CanvasText; background: Canvas; border: 1px solid CanvasText; padding: 16px; }
+@media (max-width: 800px) {
+  .support-page { padding: 12px; }
+  .support-page table { display: block; overflow-x: auto; }
+}
+@media (min-width: 1440px) {
+  .support-page { padding-left: max(24px, calc((100vw - 1600px) / 2 + 24px)); }
+}
+@media (forced-colors: active) {
+  .support-page, .support-page table, .support-page th, .support-page td, .support-page dialog {
+    color: CanvasText;
+    background: Canvas;
+    border-color: CanvasText;
+    forced-color-adjust: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .support-page * { transition: none !important; animation: none !important; }
+}

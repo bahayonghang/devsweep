@@ -1,0 +1,11 @@
+
+running 1 test
+{"cancel_to_join_ms":[3,3,3,3,3],"fixture":"analysis-native-50k-v1","p95_cancel_to_join_ms":3,"samples":[{"accounted_bytes":9095278,"nodes":51006,"private_bytes":28749824,"wall_ms":5210,"warnings":1,"workers":2},{"accounted_bytes":9095278,"nodes":51006,"private_bytes":28155904,"wall_ms":5007,"warnings":1,"workers":2},{"accounted_bytes":9095278,"nodes":51006,"private_bytes":29065216,"wall_ms":5409,"warnings":1,"workers":2},{"accounted_bytes":9095278,"nodes":51006,"private_bytes":28708864,"wall_ms":5007,"warnings":1,"workers":2},{"accounted_bytes":9095278,"nodes":51006,"private_bytes":28254208,"wall_ms":5006,"warnings":1,"workers":2}],"workers":2}
+test analysis::tests::native_gate::analysis_native_50k_v1_resource_gate has been running for over 60 seconds
+test analysis::tests::native_gate::analysis_native_50k_v1_resource_gate ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 196 filtered out; finished in 68.25s
+
+
+    Finished `release` profile [optimized] target(s) in 0.35s
+     Running unittests src\lib.rs (target\release\deps\devsweep_core-d2aa6f1b523bc95a.exe)

@@ -1,0 +1,13 @@
+Overall: PASS
+
+- AC1: PASS — sizing child AC1–AC9 satisfied.
+- AC2: PASS — icon child AC1–AC7 and native small-size gate satisfied.
+- AC3: PASS — commit history confirms isolated scope and preserved authority boundaries.
+- AC4: PASS — archived focused, desktop, diff, CI, Clean, and Analyze evidence passes.
+- AC5: PASS — both children archived product-first; parent remains planning-only.
+
+Paused sizing is recorded as completed and verified without reopening it. Clean and Analyze evidence is mapped separately to downstream bounded-execution coverage.
+
+Acceptance report: `.trellis/tasks/08-29-scan-resource-bounds-app-icon/acceptance.md`
+
+No builds, tests, lint, or type-check commands were rerun.

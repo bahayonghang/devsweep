@@ -1,0 +1,30 @@
+COMMAND: rg -n "FindPackagesByUserSecurityId|RoInitialize|RoUninitialize|OpenProcessToken|MsiEnumProductsExW|RegOpenKeyExW" crates/devsweep-core/src/software
+OUTPUT:
+crates/devsweep-core/src/software/msi.rs:214:        fn MsiEnumProductsExW(
+crates/devsweep-core/src/software/msi.rs:261:            MsiEnumProductsExW(
+crates/devsweep-core/src/software/msix.rs:143:        Win32::System::WinRT::{RO_INIT_MULTITHREADED, RoInitialize, RoUninitialize},
+crates/devsweep-core/src/software/msix.rs:150:    if unsafe { RoInitialize(RO_INIT_MULTITHREADED) }.is_err() {
+crates/devsweep-core/src/software/msix.rs:157:            unsafe { RoUninitialize() };
+crates/devsweep-core/src/software/msix.rs:173:    let iterable = match manager.FindPackagesByUserSecurityId(&HSTRING::from(sid)) {
+crates/devsweep-core/src/software/msix.rs:345:        System::Threading::{GetCurrentProcess, OpenProcessToken},
+crates/devsweep-core/src/software/msix.rs:358:    if unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) } == 0 {
+crates/devsweep-core/src/software/arp.rs:284:        fn RegOpenKeyExW(
+crates/devsweep-core/src/software/arp.rs:335:            let status = unsafe { RegOpenKeyExW(parent, subkey.as_ptr(), 0, access, &mut result) };
+EXIT_CODE: 0
+
+COMMAND: rg -n "UninstallString|QuietUninstallString|DisplayIcon|Get-AppxPackage|winget|std::process::Command|FindPackages\(\)" crates/devsweep-core/src/software
+OUTPUT:
+EXIT_CODE: 1
+CLASSIFICATION: expected no-match result; forbidden command/icon fields, shell/process fallback, winget, PowerShell package enumeration, and all-user PackageManager enumeration are absent.
+
+COMMAND: rg -n -A 2 '^name = "windows"$' Cargo.lock
+OUTPUT:
+5118:name = "windows"
+5119-version = "0.56.0"
+5120-source = "registry+https://github.com/rust-lang/crates.io-index"
+--
+5128:name = "windows"
+5129-version = "0.61.3"
+5130-source = "registry+https://github.com/rust-lang/crates.io-index"
+EXIT_CODE: 0
+CLASSIFICATION: 0.61.3 is pre-existing workspace state. The task diff adds only "windows 0.56.0" to devsweep-core's dependency list; `cargo tree -p devsweep-core` contains only windows 0.56.0.

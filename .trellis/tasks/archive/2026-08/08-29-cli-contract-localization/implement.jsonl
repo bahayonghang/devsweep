@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Apply CLI error, logging, quality, and test contracts."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Keep command parsing, typed DTOs, domain authority, output, and cancellation end to end."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/localization-contract.md", "reason": "Implement the confirmed bilingual and locale-neutral machine-output boundary."}
+{"file": ".trellis/tasks/08-29-cli-contract-localization/design.md", "reason": "Implement the frozen full grammar, conflict/default/output matrix, locale ownership, change list, and rollback order without local variation."}

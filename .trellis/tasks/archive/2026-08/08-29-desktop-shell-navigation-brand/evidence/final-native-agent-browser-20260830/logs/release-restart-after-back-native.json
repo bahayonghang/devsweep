@@ -1,0 +1,14 @@
+{
+  "time": "2026-08-30T17:47:47.4380789+08:00",
+  "pid": 34712,
+  "hwnd": "0x4830F80",
+  "release_hash": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "window_rect": [
+    205,
+    205,
+    814,
+    638
+  ],
+  "screenshot": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\screenshots\\release-restart-zh-CN-after-back-native.png",
+  "printwindow": true
+}

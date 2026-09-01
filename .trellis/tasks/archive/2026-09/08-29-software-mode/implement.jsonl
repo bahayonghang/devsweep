@@ -1,0 +1,2 @@
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/windows-software-boundary.md", "reason": "Coordinate children from the researched Windows source, identity, execution, and no-elevation boundary."}
+{"file": ".trellis/tasks/08-29-software-mode/design.md", "reason": "Enforce inventory-before-execution-before-presentation dependencies and atomic mode rollback."}

@@ -7,7 +7,7 @@
 ## Overview
 
 Logging uses `tracing` and `tracing-subscriber`. Initialization is centralized
-in `src/application/mod.rs` and writes to `stderr` so JSON plans can remain
+in `crates/devsweep-cli/src/application/mod.rs` and writes to `stderr` so JSON plans can remain
 clean on `stdout`.
 
 Current code has minimal logging. Prefer explicit CLI output for user-visible
@@ -48,7 +48,7 @@ command dispatch. Do not expose a second initialization entrypoint.
 
 - Future long-running scan or execution job boundaries.
 - Recoverable filesystem failures when they explain missing targets.
-- Audit-log write failures from `src/execution/audit.rs`. Started-record
+- Audit-log write failures from `crates/devsweep-core/src/execution/audit.rs`. Started-record
   durability failures block dispatch; terminal-record failures surface an
   unknown execution result.
 
@@ -62,7 +62,7 @@ command dispatch. Do not expose a second initialization entrypoint.
 - Do not log every visited path at `info`; cleanup scans can traverse large and
   private directory trees.
 - Do not duplicate audit events through tracing. Append-only action records and
-  replay belong exclusively to `src/execution/audit.rs`.
+  replay belong exclusively to `crates/devsweep-core/src/execution/audit.rs`.
 
 ---
 

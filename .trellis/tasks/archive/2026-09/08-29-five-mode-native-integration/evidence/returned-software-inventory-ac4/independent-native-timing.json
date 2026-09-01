@@ -1,0 +1,62 @@
+{
+  "exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+  "size_bytes": 5254656,
+  "sha256": "efbed4371a85a52a73ee324cd8cf790641d0bb6cd66895ef8e431702e03abbc0",
+  "isolated_localappdata": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\independent-localappdata",
+  "warmup_ms": 3881.941,
+  "warmup_exit": 0,
+  "warmup_pid": 35088,
+  "runs": [
+    {
+      "elapsed_ms": 3820.682,
+      "exit": 0,
+      "pid": 61740,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\independent-native-inventory-run1.json"
+    },
+    {
+      "elapsed_ms": 4030.408,
+      "exit": 0,
+      "pid": 28920,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\independent-native-inventory-run2.json"
+    },
+    {
+      "elapsed_ms": 4253.265,
+      "exit": 0,
+      "pid": 82528,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\independent-native-inventory-run3.json"
+    },
+    {
+      "elapsed_ms": 4073.429,
+      "exit": 0,
+      "pid": 70848,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\independent-native-inventory-run4.json"
+    },
+    {
+      "elapsed_ms": 3917.308,
+      "exit": 0,
+      "pid": 82884,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\independent-native-inventory-run5.json"
+    }
+  ],
+  "raw_ms": [
+    3820.682,
+    4030.408,
+    4253.265,
+    4073.429,
+    3917.308
+  ],
+  "pids": [
+    35088,
+    61740,
+    28920,
+    82528,
+    70848,
+    82884
+  ],
+  "unique_pid_count": 6,
+  "new_process_pids": true,
+  "median_ms": 4030.408,
+  "p95_ms": 4253.265,
+  "target_ms": 5000,
+  "pass": true
+}

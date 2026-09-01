@@ -1,0 +1,32 @@
+cwd=D:\Documents\Code\Rust\Exp\devsweep
+started=2026-08-31T13:08:52.6030919+08:00
+
+===== COMMAND: rtk cargo test -p devsweep-core optimize::tests::catalogue =====
+cargo test: 7 passed, 274 filtered out (2 suites, 0.00s)
+exit=0 elapsed_ms=566
+
+===== COMMAND: rtk cargo test -p devsweep-core optimize::tests::authorizer =====
+cargo test: 8 passed, 273 filtered out (2 suites, 0.00s)
+exit=0 elapsed_ms=435
+
+===== COMMAND: rtk cargo test -p devsweep-core optimize::tests::windows =====
+cargo test: 9 passed, 1 ignored, 271 filtered out (2 suites, 0.03s)
+exit=0 elapsed_ms=462
+
+===== COMMAND: rtk cargo test -p devsweep-core optimize::tests::execution =====
+cargo test: 14 passed, 267 filtered out (2 suites, 0.23s)
+exit=0 elapsed_ms=660
+
+===== COMMAND: rtk cargo test -p devsweep-core optimize::tests::audit =====
+cargo test: 6 passed, 275 filtered out (2 suites, 0.02s)
+exit=0 elapsed_ms=451
+
+===== COMMAND: rtk cargo test -p devsweep-cli optimize =====
+cargo test: 9 passed, 152 filtered out (4 suites, 0.02s)
+exit=0 elapsed_ms=1549
+
+===== COMMAND: rtk git diff --check =====
+
+exit=0 elapsed_ms=208
+
+OVERALL_EXIT=0

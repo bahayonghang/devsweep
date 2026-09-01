@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "observed_at_unix_ms": 1788100002000,
+  "sources": [
+    { "source": { "source": "msi", "context": "user_unmanaged" }, "state": "available" },
+    { "source": { "source": "msi", "context": "user_managed" }, "state": "available" },
+    { "source": { "source": "msi", "context": "machine" }, "state": "available" }
+  ],
+  "entries": [
+    {
+      "id": "software:v1:msi:unmanaged",
+      "identity": { "source": "msi", "product_code": "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}", "context": "user_unmanaged" },
+      "scope": "current_user",
+      "display_name": "User unmanaged MSI",
+      "provenance": [{ "source": "msi", "context": "user_unmanaged" }],
+      "eligibility": { "state": "manual", "reason": "msi_execution_not_supported_v1" },
+      "size": { "state": "unknown", "reason_code": "not_reported" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msi:managed",
+      "identity": { "source": "msi", "product_code": "{BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB}", "context": "user_managed" },
+      "scope": "current_user",
+      "display_name": "User managed MSI",
+      "provenance": [{ "source": "msi", "context": "user_managed" }],
+      "eligibility": { "state": "manual", "reason": "msi_execution_not_supported_v1" },
+      "size": { "state": "unknown", "reason_code": "not_reported" },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    },
+    {
+      "id": "software:v1:msi:machine",
+      "identity": { "source": "msi", "product_code": "{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC}", "context": "machine" },
+      "scope": "machine",
+      "display_name": "Machine MSI",
+      "provenance": [{ "source": "msi", "context": "machine" }],
+      "eligibility": { "state": "manual", "reason": "msi_execution_not_supported_v1" },
+      "size": { "state": "available", "value_bytes": 2048, "basis": "reported_estimate", "source_code": "msi_estimated_size_kib", "observed_at_unix_ms": 1788100002000 },
+      "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+    }
+  ],
+  "fingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+}

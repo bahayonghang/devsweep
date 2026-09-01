@@ -1,0 +1,48 @@
+Overall verdict: **FAIL**
+
+## Findings (fixed)
+
+- File: `crates/devsweep-cli/src/tui/modes/analyze/mod.rs`, `crates/devsweep-cli/src/tui/render/analyze.rs`
+- Issue: Keyboard navigation could move the cursor outside the rendered viewport.
+- Fix: Added cursor-aware viewport scrolling, node-ID selection, and regression coverage.
+
+- File: `desktop/src/modes/analyze/state.ts`, `desktop/src/modes/analyze/AnalyzePage.tsx`
+- Issue: Drill and breadcrumb navigation did not restore the canonical 200-row page or keyboard focus.
+- Fix: Added page-aware anchor restoration and post-navigation listbox focus.
+
+- File: `desktop/src/modes/analyze/styles.css`
+- Issue: Partial-tile contrast was 4.408:1 and focus styling used generic `:focus`.
+- Fix: Changed the fill to `#8f671f` for 5.087:1 contrast and adopted `:focus-visible`.
+
+- File: `crates/devsweep-cli/src/tui/render/analyze.rs`, `resources/i18n/en.json`, `resources/i18n/zh-CN.json`
+- Issue: TUI controls contained hard-coded English and omitted permission/unsupported warnings.
+- Fix: Routed copy through matching 39-key bilingual catalogues and rendered evidence warnings.
+
+- File: `desktop/src/modes/analyze/AnalyzePage.test.tsx`, `desktop/src/modes/analyze/state.test.ts`
+- Issue: Coverage did not fully exercise bilingual states, focus, paging, accessibility CSS, or no-cleanup behavior.
+- Fix: Added table-driven state and accessibility regressions.
+
+## Findings (not fixed)
+
+- Native 100/125/150/200% OS DPI variants were not captured, as disclosed in `native-evidence.md:68-70`.
+- Independent Vitest, Vite, and Tauri gates cannot start esbuild because the sandbox returns `Error: spawn EPERM`.
+- Existing browser/native evidence predates the fixes. The old keyboard capture records `focused: "BODY"`, so fresh post-fix keyboard and render evidence is required.
+
+The PathSafety observation is acceptable: native `Unverified -> Reparse` is a conservative unfollowed leaf, while fake-filesystem tests distinctly cover `AccessDenied`. This satisfies R3 distinguishability.
+
+## Verification
+
+- `cargo test -p devsweep-cli tui::modes::analyze`: exit 0 — 8 passed.
+- `cargo test -p devsweep-core analysis`: exit 0 — 11 passed.
+- `just desktop-web-check`: exit 1 — lint/type-check passed; Vitest and Vite blocked by `spawn EPERM`.
+- `just desktop-build`: exit 1 — Tauri before-build Vite step blocked by `spawn EPERM`.
+- `git diff --check`: exit 0.
+- `cargo fmt --all -- --check`: initially exit 1; after fixes exit 0.
+- `npm --prefix desktop run lint`: exit 0.
+- `npm --prefix desktop run typecheck`: initially exit 1; after fixes exit 0.
+- Focused desktop Vitest command: exit 1 — blocked by `spawn EPERM`.
+- `just ci`: exit 0.
+- Render-budget recomputation: exit 0 — layout p95 1.9589 ms, commit p95 6.69999998807907 ms, 513 rectangles, 759 DOM elements, five warm-ups and 30 samples.
+- Catalogue schema recomputation: exit 0 — matching 39-key schemas.
+
+AC1–AC4 remain **FAIL** pending successful post-fix desktop tests/build and fresh native/browser evidence including the OS DPI scaling matrix. Full report: `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/independent-check-report.md`.

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "plan": {
+    "version": 2,
+    "targets": [{
+      "id": "node.node_modules:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project\\node_modules",
+      "rule_id": "node.node_modules",
+      "scope": { "type": "project", "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project" },
+      "ecosystem": "node",
+      "kind": "dependency_directory",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project\\node_modules",
+      "estimated_bytes": 75,
+      "size_complete": true,
+      "last_modified": { "secs_since_epoch": 1785747854, "nanos_since_epoch": 969188000 },
+      "risk": "medium",
+      "reversible": true,
+      "selected_by_default": false,
+      "evidence": [
+        { "type": "marker_file", "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project\\package.json" },
+        { "type": "rule_matched", "rule_id": "node.node_modules" }
+      ],
+      "intent": { "type": "trash_project_artifact", "rule_id": "node.node_modules" }
+    }]
+  },
+  "health": {
+    "completeness": "complete",
+    "diagnostics": [],
+    "totals": { "verified_bytes": 75, "partial_lower_bound_bytes": 0, "unknown_target_count": 0 }
+  }
+}

@@ -1,0 +1,10 @@
+command: cd /d desktop && npm run typecheck
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:11:59.9362688+08:00
+----- output -----
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+
+-----
+exit=0
+finished: 2026-08-31T14:12:02.0756914+08:00

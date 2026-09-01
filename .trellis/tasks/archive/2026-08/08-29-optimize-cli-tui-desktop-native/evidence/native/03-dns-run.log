@@ -1,0 +1,28 @@
+command: devsweep optimize plan/preview/run dns.flush
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:10:38.5103228+08:00
+----- output -----
+-- before --
+PID=72144 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:10:36 PM HWND=103944568 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+
+consent before=none
+== plan exit=0 ==
+
+== preview en exit=0 ==
+Optimize preview: dns.flush | Runs here. Digest: sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d
+== stale digest exit=3 ==
+invalid_optimize_authority: optimize preview digest mismatch
+
+== confirmed run en exit=0 ==
+Optimize run finished: 1 succeeded; 0 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+dns.flush | Succeeded | Operation optimize-op-000001a05670f4f7-0000b420-0000000000000000
+
+consent after=none
+NOTE: launched is not maintenance completion.
+
+-----
+exit=0
+finished: 2026-08-31T14:10:38.5103228+08:00

@@ -1,0 +1,17 @@
+{"wall_ms":0.075,"present":true,"user_ms":125.0,"kernel_ms":390.625,"cpu_ms":515.625,"private":5484544,"threads":10}
+{"wall_ms":212.049,"present":true,"user_ms":156.25,"kernel_ms":656.25,"cpu_ms":812.5,"private":5574656,"threads":10}
+{"wall_ms":413.26,"present":true,"user_ms":156.25,"kernel_ms":1000.0,"cpu_ms":1156.25,"private":5709824,"threads":10}
+{"wall_ms":614.798,"present":true,"user_ms":156.25,"kernel_ms":1234.375,"cpu_ms":1390.625,"private":6840320,"threads":10}
+{"wall_ms":801.073,"present":true,"user_ms":156.25,"kernel_ms":1421.875,"cpu_ms":1578.125,"private":6840320,"threads":10}
+{"wall_ms":1001.818,"present":true,"user_ms":156.25,"kernel_ms":1640.625,"cpu_ms":1796.875,"private":6840320,"threads":10}
+{"wall_ms":1204.083,"present":true,"user_ms":156.25,"kernel_ms":1843.75,"cpu_ms":2000.0,"private":6840320,"threads":10}
+{"wall_ms":1407.165,"present":true,"user_ms":156.25,"kernel_ms":2031.25,"cpu_ms":2187.5,"private":6180864,"threads":10}
+{"wall_ms":1610.933,"present":true,"user_ms":171.875,"kernel_ms":2328.125,"cpu_ms":2500.0,"private":6275072,"threads":10}
+{"wall_ms":1815.277,"present":true,"user_ms":171.875,"kernel_ms":2562.5,"cpu_ms":2734.375,"private":6000640,"threads":10}
+{"wall_ms":2000.886,"present":true,"user_ms":187.5,"kernel_ms":2734.375,"cpu_ms":2921.875,"private":6000640,"threads":10}
+{"wall_ms":2201.378,"present":true,"user_ms":187.5,"kernel_ms":2921.875,"cpu_ms":3109.375,"private":6856704,"threads":10}
+{"wall_ms":2404.362,"present":true,"user_ms":187.5,"kernel_ms":3203.125,"cpu_ms":3390.625,"private":6590464,"threads":10}
+{"wall_ms":2606.594,"present":true,"user_ms":218.75,"kernel_ms":3453.125,"cpu_ms":3671.875,"private":6897664,"threads":10}
+{"wall_ms":2809.174,"present":true,"user_ms":234.375,"kernel_ms":3625.0,"cpu_ms":3859.375,"private":6897664,"threads":10}
+{"wall_ms":3010.486,"present":true,"user_ms":250.0,"kernel_ms":3796.875,"cpu_ms":4046.875,"private":6897664,"threads":10}
+{"wall_ms":3211.592,"present":false,"user_ms":0.0,"kernel_ms":0.0,"cpu_ms":0.0,"private":0,"threads":0}

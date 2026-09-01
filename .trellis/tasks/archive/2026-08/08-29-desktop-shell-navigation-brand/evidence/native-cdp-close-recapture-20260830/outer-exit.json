@@ -1,0 +1,50 @@
+{
+  "completed_at": "2026-08-30T21:43:45.7463495+08:00",
+  "helper_exit": 0,
+  "wrapper_pid": 18904,
+  "wrapper_pwsh_path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+  "wrapper_pwsh_version": "7.6.5",
+  "wrapper_command_line": "\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -NoProfile -ExecutionPolicy Bypass -File D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-wrapper.ps1 -RepositoryRoot D:\\Documents\\Code\\Rust\\Exp\\devsweep -RunRoot D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830 -PwshPath \"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -FirstPort 9401 -RestartPort 9402",
+  "wrapper": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-wrapper.ps1",
+    "exists": true,
+    "bytes": 3468,
+    "lines": 77,
+    "sha256": "42824FBB71FB0E6ACF209BE7729227CC405A72D6B63E68F2774980C0E9072729"
+  },
+  "helper": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-close-recapture.ps1",
+    "exists": true,
+    "bytes": 58104,
+    "lines": 1099,
+    "sha256": "90EB1786711CB2863FC6FEF059A05A54192C286473EF413A60C18586E8B4D740"
+  },
+  "transcript": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\02-native-release-rebind.log",
+    "exists": true,
+    "bytes": 8020,
+    "lines": 63,
+    "sha256": "CAE69BC936C590D534C78425DFC6DAE5CB6CB24F3CE28DA7750DB2810747A336"
+  },
+  "cdp": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\cdp-messages.jsonl",
+    "exists": true,
+    "bytes": 19265,
+    "lines": 50,
+    "sha256": "E455586A37FF428BCD984AC3A7B76E7E43FA6AE2B9B8E641E4E63676E87DF266"
+  },
+  "uia": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\shell-tray-wnd-uia-raw.json",
+    "exists": true,
+    "bytes": 13071,
+    "lines": 410,
+    "sha256": "3E359FFF1046A95F76FD16F61B2B96114BCB8B8BCFB97F7B3296F0B7051E891C"
+  },
+  "verification": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\native-cdp-close-recapture-20260830\\native-release\\verification.json",
+    "exists": true,
+    "bytes": 35198,
+    "lines": 897,
+    "sha256": "5B85206BA8E50BA7509575506EC9B8607380BB2622714266A12273999E05B6F9"
+  }
+}

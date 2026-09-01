@@ -1,0 +1,7 @@
+COMMAND: just release-archive
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `release` profile [optimized] target(s) in 56.63s
+release archive: dist\devsweep-x86_64-pc-windows-msvc.zip
+sha256: 0a7291af16ab2e9aac8e5c3316d4a07ded9dc605a6b8e3431aaa3030ba56ba51
+EXIT_CODE: 0

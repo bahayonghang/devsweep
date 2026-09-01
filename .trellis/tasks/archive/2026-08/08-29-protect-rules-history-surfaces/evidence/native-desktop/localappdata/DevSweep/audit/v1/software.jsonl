@@ -1,0 +1,2 @@
+{"schema_version":1,"domain":"software","operation_id":"op-sw-partial-v1","timestamp_unix_ms":1711929601000}
+{"schema_version":2,"domain":"software","operation_id":"op-sw-future","path":"C:/secret-software.exe","argv":["msiexec","/x","{SECRET-GUID}"]}

@@ -1,0 +1,28 @@
+Implemented repair round 2.
+
+Exact source diff:
+
+```diff
+ import { readFileSync } from "node:fs";
++import { resolve } from "node:path";
+
+-const analyzeStyles = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
++const analyzeStyles = readFileSync(resolve(process.cwd(), "src/modes/analyze/styles.css"), "utf8");
+```
+
+Accessibility CSS assertions are unchanged.
+
+Files changed:
+
+- `desktop/src/modes/analyze/AnalyzePage.test.tsx`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/implement.jsonl`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/repair2-desktop-lint.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/repair2-desktop-typecheck.log`
+
+Validation:
+
+- `npm --prefix desktop run lint`: exit 0
+- `npm --prefix desktop run typecheck`: exit 0
+- Journal entry parses as valid JSON.
+
+Vitest was not run because child-process creation is unavailable in this sandbox (`spawn EPERM`). Fresh Vitest verification through `just desktop-web-check` is explicitly delegated to the main session.

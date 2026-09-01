@@ -1,0 +1,130 @@
+{
+  "task": "08-29-software-inventory-plan",
+  "host": "windows_standard_user",
+  "elevation": {
+    "is_elevated": false,
+    "uac_prompt_requested": false,
+    "evidence": "step3-standard-user-no-uac.log"
+  },
+  "inventory": {
+    "command_exit_code": 0,
+    "outcome": "partial",
+    "raw_document": "step3-native-inventory.json",
+    "raw_command_log": "step3-native-inventory.log",
+    "source_count": 8,
+    "entry_count": 1293,
+    "identity_counts": {
+      "arp": 823,
+      "msi": 291,
+      "msix": 179
+    },
+    "registry_view_counts": {
+      "current_user_registry32": 42,
+      "current_user_registry64": 42,
+      "local_machine_registry32": 279,
+      "local_machine_registry64": 460
+    },
+    "msi_context_counts": {
+      "machine": 288,
+      "user_managed": 0,
+      "user_unmanaged": 3
+    },
+    "msix_scope_counts": {
+      "current_user": 179,
+      "other_user": 0,
+      "machine": 0
+    },
+    "source_states": {
+      "available": 5,
+      "partial": 3,
+      "permission": 0,
+      "unsupported": 0
+    },
+    "live_partial_reason": "registry_entry_incomplete"
+  },
+  "eligibility": {
+    "all_msi_manual": true,
+    "msi_non_manual_count": 0,
+    "selectable_non_msix_count": 0,
+    "selectable_current_user_msix_count": 86,
+    "native_reason_counts": {
+      "protected_product": 2,
+      "source_incomplete": 361,
+      "no_remove": 2,
+      "hidden_entry": 354,
+      "system_or_update": 48,
+      "dependency_package": 44,
+      "msi_execution_not_supported_v1": 291,
+      "registry_only_manual": 105,
+      "eligible_current_user_msix": 86
+    },
+    "ordered_matrix_fixture_rows": [
+      "protected_product",
+      "source_incomplete",
+      "conflicting_identity",
+      "no_remove",
+      "hidden_entry",
+      "system_or_update",
+      "dependency_package",
+      "stub_package",
+      "unhealthy_package",
+      "msi_execution_not_supported_v1",
+      "registry_only_manual",
+      "unsupported_source",
+      "eligible_current_user_msix"
+    ],
+    "ordered_matrix_fixture_evidence": "step3-core-software-rerun.log"
+  },
+  "hostile_and_incomplete_sources": {
+    "denied_or_partial_source_fixture_passed": true,
+    "hostile_command_icon_fixture_passed": true,
+    "stale_changed_reinstalled_expired_fixture_passed": true,
+    "live_incomplete_registry_sources": 3,
+    "evidence": [
+      "step3-core-software-rerun.log",
+      "step3-cli-software-tests.log"
+    ]
+  },
+  "optional_evidence": {
+    "size_counts": {
+      "available_measured_msix": 178,
+      "available_reported_arp": 530,
+      "partial_measured_lower_bound": 1,
+      "unknown": 584
+    },
+    "maximum_available_size_bytes": 109808461824,
+    "msix_walk_entry_budget": 50000,
+    "arp_value_byte_limit": 65536,
+    "msi_property_character_limit": 32768,
+    "last_used_not_exact_unknown_count": 0,
+    "last_used_contract": "unknown/no_supported_exact_source"
+  },
+  "safety": {
+    "inventory_fields_named_uninstall_string": 0,
+    "inventory_fields_named_quiet_uninstall_string": 0,
+    "inventory_fields_named_display_icon": 0,
+    "inventory_fields_named_program": 0,
+    "inventory_fields_named_argv": 0,
+    "inventory_fields_named_path": 0,
+    "inventory_fields_named_installed_path": 0,
+    "plan_safety_evidence": "step3-native-plan-safety.log"
+  },
+  "mta_and_sid": {
+    "current_process_sid_exact_test": "passed",
+    "mta_worker_join_test": "passed",
+    "active_worker_count_after_test": 0,
+    "evidence": "step3-core-software-rerun.log"
+  },
+  "locales": {
+    "english_exit_code": 0,
+    "simplified_chinese_exit_code": 0,
+    "evidence": "step3-native-human-locales.log"
+  },
+  "dependency": {
+    "cargo_tree_exit_code": 0,
+    "cargo_tree_evidence": "step3-cargo-tree.log",
+    "license": "MIT OR Apache-2.0",
+    "rust_version": "1.62",
+    "license_evidence": "step3-windows-license.log"
+  }
+}

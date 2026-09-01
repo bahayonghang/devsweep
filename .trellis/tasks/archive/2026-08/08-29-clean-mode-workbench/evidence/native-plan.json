@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "targets": [
+    {
+      "id": "node.node_modules:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-clean-mode-workbench\\evidence\\native-fixture\\app\\node_modules",
+      "rule_id": "node.node_modules",
+      "scope": {
+        "type": "project",
+        "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-clean-mode-workbench\\evidence\\native-fixture\\app"
+      },
+      "ecosystem": "node",
+      "kind": "dependency_directory",
+      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-clean-mode-workbench\\evidence\\native-fixture\\app\\node_modules",
+      "estimated_bytes": 12,
+      "size_complete": true,
+      "last_modified": {
+        "secs_since_epoch": 1788100913,
+        "nanos_since_epoch": 557931900
+      },
+      "risk": "medium",
+      "reversible": true,
+      "selected_by_default": true,
+      "evidence": [
+        {
+          "type": "marker_file",
+          "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-clean-mode-workbench\\evidence\\native-fixture\\app\\package.json"
+        },
+        {
+          "type": "rule_matched",
+          "rule_id": "node.node_modules"
+        }
+      ],
+      "intent": {
+        "type": "trash_project_artifact",
+        "rule_id": "node.node_modules"
+      }
+    }
+  ]
+}

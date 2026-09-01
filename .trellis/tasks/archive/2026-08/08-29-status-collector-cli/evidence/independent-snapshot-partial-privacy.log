@@ -1,0 +1,24 @@
+COMMAND: inspect independent-native/snapshot-1.json + extra broken-pipe recapture
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T16:00:06.5600445+08:00
+outcome=partial exit_class_expected=5
+cpu.state=available cpu.bp=5042
+memory.state=available total=68143853568 used=43644624896 available=24499228672
+volumes.state=available network.state=available power.state=available battery_present=True charge_bp=9800
+processes.state=partial reason_codes=process_limit,process_access_denied
+enumerated=676 returned=15 requested=15 truncated=True budget_exhausted=False
+process_item_keys=cpu_basis_points_of_one_logical_core,name,pid,private_bytes,read_bytes_per_second,write_bytes_per_second
+extra_process_keys=(none)
+forbidden_hits=(none)
+user_key_count=0
+warnings=process_limit,process_access_denied
+schema=1 command=status.snapshot error_is_null=True
+unsupported_count=6
+cpu_available_nonzero_total_memory=True
+partial_not_available_zeros=True
+broken_pipe_extra pid=62916 first_event=status_started exit=0 join_ms_after_close=550.8 leftover=0 stderr_len=0
+broken_pipe_first_line_prefix={"event":"status_started","schema_version":1,"operation_id":"op-1788163206688","
+envelope_keys=command,data,error,outcome,schema_version,warnings
+ANALYSIS_PASS=True
+EXIT: 0
+FINISHED: 2026-08-31T16:00:07.2755633+08:00

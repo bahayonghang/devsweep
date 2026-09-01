@@ -1,0 +1,97 @@
+host 26200 cores=24 cli=46387a57944641fe4dde99353a69fe0b3c6d0627777cb044cc19129d92d0d43b
+warmup optimize-dns
+measure optimize-dns #1
+measure optimize-dns #2
+measure optimize-dns #3
+measure optimize-dns #4
+measure optimize-dns #5
+warmup software-inventory
+measure software-inventory #1
+measure software-inventory #2
+measure software-inventory #3
+measure software-inventory #4
+measure software-inventory #5
+analyze accounted (CLI --output file only; not used for 512 MiB / 200% gates)
+counting clean-scan entries under live repo D:\Documents\Code\Rust\Exp\devsweep
+clean entries 127797
+warmup clean-scan-projects
+measure clean-scan-projects #1
+measure clean-scan-projects #2
+measure clean-scan-projects #3
+measure clean-scan-projects #4
+measure clean-scan-projects #5
+warmup settings.storage_recommendations
+warmup settings.search
+warmup settings.energy_recommendations
+analyze layout p95 (5 warm-up + 30 measured)
+analyze react-commit: building product Vite harness
+npm notice run devsweep-desktop-ui@0.2.0 benchmark:analyze:build
+npm notice run tsc --noEmit && vite build --config vite.benchmark.config.ts
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/analyze-render-benchmark/analyze-render-benchmark.html                   0.60 kB │ gzip:  0.35 kB
+dist/analyze-render-benchmark/assets/devsweep-icon-master-Bn2Ejx_Y.png      956.58 kB
+dist/analyze-render-benchmark/assets/analyze-render-benchmark-DnB4ef2b.css   18.05 kB │ gzip:  4.56 kB
+dist/analyze-render-benchmark/assets/analyze-render-benchmark-TIf0llTY.js   346.69 kB │ gzip: 86.99 kB
+✓ built in 478ms
+analyze react-commit: headless Chrome/Edge CDP on a free port (not 9223)
+status: pass p95: 6
+launch desktop idle instance (no WEBVIEW2 remote-debug argument)
+idle desktop pid 34840
+warmup idle (unrecorded, no remote-debug)
+settle idle-warmup 30s
+settle idle-1 30s
+settle idle-2 30s
+settle idle-3 30s
+settle idle-4 30s
+settle idle-5 30s
+idle done medianCpu=0 maxPrivate=7102464 maxThreads=33
+status snapshot (CLI release; process-limit 15; no WebView2 remote-debug)
+warmup status-snapshot
+measure status-snapshot #1
+measure status-snapshot #2
+measure status-snapshot #3
+measure status-snapshot #4
+measure status-snapshot #5
+warmup status live (CLI, unrecorded)
+live-warmup
+settle live-warmup 30s
+live-1
+settle live-1 30s
+live-2
+settle live-2 30s
+live-3
+settle live-3 30s
+live-4
+settle live-4 30s
+live-5
+settle live-5 30s
+optimize list (closed eight; after idle/status/software/clean; before Analyze)
+warmup optimize-list
+measure optimize-list #1
+measure optimize-list #2
+measure optimize-list #3
+measure optimize-list #4
+measure optimize-list #5
+optimize list catalogue_count=8
+analyze cancel-to-join then five desktop IPC Analyze-until-complete (main PID; CDP poll only)
+cancel desktop pid 56736
+cdp serve pid 73704 {"event":"ready"}
+warmup analyze-cancel (unrecorded)
+analyze-cancel-warmup
+analyze-cancel-1
+analyze-cancel-2
+analyze-cancel-3
+analyze-cancel-4
+analyze-cancel-5
+warmup desktop Analyze until complete (unrecorded)
+analyze-250k-desktop-warmup
+analyze-250k-desktop-1
+analyze-250k-desktop-2
+analyze-250k-desktop-3
+analyze-250k-desktop-4
+analyze-250k-desktop-5
+five-mode-v1 PASS

@@ -1,0 +1,4 @@
+command: rtk cargo fmt --all -- --check
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+exit: 0
+note: stdout empty; cargo fmt --check emits nothing on pass.

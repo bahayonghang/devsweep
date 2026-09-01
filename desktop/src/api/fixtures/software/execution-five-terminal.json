@@ -1,0 +1,14 @@
+{
+  "operation_id": "software-uninstall-1",
+  "report": {
+    "version": 1,
+    "irreversible": true,
+    "outcomes": [
+      { "operation_id": "core-removed", "software_id": "software:v1:msix:removed", "outcome": "removed", "installed_state": "absent", "reboot_evidence": "none", "irreversible": true },
+      { "operation_id": "core-reboot", "software_id": "software:v1:msix:reboot", "outcome": "reboot_required", "installed_state": "absent", "reboot_evidence": "required", "irreversible": true },
+      { "operation_id": "core-present", "software_id": "software:v1:msix:present", "outcome": "still_present", "installed_state": "present", "reboot_evidence": "none", "irreversible": true },
+      { "operation_id": "core-failed", "software_id": "software:v1:msix:failed", "outcome": "failed", "installed_state": "present", "reboot_evidence": "none", "error_code": "adapter_operation_failed", "irreversible": true },
+      { "operation_id": "core-unknown", "software_id": "software:v1:msix:unknown", "outcome": "unknown_after_dispatch", "installed_state": "unavailable", "reboot_evidence": "none", "error_code": "requery_unavailable", "irreversible": true }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+requested: rtk npm run lint
+executed: C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\npm.cmd run lint
+cwd: D:\Documents\Code\Rust\Exp\devsweep\desktop
+node: mise node@22.23.2
+exit: 0
+elapsed_s: 3.352
+
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .

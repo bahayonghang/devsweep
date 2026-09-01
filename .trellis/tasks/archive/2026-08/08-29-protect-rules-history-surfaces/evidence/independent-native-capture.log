@@ -1,0 +1,26 @@
+Independent native recapture (not the implementer native-desktop run).
+
+Driver: evidence/independent-capture-native-support.mjs
+Artifacts: evidence/independent-native-desktop/
+CDP: 9671–9674 (not 9571–9574)
+Isolated LOCALAPPDATA + APPDATA under independent-native-desktop/
+Host: Windows 11 build 26200, Medium integrity (S-1-16-8192), consent.exe count 0
+Device metrics and forced-colors via WebView2 CDP only. No OS global scale or high-contrast change.
+Host DPR 1.25; innerWidth emulated to 1440/1024/800/390.
+
+Production desktop: target/release/devsweep-desktop.exe
+  sha256 fa3c772cf5161c654d8f76c1d28bfca98eba797e5e1faa416ade48092ca92bcc
+  built with rtk just desktop-build (first cargo --release sidecar loaded Vite :4180; discarded)
+Concurrent CLI: target/debug/devsweep.exe
+  sha256 7ef0bbb8a2a1c52ed69b3f41ca1e9a73d003c994f56a3ff051b845dec545e507
+
+PIDs (new; not implementer 47328/55088/68948/47568/56388/78380):
+  EN/ZH/keyboard/AX/HC/widths session  3404   CDP 9671
+  corrupt fail-closed                  83188  CDP 9672
+  newer fail-closed (zh-CN)            22344  CDP 9673
+  concurrent CLI writers               66648 + 51696 (both exit 0, committed)
+  concurrent desktop list              49136  CDP 9674
+
+Result: driver exit 0. Event `done` in independent-native-desktop/capture-log.jsonl.
+
+EXIT 0

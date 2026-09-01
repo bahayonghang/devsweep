@@ -1,0 +1,64 @@
+command: rtk just desktop-test
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:30:11.8689788+08:00
+----- output -----
+running 35 tests
+test commands::tests::job_object_fixture_child ... ignored, process fixture entrypoint
+test commands::tests::job_object_fixture_grandchild ... ignored, process fixture entrypoint
+test analyze::tests::concurrent_analyze_is_rejected ... ok
+test analyze::tests::stale_progress_sequences_are_discarded ... ok
+test optimize::tests::concurrent_optimize_operations_and_stale_cancel_are_bounded ... ok
+test analyze::tests::analyze_result_serializes_without_cleanup_intent ... ok
+test optimize::tests::run_wire_keeps_launched_distinct_from_completion ... ok
+test commands::tests::debug_native_fault_mode_is_exact_and_closed ... ok
+test commands::tests::invalid_plan_is_structured ... ok
+test commands::tests::protection_store_round_trips_paths ... ok
+test commands::tests::presentation_setting_ipc_payload_is_locale_only_and_closed ... ok
+test commands::tests::unknown_target_is_structured ... ok
+test optimize::tests::list_wire_is_the_closed_eight_and_omits_executable_facts ... ok
+test clean::tests::empty_plan_dry_run_does_not_require_audit ... ok
+test commands::tests::stale_digest_is_structured ... ok
+test clean::tests::stale_digest_is_structured ... ok
+test error::tests::command_errors_serialize_as_stable_tagged_payloads ... ok
+test commands::tests::inspect_only_target_is_structured ... ok
+test clean::tests::unknown_target_is_structured ... ok
+test analyze::tests::cancel_joins_before_terminal_result ... ok
+test scan::tests::concurrent_scan_is_rejected_immediately ... ok
+test commands::tests::changed_selection_rejects_previous_digest ... ok
+test commands::tests::empty_plan_dry_run_accepts_matching_digest ... ok
+test error::tests::execution_errors_keep_typed_target_identity ... ok
+test scan::tests::ipc_progress_projects_display_facts_without_cleanup_authority ... ok
+test scan::tests::preview_delivery_coalesces_bursts_and_flushes_the_latest_snapshot ... ok
+test scan::tests::preview_projection_failure_stops_delivery_and_fails_closed ... ok
+test scan::tests::scan_failure_flushes_the_latest_pending_preview ... ok
+test software::tests::concurrent_software_operations_and_stale_cancel_are_bounded ... ok
+test scan::tests::worker_owned_coordinator_releases_shared_slot ... ok
+test scan::tests::scan_job_forwards_every_progress_event ... ok
+test tests::capability_grants_only_event_subscription_and_last_window_destroy ... ok
+test software::tests::software_execution_wire_rejects_partial_and_keeps_five_terminals ... ok
+test scan::tests::cancellation_is_idempotent_and_stops_fixture_within_five_seconds ... ok
+test commands::tests::process_command_runner_terminates_tree_inside_desktop_process ... ok
+test result: ok. 33 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.09s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+----- stderr -----
+cmd.exe : cargo test --locked -p devsweep-desktop
+At D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-cli-tui-desktop-native\evidence\capture-independen
+t-gate.ps1:16 char:3
++   cmd.exe /c $CommandLine > $stdoutFile 2> $stderrFile
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (cargo test --locked -p devsweep-desktop:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Compiling devsweep-desktop v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.86s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_desktop_lib-5e439ad0ce808f1d.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep_desktop-87d7e410f2b335c0.exe)
+   Doc-tests devsweep_desktop_lib
+
+-----
+exit=0
+finished: 2026-08-31T14:30:18.7488612+08:00

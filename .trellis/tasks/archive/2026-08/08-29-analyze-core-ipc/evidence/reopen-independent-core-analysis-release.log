@@ -1,0 +1,34 @@
+COMMAND: cargo test -p devsweep-core analysis --release -- --nocapture
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `release` profile [optimized] target(s) in 54.31s
+     Running unittests src\lib.rs (target\release\deps\devsweep_core-d2aa6f1b523bc95a.exe)
+
+running 16 tests
+test analysis::model::tests::snapshot_dto_has_no_cleanup_fields ... ok
+test analysis::tests::byte_cap_attempt_returns_partial_budget ... ok
+test analysis::tests::fake_sparse_file_reports_logical_size_without_real_content ... ok
+test analysis::tests::churn_and_cycle_are_distinguishable ... ok
+test analysis::walker::native_metadata_tests::permission_denied_unverified_open_maps_to_access_denied_path ... ok
+test analysis::tests::source_has_no_cleanup_plan_conversion ... ok
+test analysis::tests::cancel_joins_and_marks_canceled ... ok
+test analysis::tests::complete_snapshot_reconciles_parent_child_totals ... ok
+test analysis::tests::analysis_250k_v1_stores_exact_node_ceiling ... ok
+test analysis::tests::progress_queue_replaces_unsent_batches ... ok
+test analysis::tests::serial_fallback_matches_two_worker_totals ... ok
+test analysis::tests::native_sparse_file_reports_complete_logical_size ... ok
+test analysis::tests::native_reparse_is_a_leaf ... ok
+test analysis::tests::analysis_250k_overflow_returns_partial_budget ... ok
+test analysis::tests::native_live_churn_distinguishes_deleted_and_growing_files_and_denied_branch ... ok
+test analysis::tests::native_gate::analysis_native_50k_v1_resource_gate has been running for over 60 seconds
+{"cancel_to_join_ms":[1,1,1,2,2],"denied_branch":"access_denied_incomplete_zero_bytes","fixture":"analysis-native-50k-v1","p95_cancel_to_join_ms":2,"samples":[{"accounted_bytes":9095340,"nodes":51007,"private_bytes":31031296,"wall_ms":11016,"warnings":2,"workers":2},{"accounted_bytes":9095340,"nodes":51007,"private_bytes":30445568,"wall_ms":10821,"warnings":2,"workers":2},{"accounted_bytes":9095340,"nodes":51007,"private_bytes":30928896,"wall_ms":8812,"warnings":2,"workers":2},{"accounted_bytes":9095340,"nodes":51007,"private_bytes":30978048,"wall_ms":12020,"warnings":2,"workers":2},{"accounted_bytes":9095340,"nodes":51007,"private_bytes":30797824,"wall_ms":7814,"warnings":2,"workers":2}],"workers":2}
+test analysis::tests::native_gate::analysis_native_50k_v1_resource_gate ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out; finished in 96.97s
+
+     Running tests\public_api.rs (target\release\deps\public_api-a0f5ecb10123f676.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+EXIT_CODE: 0

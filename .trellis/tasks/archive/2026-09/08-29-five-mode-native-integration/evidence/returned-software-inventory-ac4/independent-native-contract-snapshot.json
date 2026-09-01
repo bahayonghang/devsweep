@@ -1,0 +1,73 @@
+{
+  "envelope_outcome": "partial",
+  "command": "software.inventory",
+  "source_count": 8,
+  "entry_count": 1293,
+  "arp": 823,
+  "msi": 291,
+  "msix": 179,
+  "msi_non_manual": 0,
+  "selectable_non_msix": 0,
+  "selectable_count": 86,
+  "selectable_reasons": {
+    "eligible_current_user_msix": 86
+  },
+  "selectable_sources": {
+    "msix": 86
+  },
+  "last_used_not_exact_unknown": 0,
+  "last_used_key_sets": [
+    [
+      "reason_code",
+      "state"
+    ]
+  ],
+  "msix_non_current_user": 0,
+  "entries_with_path_property": 0,
+  "identity_key_sets": [
+    [
+      "context",
+      "product_code",
+      "source"
+    ],
+    [
+      "hive",
+      "source",
+      "subkey",
+      "view"
+    ],
+    [
+      "package_full_name",
+      "source"
+    ]
+  ],
+  "forbidden": {
+    "UninstallString": false,
+    "QuietUninstallString": false,
+    "DisplayIcon": false,
+    "quoted_path_key": false
+  },
+  "size_source_codes": [
+    "arp_estimated_size_kib",
+    "msix_installed_path"
+  ],
+  "unexpected_size_source_codes": [],
+  "size_states": {
+    "unknown": 585,
+    "available": 707,
+    "partial": 1
+  },
+  "source_states": [
+    "arp/partial hive=current_user view=registry32",
+    "arp/partial hive=current_user view=registry64",
+    "arp/partial hive=local_machine view=registry32",
+    "arp/available hive=local_machine view=registry64",
+    "msi/available context=user_unmanaged",
+    "msi/available context=user_managed",
+    "msi/available context=machine",
+    "msix_current_user/available"
+  ],
+  "fingerprint_prefix": "sha256:dc65ed6479940",
+  "inventory_version": 1,
+  "contract_ok": true
+}

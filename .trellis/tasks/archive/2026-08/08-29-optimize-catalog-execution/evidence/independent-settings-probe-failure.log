@@ -1,0 +1,21 @@
+command: cargo test native_settings_shell_execute_probe --ignored --nocapture
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:25:01.4771477+08:00
+----- output -----
+Adapter-level launch-failure control via ignored native probe.
+Allowlisted PID from this probe is NOT used as CLI launch proof.
+Unregistered-scheme hInstApp is host shell behavior, not catalogue leak.
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-9efc717c4c33890e.exe)
+
+running 1 test
+allowlisted ms-settings:search: succeeded=true h_inst_app=42 (SE_ERR_ACCESSDENIED=5 SE_ERR_NOASSOC=31) last_error=0 h_process=0 (HWND not returned; SEE_MASK_FLAG_NO_UI only)
+test optimize::tests::windows::native_settings_shell_execute_probe has been running for over 60 seconds
+
+cargo probe exit=-1
+
+consent after probe: none
+
+-----
+exit=-1
+finished: 2026-08-31T13:30:50.7083562+08:00

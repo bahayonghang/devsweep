@@ -1,0 +1,6 @@
+COMMAND: rtk node evidence/independent-native/capture-native-status.mjs
+CWD: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-status-tui-desktop-native
+STARTED: 2026-08-31T17:13:26.5267938+08:00
+
+EXIT: 0
+FINISHED: 2026-08-31T17:14:33.7005670+08:00

@@ -1,0 +1,16 @@
+COMMAND: rtk node evidence/independent-native/resource-gate.mjs
+CWD: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-status-tui-desktop-native
+STARTED: 2026-08-31T17:14:42.7674001+08:00
+{
+  "snapshot_p95_le_2000ms": true,
+  "live_private_le_idle_plus_64mib": true,
+  "live_threads_le_idle_plus_4": true,
+  "live_cpu_median_le_5": true,
+  "live_cpu_p95_le_15": true,
+  "post_exit_25_samples": true,
+  "post_exit_final_five_hold": true,
+  "post_exit_no_missing_sample": true
+}
+
+EXIT: 0
+FINISHED: 2026-08-31T17:16:11.2263333+08:00

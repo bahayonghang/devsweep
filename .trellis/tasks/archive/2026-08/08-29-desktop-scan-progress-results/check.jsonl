@@ -1,0 +1,10 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Audit every payload boundary and ensure one canonical decoder/projection owner."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Route the checker through the complete backend quality and safety checklist without truncated direct injection."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Run the complete desktop frontend quality checklist."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Verify preview isolation, stale-event rejection, and dry-run/digest invariants."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Verify generated contract drift and strict decoder rejection cases."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check TUI render/state/runtime parity and focused TestBackend coverage."}
+{"file": ".trellis/tasks/08-29-desktop-scan-progress-results/research/current-scan-flow.md", "reason": "Recheck each identified risk and affected boundary against the final diff."}
+{"file": ".trellis/tasks/08-29-desktop-scan-progress-results/research/ui-brief.md", "reason": "Audit all active, cancel, error, empty, result, responsive, and accessibility states."}
+{"file": "docs/adr/0001-separate-scan-preview-from-cleanup-authority.md", "reason": "Reject any implementation that lets previews become cleanup authority."}
+{"file": ".trellis/tasks/08-29-desktop-scan-progress-results/research/contract-review-summary.md", "reason": "Audit authority, cancellation, transport, TUI, UI, and regression boundaries from the independent review."}

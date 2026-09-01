@@ -25,103 +25,158 @@ explicitly adds cleanup support.
 
 ## Required Patterns
 
-### Scenario: Foundation CLI and command entrypoints
+### Scenario: Five-mode CLI, machine output, and localization foundation
 
 #### 1. Scope / Trigger
 
-- Trigger: the foundation task defines the project command surface and the
-  local validation entrypoint used by later Trellis tasks.
+- Trigger: changing the breaking five-mode parser, bilingual human output,
+  locale-neutral JSON/NDJSON, command-module registration, output sinks, or the
+  staged handoff used by later mode tasks.
 
 #### 2. Signatures
 
 - Local command entrypoints:
   - `just ci`
   - `just build`
-  - `just dev`
   - `just test`
-- CLI entrypoints:
-  - `devsweep tui`
-  - `devsweep scan [ROOT]... [--json] [--global] [--projects] [--rescan-target TARGET_ID]`
-  - `devsweep inventory [ROOT] [--json]`
-  - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
-  - `devsweep rules`
+- CLI roots:
+  - bare `devsweep [--language <en|zh-CN>]` opens the TUI;
+  - `clean {scan,plan,preview,execute,protect,rules}`;
+  - `software {inventory,plan,preview,uninstall}`;
+  - `optimize {list,plan,preview,run}`;
+  - `analyze scan`, `status {snapshot,live}`, and read-only
+    `history {list,show}`.
+- Mutating signatures:
+  - `clean execute --plan <FILE> --preview-digest <DIGEST> --confirm`;
+  - `software uninstall --plan <FILE> --preview-digest <DIGEST> --confirm`;
+  - `optimize run --plan <FILE> --preview-digest <DIGEST> --confirm`.
+- Stream signature:
+  - `status live [--interval <1..60>] [--process-limit <1..100>]
+    [--format <human|ndjson>] [--output <FILE>]`.
+- The exhaustive generated signatures live in `docs/reference/cli.md` and
+  `docs/zh/reference/cli.md`; both exact manifests must be generated from the
+  same built Clap tree.
 
 #### 3. Contracts
 
 - `just ci` is the canonical local quality gate and must include formatting,
   type-checking, tests, and clippy.
-- `devsweep scan --json` emits a versioned `ScanReport` with an embedded
-  declarative v2 `UntrustedPlan` and non-authoritative health observations. A
-  saved target carries typed intent and observed facts, never executable argv,
-  cwd, or an authoritative action path. An empty embedded plan is:
-  ```json
-  {
-    "version": 2,
-    "targets": []
-  }
-  ```
-- `devsweep clean` defaults to dry-run behavior.
-- `devsweep clean --execute` is owned by `src/execution/mod.rs` after the execution
-  engine task.
+- Old `tui`, `scan`, `inventory`, `protect`, and `rules` roots are unknown
+  commands, not aliases. Bare invocation requires stdin and stdout TTYs.
+- `--language` is global but valid only for human output. CLI precedence is an
+  explicit flag, then a supported Simplified-Chinese Windows user locale, then
+  English. JSON, NDJSON, plans, codes, identities, and digests never localize.
+- Human messages use embedded, build-validated `resources/i18n/{en,zh-CN}.json`
+  catalogues. Placeholder, plural, accelerator, group, and truncation metadata
+  must match exactly. User data is plain text; terminal controls and bidi
+  formatting controls are escaped before interpolation.
+- Named outputs use atomic create-new behavior. Existing files are never
+  truncated or replaced; `-` is not a file sentinel. Human output does not
+  auto-switch formats under redirection.
+- JSON uses one V1 envelope with
+  `{schema_version,command,outcome,data,warnings,error}`. Status NDJSON emits
+  closed V1 lifecycle events with monotonic sequence and one internal terminal
+  state. Broken pipe cancels and joins its producer and exits 0; other sink
+  errors produce `producer_error` when possible and exit 6.
+- Exit classes are 0 success, 2 usage/TTY/conflict, 3 stale authority, 4
+  unavailable/unsupported/permission, 5 truthful partial, 6 failed or unknown
+  after dispatch, and 130 canceled before dispatch.
+- Mutating commands require a saved domain plan, the matching live preview
+  digest (`sha256:` plus 64 lowercase hexadecimal characters), and `--confirm`.
+  Parser and output infrastructure do not create execution authority.
+- `application/commands/mod.rs` and `application/presentation/mod.rs` declare
+  the complete compiler-checked module tree. Foundation creates the empty
+  module skeletons; later mode tasks fill their assigned files without editing
+  either root module.
+- During staged delivery, a parsed but unregistered mode returns truthful
+  `mode_unavailable`/exit 4. It must not fall through to a legacy handler or
+  fabricate success.
 
 #### 4. Validation & Error Matrix
 
-- `scan --json` succeeds -> valid JSON report with `version`, `plan`, and
-  `health`; `plan` remains a valid v2 cleanup plan.
-- `clean --plan PATH` without `--execute` succeeds -> reports dry-run and
-  performs no action.
-- `clean --execute` without `--plan PATH` -> returns an error before execution
-  starts.
-- Missing future scanner/provider implementations -> return placeholder output,
-  not side effects.
+- Bare invocation with either stream redirected -> `tty_required`, exit 2, no
+  TUI start.
+- `status live --format human` with redirected stdout -> exit 2 and guidance to
+  use NDJSON; NDJSON is the explicit non-interactive stream contract.
+- `--language` combined with JSON/NDJSON -> `invalid_cli`, exit 2, with a
+  locale-neutral machine error envelope when the command selects one.
+- Missing plan, digest, or `--confirm` -> usage exit 2 before dispatch. A
+  well-formed but mismatched digest -> stale-authority exit 3.
+- Existing named output -> `output_exists`, exit 6, and the existing bytes are
+  unchanged.
+- Unsupported catalogue key, placeholder drift, duplicate visible mnemonic,
+  unknown language tag, wrong Status field/type/unit/terminal, or documentation
+  manifest drift -> test/build failure.
+- Registered grammar with no owned handler yet -> `mode_unavailable`, exit 4,
+  no collector, executor, audit, trash, or process side effect.
 
 #### 5. Good/Base/Bad Cases
 
-- Good: `just ci` passes before a task is reported complete.
-- Base: `cargo check --all-targets` passes when run directly.
-- Bad: `scan` discovers or deletes directories before the scanner task exists.
-- Bad: `clean --execute` invokes `std::process::Command` outside the bounded
-  `src/process/` owner.
+- Good: English/Chinese help, generated manifests, and the actual parser all
+  derive from the same built Clap tree; value-less flags remain value-less.
+- Good: the CLI and future Tauri Status fixtures decode through one closed V1
+  test contract and are byte-identical before runtime adapters are registered.
+- Base: a fully shaped staged command returns a locale-appropriate human error
+  or locale-neutral machine error with `mode_unavailable`/exit 4.
+- Bad: a custom help renderer models `ArgAction::SetTrue` as
+  `--confirm <CONFIRM>` or omits inherited `--language`.
+- Bad: module ownership is represented only by string constants; downstream
+  modules would then require edits to a supposedly frozen root `mod.rs`.
+- Bad: a parser/output task calls a collector, constructs a cleanup plan, or
+  dispatches an action merely to make an end-to-end command appear complete.
 
 #### 6. Tests Required
 
-- CLI definition test for subcommand shape.
-- Scan-report JSON serialization/round-trip tests for representative targets.
-- TUI placeholder render test through ratatui `TestBackend`.
-- Source scan or review confirming no deletion/trash/process execution code is
-  present in foundation.
+- Exhaustive parser/help tests for every root, nested path, option, default,
+  range, conflict, removed root, bare TTY case, and both languages.
+- Exact generated-manifest tests against both reference documents. Tests must
+  compare actual parser behavior too, not only metadata produced by the same
+  renderer.
+- Catalogue parity, plural, accelerator, metadata, locale, unit, injection,
+  truncation, and closed presentation-language-tag tests.
+- Closed Status snapshot/live fixture tests, including negative primitive,
+  unit, availability, capability, truncation, sequence, and terminal cases plus
+  byte-identical CLI/Tauri fixtures.
+- Output tests for create-new, stdout/stderr separation, cancel/join,
+  `producer_error`, and a real closed OS pipe.
+- Native Windows Terminal evidence for TTY versus redirected behavior,
+  English/Chinese UTF-8, long paths, pipeline close, create-new refusal, and
+  final process cleanup.
+- Source/diff review proving no collector, executor, desktop page, preference
+  store, compatibility alias, or dependency entered the foundation task.
 
 #### 7. Wrong vs Correct
 
 Wrong:
 
 ```rust
-// Scanner/foundation code must not execute cleanup commands.
-std::process::Command::new("cargo").arg("clean").status()?;
+// A string list does not register or compiler-check downstream modules.
+const FROZEN_MODULES: &[&str] = &["clean", "status"];
 ```
 
 Correct:
 
 ```rust
-// Saved plans declare an intent; the private rules registry owns the argv template.
-CleanupIntent::RunBuiltInAction {
-    provider_id: "cargo".to_string(),
-    action_id: "clean_manifest".to_string(),
-}
+// The foundation owns stable registration; later tasks fill these files.
+mod clean;
+mod status;
 ```
 
 ### Scenario: Execution engine and audit log
 
 #### 1. Scope / Trigger
 
-- Trigger: `devsweep clean` consumes an existing cleanup plan and either
-  dry-runs selected actions or executes command/trash-backed actions with an
-  audit JSONL record for each attempted target.
+- Trigger: `devsweep clean preview` or `devsweep clean execute` consumes an
+  existing cleanup plan and either previews selected actions or executes
+  command/trash-backed actions with an audit JSONL record for each attempted
+  target.
 
 #### 2. Signatures
 
 - CLI entrypoint:
-  - `devsweep clean [--plan PATH] [--execute] [--audit-log PATH]`
+  - `devsweep clean preview --plan PATH [--format <human|json>] [--output FILE]`
+  - `devsweep clean execute --plan PATH --preview-digest DIGEST --confirm
+    [--format <human|json>] [--output FILE]`
 - Internal execution boundary:
   - `Executor::default().run_plan(&ValidatedPlan, ExecutionRequest) -> anyhow::Result<ExecutionReport>`
   - `ExecutionRequest.selected: Vec<TargetId>` names the execution set
@@ -130,33 +185,57 @@ CleanupIntent::RunBuiltInAction {
 
 #### 3. Contracts
 
-- `clean` without `--execute` is always dry-run and must not call command or
-  trash runners.
-- `clean --execute` requires `--plan PATH`; execution must never discover new
-  targets.
+- `clean preview` is always dry-run and must not call command or trash runners.
+- `clean execute` requires `--plan`, the matching live `--preview-digest`, and
+  `--confirm`; execution must never discover new targets.
 - The CLI/TUI validates a v2 `UntrustedPlan` once before the executor sees it.
-  The executor runs exactly the intersection of `request.selected` with the
-  validated plan's targets, in plan order; unknown ids are ignored. It does not read
+  The executor validates and deduplicates `request.selected` before opening an
+  audit journal or dispatching a side effect. Unknown ids reject the whole
+  request, duplicate ids produce one target outcome plus a normalization note,
+  and selected targets still run in validated plan order. It does not read
   `selected_by_default` — that flag is a scan-time ranking hint, written only
   by the freshness guard, and callers translate it into an explicit selection
   via `default_selected_ids()`.
+- `ExecutionReport` contains one terminal outcome for every deduplicated
+  selected target, including dry-run and unprocessed targets after cancellation
+  or fail-closed audit termination. `selected == attempted == outcomes.len()`
+  and `succeeded + failed + skipped == attempted`; the retained `failures`
+  compatibility field is derived only from failed outcomes.
+- A dry run returns a `ConfirmationDigest` over the canonical validated
+  manifest and sorted selected-id set. Execution requests that supply
+  `expected_digest` fail with structured `ExecutionError::StaleConfirmation`
+  before audit or side effects when it does not match. Current CLI/TUI callers
+  may omit the compatibility field; GUI execution must supply it.
 - Command actions use `CommandRequest { program, args, cwd }`; the private
-  registry under `src/rules/`, not a plan file, reconstructs those values and
+  registry under `crates/devsweep-core/src/rules/`, not a plan file, reconstructs those values and
   they must never form a shell string.
 - `MoveToTrash` actions use the rules-reconstructed path only after it
   matches the validated observed target path.
 - `DeletePermanently` is disabled in this build and cannot be selected.
-- Execution appends JSONL audit records to `--audit-log PATH` or
-  `devsweep-audit.jsonl`.
+- Execution appends versioned JSONL audit records only to the fixed
+  `%LOCALAPPDATA%\DevSweep\audit\v1\clean.jsonl` store under an exclusive lock.
+  The removed `--audit-log` path and legacy `%APPDATA%\devsweep\audit.jsonl`
+  file are never discovered, imported, converted, or modified.
+- Whole-list protection updates validate and normalize every requested path
+  before replacing the persisted snapshot. Callers use
+  `UserProtectionList::replace`; they must not emulate set semantics with a
+  sequence of independently persisted `add` and `remove` calls.
 
 #### 4. Validation & Error Matrix
 
-- Dry-run with or without plan -> returns selected target count, no side
-  effects, no audit file.
-- `--execute` without `--plan` -> error before executor runs.
-- Audit file cannot be opened -> error before any target action runs.
+- Preview with a valid plan -> returns selected target count and confirmation
+  digest, with no side effects or audit append.
+- Unknown selected target or selected inspect-only target -> structured request
+  error before audit or cleanup side effects.
+- Stale supplied confirmation digest -> structured request error before audit
+  or cleanup side effects.
+- Missing plan, preview digest, or `--confirm` -> error before executor runs.
+- Fixed audit store cannot be resolved, opened, locked, or flushed -> error
+  before any target action runs.
 - Individual target failure -> record failed audit entry, continue remaining
   targets, return a report with failures.
+- Failure to persist an authorization denial or safety skip -> report that
+  target as failed and mark all remaining targets skipped without dispatch.
 - Inspect-only target selected for cleanup -> error before audit or side effect.
 - Target path contains the running `devsweep` executable -> skipped audit entry,
   no command/trash side effect. Use the shared path-safety helper rather than
@@ -170,8 +249,8 @@ CleanupIntent::RunBuiltInAction {
 - Good: a selected target that contains `std::env::current_exe()` is skipped
   before invoking `CommandRunner` or `TrashRunner`.
 - Good: a rules-resolved trash target moves exactly the validated path.
-- Base: `devsweep clean` reports a dry-run with zero selected targets when no
-  plan is provided.
+- Base: `devsweep clean preview --plan <empty-v2-plan>` reports zero selected
+  targets and a stable digest without dispatching an action.
 - Bad: executor reruns scanner logic to infer paths.
 - Bad: executor uses `cmd /C`, `sh -c`, or string-form shell commands.
 - Bad: a failed target aborts the job before later selected targets are audited.
@@ -179,6 +258,13 @@ CleanupIntent::RunBuiltInAction {
 #### 6. Tests Required
 
 - Dry-run test proving command and trash runners are not called.
+- Selection-boundary tests for atomic unknown-id rejection, duplicate
+  deduplication notes, inspect-only rejection, and irreversible command
+  projection.
+- Confirmation tests proving stability, plan and selection sensitivity, and
+  stale execute rejection before side effects.
+- Report tests proving serde round-trip, capacity-confidence aggregation, and
+  count/detail consistency across dry-run and early termination.
 - Command-runner test asserting program and argv are separate.
 - Self-clean guard test asserting the command runner is not called and the audit
   record status is `skipped`.
@@ -186,6 +272,8 @@ CleanupIntent::RunBuiltInAction {
 - Audit JSONL test covering both success and failure records in one job.
 - Permanent-delete test proving the action is rejected before runner or audit
   calls.
+- Protection-list replacement test proving duplicate normalization and that an
+  invalid requested path leaves the prior persisted snapshot unchanged.
 - Scanner regression proving Rust target plans keep `--manifest-path`.
 
 #### 7. Wrong vs Correct
@@ -212,6 +300,116 @@ CommandRequest {
 }
 ```
 
+### Scenario: Software execution and durable audit
+
+#### 1. Scope / Trigger
+
+- Trigger: `software preview` or `software uninstall` consumes a Software V1
+  selection plan, reconstructs current-user MSIX authority, calls the WinRT
+  removal API, or appends/replays the Software audit journal.
+
+#### 2. Signatures
+
+- CLI entrypoints:
+  - `devsweep software preview --plan PATH [--format <human|json>] [--output FILE]`
+  - `devsweep software uninstall --plan PATH --preview-digest DIGEST --confirm
+    [--format <human|json>] [--output FILE]`
+- Core boundary:
+  `SoftwareExecutor::execute(SoftwareExecutionRequest { plan,
+  expected_preview_digest, confirmed, cancel })`.
+
+#### 3. Contracts
+
+- `SoftwareExecutionRequest` cannot carry a serialized or caller-constructed
+  inventory. The executor acquires current-user MSIX inventory through its
+  private live provider behind process single-flight and audit locking, after
+  reconciling pending dispatches.
+- `ValidatedSoftwareAction` is opaque and non-deserializable. Only a matching
+  live eligible current-user MSIX identity and preview digest can construct it;
+  explicit confirmation is also required at the core boundary.
+- MSI, registry-only, machine/other-user, protected, stale, malformed, and
+  unsupported identities fail before the removal adapter. No vendor command,
+  shell text, elevation fallback, or serialized argv participates.
+- The fixed versioned Software journal durably syncs `dispatch_started` before
+  `RemovePackageAsync`, holds an exclusive sidecar lock, enforces monotonic
+  transitions and exactly one terminal, and contains tagged identity plus
+  stable codes without localized or executable text.
+- Startup recovery re-queries pending exact identities and never redispatches.
+  A terminal must match accumulated adapter and requery evidence from the same
+  operation.
+- The MSIX adapter sends the exact `PackageFullName` through the joined MTA
+  helper, monitors for at most 120 seconds, requests post-dispatch OS
+  cancellation at most once, waits five seconds, then re-queries at 0, 2, and
+  10 seconds.
+- Post-dispatch terminals are exactly `removed`, `reboot_required`,
+  `still_present`, `failed`, or `unknown_after_dispatch`. Software uninstall is
+  irreversible from DevSweep's perspective and has no execution `partial`.
+
+#### 4. Validation & Error Matrix
+
+- Missing confirmation, stale digest, invalid identity, or audit-lock failure
+  -> no adapter call.
+- Cancellation before durable dispatch -> `canceled_before_start`, no adapter
+  call. Cancellation, timeout, crash, or unfinished adapter after dispatch ->
+  authoritative requery or `unknown_after_dispatch`, never canceled.
+- Exact identity absent -> `removed`, except documented reboot evidence wins as
+  `reboot_required`. Present plus definitive failure -> `failed`; present plus
+  success -> `still_present`; unavailable/conflicting evidence ->
+  `unknown_after_dispatch` unless reboot evidence has higher precedence.
+- Unknown audit version, corrupt transition order, repeated terminal, or a
+  terminal inconsistent with accumulated evidence -> fail closed without a new
+  dispatch.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: preview exposes the exact tagged current-user MSIX identity and opaque
+  digest; uninstall independently reacquires live authority after recovery.
+- Base: adapter success plus exact identity still present is
+  `still_present`, not removal success.
+- Bad: a public request injects a forged `SoftwareInventoryV1`, recovery calls
+  the adapter again, or a terminal claims an installed state that no requery
+  observed.
+
+#### 6. Tests Required
+
+- Compile/runtime authority tests for opaque actions, private live inventory,
+  explicit confirmation, every refusal class, digest failure, and lock failure
+  before adapter invocation.
+- Exhaustive valid adapter/installed-state terminal matrix, pre/post-dispatch
+  cancellation, timeout, crash/recovery, evidence conflict, and no-second-call
+  recovery tests.
+- Journal durability, redaction, unknown-version, transition-order, accumulated
+  evidence, exclusive-lock, and exactly-one-terminal tests.
+- CLI hostile-plan, locale-neutral machine output, irreversible copy, and
+  single-document failed-exit tests.
+- Native non-uninstall evidence must verify medium integrity, no UAC, stale
+  authority, and journal persistence. Real removal remains `UNVERIFIED` when no
+  user-confirmed disposable current-user MSIX fixture exists.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+SoftwareExecutionRequest {
+    plan: &plan,
+    live_inventory: &deserialized_inventory,
+    expected_preview_digest: &digest,
+    cancel: None,
+}
+```
+
+Correct:
+
+```rust
+SoftwareExecutionRequest {
+    plan: &plan,
+    expected_preview_digest: &digest,
+    confirmed: true,
+    cancel: None,
+}
+```
+
 ### Scenario: Declarative plan trust boundary
 
 #### 1. Scope / Trigger
@@ -232,8 +430,8 @@ CommandRequest {
 #### 3. Contracts
 
 - Persisted plans are exact schema v2. v1 fails with
-  `plan format v1 is no longer accepted; re-run \`devsweep scan --json\``;
-  every other version fails before execution.
+  guidance to re-run `devsweep clean scan` and `devsweep clean plan`; every
+  other version fails before execution.
 - `UntrustedPlan`/nested DTOs are closed-world serde types. They serialize
   facts, `rule_id`, and `CleanupIntent`, never `CleanAction`, `program`,
   `args`, `cwd`, or permanent-delete authority.
@@ -247,7 +445,7 @@ CommandRequest {
   rules-owned action identity with a canonical path or a rules-owned logical
   provider footprint. Duplicate fingerprints fail validation; the executor
   additionally keeps a once ledger.
-- CLI dry-run and execute consume the same validated plan. TUI confirmation
+- CLI preview and execute consume the same validated plan. TUI confirmation
   displays the digest prefix, carries the full digest with its frozen snapshot,
   and revalidates both before creating an executor request.
 
@@ -283,7 +481,7 @@ CommandRequest {
 #### 6. Tests Required
 
 - Serde tests reject executable and unknown nested fields; v1 tests assert the
-  exact rescan wording.
+  exact `clean scan` plus `clean plan` migration wording.
 - Validation tests cover relative/scope-mismatched paths, unknown IDs,
   inspect-only selection, risk/action drift, and duplicate canonical
   fingerprints, including Windows spelling variants and POSIX leading
@@ -292,7 +490,7 @@ CommandRequest {
   change or reconstructed provider command changes the digest.
 - Executor test injects a malformed test-only validated plan and proves the
   once ledger blocks the second runner call.
-- CLI/TUI tests prove dry-run/execute share validation and a digest mismatch
+- CLI/TUI tests prove preview/execute share validation and a digest mismatch
   reaches no executor action.
 
 #### 7. Wrong vs Correct
@@ -316,13 +514,15 @@ Executor::default().run_plan(&validated, request)?;
 
 #### 1. Scope / Trigger
 
-- Trigger: `devsweep scan --global` discovers global package-manager cache
-  providers and emits command-backed or inspect-only cleanup plan targets.
+- Trigger: `devsweep clean scan --scope global|all` discovers global
+  package-manager cache providers and emits command-backed or inspect-only
+  cleanup observations.
 
 #### 2. Signatures
 
 - CLI entrypoint:
-  - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
+  - `devsweep clean scan [--root PATH]... [--scope <projects|global|all>]
+    [--format <human|json>] [--output FILE]`
 - Internal provider boundary:
   - `GlobalProviderScanner::new().scan_with_cancel(None) -> CleanupPlan`
 - Provider discovery boundary:
@@ -331,12 +531,13 @@ Executor::default().run_plan(&validated, request)?;
 
 #### 3. Contracts
 
-- `scan --global` may run read-only or provider-owned inspect commands such as
+- `clean scan --scope global|all` may run read-only or provider-owned inspect
+  commands such as
   `npm config get cache`, `pip cache dir`, `pnpm store path`, `yarn --version`,
   and Yarn cache-folder commands.
-- `scan --global` must never execute cleanup commands. It produces typed
-  in-memory scan facts; `scan --json` converts those facts to declarative
-  `RunBuiltInAction` intents.
+- `clean scan --scope global|all` must never execute cleanup commands. It
+  produces typed in-memory scan facts; `--format json` serializes the
+  observation without creating execution authority.
 - npm, pip, pnpm, and Yarn cleanup argv are reconstructed by the trusted
   registry from provider/action IDs. JSON must not carry program, args, or cwd.
 - A provider must not emit multiple user-facing cleanup targets for the same
@@ -421,8 +622,9 @@ CleanAction::Command {
 #### 1. Scope / Trigger
 
 - Trigger: adding or changing a cleanup rule, or listing rules via
-  `devsweep rules` / the TUI `Rules` tab. Every rule id, fact, table row, and
-  procedural `RuleDoc` lives in `src/rules/definitions.rs`; scanner/provider
+  `devsweep clean rules list` / the TUI `Rules` surface. Every rule id, fact,
+  table row, and
+  procedural `RuleDoc` lives in `crates/devsweep-core/src/rules/definitions.rs`; scanner/provider
   implementations consume those definitions and `rule_catalogue()` aggregates
   them.
 
@@ -437,8 +639,8 @@ CleanAction::Command {
 - `rules::rule_catalogue() -> Vec<RuleDoc>` - flat display list of every rule,
   aggregated from the tables and procedural docs under the same rules owner.
 - `rules::rule_row(&RuleDoc) -> String` + `rules::risk_label(&RiskLevel)` -
-  the single row formatter shared by the CLI `rules` command and the TUI
-  Rules tab (both group by scope with section headings).
+  the single row formatter shared by the CLI `clean rules` commands and the
+  TUI Rules surface (both group by scope with section headings).
 
 #### 3. Contracts
 
@@ -547,15 +749,23 @@ GlobalCacheRule {
   - `just release-archive`
 - CI validation:
   - `cargo fmt --all -- --check`
-  - `cargo check --all-targets`
-  - `cargo test --all-targets`
-  - `cargo clippy --all-targets -- -D warnings`
+  - `cargo check --workspace --locked --all-targets`
+  - `cargo test --workspace --locked --all-targets`
+  - `cargo clippy --workspace --locked --all-targets -- -D warnings`
 
 #### 3. Contracts
 
 - `just ci` remains the canonical local quality gate.
 - CI must run the same four validation classes as `just ci`: format, check,
   tests, and clippy.
+- Process-runner tests in `devsweep-core` use the CLI-owned `process_fixture`
+  binary. The shared test helper must build a missing fixture into the target
+  root derived from the current test executable, including when Cargo uses a
+  custom `--target-dir`; timeout measurements start only after fixture setup.
+- Isolate validation build output with Cargo's `--target-dir` argument, not an
+  exported `CARGO_TARGET_DIR`. The project scanner intentionally reads that
+  environment variable as Cargo cleanup authority; exporting it into a test
+  process changes the target discovered for Rust fixtures.
 - `just release-archive` builds the release binary and writes a Windows archive
   to `dist/devsweep-x86_64-pc-windows-msvc.zip`.
 - `dist/` is a generated artifact directory and must stay ignored by git.
@@ -565,6 +775,12 @@ GlobalCacheRule {
 #### 4. Validation & Error Matrix
 
 - Format/check/test/clippy failure -> CI fails and local `just ci` fails.
+- Clean or custom Cargo target without `process_fixture` -> the core test helper
+  builds that exact target before running process assertions; it must not rely
+  on a stale binary under the default `target/` directory.
+- Exported `CARGO_TARGET_DIR` during scanner tests -> Rust fixtures correctly
+  discover the override instead of their local `target/`; a harness that expects
+  the local path is invalid, not evidence of a scanner regression.
 - Release build failure -> `just release-archive` fails before creating or
   replacing the archive.
 - Missing `target/release/devsweep.exe` after build -> archive command fails.
@@ -574,15 +790,31 @@ GlobalCacheRule {
 
 - Good: CI includes Windows and a non-Windows runner for the Rust validation
   matrix.
+- Good: a clean `cargo test --target-dir <isolated> --workspace --locked
+  --all-targets` passes without a pre-existing fixture binary.
+- Good: cross-platform validation passes `--target-dir /tmp/devsweep-check`
+  directly to Cargo and leaves `CARGO_TARGET_DIR` unset for test processes.
 - Good: release recipe uses the already built single binary.
 - Base: local `cargo build --release` succeeds without packaging.
 - Bad: committing generated `dist/*.zip` archives.
+- Bad: locating `process_fixture` in the default target directory when the
+  current test executable came from a custom target directory.
+- Bad: starting a process timeout clock before an on-demand test fixture build.
+- Bad: exporting `CARGO_TARGET_DIR=/tmp/devsweep-check` and then asserting that
+  a scanner fixture resolves `<fixture>/target`.
 - Bad: documenting Docker cleanup, permanent delete, or package-manager
   distribution as released MVP behavior.
 
 #### 6. Tests Required
 
 - Run `just ci` after workflow or validation command changes.
+- Run the workspace tests once with a clean/custom target directory so cached
+  `process_fixture` output cannot mask a broken cross-crate test dependency.
+- When using a custom target for scanner tests, pass Cargo `--target-dir` and
+  confirm `CARGO_TARGET_DIR` is not inherited by the test process unless the
+  test explicitly covers Cargo's override behavior.
+- Run the process-runner tests on Windows and one Unix host; the Unix run must
+  exercise the process-group tree-termination test dynamically.
 - Run `just release-archive` after release recipe changes on Windows.
 - Check `git status --short --ignored` to confirm `dist/` is ignored.
 
@@ -599,6 +831,20 @@ Correct:
 ```text
 Generate dist/devsweep-x86_64-pc-windows-msvc.zip locally and keep dist/
 ignored by git.
+```
+
+Wrong:
+
+```bash
+export CARGO_TARGET_DIR=/tmp/devsweep-check
+cargo test --workspace --locked --all-targets
+```
+
+Correct:
+
+```bash
+unset CARGO_TARGET_DIR
+cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
 ```
 
 ### Scenario: Cleanup plan ranking and freshness guard
@@ -624,7 +870,8 @@ ignored by git.
     unranked project observations.
   - `GlobalProviderScanner::scan_with_cancel(...)` returns an unranked global
     plan.
-  - `devsweep scan [ROOT]... [--json] [--global] [--projects]`
+  - `devsweep clean scan [--root PATH]...
+    [--scope <projects|global|all>] [--format <human|json>]`
   - TUI scan worker driving `scan::Sweeper::full_scan_report_with_cancel`
 
 #### 3. Contracts
@@ -665,10 +912,11 @@ ignored by git.
   so ranking runs in one private pipeline owner instead of each entry point
   implementing local ordering.
 - Good: a 2 GiB global target appears before a 1 GiB project target in both
-  `scan --json` and TUI results.
+  `clean scan --format json` and TUI results.
 - Base: calling the ranking helper twice is idempotent and does not duplicate
   freshness evidence.
-- Bad: sorting only in render code while `scan --json` uses discovery order.
+- Bad: sorting only in render code while `clean scan --format json` uses
+  discovery order.
 - Bad: selecting a large target by default only because it is large.
 - Bad: scanning the filesystem again from ranking to calculate missing data.
 - Bad: a report or progress consumer defensively re-ranking the projected plan.
@@ -680,6 +928,15 @@ ignored by git.
 - Sweep tests with fake scanners proving merge order, single ranking pass with
   freshness guard, staged progress event sequence, and cumulative ranked
   partial plans.
+- Continuous progress snapshots must be cumulative, deduplicated, and ordered by
+  `Sweeper`, not merged by TUI or desktop consumers. Ordinary target sizing must
+  observe cooperative cancellation as well as traversal and provider probes.
+  Provider helpers that can construct more than one target must publish and
+  re-check cancellation after each completed target rather than batching the
+  helper's entire loop behind one callback.
+- Webview progress uses the core-owned `ScanPreviewSnapshot` projection. It is an
+  observation DTO and must omit `CleanAction`, cleanup intent,
+  `selected_by_default`, and the versioned plan envelope.
 - TUI state tests proving staged scan partials apply as cumulative ranked
   snapshots with stale-scan protection.
 - TUI test proving explicit manual selection can still execute a fresh target.
@@ -705,8 +962,8 @@ let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
 #### 1. Scope / Trigger
 
 - Trigger: scanner code discovers project cleanup candidates or changes the
-  `devsweep scan --json` report projection from an empty placeholder to real
-  `CleanTarget` values and scan-health observations.
+  `devsweep clean scan --format json` report projection from an empty
+  placeholder to real `CleanTarget` values and scan-health observations.
 
 #### 2. Signatures
 
@@ -714,7 +971,8 @@ let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
   - `ProjectScanner::scan_roots_with_diagnostics_and_cancel(...) ->
     anyhow::Result<ScanOutcome>`
 - CLI entrypoint:
-  - `devsweep scan [ROOT]... [--json] [--projects] [--rescan-target TARGET_ID]`
+  - `devsweep clean scan [--root PATH]... --scope projects
+    [--rescan-target TARGET_ID] [--format <human|json>] [--output FILE]`
 
 #### 3. Contracts
 
@@ -767,8 +1025,9 @@ let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
   footprint/action pair.
 - Good: two rules with the same footprint but distinct command/trash actions
   remain independently visible.
-- Base: `devsweep scan . --json` emits a valid report whose embedded plan
-  validates through the normal cleanup-plan boundary.
+- Base: `devsweep clean scan --root . --scope projects --format json` emits a
+  valid observation report that must pass through `clean plan --observation`
+  before any saved plan can be previewed or executed.
 - Bad: matching a markerless directory because its name is `target`, `build`,
   or `dist`.
 - Bad: scanner code importing `std::process::Command`, `trash`, or file removal
@@ -819,9 +1078,13 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 - Report boundary: `ScanReport { version, plan, health }` and
   `ScanHealth { completeness, diagnostics, totals }`.
 - CLI boundaries:
-  - `devsweep scan [ROOT]... --json [--rescan-target TARGET_ID]`
-  - `devsweep inventory [ROOT] [--json]`
-  - `devsweep clean --plan PATH [--execute]`
+  - `devsweep clean scan [--root PATH]... [--scope <projects|global|all>]
+    --format json [--rescan-target TARGET_ID]`
+  - `devsweep analyze scan --root PATH [--format <human|json>] [--output FILE]`
+  - `devsweep clean plan --observation FILE --select TARGET_ID... --output FILE`
+  - `devsweep clean preview --plan FILE [--format <human|json>] [--output FILE]`
+  - `devsweep clean execute --plan FILE --preview-digest DIGEST --confirm
+    [--format <human|json>] [--output FILE]`
 - TUI inventory boundary:
   `inventory_root_with_cancel(&Path, Option<&Arc<FlagCancelObserver>>) -> Result<InventoryReport>`.
 - Review boundary:
@@ -829,9 +1092,11 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 
 #### 3. Contracts
 
-- Scan JSON is a report document. Only its embedded v2 `UntrustedPlan` can
-  cross into `validate_plan`; diagnostics, totals, and sizing warnings are
-  observations and cannot reconstruct actions or affect a validated digest.
+- Scan JSON is an observation document and cannot cross directly into
+  `validate_plan`. `clean plan --observation` is the sole CLI conversion
+  boundary: it applies an explicit selection and writes a saved v2 plan before
+  preview. Diagnostics, totals, and sizing warnings remain observations and
+  cannot reconstruct actions or affect a validated digest.
 - Size totals keep verified bytes, partial lower bounds, and unknown-target
   counts distinct. Incomplete size observations are not default-selected.
 - Traversal, marker validation, sizing, and execution-time ancestor checks use
@@ -844,7 +1109,7 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 - `--rescan-target` accepts only an exact target ID discovered by the current
   scan. It replaces that target's size observation under a larger but bounded
   walk, reusing cancellation and reparse checks.
-- `inventory` returns read-only `InventoryReport` observations and optional
+- Capacity inventory returns read-only `InventoryReport` observations and optional
   inspect-only pnpm evidence. It has no cleanup intent/action and the plan
   decoder must reject it explicitly.
 - A canceled inventory walk returns a partial read-only report with a typed
@@ -860,8 +1125,8 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 - Truncated Cargo metadata -> `output_truncated` diagnostic before JSON parse.
 - Unknown review target ID or pathless target -> rescan fails without walking
   an arbitrary caller path.
-- Inventory report supplied to `clean --plan` -> reject before validation,
-  audit, or cleanup side effect.
+- Capacity `InventoryReport` supplied to `clean plan --observation` -> reject
+  before validation, audit, or cleanup side effect.
 - Inventory cancellation before or during traversal -> no later top-level
   observation or pnpm-reference probe runs after the cancellation check.
 
@@ -869,8 +1134,9 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 
 - Good: a partial size appears as a lower bound with typed warnings, while a
   successful reviewed rescan replaces those warnings with a complete estimate.
-- Good: `clean --plan` accepts either a plan-only v2 document or the
-  embedded plan from a supported scan report.
+- Good: `clean plan --observation` accepts a supported Clean scan report and
+  emits a saved plan; `clean preview --plan` accepts that plan without granting
+  execution authority.
 - Good: a canceled TUI inventory worker receives a partial report containing a
   `canceled` diagnostic and remains outside the cleanup-plan flow.
 - Base: a complete report with no diagnostics has zero partial/unknown totals.
@@ -885,8 +1151,8 @@ if manifest.is_file() && project_root.join("target").is_dir() {
 - Report tests assert typed truncation process metadata, total separation, and
   that warnings do not change validation or digest authority.
 - Rescan tests assert exact-ID replacement, cancellation, and reparse denial.
-- CLI tests assert report decoding, inventory rejection by `clean --plan`, and
-  valid `--rescan-target` parsing.
+- CLI tests assert report decoding, capacity-inventory rejection by
+  `clean plan --observation`, and valid `--rescan-target` parsing.
 - Inventory tests assert observations are read-only and an orphan-pnpm finding
   requires complete non-candidate reference evidence; cancellation tests assert
   a typed partial report without observations.

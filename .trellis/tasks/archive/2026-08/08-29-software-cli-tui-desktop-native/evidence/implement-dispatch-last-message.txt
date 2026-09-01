@@ -1,0 +1,128 @@
+Implementation is complete; no commit/push was performed, and no uninstall was dispatched.
+
+## Per-step result
+
+1. Typed IPC and presentation
+   - Added Tauri inventory/preview/uninstall/audit/cancel commands with operation-ID scoping, single-flight coordination, stale-result rejection, audit recovery, and typed DTOs.
+   - Added strict TypeScript decoders and generated fixtures/types.
+   - Updated bilingual CLI human rendering for exact identities, eligibility/refusal reasons, size evidence, last-used unknown, digests, irreversibility, and terminal outcomes.
+   - Parser grammar and core domain were not changed.
+
+2. TUI Software mode
+   - Added loading, ready/selecting, previewing/preview-ready, confirming, uninstalling, terminal, unknown, and canceling states.
+   - Added exact-ID rows, disabled manual entries, sticky summary, size/last-used evidence, second confirmation, closed outcomes, stale-event rejection, audit recovery without redispatch, and shell cancel/join integration.
+   - Added English/Chinese 100-column render tests and reducer/runtime tests.
+
+3. Desktop SoftwareWorkbench
+   - Registered the Software route and added the complete reducer/selectors/workbench/styles/test package.
+   - Added accessible canonical list semantics, disabled refusal checkboxes, exact identities, search/sort, sticky totals, two-step confirmation, audit recovery, bilingual rendering, responsive layout, reduced-motion, and forced-colors support.
+   - Existing Analyze mocks were extended only to satisfy the expanded typed bridge.
+
+4. Parity and documentation
+   - Fixtures cover all thirteen refusal reasons, ARP/MSI/MSIX identities, duplicate/long names, partial sources, all-MSI manual refusal, size evidence variants, strict last-used unknown, five post-dispatch terminals, and restart audit recovery.
+   - Both Rust and TypeScript reject execution outcome `partial`.
+   - Added English and Chinese Software guides.
+
+5. Native evidence
+   - Standard-user inventory succeeded:
+     - All sources: 1,293 entries, 86 selectable, 1,207 manual; truthful `partial` envelope.
+     - MSIX: 179 entries, 86 selectable, 93 manual; `succeeded`.
+     - Every last-used value remained explicitly unknown.
+   - Medium-integrity token `S-1-16-8192` was verified.
+   - Non-destructive plan and bilingual preview succeeded for VP9 Video Extensions. Digest:
+     `sha256:4fdcf3cb163849a0e37a1bac6b108e4430b215707a1edae0e3c23bb54347ed46`.
+   - No uninstall command was run.
+
+## Gates
+
+Passed:
+
+- `cargo check -p devsweep-cli` — exit 0
+- `cargo check -p devsweep-desktop` — exit 0
+- `cargo test -p devsweep-cli software` — exit 0; 13 matching tests
+- `cargo test -p devsweep-cli tui::modes::software` — exit 0; 4 tests
+- `cargo test -p devsweep-desktop software` — exit 0; 2 tests
+- `cargo test -p devsweep-cli --lib` — exit 0
+- `cargo test -p devsweep-desktop --lib` — exit 0; 30 passed, 2 ignored
+- `npm run types:generate` — exit 0
+- `npm run lint` — exit 0
+- `npm run typecheck` — exit 0
+- Evidence-only in-process Software Vitest suite — exit 0; 3 files, 8 tests
+- `git diff --check` — exit 0; LF/CRLF notices only
+- `just ci` — final exit 0; formatting, offline resolution, checks, workspace tests, and Clippy passed
+
+Failed or blocked:
+
+- Initial `just ci` — exit 1 due to two identical Clippy branches; repaired before the successful final run.
+- Standard `npm test` — exit 1 before discovery:
+  ```text
+  Error: spawn EPERM
+      at ChildProcess.spawn (node:internal/child_process:457:11)
+  ```
+- `just desktop-web-check` — exit 1 after generation/lint/type-check passed; Vitest/Vite hit the same `spawn EPERM`.
+- `just desktop-build` — exit 1 in Tauri `beforeBuildCommand`; `npm run build` hit the same `spawn EPERM`.
+- Initial inventory invocation without `--bin` — exit 1:
+  ```text
+  error: cargo run could not determine which binary to run... available binaries: devsweep, process_fixture
+  ```
+  Corrected command exited 0.
+- Native process-tree query:
+  ```text
+  Get-CimInstance Win32_Process: Access denied
+  ```
+
+Full gate record: `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/gate-summary.md`.
+
+## Evidence
+
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-evidence.md`
+- `.trellis/tasks/08-29-software-cli-tui-desktop-native/evidence/native-20260831/integrity.txt`
+- `software-inventory-all.json`
+- `software-inventory-msix.json`
+- `software-plan-vp9.json`
+- `software-preview-vp9.json`
+- `software-preview-vp9-en.txt`
+- `software-preview-vp9-zh-CN.txt`
+- `vite-sandbox-shim.cjs`
+- `vitest.sandbox.config.mjs`
+
+## Files changed
+
+- CLI/TUI:
+  - `crates/devsweep-cli/src/application/commands/software/execution.rs`
+  - `crates/devsweep-cli/src/application/presentation/software.rs`
+  - `crates/devsweep-cli/src/tui/app/{events,input,jobs,mod,worker}.rs`
+  - `crates/devsweep-cli/src/tui/modes/mod.rs`
+  - `crates/devsweep-cli/src/tui/modes/software/{mod,tests}.rs`
+  - `crates/devsweep-cli/src/tui/render/{jobs,mod,software}.rs`
+  - `crates/devsweep-cli/src/tui/runtime/{mod,workers}.rs`
+  - `crates/devsweep-cli/src/tui/shell/mod.rs`
+- Tauri:
+  - `desktop/src-tauri/Cargo.toml`
+  - `desktop/src-tauri/src/{error,lib,software}.rs`
+- Desktop:
+  - `desktop/scripts/generate-types.mjs`
+  - `desktop/src/{App,App.test}.tsx`
+  - `desktop/src/api/{bridge,contract,fixture-bridge,types.gen}.ts`
+  - `desktop/src/api/fixtures/contract-variants.json`
+  - `desktop/src/api/fixtures/software/*`
+  - `desktop/src/components/ErrorBanner.tsx`
+  - `desktop/src/modes/software/*`
+  - Analyze test/benchmark bridge mocks
+- Documentation/i18n:
+  - `docs/guide/software.md`
+  - `docs/zh/guide/software.md`
+  - `resources/i18n/{en,zh-CN}.json`
+- Task evidence files listed above.
+
+The pre-existing dirty `.trellis/.gitignore`, `README.md`, `justfile`, and `crates/devsweep-cli/tests/cli_contract.rs` changes were preserved. Other unrelated untracked task directories were untouched. Existing dirty i18n files were extended only with scoped Software keys.
+
+## Explicitly UNVERIFIED
+
+- Current-build native desktop captures at 390/800/1024/1440 CSS pixels and 100/125/150/200% scale.
+- Native reduced-motion, high-contrast, keyboard-focus, and full accessibility-tree evidence.
+- Native visual states for long/duplicate names, partial sources, cancel/timeout/unknown, and restart audit.
+- Live interactive TUI keyboard capture beyond TestBackend/runtime tests.
+- Process-tree and no-UAC observation.
+- Real uninstall, post-state, reboot, timeout/cancel/unknown-after-dispatch, crash/restart replay, and proof of no redispatch.
+- Free-space recovery and activity/last-used claims.

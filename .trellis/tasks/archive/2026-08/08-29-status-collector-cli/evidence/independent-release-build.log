@@ -1,0 +1,7 @@
+COMMAND: rtk cargo build --locked --release -p devsweep-cli --bin devsweep
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T15:56:02.1884679+08:00
+    Finished `release` profile [optimized] target(s) in 0.34s
+
+EXIT: 0
+FINISHED: 2026-08-31T15:56:02.7452793+08:00

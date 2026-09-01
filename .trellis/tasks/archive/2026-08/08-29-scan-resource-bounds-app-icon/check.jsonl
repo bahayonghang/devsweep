@@ -1,0 +1,43 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit the sizing child against every backend safety and quality requirement."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit the icon child against the full desktop web, accessibility, visual, and packaging gate."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/research/current-sizing-evidence.md", "reason": "Recheck the verified hot path, fallback semantic trap, cancellation gap, and all shared callers."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/research/icon-generation.md", "reason": "Verify the exact selected source and reject unsupported transparency or small-size claims."}
+{"file": ".trellis/tasks/08-29-scan-resource-bounds-app-icon/prd.md", "reason": "Trace every parent requirement and acceptance clause to child evidence."}
+{"file": ".trellis/tasks/08-29-scan-resource-bounds-app-icon/design.md", "reason": "Verify parent-only ownership, lifecycle, combined review, and rollback boundaries."}
+{"file": ".trellis/tasks/08-29-scan-resource-bounds-app-icon/implement.md", "reason": "Apply the required parent acceptance format and evidence threshold."}
+{"file": ".trellis/tasks/08-29-scan-resource-bounds-app-icon/task.json", "reason": "Confirm parent status and exact two-child map."}
+{"file": ".trellis/tasks/08-29-scan-resource-bounds-app-icon/check.jsonl", "reason": "Preserve the existing journal while appending this review's consulted files."}
+{"file": ".trellis/tasks/08-29-scan-resource-bounds-app-icon/acceptance.md", "reason": "Replace the prior verdict with the requested paused-sizing and downstream-bound disposition."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/prd.md", "reason": "Map sizing AC1-AC9 and R1-R5 to archived proof."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/design.md", "reason": "Verify dedicated-pool, serial-fallback, benchmark, and scope contracts."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/implement.md", "reason": "Verify the final measurement record and selected ceiling."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/task.json", "reason": "Record the paused checkpoint's final completed and passed state."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/check.jsonl", "reason": "Confirm the archived independent review inputs."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-bound-sizing-concurrency/evidence/verification-2026-08-30.md", "reason": "Verify sizing tests, A/B throughput, gates, scope, and preserved dirt."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/prd.md", "reason": "Map icon AC1-AC7 and R1-R5 to archived proof."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/design.md", "reason": "Verify exact icon inventory, generation, shell handoff, and visual gate."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/implement.md", "reason": "Verify the completed visual evidence record and validation contract."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/task.json", "reason": "Confirm the icon child's final completed and passed state."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/check.jsonl", "reason": "Confirm the archived independent review inputs."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-generated-app-icon-integration/evidence/verification-2026-08-30.md", "reason": "Verify hashes, inventory, native evidence, builds, CI, and scope."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/prd.md", "reason": "Identify Clean's dependency on accepted bounded sizing and its own AC boundary."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/design.md", "reason": "Confirm Clean consumes rather than owns or reopens the sizing implementation."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/implement.md", "reason": "Confirm the explicit do-not-resume sizing disposition and downstream gates."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/task.json", "reason": "Confirm Clean's completed archive state and sizing dependency."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/evidence/independent-check-round.md", "reason": "Separate downstream Clean evidence from out-of-scope residual UI gaps."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/evidence/cargo-test-core-scan.log", "reason": "Verify downstream scan cancellation, incomplete evidence, and sizing integration tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/evidence/desktop-build.log", "reason": "Confirm the later Windows desktop build result."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/evidence/just-ci.log", "reason": "Confirm combined Clean-era CI and sizing regression coverage."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/evidence/independent-check-git-diff-check.log", "reason": "Confirm the later independent whitespace gate exit."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-clean-mode-workbench/evidence/independent-check-just-ci.log", "reason": "Confirm the later independent full CI and sizing tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/prd.md", "reason": "Identify the separate Analyze bounded-execution contract."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/design.md", "reason": "Verify Analyze's two-worker, memory, node, warning, progress, and cancel bounds."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/implement.md", "reason": "Confirm Analyze does not reopen sizing and defines independent resource gates."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/task.json", "reason": "Confirm Analyze's completed archived state and separate ownership."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/native-50k-run-meta.json", "reason": "Verify the native release resource-gate command and successful exit."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/native-50k-status.json", "reason": "Verify two workers, resource samples, and 3 ms p95 cancellation."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/just-ci.json", "reason": "Confirm the later Analyze-era full CI exit."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-core-analysis.log", "reason": "Verify focused bounded-analysis and serial-fallback tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-desktop-web-check.log", "reason": "Confirm the later desktop frontend gate commands completed."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/native-50k-run.log", "reason": "Verify the recorded five native samples, worker count, and cancellation latency."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-git-diff-check.log", "reason": "Confirm the later independent diff-check evidence."}

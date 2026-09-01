@@ -1,0 +1,11 @@
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\archive\2026-08\08-29-generated-app-icon-integration
+
+  [0;31mimplement.jsonl:2: File not found: .trellis/tasks/08-29-generated-app-icon-integration/design.md[0m
+  [0;31mimplement.jsonl:3: File not found: .trellis/tasks/08-29-generated-app-icon-integration/research/icon-generation.md[0m
+  [0;31mimplement.jsonl: ✗ (2 errors)[0m
+  [0;31mcheck.jsonl:2: File not found: .trellis/tasks/08-29-generated-app-icon-integration/design.md[0m
+  [0;31mcheck.jsonl:3: File not found: .trellis/tasks/08-29-generated-app-icon-integration/research/icon-generation.md[0m
+  [0;31mcheck.jsonl: ✗ (2 errors)[0m
+
+[0;31m✗ Validation failed (4 errors)[0m

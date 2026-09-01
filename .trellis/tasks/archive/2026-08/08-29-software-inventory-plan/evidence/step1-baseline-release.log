@@ -1,0 +1,6 @@
+COMMAND: just release-archive
+OUTPUT:
+    Finished `release` profile [optimized] target(s) in 0.44s
+release archive: dist\devsweep-x86_64-pc-windows-msvc.zip
+sha256: d2f8f80b0c77c5c3ca0b321eb7b31028ac9a3abcf9511f9537ede07d1c7649ad
+EXIT_CODE: 0

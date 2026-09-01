@@ -1,0 +1,15 @@
+{
+  "operation_id": "optimize-preview-storage",
+  "plan": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "settings.storage_recommendations"
+  },
+  "preview": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "settings.storage_recommendations",
+    "action_class": "settings_handoff",
+    "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

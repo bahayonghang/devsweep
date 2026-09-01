@@ -1,0 +1,8 @@
+Overall: **PASS**
+
+- AC1: **PASS**
+- AC2: **PASS**
+- AC3: **PASS**
+- R1–R4: **PASS**
+
+Acceptance report: `.trellis/tasks/08-29-analyze-mode/acceptance.md`

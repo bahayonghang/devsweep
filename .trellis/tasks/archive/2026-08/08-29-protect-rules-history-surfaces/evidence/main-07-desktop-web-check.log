@@ -1,0 +1,63 @@
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+npm notice run devsweep-desktop-ui@0.2.0 types:generate
+npm notice run node scripts/generate-types.mjs
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+generated src/api/types.gen.ts from 32 named fixture files
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ 鉁?src/modes/analyze/selectors.test.ts (2 tests) 4ms
+ 鉁?src/modes/analyze/treemap.test.ts (3 tests) 9ms
+ 鉁?src/modes/software/parity.test.ts (2 tests) 3ms
+ 鉁?src/modes/analyze/parity.test.ts (1 test) 3ms
+ 鉁?src/app-shell/operation-coordinator.test.ts (6 tests) 73ms
+ 鉁?src/lifecycle.test.ts (4 tests) 68ms
+ 鉁?src/i18n/index.test.ts (5 tests) 6ms
+ 鉁?src/state/app-state.test.ts (10 tests) 5ms
+ 鉁?src/components/TargetTable.test.tsx (1 test) 115ms
+ 鉁?src/modes/status/state.test.ts (3 tests) 3ms
+ 鉁?src/api/bridge.test.ts (4 tests) 6ms
+ 鉁?src/api/contract.test.ts (34 tests) 11ms
+ 鉁?src/pages/ScanPage.test.tsx (2 tests) 143ms
+ 鉁?src/modes/optimize/state.test.ts (4 tests) 3ms
+ 鉁?src/api/fixture-bridge.test.ts (3 tests) 5ms
+ 鉁?src/modes/status/StatusWorkbench.test.tsx (3 tests) 318ms
+ 鉁?src/modes/software/state.test.ts (4 tests) 3ms
+ 鉁?src/styles.test.ts (4 tests) 2ms
+ 鉁?src/modes/status/parity.test.ts (2 tests) 2ms
+ 鉁?src/modes/clean/reducer.test.ts (1 test) 2ms
+ 鉁?src/modes/analyze/state.test.ts (2 tests) 2ms
+ 鉁?src/modes/optimize/parity.test.ts (2 tests) 3ms
+ 鉁?src/support/SupportViews.test.tsx (6 tests) 485ms
+   鉁?support views > keeps protection add behind confirmation  407ms
+ 鉁?src/app-shell/AppShell.test.tsx (15 tests) 1007ms
+ 鉁?src/modes/software/SoftwareWorkbench.test.tsx (2 tests) 554ms
+   鉁?SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  481ms
+ 鉁?src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 627ms
+   鉁?OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  548ms
+ 鉁?src/api/types-generation.test.ts (2 tests) 2202ms
+   鉁?IPC type generation > is deterministic, committed, ASCII, and type-only  1137ms
+   鉁?IPC type generation > changes when a named fixture changes  1064ms
+ 鉁?src/modes/analyze/AnalyzePage.test.tsx (6 tests) 1635ms
+   鉁?AnalyzePage > restores the focused directory on its canonical 200-row parent page  696ms
+   鉁?AnalyzePage > covers empty/loading/canceling/canceled/partial/error/complete copy in 'en'  304ms
+ 鉁?src/App.test.tsx (34 tests) 4346ms
+   鉁?desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  491ms
+   鉁?desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  311ms
+ Test Files  29 passed (29)
+      Tests  170 passed (170)
+   Start at  18:44:17
+   Duration  7.77s (transform 3.46s, setup 6.32s, collect 13.17s, tests 11.64s, environment 27.59s, prepare 3.15s)
+vite v7.3.6 building client environment for production...
+transforming...
+鉁?111 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB 鈹?gzip:   0.26 kB
+... (4 lines truncated)
+[see remaining: tail -n +51 "$HOME/AppData/Local/rtk/tee/1788173068_just_desktop-web-check.log"]

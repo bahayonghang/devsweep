@@ -1,0 +1,21 @@
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/clean.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/commands/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/application/presentation/clean.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/tests/cli_contract.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/execution/audit.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/execution/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-core/src/services.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/scripts/generate-types.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/commands.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src-tauri/src/lib.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/fixtures/execution-report.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/main.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/guide/clean.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/zh/guide/clean.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/en.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it
+
+exit=0

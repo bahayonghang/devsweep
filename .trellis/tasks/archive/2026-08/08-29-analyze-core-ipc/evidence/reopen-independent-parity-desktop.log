@@ -1,0 +1,3 @@
+COMMAND: node --experimental-strip-types .trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-desktop-parity-fallback.mjs
+{"nodes":7,"root_bytes":8388616,"visible_bytes":8388616,"complete":5,"incomplete":2,"access_denied":1,"snapshot_sha256":"d14a6c33214dbb4a19527b6184411b68b02b90bec639fb9d8c94e08f7a3e1c36"}
+EXIT_CODE: 0

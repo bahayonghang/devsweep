@@ -1,0 +1,10 @@
+command: devsweep optimize plan --operation guidance.drive_optimize
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:10:37.3112849+08:00
+----- output -----
+invalid_optimize_selection: guidance entry guidance.drive_optimize is never dispatched
+
+file_exists=False
+-----
+exit=6
+finished: 2026-08-31T14:10:37.3683543+08:00

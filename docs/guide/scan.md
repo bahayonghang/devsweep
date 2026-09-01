@@ -54,3 +54,14 @@ ask DevSweep to inspect an arbitrary path.
 A partial lower bound is not an exact size. Diagnostics explain skipped,
 canceled, or incomplete work. Resolve uncertainty before deciding whether a
 target belongs in a cleanup execution.
+
+## Desktop live preview
+
+The desktop workbench shows an indeterminate phase progress bar and cumulative
+targets while a scan is running. These rows are incomplete, read-only
+observations grouped by project and global scope. They cannot be selected or
+sent to dry run. Only the completed scan report enables selection and cleanup
+review. If a scan is canceled or fails, the latest preview remains visible as
+partial evidence without becoming cleanup authority.
+After a stopped rescan, use **Return to previous report** to leave the read-only
+preview and restore the last completed report's default review selection.

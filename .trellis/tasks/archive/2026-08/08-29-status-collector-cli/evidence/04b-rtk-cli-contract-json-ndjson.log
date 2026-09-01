@@ -1,0 +1,7 @@
+COMMAND: rtk cargo test -p devsweep-cli --test cli_contract json_and_ndjson --offline
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T15:41:20.8672977+08:00
+cargo test: 1 passed, 11 filtered out (1 suite, 1.77s)
+
+EXIT: 0
+FINISHED: 2026-08-31T15:41:23.2203545+08:00

@@ -1,0 +1,6 @@
+{
+  "time": "2026-08-30T18:46:17.5603479+08:00",
+  "command": "pwsh -NoProfile -File debug-direct-cdp.ps1 -RepositoryRoot D:\\Documents\\Code\\Rust\\Exp\\devsweep -EvidenceRoot D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\final-direct-cdp -CdpPort 9341",
+  "exit": 1,
+  "output_path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\final-native-agent-browser-20260830\\final-direct-cdp\\command-output.txt"
+}

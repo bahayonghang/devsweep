@@ -1,0 +1,26 @@
+command: git diff --check
+exit_code: 0
+
+warning: in the working copy of '.trellis/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/events.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/input.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/jobs.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/app/worker.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/modes/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/jobs.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/render/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/runtime/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/runtime/workers.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'crates/devsweep-cli/src/tui/shell/mod.rs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.test.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/bridge.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/bridge.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/contract.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/contract.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/fixture-bridge.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'desktop/src/api/fixtures/analyze/complete.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/en.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it

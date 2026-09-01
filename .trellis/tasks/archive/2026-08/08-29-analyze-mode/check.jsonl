@@ -1,0 +1,98 @@
+{"file": ".trellis/tasks/08-29-analyze-mode/prd.md", "reason": "Audit recursive core/presentation evidence and the read-only authority boundary."}
+{"file": ".trellis/tasks/08-29-analyze-mode/design.md", "reason": "Verify schema ownership, fixture parity, dependency order, and atomic rollback."}
+{"file": ".agents/skills/trellis-check/SKILL.md", "reason": "Apply the dispatched Trellis reviewer contract without spawning another reviewer."}
+{"file": ".trellis/tasks/08-29-analyze-mode/acceptance-review-prompt.md", "reason": "Apply the verbatim parent acceptance scope, evidence requirements, and write boundary."}
+{"file": ".trellis/tasks/08-29-analyze-mode/implement.md", "reason": "Audit umbrella dependency, acceptance, evidence, rollback, and no-UNVERIFIED rules."}
+{"file": ".trellis/tasks/08-29-analyze-mode/task.json", "reason": "Confirm parent identity, child list, coordination-only scope, and current lifecycle state."}
+{"file": ".trellis/tasks/08-29-analyze-mode/check.jsonl", "reason": "Preserve the existing reading journal and append every acceptance-review source."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/prd.md", "reason": "Trace core R1-R4 and AC1-AC4 into archived tests, native evidence, and commit history."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/design.md", "reason": "Audit fixed budgets, native fixture contract, DTO, CLI, IPC, and rollback boundaries."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/implement.md", "reason": "Compare the implemented core and recorded gates with the approved sequence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/task.json", "reason": "Confirm completion metadata, parent linkage, dependency, and archived scope."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/check.jsonl", "reason": "Audit the core independent-review reading manifest."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/implement.jsonl", "reason": "Audit the core implementer context manifest and ownership boundaries."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/debug-tests.json", "reason": "Verify recorded focused core, CLI, desktop, public API, and whitespace gate exits."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/desktop-web-check.json", "reason": "Verify the core child desktop lint, typecheck, tests, and build result."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/just-ci.json", "reason": "Verify the core child canonical CI gate result."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/native-50k-run-meta.json", "reason": "Audit the native release command, exit codes, binary identity, and elapsed time."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/native-50k-status.json", "reason": "Audit native nodes, accounted bytes, private bytes, workers, and cancel p95."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/native-50k-run.log", "reason": "Verify the raw five-sample native resource and cancellation output."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-core-analysis.log", "reason": "Verify independent bounds, totals, warnings, cancellation, and no-cleanup tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-cli-analyze.log", "reason": "Verify locale-invariant CLI JSON and bilingual owned-renderer tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-desktop-analyze.log", "reason": "Verify IPC correlation, stale-sequence rejection, cancel/join, and data-only serialization."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-desktop-web-check.log", "reason": "Verify the independent desktop web gate command sequence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-git-diff-check.log", "reason": "Verify the core whitespace gate and distinguish line-ending warnings."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-task-validate.log", "reason": "Verify the archived core task validation exit."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/prd.md", "reason": "Trace presentation R1-R5 and AC1-AC4 into final independent and native evidence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/design.md", "reason": "Audit frozen render caps, paging, immutable DTO consumption, and lifecycle."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/implement.md", "reason": "Compare pure views, IPC/accessibility wiring, and fixed native gates with evidence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/task.json", "reason": "Confirm presentation completion metadata, dependency, parent, and scope."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/check.jsonl", "reason": "Audit the presentation review manifest and code/evidence coverage."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/implement.jsonl", "reason": "Audit the presentation implementer manifest, repair rounds, and evidence provenance."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/gate-summary.json", "reason": "Distinguish the stale implementation-phase pending summary from final evidence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/render-budget-250k.json", "reason": "Audit the pure layout fixture, raw samples, nearest-rank p95, and rectangle cap."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/render-budget-browser.json", "reason": "Audit the initial production-browser raw commit samples, DOM count, and host."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/render-budget-browser-post-fix.json", "reason": "Audit the current post-fix browser p95, rectangle cap, and DOM cap."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md", "reason": "Audit final native widths, locales, DPI, AX tree, focus, cancellation, and permission limitations."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/native-20260831-round3/capture-log.jsonl", "reason": "Verify the raw native permission probe and final locale/lifecycle event claims."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-report.md", "reason": "Audit all five review rounds and the final AC1-AC4 PASS evidence adjudication."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-cargo-test-tui-analyze.log", "reason": "Verify the eight focused TUI hierarchy, bilingual, bounds, stale-event, and lifecycle tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-cargo-test-core-analysis.log", "reason": "Verify the final presentation review reran the eleven core Analyze tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-catalogue-verify.log", "reason": "Verify 39 matching Analyze keys and schemas in both catalogues."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-render-budget-verify.log", "reason": "Verify independent nearest-rank p95 recomputation and frozen caps."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-supplemental-gates.log", "reason": "Verify format, lint, typecheck, and canonical Rust CI exits."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/desktop-web-check-final.log", "reason": "Verify the genuine final 18-file 121-test web gate and production Vite build."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-desktop-build.log", "reason": "Record the independent sandbox EPERM separately from product gate status."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/desktop-build-post-check-fix.log", "reason": "Verify the successful post-fix Tauri release and NSIS build."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/just-ci-final.log", "reason": "Verify final workspace tests and clippy completion."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/independent-check-git-diff-check.log", "reason": "Verify the presentation whitespace gate."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/artifact-validation.log", "reason": "Verify manifest, benchmark artifact, and deterministic sort validation."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-tui-desktop-treemap/evidence/check-dispatch-round5-last-message.txt", "reason": "Verify the final locale repair, native audit, and AC1-AC4 PASS summary."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit the presentation commit's out-of-plan spec sync and evidence protocol addition."}
+{"file": "crates/devsweep-core/Cargo.toml", "reason": "Verify the core commit only adds the existing Windows process-memory feature, not a new dependency."}
+{"file": "crates/devsweep-core/src/analysis/model.rs", "reason": "Audit frozen V1 fields, exact caps, lower-bound completeness, and absence of cleanup authority."}
+{"file": "crates/devsweep-core/src/analysis/walker.rs", "reason": "Audit two-worker traversal, no-follow behavior, cancellation, bounds, and native fixture implementation."}
+{"file": "crates/devsweep-core/src/analysis/tests.rs", "reason": "Trace all core fixture clauses and identify absent sparse/native live-churn coverage."}
+{"file": "crates/devsweep-cli/src/application/cli.rs", "reason": "Confirm the frozen Analyze grammar is unchanged by the product commits."}
+{"file": "crates/devsweep-cli/src/application/commands/mod.rs", "reason": "Audit the narrow Analyze dispatch registration deviation."}
+{"file": "crates/devsweep-cli/src/application/commands/analyze.rs", "reason": "Audit synchronous CLI DTO serialization, locale invariance, and no-cleanup assertions."}
+{"file": "crates/devsweep-cli/src/application/presentation/mod.rs", "reason": "Audit the narrow Analyze renderer visibility deviation."}
+{"file": "crates/devsweep-cli/src/application/presentation/analyze.rs", "reason": "Audit bilingual human rendering and data-only output."}
+{"file": "desktop/src-tauri/src/analyze.rs", "reason": "Audit typed IPC, operation/sequence scoping, cancel/join, and data-only terminal results."}
+{"file": "crates/devsweep-cli/src/tui/app/jobs.rs", "reason": "Audit mode-leave cancellation and post-terminal state release."}
+{"file": "crates/devsweep-cli/src/tui/app/worker.rs", "reason": "Audit Analyze terminal events and stale/canceled job handling."}
+{"file": "crates/devsweep-cli/src/tui/modes/analyze/mod.rs", "reason": "Audit immutable DTO projection, 200-row paging, evidence bars, hierarchy, and lifecycle tests."}
+{"file": "crates/devsweep-cli/src/tui/render/analyze.rs", "reason": "Audit bilingual bounded hierarchy rendering and warning presentation."}
+{"file": "crates/devsweep-cli/src/tui/shell/mod.rs", "reason": "Confirm the frozen five-mode identity remains intact and shell changes are registration only."}
+{"file": "desktop/src/state/operation-coordinator.ts", "reason": "Audit single-flight cancellation and mandatory join before route transition."}
+{"file": "desktop/src/app-shell/AppShell.tsx", "reason": "Verify shared desktop navigation awaits cancelAndJoin without authority changes."}
+{"file": "desktop/src/api/contract.ts", "reason": "Audit strict Analyze V1 decoding separately from unrelated cleanup decoders."}
+{"file": "desktop/src/api/bridge.ts", "reason": "Trace operation-scoped Analyze IPC decoding into desktop state."}
+{"file": "desktop/src/api/fixture-bridge.ts", "reason": "Audit fixture-mode Analyze lifecycle and cancellation behavior."}
+{"file": "desktop/src/api/fixtures/analyze/snapshot.json", "reason": "Inspect the desktop V1 fixture used by decoder and presentation tests."}
+{"file": "desktop/src/api/fixtures/analyze/complete.json", "reason": "Inspect the desktop terminal fixture and compare its snapshot with other surface fixtures."}
+{"file": "desktop/src/modes/analyze/state.ts", "reason": "Audit immutable snapshot ownership, evidence status, operation ids, sequences, and release."}
+{"file": "desktop/src/modes/analyze/selectors.ts", "reason": "Audit canonical 200-row paging, sorting, unknown handling, and bounded treemap inputs."}
+{"file": "desktop/src/modes/analyze/treemap.ts", "reason": "Audit deterministic 512-plus-Other layout and no invented unknown capacity."}
+{"file": "desktop/src/modes/analyze/AnalyzePage.tsx", "reason": "Audit accessible list/treemap, bilingual totals, focus, and no cleanup affordance."}
+{"file": "desktop/src/modes/analyze/AnalyzePage.test.tsx", "reason": "Audit state, keyboard, focus, CSS, bilingual, and no-cleanup regression coverage."}
+{"file": "desktop/src/modes/analyze/state.test.ts", "reason": "Audit stale-event and page-aware anchor restoration tests."}
+{"file": "desktop/src/modes/analyze/selectors.test.ts", "reason": "Audit pagination, Other aggregation, search/sort, and immutable ordering tests."}
+{"file": "desktop/src/modes/analyze/treemap.test.ts", "reason": "Audit deterministic area, rounding, tiny, unknown, and rectangle-cap tests."}
+{"file": "desktop/src/modes/analyze/styles.css", "reason": "Audit contrast, focus-visible, reduced-motion, and forced-colors contracts."}
+{"file": "desktop/src/modes/analyze/render-benchmark.tsx", "reason": "Audit the equivalent-wide-directory fixture and production component measurement path."}
+{"file": ".trellis/tasks/08-29-analyze-mode/acceptance-review2-prompt.md", "reason": "Apply the verbatim round-2 reopen scope, evidence clauses, ancestry requirement, and write boundary."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-summary.json", "reason": "Audit the repaired gap summary, canonical parity counts, fixture hash, and recorded validation outcomes."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/independent-check-report.md", "reason": "Re-adjudicate all four reopen gaps from the independent PASS report and its evidence notes."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-core-analysis.log", "reason": "Verify fake and native sparse, denied classification, native churn, bounds, reconciliation, and no-cleanup tests passed."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-core-analysis-release.log", "reason": "Verify the release native 50k gate, real denied branch, worker cap, resource values, and cancellation p95."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-native-churn-repeat.log", "reason": "Verify three repeated native deletion, growth, ACL-denied, and lower-bound reconciliation passes."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-native-evidence-audit.log", "reason": "Audit consistency between the refreshed release log, status artifact, run metadata, and denied-branch assertion."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-parity-cli.log", "reason": "Verify the real CLI generated the canonical seven-node parity fixture and emitted incomplete zero-byte denied evidence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-cli-analyze.log", "reason": "Verify the TUI reducer consumes the shared CLI fixture and the locale-invariant Analyze suite passes."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-desktop-test-main-session.log", "reason": "Verify the full desktop Vitest run passed the shared parity test among 19 files and 122 tests."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-parity-audit.log", "reason": "Verify generator structure, checked-in fixture identity, snapshot hash, and recorded Vitest parity result."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-parity-desktop.log", "reason": "Verify the no-spawn run through the production desktop decoder and selectors matches canonical totals and evidence."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-core-ipc/evidence/reopen-independent-scope-audit.log", "reason": "Verify frozen caps and absence of forbidden contract, dependency, or cleanup-authority changes."}
+{"file": "desktop/src/api/fixtures/analyze/cli-parity.json", "reason": "Inspect the one CLI-generated V1 snapshot shared by CLI, TUI reducer, and desktop parity gates."}
+{"file": "desktop/src/modes/analyze/parity.test.ts", "reason": "Audit the real decoder and selector assertions for canonical totals, sparse bytes, and denied evidence."}

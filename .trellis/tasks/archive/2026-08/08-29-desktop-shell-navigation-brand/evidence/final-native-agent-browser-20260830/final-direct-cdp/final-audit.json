@@ -1,0 +1,53 @@
+{
+  "time": "2026-08-30T18:49:32.1692110+08:00",
+  "git_diff_check_exit": 0,
+  "git_diff_check_output": "",
+  "release_hash": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "debug_hash": "5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9",
+  "ports": [],
+  "devsweep_webview_agent_browser": [],
+  "task_vite_node": [],
+  "localappdata_files": [],
+  "evidence_files": [
+    {
+      "relative": "cdp-messages.jsonl",
+      "length": 8121,
+      "sha256": "E669ED6E86D00DF4DFDE89C4BCAA8C2683F4947D4A155FE46680673F1008E150"
+    },
+    {
+      "relative": "command-output.txt",
+      "length": 78,
+      "sha256": "F0E0EA44F2B86828E3781F63CFAF3200B0A201CEC43A8F2565BF3623A4C7050B"
+    },
+    {
+      "relative": "command-result.json",
+      "length": 575,
+      "sha256": "36A573A6B268F5541FA4984F6DF6E84437A703715B53D341FB507A3539E20E16"
+    },
+    {
+      "relative": "debug-direct-cdp.ps1",
+      "length": 21125,
+      "sha256": "D9842D4D006692E73FA707F5EC0DA54B41D0B529DCB41537E38218BE2EAEF307"
+    },
+    {
+      "relative": "final-residue.json",
+      "length": 257,
+      "sha256": "987418D3C2004895A6642C995519F09C0137F2DFD4F9F421CEF982F182462E2E"
+    },
+    {
+      "relative": "verification.json",
+      "length": 13247,
+      "sha256": "E5A509A7ECA040F41D8AD0A82A28E2C19EDF31454129B2A816E2A8D062A7F5D0"
+    },
+    {
+      "relative": "verification.md",
+      "length": 4263,
+      "sha256": "D2B364A7E210CFB0BD436AAA604D64C7A13729910044D72F80D01FE888AB23E1"
+    },
+    {
+      "relative": "vite-transcript.txt",
+      "length": 2106,
+      "sha256": "E6059326A8B9541A0485D80151B9F785424CA97B924DBF55DAEFE823F86FFC5F"
+    }
+  ]
+}

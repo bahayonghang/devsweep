@@ -1,0 +1,26 @@
+{"event":"exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"f977af3d7f16a0643b3bd9cf78a3c1d1e74c8f93ba2081b3aa76e0f197762b47"}
+{"event":"acl_deny_set"}
+{"event":"app_launched","pid":41744,"cdpPort":9348}
+{"event":"analyze_start_clicked","rootPath":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831-postfix\\fixture"}
+{"event":"complete_state","complete":{"hasWorkspace":true,"summary":"Analysis complete. 3126 nodes; 194.6 KiB.Root: d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desk"}}
+{"event":"screenshot","name":"postfix-01-analyze-complete-en-1440"}
+{"event":"keyboard_drill_postfix","kb":{"ok":true,"label":"big — 187.5 KiB — Available","before":"big — 187.5 KiB — Available"},"kbAfter":{"active":"Accessible directory list","activeClass":"analyze-listbox","crumbs":2}}
+{"event":"screenshot","name":"postfix-02-analyze-keyboard-drill-en"}
+{"event":"screenshot","name":"postfix-03-analyze-complete-en-dpi-100"}
+{"event":"screenshot","name":"postfix-03-analyze-complete-en-dpi-125"}
+{"event":"screenshot","name":"postfix-03-analyze-complete-en-dpi-150"}
+{"event":"screenshot","name":"postfix-03-analyze-complete-en-dpi-200"}
+{"event":"list_probe_postfix","listProbe":{"options":["Accessible directory list","small — Directory — 7.1 KiB — Available","locked — Unsupported reparse point — 0 B — Available — Unsupported or unfollowed entry"]}}
+{"event":"screenshot","name":"postfix-04-analyze-src-warnings-en"}
+{"event":"screenshot","name":"postfix-05-analyze-reduced-motion-en"}
+{"event":"screenshot","name":"postfix-06-analyze-forced-colors-en"}
+{"event":"store_audit","exists":true,"content":"{\"schema_version\":1,\"language\":\"zh-CN\"}"}
+{"event":"analyze_start_clicked","rootPath":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-analyze-tui-desktop-treemap\\evidence\\native-20260831-postfix\\fixture"}
+{"event":"complete_state_zh","completeZh":{"hasWorkspace":true,"summary":"分析完成。3126 个节点；194.6 KiB。根目录：d:/documents/code/rust/exp/devsweep/.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidenc"}}
+{"event":"screenshot","name":"postfix-07-analyze-complete-zh-1440"}
+{"event":"analyze_start_clicked","rootPath":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target"}
+{"event":"canceling_state","canceling":{"status":"正在分析… 已表示 0 个节点。","cancelVisible":true}}
+{"event":"screenshot","name":"postfix-08-analyze-canceling-en"}
+{"event":"return_after_cancel","returnState":{"empty":true}}
+{"event":"screenshot","name":"postfix-09-analyze-after-cancel-return"}
+{"event":"done"}

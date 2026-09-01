@@ -1,0 +1,19 @@
+{
+  "time": "2026-08-30T17:48:57.9259082+08:00",
+  "close_command_note": "Previous evidence command invoked CloseMainWindow, waited until PID 34712 disappeared, then failed only while reading the exited Process.Path; this read-only follow-up records resulting state.",
+  "main_pid": 34712,
+  "release": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "release_sha256": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "agent_browser_session": "devsweep-shell-restart-1d2fcac28664",
+  "agent_browser_close_exit": 0,
+  "agent_browser_close_output": "✓ Browser closed",
+  "agent_browser_info_exit": 0,
+  "agent_browser_info": "Session: devsweep-shell-restart-1d2fcac28664\nSocket dir: C:\\Users\\lyh\\.agent-browser\nDaemon: not running",
+  "devsweep_main_residue": [],
+  "devsweep_webview_residue": [],
+  "cdp_9337_residue": [],
+  "store_length": 39,
+  "store_sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899",
+  "store_utf8": "{\"schema_version\":1,\"language\":\"zh-CN\"}",
+  "lock_temp_residue": []
+}

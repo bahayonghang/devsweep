@@ -1,0 +1,6 @@
+command: repair artifact validation
+implement_jsonl_lines: 42
+localeCompare_hits: 0
+browser_harness_files_present: True
+passed: True
+exit_code: 0

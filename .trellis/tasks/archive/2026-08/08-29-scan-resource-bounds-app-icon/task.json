@@ -1,0 +1,29 @@
+{
+  "id": "scan-resource-bounds-app-icon",
+  "name": "scan-resource-bounds-app-icon",
+  "title": "Bound scan concurrency and add app icon",
+  "description": "Plan and implement a shared bounded filesystem-sizing pool with measured throughput protection, then promote a generated DevSweep icon into stable product and Tauri native assets for shell handoff.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "devsweep-core filesystem sizing concurrency and tests; release timing evidence; generated desktop icon master; Tauri native icon outputs; shell handoff; packaging and native icon verification",
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-08-31",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-29-bound-sizing-concurrency",
+    "08-29-generated-app-icon-integration"
+  ],
+  "parent": "08-29-mole-inspired-cli-windows-desktop-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

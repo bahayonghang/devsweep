@@ -1,0 +1,25 @@
+{
+  "command": "audit reopen-core-analysis-release.log against native-50k-status.json and native-50k-run-meta.json",
+  "checks": {
+    "fixture": true,
+    "workers": true,
+    "nodes": true,
+    "accounted_bytes": true,
+    "warnings": true,
+    "private_bytes_samples": true,
+    "wall_ms_samples": true,
+    "cancel_to_join_ms": true,
+    "p95": true,
+    "denied_branch": true,
+    "recorded_binary_hash_fields_agree": true
+  },
+  "nodes": 51007,
+  "warnings": 2,
+  "accounted_bytes": 9095340,
+  "p95_cancel_to_join_ms": 3,
+  "recorded_binary_sha256": "379f95912d64c07e4e10f19d813806bc5d3ce8f86ae9dce471f3c4b0f332e1ca",
+  "current_binary_sha256_after_independent_rebuild": "b610f3389885b992c7e5ed3f91c5bbc860f7968680a8f33d380f320997eac91f",
+  "current_path_matches_recorded_hash": false,
+  "note": "the independent release rerun overwrote the target-path binary; log/status assertions remain internally consistent",
+  "exit_code": 0
+}

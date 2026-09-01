@@ -1,0 +1,25 @@
+{
+  "command": "just release-archive",
+  "exit_code": 0,
+  "baseline": {
+    "binary_size_bytes": 3487232,
+    "binary_sha256": "4ac8b7a95deca838b42798672b684d5b6a2a6b0553944da4f4be218d465fde41",
+    "zip_size_bytes": 1391501,
+    "zip_sha256": "d2f8f80b0c77c5c3ca0b321eb7b31028ac9a3abcf9511f9537ede07d1c7649ad"
+  },
+  "after_selected_binding_and_mta_probe": {
+    "binary_size_bytes": 3487232,
+    "binary_sha256": "721d00fb34703befcc591ccf84842f287139e8ac214240e3718ecbe944239d90",
+    "zip_size_bytes": 1392738,
+    "zip_sha256": "64ded92da03645b8f62347a570d091581e80c52abe410ae2fd9663aa10c7f5bc"
+  },
+  "delta": {
+    "binary_bytes": 0,
+    "zip_bytes": 1237
+  },
+  "stop_threshold": {
+    "binary_bytes": 5242880,
+    "zip_bytes": 2097152
+  },
+  "result": "passed"
+}

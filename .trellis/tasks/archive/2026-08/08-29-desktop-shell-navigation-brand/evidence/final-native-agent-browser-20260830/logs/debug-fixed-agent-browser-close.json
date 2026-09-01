@@ -1,0 +1,9 @@
+{
+  "time": "2026-08-30T18:08:57.7218613+08:00",
+  "old_session": "devsweep-shell-debug-1d2fcac28664",
+  "old_exit": 0,
+  "old_output": "✓ Browser closed",
+  "new_session": "devsweep-shell-debug-cdp-1d2fcac28664",
+  "new_exit": 0,
+  "new_output": "✓ Browser closed"
+}

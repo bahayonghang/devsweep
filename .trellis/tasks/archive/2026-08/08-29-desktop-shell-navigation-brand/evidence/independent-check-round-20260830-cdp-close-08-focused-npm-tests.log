@@ -1,0 +1,26 @@
+requested: rtk npm test -- src/i18n/index.test.ts src/app-shell/operation-coordinator.test.ts src/app-shell/AppShell.test.tsx src/App.test.tsx src/styles.test.ts src/lifecycle.test.ts
+executed: C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\npm.cmd test -- src/i18n/index.test.ts src/app-shell/operation-coordinator.test.ts src/app-shell/AppShell.test.tsx src/App.test.tsx src/styles.test.ts src/lifecycle.test.ts
+cwd: D:\Documents\Code\Rust\Exp\devsweep\desktop
+node: mise node@22.23.2
+exit: 0
+elapsed_s: 7.911
+
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/styles.test.ts (4 tests) 3ms
+ ✓ src/i18n/index.test.ts (5 tests) 7ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 63ms
+ ✓ src/lifecycle.test.ts (4 tests) 64ms
+ ✓ src/app-shell/AppShell.test.tsx (15 tests) 1007ms
+ ✓ src/App.test.tsx (33 tests) 4237ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  470ms
+   ✓ desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  305ms
+
+ Test Files  6 passed (6)
+      Tests  67 passed (67)
+   Start at  21:53:37
+   Duration  6.83s (transform 410ms, setup 1.70s, collect 1.10s, tests 5.38s, environment 6.57s, prepare 516ms)
+
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run src/i18n/index.test.ts src/app-shell/operation-coordinator.test.ts src/app-shell/AppShell.test.tsx src/App.test.tsx src/styles.test.ts src/lifecycle.test.ts

@@ -1,0 +1,8 @@
+command: rtk cargo fmt --all -- --check
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:26:56.7968314+08:00
+----- output -----
+
+-----
+exit=0
+finished: 2026-08-31T14:26:57.4756649+08:00

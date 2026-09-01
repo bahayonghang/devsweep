@@ -1,0 +1,64 @@
+REPAIR ROUND 1 COMPLETE — no commit or push performed.
+
+Implemented:
+
+- Replaced ICU `localeCompare` calls in Analyze layout/selectors with deterministic UTF-16 code-unit ordering.
+- Reworked omitted-node aggregation into a linear pass, preserving exact `Other` bytes/count.
+- Memoized sorted immutable directory children by array identity and sort key. Paging and search no longer repeat the 10,000-child sort.
+- Added a production Vite benchmark harness mounting the real `AnalyzePage` with a 250,000-node fixture and 10,000-child directory.
+- Preserved all frozen limits, DTOs, CLI/`ModeId` contracts, protected files, and unrelated task directories.
+
+Render budget:
+
+- Pure-layout p95: `1.9588999999999999 ms` versus `50 ms`.
+- Method: five warm-ups, 30 measurements, nearest-rank 29.
+- Rectangles: `513` versus maximum `513`.
+- Fixture hash unchanged: `sha256:42685e0971165c2b59362cb44f251d4699e282bc647fd2f407d85559830ef37f`.
+- Independent recomputation passed.
+- Initial rerun failed with `ERR_MODULE_NOT_FOUND` because Node strip-types would not resolve an extensionless helper import. Keeping the comparator locally in each hot-path module resolved it; subsequent runs passed.
+
+Browser harness reproduction:
+
+```powershell
+npm --prefix desktop run benchmark:analyze:build
+npm --prefix desktop run benchmark:analyze:preview
+```
+
+Open `http://127.0.0.1:4181/analyze-render-benchmark.html`.
+
+The resulting JSON is displayed in `#benchmark-output`, emitted as `DEVSWEEP_ANALYZE_BENCHMARK {...}`, and available through:
+
+```javascript
+await window.__DEVSWEEP_ANALYZE_BENCHMARK_PROMISE__
+```
+
+It performs five warm-ups and 30 measured real SVG drill-ins. Timing begins immediately before event dispatch and ends in `AnalyzePage`’s post-commit `useLayoutEffect`, covering React event processing, selector/layout work, and DOM commit. DOM elements and rectangles are counted after each commit.
+
+Validation:
+
+- `npm --prefix desktop run typecheck`: PASS, exit 0.
+- `npm --prefix desktop run lint`: PASS, exit 0.
+- `cargo test -p devsweep-cli tui::modes::analyze`: PASS, 7 tests.
+- `cargo test -p devsweep-cli --lib`: PASS, 125 tests.
+- `git diff --check`: PASS, exit 0; only pre-existing line-ending warnings.
+- `just ci`: PASS, exit 0.
+- JSON/JSONL and harness artifact validation: PASS.
+- No `localeCompare` remains under `desktop/src/modes/analyze`.
+
+Files changed:
+
+- `desktop/src/modes/analyze/treemap.ts`
+- `desktop/src/modes/analyze/selectors.ts`
+- `desktop/src/modes/analyze/selectors.test.ts`
+- `desktop/src/modes/analyze/render-benchmark.tsx`
+- `desktop/analyze-render-benchmark.html`
+- `desktop/vite.benchmark.config.ts`
+- `desktop/package.json`
+- Task `implement.jsonl` and evidence files/logs.
+
+Remaining evidence:
+
+- React commit p95 and DOM count remain `UNVERIFIED` until the main session executes the release-build browser harness.
+- Fresh `just desktop-web-check` and `just desktop-build` runs are required after this repair. Existing main-session logs passed before the repair.
+- WebView/native screenshots and the visual/scaling/accessibility matrix remain `UNVERIFIED`.
+- Browser evidence fields remain `null`; no values were fabricated.

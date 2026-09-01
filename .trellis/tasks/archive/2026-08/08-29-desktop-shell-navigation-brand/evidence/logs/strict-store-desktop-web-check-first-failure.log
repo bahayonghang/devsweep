@@ -1,0 +1,55 @@
+generated src/api/types.gen.ts from 7 named fixture files
+
+D:\Documents\Code\Rust\Exp\devsweep\desktop\src\App.tsx
+  183:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Documents\Code\Rust\Exp\devsweep\desktop\src\App.tsx:183:5
+  181 |     const generation = ++presentationGeneration.current;
+  182 |     saveInFlight.current = false;
+> 183 |     setPresentation({ status: "loading" });
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  184 |     void presentationSettings.load().then((settings) => {
+  185 |       if (generation !== presentationGeneration.current) return;
+  186 |       setPresentation({  react-hooks/set-state-in-effect
+
+✖ 1 problem (1 error, 0 warnings)
+
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/styles.test.ts (4 tests) 2ms
+ ✓ src/app-shell/operation-coordinator.test.ts (5 tests) 6ms
+ ✓ src/api/contract.test.ts (14 tests) 7ms
+ ✓ src/i18n/index.test.ts (4 tests) 4ms
+ ✓ src/state/app-state.test.ts (10 tests) 5ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 6ms
+ ✓ src/api/bridge.test.ts (3 tests) 6ms
+ ✓ src/pages/ScanPage.test.tsx (1 test) 145ms
+ ✓ src/app-shell/AppShell.test.tsx (8 tests) 590ms
+ ✓ src/api/types-generation.test.ts (2 tests) 1510ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  815ms
+   ✓ IPC type generation > changes when a named fixture changes  695ms
+ ✓ src/App.test.tsx (18 tests) 2842ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  467ms
+
+ Test Files  11 passed (11)
+      Tests  72 passed (72)
+   Start at  11:35:37
+   Duration  5.12s (transform 569ms, setup 1.62s, collect 1.94s, tests 5.12s, environment 6.93s, prepare 875ms)
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 50 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB │ gzip:  0.26 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/index-CNBoQlOx.css                  13.77 kB │ gzip:  3.78 kB
+dist/assets/index-675NPDD6.js                  249.25 kB │ gzip: 76.18 kB
+✓ built in 535ms

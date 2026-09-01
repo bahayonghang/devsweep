@@ -1,0 +1,15 @@
+{
+  "english_chinese": "PASS",
+  "keyboard_ax": "PASS",
+  "reduced_motion_high_contrast": "PASS",
+  "widths_390_800_1024_1440": "PASS",
+  "device_scale_100_125_150_200": "PASS",
+  "cancellation_navigation_exit": "PASS",
+  "app_restart": "PASS",
+  "taskbar_window_icon": "PASS",
+  "capability_unsupported": "PASS",
+  "sleep_resume": "UNVERIFIED",
+  "software_inventory": "PASS",
+  "software_uninstall": "UNVERIFIED",
+  "clean_recycle_fixture": "PASS"
+}

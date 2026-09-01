@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Consume the shell-owned post-update five-mode desktop spec; this mode must not edit it independently."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Implement equivalent TUI Software navigation and confirmation behavior."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/design.md", "reason": "Render exact tagged identity, evidence, eligibility, and preview contracts."}
+{"file": ".trellis/tasks/08-29-software-execution-audit/design.md", "reason": "Present dispatch and post-state outcomes without inventing cancellation certainty."}
+{"file": ".trellis/tasks/08-29-software-cli-tui-desktop-native/design.md", "reason": "Implement dense Software workbench and two-step confirmation."}
+{"file": "desktop/src/App.test.tsx", "reason": "Repair the stale availability assertion: Software is registered and renders its workbench; Optimize and Status remain absent."}

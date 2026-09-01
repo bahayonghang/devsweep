@@ -1,0 +1,38 @@
+command: devsweep optimize plan/preview/run settings.search
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:10:44.6343147+08:00
+----- output -----
+-- before --
+PID=72144 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:10:36 PM HWND=103944568 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+
+consent before=none
+== plan exit=0 ==
+
+== preview en exit=0 ==
+Optimize preview: settings.search | Opens Windows Settings. Digest: sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479
+== stale digest exit=3 ==
+invalid_optimize_authority: optimize preview digest mismatch
+
+== confirmed run en exit=0 ==
+Optimize run finished: 0 succeeded; 1 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.search | Launched (Settings page opened) | Operation optimize-op-000001a05670f84c-00014a64-0000000000000000
+
+-- after --
+PID=72144 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe StartTime=8/31/2026 2:10:36 PM HWND=0 CommandLine="C:\Windows\ImmersiveControlPanel\SystemSettings.exe" -ServerName:microsoft.windows.immersivecontrolpanel
+
+candidate PID=72144 Path=C:\Windows\ImmersiveControlPanel\SystemSettings.exe HWND=0 identity_ok=True
+HWND=91427846 visible=False title=
+HWND=57807254 visible=False title=MSCTFIME UI
+HWND=146083982 visible=False title=Default IME
+HWND=10028826 visible=False title=Default IME
+CloseMainWindow PID=72144 returned=False HWND=0
+closed gracefully PID=72144
+consent after=none
+NOTE: launched is not maintenance completion.
+
+-----
+exit=0
+finished: 2026-08-31T14:10:44.6343147+08:00

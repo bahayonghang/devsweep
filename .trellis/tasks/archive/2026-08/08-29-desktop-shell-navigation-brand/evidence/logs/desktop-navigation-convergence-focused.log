@@ -1,0 +1,8 @@
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/app-shell/AppShell.test.tsx (8 tests) 524ms
+ ✓ src/App.test.tsx (12 tests) 2013ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  442ms
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  10:44:26
+   Duration  3.88s (transform 172ms, setup 256ms, collect 376ms, tests 2.54s, environment 1.00s, prepare 135ms)

@@ -6,7 +6,7 @@
 
 ## Overview
 
-Interactive TUI state lives in `src/tui/app/mod.rs::App`. Use this single
+Interactive TUI state lives in `crates/devsweep-cli/src/tui/app/mod.rs::App`. Use this single
 explicit app state instead of global mutable state, per-view stores, or
 widget-owned side effects. Cohesive child modules may implement transitions,
 but `App::update(UiEvent) -> Vec<Effect>` remains the root reducer.
@@ -16,7 +16,7 @@ but `App::update(UiEvent) -> Vec<Effect>` remains the root reducer.
 ## State Categories
 
 - Domain state: `CleanupPlan`, `CleanTarget`, risk, evidence, and actions from
-  `src/model/`.
+  `devsweep_core::model`.
 - View state: selected row, active tab, filter text, modal state, and help
   visibility. These live in `App`.
 - Worker state: scan/execution jobs, progress, cancellation, and logs. These
@@ -58,6 +58,13 @@ digest. Selection or scan changes must not reconstruct or silently update that
 manifest. Current scan updates invalidate the confirmation, stale worker events
 are rejected by job identity/state, and inventory observations never enter the
 cleanup target selection.
+
+While a scan job is active, cumulative `ScanProgress` targets are read-only
+preview state. Clear cleanup selection at scan start and block selection,
+select-all, group selection, dry-run, and cleanup confirmation until the matching
+`ScanFinished` event replaces the preview and projects final defaults. A canceled
+or failed scan never promotes its staged targets; the unpromoted snapshot remains
+read-only until a later successful scan replaces it.
 
 ---
 

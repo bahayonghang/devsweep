@@ -1,0 +1,55 @@
+command: devsweep optimize plan hostile/guidance ids
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:01:27.8555425+08:00
+----- output -----
+
+
+== guidance.drive_optimize -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\guidance.drive_optimize.json ==
+invalid_optimize_selection: guidance entry guidance.drive_optimize is never dispatched
+exit=6 exists=False
+
+== guidance.system_integrity -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\guidance.system_integrity.json ==
+invalid_optimize_selection: guidance entry guidance.system_integrity is never dispatched
+exit=6 exists=False
+
+== guidance.filesystem_check -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\guidance.filesystem_check.json ==
+invalid_optimize_selection: guidance entry guidance.filesystem_check is never dispatched
+exit=6 exists=False
+
+== guidance.network_reset -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\guidance.network_reset.json ==
+invalid_optimize_selection: guidance entry guidance.network_reset is never dispatched
+exit=6 exists=False
+
+== security.defender -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\security.defender.json ==
+invalid_optimize_selection: unknown optimize operation security.defender
+exit=6 exists=False
+
+== windows.update.reset -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\windows.update.reset.json ==
+invalid_optimize_selection: unknown optimize operation windows.update.reset
+exit=6 exists=False
+
+== registry.tweak -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\registry.tweak.json ==
+invalid_optimize_selection: unknown optimize operation registry.tweak
+exit=6 exists=False
+
+== storage_sense.configure -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\storage_sense.configure.json ==
+invalid_optimize_selection: unknown optimize operation storage_sense.configure
+exit=6 exists=False
+
+== cmd.exe /c calc -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\cmd.exe__c_calc.json ==
+invalid_optimize_selection: unknown optimize operation cmd.exe /c calc
+exit=6 exists=False
+
+== ipconfig -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\ipconfig.json ==
+invalid_optimize_selection: unknown optimize operation ipconfig
+exit=6 exists=False
+
+== DNS.FLUSH -> D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-catalog-execution\evidence\native\fixtures\rejected-turn\DNS.FLUSH.json ==
+invalid_optimize_selection: unknown optimize operation DNS.FLUSH
+exit=6 exists=False
+
+rejected files written: 0
+
+-----
+exit=0
+finished: 2026-08-31T13:01:28.5249362+08:00

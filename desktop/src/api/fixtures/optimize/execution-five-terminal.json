@@ -1,0 +1,41 @@
+{
+  "operation_id": "optimize-run-terminals",
+  "report": {
+    "version": 1,
+    "catalogue_version": 1,
+    "outcomes": [
+      {
+        "operation_id": "optimize-op-canceled",
+        "catalogue_id": "dns.flush",
+        "action_class": "execute",
+        "outcome": "canceled_before_start"
+      },
+      {
+        "operation_id": "optimize-op-succeeded",
+        "catalogue_id": "dns.flush",
+        "action_class": "execute",
+        "outcome": "succeeded"
+      },
+      {
+        "operation_id": "optimize-op-launched",
+        "catalogue_id": "settings.search",
+        "action_class": "settings_handoff",
+        "outcome": "launched"
+      },
+      {
+        "operation_id": "optimize-op-failed",
+        "catalogue_id": "dns.flush",
+        "action_class": "execute",
+        "outcome": "failed",
+        "error_code": "adapter_operation_failed"
+      },
+      {
+        "operation_id": "optimize-op-unknown",
+        "catalogue_id": "dns.flush",
+        "action_class": "execute",
+        "outcome": "unknown_after_dispatch",
+        "error_code": "adapter_timed_out"
+      }
+    ]
+  }
+}

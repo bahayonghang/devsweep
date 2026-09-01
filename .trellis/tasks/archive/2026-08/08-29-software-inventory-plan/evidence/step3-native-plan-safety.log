@@ -1,0 +1,20 @@
+COMMAND: Inspect .trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-plan.json for closed SoftwareSelectionPlanV1 fields and forbidden executable/path data
+OUTPUT:
+{
+  "version": 1,
+  "selected_count": 1,
+  "fingerprint_prefixed": true,
+  "has_program": false,
+  "has_argv": false,
+  "has_uninstall_string": false,
+  "has_display_icon": false,
+  "has_installed_path": false,
+  "top_level_fields": [
+    "version",
+    "inventory_fingerprint",
+    "inventory_observed_at_unix_ms",
+    "expires_at_unix_ms",
+    "selected_ids"
+  ]
+}
+EXIT_CODE: 0

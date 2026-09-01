@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Web/Tauri 前端 pre-development 与 quality checklist"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "React 组件、可访问性、工具型视觉与文案规范"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "扫描-审查-确认-执行状态机与 digest 失效不变量"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "core serde IPC 类型生成、解码与穷举约束"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "页面流、不定进度、digest 与回收站语义"}

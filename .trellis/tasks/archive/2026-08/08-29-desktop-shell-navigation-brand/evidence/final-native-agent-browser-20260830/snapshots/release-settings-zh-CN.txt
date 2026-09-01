@@ -1,0 +1,10 @@
+- generic "DevSweep清理计划工作区清理语言帮助语言设置语言英语简体中文" [ref=e1] clickable [onclick]
+  - tab "清理" [ref=e5]
+  - navigation "支持目的地" [ref=e2]
+    - button "语言" [ref=e6]
+  - link "帮助" [ref=e3]
+  - region "语言设置" [ref=e4]
+    - heading "语言设置" [level=1, ref=e7]
+    - combobox "语言" [expanded=false, ref=e8]: 简体中文
+      - option "英语" [ref=e9]
+      - option "简体中文" [selected, ref=e10]

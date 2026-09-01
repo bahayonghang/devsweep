@@ -1,0 +1,41 @@
+Overall: **PASS** — all four reopened gaps are closed.
+
+## Findings (fixed)
+
+No production-code defect required further changes. Added only the requested independent logs, report, and `check.jsonl` entries.
+
+## Gap verdicts
+
+- **Gap 1 — PASS:** ACL-denied no-follow entries become incomplete, zero-byte `access_denied` evidence and are never traversed. Other unverified probes remain conservative non-traversed leaves.
+- **Gap 2 — PASS:** Fake and native `FSCTL_SET_SPARSE` 8 GiB sparse-file tests passed.
+- **Gap 3 — PASS:** Native deletion, growth, ACL-denied, and lower-bound reconciliation gate passed, including three repeated runs. Release gate: 51,007 nodes, two workers, 2 ms independent p95 cancel-to-join.
+- **Gap 4 — PASS:** CLI, TUI reducer, and desktop decoder/selectors agree on 7 nodes, 8,388,616 bytes, 5 complete, 2 incomplete, one access-denied warning, and SHA-256 `d14a6c33214dbb4a19527b6184411b68b02b90bec639fb9d8c94e08f7a3e1c36`.
+
+## Findings (not fixed)
+
+No functional blockers.
+
+Non-blocking evidence notes:
+
+- The fixture generator deterministically defines logical contents and ACL behavior, while the frozen DTO hash remains host/path/mtime-specific.
+- The independent rebuild replaced the binary referenced by the older evidence path, so its current hash differs; the recorded log and status remain internally consistent.
+
+## Verification
+
+- `cargo test -p devsweep-core analysis` — exit 0, 15 passed
+- `cargo test -p devsweep-core analysis --release -- --nocapture` — exit 0, 16 passed
+- `cargo test -p devsweep-cli analyze` — exit 0, 12 passed
+- `cargo fmt --all -- --check` — exit 0
+- `git diff --check` — exit 0
+- `just ci` — exit 0
+- `npm --prefix desktop run typecheck` — exit 0
+- Targeted Vitest — exit 1, sandbox `spawn EPERM`
+- Main-session Vitest evidence — exit 0, 19 files / 122 tests passed
+- Desktop no-spawn decoder/selector fallback — exit 0
+- Native churn test, three repetitions — exit 0
+
+Report: [independent-check-report.md](D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/08-29-analyze-core-ipc/evidence/independent-check-report.md)
+
+Fixes applied: no production changes; independent evidence/reporting only.
+
+Blockers: none.

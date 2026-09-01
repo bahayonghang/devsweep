@@ -30,7 +30,7 @@ Before TUI/frontend changes:
 
 1. Read [Quality Guidelines](./quality-guidelines.md) for render purity and
    `TestBackend` expectations.
-2. Read [Directory Structure](./directory-structure.md) for the `src/tui/`
+2. Read [Directory Structure](./directory-structure.md) for the `crates/devsweep-cli/src/tui/`
    module layout and visibility discipline.
 3. Read [Component Guidelines](./component-guidelines.md) before adding new
    render functions or widgets.

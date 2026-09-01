@@ -1,0 +1,30 @@
+{
+  "report": {
+    "dry_run": true,
+    "selected": 2,
+    "attempted": 2,
+    "succeeded": 2,
+    "failed": 0,
+    "skipped": 0,
+    "failures": [],
+    "outcomes": [
+      {
+        "target_id": "cargo.target:C:/work/app/target",
+        "action": { "type": "move_to_trash" },
+        "status": { "type": "succeeded" },
+        "estimated_recoverable": { "type": "verified", "bytes": 524288000 }
+      },
+      {
+        "target_id": "npm.cache.clean:global",
+        "action": { "type": "command", "irreversible": true },
+        "status": { "type": "succeeded" },
+        "estimated_recoverable": { "type": "partial", "lower_bound_bytes": 134217728 }
+      }
+    ],
+    "notes": [],
+    "estimated_recoverable": { "verified_bytes": 524288000, "partial_lower_bound_bytes": 134217728, "unknown_target_count": 0 },
+    "confirmation_digest": "9ad10cc52be4f63b75dcfa34c837260a5118f931229893fec4c90dfac93d7e1a",
+    "audit_log": null
+  },
+  "digest": "9ad10cc52be4f63b75dcfa34c837260a5118f931229893fec4c90dfac93d7e1a"
+}

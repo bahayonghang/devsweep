@@ -1,0 +1,89 @@
+STOPPED — mandatory render-budget gate failed. No commit or push was performed.
+
+Implemented through `implement.md` Steps 1–2:
+
+- Added immutable Analyze selectors, deterministic 200-row paging, breadcrumbs, search/sort, focus anchors, and keyboard drill-down/up.
+- Added a zero-dependency squarified treemap capped at 512 known child tiles plus one exact `Other` tile. Unknown sizes receive no invented area.
+- Added desktop Analyze reducers, strict generated-DTO decoding, operation-id/sequence stale-event rejection, Tauri start/cancel bridge wiring, linked treemap/accessibility list, responsive/reduced-motion/high-contrast presentation, and bilingual states.
+- Registered Analyze in the desktop shell.
+- Added TUI Analyze state, worker integration around `analyze_path`, progress/cancellation handling, bounded viewport rendering, proportional lower-bound bars, bilingual evidence labels, shell registration, and cancel/join-before-state-release navigation behavior.
+- Added focused Rust and desktop unit tests. Desktop tests could not execute because the sandbox denied esbuild process creation.
+
+Gate results:
+
+- `cargo test -p devsweep-cli tui::modes::analyze` — exit `0`; 7 passed.
+- `cargo test -p devsweep-cli --lib` — exit `0`; 125 passed.
+- `just desktop-web-check` — exit `1`.
+  - Type generation, ESLint, and TypeScript typecheck passed.
+  - Vitest and Vite build failed while loading `vite.config.ts`:
+    `Error: spawn EPERM`
+- `just desktop-build` — exit `1`; production build failed at the same Vite/esbuild boundary with `Error: spawn EPERM`.
+- `git diff --check` — exit `0`.
+- `just ci` — exit `0`; canonical workspace format/check/test/clippy gate passed.
+
+Render-budget result:
+
+- Fixture: deterministic `analysis-250k-v1` equivalent with a 10,000-child current directory.
+- Fixture child hash: `sha256:42685e0971165c2b59362cb44f251d4699e282bc647fd2f407d85559830ef37f`
+- Host: Node `v26.7.0`, `win32-x64`; rustc `1.98.0`.
+- Warm-ups: 5.
+- Measured navigations: 30.
+- Nearest-rank p95: 29th sorted sample.
+- Rectangles: `513`, limit `<=513` — passed.
+- Pure layout p95: `75.7631 ms`, limit `<=50 ms` — **failed**.
+- React commit p95, DOM count, memory count, WebView version, and native screenshots: `UNVERIFIED`.
+
+Per the explicit STOP rule, I did not raise the cap or continue native/browser capture after the layout miss. The independent `spawn EPERM` build failure also prevented launching a real production desktop. No screenshots were fabricated.
+
+Evidence:
+
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/cargo-test-tui-analyze.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/cargo-test-cli-lib.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/desktop-web-check.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/desktop-build.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/git-diff-check.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/just-ci.log`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/gate-summary.json`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-250k.json`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md`
+
+Files changed:
+
+- `crates/devsweep-cli/src/tui/app/events.rs`
+- `crates/devsweep-cli/src/tui/app/input.rs`
+- `crates/devsweep-cli/src/tui/app/jobs.rs`
+- `crates/devsweep-cli/src/tui/app/mod.rs`
+- `crates/devsweep-cli/src/tui/app/worker.rs`
+- `crates/devsweep-cli/src/tui/modes/mod.rs`
+- `crates/devsweep-cli/src/tui/modes/analyze/mod.rs`
+- `crates/devsweep-cli/src/tui/render/analyze.rs`
+- `crates/devsweep-cli/src/tui/render/jobs.rs`
+- `crates/devsweep-cli/src/tui/render/mod.rs`
+- `crates/devsweep-cli/src/tui/runtime/mod.rs`
+- `crates/devsweep-cli/src/tui/runtime/workers.rs`
+- `crates/devsweep-cli/src/tui/shell/mod.rs`
+- `desktop/src/App.tsx`
+- `desktop/src/App.test.tsx`
+- `desktop/src/api/bridge.ts`
+- `desktop/src/api/bridge.test.ts`
+- `desktop/src/api/contract.ts`
+- `desktop/src/api/contract.test.ts`
+- `desktop/src/api/fixture-bridge.ts`
+- `desktop/src/api/fixtures/analyze/complete.json`
+- `desktop/src/modes/analyze/AnalyzePage.tsx`
+- `desktop/src/modes/analyze/AnalyzePage.test.tsx`
+- `desktop/src/modes/analyze/index.ts`
+- `desktop/src/modes/analyze/selectors.ts`
+- `desktop/src/modes/analyze/selectors.test.ts`
+- `desktop/src/modes/analyze/state.ts`
+- `desktop/src/modes/analyze/state.test.ts`
+- `desktop/src/modes/analyze/styles.css`
+- `desktop/src/modes/analyze/treemap.ts`
+- `desktop/src/modes/analyze/treemap.test.ts`
+- `resources/i18n/en.json`
+- `resources/i18n/zh-CN.json`
+- `.trellis/tasks/08-29-analyze-tui-desktop-treemap/implement.jsonl`
+- The evidence files listed above.
+
+The pre-existing out-of-scope changes in `.trellis/.gitignore`, `README.md`, `justfile`, and other task directories were not modified, staged, or reverted.

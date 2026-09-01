@@ -1,0 +1,17 @@
+Diff in \\?\D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli\src\i18n\mod.rs:647:
+         for (key, english, chinese) in root_modes {
+             let en = message_metadata(Locale::En, key).unwrap();
+             let zh = message_metadata(Locale::ZhCn, key).unwrap();
+-            assert_eq!(en.accelerator, english, "English accelerator drifted for {key}");
+-            assert_eq!(zh.accelerator, chinese, "Chinese accelerator drifted for {key}");
++            assert_eq!(
++                en.accelerator, english,
++                "English accelerator drifted for {key}"
++            );
++            assert_eq!(
++                zh.accelerator, chinese,
++                "Chinese accelerator drifted for {key}"
++            );
+             assert_eq!(en.group, Some("root_modes"));
+             assert_eq!(zh.group, en.group);
+         }

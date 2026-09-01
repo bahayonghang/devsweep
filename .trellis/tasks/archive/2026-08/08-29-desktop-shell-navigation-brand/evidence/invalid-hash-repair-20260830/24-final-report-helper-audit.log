@@ -1,0 +1,17 @@
+helper_parse_errors=0
+
+git_diff_check_exit=0
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand
+
+  [0;32mimplement.jsonl: ✓ (7 entries)[0m
+  [0;32mcheck.jsonl: ✓ (3 entries)[0m
+
+[0;32m✓ All validations passed[0m
+task_validate_exit=0
+port_4180_listeners=0
+port_9361_listeners=0
+port_9363_listeners=0
+port_9364_listeners=0
+main_processes=0
+owned_webviews=0

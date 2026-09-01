@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit Windows source adapters, identities, errors, logs, tests, and dependency changes."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/prd.md", "reason": "Trace hostile data, eligibility, fingerprints, preview, redaction, and native evidence."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/design.md", "reason": "Verify dangerous registry data cannot cross the observation boundary."}
+{"file": "crates/devsweep-core/src/software/mod.rs", "reason": "Independent check fixed deterministic exact-identity merging and fail-closed refusal propagation."}
+{"file": "crates/devsweep-core/src/software/msix.rs", "reason": "Independent check fixed fallible WinRT package and dependency collection handling."}
+{"file": "crates/devsweep-core/src/software/tests.rs", "reason": "Independent check added exact-duplicate order and refusal regression coverage."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/evidence/independent-check-report.md", "reason": "Combined child verification, fixes, acceptance result, and command exit codes."}

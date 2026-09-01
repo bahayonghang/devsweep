@@ -1,0 +1,21 @@
+{
+  "operation_id": "analyze-op-1",
+  "sequence": 1,
+  "stored_nodes": 2,
+  "accounted_owned_bytes": 128,
+  "changed_nodes": [
+    {
+      "id": 1,
+      "parent_id": 0,
+      "kind": "file",
+      "name": "a.bin",
+      "bytes": 4096,
+      "immediate_count": 0,
+      "recursive_count": 0,
+      "evidence": "complete",
+      "warnings": [],
+      "mtime_ms": null
+    }
+  ],
+  "queue_depth": 1
+}

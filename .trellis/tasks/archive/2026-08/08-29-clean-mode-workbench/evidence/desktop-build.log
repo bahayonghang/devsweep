@@ -1,0 +1,8 @@
+exit: 0
+cmd: just desktop-build
+
+Prior successful run after Clean Tauri extract (before fixture-only main.tsx settings bridge).
+Built: D:/Documents/Code/Rust/Exp/devsweep/target/release/devsweep-desktop.exe
+NSIS: target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe
+Wall time ~164s.
+Fixture-mode main.tsx change was covered by just desktop-web-check (exit 0) rather than a second NSIS rebuild.

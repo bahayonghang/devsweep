@@ -1,0 +1,24 @@
+SCRIPT=.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/focus-failure-repair-20260830/offline-cdp-audit.ps1 PARSE_ERRORS=0
+SCRIPT=.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/focus-failure-repair-20260830/release-direct-cdp.ps1 PARSE_ERRORS=0
+SCRIPT=.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/final-direct-cdp/debug-direct-cdp.ps1 PARSE_ERRORS=0
+
+GIT_DIFF_CHECK_EXIT=0
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand
+
+  [0;32mimplement.jsonl: ✓ (7 entries)[0m
+  [0;32mcheck.jsonl: ✓ (3 entries)[0m
+
+[0;32m✓ All validations passed[0m
+TASK_VALIDATE_EXIT=0
+FINAL_MAIN=0 FINAL_WEBVIEW=0 FINAL_VITE=0
+PORT_9341_LISTENERS=0
+PORT_9351_LISTENERS=0
+PORT_9352_LISTENERS=0
+PORT_9353_LISTENERS=0
+PORT_9354_LISTENERS=0
+PORT_9355_LISTENERS=0
+PORT_9356_LISTENERS=0
+FINAL_STORE_FILES=1 LOCK_TEMP_RESIDUE=0
+?? .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/focus-failure-repair-20260830/
+?? desktop/src/app-shell/

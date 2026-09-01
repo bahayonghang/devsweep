@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Rust 后端规范入口"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "结构化错误枚举约定"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "契约缺口清单与 digest/边界行为契约(§2.1、§3)"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/research/devsweep-current-state.md", "reason": "现状类型与序列化缺口证据"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "digest 冻结语义参照(仅语义约束,非 ratatui 实现规则)"}

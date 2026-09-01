@@ -1,0 +1,66 @@
+{
+  "operation_id": "optimize-audit-1",
+  "recovered": [
+    {
+      "operation_id": "optimize-op-recovered",
+      "catalogue_id": "dns.flush",
+      "action_class": "execute",
+      "outcome": "unknown_after_dispatch",
+      "error_code": "recovered_after_crash"
+    }
+  ],
+  "records": [
+    {
+      "schema_version": 1,
+      "domain": "optimize",
+      "operation_id": "optimize-op-recovered",
+      "timestamp_unix_ms": 1,
+      "catalogue_version": 1,
+      "catalogue_id": "dns.flush",
+      "action_class": "execute",
+      "preview_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "transition": { "kind": "validated" },
+      "status_code": "validated"
+    },
+    {
+      "schema_version": 1,
+      "domain": "optimize",
+      "operation_id": "optimize-op-recovered",
+      "timestamp_unix_ms": 2,
+      "catalogue_version": 1,
+      "catalogue_id": "dns.flush",
+      "action_class": "execute",
+      "preview_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "transition": { "kind": "dispatch_started" },
+      "status_code": "dispatch_started"
+    },
+    {
+      "schema_version": 1,
+      "domain": "optimize",
+      "operation_id": "optimize-op-recovered",
+      "timestamp_unix_ms": 3,
+      "catalogue_version": 1,
+      "catalogue_id": "dns.flush",
+      "action_class": "execute",
+      "preview_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "transition": { "kind": "adapter_completed" },
+      "status_code": "adapter_unfinished",
+      "error_code": "recovered_after_crash",
+      "adapter_outcome": "unfinished"
+    },
+    {
+      "schema_version": 1,
+      "domain": "optimize",
+      "operation_id": "optimize-op-recovered",
+      "timestamp_unix_ms": 4,
+      "catalogue_version": 1,
+      "catalogue_id": "dns.flush",
+      "action_class": "execute",
+      "preview_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "transition": { "kind": "terminal", "outcome": "unknown_after_dispatch" },
+      "status_code": "unknown_after_dispatch",
+      "error_code": "recovered_after_crash",
+      "adapter_outcome": "unfinished"
+    }
+  ]
+}

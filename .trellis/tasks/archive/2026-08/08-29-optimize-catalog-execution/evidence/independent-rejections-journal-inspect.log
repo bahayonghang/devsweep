@@ -1,0 +1,17 @@
+command: inspect independent-fixtures/lappdata-rejections journal after hostile plan/preview/run
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:32:20.0000000+08:00
+----- output -----
+CLI plan of URI-like and hostile ids: all exit 6, zero plan files written (independent-rejections.log).
+CLI preview of extra uri field: invalid_optimize_plan exit 6.
+CLI preview/run of operation_id=ms-settings:search and devsweep-not-a-protocol:test: invalid_optimize_selection exit 6.
+
+optimize.jsonl exists because MaintenanceExecutor::execute opens the exclusive journal
+before construct_validated_action. File length is 0 bytes. optimize.lock is the sidecar.
+No JSONL records. No catalogue_id. No ms-settings. No dispatch_started.
+
+Harness independent-rejections.log exit=1 was an overly strict "file must not exist"
+check, not a product dispatch of a non-allowlisted URI.
+-----
+exit=0
+finished: 2026-08-31T13:32:20.0000000+08:00

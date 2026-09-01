@@ -1,0 +1,10 @@
+command: cd /d desktop && npm run lint
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:11:57.3694750+08:00
+----- output -----
+npm notice run devsweep-desktop-ui@0.2.0 lint
+npm notice run eslint .
+
+-----
+exit=0
+finished: 2026-08-31T14:11:59.9337316+08:00

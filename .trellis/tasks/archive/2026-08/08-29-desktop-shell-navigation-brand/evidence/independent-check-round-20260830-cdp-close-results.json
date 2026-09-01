@@ -1,0 +1,160 @@
+[
+  {
+    "name": "01-core-presentation-settings",
+    "command": "rtk cargo test -p devsweep-core presentation_settings",
+    "executed": "cargo test -p devsweep-core presentation_settings",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.99,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-01-core-presentation-settings.log",
+    "bytes": 1530
+  },
+  {
+    "name": "02-cli-i18n",
+    "command": "rtk cargo test -p devsweep-cli i18n",
+    "executed": "cargo test -p devsweep-cli i18n",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.559,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-02-cli-i18n.log",
+    "bytes": 1992
+  },
+  {
+    "name": "03-tui-shell",
+    "command": "rtk cargo test -p devsweep-cli tui::shell",
+    "executed": "cargo test -p devsweep-cli tui::shell",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.424,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-03-tui-shell.log",
+    "bytes": 1515
+  },
+  {
+    "name": "04-tui-app",
+    "command": "rtk cargo test -p devsweep-cli tui::app",
+    "executed": "cargo test -p devsweep-cli tui::app",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.505,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-04-tui-app.log",
+    "bytes": 3830
+  },
+  {
+    "name": "05-tui-runtime",
+    "command": "rtk cargo test -p devsweep-cli tui::runtime",
+    "executed": "cargo test -p devsweep-cli tui::runtime",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.43,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-05-tui-runtime.log",
+    "bytes": 2088
+  },
+  {
+    "name": "06-tui-render",
+    "command": "rtk cargo test -p devsweep-cli tui::render",
+    "executed": "cargo test -p devsweep-cli tui::render",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.439,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-06-tui-render.log",
+    "bytes": 3163
+  },
+  {
+    "name": "07-debug-native-fault",
+    "command": "rtk cargo test -p devsweep-desktop debug_native_fault",
+    "executed": "cargo test -p devsweep-desktop debug_native_fault",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.629,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-07-debug-native-fault.log",
+    "bytes": 1161
+  },
+  {
+    "name": "08-focused-npm-tests",
+    "command": "rtk npm test -- src/i18n/index.test.ts src/app-shell/operation-coordinator.test.ts src/app-shell/AppShell.test.tsx src/App.test.tsx src/styles.test.ts src/lifecycle.test.ts",
+    "executed": "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\npm.cmd test -- src/i18n/index.test.ts src/app-shell/operation-coordinator.test.ts src/app-shell/AppShell.test.tsx src/App.test.tsx src/styles.test.ts src/lifecycle.test.ts",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop",
+    "exit": 0,
+    "elapsed_s": 7.911,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-08-focused-npm-tests.log",
+    "bytes": 1533,
+    "node22": true
+  },
+  {
+    "name": "09-npm-lint",
+    "command": "rtk npm run lint",
+    "executed": "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\npm.cmd run lint",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop",
+    "exit": 0,
+    "elapsed_s": 3.352,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-09-npm-lint.log",
+    "bytes": 287,
+    "node22": true
+  },
+  {
+    "name": "10-npm-typecheck",
+    "command": "rtk npm run typecheck",
+    "executed": "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\npm.cmd run typecheck",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop",
+    "exit": 0,
+    "elapsed_s": 1.939,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-10-npm-typecheck.log",
+    "bytes": 306,
+    "node22": true
+  },
+  {
+    "name": "11-desktop-web-check",
+    "command": "rtk just desktop-web-check",
+    "executed": "C:\\Users\\lyh\\scoop\\shims\\just.EXE desktop-web-check",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 16.279,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-11-desktop-web-check.log",
+    "bytes": 2345,
+    "node22": true
+  },
+  {
+    "name": "12-desktop-test",
+    "command": "rtk just desktop-test",
+    "executed": "C:\\Users\\lyh\\scoop\\shims\\just.EXE desktop-test",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 1.554,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-12-desktop-test.log",
+    "bytes": 2968,
+    "node22": false
+  },
+  {
+    "name": "13-git-diff-check",
+    "command": "git diff --check",
+    "executed": "git diff --check",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.096,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-13-git-diff-check.log",
+    "bytes": 4024,
+    "node22": false
+  },
+  {
+    "name": "14-task-validate",
+    "command": "python -X utf8 ./.trellis/scripts/task.py validate .trellis/tasks/08-29-desktop-shell-navigation-brand",
+    "executed": "python -X utf8 ./.trellis/scripts/task.py validate .trellis/tasks/08-29-desktop-shell-navigation-brand",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 0.109,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-14-task-validate.log",
+    "bytes": 594,
+    "node22": false
+  },
+  {
+    "name": "15-just-ci",
+    "command": "rtk just ci",
+    "executed": "C:\\Users\\lyh\\scoop\\shims\\just.EXE ci",
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "exit": 0,
+    "elapsed_s": 13.679,
+    "log": ".trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\independent-check-round-20260830-cdp-close-15-just-ci.log",
+    "bytes": 30376,
+    "node22": false
+  }
+]

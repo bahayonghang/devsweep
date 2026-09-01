@@ -1,0 +1,42 @@
+requested: rtk cargo test -p devsweep-cli tui::runtime
+executed: cargo test -p devsweep-cli tui::runtime  # unfiltered complete log; rtk compact already exited 0
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+exit: 0
+elapsed_s: 0.430
+
+
+running 11 tests
+test tui::runtime::tests::cancel_effect_does_not_fabricate_a_cancellation_event ... ok
+test tui::runtime::tests::scan_worker_reports_failure_as_job_failed ... ok
+test tui::runtime::tests::presentation_effect_returns_typed_success_and_failure_without_stdout ... ok
+test tui::runtime::tests::inventory_worker_emits_read_only_report_events ... ok
+test tui::runtime::tests::scan_worker_does_not_promote_an_explicitly_canceled_scan ... ok
+test tui::runtime::tests::clean_worker_translates_execution_progress ... ok
+test tui::runtime::tests::clean_worker_reports_finish_and_failure ... ok
+test tui::runtime::tests::scan_worker_emits_started_progress_finished ... ok
+test tui::runtime::tests::duplicate_clean_dispatch_starts_only_one_worker ... ok
+test tui::runtime::tests::scan_dispatch_is_refused_until_prior_worker_terminal_is_joined ... ok
+test tui::runtime::tests::confirmed_digest_must_match_the_revalidated_snapshot ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 97 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.26s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)

@@ -1,0 +1,2 @@
+Optimize preview: settings.energy_recommendations | Opens Windows Settings. Digest: sha256:53ee66aeb8f769e9620186cdeb5b469b3a32e8d11741235af3804347ab6367b5. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.

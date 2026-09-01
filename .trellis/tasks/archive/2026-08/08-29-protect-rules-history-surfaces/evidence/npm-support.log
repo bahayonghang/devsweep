@@ -1,0 +1,10 @@
+command: rtk npm --prefix desktop run test -- --run support
+exit: 0
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ 鉁?src/support/SupportViews.test.tsx (6 tests) 382ms
+   鉁?support views > keeps protection add behind confirmation  313ms
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  18:22:56
+   Duration  2.08s (transform 122ms, setup 108ms, collect 265ms, tests 382ms, environment 404ms, prepare 53ms)

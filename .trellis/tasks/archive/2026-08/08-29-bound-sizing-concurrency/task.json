@@ -1,0 +1,30 @@
+{
+  "id": "bound-sizing-concurrency",
+  "name": "bound-sizing-concurrency",
+  "title": "Bound filesystem sizing concurrency",
+  "description": "Implement and verify a project-owned capped Rayon sizing pool with equivalent serial fallback, deterministic cancellation tests, and a stable same-host performance gate.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "devsweep-core filesystem sizing execution policy, equivalent serial fallback, deterministic cancellation and limit tests, and same-host release timing evidence",
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-08-30",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-scan-resource-bounds-app-icon",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "implementation_state": "verified_ready_for_commit",
+    "approval_state": "implementation_approved",
+    "verification_state": "passed"
+  }
+}

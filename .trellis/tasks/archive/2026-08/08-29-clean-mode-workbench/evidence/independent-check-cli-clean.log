@@ -1,0 +1,51 @@
+
+running 22 tests
+test tui::modes::clean::tests::no_selection_during_scan_and_stale_events_are_ignored ... ok
+test tui::modes::clean::tests::execute_requires_preview_and_second_confirmation ... ok
+test tui::modes::clean::tests::inspect_only_never_selects_and_selection_invalidates_preview ... ok
+test tui::runtime::tests::clean_worker_translates_execution_progress ... ok
+test tui::runtime::tests::clean_worker_reports_finish_and_failure ... ok
+test tui::runtime::tests::duplicate_clean_dispatch_starts_only_one_worker ... ok
+test application::presentation::clean::tests::empty_scan_is_truthful_in_both_locales ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test tui::app::tests::chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+{"command":"clean.preview","data":{"digest":"sha256:f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","report":{"attempted":0,"audit_log":null,"confirmation_digest":"f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","dry_run":true,"estimated_recoverable":{"partial_lower_bound_bytes":0,"unknown_target_count":0,"verified_bytes":0},"failed":0,"failures":[],"notes":[],"outcomes":[],"selected":0,"skipped":0,"succeeded":0}},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::clean::tests::stale_execute_is_invalid_authority ... ok
+test application::commands::clean::tests::plan_rejects_inspect_only_selection ... ok
+test application::commands::clean::tests::preview_empty_plan_is_dry_run ... ok
+test tui::render::tests::cleaned_target_renders_as_tombstone ... ok
+test tui::app::tests::finished_cleanup_progress_stays_visible_until_dismissed ... ok
+test tui::render::tests::cleanup_progress_updates_job_and_renders_modal ... ok
+test tui::render::tests::cleanup_progress_renders_mixed_target_results ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.32s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)
+
+exit=0

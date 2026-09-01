@@ -1,0 +1,415 @@
+{
+  "string_enums": {
+    "Ecosystem": ["rust", "node", "python", "docker", "generic"],
+    "RiskLevel": ["low", "medium", "high", "dangerous"],
+    "ScanCompleteness": ["complete", "partial"],
+    "ScanDiagnosticOutcome": ["skipped", "failed", "canceled", "output_truncated"],
+    "ScanDiagnosticStage": ["discovery", "sizing", "cargo_metadata", "provider"],
+    "ScanPhase": ["projects", "global"],
+    "ScanPreviewDisposition": ["candidate", "inspect_only"],
+    "SizingWarningKind": ["canceled", "entry_budget_exhausted", "metadata_unavailable", "reparse_safety_unverified", "max_depth_reached", "directory_read_failed", "directory_entry_read_failed", "path_unresolved"],
+    "TargetKind": ["package_cache", "build_artifacts", "dependency_directory", "virtual_env", "test_cache", "tool_cache"],
+    "AnalyzeNodeKind": ["file", "directory", "reparse"],
+    "AnalyzeEvidence": ["complete", "incomplete", "unknown"],
+    "AnalyzeCompleteness": ["complete", "partial_budget", "canceled"],
+    "AnalyzeWarningClass": ["partial_budget", "access_denied", "io_error", "churn", "cycle", "reparse", "duplicate_link"],
+    "RegistryHive": ["current_user", "local_machine"],
+    "RegistryView": ["registry32", "registry64"],
+    "MsiContext": ["user_unmanaged", "user_managed", "machine"],
+    "SoftwareSourceState": ["available", "partial", "permission", "unsupported"],
+    "SoftwareScope": ["current_user", "machine"],
+    "SoftwareEligibilityState": ["selectable", "manual"],
+    "SoftwareEligibilityReason": ["protected_product", "source_incomplete", "conflicting_identity", "no_remove", "hidden_entry", "system_or_update", "dependency_package", "stub_package", "unhealthy_package", "msi_execution_not_supported_v1", "registry_only_manual", "unsupported_source", "eligible_current_user_msix"],
+    "SoftwareSizeBasis": ["reported_estimate", "measured_installed_location"],
+    "SoftwareSizeSourceCode": ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path"],
+    "SoftwareLastUsedReason": ["no_supported_exact_source"],
+    "SoftwareActionClass": ["remove_current_user_msix"],
+    "SoftwareExecutionOutcome": ["canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch"],
+    "SoftwareInstalledState": ["present", "absent", "unavailable", "conflicting"],
+    "SoftwareRebootEvidence": ["none", "required"],
+    "SoftwareAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_status_unavailable", "adapter_timed_out", "adapter_canceled_after_dispatch", "adapter_cancel_failed", "requery_unavailable", "requery_conflicting", "recovered_after_crash"],
+    "SoftwareAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_reboot_required", "requery_present", "requery_absent", "requery_unavailable", "requery_conflicting", "canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch", "recovered_before_dispatch"],
+    "SoftwareAuditRequeryResult": ["present", "absent", "unavailable", "conflicting"],
+    "SoftwareAdapterOutcome": ["success", "failure", "reboot_required", "unfinished"],
+    "MaintenanceActionClass": ["execute", "settings_handoff", "guidance"],
+    "MaintenanceExecutionOutcome": ["canceled_before_start", "succeeded", "launched", "failed", "unknown_after_dispatch"],
+    "OptimizeAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_unfinished", "canceled_before_start", "recovered_before_dispatch", "succeeded", "launched", "failed", "unknown_after_dispatch"],
+    "OptimizeAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_timed_out", "adapter_canceled_after_dispatch", "recovered_after_crash"],
+    "OptimizeAdapterOutcome": ["success", "failure", "unfinished"],
+    "AcState": ["online", "offline", "unknown"],
+    "UnsupportedCode": ["gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity"],
+    "UnsupportedCapabilityState": ["unsupported"],
+    "TickSkipReason": ["sample_in_flight"],
+    "TerminalReason": ["completed", "canceled", "broken_pipe", "producer_error"]
+  },
+  "tagged_unions": {
+    "Scope": { "variants": {
+      "ScopeGlobal": [{ "type": "global" }],
+      "ScopeProject": [{ "type": "project", "root": "C:/fixture/project" }]
+    }},
+    "Evidence": { "variants": {
+      "EvidenceMarkerFile": [{ "type": "marker_file", "path": "C:/fixture/Cargo.toml" }],
+      "EvidenceKnownCacheDir": [{ "type": "known_cache_dir", "source": "fixture provider", "path": "C:/fixture/cache" }],
+      "EvidenceOfficialCommand": [{ "type": "official_command", "command": "fixture verify" }],
+      "EvidenceRuleMatched": [{ "type": "rule_matched", "rule_id": "fixture.rule" }],
+      "EvidenceUserConfigured": [{ "type": "user_configured" }]
+    }},
+    "CleanupIntent": { "variants": {
+      "CleanupIntentTrashProjectArtifact": [{ "type": "trash_project_artifact", "rule_id": "fixture.trash" }],
+      "CleanupIntentRunBuiltInAction": [{ "type": "run_built_in_action", "provider_id": "fixture", "action_id": "clean" }],
+      "CleanupIntentInspectOnly": [{ "type": "inspect_only", "rule_id": "fixture.inspect" }]
+    }},
+    "ScanProcessStatus": { "variants": {
+      "ScanProcessStatusSuccess": [{ "type": "success" }],
+      "ScanProcessStatusNotFound": [{ "type": "not_found" }],
+      "ScanProcessStatusTimeout": [{ "type": "timeout" }],
+      "ScanProcessStatusExit": [{ "type": "exit", "code": 1 }, { "type": "exit", "code": null }],
+      "ScanProcessStatusInvalidOutput": [{ "type": "invalid_output" }],
+      "ScanProcessStatusCanceled": [{ "type": "canceled" }]
+    }},
+    "ActionKind": { "variants": {
+      "ActionKindCommand": [{ "type": "command", "irreversible": true }, { "type": "command", "irreversible": false }],
+      "ActionKindMoveToTrash": [{ "type": "move_to_trash" }],
+      "ActionKindInspectOnly": [{ "type": "inspect_only" }],
+      "ActionKindPermanentDelete": [{ "type": "permanent_delete" }]
+    }},
+    "CapacityEstimate": { "variants": {
+      "CapacityEstimateVerified": [{ "type": "verified", "bytes": 1024 }],
+      "CapacityEstimatePartial": [{ "type": "partial", "lower_bound_bytes": 512 }],
+      "CapacityEstimateUnknown": [{ "type": "unknown" }]
+    }},
+    "OutcomeStatus": { "variants": {
+      "OutcomeStatusSucceeded": [{ "type": "succeeded" }],
+      "OutcomeStatusFailed": [{ "type": "failed", "message": "controlled failure" }],
+      "OutcomeStatusSkipped": [{ "type": "skipped", "reason": "controlled skip" }]
+    }},
+    "ExecutionNote": { "variants": {
+      "ExecutionNoteDuplicateSelectionRemoved": [{ "type": "duplicate_selection_removed", "target_id": "fixture-target" }]
+    }},
+    "CommandError": { "tag": "code", "variants": {
+      "CommandErrorScanAlreadyRunning": [{ "code": "scan_already_running" }],
+      "CommandErrorScanFailed": [{ "code": "scan_failed", "message": "controlled failure" }],
+      "CommandErrorAnalyzeAlreadyRunning": [{ "code": "analyze_already_running" }],
+      "CommandErrorAnalyzeFailed": [{ "code": "analyze_failed", "message": "controlled analyze failure" }],
+      "CommandErrorSoftwareAlreadyRunning": [{ "code": "software_already_running" }],
+      "CommandErrorSoftwareFailed": [{ "code": "software_failed", "message": "controlled software failure" }],
+      "CommandErrorSoftwareStaleAuthority": [{ "code": "software_stale_authority", "message": "controlled stale authority" }],
+      "CommandErrorSoftwareAuditUnavailable": [{ "code": "software_audit_unavailable", "message": "controlled audit failure" }],
+      "CommandErrorOptimizeAlreadyRunning": [{ "code": "optimize_already_running" }],
+      "CommandErrorOptimizeFailed": [{ "code": "optimize_failed", "message": "controlled optimize failure" }],
+      "CommandErrorOptimizeStaleAuthority": [{ "code": "optimize_stale_authority", "message": "controlled stale optimize authority" }],
+      "CommandErrorOptimizeUnavailable": [{ "code": "optimize_unavailable", "message": "the Windows OS build query is unavailable" }],
+      "CommandErrorOptimizeAuditUnavailable": [{ "code": "optimize_audit_unavailable", "message": "controlled optimize audit failure" }],
+      "CommandErrorStatusAlreadyRunning": [{ "code": "status_already_running" }],
+      "CommandErrorStatusFailed": [{ "code": "status_failed", "message": "controlled status failure" }],
+      "CommandErrorInvalidPlan": [{ "code": "invalid_plan", "issues": ["controlled issue"] }],
+      "CommandErrorStaleConfirmation": [{ "code": "stale_confirmation", "expected_digest": "expected", "actual_digest": "actual" }],
+      "CommandErrorUnknownTarget": [{ "code": "unknown_target", "target_id": "unknown" }],
+      "CommandErrorInspectOnlyTarget": [{ "code": "inspect_only_target", "target_id": "inspect" }],
+      "CommandErrorIo": [{ "code": "io", "message": "controlled io failure" }],
+      "CommandErrorProtectionStoreUnavailable": [{ "code": "protection_store_unavailable", "message": "protection store unavailable" }],
+      "CommandErrorProtectionAuditUnknown": [{ "code": "protection_audit_unknown", "message": "protection audit unknown" }],
+      "CommandErrorProtectionPathMissing": [{ "code": "protection_path_missing", "message": "protect add requires an existing path" }],
+      "CommandErrorProtectionConfirmationRequired": [{ "code": "protection_confirmation_required", "message": "protection mutations require explicit confirmation" }],
+      "CommandErrorHistoryStoreUnavailable": [{ "code": "history_store_unavailable", "message": "history store unavailable" }],
+      "CommandErrorHistoryNotFound": [{ "code": "history_not_found", "message": "operation was not found" }],
+      "CommandErrorRuleNotFound": [{ "code": "rule_not_found", "message": "rule is not in the shipped registry" }]
+    }},
+    "DesktopScanResult": { "variants": {
+      "DesktopScanResultCompleted": [{
+        "type": "completed",
+        "scan_id": "fixture-scan-1",
+        "report": {
+          "version": 1,
+          "plan": { "version": 2, "targets": [] },
+          "health": {
+            "completeness": "complete",
+            "diagnostics": [],
+            "totals": { "verified_bytes": 0, "partial_lower_bound_bytes": 0, "unknown_target_count": 0 }
+          }
+        }
+      }],
+      "DesktopScanResultCanceled": [{ "type": "canceled", "scan_id": "fixture-scan-1" }]
+    }},
+    "DesktopAnalyzeResult": { "variants": {
+      "DesktopAnalyzeResultCompleted": [{
+        "type": "completed",
+        "operation_id": "analyze-op-1",
+        "snapshot": {
+          "version": 1,
+          "root": { "input": "C:/fixture/analyze", "normalized": "C:/fixture/analyze", "volume": "vol" },
+          "nodes": [],
+          "warnings": [],
+          "completeness": "complete",
+          "accounted_owned_bytes": 0
+        }
+      }],
+      "DesktopAnalyzeResultCanceled": [{
+        "type": "canceled",
+        "operation_id": "analyze-op-1",
+        "snapshot": {
+          "version": 1,
+          "root": { "input": "C:/fixture/analyze", "normalized": "C:/fixture/analyze", "volume": "vol" },
+          "nodes": [],
+          "warnings": [{ "class": "partial_budget", "node_id": 0 }],
+          "completeness": "canceled",
+          "accounted_owned_bytes": 0
+        }
+      }]
+    }},
+    "SoftwareSourceId": { "tag": "source", "variants": {
+      "SoftwareSourceIdArp": [{ "source": "arp", "hive": "current_user", "view": "registry64" }],
+      "SoftwareSourceIdMsi": [{ "source": "msi", "context": "user_unmanaged" }],
+      "SoftwareSourceIdMsixCurrentUser": [{ "source": "msix_current_user" }]
+    }},
+    "SoftwareIdentity": { "tag": "source", "variants": {
+      "SoftwareIdentityArp": [{ "source": "arp", "hive": "current_user", "view": "registry64", "subkey": "Fixture" }],
+      "SoftwareIdentityMsi": [{ "source": "msi", "product_code": "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}", "context": "user_unmanaged" }],
+      "SoftwareIdentityMsix": [{ "source": "msix", "package_full_name": "Fixture_1.0.0.0_x64__publisher" }]
+    }},
+    "SoftwareSizeEvidence": { "tag": "state", "variants": {
+      "SoftwareSizeEvidenceAvailable": [{ "state": "available", "value_bytes": 1024, "basis": "reported_estimate", "source_code": "arp_estimated_size_kib", "observed_at_unix_ms": 1 }],
+      "SoftwareSizeEvidencePartial": [{ "state": "partial", "lower_bound_bytes": 512, "basis": "measured_installed_location", "source_code": "msix_installed_path", "reason_code": "controlled_partial", "observed_at_unix_ms": 1 }],
+      "SoftwareSizeEvidenceUnknown": [{ "state": "unknown", "reason_code": "not_reported" }]
+    }},
+    "SoftwareLastUsedEvidence": { "tag": "state", "variants": {
+      "SoftwareLastUsedEvidenceUnknown": [{ "state": "unknown", "reason_code": "no_supported_exact_source" }]
+    }},
+    "SoftwareAuditTransition": { "tag": "kind", "variants": {
+      "SoftwareAuditTransitionValidated": [{ "kind": "validated" }],
+      "SoftwareAuditTransitionDispatchStarted": [{ "kind": "dispatch_started" }],
+      "SoftwareAuditTransitionAdapterCompleted": [{ "kind": "adapter_completed" }],
+      "SoftwareAuditTransitionRequeryObserved": [{ "kind": "requery_observed" }],
+      "SoftwareAuditTransitionTerminal": [{ "kind": "terminal", "outcome": "unknown_after_dispatch" }]
+    }},
+    "DesktopSoftwareInventoryResult": { "variants": {
+      "DesktopSoftwareInventoryResultCompleted": [{
+        "type": "completed",
+        "operation_id": "software-inventory-1",
+        "inventory": {
+          "version": 1,
+          "observed_at_unix_ms": 1,
+          "sources": [],
+          "entries": [],
+          "fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      }],
+      "DesktopSoftwareInventoryResultCanceled": [{ "type": "canceled", "operation_id": "software-inventory-1" }]
+    }},
+    "DesktopOptimizeListResult": { "variants": {
+      "DesktopOptimizeListResultCompleted": [{
+        "type": "completed",
+        "operation_id": "optimize-list-1",
+        "catalogue_version": 1,
+        "entries": [
+          { "id": "dns.flush", "action_class": "execute", "build_floor": null },
+          { "id": "settings.storage_recommendations", "action_class": "settings_handoff", "build_floor": 22000 },
+          { "id": "settings.search", "action_class": "settings_handoff", "build_floor": 22000 },
+          { "id": "settings.energy_recommendations", "action_class": "settings_handoff", "build_floor": 22624 },
+          { "id": "guidance.drive_optimize", "action_class": "guidance", "build_floor": null },
+          { "id": "guidance.system_integrity", "action_class": "guidance", "build_floor": null },
+          { "id": "guidance.filesystem_check", "action_class": "guidance", "build_floor": null },
+          { "id": "guidance.network_reset", "action_class": "guidance", "build_floor": null }
+        ]
+      }],
+      "DesktopOptimizeListResultCanceled": [{ "type": "canceled", "operation_id": "optimize-list-1" }]
+    }},
+    "DesktopStatusSnapshotResult": { "variants": {
+      "DesktopStatusSnapshotResultCompleted": [{
+        "type": "completed",
+        "operation_id": "status-snapshot-1",
+        "snapshot": {
+          "snapshot_id": "snapshot-fixture",
+          "sampled_at_unix_ms": 1788019200000,
+          "sample_window_ms": 1000,
+          "logical_processor_count": 16,
+          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321 } },
+          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184 }, "reason_codes": ["counter_lagged"] },
+          "volumes": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "items": [{ "volume_id": "volume-fixture", "mount_points": ["C:\\"], "total_bytes": 1000000000, "available_bytes": 400000000 }], "complete": true } },
+          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048 }] } },
+          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null } },
+          "processes": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 3, "value": { "items": [{ "pid": 42, "name": "fixture.exe", "cpu_basis_points_of_one_logical_core": 12500, "private_bytes": 1048576, "read_bytes_per_second": 2048, "write_bytes_per_second": 1024 }], "enumerated_count": 4096, "returned_count": 1, "requested_limit": 15, "enumeration_ceiling": 4096, "detail_budget_ms": 150, "truncated_by_limit": true, "budget_exhausted": true }, "reason_codes": ["process_limit", "detail_budget_exhausted"] },
+          "unsupported_capabilities": [
+            { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+          ]
+        }
+      }],
+      "DesktopStatusSnapshotResultCanceled": [{ "type": "canceled", "operation_id": "status-snapshot-1" }]
+    }},
+    "DesktopStatusLiveResult": { "variants": {
+      "DesktopStatusLiveResultCompleted": [{ "type": "completed", "operation_id": "status-live-1" }],
+      "DesktopStatusLiveResultCanceled": [{ "type": "canceled", "operation_id": "status-live-1" }]
+    }},
+    "StatusEventV1": { "tag": "event", "variants": {
+      "StatusEventV1Started": [{
+        "schema_version": 1,
+        "event": "status_started",
+        "operation_id": "op-fixture",
+        "sequence": 0,
+        "emitted_at_unix_ms": 1788019200000,
+        "data": { "interval_ms": 2000, "process_limit": 15 }
+      }],
+      "StatusEventV1Snapshot": [{
+        "schema_version": 1,
+        "event": "status_snapshot",
+        "operation_id": "op-fixture",
+        "sequence": 1,
+        "emitted_at_unix_ms": 1788019202000,
+        "data": {
+          "snapshot_id": "snapshot-fixture",
+          "sampled_at_unix_ms": 1788019202000,
+          "sample_window_ms": 1000,
+          "logical_processor_count": 16,
+          "cpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "memory": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "processes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "unsupported_capabilities": [
+            { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+          ]
+        }
+      }],
+      "StatusEventV1TickSkipped": [{
+        "schema_version": 1,
+        "event": "tick_skipped",
+        "operation_id": "op-fixture",
+        "sequence": 2,
+        "emitted_at_unix_ms": 1788019203000,
+        "data": { "reason": "sample_in_flight", "skipped_total": 1 }
+      }],
+      "StatusEventV1Terminal": [{
+        "schema_version": 1,
+        "event": "status_terminal",
+        "operation_id": "op-fixture",
+        "sequence": 3,
+        "emitted_at_unix_ms": 1788019204000,
+        "data": { "reason": "completed", "error_code": null }
+      }]
+    }},
+    "OptimizeAuditTransition": { "tag": "kind", "variants": {
+      "OptimizeAuditTransitionValidated": [{ "kind": "validated" }],
+      "OptimizeAuditTransitionDispatchStarted": [{ "kind": "dispatch_started" }],
+      "OptimizeAuditTransitionAdapterCompleted": [{ "kind": "adapter_completed" }],
+      "OptimizeAuditTransitionTerminal": [{ "kind": "terminal", "outcome": "unknown_after_dispatch" }]
+    }}
+  },
+  "additional_samples": {
+    "DesktopScanProgress": [
+      { "scan_id": "fixture-scan-2", "sequence": 2, "phase": "global", "message": "Scanning global providers", "preview": null }
+    ],
+    "ScanPreviewTarget": [
+      {
+        "id": "cargo.home.inspect:fixture",
+        "scope": { "type": "global" },
+        "ecosystem": "rust",
+        "kind": "package_cache",
+        "path": null,
+        "estimated_bytes": 0,
+        "size_complete": false,
+        "sizing_warnings": [{ "kind": "path_unresolved", "detail": "controlled path" }],
+        "last_modified": null,
+        "risk": "high",
+        "disposition": "inspect_only",
+        "evidence": [{ "type": "rule_matched", "rule_id": "cargo.home.inspect" }]
+      }
+    ],
+    "ScanOptions": [
+      { "include_projects": true, "include_global": true, "roots": ["C:/fixture"] },
+      { "include_projects": false, "include_global": true, "roots": [] }
+    ],
+    "SizingWarning": [
+      { "kind": "canceled", "detail": "controlled canceled" },
+      { "kind": "entry_budget_exhausted", "detail": "controlled budget" },
+      { "kind": "metadata_unavailable", "detail": "controlled metadata" },
+      { "kind": "reparse_safety_unverified", "detail": "controlled reparse" },
+      { "kind": "max_depth_reached", "detail": "controlled depth" },
+      { "kind": "directory_read_failed", "detail": "controlled directory" },
+      { "kind": "directory_entry_read_failed", "detail": "controlled entry" },
+      { "kind": "path_unresolved", "detail": "controlled path" }
+    ],
+    "ScanDiagnostic": [
+      { "stage": "discovery", "path": "C:/fixture", "outcome": "skipped", "detail": "controlled skip" },
+      { "stage": "cargo_metadata", "path": "C:/fixture/Cargo.toml", "outcome": "output_truncated", "detail": "controlled process", "process": {
+        "status": { "type": "exit", "code": null },
+        "stdout": { "truncated": true, "retained_bytes": 1024, "total_bytes": 4096 },
+        "stderr": { "truncated": false, "retained_bytes": 0, "total_bytes": 0 }
+      }}
+    ],
+    "ActionFailure": [{ "target_id": "fixture-target", "message": "controlled failure" }],
+    "AnalyzeWarningV1": [
+      { "class": "access_denied", "node_id": 1 },
+      { "class": "io_error", "node_id": null }
+    ],
+    "AnalyzeNodeV1": [
+      {
+        "id": 2,
+        "parent_id": 0,
+        "kind": "reparse",
+        "name": "link",
+        "bytes": 0,
+        "immediate_count": 0,
+        "recursive_count": 0,
+        "evidence": "incomplete",
+        "warnings": ["reparse"],
+        "mtime_ms": null
+      },
+      {
+        "id": 3,
+        "parent_id": 0,
+        "kind": "file",
+        "name": "gone.bin",
+        "bytes": 0,
+        "immediate_count": 0,
+        "recursive_count": 0,
+        "evidence": "unknown",
+        "warnings": ["churn", "duplicate_link"],
+        "mtime_ms": 1
+      }
+    ],
+    "SoftwareEntryV1": [
+      {
+        "id": "software:v1:msix:no-display-name",
+        "identity": { "source": "msix", "package_full_name": "NoDisplay_1.0.0.0_x64__publisher" },
+        "scope": "current_user",
+        "provenance": [{ "source": "msix_current_user" }],
+        "eligibility": { "state": "manual", "reason": "hidden_entry" },
+        "size": { "state": "unknown", "reason_code": "not_reported" },
+        "last_used": { "state": "unknown", "reason_code": "no_supported_exact_source" }
+      }
+    ],
+    "SoftwareActionOutcomeV1": [
+      {
+        "operation_id": "core-canceled",
+        "software_id": "software:v1:msix:canceled",
+        "outcome": "canceled_before_start",
+        "reboot_evidence": "none",
+        "irreversible": true
+      }
+    ],
+    "CpuAvailabilityV1": [
+      { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },
+      { "state": "permission_denied", "sampled_at_unix_ms": null, "reason_code": "access_denied" }
+    ],
+    "PowerV1": [
+      { "battery_present": true, "ac_state": "offline", "charge_basis_points": 5400, "remaining_seconds": 3600 },
+      { "battery_present": false, "ac_state": "unknown", "charge_basis_points": null, "remaining_seconds": null }
+    ],
+    "StatusTerminalV1": [
+      { "reason": "canceled", "error_code": null },
+      { "reason": "broken_pipe", "error_code": null },
+      { "reason": "producer_error", "error_code": "sample_failed" }
+    ]
+  }
+}

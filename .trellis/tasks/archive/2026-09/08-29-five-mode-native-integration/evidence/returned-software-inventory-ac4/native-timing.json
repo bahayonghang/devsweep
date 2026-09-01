@@ -1,0 +1,43 @@
+{
+  "exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+  "warmup_ms": 4033.795,
+  "warmup_exit": 0,
+  "runs": [
+    {
+      "elapsed_ms": 4379.214,
+      "exit": 0,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\native-inventory-run1.json"
+    },
+    {
+      "elapsed_ms": 3941.491,
+      "exit": 0,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\native-inventory-run2.json"
+    },
+    {
+      "elapsed_ms": 4225.933,
+      "exit": 0,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\native-inventory-run3.json"
+    },
+    {
+      "elapsed_ms": 3935.93,
+      "exit": 0,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\native-inventory-run4.json"
+    },
+    {
+      "elapsed_ms": 4087.308,
+      "exit": 0,
+      "output": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-software-inventory-plan\\evidence\\reopen-five-mode-ac4\\native-inventory-run5.json"
+    }
+  ],
+  "raw_ms": [
+    4379.214,
+    3941.491,
+    4225.933,
+    3935.93,
+    4087.308
+  ],
+  "median_ms": 4087.308,
+  "p95_ms": 4379.214,
+  "target_ms": 5000,
+  "pass": true
+}

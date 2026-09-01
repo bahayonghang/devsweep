@@ -1,0 +1,26 @@
+﻿2026-08-31T15:56:31.6194331+08:00 repo=D:\Documents\Code\Rust\Exp\devsweep
+2026-08-31T15:56:31.6828530+08:00 exe=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep.exe
+2026-08-31T15:56:32.5899032+08:00 os=Microsoft Windows 11 专业版 build=26200
+2026-08-31T15:56:32.5914210+08:00 integrity=Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+2026-08-31T15:56:32.6127054+08:00 consent.exe_count=0
+2026-08-31T15:56:32.6825861+08:00 sha256=3E6CD1BF89AC27850F596AEE331B178AFDE5D2106097E71B2EAE2BF6C5DC112F pe=amd64 (0x8664)
+2026-08-31T15:56:33.6504159+08:00 warmup_snapshot exit=5 latency_ms=615
+2026-08-31T15:56:34.3126520+08:00 snapshot[1] exit=5 latency_ms=611 outcome=partial cpu=available power=available battery=True enumerated=676 truncated=True
+2026-08-31T15:56:34.9247828+08:00 snapshot[2] exit=5 latency_ms=606 outcome=partial cpu=available power=available battery=True enumerated=679 truncated=True
+2026-08-31T15:56:35.5208176+08:00 snapshot[3] exit=5 latency_ms=591 outcome=partial cpu=available power=available battery=True enumerated=677 truncated=True
+2026-08-31T15:56:36.1142496+08:00 snapshot[4] exit=5 latency_ms=589 outcome=partial cpu=available power=available battery=True enumerated=675 truncated=True
+2026-08-31T15:56:36.7042726+08:00 snapshot[5] exit=5 latency_ms=586 outcome=partial cpu=available power=available battery=True enumerated=678 truncated=True
+2026-08-31T15:56:41.3065789+08:00 idle_pid=15496 private_median=2150400 threads_median=5 cpu_median_pct=0 samples=10
+2026-08-31T15:56:41.3894565+08:00 live60_start pid=6044
+2026-08-31T15:57:41.4483680+08:00 live60_stop running_before_stop=True has_exited=True exit= samples=300
+2026-08-31T15:57:41.4671718+08:00 live60 cpu_median=0 cpu_p95=7.802 private_peak=4362240 threads_peak=5 present=300/300
+2026-08-31T15:57:46.4993452+08:00 post_exit samples=25 leftover_same_exe=0 final_five_absent=True
+2026-08-31T15:57:46.5352140+08:00 live60 events=31 skipped_total=0 kinds=status_started,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot,status_snapshot
+2026-08-31T15:57:47.1619264+08:00 interval_1s started_interval_ms=1000 exit=0 line_prefix={"event":"status_started","schema_version":1,"operation_id":"op-1788163066601","
+2026-08-31T15:57:47.7944338+08:00 interval_60s started_interval_ms=60000 exit=0 line_prefix={"event":"status_started","schema_version":1,"operation_id":"op-1788163067245","
+2026-08-31T15:57:47.8543076+08:00 interval_invalid 0=>2 61=>2
+2026-08-31T15:57:48.4460033+08:00 broken_pipe started_interval_ms=1000 exit=0 line_prefix={"event":"status_started","schema_version":1,"operation_id":"op-1788163067894","
+2026-08-31T15:57:50.4260047+08:00 two_process_live a_alive=True b_alive=True (in-process permit only; both OS processes may run)
+2026-08-31T15:57:51.0414028+08:00 leftover_after_all leftover=0
+2026-08-31T15:57:51.0722486+08:00 summary_written gates=snapshot_p95_le_2000ms=True live_private_le_idle_plus_64mib=True live_threads_le_idle_plus_4=True live_cpu_median_le_5=True live_cpu_p95_le_15=True post_exit_25_samples=True post_exit_final_five_hold=True interval_1s_wire_1000=True interval_60s_wire_60000=True interval_0_exit_2=True interval_61_exit_2=True broken_pipe_exit_0=True no_leftover_release_exe=True
+2026-08-31T15:57:51.0732532+08:00 harness complete

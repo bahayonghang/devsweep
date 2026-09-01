@@ -1,0 +1,58 @@
+Overall verdict: **FAIL**. Product code and automated gates pass, but final closeout still lacks a genuine current 1440 CSS-pixel native capture.
+
+## Findings (fixed)
+
+- File: `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/capture-native-analyze-round3.mjs`
+- Issue: The files labelled `1440` were captured before the width override, at the default 800×600 CSS-pixel viewport. The script could also truncate the existing JSONL log before fixture setup succeeded.
+- Fix: Explicitly request 1440/1024/800/390 English captures and 1440/390 zh-CN captures; use `native-window` for unoverridden captures; reset/log only after ACL setup succeeds. Syntax check passes.
+
+- File: `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md`
+- Issue: The evidence index presented the misleading `-1440` filenames without disclosing their actual viewport.
+- Fix: Documented the true coverage, scaling-series semantics, and blocked corrected recapture.
+
+- File: `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/independent-check-report.md`
+- Issue: Round-3 verification and final per-AC verdicts were absent.
+- Fix: Added the complete round-3 audit, command ledger, evidence findings, and final verdicts.
+
+- File: `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-20260831-round3/capture-log.jsonl`
+- Issue: The failed recapture attempt reached the old early-truncation path.
+- Fix: Restored the exact 54-event log read at the beginning of review. It parses successfully and ends with `done`.
+
+## Findings (not fixed)
+
+- File: `evidence/native-20260831-round3/screenshots/r3-01-analyze-complete-en-1440.png`, `r3-08-analyze-complete-zh-1440.png`
+- Issue: Neither is a 1440 CSS-pixel render. The English image is byte-identical to the 125% native-window screenshot whose probe records DPR 1.25 and viewport 800×600; the zh-CN image was captured in the same unoverridden state.
+- Why not fixed: Running the corrected capture driver exits 1 with `spawnSync cmd.exe EPERM` during fixture setup, before the app launches. Native evidence cannot be reconstructed or relabelled.
+
+- File: checker execution environment
+- Issue: `just desktop-web-check` exits 1 because Vitest/Vite cannot spawn esbuild (`EPERM`).
+- Why not fixed: This is sandbox-specific. The supplied final log proves 18/18 files, 121/121 tests, and the production Vite build pass; lint and type-check also pass independently here.
+
+## Acceptance criteria
+
+- **AC1 — PASS:** Deterministic layout, reconciliation, unknown exclusion, caps, paging, snapshots, fixture hash, rectangle budget, and recomputed layout p95 pass.
+- **AC2 — PASS:** List semantics, labelled rectangles, focus restoration, keyboard navigation, contrast, reduced motion, forced colors, no-cleanup boundary, native focus evidence, and the 123-node AX tree pass.
+- **AC3 — FAIL:** Bilingual states, 1024/800/390 English, 390 zh-CN, render budgets, and the accepted real-app WebView scaling matrix pass. A true current 1440 CSS-pixel capture is missing.
+- **AC4 — FAIL:** Automated gates and the current release binary pass, but complete native visual evidence is required and the 1440-width observation is absent.
+
+## Verification
+
+| Command/check | Exit | Result |
+| --- | ---: | --- |
+| `cargo test -p devsweep-cli tui::modes::analyze` | 0 | 8 passed |
+| `cargo test -p devsweep-core analysis` | 0 | 11 passed |
+| `npm --prefix desktop run lint` | 0 | Pass |
+| `npm --prefix desktop run typecheck` | 0 | Pass |
+| `git diff --check` | 0 | Pass |
+| `cargo fmt --all -- --check` | 0 | Pass |
+| `just ci` | 0 | 363 passed, 2 ignored; format/check/clippy passed |
+| `just desktop-web-check` | 1 | Sandbox `spawn EPERM` |
+| Supplied `desktop-web-check-final.log` | 0 | 18/18 files, 121/121 tests, Vite build passed |
+| Render-budget recomputation | 0 | Pure p95 1.9589 ms; browser p95 7.70 ms; caps/hashes pass |
+| Native evidence audit | 0 | Executable hashes, probes, PNGs, store, focus, cancellation, and 123 AX nodes verified |
+| `node --check evidence/capture-native-analyze-round3.mjs` | 0 | Pass |
+| Corrected native recapture | 1 | `spawnSync cmd.exe EPERM`; no new screenshot |
+
+The 100/125/150/200% evidence is accepted: four separate Tauri/WebView2 launches produced DPR 1/1.25/1.5/2 and viewports 1000×750, 800×600, 667×500, and 500×375. This exercises the real application/WebView scaling pipeline, while not claiming that the protected OS-wide display setting changed.
+
+No product source, protected file, dependency, contract, cap, commit, or remote state was changed. The sole closeout blocker is a fresh, auditable 1440 CSS-pixel native capture from the corrected driver.

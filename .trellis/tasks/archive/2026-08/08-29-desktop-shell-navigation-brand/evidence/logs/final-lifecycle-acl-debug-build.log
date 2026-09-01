@@ -1,0 +1,5 @@
+warning: linker stdout: 正在创建库 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.lib 和对象 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.exp
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+cargo build: 0 errors, 1 warnings (1 crates)

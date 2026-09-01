@@ -1,0 +1,10 @@
+== plan + preview settings.search (build floor 22000; this host build comes from RtlGetVersion) ==
+plan exit=0
+preview exit=0
+digest=sha256:7307cb96c72c6e03a340bb3b6ddd3ff90b127d0659f9b66c12453dbdfd8a7479
+
+== run CONFIRMED -> ShellExecuteExW opens the exact frozen ms-settings:search page; outcome is launched only ==
+Optimize run finished: 0 succeeded; 0 launched; 1 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+settings.search | Failed | Operation optimize-op-000001a05603713d-0000700c-0000000000000000
+exit=6
+NOTE: an opened Settings page is not maintenance completion.

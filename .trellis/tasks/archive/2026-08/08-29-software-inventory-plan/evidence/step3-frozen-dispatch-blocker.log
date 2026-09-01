@@ -1,0 +1,23 @@
+COMMAND: target\debug\devsweep.exe software inventory --format json
+OUTPUT:
+{"command":"software.inventory","data":null,"error":{"code":"mode_unavailable","message":null},"outcome":"failed","schema_version":1,"warnings":[]}
+PROCESS_EXIT_CODE: 4
+EXIT_CODE: 4
+
+SOURCE EVIDENCE: crates/devsweep-cli/src/application/commands/mod.rs:23-28
+The frozen root dispatches only command.starts_with("clean.") and command.starts_with("analyze.").
+There is no predeclared Software dispatch call. Wiring the implemented handler would require editing
+the frozen root module, which the task contract and Step 3 stop rule prohibit.
+
+DIAGNOSTIC COMMAND DEVIATION:
+COMMAND: cargo run -q -p devsweep-cli -- software inventory --format json
+OUTPUT:
+error: `cargo run` could not determine which binary to run. Use the `--bin` option to specify a binary, or the `default-run` manifest key.
+available binaries: devsweep, process_fixture
+EXIT_CODE: 1
+
+RETRY COMMAND: cargo run -q -p devsweep-cli --bin devsweep -- software inventory --format json
+OUTPUT:
+{"command":"software.inventory","data":null,"error":{"code":"mode_unavailable","message":null},"outcome":"failed","schema_version":1,"warnings":[]}
+EXIT_CODE: 1
+NOTE: Cargo maps the child exit to its own exit 1. Direct execution above records the CLI process exit 4.

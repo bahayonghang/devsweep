@@ -7,9 +7,10 @@
 ## Overview
 
 The current crate uses `anyhow::Result` for application-level command flow and
-scanner filesystem failures. There are no custom error enums yet. Add one only
-when callers need to branch on error categories instead of showing or
-propagating context.
+scanner filesystem failures. `execution::ExecutionError` is the narrow custom
+error enum for caller-correctable selection and confirmation failures that GUI
+wrappers need to branch on. Add other custom enums only when callers likewise
+need typed categories instead of display-only context.
 
 ---
 
@@ -22,6 +23,14 @@ propagating context.
   `application::commands::run_<command>(...) -> anyhow::Result<()>`
 - Scan report pipeline:
   `scan::Sweeper::default().full_scan_report(...) -> anyhow::Result<ScanReport>`
+- Execution request errors carried by `anyhow::Result` and available through
+  downcast: `ExecutionError::{UnknownTarget, InspectOnlyTarget,
+  StaleConfirmation}`
+- Tauri commands return the tagged, serializable
+  `desktop/src-tauri/src/error.rs::CommandError`. Conversion from typed core
+  execution errors is centralized there; plan validation becomes
+  `invalid_plan`, scan failures become `scan_failed`, and other boundary I/O
+  failures remain structured `io` responses.
 
 Use `anyhow::Context` when a filesystem operation needs path-specific context:
 
@@ -39,23 +48,26 @@ let root = root
   `devsweep::run` to `main`.
 - Use `anyhow::bail!` for explicit user-facing command failures. For example,
   `clean --execute` without `--plan PATH` fails before the executor runs.
-- Saved plan/report decoding in `src/application/commands.rs` adds file and
+- Saved plan/report decoding in `crates/devsweep-cli/src/application/commands.rs` adds file and
   JSON context, rejects inventory documents, and preserves version-specific
   rescan guidance before validation.
 - Project scan root access failures are hard errors. Inaccessible nested entries are
   recorded as discovery diagnostics and skipped so one unreadable child does not
   abort the whole scan; the outcome is marked partial while sibling candidates
   remain.
-- Bounded walks under `src/filesystem/sizing.rs` never convert I/O failure into
+- Bounded walks under `crates/devsweep-core/src/filesystem/sizing.rs` never convert I/O failure into
   a trusted `0 B`. They return a `SizeEstimate` that is either a complete total,
   a partial lower bound, or unknown. Incomplete and unknown estimates are not
   selected by default.
-- Execution authorization and started-audit failures are fail-closed. A
+- Execution authorization and started-audit failures are fail-closed. Failure
+  to persist an authorization denial or safety skip halts later dispatch. A
   terminal audit failure after dispatch reports the result as unknown because
   the side effect may already have run.
+- Unknown selections, inspect-only selections, and stale supplied confirmation
+  digests fail before opening the audit journal or dispatching side effects.
 - Tests may use `expect(...)` with a specific reason.
 
-Example from `src/application/commands.rs`:
+Example from `crates/devsweep-cli/src/application/commands.rs`:
 
 ```rust
 if command.execute && command.plan.is_none() {
@@ -69,7 +81,8 @@ if command.execute && command.plan.is_none() {
 
 There is no HTTP API. CLI commands should return non-zero through propagated
 errors and keep machine-readable JSON output clean. Do not mix diagnostics into
-`stdout` when `--json` is active.
+`stdout` when `--json` is active. Tauri commands must return tagged errors with
+stable snake-case codes; frontend callers must not parse display strings.
 
 ---
 

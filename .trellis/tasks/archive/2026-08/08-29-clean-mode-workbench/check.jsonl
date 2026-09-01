@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit cleanup safety, revalidation, cancellation, execution, and truthful evidence."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit Clean state ownership, accessibility, layout, and native evidence."}
+{"file": ".trellis/tasks/08-29-clean-mode-workbench/prd.md", "reason": "Trace every Clean safety, presentation, and validation criterion."}
+{"file": ".trellis/tasks/08-29-clean-mode-workbench/design.md", "reason": "Verify state transitions and IPC authority match the planned workbench."}

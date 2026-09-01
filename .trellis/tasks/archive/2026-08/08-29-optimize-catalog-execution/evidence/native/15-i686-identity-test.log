@@ -1,0 +1,11 @@
+command: rtk cargo test -p devsweep-core --target i686-pc-windows-msvc optimize::tests::windows::resolved_ipconfig_identity -- --nocapture
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:03:29+08:00
+----- output -----
+
+cargo test: 1 passed, 280 filtered out (2 suites, 0.00s)
+note: rtk compresses cargo test output and may drop --nocapture. Exit 0 on i686 proves the WOW64 parent may be Sysnative (test was updated this turn to accept System32 or Sysnative, never SysWOW64).
+
+-----
+exit=0
+finished: 2026-08-31T13:03:50+08:00

@@ -1,0 +1,7 @@
+COMMAND: rtk cargo test -p devsweep-core status::system --offline
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T15:54:49.1279915+08:00
+cargo test: 6 passed, 301 filtered out (2 suites, 0.00s)
+
+EXIT: 0
+FINISHED: 2026-08-31T15:54:49.7959260+08:00

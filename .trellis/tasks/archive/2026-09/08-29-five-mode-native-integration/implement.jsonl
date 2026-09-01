@@ -1,0 +1,30 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Run the complete backend quality and safety gate across all domains."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Run complete desktop type, component, state, accessibility, and native validation gates."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify end-to-end coordination, authority, errors, cancellation, persistence, and feedback."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/design.md", "reason": "Integrate in the approved dependency order and preserve rollback ownership."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/design.md", "reason": "Execute the release matrix without expanding scope or masking domain failures."}
+{"file": "crates/devsweep-cli/tests/five_mode_contract.rs", "reason": "Cross-mode coordinator, digest, locale, cancel, stale, restart, and audit-version fixtures."}
+{"file": "desktop/src/app-shell/registry.ts", "reason": "Shipped mode and support adapters without moving domain logic into glue."}
+{"file": "tools/measure-resources.ps1", "reason": "Frozen five-mode-v1 200 ms sampler, host manifest, nearest-rank thresholds, raw artifacts."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Native scenario matrix, evidence paths, and resource protocol pointer."}
+{"file": "docs/guide/cli-migration.md", "reason": "Breaking CLI migration and rollback notes for shipped roots only."}
+{"file": "docs/safety-capability-matrix.md", "reason": "Shipped capability matrix; rejected Docker, aliases, and elevation."}
+{"file": "crates/devsweep-cli/src/application/mod.rs", "reason": "Frozen shipped CLI roots with no compatibility aliases."}
+{"file": "desktop/src-tauri/src/lib.rs", "reason": "Frozen shipped Tauri invoke inventory with no glue aliases."}
+{"file": "desktop/src-tauri/tauri.conf.json", "reason": "Unsigned current-user NSIS packaging metadata without signing."}
+{"file": "README.md", "reason": "Separate Five-mode product hunk; pre-existing tinstall hunk preserved."}
+{"file": "desktop/src/App.tsx", "reason": "Shell consumes shippedModeRegistrations glue adapters."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Filled native PASS/FAIL/UNVERIFIED matrix after recorded capture."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/evidence/verification-report.md", "reason": "R/AC ledger, command exits, resource table, native matrix, domain returns."}
+{"file": "tools/measure-resources.ps1", "reason": "Round-2 windows: idle without remote-debug, desktop Analyze until terminal status, list-only catalogue p95, Settings launch-return clock, sizing worktree Clean."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/evidence/verification-report.md", "reason": "Round-2 AC4 table, flipped gates, remaining Analyze/Software domain returns."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Round-2 resource protocol result and changed measurement windows."}
+{"file": "tools/measure-resources.ps1", "reason": "Round-3 windows: CLI Status snapshot/live, live-repo Clean ratio, five CLI Analyze reps, rebuilt binaries."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/evidence/verification-report.md", "reason": "Round-3 AC4 table after fac3e8b rebuild; Analyze still FAIL."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Round-3 host SHAs and remaining Analyze/Optimize misses."}
+{"file": "tools/measure-resources.ps1", "reason": "Round-4 Stopwatch CPU wall, list-before-Analyze, five desktop Analyze-until-complete reps."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/evidence/verification-report.md", "reason": "Round-4 AC4 PASS table and Analyze partial/timeout note."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Round-4 protocol PASS, Stopwatch window, prior raw dirs kept."}
+{"file": "tools/measure-resources.ps1", "reason": "Round-5 stop Analyze at partial|complete; walk-window Stopwatch CPU only."}
+{"file": ".trellis/tasks/08-29-five-mode-native-integration/evidence/verification-report.md", "reason": "Round-5 honest AC4 FAIL on walk-window Analyze CPU 203.31%."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Round-5 FAIL; round-4 padded CPU is not Complete."}

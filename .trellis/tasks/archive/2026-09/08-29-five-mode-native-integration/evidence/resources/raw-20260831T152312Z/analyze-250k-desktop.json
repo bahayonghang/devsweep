@@ -1,0 +1,15 @@
+{
+  "label": "analyze-250k-desktop",
+  "started": true,
+  "filled": true,
+  "startClicked": true,
+  "status": "partial",
+  "elapsed_ms": 20433.805,
+  "samples": 103,
+  "peak_private": 398393344.0,
+  "max_threads": 34.0,
+  "cpu_p95": 203.15953712131122,
+  "cpu_median": 199.84160247139494,
+  "window": "desktop Analyze IPC until data-status=complete; 200 ms samples from start click; no CLI JSON materialization",
+  "file": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-five-mode-native-integration\\evidence\\resources\\raw-20260831T152312Z\\analyze-250k-desktop.jsonl"
+}

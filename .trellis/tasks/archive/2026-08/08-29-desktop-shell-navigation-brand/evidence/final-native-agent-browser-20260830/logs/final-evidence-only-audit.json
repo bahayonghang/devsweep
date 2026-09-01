@@ -1,0 +1,363 @@
+{
+  "time": "2026-08-30T18:12:50.3281302+08:00",
+  "git_diff_check_exit": 0,
+  "git_diff_check_output": "",
+  "report_rg_exit": 0,
+  "report_matches": ".trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:7:completion-required UNVERIFIED because the sole newly authorized run hit the\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:8:same agent-browser target-binding failure twice before the fault action. Two\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:9:agent-browser daemon processes also remain after successful named-session\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:22:| `target/debug/devsweep-desktop.exe` after `tauri dev` relink | 14,758,912 | `5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9` | User subsequently fixed this as the sole authorized debug-evidence hash; it matched before launch, after launch, and after close |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:50:| Final-hash taskbar icon appearance | **UNVERIFIED** | A bottom-screen button labeled `devsweep` could not be uniquely bound to the Tauri HWND because another host/repository window used the same title. `logs/release-associated-icon-audit.json` proves the executable's associated icon is the expected green icon, but that is not a direct taskbar observation |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:62:`E16F09D...727091` to `5677E0FE...9C07D9`, so that preparation stopped before\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:64:`5677E0FE...9C07D9` and authorized one isolated debug-only run.\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:78:`[agent-browser] launched browser`. This was the same target-binding/snapshot\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:101:**UNVERIFIED, completion-required**. This round does not infer them from unit\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:106:found task-created agent-browser daemon PIDs 64440 and 71148 with loopback\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:135:  forced termination. Two agent-browser daemon processes/listeners remain as\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:140:- Debug route-error native evidence is completion-required `UNVERIFIED`\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:141:  because the same agent-browser target-binding/snapshot failure occurred\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:146:- Taskbar appearance remains `UNVERIFIED` because no taskbar button could be\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-native-agent-browser-20260830/verification.md:149:  non-completion-required `WAIVED/UNVERIFIED` items. This round did not inspect\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:8:evidence are green, but completion-required Desktop locale/restart/Back and\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:11:Motion observations remain explicitly `WAIVED/UNVERIFIED` and are not\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:22:| R5 | Automated clauses verified; final native route-error evidence incomplete | Desktop/TUI tests cover deterministic routing, keyboard navigation, activating-control focus restoration, canonical localized route errors, collision-free available accelerators, canonical IEC units, full accessible user data, and non-truncation of authority/action copy. Final release screenshots prove real Clean/Language focus and Settings activation, but the bounded stop rule prevented the debug native route-error harness; that completion-required clause remains `UNVERIFIED`. Scaling/High Contrast/Reduced Motion remain waived below. |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:24:| R7 / AC6 | Implementer verified; independent pending | React shell uses `src/assets/devsweep-icon-master.png`; Tauri continues using the icon child's generated native outputs. Header/taskbar evidence exists at current scale, the image remains decorative next to one accessible product name, and the exact-owned product-path audit found no `.trellis` runtime/reference string. A broader scan found only four pre-existing, untouched fixture-data paths in `desktop/src/api/fixtures/scan-report.real.json`; none is referenced by this task's runtime code. |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:195:  `5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9`.\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:197:  stable, but repeated agent-browser target-binding/snapshot failure stopped\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:208:| Debug-only native route-error, route/hash/focus stability, dismiss/retry | **UNVERIFIED, completion-required** | The user fixed `5677E0FE...9C07D9` and authorized one run. The same agent-browser target-binding/snapshot failure occurred twice before a Language action: own `about:blank`, one successful explicit-CDP Clean snapshot, then own `about:blank` again after idle. The fault was not consumed; dismiss/retry and console audit were not executed |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:210:| Header/title original icon presence | PASS for current-scale presence; no exact-size claim | Final-hash HWND-bound PrintWindow capture. Final-hash taskbar appearance remains `UNVERIFIED` because no visible taskbar button could be uniquely bound to the Tauri HWND |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:212:| 100/125/150/200% native scaling and exact native dimensions | **WAIVED/UNVERIFIED** | User waiver; 125% DPI-virtualized captures remain diagnostic only |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:213:| Native Windows High Contrast appearance | **WAIVED/UNVERIFIED** | User waiver; forced-colors CSS/test remains PASS only as automation |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:214:| Native Windows Reduced Motion appearance | **WAIVED/UNVERIFIED** | User waiver; reduced-motion CSS/test remains PASS only as automation |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:222:evidence remains completion-required `UNVERIFIED` because the sole authorized\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:223:fixed-5677 debug run hit the same agent-browser target-binding/snapshot failure\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:226:retain their user-approved `WAIVED/UNVERIFIED` state. The task remains\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:273:  Locale save/restart/Back, debug route-error, and final-hash taskbar evidence\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:279:  It used named sessions and loopback-only CDP. A taskbar button could not be\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:280:  uniquely bound to the Tauri HWND, so taskbar appearance remains\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/verification-report.md:286:  agent-browser daemon processes/listeners remain despite successful named\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:6:evidence now passes, but debug native fault evidence remains completion-required\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:52:| Debug-only canonical route-error, stable route/hash/focus, dismiss/retry | **UNVERIFIED, completion-required** | The user fixed `5677E0FE...9C07D9` and authorized one debug-only run. The fixed hash stayed stable, but the same agent-browser target-binding/snapshot failure occurred twice before any Language action: own `about:blank`, then a successful explicit-CDP snapshot, then own `about:blank` again after idle. The run stopped without consuming the fault |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:53:| Final-hash taskbar icon | **UNVERIFIED** | A screen taskbar button titled `devsweep` could not be uniquely bound to the Tauri HWND because another host/repository window shared the title. The executable's associated icon is correct, but that is not direct taskbar evidence |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:54:| 100/125/150/200% native scaling and exact dimensions | **WAIVED/UNVERIFIED** | User waiver; system scaling was never changed |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:55:| Native High Contrast appearance | **WAIVED/UNVERIFIED** | User waiver; forced-colors CSS/test remains automated evidence only |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:56:| Native Reduced Motion appearance | **WAIVED/UNVERIFIED** | User waiver; reduced-motion CSS/test remains automated evidence only |\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:76:  target-binding/snapshot failure occurred twice. The debug app and Vite closed\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:77:  naturally, but two non-DevSweep agent-browser daemon processes remain after\n.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/final-lifecycle-native-20260830/verification.md:102:incomplete. Non-DevSweep agent-browser daemon residue also remains outside the",
+  "release_hash": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "debug_hash": "5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9",
+  "devsweep_and_webview_residue": [],
+  "app_ports": [],
+  "agent_browser_processes": [
+    {
+      "ProcessId": 64440,
+      "ParentProcessId": 52764,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T18:04:10.751174+08:00",
+      "CommandLine": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\""
+    },
+    {
+      "ProcessId": 71148,
+      "ParentProcessId": 83860,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T18:10:09.254089+08:00",
+      "CommandLine": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\""
+    }
+  ],
+  "agent_browser_listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 14819,
+      "OwningProcess": 64440
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 14818,
+      "OwningProcess": 64440
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 13931,
+      "OwningProcess": 71148
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 13930,
+      "OwningProcess": 71148
+    }
+  ],
+  "evidence_files": [
+    {
+      "relative": "logs/baseline.json",
+      "length": 1069,
+      "sha256": "C6BEBAA1F23B71A4F7B5DB23C63D5E4AAC411169B0F5D4B6303F6772989998EA"
+    },
+    {
+      "relative": "logs/debug-fixed-agent-browser-close.json",
+      "length": 281,
+      "sha256": "7F6E977BE084A294745AB38B9270F9AE4ABD92BC489F3A8EA3C402430BED3B83"
+    },
+    {
+      "relative": "logs/debug-fixed-agent-browser-connect.txt",
+      "length": 44,
+      "sha256": "C2BFC35DDC9653CFB8F55135433B5FAC99011BCF942EE88EFD15CB80DF0415C6"
+    },
+    {
+      "relative": "logs/debug-fixed-agent-browser-final-close.json",
+      "length": 1624,
+      "sha256": "5FE6359BBAEF82717872016D2E6D5D6E68F01BF7BEA74106C2B07C0D3AE81372"
+    },
+    {
+      "relative": "logs/debug-fixed-agent-browser-stream-disable-close.json",
+      "length": 619,
+      "sha256": "297F5BD0669AA88D8D8A21F8E75E488ACB0CC3D6E30726DE42862E50753E766B"
+    },
+    {
+      "relative": "logs/debug-fixed-automation-stop-natural-close.json",
+      "length": 8529,
+      "sha256": "D2B00CAD383F721FB69E941A057A4C1D3715103D9F05FEF00FDC3FE1BF984DEC"
+    },
+    {
+      "relative": "logs/debug-fixed-cdp-diagnostic.json",
+      "length": 2084,
+      "sha256": "F66311FBC790ED184A525D75DA2B413F653051768ACD3D6B719A840921F0D577"
+    },
+    {
+      "relative": "logs/debug-fixed-final-residue.json",
+      "length": 1849,
+      "sha256": "F8BA6E402457E9E7C507E28AB769D3068B4563605A433F97BFE81348FCF9B0C6"
+    },
+    {
+      "relative": "logs/debug-fixed-launch-followup.json",
+      "length": 2020,
+      "sha256": "5A8109BA8111C8944117F98EADE8C27D6D78C7AFF2942B918F45F2706F410311"
+    },
+    {
+      "relative": "logs/debug-fixed-real-initial-dom.json",
+      "length": 88,
+      "sha256": "FD0F234AEEE0028716C674A9E00DA77560BFD493966AF5036183DF6D8D6A4A80"
+    },
+    {
+      "relative": "logs/debug-fixed-session-diagnostic-change.json",
+      "length": 415,
+      "sha256": "B5F14FF37C3CAD425A38189FEE6234284BBA47429A51C74F8ADBA1A68289C70F"
+    },
+    {
+      "relative": "logs/debug-fixed-vite-transcript.txt",
+      "length": 2116,
+      "sha256": "83480DD9297DB105F1CFE45FC7B4D9AF15BD8BAF8F888BD77D9A7AFE41CE9441"
+    },
+    {
+      "relative": "logs/debug-hash-drift-and-natural-close.json",
+      "length": 868,
+      "sha256": "BFF162AE8196582204678E76C3DED0B52F143550276B0E25948BC15EDA2324BD"
+    },
+    {
+      "relative": "logs/debug-tauri-dev-transcript.txt",
+      "length": 3017,
+      "sha256": "EE5E234306390DF5A8E97CC60B807AA58958D48E205BE8AD3030AD7E89C7F805"
+    },
+    {
+      "relative": "logs/final-residue-and-scope-audit.json",
+      "length": 46662,
+      "sha256": "925FD48F5D38039F355ACAD49A53B3E29B858C4DD4C3F3787527BB28190C7870"
+    },
+    {
+      "relative": "logs/release-agent-browser-close.txt",
+      "length": 20,
+      "sha256": "462E1CE47492715A9144F255F10E21588DE655C76E1A10E52DE2A23FB9F4E227"
+    },
+    {
+      "relative": "logs/release-agent-browser-residue.json",
+      "length": 1269,
+      "sha256": "195411D8A6E46A6271E80B40305148E43ECCD8CF823EAA093C27E0AF67E475BF"
+    },
+    {
+      "relative": "logs/release-agent-browser-tab.txt",
+      "length": 52,
+      "sha256": "E36E0F6DC4E6B271C5E8A058CD0526B923C20333168DCFDEF9ED0E9E592A2DC8"
+    },
+    {
+      "relative": "logs/release-associated-icon-audit.json",
+      "length": 753,
+      "sha256": "E47863A821AB996A897FD25EEA532A6A75D506880B58846D3D9F80337E85F4BD"
+    },
+    {
+      "relative": "logs/release-click-language-attempt2.txt",
+      "length": 10,
+      "sha256": "91A4D5BDB4DC2A60F7941ABD953F75047A0534FFF96B52037E3348E7B8B99A4D"
+    },
+    {
+      "relative": "logs/release-click-language.txt",
+      "length": 81,
+      "sha256": "E586598881860A57C0152B08222EF1486D46E171B1DCD3D71DC86E29DE5EF067"
+    },
+    {
+      "relative": "logs/release-daemon-graceful-timeout-followup.json",
+      "length": 334,
+      "sha256": "F929097288E37A9BA8A11A28B90BACE25C4737155220CD262A8A9BC050AE2CA1"
+    },
+    {
+      "relative": "logs/release-final-residue.json",
+      "length": 538,
+      "sha256": "1B8759D22DC56581170536CDE9E6054B04BFB93F0AEEF706DF281E887C69309A"
+    },
+    {
+      "relative": "logs/release-initial-dom.json",
+      "length": 450,
+      "sha256": "D2A8B31613D044D81FA73BD16BFA2D87FCD007259C1A062251046E78A1FA60EF"
+    },
+    {
+      "relative": "logs/release-launch.json",
+      "length": 73411,
+      "sha256": "EF8A651F462EE831EF7DB0D3309C64D73F57908527F720551549BAA781EC58DE"
+    },
+    {
+      "relative": "logs/release-native-printwindow-capture.json",
+      "length": 912,
+      "sha256": "DEAB85F88F50C8BC75A9C3A1BC3EA7144050F425C9ADC0BA747AD62ADCEEE762"
+    },
+    {
+      "relative": "logs/release-natural-close.json",
+      "length": 8326,
+      "sha256": "BF9C3B25D01141C8EAD52CC6F81D66C7FEB0F133EFE0030CDB41D0D5D974D767"
+    },
+    {
+      "relative": "logs/release-restart-after-back-dom.json",
+      "length": 175,
+      "sha256": "473A10BDECD8B8539E7D5AEA56F30843357C835855CCC5E622CC8B98208E6F0E"
+    },
+    {
+      "relative": "logs/release-restart-after-back-native.json",
+      "length": 491,
+      "sha256": "7030E20A581D5A9057F9B24A5997DD56C9605358065A6185626BCD74279D892C"
+    },
+    {
+      "relative": "logs/release-restart-after-browser-back-dom.json",
+      "length": 167,
+      "sha256": "D81F086931CD6BC146326163B520C8D88226F3C576C13B350DAAB59818C0B293"
+    },
+    {
+      "relative": "logs/release-restart-alt-left.txt",
+      "length": 10,
+      "sha256": "91A4D5BDB4DC2A60F7941ABD953F75047A0534FFF96B52037E3348E7B8B99A4D"
+    },
+    {
+      "relative": "logs/release-restart-browser-back.txt",
+      "length": 32,
+      "sha256": "88E3637B818055FA0E0231E6FBE5426B8BCF0FDBE7B060207AD5B0FB49E6E2E1"
+    },
+    {
+      "relative": "logs/release-restart-click-language.txt",
+      "length": 10,
+      "sha256": "91A4D5BDB4DC2A60F7941ABD953F75047A0534FFF96B52037E3348E7B8B99A4D"
+    },
+    {
+      "relative": "logs/release-restart-close-followup.json",
+      "length": 1107,
+      "sha256": "BD891B10961803E1250BF31C7D7627758FA104FA303023F29E485D390E971B9E"
+    },
+    {
+      "relative": "logs/release-restart-initial-zh-CN-dom.json",
+      "length": 600,
+      "sha256": "AB5B01245C72ED33692C2C770922C3900E9CCD6A09B1927937AE04F5F0809AD9"
+    },
+    {
+      "relative": "logs/release-restart-launch.json",
+      "length": 1764,
+      "sha256": "4949D9550AD2DEFE4EACBB2EC51E0FF7C74D4973FF4DA04A758DF7FF59DEE5B0"
+    },
+    {
+      "relative": "logs/release-restart-settings-zh-CN-dom.json",
+      "length": 127,
+      "sha256": "CBB58C709B168E9BE917A6269A0E1143C81E4618A683A0B2B2B39D91E7D74A73"
+    },
+    {
+      "relative": "logs/release-restart-store-after-back.json",
+      "length": 182,
+      "sha256": "81F381E83A7FE381339A120AB902AC5B305B95F03BACC35C932F853866291FBE"
+    },
+    {
+      "relative": "logs/release-restart-store-before-navigation.json",
+      "length": 182,
+      "sha256": "81F381E83A7FE381339A120AB902AC5B305B95F03BACC35C932F853866291FBE"
+    },
+    {
+      "relative": "logs/release-select-zh-cn.txt",
+      "length": 10,
+      "sha256": "91A4D5BDB4DC2A60F7941ABD953F75047A0534FFF96B52037E3348E7B8B99A4D"
+    },
+    {
+      "relative": "logs/release-settings-en-dom.json",
+      "length": 264,
+      "sha256": "B7E296B2721ED63F752C8F331C518EC16C534F70E6910665ABE556338AE95AA0"
+    },
+    {
+      "relative": "logs/release-settings-zh-CN-dom.json",
+      "length": 284,
+      "sha256": "427DF15E44F6E889C92177999A75635C1024486F1AD898074BBFD5D4AD2C194A"
+    },
+    {
+      "relative": "logs/release-store-after-zh.json",
+      "length": 503,
+      "sha256": "47C6DC3A53CA95F7AB53B1E02F96D6165AB7553CE6E642DBB939D88A464C707A"
+    },
+    {
+      "relative": "logs/release-taskbar-capture.json",
+      "length": 518,
+      "sha256": "46643DD471764F2BAAD4585A40D6DD1B28028F83B147536A657F62993256C60E"
+    },
+    {
+      "relative": "release/localappdata/DevSweep/settings/presentation-v1.json",
+      "length": 39,
+      "sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899"
+    },
+    {
+      "relative": "screenshots/release-extracted-associated-icon.png",
+      "length": 1613,
+      "sha256": "690EA895DF7ED32E1630BFF280DAC385816B9D48CD56BB8FA3DEE436DAF8C3DC"
+    },
+    {
+      "relative": "screenshots/release-initial-native.png",
+      "length": 82492,
+      "sha256": "9723D3DE80C53650B5F0EE2A3A5007B3A6004794D364A2B28CB919B94746C723"
+    },
+    {
+      "relative": "screenshots/release-restart-zh-CN-after-back-native.png",
+      "length": 16907,
+      "sha256": "B5004269C8E8C80E808FF0250AAC98DAAB20BD558285CD63517B30A4453DE97F"
+    },
+    {
+      "relative": "screenshots/release-settings-zh-CN-native-printwindow.png",
+      "length": 14104,
+      "sha256": "146437FC610C988C2DCF4056C1AD63E430FB76EA4666721312E94E55AA6BF3D3"
+    },
+    {
+      "relative": "screenshots/release-settings-zh-CN-native.png",
+      "length": 82365,
+      "sha256": "94200265CC9F2952FC04F168DBFB8AC0D01F2891D2F61217760F571C3AD51C48"
+    },
+    {
+      "relative": "screenshots/release-taskbar-bound-crop.png",
+      "length": 2715,
+      "sha256": "EFCB746023408C9A6D75D910A0892F4AC3F0059C0423910A34B42B4DA4C23655"
+    },
+    {
+      "relative": "screenshots/release-taskbar-candidate.png",
+      "length": 36533,
+      "sha256": "D92A1B005C1D4D2489BC31C7C26CE7F5A20AEE6704E2E4FCAFB534CFF9C7400B"
+    },
+    {
+      "relative": "snapshots/debug-fixed-initial.txt",
+      "length": 27,
+      "sha256": "39E5DC31E3E4F6F8F9B70001FCDC0901452EB3E0BCEACBE144350401268EADF0"
+    },
+    {
+      "relative": "snapshots/debug-fixed-real-initial.txt",
+      "length": 27,
+      "sha256": "39E5DC31E3E4F6F8F9B70001FCDC0901452EB3E0BCEACBE144350401268EADF0"
+    },
+    {
+      "relative": "snapshots/release-initial.txt",
+      "length": 86,
+      "sha256": "E67EF84F69E80713E096A554CC09F9271CCD5D38B30673DA86C889436C9E62F9"
+    },
+    {
+      "relative": "snapshots/release-restart-after-back.txt",
+      "length": 489,
+      "sha256": "6310FDAB17C49AE15600C5D3C565B1F0ACDBB552DE9CC0ECE9F262D1C0649CE6"
+    },
+    {
+      "relative": "snapshots/release-restart-after-browser-back.txt",
+      "length": 576,
+      "sha256": "D49E41B99E1B1A6B6BEAD8186CFB859131BE2CA4D00BD58D92AF51FC7EDFFA02"
+    },
+    {
+      "relative": "snapshots/release-restart-initial-zh-CN.txt",
+      "length": 576,
+      "sha256": "D49E41B99E1B1A6B6BEAD8186CFB859131BE2CA4D00BD58D92AF51FC7EDFFA02"
+    },
+    {
+      "relative": "snapshots/release-restart-settings-zh-CN.txt",
+      "length": 489,
+      "sha256": "6310FDAB17C49AE15600C5D3C565B1F0ACDBB552DE9CC0ECE9F262D1C0649CE6"
+    },
+    {
+      "relative": "snapshots/release-settings-en.txt",
+      "length": 524,
+      "sha256": "D6735988C912106DD88BAD5D8F76F91AEEE451F698928B946C009DF0A2D9FCE7"
+    },
+    {
+      "relative": "snapshots/release-settings-zh-CN.txt",
+      "length": 489,
+      "sha256": "6310FDAB17C49AE15600C5D3C565B1F0ACDBB552DE9CC0ECE9F262D1C0649CE6"
+    },
+    {
+      "relative": "verification.md",
+      "length": 10053,
+      "sha256": "358C7C0C2A991B01A30CA6F2646AA9114BA414380D52996B06C52779B524C6AC"
+    }
+  ]
+}

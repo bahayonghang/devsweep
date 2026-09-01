@@ -1,0 +1,10 @@
+sources:
+  - resources/i18n/en.json
+  - resources/i18n/zh-CN.json
+
+analyze_keys_en: 39
+analyze_keys_zh-CN: 39
+only_en: []
+only_zh-CN: []
+schema_mismatches: []
+result: pass

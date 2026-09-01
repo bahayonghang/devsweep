@@ -1,0 +1,9 @@
+=== Validating Context Files ===
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-clean-mode-workbench
+
+  implement.jsonl: ✓ (5 entries)
+  check.jsonl: ✓ (4 entries)
+
+✓ All validations passed
+
+exit=0

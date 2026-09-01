@@ -1,0 +1,36 @@
+ENVIRONMENT: CARGO_TERM_QUIET=true (quiet raw-log rerun after the ordinary full-output run also passed)
+COMMAND: just ci
+cargo fmt --all -- --check
+cargo update --offline --package devsweep-core --package devsweep-cli
+cargo check --workspace --locked --all-targets
+cargo test --workspace --locked --all-targets
+warning: linker stdout: 正在创建库 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.lib 和对象 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.exp
+note: #[warn(linker_messages)] on by default
+
+running 135 tests
+test result: ok. 135 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+running 12 tests
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.35s
+
+running 231 tests
+test result: ok. 231 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.87s
+
+running 1 test
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+running 30 tests
+test result: ok. 28 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo clippy --workspace --locked --all-targets -- -D warnings
+ci complete
+EXIT_CODE=0

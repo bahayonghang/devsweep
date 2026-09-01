@@ -1,0 +1,68 @@
+**********************
+PowerShell transcript start
+Start time: 20260830133537
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$log = '.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/logs/final-static-convergence-scope-residue.log'
+Start-Transcript -Path $log -Force
+rtk git diff --check
+$diffCode = $LASTEXITCODE
+"git_diff_check_exit=$diffCode"
+python ./.trellis/scripts/task.py validate .trellis/tasks/08-29-desktop-shell-navigation-brand
+$validateCode = $LASTEXITCODE
+"task_validate_exit=$validateCode"
+rtk git diff --quiet -- Cargo.toml Cargo.lock desktop/package.json desktop/package-lock.json
+$manifestCode = $LASTEXITCODE
+"manifest_lock_diff_exit=$manifestCode"
+$owned = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -match '^devsweep' })
+"owned_process_count=$($owned.Count)"
+$listeners = @(Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.OwningProcess -in @($owned.Id) })
+"owned_listener_count=$($listeners.Count)"
+$locks = @(Get-ChildItem '.trellis/tasks/08-29-desktop-shell-navigation-brand/evidence' -Recurse -File -Filter '*.lock' -ErrorAction SilentlyContinue)
+"task_evidence_lock_count=$($locks.Count)"
+$exe = Get-Item 'target/release/devsweep-desktop.exe'
+$exeHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $exe.FullName).Hash
+"desktop_exe_bytes=$($exe.Length)"
+"desktop_exe_sha256=$exeHash"
+$bundle = Get-Item 'target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe'
+$bundleHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $bundle.FullName).Hash
+"nsis_bytes=$($bundle.Length)"
+"nsis_sha256=$bundleHash"
+Stop-Transcript | Out-Null
+if ($diffCode -ne 0) { exit $diffCode }
+if ($validateCode -ne 0) { exit $validateCode }
+if ($manifestCode -ne 0) { exit $manifestCode }
+if ($owned.Count -ne 0 -or $listeners.Count -ne 0 -or $locks.Count -ne 0) { exit 1 }
+exit 0
+Process ID: 71104
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/logs/final-static-convergence-scope-residue.log
+› Ask Codex to do anything
+git_diff_check_exit=0
+› Ask Codex to do anything
+task_validate_exit=0
+› Ask Codex to do anything
+manifest_lock_diff_exit=0
+owned_process_count=0
+owned_listener_count=0
+task_evidence_lock_count=0
+desktop_exe_bytes=9790976
+desktop_exe_sha256=5D852DE611B3B62719C21D9108377F59619B8BFAC7C8A242530AD590E4498995
+nsis_bytes=3117703
+nsis_sha256=0773894085D5ECE773E4331B7A2AB5386F8E18572608185F20BC71B572D871AD
+**********************
+PowerShell transcript end
+End time: 20260830133539
+**********************

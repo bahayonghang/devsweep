@@ -1,0 +1,8 @@
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/i18n/index.test.ts (4 tests) 3ms
+ ✓ src/app-shell/AppShell.test.tsx (8 tests) 564ms
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  11:14:59
+   Duration  2.33s (transform 78ms, setup 358ms, collect 198ms, tests 567ms, environment 1.15s, prepare 124ms)
+EXIT_CODE=0

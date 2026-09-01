@@ -1,0 +1,2 @@
+Software preview: 1 exact current-user MSIX package(s). Digest: sha256:4fdcf3cb163849a0e37a1bac6b108e4430b215707a1edae0e3c23bb54347ed46. Uninstall is irreversible from DevSweep's perspective.
+software:v1:msix:03ffd8702fd10d53af9c2a2d81d85e832ade9b368d20f7be48429d2b5ae708da | msix:Microsoft.VP9VideoExtensions_1.2.20.0_x64__8wekyb3d8bbwe | Current user | Remove current-user MSIX

@@ -1,0 +1,20 @@
+=== runtime .trellis reference audit ===
+desktop/src\api\fixtures\scan-report.real.json:6:      "id": "node.node_modules:\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project\\node_modules",
+desktop/src\api\fixtures\scan-report.real.json:8:      "scope": { "type": "project", "root": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project" },
+desktop/src\api\fixtures\scan-report.real.json:11:      "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project\\node_modules",
+desktop/src\api\fixtures\scan-report.real.json:19:        { "type": "marker_file", "path": "\\\\?\\D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-03-desktop-frontend-ui\\research\\fixtures\\project\\package.json" },
+RG_EXIT=0 (1 means expected no matches)
+=== dependency/manifest diff audit ===
+MANIFEST_DIFF_COUNT=0
+=== artifact hashes ===
+target/release/devsweep-desktop.exe|9789440|E532A472DC6552FE9115B8D75F1EAA385A94FA8173AFD848C4CC2A89B515EBC4|2026-08-30T10:57:30.8448165+08:00
+target/release/bundle/nsis/devsweep_0.2.0_x64-setup.exe|3116039|4261817EE59015004BDBA05A2683CCF988ED76765B6E67B7B0F6859179CAF862|2026-08-30T10:57:29.7904448+08:00
+=== residue ===
+OWNED_PROCESS_COUNT=0
+OWNED_LISTENER_COUNT=0
+STARTUP_DIRT_PRESERVED=
+ M .trellis/.gitignore
+ M README.md
+ M justfile
+=== exact-owned runtime reference audit ===
+EXACT_OWNED_RG_EXIT=1 (1 = no matches)

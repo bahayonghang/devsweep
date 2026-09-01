@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "inventory_fingerprint": "sha256:89eb1fd5b0c9166291c2531af94a7f7b36df6ab68904725aae4d75d7a5179a75",
+  "inventory_observed_at_unix_ms": 1788130995308,
+  "expires_at_unix_ms": 1788131895308,
+  "selected_ids": [
+    "software:v1:msix:03ffd8702fd10d53af9c2a2d81d85e832ade9b368d20f7be48429d2b5ae708da"
+  ]
+}

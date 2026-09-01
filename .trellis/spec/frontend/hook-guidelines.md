@@ -7,7 +7,7 @@
 ## Overview
 
 This Rust TUI project does not use React hooks. The equivalent boundary is the
-event/update layer in `src/tui/app/`: keyboard events and worker messages enter
+event/update layer in `crates/devsweep-cli/src/tui/app/`: keyboard events and worker messages enter
 `App::update`, which mutates the single `App` owner and returns typed
 side-effect requests. `app/input.rs`, `selection.rs`, `worker.rs`, and `jobs.rs`
 contain cohesive transitions; `app/mod.rs` remains the exhaustive root router.
@@ -154,9 +154,10 @@ send(WorkerEvent::ScanProgress {
 - A current scan update immediately invalidates an open confirmation. Keep the
   modal visible with re-confirmation feedback, apply the scan update normally,
   and emit no cleanup effect until the user closes and reopens confirmation.
-- Selection state is keyed by `TargetId`. Preserve explicit select/deselect
-  overrides for matching staged-scan targets; use `selected_by_default` only
-  for targets without an override.
+- Selection state is keyed by `TargetId`. Active scan snapshots are preview-only:
+  clear selection when the scan starts and block selection, dry-run, and cleanup
+  confirmation until `ScanFinished` promotes the final plan and applies its
+  executable `selected_by_default` values.
 - The app rejects scan and cleanup requests while a cleanup job is active. The
   runtime independently permits only one clean worker, so an accidental second
   `StartClean` cannot spawn a second mutation worker.
@@ -182,8 +183,8 @@ send(WorkerEvent::ScanProgress {
 #### 5. Good/Base/Bad Cases
 
 - Good: a confirmation runs exactly the targets displayed when it was opened.
-- Good: a user deselects an existing target, then receives a staged scan update;
-  that target remains deselected while a new default-selected target is added.
+- Good: same-phase staged scan updates replace the visible target snapshot while
+  selection remains empty; `ScanFinished` alone applies final default selection.
 - Base: a cancellation request may still end as succeeded or failed until the
   real cancellation token reaches the worker.
 - Bad: rebuilding a cleanup plan from `App.targets` when Enter is pressed.
@@ -195,7 +196,8 @@ send(WorkerEvent::ScanProgress {
   phrase, and assert no clean effect is emitted.
 - Reducer test: mutate current selection after opening confirmation and assert
   the emitted plan still equals the frozen manifest.
-- Reducer test: preserve an explicit selection override across a staged scan.
+- Reducer test: staged scan targets cannot be selected or dry-run, and final scan
+  completion alone applies default selection.
 - Runtime test with a blocking clean service: dispatch two clean effects and
   assert exactly one service invocation.
 - Runtime test: a revalidated snapshot with a different digest is rejected

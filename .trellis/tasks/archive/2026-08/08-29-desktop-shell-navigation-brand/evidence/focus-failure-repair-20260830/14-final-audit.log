@@ -1,0 +1,18 @@
+
+GIT_DIFF_CHECK_EXIT=0
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand
+
+  [0;32mimplement.jsonl: ✓ (7 entries)[0m
+  [0;32mcheck.jsonl: ✓ (3 entries)[0m
+
+[0;32m✓ All validations passed[0m
+TASK_VALIDATE_EXIT=0
+PORT_4180_LISTENERS=0
+PORT_9341_LISTENERS=0
+DEVSWEEP_DESKTOP_PROCESSES=0
+DEVSWEEP_WEBVIEW_PROCESSES=0
+VITE_4180_PROCESSES=0
+STORE_LOCK_TEMP_FILES=0
+?? .trellis/tasks/08-29-desktop-shell-navigation-brand/evidence/focus-failure-repair-20260830/
+?? desktop/src/app-shell/

@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Run the full desktop web, accessibility, visual, and packaging review."}
+{"file": ".trellis/tasks/08-29-generated-app-icon-integration/design.md", "reason": "Verify no React/TUI/CSS ownership leaked back into this foundation child."}
+{"file": ".trellis/tasks/08-29-generated-app-icon-integration/research/icon-generation.md", "reason": "Audit the product copy, generated outputs, 16/32px evidence, and opaque-source claims."}

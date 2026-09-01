@@ -1,0 +1,53 @@
+
+running 31 tests
+test tui::app::tests::language_save_failure_stays_visible_without_changing_the_session_locale ... ok
+test tui::app::tests::chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::scan_progress_applies_latest_cumulative_partial_plan ... ok
+test tui::app::tests::cancelling_job_ignores_late_progress_events ... ok
+test tui::app::tests::completed_scan_keeps_partial_health_and_capacity_totals_in_state ... ok
+test tui::app::tests::quit_during_active_job_opens_confirm_instead_of_detaching ... ok
+test tui::app::tests::completed_scan_replaces_preview_and_reapplies_final_defaults ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test tui::app::tests::cancellation_key_requests_active_job_cancellation ... ok
+test tui::app::tests::replacement_scan_waits_for_cancel_terminal_and_rejects_stale_results ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test tui::app::tests::pycache_groups_collapse_without_changing_target_selection_or_identity ... ok
+test tui::app::tests::startup_effects_request_an_initial_scan ... ok
+test tui::app::tests::startup_default_selection_follows_selected_by_default_even_for_self_targets ... ok
+test tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes ... FAILED
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+test tui::app::tests::update_keeps_scan_preview_read_only_then_restores_completed_selection ... ok
+test tui::app::tests::worker_events_update_jobs_and_targets ... ok
+test tui::app::tests::byte_summaries_count_duplicate_paths_once ... ok
+test tui::app::tests::terminal_jobs_ignore_late_worker_events ... ok
+test tui::app::tests::accepted_confirmation_keeps_explicit_fresh_target_selection ... ok
+test tui::app::tests::accepted_confirmation_executes_its_frozen_manifest ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test tui::app::tests::viewport_keeps_selection_visible_for_long_lists ... ok
+test tui::app::tests::scan_progress_shows_project_targets_before_global_scan_finishes ... ok
+test tui::app::tests::scan_updates_invalidate_open_confirmation_and_block_enter ... ok
+test tui::app::tests::rejected_confirmation_shows_inline_feedback ... ok
+test tui::app::tests::finished_cleanup_progress_stays_visible_until_dismissed ... ok
+
+failures:
+
+---- tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes stdout ----
+
+thread 'tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes' (72556) panicked at crates\devsweep-cli\src\tui\app\tests.rs:839:5:
+assertion failed: matches!(app.update(key(KeyCode::Char('s'))).as_slice(),
+    [Effect::StartScan { .. }])
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes
+
+test result: FAILED. 30 passed; 1 failed; 0 ignored; 0 measured; 76 filtered out; finished in 0.01s
+
+   Compiling devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.39s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+error: test failed, to rerun pass `-p devsweep-cli --lib`

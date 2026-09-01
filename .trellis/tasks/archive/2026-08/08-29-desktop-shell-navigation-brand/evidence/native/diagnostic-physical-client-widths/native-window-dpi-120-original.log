@@ -1,0 +1,20 @@
+SYSTEM_DPI=96 SCALE_PERCENT=100
+EXECUTABLE=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe
+ISOLATED_LOCALAPPDATA=D:\Documents\Code\Rust\Exp\devsweep\target\devsweep-shell-native-evidence\localappdata-20260830T0944
+FIRST_PID=23632 WINDOW_DPI=120
+CAPTURE locale=en scale=100 requested=390x900 actual=390x900
+CAPTURE locale=en scale=100 requested=800x900 actual=800x900
+CAPTURE locale=en scale=100 requested=1024x900 actual=1024x900
+CAPTURE locale=en scale=100 requested=1440x900 actual=1440x900
+CAPTURE keyboard_focus scale=100 actual=390x900
+SETTINGS_PATH=D:\Documents\Code\Rust\Exp\devsweep\target\devsweep-shell-native-evidence\localappdata-20260830T0944\DevSweep\settings\presentation-v1.json
+SETTINGS_BYTES=39 SETTINGS_TEXT={"schema_version":1,"language":"zh-CN"}
+CAPTURE locale=zh-CN scale=100 requested=390x900 actual=390x900
+CAPTURE locale=zh-CN scale=100 requested=800x900 actual=800x900
+CAPTURE locale=zh-CN scale=100 requested=1024x900 actual=1024x900
+CAPTURE locale=zh-CN scale=100 requested=1440x900 actual=1440x900
+GRACEFUL_EXIT pid=23632 exit=0
+RESTART_PID=33168 WINDOW_DPI=120
+CAPTURE persisted_restart locale=zh-CN scale=100 actual=800x900
+GRACEFUL_EXIT pid=33168 exit=0
+ZERO_RESIDUAL=PASS

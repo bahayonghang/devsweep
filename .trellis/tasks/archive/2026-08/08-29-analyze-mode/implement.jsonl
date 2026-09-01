@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Coordinate the Analyze core schema, IPC, and presentation without crossing into execution authority."}
+{"file": ".trellis/tasks/08-29-analyze-mode/design.md", "reason": "Enforce child ownership, dependency order, parity, and rollback as one read-only mode."}

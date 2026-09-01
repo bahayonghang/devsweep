@@ -1,0 +1,31 @@
+{
+  "verification_state": "failed",
+  "verification_failure": "CDP observed exception/error console output",
+  "runtime_exception_count": 0,
+  "console_error_count": 0,
+  "log_error_count": 1,
+  "known_vite_favicon_404_count": 1,
+  "unexpected_log_error_count": 0,
+  "state_snapshot_count": 4,
+  "window_unhandled_count": 0,
+  "window_error_count": 0,
+  "runtime_exceptions": [],
+  "console_errors": [],
+  "log_errors": [
+    {
+      "method": "Log.entryAdded",
+      "params": {
+        "entry": {
+          "source": "network",
+          "level": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "timestamp": 1788087706465.517,
+          "url": "http://127.0.0.1:4180/favicon.ico",
+          "networkRequestId": "72856.46"
+        }
+      }
+    }
+  ],
+  "window_unhandled": [],
+  "window_errors": []
+}

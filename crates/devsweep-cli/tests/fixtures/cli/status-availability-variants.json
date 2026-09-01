@@ -1,0 +1,7 @@
+{
+  "available": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "fixture": 1 } },
+  "partial": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "fixture": 1 }, "reason_codes": ["fixture_partial"] },
+  "unavailable": { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "fixture_unavailable" },
+  "permission_denied": { "state": "permission_denied", "sampled_at_unix_ms": null, "reason_code": "fixture_denied" },
+  "unsupported": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "not_supported_v1" }
+}

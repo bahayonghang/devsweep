@@ -1,0 +1,27 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-9efc717c4c33890e.exe)
+
+running 14 tests
+test optimize::tests::execution::terminal_classification_is_exhaustive_and_closed ... ok
+test optimize::tests::execution::confirmation_is_required ... ok
+test optimize::tests::execution::digest_mismatch_fails_before_dispatch_without_touching_the_journal ... ok
+test optimize::tests::execution::stale_catalogue_version_fails_before_dispatch ... ok
+test optimize::tests::execution::audit_records_stay_redacted ... ok
+test optimize::tests::execution::cancel_before_dispatch_is_canceled_without_a_call ... ok
+test optimize::tests::execution::confirmed_dns_success_writes_the_full_audit_trail ... ok
+test optimize::tests::execution::cancel_after_dispatch_is_unknown ... ok
+test optimize::tests::execution::one_operation_permit_serializes_concurrent_runs ... ok
+test optimize::tests::execution::settings_success_is_only_launched ... ok
+test optimize::tests::execution::unsupported_preflight_fails_before_dispatch ... ok
+test optimize::tests::execution::adapter_failure_and_unfinished_map_to_failed_and_unknown ... ok
+test optimize::tests::execution::lock_conflict_fails_closed_and_preserves_bytes ... ok
+test optimize::tests::execution::recovery_never_redispatches_pending_operations ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 265 filtered out; finished in 0.25s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-8517483b5bf2ac5a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

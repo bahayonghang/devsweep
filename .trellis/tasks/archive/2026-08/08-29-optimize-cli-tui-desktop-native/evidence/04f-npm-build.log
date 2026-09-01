@@ -1,0 +1,20 @@
+command: cd /d desktop && npm run build
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:12:10.0944692+08:00
+----- output -----
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+vite v7.3.6 building client environment for production...
+transforming...
+鉁?96 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB 鈹?gzip:   0.27 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/index-BXJwfnBU.css                  25.06 kB 鈹?gzip:   5.64 kB
+dist/assets/index-CqF6OFm_.js                  427.96 kB 鈹?gzip: 106.76 kB
+鉁?built in 550ms
+
+-----
+exit=0
+finished: 2026-08-31T14:12:12.7935669+08:00

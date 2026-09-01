@@ -1,0 +1,28 @@
+=== cargo fmt --all -- --check ===
+EXIT:0
+=== cargo test -p devsweep-cli --lib ===
+test application::cli::tests::every_clap_context_has_complete_contextual_chinese_help ... ok
+
+test result: ok. 140 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+EXIT:0
+=== just ci ===
+cargo clippy --workspace --locked --all-targets -- -D warnings
+    Checking devsweep-cli v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.85s
+ci complete
+EXIT:0
+=== npm --prefix desktop run typecheck ===
+npm notice run devsweep-desktop-ui@0.2.0 typecheck
+npm notice run tsc --noEmit
+EXIT:0
+=== npm --prefix desktop run test ===
+   [33m[2m✓[22m[39m desktop workflow[2m > [22minvalidates a dry run after selection changes, then confirms and reports execution [33m 499[2mms[22m[39m
+   [33m[2m✓[22m[39m desktop workflow[2m > [22morders real bridge scan, dry-run, and execute starts after old cancel and join [33m 304[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+[2m      Tests [22m [1m[32m130 passed[39m[22m[90m (130)[39m
+[2m   Start at [22m 10:46:41
+[2m   Duration [22m 8.28s[2m (transform 4.23s, setup 8.19s, collect 9.94s, tests 9.89s, environment 32.45s, prepare 2.61s)[22m
+
+EXIT:0

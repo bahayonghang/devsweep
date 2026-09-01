@@ -1,0 +1,10 @@
+command: rtk cargo test -p devsweep-core optimize::tests::windows
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:04:40.1139318+08:00
+----- output -----
+
+cargo test: 9 passed, 1 ignored, 271 filtered out (2 suites, 0.03s)
+
+-----
+exit=0
+finished: 2026-08-31T13:04:40.6340894+08:00

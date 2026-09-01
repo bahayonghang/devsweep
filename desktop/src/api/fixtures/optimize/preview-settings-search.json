@@ -1,0 +1,15 @@
+{
+  "operation_id": "optimize-preview-settings",
+  "plan": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "settings.search"
+  },
+  "preview": {
+    "version": 1,
+    "catalogue_version": 1,
+    "operation_id": "settings.search",
+    "action_class": "settings_handoff",
+    "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}

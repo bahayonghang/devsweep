@@ -1,0 +1,170 @@
+   Compiling devsweep-core v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.63s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 6 tests
+test presentation_settings::tests::windows_exclusive_sidecar_errors_are_bounded_lock_contention ... ok
+test presentation_settings::tests::fixed_windows_path_never_selects_a_fallback_root ... ok
+test presentation_settings::tests::missing_file_means_no_explicit_choice ... ok
+test presentation_settings::tests::corrupt_unknown_and_newer_documents_are_preserved_byte_for_byte ... ok
+test presentation_settings::tests::exact_v1_bytes_and_closed_tags_round_trip ... ok
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.19s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=1
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.19s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=2
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=3
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=4
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=5
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.19s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=6
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=7
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.28s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=8
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=9
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.19s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+stress_iteration=10
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.27s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+
+running 1 test
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 0.18s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

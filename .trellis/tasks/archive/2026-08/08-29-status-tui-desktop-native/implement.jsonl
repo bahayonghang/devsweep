@@ -1,0 +1,9 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Consume the post-shell desktop component and state conventions before implementing Status cards, charts, process table, lifecycle, accessibility, and native validation."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Implement equivalent TUI snapshot/live presentation and keyboard behavior."}
+{"file": ".trellis/tasks/08-29-status-collector-cli/design.md", "reason": "Consume the frozen availability and sampling DTO without inventing values."}
+{"file": ".trellis/tasks/08-29-status-tui-desktop-native/design.md", "reason": "Implement explicit live lifecycle, bounded in-memory charts, and privacy-safe UI."}
+{"file": "crates/devsweep-cli/src/tui/modes/status/", "reason": "Mode-local Status reducer: snapshot first, explicit live, 60-point gapped charts, privacy-safe process rows, drop on leave."}
+{"file": "desktop/src-tauri/src/status.rs", "reason": "Tauri snapshot/live/cancel adapter over frozen Status V1; concurrent live rejected."}
+{"file": "desktop/src/modes/status/", "reason": "Desktop workbench, closed decoders, chart text alternatives, coordinator live restart."}
+{"file": "docs/validation/status-native.md", "reason": "Native matrix and resource-gate artifact names."}
+{"evidence": "Focused gates EXIT 0: 01 cargo test cli status 15+1; 02 tui::modes::status 10; 03 git diff --check; 04 just desktop-web-check plus npm types:generate/lint/typecheck/test(157)/build; 05 just desktop-test; 06 just desktop-build. Native capture EXIT 0 EN/ZH 390-1440, DPI 100-200, keyboard Space live, AX 792 nodes, reduced-motion, forced-colors, interval 5000, leave/restart/close. Resource gate EXIT 0 on release sha256 9B4EBB3F…: snapshot p95 820ms, live CPU median 0% p95 7.776%, private peak 7278592 <= idle 6172672+64MiB, threads 37 <= 36+4, 25 post-exit samples final five absent. See evidence/verification-report.md."}

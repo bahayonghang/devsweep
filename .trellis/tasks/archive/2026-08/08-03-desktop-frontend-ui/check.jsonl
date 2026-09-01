@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "执行 desktop frontend completion checklist 与 Node 22 quality gates"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "检查可访问控件、表格信息密度、风险/容量/文案呈现"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "检查选择、重扫、digest 失效与二次确认状态不变量"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "核对生成类型、单点解码和 Rust serde tag/字段"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "检查 command/event -> decoder -> reducer -> view 全链路"}

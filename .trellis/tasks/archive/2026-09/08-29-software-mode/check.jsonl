@@ -1,0 +1,16 @@
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/windows-software-boundary.md", "reason": "Audit recursive behavior against the approved inventory, execution, and refusal boundary."}
+{"file": ".trellis/tasks/08-29-software-mode/prd.md", "reason": "Trace cross-child Software safety, parity, redaction, no-UAC, and rollback evidence."}
+{"file": ".trellis/tasks/08-29-software-mode/design.md", "reason": "Verify umbrella handoff ownership, fixture ledger, and registration/rollback clauses against child evidence."}
+{"file": ".trellis/tasks/08-29-software-mode/implement.md", "reason": "Apply the umbrella acceptance procedure, PASS conditions, and UNVERIFIED boundary rules."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-inventory-plan/prd.md", "reason": "Map parent R1/R2 to child inventory/plan/eligibility requirements when tracing AC1-AC3."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-execution-audit/prd.md", "reason": "Map parent R1 five-terminal/audit/no-UAC clauses to the execution child contract."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-cli-tui-desktop-native/prd.md", "reason": "Map parent AC2 parity and native-evidence clauses to the presentation child contract."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-inventory-plan/evidence/independent-check-report.md", "reason": "Independent PASS verdict and fix log for hostile inventory, identities, refusal matrix, redaction."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-execution-audit/evidence/independent-check-report.md", "reason": "Independent PASS verdict, authority hardening fixes, and sanctioned UNVERIFIED statement for execution."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-cli-tui-desktop-native/evidence/independent-check-report.md", "reason": "Independent PASS verdict, cross-surface parity probe, grammar-untouched proof, and adjudications."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-execution-audit/evidence/independent-static-audit.log", "reason": "Authority/dispatch/audit trace proving opaque action, no vendor/shell/MSI paths, and frozen grammar."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-execution-audit/evidence/native-evidence.md", "reason": "Confirm native non-uninstall evidence and the exact sanctioned UNVERIFIED real-uninstall scenario list."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-cli-tui-desktop-native/evidence/native-evidence.md", "reason": "Confirm native inventory/plan/preview/desktop captures and remaining UNVERIFIED boundaries."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-cli-tui-desktop-native/evidence/gate-summary.md", "reason": "Verify recorded gate commands, exit codes, sandbox EPERM handling, and honest failure notes."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-cli-tui-desktop-native/evidence/native-20260831/software-preview-vp9.json", "reason": "Recompute preview digest, confirm frozen six-field item schema, irreversibility, and redaction scan."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-software-cli-tui-desktop-native/evidence/native-20260831/software-plan-vp9.json", "reason": "Confirm serialized plan payload is exactly the five frozen fields with no command data."}

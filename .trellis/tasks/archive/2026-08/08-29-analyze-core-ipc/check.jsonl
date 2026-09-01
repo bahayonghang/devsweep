@@ -1,0 +1,18 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit traversal correctness, bounds, cancellation, errors, tests, and safety separation."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/prd.md", "reason": "Trace every evidence, schema, resource, IPC, and native clause."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/design.md", "reason": "Verify snapshot aggregation and adapters cannot create cleanup authority."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify Analyze remains read-only, no-follow, lower-bound, and free of cleanup authority."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Verify the TUI reducer parity test follows frontend state and quality gates."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Verify the desktop parity test uses the canonical closed-world decoder and generated DTO types."}
+{"file": ".trellis/tasks/08-29-analyze-mode/acceptance.md", "reason": "Trace the four exact parent acceptance gaps reopened for this child."}
+{"file": "crates/devsweep-core/src/analysis/walker.rs", "reason": "Verify denied and unverified no-follow classification, zero-byte failure handling, lower-bound churn, and non-traversal."}
+{"file": "crates/devsweep-core/src/analysis/tests.rs", "reason": "Verify fake/native sparse, live deletion and growth, ACL-denied, reconciliation, and release resource gates."}
+{"file": "crates/devsweep-core/src/filesystem/reparse.rs", "reason": "Confirm non-denied unverifiable probes remain fail-closed and are never approved for traversal."}
+{"file": "crates/devsweep-core/src/analysis/model.rs", "reason": "Confirm the frozen DTO and node, warning, memory, and worker caps were not changed."}
+{"file": "crates/devsweep-cli/src/tui/modes/analyze/mod.rs", "reason": "Verify the canonical CLI fixture passes through the actual TUI reducer and projections."}
+{"file": "desktop/src/modes/analyze/parity.test.ts", "reason": "Verify the real desktop decoder and selectors preserve canonical fixture totals, evidence, warnings, and hash."}
+{"file": "desktop/src/api/fixtures/analyze/cli-parity.json", "reason": "Audit the exact frozen CLI snapshot shared by TUI and desktop parity gates."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-generate-parity-fixture.ps1", "reason": "Audit deterministic logical contents, sparse construction, ACL denial, and collision refusal."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-core-analysis-release.log", "reason": "Audit release native churn, denied, sparse, resource, and cancellation evidence."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/evidence/native-50k-status.json", "reason": "Cross-check refreshed 50k samples, counts, warnings, workers, and p95 cancellation."}
+{"file": ".trellis/tasks/08-29-analyze-core-ipc/evidence/reopen-desktop-test-main-session.log", "reason": "Audit the sandbox-external 19-file and 122-test Vitest pass including parity.test.ts."}

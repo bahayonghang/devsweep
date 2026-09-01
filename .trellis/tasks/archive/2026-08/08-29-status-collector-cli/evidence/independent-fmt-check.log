@@ -1,0 +1,6 @@
+COMMAND: rtk cargo fmt --all -- --check
+CWD: D:\Documents\Code\Rust\Exp\devsweep
+STARTED: 2026-08-31T15:55:22.9547519+08:00
+
+EXIT: 0
+FINISHED: 2026-08-31T15:55:23.6796214+08:00

@@ -1,0 +1,33 @@
+sources:
+  - evidence/render-budget-250k.json
+  - evidence/render-budget-browser.json
+
+nearest_rank_rule: ceil(0.95 * 30) = 29
+layout_samples: 30
+layout_warmups: 5
+layout_rank: 29
+layout_p95_recomputed_ms: 1.9589
+layout_p95_summary_matches: true
+layout_limit_ms: 50
+layout_limit_pass: true
+layout_rectangles: 513
+layout_rectangle_limit: 513
+layout_rectangle_limit_pass: true
+layout_host: Node v26.7.0, win32-x64
+
+commit_samples: 30
+commit_warmups: 5
+commit_rank: 29
+commit_p95_recomputed_ms: 6.69999998807907
+commit_p95_summary_matches: true
+commit_limit_ms: 100
+commit_limit_pass: true
+browser_rectangles: 513
+browser_rectangle_limit_pass: true
+browser_dom_elements: 759
+browser_dom_limit: 900
+browser_dom_limit_pass: true
+browser_host: HeadlessChrome/152
+
+result: recorded raw samples internally satisfy all frozen render-budget caps.
+qualification: browser commit evidence predates the independent keyboard-focus fix and therefore needs a fresh post-fix capture before final closeout.

@@ -1,0 +1,17 @@
+command: whoami /groups; file hash
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:10:37.1526735+08:00
+----- output -----
+integrity:
+Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+consent.exe before=none
+exe=D:\Documents\Code\Rust\Exp\devsweep\target\debug\devsweep.exe
+pe=amd64 (0x8664)
+sha256=3CB2058FB642AA6F09D720337B7866CB995F5BCFE3281A4BD787F699E2E2503A
+LOCALAPPDATA override=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-cli-tui-desktop-native\evidence\native\lappdata
+ipconfig exists=True
+SystemSettings exists=True
+NOTE: opened Settings pages are launched, never maintenance completion.
+-----
+exit=0
+finished: 2026-08-31T14:10:37.1526735+08:00

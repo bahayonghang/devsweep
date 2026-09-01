@@ -1,0 +1,84 @@
+host 26200 cores=24 cli=f2ec3d3f5c676146fab65a41b03f6dcb6268800f96fc0fdf01c014ec8d9205d9
+warmup optimize-list
+measure optimize-list #1
+measure optimize-list #2
+measure optimize-list #3
+measure optimize-list #4
+measure optimize-list #5
+optimize list catalogue_count=8
+warmup optimize-dns
+measure optimize-dns #1
+measure optimize-dns #2
+measure optimize-dns #3
+measure optimize-dns #4
+measure optimize-dns #5
+warmup software-inventory
+measure software-inventory #1
+measure software-inventory #2
+measure software-inventory #3
+measure software-inventory #4
+measure software-inventory #5
+analyze accounted (CLI --output file; stdout not loaded into sampler)
+creating sizing worktree at d9f4e204b92bf1fa617352f10403fd7b746d6c29
+Preparing worktree (detached HEAD d9f4e20)
+HEAD is now at d9f4e20 perf(core): ⚡ 限制文件大小扫描并发
+counting clean-scan entries under sizing worktree C:\Users\lyh\AppData\Local\Temp\devsweep-five-mode-v1\sizing-worktree-d9f4e20
+clean entries 800
+warmup clean-scan-projects
+measure clean-scan-projects #1
+measure clean-scan-projects #2
+measure clean-scan-projects #3
+measure clean-scan-projects #4
+measure clean-scan-projects #5
+warmup settings.storage_recommendations
+warmup settings.search
+warmup settings.energy_recommendations
+analyze layout p95 (5 warm-up + 30 measured)
+analyze react-commit: building product harness
+npm notice run devsweep-desktop-ui@0.2.0 benchmark:analyze:build
+npm notice run tsc --noEmit && vite build --config vite.benchmark.config.ts
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/analyze-render-benchmark/analyze-render-benchmark.html                   0.60 kB │ gzip:  0.35 kB
+dist/analyze-render-benchmark/assets/devsweep-icon-master-Bn2Ejx_Y.png      956.58 kB
+dist/analyze-render-benchmark/assets/analyze-render-benchmark-DnB4ef2b.css   18.05 kB │ gzip:  4.56 kB
+dist/analyze-render-benchmark/assets/analyze-render-benchmark-TIf0llTY.js   346.69 kB │ gzip: 86.99 kB
+✓ built in 481ms
+edge pid 68348 for react-commit
+launch desktop idle instance (no WEBVIEW2 remote-debug argument)
+idle desktop pid 51776
+warmup idle (unrecorded, no remote-debug)
+settle idle-warmup 30s
+settle idle-1 30s
+settle idle-2 30s
+settle idle-3 30s
+settle idle-4 30s
+settle idle-5 30s
+idle done medianCpu=0 maxPrivate=6811648 maxThreads=35
+launch separate desktop CDP instance for Status snapshot/live
+status desktop pid 53188
+cdp serve pid 32332 {"event":"ready"}
+warmup snapshot (unrecorded)
+warmup live (unrecorded)
+settle live-warmup 30s
+settle live-1 30s
+settle live-2 30s
+settle live-3 30s
+settle live-4 30s
+settle live-5 30s
+analyze cancel-to-join (desktop, after live)
+warmup analyze-cancel (unrecorded)
+analyze-cancel-warmup
+analyze-cancel-1
+analyze-cancel-2
+analyze-cancel-3
+analyze-cancel-4
+analyze-cancel-5
+desktop Analyze IPC until complete (analysis-250k-v1 walker window)
+analyze-250k-desktop
+SAMPLER_ERROR line=180 five-mode-v1 FAILED
+analyze.p95_cpu_le_200 :: p95cpu=203.159537121311
+software.p95_elapsed_le_5s :: p95=6108.807

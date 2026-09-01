@@ -1,0 +1,102 @@
+﻿{
+    "artifacts":  [
+                      {
+                          "name":  "release",
+                          "stage":  "postflight",
+                          "path":  "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+                          "bytes":  9827328,
+                          "sha256":  "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+                          "expected_bytes":  9827328,
+                          "expected_sha256":  "92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20",
+                          "matches":  true
+                      },
+                      {
+                          "name":  "debug",
+                          "stage":  "postflight",
+                          "path":  "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+                          "bytes":  14758912,
+                          "sha256":  "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5",
+                          "expected_bytes":  14758912,
+                          "expected_sha256":  "F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5",
+                          "matches":  true
+                      },
+                      {
+                          "name":  "nsis",
+                          "stage":  "postflight",
+                          "path":  "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\bundle\\nsis\\devsweep_0.2.0_x64-setup.exe",
+                          "bytes":  3152372,
+                          "sha256":  "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328",
+                          "expected_bytes":  3152372,
+                          "expected_sha256":  "0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328",
+                          "matches":  true
+                      }
+                  ],
+    "residue":  {
+                    "captured_at":  "2026-08-30T20:32:50.9286397+08:00",
+                    "main":  [
+                                 {
+                                     "ProcessId":  16920,
+                                     "ParentProcessId":  59928,
+                                     "Name":  "devsweep-desktop.exe",
+                                     "ExecutablePath":  "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+                                     "CreationDate":  "\/Date(1788093160801)\/",
+                                     "CommandLine":  "\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe\" "
+                                 }
+                             ],
+                    "webview":  [
+                                    {
+                                        "ProcessId":  55328,
+                                        "ParentProcessId":  16920,
+                                        "Name":  "msedgewebview2.exe",
+                                        "ExecutablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+                                        "CreationDate":  "\/Date(1788093160907)\/",
+                                        "CommandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --embedded-browser-webview=1 --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --noerrdialogs --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port=9381 --lang=en-US --mojo-named-platform-channel-pipe=16920.79448.12652039500964262056 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+                                    },
+                                    {
+                                        "ProcessId":  80336,
+                                        "ParentProcessId":  55328,
+                                        "Name":  "msedgewebview2.exe",
+                                        "ExecutablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+                                        "CreationDate":  "\/Date(1788093161122)\/",
+                                        "CommandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=gpu-process --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --gpu-preferences=WAAAAAAAAADgAAAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAAEAAAAAIAAAABAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --startup-read-main-dll --metrics-shmem-handle=2232,i,17833785594350545483,4505056518378695793,262144 --field-trial-handle=2288,i,1237024780903211300,12523371130018619476,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2336,i,2062034858112226995,14865593230045728766,4 --trace-process-track-uuid=3190708988185955192 --mojo-platform-channel-handle=2332 /prefetch:2 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+                                    },
+                                    {
+                                        "ProcessId":  58240,
+                                        "ParentProcessId":  55328,
+                                        "Name":  "msedgewebview2.exe",
+                                        "ExecutablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+                                        "CreationDate":  "\/Date(1788093161125)\/",
+                                        "CommandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --startup-read-main-dll --metrics-shmem-handle=2576,i,14312976494521151846,18047120515141959679,524288 --field-trial-handle=2288,i,1237024780903211300,12523371130018619476,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2336,i,2062034858112226995,14865593230045728766,4 --trace-process-track-uuid=3190708989122997041 --mojo-platform-channel-handle=2572 /prefetch:11 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+                                    },
+                                    {
+                                        "ProcessId":  43004,
+                                        "ParentProcessId":  55328,
+                                        "Name":  "msedgewebview2.exe",
+                                        "ExecutablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+                                        "CreationDate":  "\/Date(1788093161161)\/",
+                                        "CommandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=service --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --startup-read-main-dll --metrics-shmem-handle=2860,i,5134207296062020610,3066007299393196914,524288 --field-trial-handle=2288,i,1237024780903211300,12523371130018619476,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2336,i,2062034858112226995,14865593230045728766,4 --trace-process-track-uuid=3190708990060038890 --mojo-platform-channel-handle=2880 /prefetch:13 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e"
+                                    },
+                                    {
+                                        "ProcessId":  81108,
+                                        "ParentProcessId":  55328,
+                                        "Name":  "msedgewebview2.exe",
+                                        "ExecutablePath":  "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe",
+                                        "CreationDate":  "\/Date(1788093161231)\/",
+                                        "CommandLine":  "\"C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\151.0.4129.107\\msedgewebview2.exe\" --type=renderer --noerrdialogs --user-data-dir=\"C:\\Users\\lyh\\AppData\\Local\\io.github.bahayonghang.devsweep\\EBWebView\" --webview-exe-name=devsweep-desktop.exe --webview-exe-version=0.2.0 --embedded-browser-webview=1 --embedded-browser-webview-dpi-awareness=2 --autoplay-policy=no-user-gesture-required --remote-debugging-port=9381 --video-capture-use-gpu-memory-buffer --lang=en-US --js-flags=--expose-gc --device-scale-factor=1.25 --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=5 --time-ticks-at-unix-epoch=-1788005321295131 --launch-time-ticks=87839931013 --ssd-no-pressure-read-main-dll --metrics-shmem-handle=4236,i,14271800208072305726,13568041897090167159,2097152 --field-trial-handle=2288,i,1237024780903211300,12523371130018619476,262144 --disable-features=msPdfOOUI,msSmartScreenProtection,msWebOOUI --variations-seed-version --pseudonymization-salt-handle=2336,i,2062034858112226995,14865593230045728766,4 --trace-process-track-uuid=3190708990997080739 --mojo-platform-channel-handle=4288 /pfhostedapp:b047d28e7011625ba0c081f9a688fdaf1231341e /prefetch:1"
+                                    }
+                                ],
+                    "first_port":  [
+                                       {
+                                           "LocalAddress":  "127.0.0.1",
+                                           "LocalPort":  9381,
+                                           "OwningProcess":  55328
+                                       }
+                                   ],
+                    "restart_port":  [
+
+                                     ],
+                    "vite":  [
+
+                             ]
+                }
+}

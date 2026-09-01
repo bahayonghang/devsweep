@@ -1,0 +1,28 @@
+{
+  "analysis-250k-v1": {
+    "status": "passed",
+    "command": "cargo test -p devsweep-core --lib analysis::tests --offline -- --nocapture",
+    "exit": 0,
+    "tests": 10
+  },
+  "devsweep-cli-analyze": {
+    "status": "passed",
+    "command": "cargo test -p devsweep-cli analyze --offline",
+    "exit": 0
+  },
+  "devsweep-desktop-analyze": {
+    "status": "passed",
+    "command": "cargo test -p devsweep-desktop analyze --offline",
+    "exit": 0
+  },
+  "public_api": {
+    "status": "passed",
+    "command": "cargo test -p devsweep-core --test public_api --offline",
+    "exit": 0
+  },
+  "git_diff_check": {
+    "status": "passed",
+    "command": "git diff --check",
+    "exit": 0
+  }
+}

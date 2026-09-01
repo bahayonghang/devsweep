@@ -1,0 +1,45 @@
+command: rtk just desktop-build
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:38:44.5686046+08:00
+----- output -----
+vite v7.3.6 building client environment for production...
+transforming...
+鉁?96 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.39 kB 鈹?gzip:   0.27 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/index-CNv90rPz.css                  25.29 kB 鈹?gzip:   5.72 kB
+dist/assets/index-DEM6IxVW.js                  428.35 kB 鈹?gzip: 106.96 kB
+鉁?built in 548ms
+
+----- stderr -----
+cmd.exe : cd desktop; npm run tauri -- build
+At D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-cli-tui-desktop-native\evidence\capture-independen
+t-gate.ps1:16 char:3
++   cmd.exe /c $CommandLine > $stdoutFile 2> $stderrFile
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (cd desktop; npm run tauri -- build:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm notice run devsweep-desktop-ui@0.2.0 tauri
+npm notice run tauri build
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `npm run build`
+npm notice run devsweep-desktop-ui@0.2.0 build
+npm notice run tsc --noEmit && vite build
+   Compiling devsweep-desktop v0.2.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `release` profile [optimized] target(s) in 2m 24s
+       Built application at: D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe
+        Info Patching D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe with bundle type 
+information: nsis
+        Info Target: x64
+     Running makensis to produce 
+D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.2.0_x64-setup.exe
+    Finished 1 bundle at:
+        D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.2.0_x64-setup.exe
+
+
+-----
+exit=0
+finished: 2026-08-31T14:41:18.0936704+08:00

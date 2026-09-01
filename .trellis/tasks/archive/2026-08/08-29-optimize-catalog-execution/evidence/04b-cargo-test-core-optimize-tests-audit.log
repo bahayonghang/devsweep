@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.19s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-9efc717c4c33890e.exe)
+
+running 6 tests
+test optimize::tests::audit::fixed_path_requires_local_app_data ... ok
+test optimize::tests::audit::exclusive_lock_conflict_does_not_modify_journal ... ok
+test optimize::tests::audit::journal_is_durable_redacted_and_rejects_unknown_versions ... ok
+test optimize::tests::audit::catalogue_identity_must_be_closed_and_consistent ... ok
+test optimize::tests::audit::terminal_must_match_accumulated_adapter_evidence ... ok
+test optimize::tests::audit::happy_trail_is_monotonic_and_terminal_is_closed ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 273 filtered out; finished in 0.02s
+
+     Running tests\public_api.rs (target\debug\deps\public_api-8517483b5bf2ac5a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

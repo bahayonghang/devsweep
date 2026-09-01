@@ -1,0 +1,21 @@
+ok
+ok
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+ ✓ src/styles.test.ts (4 tests) 2ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 68ms
+ ✓ src/api/contract.test.ts (14 tests) 7ms
+ ✓ src/i18n/index.test.ts (5 tests) 7ms
+ ✓ src/api/bridge.test.ts (3 tests) 6ms
+ ✓ src/state/app-state.test.ts (10 tests) 5ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 5ms
+ ✓ src/pages/ScanPage.test.tsx (1 test) 131ms
+ ✓ src/app-shell/AppShell.test.tsx (11 tests) 759ms
+ ✓ src/api/types-generation.test.ts (2 tests) 1482ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  850ms
+   ✓ IPC type generation > changes when a named fixture changes  632ms
+ ✓ src/App.test.tsx (29 tests) 3862ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  452ms
+ Test Files  11 passed (11)
+      Tests  88 passed (88)
+   Start at  15:23:51
+   Duration  5.81s (transform 631ms, setup 1.36s, collect 1.96s, tests 6.33s, environment 5.11s, prepare 699ms)

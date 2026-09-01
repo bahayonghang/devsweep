@@ -1,0 +1,21 @@
+Independent verification timestamp: 2026-08-31T08:37:20.2238764+08:00
+
+COMMAND: cargo test -p devsweep-core software
+EXIT_CODE=0
+RESULT: 35 passed; 0 failed; 200 filtered out. Public API filtered test target also completed successfully.
+
+COMMAND: cargo test -p devsweep-cli software
+EXIT_CODE=0
+RESULT: 9 passed; 0 failed; 127 filtered out. Main, process-fixture, and CLI-contract filtered targets completed successfully.
+
+COMMAND: cargo test -p devsweep-core --doc
+EXIT_CODE=0
+RESULT: 2 compile-fail doctests passed, proving private ValidatedSoftwareAction fields and absence of caller-injected live_inventory authority.
+
+COMMAND: cargo fmt --all -- --check
+EXIT_CODE=0
+RESULT: pass
+
+COMMAND: git diff --check
+EXIT_CODE=0
+RESULT: pass; only Git CRLF conversion warnings were emitted.

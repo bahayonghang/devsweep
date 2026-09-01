@@ -1,0 +1,24 @@
+{
+  "time": "2026-08-30T18:03:45.5784761+08:00",
+  "session_info_exit": 0,
+  "session_info": "{\"data\":{\"active\":true,\"namespace\":null,\"pid\":65744,\"runtime\":{\"backgroundPid\":65744,\"browserLaunched\":true,\"compatibilityStatus\":\"current\",\"effectiveLaunch\":{\"browserLaunched\":true,\"engine\":\"chrome\",\"launchHash\":7707568497978554591},\"engine\":\"chrome\",\"launchHash\":7707568497978554591,\"lifecycle\":{\"effectiveLaunch\":{\"browserLaunched\":true,\"engine\":\"chrome\",\"launchHash\":7707568497978554591},\"launched\":false,\"relaunchedBrowser\":false,\"restartedBackground\":false,\"restoreStatus\":\"not_configured\",\"reused\":false,\"saveStatus\":\"not_attempted\"},\"namespace\":null,\"pageCount\":1,\"restoreCheckFn\":null,\"restoreCheckText\":null,\"restoreCheckUrl\":null,\"restoreKey\":null,\"restoreLoadedPath\":null,\"restoreSave\":\"auto\",\"restoreSavedPath\":null,\"restoreStatus\":\"not_configured\",\"restoreStatusDetail\":null,\"restoreValidationPending\":false,\"saveStatus\":\"not_attempted\",\"session\":\"devsweep-shell-debug-1d2fcac28664\",\"socketDir\":\"C:\\\\Users\\\\lyh\\\\.agent-browser\"},\"runtimeError\":null,\"session\":\"devsweep-shell-debug-1d2fcac28664\",\"socketDir\":\"C:\\\\Users\\\\lyh\\\\.agent-browser\",\"version\":\"0.35.1\"},\"success\":true}",
+  "cdp_targets": [
+    {
+      "description": "",
+      "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@419e77616b4ed7d0a544b85cb53ccd5b74d5f135/inspector.html?ws=127.0.0.1:9336/devtools/page/7EF51AC91FBF71CB3ACB19810E2B6079",
+      "id": "7EF51AC91FBF71CB3ACB19810E2B6079",
+      "title": "devsweep",
+      "type": "page",
+      "url": "http://127.0.0.1:4180/#/clean",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:9336/devtools/page/7EF51AC91FBF71CB3ACB19810E2B6079"
+    }
+  ],
+  "session_target_file": "{\"targetId\":\"C83F944A8B934DB330183681DB91C868\",\"url\":\"about:blank\",\"pinned\":false}",
+  "listener": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 9336,
+      "OwningProcess": 58008
+    }
+  ]
+}

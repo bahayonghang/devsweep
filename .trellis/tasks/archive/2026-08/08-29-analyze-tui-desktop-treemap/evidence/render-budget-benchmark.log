@@ -1,0 +1,22 @@
+Attempt 1
+command: rtk node --experimental-strip-types .trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs
+exit_code: 1
+output:
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'D:\Documents\Code\Rust\Exp\devsweep\desktop\src\modes\analyze\ordering' imported from D:\Documents\Code\Rust\Exp\devsweep\desktop\src\modes\analyze\treemap.ts
+Node.js v26.7.0
+
+Resolution: kept the deterministic UTF-16 comparator local to each hot-path module so the standalone Node strip-types benchmark stays dependency-free.
+
+Attempt 2
+command: rtk node --experimental-strip-types .trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs
+exit_code: 0
+output: successful intermediate structured output before the host metadata probe was added
+layout_p95_ms: 2.802500000000009
+rectangle_count: 513
+
+Attempt 3
+command: rtk node --experimental-strip-types .trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/render-budget-benchmark.mjs
+exit_code: 0
+output: render-budget-250k.json (verbatim structured output with host metadata probe)
+layout_p95_ms: 1.9588999999999999
+rectangle_count: 513

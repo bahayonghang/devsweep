@@ -1,0 +1,4 @@
+command: rtk cargo test --offline -p devsweep-cli -- tui::support
+exit: 0
+
+cargo test: 3 passed, 191 filtered out (5 suites, 0.01s)

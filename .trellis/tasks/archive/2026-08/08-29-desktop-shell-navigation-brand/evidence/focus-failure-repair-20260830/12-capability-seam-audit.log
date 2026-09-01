@@ -1,0 +1,3 @@
+PERMISSIONS=core:event:allow-listen,core:event:allow-unlisten,core:window:allow-destroy
+RELEASE_SEAM_RG_EXIT=1
+AUDIT_EXIT_CODE=0

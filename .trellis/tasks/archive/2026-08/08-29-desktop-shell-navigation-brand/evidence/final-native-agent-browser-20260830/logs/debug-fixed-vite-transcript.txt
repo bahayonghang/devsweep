@@ -1,0 +1,43 @@
+**********************
+PowerShell transcript start
+Start time: 20260830180058
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference='Stop'
+$taskRoot=(Resolve-Path '..\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-native-agent-browser-20260830').Path
+$debug=(Resolve-Path '..\target\debug\devsweep-desktop.exe').Path
+$hash=(Get-FileHash -Algorithm SHA256 $debug).Hash
+if($hash-ne'5677E0FE2DF24B6A454A2CEA378B38985EF6B0760DA12BC7D19E1384929C07D9'){throw"debug hash drift before fixed run: $hash"}
+if(@(Get-NetTCPConnection -LocalPort 4180,9336 -State Listen -ErrorAction SilentlyContinue).Count-ne0){throw'port baseline occupied'}
+$isolated=(Resolve-Path (Join-Path $taskRoot 'debug\localappdata')).Path
+if(@(Get-ChildItem $isolated -Recurse -Force -File -ErrorAction SilentlyContinue).Count-ne0){throw'debug isolated LOCALAPPDATA not empty'}
+$log=Join-Path $taskRoot 'logs\debug-fixed-vite-transcript.txt'
+Start-Transcript -LiteralPath $log -Force
+try{npm.cmd run dev}finally{Stop-Transcript}
+Process ID: 26948
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\final-native-agent-browser-20260830\logs\debug-fixed-vite-transcript.txt
+npm notice run devsweep-desktop-ui@0.2.0 dev
+npm notice run vite
+
+  VITE v7.3.6  ready in 319 ms
+
+  ➜  Local:   http://127.0.0.1:4180/
+  ➜  press h + enter to show help
+PS>TerminatingError(): "The pipeline has been stopped."
+**********************
+PowerShell transcript end
+End time: 20260830180835
+**********************

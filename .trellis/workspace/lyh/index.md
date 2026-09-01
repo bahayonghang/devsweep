@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 42
-- **Last Active**: 2026-08-03
+- **Total Sessions**: 49
+- **Last Active**: 2026-08-29
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1278 | Active |
+| `journal-1.md` | ~1427 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,13 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 49 | 2026-08-29 | 实现桌面扫描进度与分类结果 | `53a4082`, `8fb4a86`, `9483ad1` | `dev` |
+| 48 | 2026-08-03 | 完成 Tauri 桌面应用任务树 | `2a63c39` | `dev` |
+| 47 | 2026-08-03 | 修复桌面 CI 前端门禁 | `712884a` | `dev` |
+| 46 | 2026-08-03 | 完成桌面扫描审查执行界面 | `6408f65` | `dev` |
+| 45 | 2026-08-03 | 完成 Tauri 壳层与后端桥接 | `54b2ca6` | `dev` |
+| 44 | 2026-08-03 | 完成 core GUI 执行契约扩展 | `614a79eafa2ed59ce7f2c291df8964c5bdb426e3` | `dev` |
+| 43 | 2026-08-03 | 完成核心 API 拆分 | `e4b8386e40a28e2ef4e5436bf7b7d0f59e573be8` | `dev` |
 | 42 | 2026-08-03 | Complete Rust source architecture reorganization | `f726871`, `9ea6ffd`, `9a059ed`, `f62a872` | `dev` |
 | 41 | 2026-08-03 | Narrow application entrypoint and reconcile architecture | `f62a872` | `dev` |
 | 40 | 2026-08-03 | Decompose TUI internals | `9a059ed` | `dev` |

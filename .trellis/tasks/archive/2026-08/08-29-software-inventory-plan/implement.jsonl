@@ -1,0 +1,24 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Apply domain placement, Windows adapter, error, logging, safety, and test conventions."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/research/windows-software-boundary.md", "reason": "Implement only the researched sources, tagged identities, and standard-user eligibility."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/design.md", "reason": "Keep untrusted observations out of serialized plans and executable strategies."}
+{"file": "crates/devsweep-core/Cargo.toml", "reason": "Added the user-approved exact Windows 0.56.0 projection and no other dependency."}
+{"file": "crates/devsweep-core/src/software/mod.rs", "reason": "Implemented the read-only Software V1 orchestration, exact deduplication, ordered eligibility, identity, and fingerprint boundary."}
+{"file": "crates/devsweep-core/src/software/model.rs", "reason": "Implemented closed locale-neutral source, identity, eligibility, size, last-used, inventory, plan, and preview DTOs."}
+{"file": "crates/devsweep-core/src/software/arp.rs", "reason": "Implemented allowlisted HKCU/HKLM 32/64 ARP registry inventory without vendor command or icon reads."}
+{"file": "crates/devsweep-core/src/software/msi.rs", "reason": "Implemented current-user managed/unmanaged and machine MSI identity inventory with manual-only eligibility."}
+{"file": "crates/devsweep-core/src/software/msix.rs", "reason": "Implemented joined MTA current-process-SID PackageManager inventory and bounded no-follow installed-path sizing."}
+{"file": "crates/devsweep-core/src/software/plan.rs", "reason": "Implemented untrusted exact-id selection, expiry, stale live revalidation, opaque strategy tokens, and digest."}
+{"file": "crates/devsweep-core/src/software/tests.rs", "reason": "Added exact identity, refusal priority, fingerprint, checked-size, and Windows MTA/SID regression coverage."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/evidence/implementation-status.json", "reason": "Recorded Step 1 and Step 2 completion and the Step 3 frozen-dispatch stop condition."}
+{"file": "crates/devsweep-cli/src/application/commands/mod.rs", "reason": "Activated only the software.* dispatch branch and added a route regression while preserving the frozen parser."}
+{"file": "crates/devsweep-cli/src/application/commands/software/mod.rs", "reason": "Routed the frozen inventory and plan leaves while leaving preview and uninstall truthfully unavailable."}
+{"file": "crates/devsweep-cli/src/application/commands/software/inventory.rs", "reason": "Implemented locale-neutral inventory envelopes, closed inventory decoding, exact selection-plan creation, hostile-field rejection, and CLI tests."}
+{"file": "crates/devsweep-cli/src/application/presentation/software.rs", "reason": "Implemented bilingual typed inventory summaries without inferring eligibility or optional evidence."}
+{"file": "crates/devsweep-cli/src/application/presentation/mod.rs", "reason": "Exposed the compiler-registered Software renderer to its sibling command handler."}
+{"file": "resources/i18n/en.json", "reason": "Added the English Software V1 inventory summary and source-state messages."}
+{"file": "resources/i18n/zh-CN.json", "reason": "Added matching Simplified Chinese Software V1 inventory summary and source-state messages."}
+{"file": "crates/devsweep-cli/tests/cli_contract.rs", "reason": "Moved the staged Chinese unavailable-mode assertion from activated Software inventory to still-unavailable Optimize list."}
+{"file": "crates/devsweep-core/src/software/arp.rs", "reason": "Applied the behavior-preserving fixed-width UTF-16 slice iteration required by the current Clippy gate."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/evidence/step3-native-summary.json", "reason": "Recorded standard-user native source, identity, refusal, size, last-used, no-UAC, SID, and MTA evidence."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/evidence/step3-validation-summary.json", "reason": "Recorded focused and full gate commands, real exit codes, resolved failures, and raw log paths."}
+{"file": ".trellis/tasks/08-29-software-inventory-plan/evidence/step3-size-budget.json", "reason": "Recorded final release binary and zip deltas against both stop thresholds."}

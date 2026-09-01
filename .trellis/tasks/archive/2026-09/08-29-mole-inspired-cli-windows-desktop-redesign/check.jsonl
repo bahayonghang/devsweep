@@ -1,0 +1,20 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Audit every executable and read-only domain against repository backend safety requirements."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit shared and per-mode presentation against desktop quality and validation requirements."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify end-to-end data, cancellation, authority, error, and feedback paths across all surfaces."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/prd.md", "reason": "Trace every parent requirement and acceptance clause to recursive child evidence."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/design.md", "reason": "Verify domain isolation, phase dependencies, clean-room boundaries, and rollback ownership."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/acceptance.md", "reason": "Spot-check root R1-R13 and AC1-AC14 SHA/path claims against git log and archives; do not rewrite unless a false fact would make overall PASS false."}
+{"file": ".trellis/tasks/archive/2026-09/08-29-software-mode/acceptance.md", "reason": "Confirm archived software-mode coordination parent overall PASS."}
+{"file": ".trellis/tasks/archive/2026-09/08-29-optimize-mode/acceptance.md", "reason": "Confirm archived optimize-mode coordination parent overall PASS."}
+{"file": ".trellis/tasks/archive/2026-09/08-29-status-mode/acceptance.md", "reason": "Confirm archived status-mode coordination parent overall PASS."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-scan-resource-bounds-app-icon/acceptance.md", "reason": "Confirm already-archived scan parent overall PASS."}
+{"file": ".trellis/tasks/archive/2026-08/08-29-analyze-mode/acceptance.md", "reason": "Confirm Analyze parent round-2 PASS supersedes round-1 FAIL."}
+{"file": ".trellis/tasks/archive/2026-09/08-29-five-mode-native-integration/evidence/independent-check-report.md", "reason": "Spot-check five-mode independent PASS and R13 resource numbers; round-4 p95cpu=0 not used."}
+{"file": ".trellis/tasks/archive/2026-09/08-29-five-mode-native-integration/evidence/resources/independent-check/gates.json", "reason": "Re-read independent five-mode-v1 gate results cited by root R13/AC14."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/logs/independent-task-validate.log", "reason": "Independent task.py validate exit 0."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/logs/independent-git-diff-check.log", "reason": "Independent git diff --check exit 0."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/logs/independent-desktop-web-check.log", "reason": "Independent just desktop-web-check exit 0."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/logs/independent-desktop-test.log", "reason": "Independent just desktop-test exit 0."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/logs/independent-desktop-build.log", "reason": "Independent just desktop-build exit 0."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/logs/independent-just-ci.log", "reason": "Independent just ci exit 0."}
+{"file": ".trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign/evidence/independent-check-report.md", "reason": "Independent trellis-check overall PASS for root R1-R13 and AC1-AC14; focused gates exit 0; git isolation preserved."}

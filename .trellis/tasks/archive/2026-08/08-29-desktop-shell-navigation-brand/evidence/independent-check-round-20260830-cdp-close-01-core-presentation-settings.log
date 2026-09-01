@@ -1,0 +1,27 @@
+requested: rtk cargo test -p devsweep-core presentation_settings
+executed: cargo test -p devsweep-core presentation_settings  # unfiltered complete log; rtk compact already exited 0
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+exit: 0
+elapsed_s: 0.990
+
+
+running 8 tests
+test presentation_settings::tests::windows_exclusive_sidecar_errors_are_bounded_lock_contention ... ok
+test presentation_settings::tests::fixed_windows_path_never_selects_a_fallback_root ... ok
+test presentation_settings::tests::missing_file_means_no_explicit_choice ... ok
+test presentation_settings::tests::concurrent_frontends_serialize_complete_transactions ... ok
+test presentation_settings::tests::dropped_abnormal_owner_releases_kernel_lock_even_when_name_remains ... ok
+test presentation_settings::tests::post_commit_cleanup_failure_is_success_and_next_transaction_recovers ... ok
+test presentation_settings::tests::exact_v1_bytes_and_closed_tags_round_trip ... ok
+test presentation_settings::tests::corrupt_unknown_and_newer_documents_are_preserved_byte_for_byte ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 171 filtered out; finished in 0.57s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-f40d9a71f6b92686.exe)
+     Running tests\public_api.rs (target\debug\deps\public_api-96f5c095fa2d7274.exe)

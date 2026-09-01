@@ -1,0 +1,37 @@
+command: independent dns.flush with C# GetProcessesByName spin probe
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:29:24.2866889+08:00
+----- output -----
+integrity:
+Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+consent_before=none
+consent_after=none
+uac_observed=False
+plan_exit=6
+preview_exit=0
+preview:
+Optimize preview: dns.flush | Runs here. Digest: sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d
+stale_exit=3
+stale:
+invalid_optimize_authority: optimize preview digest mismatch
+
+run_exit=0
+run:
+Optimize run finished: 1 succeeded; 0 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+dns.flush | Succeeded | Operation optimize-op-000001a056822443-00011030-0000000000000000
+
+probe_hits=0
+ipconfig_path_observed=
+ipconfig_pid_observed=
+expected_path=C:\Windows\System32\ipconfig.exe
+ipconfig_exists=True
+process_samples:
+
+journal_redaction=REDACTED_OK
+NOTE: presentation journal redacts program/argv by contract. Live probe is GetProcessesByName spin; argv is owned by core runner (separate program/argv, not reconstructed here).
+-----
+exit=0
+finished: 2026-08-31T14:29:27.0270143+08:00

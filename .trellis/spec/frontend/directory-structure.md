@@ -7,7 +7,7 @@
 ## Overview
 
 The frontend for `devsweep` is a Rust terminal UI built with `ratatui`, not a
-web frontend. TUI code lives in the `src/tui/` module directory, split along
+web frontend. TUI code lives in the `crates/devsweep-cli/src/tui/` module directory, split along
 its natural seams: terminal lifecycle, threaded runtime, app state/reducer,
 and rendering. Its crate-private composition seam is `tui::run()`; the only
 external Rust interface is `devsweep::run()`.
@@ -16,10 +16,10 @@ external Rust interface is `devsweep::run()`.
 
 ## Directory Layout
 
-Current layout:
+Current CLI layout:
 
 ```text
-src/tui/
+crates/devsweep-cli/src/tui/
 ├── mod.rs             # pub(crate) fn run() composition and default services
 ├── terminal.rs        # raw-mode/alt-screen lifecycle
 ├── display.rs         # pure shared path/text/action/command presentation
@@ -33,7 +33,6 @@ src/tui/
 │   └── tests.rs       # reducer and state-machine coverage
 ├── runtime/
 │   ├── mod.rs         # event loop, effect dispatch, channels, cancellation
-│   ├── services.rs    # injected service traits and production adapters
 │   ├── workers.rs     # worker execution and WorkerEvent translation
 │   └── tests.rs       # fake-service and single-flight coverage
 ├── render/
@@ -58,18 +57,17 @@ src/tui/
   cohesive implementation blocks; `App::update(UiEvent) -> Vec<Effect>` remains
   the single reducer routing interface.
 - `runtime/mod.rs` is the only owner of threads, channels, cancellation tokens,
-  clean-worker single-flight, and effect dispatch. Service construction and
-  backend validation live in `services.rs`; worker translation lives in
-  `workers.rs`.
+  clean-worker single-flight, and effect dispatch. It constructs the production
+  adapters imported from `devsweep_core::services`; worker translation lives
+  in `workers.rs`.
 - `render/mod.rs::render_app` is the only root render interface. View modules
   consume immutable typed state; `theme.rs` and `format.rs` contain shared
   rendering concerns without becoming configurable frameworks.
 - `display.rs` is neutral, pure presentation shared by app and render. App
   modules must not import render modules.
 - Scanner, cleanup execution, and size calculation do not belong in TUI
-  modules; scanning goes through `scan::Sweeper` via
-  `runtime/services.rs::SweepScanService`.
-- Shared cleanup data comes from `src/model/`; TUI code should not define a
+  modules; scanning goes through `devsweep_core::services::SweepScanService`.
+- Shared cleanup data comes from `devsweep_core::model`; TUI code should not define a
   second target schema.
 - Visibility discipline: `run()` is `pub(crate)` for application dispatch;
   child-module collaboration uses `pub(super)` or private items. The private
@@ -88,8 +86,8 @@ src/tui/
 
 ## Examples
 
-- `src/tui/render/mod.rs::render_app` shows the pure root render function.
-- `src/tui/render/tests.rs::representative_state_renders_with_targets_details_and_jobs`
+- `crates/devsweep-cli/src/tui/render/mod.rs::render_app` shows the pure root render function.
+- `crates/devsweep-cli/src/tui/render/tests.rs::representative_state_renders_with_targets_details_and_jobs`
   shows the `TestBackend` render pattern.
-- `src/tui/runtime/tests.rs::scan_worker_emits_started_progress_finished`
+- `crates/devsweep-cli/src/tui/runtime/tests.rs::scan_worker_emits_started_progress_finished`
   shows the fake-service worker translation pattern.

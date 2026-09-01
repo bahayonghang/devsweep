@@ -1,0 +1,19 @@
+{
+  "time": "2026-08-30T18:41:47.3531532+08:00",
+  "authorization": "Goal-level necessary operation default authorization; no agent-browser usage in final direct-CDP run",
+  "identity": {
+    "pid": 3264,
+    "name": "agent-browser-win32-x64.exe",
+    "path": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+    "start_time": "2026-08-30T18:40:23.9192600+08:00",
+    "parent_pid": 13276,
+    "parent": null,
+    "command_line": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\"",
+    "listeners": []
+  },
+  "command": "Stop-Process -Id 3264",
+  "exit": 0,
+  "elapsed_ms": 117.0,
+  "alive_after": false,
+  "agent_browser_remaining": []
+}

@@ -59,9 +59,9 @@ terminal
 #### 2. Signatures
 
 - Shared inputs: `ScanHealth`, `ScanTotals`, `ScanDiagnostic`, and
-  `CleanTarget.sizing_warnings` from `src/model/`.
+  `CleanTarget.sizing_warnings` from `devsweep_core::model`.
 - Inventory input: `InventoryReport { observations, health, orphan_pnpm_store }`
-  from `src/inventory/`.
+  from `devsweep_core::inventory`.
 - TUI boundary: scan and inventory workers deliver typed results to
   `App::update`; render helpers consume the resulting `App` state only.
 

@@ -1,0 +1,32 @@
+{
+  "id": "tauri-desktop-app",
+  "name": "tauri-desktop-app",
+  "title": "Tauri 桌面应用(参考 Mole)",
+  "description": "",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-03",
+  "completedAt": "2026-08-03",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-03-core-api-extraction",
+    "08-03-tauri-shell-backend",
+    "08-03-desktop-frontend-ui",
+    "08-03-core-contract-extension",
+    "08-03-desktop-ci-frontend-gate-fix"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

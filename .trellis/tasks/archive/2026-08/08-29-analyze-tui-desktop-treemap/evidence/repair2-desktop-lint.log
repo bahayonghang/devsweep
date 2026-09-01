@@ -1,0 +1,5 @@
+command: npm --prefix desktop run lint
+runner: rtk
+output:
+ok
+exit_code: 0

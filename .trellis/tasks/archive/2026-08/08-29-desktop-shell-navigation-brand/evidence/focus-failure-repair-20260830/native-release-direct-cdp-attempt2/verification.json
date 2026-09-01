@@ -1,0 +1,35 @@
+{
+  "started_at": "2026-08-30T19:11:07.7183183+08:00",
+  "release": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "expected_hash": "6A54C2C752969045B247251A87FB6053271985511DEF1DC2D663088F6B530DC6",
+  "localappdata": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\focus-failure-repair-20260830\\native-release-direct-cdp-attempt2\\localappdata",
+  "state": "failed",
+  "failure": {
+    "message": "first release close left residue",
+    "position": "At D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\focus-failure-repair-20260830\\release-direct-cdp.ps1:360 char:166\r\n+ … ner_residue.Count -ne 0) { throw \"first release close left residue\" }\r\n+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+    "stack": "at <ScriptBlock>, D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\focus-failure-repair-20260830\\release-direct-cdp.ps1: line 360"
+  },
+  "final": {
+    "release_hash": "6A54C2C752969045B247251A87FB6053271985511DEF1DC2D663088F6B530DC6",
+    "main_processes": [],
+    "webview_processes": [],
+    "first_port_listeners": [],
+    "restart_port_listeners": [],
+    "store": {
+      "exists": true,
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\focus-failure-repair-20260830\\native-release-direct-cdp-attempt2\\localappdata\\DevSweep\\settings\\presentation-v1.json",
+      "length": 39,
+      "utf8": "{\"schema_version\":1,\"language\":\"zh-CN\"}",
+      "base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibGFuZ3VhZ2UiOiJ6aC1DTiJ9",
+      "expected_base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibGFuZ3VhZ2UiOiJ6aC1DTiJ9",
+      "sha256": "2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899",
+      "files": {
+        "Name": "presentation-v1.json",
+        "Length": 39,
+        "FullName": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\08-29-desktop-shell-navigation-brand\\evidence\\focus-failure-repair-20260830\\native-release-direct-cdp-attempt2\\localappdata\\DevSweep\\settings\\presentation-v1.json"
+      },
+      "lock_temp_count": 0
+    }
+  },
+  "finished_at": "2026-08-30T19:11:32.7520677+08:00"
+}

@@ -1,0 +1,4 @@
+command: rtk cargo test --offline --locked -p devsweep-desktop -- support
+exit: 0
+
+cargo test: 3 passed, 36 filtered out (3 suites, 0.00s)

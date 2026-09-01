@@ -1,0 +1,55 @@
+requested: rtk cargo test -p devsweep-cli tui::render
+executed: cargo test -p devsweep-cli tui::render  # unfiltered complete log; rtk compact already exited 0
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+exit: 0
+elapsed_s: 0.439
+
+
+running 24 tests
+test tui::render::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::render::tests::display_hygiene_quotes_argv_and_strips_controls ... ok
+test tui::render::tests::target_details_show_typed_sizing_warnings ... ok
+test tui::render::tests::target_details_show_freshness_guard_evidence ... ok
+test tui::render::tests::representative_state_renders_with_targets_details_and_jobs ... ok
+test tui::render::tests::representative_state_renders_at_degraded_supported_size ... ok
+test tui::render::tests::presentation_save_failure_renders_only_canonical_locale_copy ... ok
+test tui::render::tests::narrow_footer_keeps_primary_actions_visible ... ok
+test tui::render::tests::inventory_tab_renders_read_only_observations_health_and_inspection ... ok
+test tui::render::tests::render_path_does_not_mutate_app_state ... ok
+test tui::render::tests::representative_state_renders_at_full_supported_size ... ok
+test tui::render::tests::rendered_paths_hide_windows_verbatim_prefixes ... ok
+test tui::render::tests::rules_tab_lists_catalogue_entries ... ok
+test tui::render::tests::partial_scan_health_renders_truthful_totals_and_diagnostics ... ok
+test tui::render::tests::cleaned_target_renders_as_tombstone ... ok
+test tui::render::tests::invalidated_confirmation_renders_reconfirmation_state ... ok
+test tui::render::tests::confirmation_and_dry_run_show_selected_targets_across_scopes ... ok
+test tui::render::tests::accepted_irreversible_confirmation_renders_initial_progress ... ok
+test tui::render::tests::pycache_group_renders_collapsed_and_expanded_target_paths ... ok
+test tui::render::tests::cleanup_progress_updates_job_and_renders_modal ... ok
+test tui::render::tests::cleanup_progress_renders_mixed_target_results ... ok
+test tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state ... ok
+test tui::render::tests::footer_renders_contextual_key_actions ... ok
+test tui::render::tests::smoke_renders_dashboard_details_confirm_and_jobs_logs_states ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 84 filtered out; finished in 0.01s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.26s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)

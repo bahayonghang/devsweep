@@ -1,0 +1,36 @@
+command: independent dns.flush with concurrent ipconfig process poll
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T14:28:17.6098239+08:00
+----- output -----
+integrity:
+Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+consent_before=none
+consent_after=none
+uac_observed=False
+plan_exit=0
+preview_exit=0
+preview:
+Optimize preview: dns.flush | Runs here. Digest: sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d. Run requires this digest and --confirm.
+A launched Settings page is never maintenance completion.
+
+digest=sha256:3deb8ab1399acf3f832ac4886c2e1b646ef3d7a9f6c2035283c4a8961d926b1d
+stale_exit=3
+stale:
+invalid_optimize_authority: optimize preview digest mismatch
+
+run_exit=0
+run:
+Optimize run finished: 1 succeeded; 0 launched; 0 failed; 0 unknown after dispatch; 0 canceled before dispatch. A launched Settings page is not maintenance completion.
+dns.flush | Succeeded | Operation optimize-op-000001a056812013-00012db8-0000000000000000
+
+ipconfig_path_observed=False
+ipconfig_argv_observed=False
+expected_path=C:\Windows\System32\ipconfig.exe
+process_samples_count=0
+process_samples:
+
+journal_redaction=REDACTED_OK
+NOTE: presentation journal redacts program/argv; live CIM/Get-Process samples are the process-identity evidence.
+-----
+exit=0
+finished: 2026-08-31T14:28:18.4351954+08:00

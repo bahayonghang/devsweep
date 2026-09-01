@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Audit component boundaries, state ownership, accessibility, responsive layout, and native validation."}
+{"file": ".trellis/tasks/08-29-desktop-shell-navigation-brand/prd.md", "reason": "Trace navigation, brand, localization, coordination, and evidence requirements."}
+{"file": ".trellis/tasks/08-29-desktop-shell-navigation-brand/design.md", "reason": "Verify the shell remains presentation-only and feature gating hides incomplete modes."}

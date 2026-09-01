@@ -1,0 +1,25 @@
+=== catalogue single-field diff ===
+warning: in the working copy of 'resources/i18n/zh-CN.json', LF will be replaced by CRLF the next time Git touches it
+diff --git a/resources/i18n/zh-CN.json b/resources/i18n/zh-CN.json
+index da0674f..7231812 100644
+--- a/resources/i18n/zh-CN.json
++++ b/resources/i18n/zh-CN.json
+@@ -4,7 +4,7 @@
+     "app.about": { "forms": { "other": "检查、规划并仅在明确授权后执行开发环境维护。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+     "app.title": { "forms": { "other": "DevSweep" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+     "command.analyze": { "forms": { "other": "分析" }, "placeholders": [], "count": "none", "accelerator": "F", "group": "root_modes", "truncation": "never" },
+-    "command.clean": { "forms": { "other": "清理" }, "placeholders": [], "count": "none", "accelerator": "Q", "group": "root_modes", "truncation": "never" },
++    "command.clean": { "forms": { "other": "清理" }, "placeholders": [], "count": "none", "accelerator": null, "group": "root_modes", "truncation": "never" },
+     "command.history": { "forms": { "other": "历史" }, "placeholders": [], "count": "none", "accelerator": "L", "group": "root_modes", "truncation": "never" },
+     "command.optimize": { "forms": { "other": "优化" }, "placeholders": [], "count": "none", "accelerator": "Y", "group": "root_modes", "truncation": "never" },
+     "command.software": { "forms": { "other": "软件" }, "placeholders": [], "count": "none", "accelerator": "R", "group": "root_modes", "truncation": "never" },
+cargo test: 8 passed, 108 filtered out (4 suites, 0.00s)
+cargo test: 4 passed, 112 filtered out (4 suites, 0.00s)
+cargo test: 1 passed, 115 filtered out (4 suites, 0.00s)
+cargo test: 1 passed, 115 filtered out (4 suites, 0.01s)
+cargo test: 73 passed, 43 filtered out (4 suites, 0.02s)
+I18N_EXIT=0
+SHELL_EXIT=0
+INPUT_EXIT=0
+RENDER_EXIT=0
+TUI_EXIT=0

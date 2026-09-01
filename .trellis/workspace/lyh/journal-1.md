@@ -1276,3 +1276,152 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 43: 完成核心 API 拆分
+
+**Date**: 2026-08-03
+**Task**: 完成核心 API 拆分
+**Branch**: `dev`
+
+### Summary
+
+建立 devsweep-core 与 devsweep-cli workspace，公开前端中立服务边界，保持 CLI/TUI 与 JSON 契约等价，并完成跨平台本地等价验证。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e4b8386e40a28e2ef4e5436bf7b7d0f59e573be8` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 44: 完成 core GUI 执行契约扩展
+
+**Date**: 2026-08-03
+**Task**: 完成 core GUI 执行契约扩展
+**Branch**: `dev`
+
+### Summary
+
+新增可序列化 core 边界、选择感知确认 digest、逐目标结果与预计可回收容量，统一 selected_ids 结构化校验，并补强审计失败的 fail-closed 行为。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `614a79eafa2ed59ce7f2c291df8964c5bdb426e3` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 45: 完成 Tauri 壳层与后端桥接
+
+**Date**: 2026-08-03
+**Task**: 完成 Tauri 壳层与后端桥接
+**Branch**: `dev`
+
+### Summary
+
+新增 Tauri 2 桌面壳层与 core 命令桥接，补齐单飞扫描、协作取消、digest 强制执行、原子保护列表、Job Object 进程树验证、Node 22 CI、NSIS 构建安装启动证据，并通过独立审查与全量 just ci。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `54b2ca6` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 46: 完成桌面扫描审查执行界面
+
+**Date**: 2026-08-03
+**Task**: 完成桌面扫描审查执行界面
+**Branch**: `dev`
+
+### Summary
+
+建立 desktop-frontend 规范与 React 扫描审查执行流程，补齐 progress authority 脱敏、严格 IPC 解码、digest 冻结、fixture E2E、quicktype 样例类型生成、响应式与可访问性验证，并通过独立审查和全量质量门。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6408f65` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 47: 修复桌面 CI 前端门禁
+
+**Date**: 2026-08-03
+**Task**: 修复桌面 CI 前端门禁
+**Branch**: `dev`
+
+### Summary
+
+修复 Desktop CI 对不存在 npm run check 的调用，改为 Node 22 类型生成、lint、typecheck 与 31 项前端测试门禁；同步 desktop-frontend 规范并完成独立检查。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `712884a` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 48: 完成 Tauri 桌面应用任务树
+
+**Date**: 2026-08-03
+**Task**: 完成 Tauri 桌面应用任务树
+**Branch**: `dev`
+
+### Summary
+
+完成 Tauri 2 桌面任务树最终集成审查：复核 CLI 等价、digest 安全链路、受控前端流程、原生 Tauri/NSIS 证据和跨平台门禁；修复并独立归档 Desktop CI 前端门禁漂移，最终 just ci 全绿。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2a63c39` | (see git log) |
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 49: 实现桌面扫描进度与分类结果
+
+**Date**: 2026-08-29
+**Task**: 实现桌面扫描进度与分类结果
+**Branch**: `dev`
+
+### Summary
+
+实现核心累计扫描预览、CLI/TUI 只读阶段、Tauri Channel 传输与桌面分类结果界面；补齐取消竞态、权限隔离、无障碍节流、规格文档和视觉证据，并通过全部质量门禁。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `53a4082` | (see git log) |
+| `8fb4a86` | (see git log) |
+| `9483ad1` | (see git log) |
+
+### Status
+
+[OK] **Completed**

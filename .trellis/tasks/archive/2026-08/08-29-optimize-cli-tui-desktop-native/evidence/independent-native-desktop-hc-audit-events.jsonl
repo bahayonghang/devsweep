@@ -1,0 +1,8 @@
+{"event":"hc_audit_exe_hash","exe":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe","sha256":"14a2e7fcb1a4ad90cafcde05273850e998f4554f69020060ae630e1db6f890f7"}
+{"event":"app_launched","pid":61484,"cdpPort":9375}
+{"event":"high_contrast_probe","hc":{"forced":true,"contrast":true,"summary":"Eight closed operations. Guidance has no run action. Settings only open; they never complete an optimization.Review previewContinue to confirmation"}}
+{"event":"screenshot","name":"opt-09-high-contrast-en"}
+{"event":"audit_probe","audit":{"status":"ready","auditText":"20 audit transitions; 0 recovered terminals. Recovery never redispatches.Audit transitionsoptimize-op-000001a056801248-00013e54-0000000000000000 · validatedoptimize-op-000001a056801248-00013e54-0000000000000000 · dispatch_startedoptimize-op-000001a056801248-00013e54-0000000000000"}}
+{"event":"screenshot","name":"opt-10-audit-en"}
+{"event":"force_kill_after_path_pid_match","pid":61484,"path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"}
+{"event":"hc_audit_done"}

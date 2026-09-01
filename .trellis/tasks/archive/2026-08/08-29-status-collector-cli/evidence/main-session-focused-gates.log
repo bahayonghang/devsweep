@@ -1,0 +1,21 @@
+started=2026-08-31T15:50:36.5024325+08:00
+
+===== rtk cargo test -p devsweep-core --offline status::system =====
+cargo test: 6 passed, 301 filtered out (2 suites, 0.00s)
+exit=0
+
+===== rtk cargo test -p devsweep-core --offline status::process =====
+cargo test: 6 passed, 301 filtered out (2 suites, 0.00s)
+exit=0
+
+===== rtk cargo test -p devsweep-core --offline status::sampler =====
+cargo test: 6 passed, 301 filtered out (2 suites, 0.00s)
+exit=0
+
+===== rtk cargo test -p devsweep-cli --offline status =====
+cargo test: 6 passed, 167 filtered out (4 suites, 1.12s)
+exit=0
+
+===== rtk git diff --check =====
+
+exit=0

@@ -1,0 +1,35 @@
+command: host inventory (whoami, integrity, OS build, binary hashes, no UAC)
+cwd: D:\Documents\Code\Rust\Exp\devsweep
+started: 2026-08-31T13:01:01.0488195+08:00
+----- output -----
+
+whoami: desktop-516bf74\lyh
+integrity lines:
+
+Everyone                               Well-known group S-1-1-0                                        Mandatory group, Enabled by default, Enabled group
+DESKTOP-516BF74\docker-users           Alias            S-1-5-21-2143440361-2401194771-2834292696-1002 Mandatory group, Enabled by default, Enabled group
+BUILTIN\Performance Log Users          Alias            S-1-5-32-559                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                          Alias            S-1-5-32-545                                   Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\INTERACTIVE               Well-known group S-1-5-4                                        Mandatory group, Enabled by default, Enabled group
+CONSOLE LOGON                          Well-known group S-1-2-1                                        Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users       Well-known group S-1-5-11                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization         Well-known group S-1-5-15                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\本地帐户                  Well-known group S-1-5-113                                      Mandatory group, Enabled by default, Enabled group
+LOCAL                                  Well-known group S-1-2-0                                        Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\NTLM Authentication       Well-known group S-1-5-64-10                                    Mandatory group, Enabled by default, Enabled group
+Mandatory Label\Medium Mandatory Level Label            S-1-16-8192                                                                                      
+consent.exe before: none
+CurrentBuild=26200 UBR=9278 DisplayVersion=25H2 ProductName=Windows 10 Pro
+[Environment]::OSVersion=Microsoft Windows NT 10.0.26200.0 (manifest-sensitive; product uses RtlGetVersion, not this)
+PROCESSOR_ARCHITECTURE=AMD64
+IsWow64Process note: this PowerShell is 64-bit
+
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.28s
+x64 cargo build exit=0
+x64 exe: D:\Documents\Code\Rust\Exp\devsweep\target\debug\devsweep.exe sha256=B9932076CA128C99570D2A7EA345A2889069E1775461F8CCEC438205FC60A811 size=10522112
+x64 Machine type: D:\Documents\Code\Rust\Exp\devsweep\target\debug\devsweep.exe
+i686 exe: D:\Documents\Code\Rust\Exp\devsweep\target\i686-pc-windows-msvc\debug\devsweep.exe sha256=0E8537AD48C832FE646388210D71E45416F49D3FE47EEC82291364CDDF295416 size=9645056
+
+-----
+exit=0
+finished: 2026-08-31T13:01:01.6765996+08:00

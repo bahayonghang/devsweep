@@ -1,0 +1,36 @@
+{
+  "time": "2026-08-30T17:31:57.9577746+08:00",
+  "release_path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "release_size": 9826816,
+  "release_sha256": "C75D08506B97984635EB3799E8BD3D9D5732A5D40A328BBA4B3FEA2D6FD66742",
+  "debug_path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\debug\\devsweep-desktop.exe",
+  "debug_size": 14758912,
+  "debug_sha256": "E16F09D393A81291D7D05F1D655648B16592A456786EAA431E0478CF5B727091",
+  "sessions": {
+    "release": "devsweep-shell-release-1d2fcac28664",
+    "restart": "devsweep-shell-restart-1d2fcac28664",
+    "debug": "devsweep-shell-debug-1d2fcac28664"
+  },
+  "ports": [
+    {
+      "Port": 9335,
+      "Listeners": 0,
+      "Owners": "",
+      "Addresses": ""
+    },
+    {
+      "Port": 9336,
+      "Listeners": 0,
+      "Owners": "",
+      "Addresses": ""
+    },
+    {
+      "Port": 9337,
+      "Listeners": 0,
+      "Owners": "",
+      "Addresses": ""
+    }
+  ],
+  "devsweep_processes": [],
+  "initial_release_localappdata_files": []
+}

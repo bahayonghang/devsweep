@@ -1,0 +1,30 @@
+{
+  "id": "analyze-tui-desktop-treemap",
+  "name": "analyze-tui-desktop-treemap",
+  "title": "Build Analyze TUI and desktop treemap",
+  "description": "Own accessible hierarchical browsing, zero-dependency treemap layout, bilingual presentation, responsive interaction, and native visual evidence for Analyze.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": "Analyze TUI hierarchy and accessible desktop list/treemap; no filesystem or cleanup authority",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-08-29",
+  "completedAt": "2026-08-31",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-29-analyze-mode",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "phase": "3-core-modes",
+    "depends_on": "08-29-analyze-core-ipc,08-29-desktop-shell-navigation-brand",
+    "approval_state": "awaiting_parent_approval"
+  }
+}

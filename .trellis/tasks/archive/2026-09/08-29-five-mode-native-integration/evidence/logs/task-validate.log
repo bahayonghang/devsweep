@@ -1,0 +1,46 @@
+=== VALIDATE .trellis/tasks/08-29-five-mode-native-integration ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-five-mode-native-integration
+
+  [0;32mimplement.jsonl: 鉁?(5 entries)[0m
+  [0;32mcheck.jsonl: 鉁?(4 entries)[0m
+
+[0;32m鉁?All validations passed[0m
+=== VALIDATE .trellis/tasks/08-29-mole-inspired-cli-windows-desktop-redesign ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-mole-inspired-cli-windows-desktop-redesign
+
+  [0;32mimplement.jsonl: 鉁?(7 entries)[0m
+  [0;32mcheck.jsonl: 鉁?(5 entries)[0m
+
+[0;32m鉁?All validations passed[0m
+=== VALIDATE .trellis/tasks/08-29-software-mode ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-software-mode
+
+  [0;32mimplement.jsonl: 鉁?(2 entries)[0m
+  [0;32mcheck.jsonl: 鉁?(16 entries)[0m
+
+[0;32m鉁?All validations passed[0m
+=== VALIDATE .trellis/tasks/08-29-optimize-mode ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-optimize-mode
+
+  [0;32mimplement.jsonl: 鉁?(3 entries)[0m
+  [0;32mcheck.jsonl: 鉁?(2 entries)[0m
+
+[0;32m鉁?All validations passed[0m
+=== VALIDATE .trellis/tasks/08-29-status-mode ===
+[0;34m=== Validating Context Files ===[0m
+Target dir: D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-status-mode
+
+  [0;32mimplement.jsonl: 鉁?(3 entries)[0m
+  [1;33mcheck.jsonl:9: Warning: .trellis/tasks/archive/2026-08/08-29-status-collector-cli/evidence/independent-native/summary.json is 197770 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [1;33mcheck.jsonl:16: Warning: crates/devsweep-core/src/status/mod.rs looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:17: Warning: desktop/src/api/contract.ts looks like a code file 鈥?implement/check.jsonl should reference spec/research docs; agents read code themselves[0m
+  [1;33mcheck.jsonl:17: Warning: desktop/src/api/contract.ts is 74608 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it[0m
+  [0;32mcheck.jsonl: 鉁?(18 entries)[0m
+
+[0;32m鉁?All validations passed[0m
+MISSING .trellis/tasks/08-29-scan-resource-bounds-app-icon
+MISSING .trellis/tasks/08-29-analyze-mode

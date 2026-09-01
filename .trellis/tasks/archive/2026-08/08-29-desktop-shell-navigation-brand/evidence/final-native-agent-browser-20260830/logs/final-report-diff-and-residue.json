@@ -1,0 +1,47 @@
+{
+  "time": "2026-08-30T18:13:56.8912658+08:00",
+  "git_diff_check_exit": 0,
+  "git_diff_check_output": "",
+  "devsweep_or_webview_residue": [],
+  "application_ports": [],
+  "agent_browser_processes": [
+    {
+      "ProcessId": 64440,
+      "ParentProcessId": 52764,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T18:04:10.751174+08:00",
+      "CommandLine": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\""
+    },
+    {
+      "ProcessId": 71148,
+      "ParentProcessId": 83860,
+      "Name": "agent-browser-win32-x64.exe",
+      "ExecutablePath": "C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe",
+      "CreationDate": "2026-08-30T18:10:09.254089+08:00",
+      "CommandLine": "\"\\\\?\\C:\\home\\lyh\\.npm-global\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe\""
+    }
+  ],
+  "agent_browser_listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 14819,
+      "OwningProcess": 64440
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 14818,
+      "OwningProcess": 64440
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 13931,
+      "OwningProcess": 71148
+    },
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 13930,
+      "OwningProcess": 71148
+    }
+  ]
+}

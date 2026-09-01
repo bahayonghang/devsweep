@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Node 22 desktop frontend quality gate and completion checklist"}
+{"file": ".trellis/tasks/08-03-tauri-desktop-app/design.md", "reason": "Parent CI, Node, lockfile, platform, and Tauri build decisions"}

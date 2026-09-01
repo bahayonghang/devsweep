@@ -1,0 +1,78 @@
+## Verification round 2 — FAIL
+
+Round 2 confirms that the round-1 product fixes remain intact. The browser sample is authentic and within every frozen render cap, the release-binary hash matches the native log, and keyboard focus now returns to `.analyze-listbox`.
+
+Closeout still fails because the supplied desktop web-check contains a failed test, while the native evidence uses renderer emulation instead of Windows OS DPI scaling and omits claimed matrix cases.
+
+## Findings (fixed)
+
+- File: `desktop/src/modes/analyze/AnalyzePage.test.tsx`
+- Issue: `styles.css?raw` resolved to an empty string under Vitest, causing the CSS accessibility regression test to fail.
+- Fix: Read the checked-in stylesheet using `readFileSync(new URL("./styles.css", import.meta.url), "utf8")`. Lint, type-check, and a direct stylesheet-contract probe pass. A full Vitest rerun remains blocked by `spawn EPERM`.
+
+- File: `.trellis/tasks/08-29-analyze-tui-desktop-treemap/evidence/native-evidence.md`
+- Issue: The index incorrectly described the web gate as passing and renderer `deviceScaleFactor` emulation as OS DPI evidence.
+- Fix: Corrected the evidence index and documented missing/mislabeled captures without altering raw evidence.
+
+## Findings (not fixed)
+
+- File: `justfile` / `desktop-web-check-post-check-fix.log`
+- Issue: The recipe chains commands with semicolons, allowing failed tests to be masked by a later successful build. The log contains 1 failed and 120 passed tests.
+- Why not fixed: The dispatch explicitly prohibited modifying `justfile`.
+
+- File: `native-20260831-postfix/`
+- Issue: The 100/125/150/200% matrix changes only renderer `deviceScaleFactor` at a fixed 1440×860 CSS viewport. PNG dimensions scale to 1440×860, 1800×1075, 2160×1290, and 2880×1720. This does not exercise Windows display scaling or native WebView/window DPI negotiation.
+- Why not fixed: Authentic OS DPI evidence requires a fresh native capture outside this sandbox.
+
+- File: `native-20260831-postfix/`
+- Issue: No post-fix 390/800/1024-width captures exist. The files labeled English/Chinese 1440 are actually 1000×750. The file labeled English canceling is zh-CN. The warning capture shows an available unsupported reparse point, not partial or unknown evidence. No accessibility-tree or screen-reader capture exists.
+- Why not fixed: Missing native observations cannot be reconstructed from source or existing screenshots.
+
+- File: Desktop execution environment
+- Issue: Vitest, Vite, and Tauri attempts fail during child-process creation with `spawn EPERM`.
+- Why not fixed: This is a sandbox restriction.
+
+## Raw evidence audit
+
+- Pure layout: 30 samples; nearest rank 29; recomputed p95 `1.9588999999999999 ms` against the 50 ms limit.
+- React commit: 30 samples; nearest rank 29; recomputed p95 `7.699999988079071 ms` against the 100 ms limit.
+- Caps: 513 rectangles and 759 DOM elements, within frozen limits.
+- Browser console JSON exactly matches `render-budget-browser-post-fix.json`.
+- Pure/browser fixture hashes match:
+  `sha256:42685e0971165c2b59362cb44f251d4699e282bc647fd2f407d85559830ef37f`.
+- Current release executable matches the native log:
+  `f977af3d7f16a0643b3bd9cf78a3c1d1e74c8f93ba2081b3aa76e0f197762b47`.
+- Native log terminates with `done`.
+- Keyboard probe reports `activeClass: "analyze-listbox"` and two breadcrumbs.
+- Cancel-on-leave reports `empty: true`.
+- Persisted language store is `{"schema_version":1,"language":"zh-CN"}`.
+
+## Acceptance criteria
+
+- **AC1 — PASS:** Deterministic layout, resize, zero/unknown/extreme/tiny aggregation, exact `Other`, 10,000-child cap, pagination, fixture parity, layout p95, and rectangle-cap evidence pass.
+- **AC2 — FAIL:** Product behavior now includes correct focus restoration, keyboard navigation, labels, contrast, forced-colors/reduced-motion rules, and no cleanup action. However, the fixed CSS test has not completed successfully and native screen-reader/accessibility-tree evidence is absent.
+- **AC3 — FAIL:** Bilingual state tests and render budgets pass. Authentic Windows DPI evidence, post-fix 390/800/1024 widths, and partial/unknown native evidence remain absent.
+- **AC4 — FAIL:** Rust gates, lint, type-check, stylesheet probe, and whitespace checks pass. The desktop web gate contains a failed test; independent desktop tests/builds are blocked by `spawn EPERM`; the native matrix is incomplete.
+
+## Verification
+
+| Command | Exit | Result |
+| --- | ---: | --- |
+| `npm --prefix desktop run lint` | 0 | Pass |
+| `npm --prefix desktop run typecheck` | 0 | Pass |
+| Direct stylesheet-contract probe | 0 | Pass |
+| `cargo test -p devsweep-cli tui::modes::analyze` | 0 | 8 passed |
+| `cargo test -p devsweep-core analysis` | 0 | 11 passed |
+| `just ci` | 0 | 363 passed, 2 ignored; format/check/clippy passed |
+| `git diff --check` | 0 | Pass; line-ending warnings only |
+| `just desktop-web-check` | 1 | `spawn EPERM` |
+| Vitest with `--configLoader runner` | 1 | `spawn EPERM` |
+| Vitest with `--configLoader native` | 1 | `spawn EPERM`; no tests ran |
+| Vitest native loader with single thread | 1 | `spawn EPERM`; no tests ran |
+| `just desktop-build` | 1 | Tauri before-build blocked by `spawn EPERM` |
+| Nearest-rank recomputation | 0 | Layout 1.9589 ms; commit 7.70 ms |
+| Browser/native consistency and hash audit | 0 | Pass |
+
+No commit, push, dependency, cap, schema, frozen CLI/DTO contract, `justfile`, protected dirty file, or other task directory was modified.
+
+Overall verdict: **FAIL**. Required closeout work is to make the desktop web-check fail fast and rerun it after the test fix, then capture authentic Windows 100/125/150/200% DPI evidence together with the missing widths, correct locales, partial/unknown state, and accessibility-tree evidence.

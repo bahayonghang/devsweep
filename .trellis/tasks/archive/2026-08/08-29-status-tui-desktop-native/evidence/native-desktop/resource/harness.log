@@ -1,0 +1,106 @@
+{
+  "host": {
+    "os": "Microsoft Windows 11 רҵ��",
+    "build": "26200",
+    "integrity": "Mandatory Label\\Medium Mandatory Level Label            S-1-16-8192                                                                                      ",
+    "consent": 0,
+    "sha256": "9b4ebb3f8e95326c5663065f6150979a63d94c9cc4c575b3a4fef9cc16fa0185",
+    "exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+    "pid": 27688
+  },
+  "warmup": {
+    "status": "ready",
+    "snapshot": true
+  },
+  "snapshot_latency_ms": [
+    812,
+    820,
+    820,
+    818,
+    806
+  ],
+  "snapshot_p95_ms": 820,
+  "idle": {
+    "private_median": 6172672,
+    "threads_median": 36,
+    "sample_count": 10
+  },
+  "live60": {
+    "sample_count": 300,
+    "present_count": 300,
+    "cpu_median_pct": 0,
+    "cpu_p95_pct": 7.776146515041987,
+    "private_peak": 7278592,
+    "threads_peak": 37,
+    "live_ready": {
+      "status": "live",
+      "stop": true
+    }
+  },
+  "post_exit": {
+    "sample_count": 25,
+    "final_five": [
+      {
+        "wall_ms": 4002.548,
+        "present": false,
+        "user_ms": 0,
+        "kernel_ms": 0,
+        "cpu_ms": 0,
+        "private": 0,
+        "threads": 0
+      },
+      {
+        "wall_ms": 4205.518,
+        "present": false,
+        "user_ms": 0,
+        "kernel_ms": 0,
+        "cpu_ms": 0,
+        "private": 0,
+        "threads": 0
+      },
+      {
+        "wall_ms": 4406.627,
+        "present": false,
+        "user_ms": 0,
+        "kernel_ms": 0,
+        "cpu_ms": 0,
+        "private": 0,
+        "threads": 0
+      },
+      {
+        "wall_ms": 4609.248,
+        "present": false,
+        "user_ms": 0,
+        "kernel_ms": 0,
+        "cpu_ms": 0,
+        "private": 0,
+        "threads": 0
+      },
+      {
+        "wall_ms": 4811.115,
+        "present": false,
+        "user_ms": 0,
+        "kernel_ms": 0,
+        "cpu_ms": 0,
+        "private": 0,
+        "threads": 0
+      }
+    ],
+    "hold": true
+  },
+  "thresholds": {
+    "idlePlus64": 73281536,
+    "idlePlus4": 40
+  },
+  "gates": {
+    "snapshot_p95_le_2000ms": true,
+    "live_private_le_idle_plus_64mib": true,
+    "live_threads_le_idle_plus_4": true,
+    "live_cpu_median_le_5": true,
+    "live_cpu_p95_le_15": true,
+    "post_exit_25_samples": true,
+    "post_exit_final_five_hold": true,
+    "post_exit_no_missing_sample": true
+  },
+  "pass": true
+}

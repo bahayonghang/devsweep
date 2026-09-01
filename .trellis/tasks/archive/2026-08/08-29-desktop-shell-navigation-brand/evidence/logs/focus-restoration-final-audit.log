@@ -1,0 +1,15 @@
+command: rtk git diff --check
+working_directory: D:\Documents\Code\Rust\Exp\devsweep
+exit_code: 0
+output: <empty>
+
+read_only_residue_audit:
+  devsweep_process_count: 0
+  desktop_dev_server_count: 0
+  owned_listener_count: 0
+
+untracked_source_whitespace_check:
+  command: git diff --no-index --check -- NUL <path>
+  AppShell.tsx: no whitespace diagnostic; exit 1 means the non-empty file differs from NUL
+  AppShell.test.tsx: no whitespace diagnostic; exit 1 means the non-empty file differs from NUL
+  note: Git emitted only the configured LF-to-CRLF working-copy warning for each file.

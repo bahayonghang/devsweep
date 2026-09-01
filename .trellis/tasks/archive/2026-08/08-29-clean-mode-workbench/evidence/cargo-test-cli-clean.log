@@ -1,0 +1,301 @@
+warning: function `legacy_audit_log_path` is never used
+   --> crates\devsweep-core\src\execution\audit.rs:315:8
+    |
+315 | pub fn legacy_audit_log_path() -> Option<PathBuf> {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `path` is never used
+   --> crates\devsweep-core\src\execution\audit.rs:663:19
+    |
+639 | impl AuditJournal {
+    | ----------------- method in this implementation
+...
+663 |     pub(super) fn path(&self) -> &Path {
+    |                   ^^^^
+
+warning: function `sanitize_audit_detail` is never used
+   --> crates\devsweep-core\src\execution\audit.rs:703:15
+    |
+703 | pub(super) fn sanitize_audit_detail(message: impl AsRef<str>) -> String {
+    |               ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unreachable `pub` item
+   --> crates\devsweep-core\src\execution\audit.rs:315:1
+    |
+315 | pub fn legacy_audit_log_path() -> Option<PathBuf> {
+    | ---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    | |
+    | help: consider restricting its visibility: `pub(super)`
+    |
+    = help: or consider exporting it for use by other crates
+note: the lint level is defined here
+   --> crates\devsweep-core\src\lib.rs:1:9
+    |
+  1 | #![warn(unreachable_pub)]
+    |         ^^^^^^^^^^^^^^^
+
+warning: `devsweep-core` (lib) generated 4 warnings (run `cargo fix --lib -p devsweep-core` to apply 1 suggestion)
+warning: unused import: `clap::Parser`
+ --> crates\devsweep-cli\src\application\commands\clean.rs:5:5
+  |
+5 | use clap::Parser;
+  |     ^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `UntrustedTarget`
+  --> crates\devsweep-cli\src\application\commands\clean.rs:10:65
+   |
+10 |     model::{CleanupIntent, ScanReport, TargetId, UntrustedPlan, UntrustedTarget},
+   |                                                                 ^^^^^^^^^^^^^^^
+
+warning: function `run` is never used
+  --> crates\devsweep-cli\src\application\commands\clean.rs:28:15
+   |
+28 | pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
+   |               ^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `mode_unavailable` is never used
+  --> crates\devsweep-cli\src\application\commands\clean.rs:41:4
+   |
+41 | fn mode_unavailable(cli: &Cli, locale: Locale) -> ApplicationError {
+   |    ^^^^^^^^^^^^^^^^
+
+warning: function `run_scan` is never used
+  --> crates\devsweep-cli\src\application\commands\clean.rs:49:4
+   |
+49 | fn run_scan(
+   |    ^^^^^^^^
+
+warning: function `run_plan` is never used
+  --> crates\devsweep-cli\src\application\commands\clean.rs:76:4
+   |
+76 | fn run_plan(command: &CleanPlanCommand, locale: Locale) -> Result<(), ApplicationError> {
+   |    ^^^^^^^^
+
+warning: function `run_preview` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:112:4
+    |
+112 | fn run_preview(
+    |    ^^^^^^^^^^^
+
+warning: function `run_execute` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:134:4
+    |
+134 | fn run_execute(
+    |    ^^^^^^^^^^^
+
+warning: function `load_scan_report` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:190:4
+    |
+190 | fn load_scan_report(path: &Path) -> Result<ScanReport, ApplicationError> {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `load_validated_selection` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:205:4
+    |
+205 | fn load_validated_selection(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `prefixed_digest` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:225:4
+    |
+225 | fn prefixed_digest(report: &ExecutionReport) -> String {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `emit_scan` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:228:4
+    |
+228 | fn emit_scan(cli: &Cli, locale: Locale, report: &ScanReport) -> Result<(), ApplicationError> {
+    |    ^^^^^^^^^
+
+warning: function `emit_preview` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:250:4
+    |
+250 | fn emit_preview(
+    |    ^^^^^^^^^^^^
+
+warning: function `emit_execution` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:278:4
+    |
+278 | fn emit_execution(
+    |    ^^^^^^^^^^^^^^
+
+warning: function `write_human` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:310:4
+    |
+310 | fn write_human(cli: &Cli, text: &str) -> Result<(), ApplicationError> {
+    |    ^^^^^^^^^^^
+
+warning: function `write_envelope` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:318:4
+    |
+318 | fn write_envelope(
+    |    ^^^^^^^^^^^^^^
+
+warning: function `map_anyhow` is never used
+   --> crates\devsweep-cli\src\application\commands\clean.rs:338:4
+    |
+338 | fn map_anyhow(code: &'static str, error: anyhow::Error) -> ApplicationError {
+    |    ^^^^^^^^^^
+
+warning: function `scan_report` is never used
+  --> crates\devsweep-cli\src\application\presentation\clean.rs:14:15
+   |
+14 | pub(super) fn scan_report(locale: Locale, report: &ScanReport) -> Result<String, CatalogueError> {
+   |               ^^^^^^^^^^^
+
+warning: function `preview` is never used
+  --> crates\devsweep-cli\src\application\presentation\clean.rs:31:15
+   |
+31 | pub(super) fn preview(
+   |               ^^^^^^^
+
+warning: function `execution` is never used
+  --> crates\devsweep-cli\src\application\presentation\clean.rs:46:15
+   |
+46 | pub(super) fn execution(
+   |               ^^^^^^^^^
+
+warning: function `format_capacity` is never used
+  --> crates\devsweep-cli\src\application\presentation\clean.rs:72:4
+   |
+72 | fn format_capacity(report: &ExecutionReport) -> String {
+   |    ^^^^^^^^^^^^^^^
+
+warning: enum `CleanPhase` is never used
+  --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:11:17
+   |
+11 | pub(crate) enum CleanPhase {
+   |                 ^^^^^^^^^^
+
+warning: struct `CleanModeState` is never constructed
+  --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:27:19
+   |
+27 | pub(crate) struct CleanModeState {
+   |                   ^^^^^^^^^^^^^^
+
+warning: enum `CleanAction` is never used
+  --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:52:17
+   |
+52 | pub(crate) enum CleanAction {
+   |                 ^^^^^^^^^^^
+
+warning: function `reduce` is never used
+  --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:69:15
+   |
+69 | pub(crate) fn reduce(state: CleanModeState, action: CleanAction) -> CleanModeState {
+   |               ^^^^^^
+
+warning: function `default_selected` is never used
+   --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:218:4
+    |
+218 | fn default_selected(report: &ScanReport) -> HashSet<TargetId> {
+    |    ^^^^^^^^^^^^^^^^
+
+warning: function `executable_ids` is never used
+   --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:228:4
+    |
+228 | fn executable_ids(report: Option<&ScanReport>) -> HashSet<TargetId> {
+    |    ^^^^^^^^^^^^^^
+
+warning: function `is_executable` is never used
+   --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:242:4
+    |
+242 | fn is_executable(report: Option<&ScanReport>, target_id: &TargetId) -> bool {
+    |    ^^^^^^^^^^^^^
+
+warning: function `is_target_executable` is never used
+   --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:254:4
+    |
+254 | fn is_target_executable(target: &UntrustedTarget) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `current_digest` is never used
+   --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:258:15
+    |
+258 | pub(crate) fn current_digest(state: &CleanModeState) -> Option<&ConfirmationDigest> {
+    |               ^^^^^^^^^^^^^^
+
+warning: function `preview` is never used
+  --> crates\devsweep-cli\src\application\presentation\clean.rs:31:15
+   |
+31 | pub(super) fn preview(
+   |               ^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variants `ScanCanceled`, `SelectAll`, `ConfirmClosed`, and `ExecuteCompleted` are never constructed
+  --> crates\devsweep-cli\src\tui\modes\clean\mod.rs:56:5
+   |
+52 | pub(crate) enum CleanAction {
+   |                 ----------- variants in this enum
+...
+56 |     ScanCanceled { operation_id: String },
+   |     ^^^^^^^^^^^^
+57 |     SelectionChanged { target_id: TargetId, selected: bool },
+58 |     SelectAll { selected: bool },
+   |     ^^^^^^^^^
+...
+63 |     ConfirmClosed,
+   |     ^^^^^^^^^^^^^
+64 |     ExecuteRequested,
+65 |     ExecuteCompleted { report: ExecutionReport },
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `CleanAction` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `devsweep-cli` (lib) generated 30 warnings (run `cargo fix --lib -p devsweep-cli` to apply 2 suggestions)
+warning: `devsweep-cli` (lib test) generated 5 warnings (3 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.34s
+     Running unittests src\lib.rs (target\debug\deps\devsweep-83cbc49b671c4788.exe)
+
+running 22 tests
+test tui::modes::clean::tests::inspect_only_never_selects_and_selection_invalidates_preview ... ok
+test tui::modes::clean::tests::execute_requires_preview_and_second_confirmation ... ok
+test tui::modes::clean::tests::no_selection_during_scan_and_stale_events_are_ignored ... ok
+test tui::runtime::tests::clean_worker_reports_finish_and_failure ... ok
+test tui::runtime::tests::clean_worker_translates_execution_progress ... ok
+test tui::runtime::tests::duplicate_clean_dispatch_starts_only_one_worker ... ok
+test tui::app::tests::chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit ... ok
+test application::presentation::clean::tests::empty_scan_is_truthful_in_both_locales ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+{"command":"clean.preview","data":{"digest":"sha256:f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","report":{"attempted":0,"audit_log":null,"confirmation_digest":"f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","dry_run":true,"estimated_recoverable":{"partial_lower_bound_bytes":0,"unknown_target_count":0,"verified_bytes":0},"failed":0,"failures":[],"notes":[],"outcomes":[],"selected":0,"skipped":0,"succeeded":0}},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::clean::tests::plan_rejects_inspect_only_selection ... ok
+test application::commands::clean::tests::preview_empty_plan_is_dry_run ... ok
+test application::commands::clean::tests::stale_execute_is_invalid_authority ... ok
+test tui::render::tests::cleaned_target_renders_as_tombstone ... ok
+test tui::app::tests::finished_cleanup_progress_stays_visible_until_dismissed ... ok
+test tui::render::tests::cleanup_progress_updates_job_and_renders_modal ... ok
+test tui::render::tests::cleanup_progress_renders_mixed_target_results ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 93 filtered out; finished in 0.01s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep-ae2a28329349150a.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src\bin\process_fixture.rs (target\debug\deps\process_fixture-62bbfd2de04fb49d.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests\cli_contract.rs (target\debug\deps\cli_contract-4580518079a6a3a8.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+

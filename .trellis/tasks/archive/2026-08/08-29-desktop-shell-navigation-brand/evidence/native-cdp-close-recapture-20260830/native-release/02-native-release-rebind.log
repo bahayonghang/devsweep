@@ -1,0 +1,63 @@
+**********************
+PowerShell transcript start
+Start time: 20260830214331
+Username: DESKTOP-516BF74\lyh
+RunAs User: DESKTOP-516BF74\lyh
+Configuration Name: 
+Machine: DESKTOP-516BF74 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -NoProfile -ExecutionPolicy Bypass -File D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-close-recapture.ps1 -RepositoryRoot D:\Documents\Code\Rust\Exp\devsweep -EvidenceRoot D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-release -FirstPort 9401 -RestartPort 9402 -ExpectedHash 92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 -PwshPath C:\Program Files\PowerShell\7\pwsh.exe -WrapperPath D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-close-wrapper.ps1
+Process ID: 58140
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+[2026-08-30T21:43:31.6711300+08:00] PRELAUNCH transcript_started=true devsweep_started=false
+[2026-08-30T21:43:31.6807148+08:00] HELPER_START release=D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe expected_hash=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 localappdata=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-release\localappdata cdp_log=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-release\cdp-messages.jsonl
+[2026-08-30T21:43:32.4107310+08:00] TOOLCHAIN_PWSH path=C:\Program Files\PowerShell\7\pwsh.exe version=7.6.5 pid=58140 commandline="C:\Program Files\PowerShell\7\pwsh.exe" -NoProfile -ExecutionPolicy Bypass -File D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-close-recapture.ps1 -RepositoryRoot D:\Documents\Code\Rust\Exp\devsweep -EvidenceRoot D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-release -FirstPort 9401 -RestartPort 9402 -ExpectedHash 92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 -PwshPath "C:\Program Files\PowerShell\7\pwsh.exe" -WrapperPath D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\08-29-desktop-shell-navigation-brand\evidence\native-cdp-close-recapture-20260830\native-close-wrapper.ps1
+[2026-08-30T21:43:32.5222829+08:00] ARTIFACT_GATE when=before_launch name=release bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20
+[2026-08-30T21:43:32.5232282+08:00] ARTIFACT_GATE when=before_launch name=debug bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5
+[2026-08-30T21:43:32.5238896+08:00] ARTIFACT_GATE when=before_launch name=nsis bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328
+[2026-08-30T21:43:33.9033420+08:00] TOOLCHAIN_GATE=PASS all_prelaunch_checks=true
+[2026-08-30T21:43:33.9193630+08:00] START_RELEASE name=first port=9401
+[2026-08-30T21:43:34.0184603+08:00] ARTIFACT_GATE when=before_first name=release bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20
+[2026-08-30T21:43:34.0194473+08:00] ARTIFACT_GATE when=before_first name=debug bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5
+[2026-08-30T21:43:34.0202402+08:00] ARTIFACT_GATE when=before_first name=nsis bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328
+[2026-08-30T21:43:34.8458651+08:00] CDP_READY name=first pid=53684 hwnd=0x30E1458 target=858D8429065121C0794098EA87265F85
+[2026-08-30T21:43:36.4559835+08:00] FIRST_LOCALE_PASS locale=zh-CN store_bytes=39 store_hash=2CD9EEDF29B04115F701CE73EA055ACCB6AFB96896ADE03BD22189D6B43D2899 lock_temp=0
+[2026-08-30T21:43:36.9278279+08:00] CLOSE_BEGIN name=first pid=53684 target=858D8429065121C0794098EA87265F85 socket=Open
+[2026-08-30T21:43:36.9321544+08:00] CLOSE_MAIN_WINDOW name=first pid=53684 result=True socket=Open
+[2026-08-30T21:43:36.9747277+08:00] WAIT_FOR_EXIT name=first waited=True elapsed_ms=41 has_exited=True
+[2026-08-30T21:43:37.0140873+08:00] CDP_Target.detachFromTarget sent=True socket_closed=True state=Aborted elapsed_ms=13 error=none
+[2026-08-30T21:43:37.0162795+08:00] DEBUGGER_DISPOSED name=first state=Aborted
+[2026-08-30T21:43:37.7529363+08:00] RESIDUE i=1 after_ms=818 main=0 owned=0 listener=0 lock_temp=0 query_ms=718.8
+[2026-08-30T21:43:38.4517797+08:00] CLOSE_RESULT name=first elapsed_ms=41 main=0 webview=0 listener=0 lock_temp=0 graceful_clear=True
+[2026-08-30T21:43:38.4758935+08:00] START_RELEASE name=restart port=9402
+[2026-08-30T21:43:38.5632854+08:00] ARTIFACT_GATE when=before_restart name=release bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20
+[2026-08-30T21:43:38.5640228+08:00] ARTIFACT_GATE when=before_restart name=debug bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5
+[2026-08-30T21:43:38.5646020+08:00] ARTIFACT_GATE when=before_restart name=nsis bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328
+[2026-08-30T21:43:39.1657352+08:00] CDP_READY name=restart pid=47692 hwnd=0x1C7A0904 target=6E54D8E6177BC10820A24A5DE179187A
+[2026-08-30T21:43:40.7476984+08:00] RESTART_BACK_PASS locale=zh-CN hash=#/clean active=BUTTON/语言
+[2026-08-30T21:43:42.0118411+08:00] TASKBAR_PASS pid=47692 hwnd=0x1C7A0904 capture_id=20260830-214341528
+[2026-08-30T21:43:42.0463035+08:00] CLOSE_BEGIN name=restart pid=47692 target=6E54D8E6177BC10820A24A5DE179187A socket=Open
+[2026-08-30T21:43:42.0471321+08:00] CLOSE_MAIN_WINDOW name=restart pid=47692 result=True socket=Open
+[2026-08-30T21:43:42.1102065+08:00] WAIT_FOR_EXIT name=restart waited=True elapsed_ms=63 has_exited=True
+[2026-08-30T21:43:42.1145747+08:00] CDP_Target.detachFromTarget sent=True socket_closed=True state=Aborted elapsed_ms=2 error=none
+[2026-08-30T21:43:42.1156508+08:00] DEBUGGER_DISPOSED name=restart state=Aborted
+[2026-08-30T21:43:42.8452628+08:00] RESIDUE i=1 after_ms=798 main=0 owned=0 listener=0 lock_temp=0 query_ms=720.7
+[2026-08-30T21:43:43.5275439+08:00] CLOSE_RESULT name=restart elapsed_ms=63 main=0 webview=0 listener=0 lock_temp=0 graceful_clear=True
+[2026-08-30T21:43:43.5473703+08:00] ERROR_AUDIT_PASS runtime=0 console=0 log=0
+[2026-08-30T21:43:44.0463134+08:00] ARTIFACT_GATE when=after_run name=release bytes=9827328 sha256=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20
+[2026-08-30T21:43:44.0469029+08:00] ARTIFACT_GATE when=after_run name=debug bytes=14758912 sha256=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5
+[2026-08-30T21:43:44.0474006+08:00] ARTIFACT_GATE when=after_run name=nsis bytes=3152372 sha256=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328
+[2026-08-30T21:43:45.5950712+08:00] FINAL_AUDIT state=pass release_hash=92C3919D776AC0AE9F04633C26E52BB23BD33D9706F0DA669F55C6F1D62B4E20 debug_hash=F5DFC77BE96E780EC15817B94931C74BF6A9412DF46C128B1902925DF63D65F5 nsis_hash=0903D735C1C6C5AC7614410C62F84E82E92E2DC1CE454444C5B9712F8BA39328 main=0 webview=0 port1=0 port2=0 store_lock_temp=0 cdp_lines=50 cdp_sha256=E455586A37FF428BCD984AC3A7B76E7E43FA6AE2B9B8E641E4E63676E87DF266
+[2026-08-30T21:43:45.5958297+08:00] HELPER_EXIT_CODE=0
+**********************
+PowerShell transcript end
+End time: 20260830214345
+**********************
