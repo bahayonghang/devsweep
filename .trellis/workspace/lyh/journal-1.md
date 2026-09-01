@@ -1425,3 +1425,24 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 50: 添加 DevSweep 本机检查建议 skill
+
+**Date**: 2026-09-01
+**Task**: 添加 DevSweep 本机检查建议 skill
+**Branch**: `dev`
+
+### Summary
+
+落地 skills/devsweep-inspect Production 包与 AGENTS.md 发现接线。默认只检查并给出建议，不执行清理。validate_skill、trigger eval 13/13、output eval 2/2 与 trellis-check 均为 PASS。归档 09-01-inspect-skill-package、09-01-inspect-skill-discovery、09-01-inspect-advise-skill。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f7bd65d` | (see git log) |
+
+### Status
+
+[OK] **Completed**
