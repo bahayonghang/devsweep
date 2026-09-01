@@ -1,0 +1,5 @@
+{"file": "CONTEXT.md", "reason": "Check recommendation wording against domain terms."}
+{"file": "docs/reference/cli.md", "reason": "Check playbook commands against the live Clap contract."}
+{"file": "docs/guide/safety-model.md", "reason": "Check execute prohibition and Inspect Only rows."}
+{"file": ".trellis/tasks/09-01-inspect-skill-package/prd.md", "reason": "Package acceptance criteria and Production gates."}
+{"file": "AGENTS.md", "reason": "Confirm the package does not weaken repo safety contracts."}

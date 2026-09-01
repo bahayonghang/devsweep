@@ -1,0 +1,8 @@
+{"file": "CONTEXT.md", "reason": "Required vocabulary for SKILL.md and the recommendation report."}
+{"file": "docs/reference/cli.md", "reason": "Inspect command argv, JSON output, and execute exclusions."}
+{"file": "docs/guide/clean.md", "reason": "Clean authority chain: scan, plan, preview, execute."}
+{"file": "docs/guide/optimize.md", "reason": "Optimize list is inspect; run is a side effect; Settings launch is not completion."}
+{"file": "docs/guide/safety-model.md", "reason": "Dry-run default, Cargo home Inspect Only, no Docker, no permanent delete."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/prd.md", "reason": "Parent job, mode, and recommend-only decision."}
+{"file": ".trellis/tasks/09-01-inspect-advise-skill/research/prior-art-research.md", "reason": "Prior-art synthesis to copy into package reports."}
+{"file": ".trellis/tasks/09-01-inspect-skill-package/design.md", "reason": "Package layout, CLI playbook, evals, and manifest."}
