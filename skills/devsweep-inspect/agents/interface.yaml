@@ -1,0 +1,52 @@
+interface:
+  display_name: "DevSweep inspect and advise"
+  short_description: "Inspect this machine with the DevSweep CLI and recommend cleanup or optimization without executing side effects"
+  default_prompt: "Inspect this machine with the DevSweep CLI. Return cleanup advice and optimization advice as a recommendation report that uses Cleanup Target, Scan Report, Cleanup Plan, Estimated Recoverable, and Inspect Only. Do not run clean execute, optimize run, software uninstall, or shell deletion."
+  examples:
+    - "检查本机，给出磁盘清理建议"
+    - "看看开发缓存占了多少空间"
+    - "recommend cleanup for this machine, inspect disk space first"
+    - "给出优化建议，先不要执行"
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "claude"
+    - "generic"
+    - "agent-skills-compatible"
+  activation:
+    mode: "manual"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "pwsh"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow catalog metadata and read-only source review; forbid unreviewed execution"
+    generated_public_claims: "evidence-bound"
+  permissions:
+    network: "none required"
+    file_write: "optional new observation or untrusted plan JSON via DevSweep --output create-new"
+    subprocess: "DevSweep inspect commands only; cargo run for the repo binary"
+    interactive: "avoid"
+  degradation:
+    openai: "neutral-source"
+    claude: "neutral-source"
+    generic: "neutral-source"
+    agent-skills-compatible: "canonical-source"
+gates:
+  scaffold:
+    - "SKILL.md frontmatter"
+    - "README hook and natural trigger examples"
+    - "clear exclusions"
+  production:
+    - "agents/interface.yaml"
+    - "evals/trigger_cases.json"
+    - "output fixture eval"
+    - "prior-art research report"
+    - "creation handoff"
+    - "root-only discoverable SKILL.md entrypoint"
+    - "recommend-only execute boundary"
+  library: []
+  governed: []

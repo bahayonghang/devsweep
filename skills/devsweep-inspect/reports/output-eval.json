@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "summary": {
+    "total": 2,
+    "passed": 2
+  },
+  "failures": [],
+  "results": [
+    {
+      "path": "evals/fixtures/sample-recommendation.md",
+      "expect": "pass",
+      "passed": true,
+      "ok": true,
+      "missing_required": [],
+      "forbidden_hits": []
+    },
+    {
+      "path": "evals/fixtures/bad-execute.md",
+      "expect": "fail",
+      "passed": true,
+      "ok": false,
+      "missing_required": [
+        "Cleanup Target",
+        "Scan Report",
+        "Cleanup Plan",
+        "Estimated Recoverable",
+        "Inspect Only"
+      ],
+      "forbidden_hits": [
+        "clean execute --",
+        "optimize run --",
+        "software uninstall --",
+        "rm -rf",
+        "Remove-Item"
+      ]
+    }
+  ]
+}

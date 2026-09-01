@@ -1,0 +1,178 @@
+{
+  "ok": true,
+  "threshold": 0.34,
+  "description_concepts": [
+    "cleanup_advice",
+    "dev_cache",
+    "devsweep",
+    "inspect",
+    "optimize"
+  ],
+  "missing_description_concepts": [],
+  "summary": {
+    "total": 13,
+    "passed": 13,
+    "false_positive": 0,
+    "false_negative": 0,
+    "pass_rate": 1.0
+  },
+  "failures": [],
+  "results": {
+    "should_trigger": [
+      {
+        "prompt": "检查本机，给出磁盘清理建议",
+        "family": "cn_inspect_advice",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "cleanup_advice",
+          "inspect"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "看看开发缓存占了多少 disk space",
+        "family": "cn_dev_cache",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "dev_cache",
+          "inspect"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "recommend cleanup for this machine, inspect disk space first",
+        "family": "en_recommend_inspect",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "cleanup_advice",
+          "inspect"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "给出优化建议，并检查本机开发缓存",
+        "family": "cn_optimize_cache",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.6,
+        "matched_concepts": [
+          "dev_cache",
+          "inspect",
+          "optimize"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "Use DevSweep to inspect disk space and return cleanup advice",
+        "family": "en_devsweep_inspect",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.6,
+        "matched_concepts": [
+          "cleanup_advice",
+          "devsweep",
+          "inspect"
+        ],
+        "negative_pattern": null
+      },
+      {
+        "prompt": "本机开发缓存太大，先给我清理建议和释放空间估计",
+        "family": "cn_cache_space",
+        "expected_trigger": true,
+        "predicted_trigger": true,
+        "passed": true,
+        "score": 0.4,
+        "matched_concepts": [
+          "cleanup_advice",
+          "dev_cache"
+        ],
+        "negative_pattern": null
+      }
+    ],
+    "should_not_trigger": [
+      {
+        "prompt": "just ci",
+        "family": "ci_gate",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": "just ci"
+      },
+      {
+        "prompt": "写一条 commit message",
+        "family": "commit_only",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": "commit message"
+      },
+      {
+        "prompt": "帮我看一下 TUI layout",
+        "family": "tui_layout",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": "tui layout"
+      },
+      {
+        "prompt": "GitHub issue triage for needs-info",
+        "family": "issue_triage",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": null
+      }
+    ],
+    "near_neighbor": [
+      {
+        "prompt": "执行清理，run clean execute now",
+        "family": "execute_request",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": "clean execute"
+      },
+      {
+        "prompt": "卸载这个 MSIX，software uninstall",
+        "family": "uninstall_request",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": "software uninstall"
+      },
+      {
+        "prompt": "rm -rf node_modules and Remove-Item the cache",
+        "family": "shell_delete",
+        "expected_trigger": false,
+        "predicted_trigger": false,
+        "passed": true,
+        "score": 0.0,
+        "matched_concepts": [],
+        "negative_pattern": "rm -rf"
+      }
+    ]
+  }
+}

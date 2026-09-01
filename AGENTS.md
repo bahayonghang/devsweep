@@ -45,6 +45,13 @@ Use the default canonical labels: `needs-triage`, `needs-info`,
 This repo uses a single-context domain-doc layout. See
 `docs/agents/domain.md`.
 
+### Inspect and advise
+
+When the user asks to inspect this machine, recommend cleanup, or give
+optimization advice, read `skills/devsweep-inspect/SKILL.md` and follow it.
+The skill is recommend-only. Do not run `clean execute`, `optimize run`, or
+`software uninstall` from that workflow.
+
 ## Trellis And Codex
 
 - For backend changes, read `.trellis/spec/backend/index.md` before editing.

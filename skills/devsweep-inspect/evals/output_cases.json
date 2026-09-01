@@ -1,0 +1,28 @@
+{
+  "forbidden_patterns": [
+    "clean execute --",
+    "optimize run --",
+    "software uninstall --",
+    "rm -rf",
+    "Remove-Item"
+  ],
+  "required_terms": [
+    "Cleanup Target",
+    "Scan Report",
+    "Cleanup Plan",
+    "Estimated Recoverable",
+    "Inspect Only"
+  ],
+  "fixtures": [
+    {
+      "path": "evals/fixtures/sample-recommendation.md",
+      "expect": "pass",
+      "notes": "Recorded fixture for a recommend-only report."
+    },
+    {
+      "path": "evals/fixtures/bad-execute.md",
+      "expect": "fail",
+      "notes": "Negative fixture: execute argv must fail the checker."
+    }
+  ]
+}

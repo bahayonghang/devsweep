@@ -1,0 +1,106 @@
+{
+  "recommended_threshold": 0.34,
+  "description_required_concepts": [
+    "inspect",
+    "cleanup_advice",
+    "dev_cache",
+    "optimize",
+    "devsweep"
+  ],
+  "positive_concepts": {
+    "inspect": [
+      "检查本机",
+      "inspect this machine",
+      "inspect disk space",
+      "disk space"
+    ],
+    "cleanup_advice": [
+      "磁盘清理建议",
+      "清理建议",
+      "cleanup advice",
+      "recommend cleanup",
+      "释放空间"
+    ],
+    "dev_cache": [
+      "开发缓存",
+      "developer cache"
+    ],
+    "optimize": [
+      "优化建议",
+      "optimization advice"
+    ],
+    "devsweep": [
+      "devsweep",
+      "DevSweep CLI"
+    ]
+  },
+  "negative_patterns": [
+    "clean execute",
+    "执行清理",
+    "software uninstall",
+    "卸载这个",
+    "rm -rf",
+    "remove-item",
+    "just ci",
+    "tui layout",
+    "commit message"
+  ],
+  "should_trigger": [
+    {
+      "text": "检查本机，给出磁盘清理建议",
+      "family": "cn_inspect_advice"
+    },
+    {
+      "text": "看看开发缓存占了多少 disk space",
+      "family": "cn_dev_cache"
+    },
+    {
+      "text": "recommend cleanup for this machine, inspect disk space first",
+      "family": "en_recommend_inspect"
+    },
+    {
+      "text": "给出优化建议，并检查本机开发缓存",
+      "family": "cn_optimize_cache"
+    },
+    {
+      "text": "Use DevSweep to inspect disk space and return cleanup advice",
+      "family": "en_devsweep_inspect"
+    },
+    {
+      "text": "本机开发缓存太大，先给我清理建议和释放空间估计",
+      "family": "cn_cache_space"
+    }
+  ],
+  "should_not_trigger": [
+    {
+      "text": "just ci",
+      "family": "ci_gate"
+    },
+    {
+      "text": "写一条 commit message",
+      "family": "commit_only"
+    },
+    {
+      "text": "帮我看一下 TUI layout",
+      "family": "tui_layout"
+    },
+    {
+      "text": "GitHub issue triage for needs-info",
+      "family": "issue_triage"
+    }
+  ],
+  "near_neighbor": [
+    {
+      "text": "执行清理，run clean execute now",
+      "family": "execute_request"
+    },
+    {
+      "text": "卸载这个 MSIX，software uninstall",
+      "family": "uninstall_request"
+    },
+    {
+      "text": "rm -rf node_modules and Remove-Item the cache",
+      "family": "shell_delete"
+    }
+  ]
+}

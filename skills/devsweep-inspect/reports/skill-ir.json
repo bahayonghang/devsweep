@@ -1,0 +1,161 @@
+{
+  "schema_version": "2.0.0-qiaomu-lite",
+  "generated_at": "2026-09-01",
+  "package": {
+    "name": "devsweep-inspect",
+    "version": "1.0.0",
+    "owner": "bahayonghang",
+    "maturity_tier": "production",
+    "lifecycle_stage": "production",
+    "upstream_inspiration": "avdlee/xcode-disk-cleanup-agent-skill; orzcls/win-disk-cleaner; az9713/claude-skill-disk-cleanup; heyzgj/storage-cleanup-skill; thearmagan/skills@dry-run-first",
+    "upstream_sync": {}
+  },
+  "intent": {
+    "description": "Inspect this machine with the DevSweep CLI and return cleanup advice or\noptimization advice for developer caches and disk space. Use when the user\nasks to 检查本机, 磁盘清理建议, 释放空间, 开发缓存, or 优化建议; or says\ninspect disk space, developer cache, recommend cleanup, or optimization\nadvice. Do not use for clean execute, software uninstall, TUI work, rm -rf,\nor PowerShell Remove-Item deletion.",
+    "job_to_be_done": "Inspect this machine with the DevSweep CLI and return evidence-backed cleanup and optimization advice without side effects.",
+    "target_users": [
+      "coding agents working in the DevSweep repository",
+      "developers who ask an agent to inspect disk space or developer caches"
+    ],
+    "inputs": [
+      "natural-language inspect or advice request",
+      "optional scan roots and scope"
+    ],
+    "outputs": [
+      "recommendation report using CONTEXT.md terms",
+      "optional new observation JSON or untrusted Cleanup Plan file"
+    ],
+    "exclusions": [
+      "clean execute",
+      "optimize run",
+      "software uninstall",
+      "protection list mutation",
+      "ad-hoc shell deletion",
+      "TUI or desktop implementation"
+    ],
+    "qiaomu_defaults": {}
+  },
+  "triggers": {
+    "should_trigger": [
+      "检查本机，给出磁盘清理建议",
+      "看看开发缓存占了多少 disk space",
+      "recommend cleanup for this machine, inspect disk space first",
+      "给出优化建议，并检查本机开发缓存",
+      "Use DevSweep to inspect disk space and return cleanup advice",
+      "本机开发缓存太大，先给我清理建议和释放空间估计"
+    ],
+    "should_not_trigger": [
+      "just ci",
+      "写一条 commit message",
+      "帮我看一下 TUI layout",
+      "GitHub issue triage for needs-info"
+    ],
+    "near_neighbor": [
+      "执行清理，run clean execute now",
+      "卸载这个 MSIX，software uninstall",
+      "rm -rf node_modules and Remove-Item the cache"
+    ]
+  },
+  "workflow": {
+    "router_rules": [],
+    "compact_workflow": [
+      "Locate the DevSweep program. In this repo use `cargo run --locked -p devsweep-cli --bin devsweep --`. Prefer an installed `devsweep` when `devsweep --version` works.",
+      "Route the request with [references/cli-playbook.md](references/cli-playbook.md). Default to `clean scan --scope all --format json --output <new-file>`. Use `analyze scan` when the user wants tree usage without cleanup authority. Use `optimize list` for the Windows catalogue. Use `status snapshot` for a machine snapshot.",
+      "Keep program and argv separate. Do not compose a shell cleanup string.",
+      "Read the JSON result. Build the recommendation report from [references/recommendation-report.md](references/recommendation-report.md). Use Cleanup Target, Scan Report, Cleanup Plan, Estimated Recoverable, and Inspect Only.",
+      "Save `clean plan` only when the user asked for a plan file. The file stays an untrusted Cleanup Plan.",
+      "Stop. Do not run `clean execute`, `optimize run`, `software uninstall`, or protection mutations. Say that execution needs a later explicit request plus preview digest and `--confirm`."
+    ],
+    "gate_ladder": [],
+    "output_contract": [
+      "Name the inspect command and roots that actually ran.",
+      "Split Estimated Recoverable into verified, partial-lower-bound, and unknown.",
+      "Table Cleanup Targets with id, path, evidence, risk, class, and advice `recommend` / `inspect-only` / `exclude`.",
+      "Call out Inspect Only rows, including Cargo home.",
+      "Treat Optimize list rows as catalogue facts, not completed maintenance.",
+      "End with the execute-later next step. Omit execute argv from the default report."
+    ]
+  },
+  "resources": {
+    "references": [
+      "references\\cli-playbook.md",
+      "references\\recommendation-report.md",
+      "references\\safety-contract.md"
+    ],
+    "scripts": [
+      "scripts\\output_eval.py"
+    ],
+    "evals": [
+      "evals\\fixtures\\bad-execute.md",
+      "evals\\fixtures\\sample-recommendation.md",
+      "evals\\output_cases.json",
+      "evals\\trigger_cases.json"
+    ],
+    "reports": [
+      "reports\\creation-handoff.md",
+      "reports\\output-eval.json",
+      "reports\\prior-art-research.md",
+      "reports\\skill-ir.json",
+      "reports\\trigger-eval.json"
+    ]
+  },
+  "portability": {
+    "canonical_format": "agent-skills",
+    "adapter_targets": [
+      "openai",
+      "claude",
+      "generic",
+      "agent-skills-compatible"
+    ],
+    "activation": {
+      "mode": "manual",
+      "paths": []
+    },
+    "execution": {
+      "context": "inline",
+      "shell": "pwsh"
+    },
+    "trust": {
+      "source_tier": "local",
+      "remote_inline_execution": "forbid",
+      "remote_metadata_policy": "allow catalog metadata and read-only source review; forbid unreviewed execution",
+      "generated_public_claims": "evidence-bound"
+    },
+    "permissions": {
+      "network": "none required",
+      "file_write": "optional new observation or untrusted plan JSON via DevSweep --output create-new",
+      "subprocess": "DevSweep inspect commands only; cargo run for the repo binary",
+      "interactive": "avoid"
+    },
+    "degradation": {
+      "openai": "neutral-source",
+      "claude": "neutral-source",
+      "generic": "neutral-source",
+      "agent-skills-compatible": "canonical-source"
+    }
+  },
+  "gates": {
+    "scaffold": [
+      "SKILL.md frontmatter",
+      "README hook and natural trigger examples",
+      "clear exclusions"
+    ],
+    "production": [
+      "agents/interface.yaml",
+      "evals/trigger_cases.json",
+      "output fixture eval",
+      "prior-art research report",
+      "creation handoff",
+      "root-only discoverable SKILL.md entrypoint",
+      "recommend-only execute boundary"
+    ],
+    "library": [],
+    "governed": []
+  },
+  "evidence_boundary": {
+    "generated_reports_are_evidence": true,
+    "planned_work_is_evidence": false,
+    "missing_external_or_human_evidence_label": "missing evidence",
+    "public_claim_policy": "claim only what local validation, install proof, human review, or provider-backed evidence actually supports"
+  }
+}

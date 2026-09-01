@@ -102,6 +102,11 @@ The dependency direction starts at `main -> devsweep::run -> application ->
 devsweep-core`. Core modules never import CLI or TUI code. TUI render code
 remains read-only and backend discovery layers remain non-mutating.
 
+## Agent skill packages
+
+- `skills/devsweep-inspect/` - Production agent skill that inspects with the
+  DevSweep CLI and returns cleanup or optimization advice. Recommend-only.
+
 ## Specs And Workflow
 
 - `.trellis/spec/backend/index.md` - backend pre-development checklist and

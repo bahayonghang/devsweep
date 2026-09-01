@@ -1,0 +1,50 @@
+{
+  "name": "devsweep-inspect",
+  "version": "1.0.0",
+  "owner": "bahayonghang",
+  "updated_at": "2026-09-01",
+  "status": "active",
+  "maturity_tier": "production",
+  "lifecycle_stage": "production",
+  "context_budget_tier": "production",
+  "upstream_inspiration": "avdlee/xcode-disk-cleanup-agent-skill; orzcls/win-disk-cleaner; az9713/claude-skill-disk-cleanup; heyzgj/storage-cleanup-skill; thearmagan/skills@dry-run-first",
+  "target_platforms": [
+    "openai",
+    "claude",
+    "generic",
+    "agent-skills-compatible"
+  ],
+  "intent": {
+    "job_to_be_done": "Inspect this machine with the DevSweep CLI and return evidence-backed cleanup and optimization advice without side effects.",
+    "target_users": [
+      "coding agents working in the DevSweep repository",
+      "developers who ask an agent to inspect disk space or developer caches"
+    ],
+    "inputs": [
+      "natural-language inspect or advice request",
+      "optional scan roots and scope"
+    ],
+    "outputs": [
+      "recommendation report using CONTEXT.md terms",
+      "optional new observation JSON or untrusted Cleanup Plan file"
+    ],
+    "exclusions": [
+      "clean execute",
+      "optimize run",
+      "software uninstall",
+      "protection list mutation",
+      "ad-hoc shell deletion",
+      "TUI or desktop implementation"
+    ]
+  },
+  "release_gates": [
+    "prior_art_research",
+    "agents/interface.yaml",
+    "evals/trigger_cases.json",
+    "validate_skill",
+    "trigger_eval",
+    "output_eval_fixtures",
+    "creation_handoff",
+    "root_entrypoint_isolation"
+  ]
+}
