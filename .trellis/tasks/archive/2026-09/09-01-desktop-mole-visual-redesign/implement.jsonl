@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop quality gate and completion checklist that still names the old gray-green non-hero contract."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Visual System currently forbids heroes, page-wide palettes, and planets; this task rewrites that clause first."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Coordinator, routing, and Clean authority invariants that presentation must not weaken."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "IPC decoding and no-authority rules for restyled pages."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/research/mole-fit-visual-audit.md", "reason": "mole.fit accept/adapt/reject table and provenance boundary."}
+{"file": ".trellis/tasks/archive/2026-09/08-29-mole-inspired-cli-windows-desktop-redesign/research/mole-reference-audit.md", "reason": "Prior programme rejected planets and heroes; this task supersedes that visual direction only."}
+{"file": "docs/provenance.md", "reason": "MIT vs Mole GPL/trademark; no copied assets or copy."}
+{"file": "CONTEXT.md", "reason": "Domain terms: Estimated Recoverable, Cleanup Target, Inspect Only, Scan Progress."}

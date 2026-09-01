@@ -1,0 +1,30 @@
+{
+  "id": "desktop-mole-visual-redesign",
+  "name": "desktop-mole-visual-redesign",
+  "title": "Redesign desktop UI from Mole visual language",
+  "description": "Clean-room redesign of the Tauri desktop shell and five-mode workbenches using mole.fit interaction and visual ideas, without copying Mole assets or weakening DevSweep safety contracts.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-01",
+  "completedAt": "2026-09-01",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-01-desktop-immersive-spec-shell",
+    "09-01-desktop-clean-hero-workbench",
+    "09-01-desktop-modes-immersive-restyle"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

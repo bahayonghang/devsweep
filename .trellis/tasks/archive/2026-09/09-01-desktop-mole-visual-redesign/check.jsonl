@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Verify immersive checklist, bilingual widths, and no-space-freed rule after the rewrite."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Verify Visual System matches the approved immersive contract and still forbids Mole assets."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Verify Clean digest/Inspect Only/coordinator invariants survived the restyle."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Verify restyled pages still decode closed-world IPC and never reconstruct authority."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/research/mole-fit-visual-audit.md", "reason": "Verify reject list: planets, hamster, traffic lights, health score, tray HUD."}
+{"file": "docs/provenance.md", "reason": "Verify no Mole asset or copy landed in production or tests."}
+{"file": "CONTEXT.md", "reason": "Verify visible copy still uses Estimated Recoverable and never claims space freed."}
