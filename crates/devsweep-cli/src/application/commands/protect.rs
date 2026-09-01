@@ -162,6 +162,8 @@ mod tests {
         _guard: std::sync::MutexGuard<'static, ()>,
         previous_appdata: Option<std::ffi::OsString>,
         previous_local: Option<std::ffi::OsString>,
+        previous_xdg: Option<std::ffi::OsString>,
+        previous_home: Option<std::ffi::OsString>,
     }
 
     impl IsolatedAppData {
@@ -170,21 +172,47 @@ mod tests {
             let temp = TempDir::new().expect("temp");
             let previous_appdata = std::env::var_os("APPDATA");
             let previous_local = std::env::var_os("LOCALAPPDATA");
+            let previous_xdg = std::env::var_os("XDG_CONFIG_HOME");
+            let previous_home = std::env::var_os("HOME");
             // SAFETY: tests hold ENV_LOCK and restore the previous values on drop.
             unsafe {
                 std::env::set_var("APPDATA", temp.path());
                 std::env::set_var("LOCALAPPDATA", temp.path());
+                std::env::set_var("XDG_CONFIG_HOME", temp.path());
+                std::env::set_var("HOME", temp.path());
             }
             Self {
                 _temp: temp,
                 _guard: guard,
                 previous_appdata,
                 previous_local,
+                previous_xdg,
+                previous_home,
             }
         }
 
         fn path(&self) -> &std::path::Path {
             self._temp.path()
+        }
+
+        fn protection_store(&self) -> std::path::PathBuf {
+            #[cfg(windows)]
+            {
+                self.path().join("devsweep/protected-paths.json")
+            }
+            #[cfg(target_os = "macos")]
+            {
+                self.path()
+                    .join("Library/Application Support/devsweep/protected-paths.json")
+            }
+            #[cfg(all(unix, not(target_os = "macos")))]
+            {
+                self.path().join("devsweep/protected-paths.json")
+            }
+            #[cfg(not(any(windows, unix)))]
+            {
+                unreachable!("protect isolation tests require windows or unix")
+            }
         }
     }
 
@@ -198,6 +226,14 @@ mod tests {
                 match &self.previous_local {
                     Some(value) => std::env::set_var("LOCALAPPDATA", value),
                     None => std::env::remove_var("LOCALAPPDATA"),
+                }
+                match &self.previous_xdg {
+                    Some(value) => std::env::set_var("XDG_CONFIG_HOME", value),
+                    None => std::env::remove_var("XDG_CONFIG_HOME"),
+                }
+                match &self.previous_home {
+                    Some(value) => std::env::set_var("HOME", value),
+                    None => std::env::remove_var("HOME"),
                 }
             }
         }
@@ -257,7 +293,7 @@ mod tests {
     #[test]
     fn protect_corrupt_store_is_unavailable_and_preserves_bytes() {
         let isolated = IsolatedAppData::new();
-        let store = isolated.path().join("devsweep/protected-paths.json");
+        let store = isolated.protection_store();
         fs::create_dir_all(store.parent().unwrap()).expect("dir");
         fs::write(&store, "{not-json").expect("corrupt");
         let cli = parse(&["devsweep", "clean", "protect", "list", "--format", "json"]);
