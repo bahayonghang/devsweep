@@ -179,35 +179,48 @@ fn preview_digest_mismatch_is_stale_authority_before_side_effects() {
         "--format",
         "json",
     ]);
-    assert_eq!(
-        optimize_preview.status.code(),
-        Some(0),
-        "{}",
-        stderr(&optimize_preview)
-    );
-    let optimize_preview_json = envelope(&optimize_preview);
-    let optimize_digest = optimize_preview_json["data"]["digest"]
-        .as_str()
-        .expect("optimize digest")
-        .to_string();
-    let optimize_stale = devsweep(&[
-        "optimize",
-        "run",
-        "--plan",
-        optimize_plan.to_str().unwrap(),
-        "--preview-digest",
-        &digest_placeholder(),
-        "--confirm",
-        "--format",
-        "json",
-    ]);
-    assert_eq!(optimize_stale.status.code(), Some(3));
-    let optimize_error = envelope(&optimize_stale);
-    assert_eq!(
-        optimize_error["error"]["code"],
-        "invalid_optimize_authority"
-    );
-    assert_ne!(optimize_digest, digest_placeholder());
+    if cfg!(windows) {
+        assert_eq!(
+            optimize_preview.status.code(),
+            Some(0),
+            "{}",
+            stderr(&optimize_preview)
+        );
+        let optimize_preview_json = envelope(&optimize_preview);
+        let optimize_digest = optimize_preview_json["data"]["digest"]
+            .as_str()
+            .expect("optimize digest")
+            .to_string();
+        let optimize_stale = devsweep(&[
+            "optimize",
+            "run",
+            "--plan",
+            optimize_plan.to_str().unwrap(),
+            "--preview-digest",
+            &digest_placeholder(),
+            "--confirm",
+            "--format",
+            "json",
+        ]);
+        assert_eq!(optimize_stale.status.code(), Some(3));
+        let optimize_error = envelope(&optimize_stale);
+        assert_eq!(
+            optimize_error["error"]["code"],
+            "invalid_optimize_authority"
+        );
+        assert_ne!(optimize_digest, digest_placeholder());
+    } else {
+        assert_eq!(
+            optimize_preview.status.code(),
+            Some(4),
+            "{}",
+            stderr(&optimize_preview)
+        );
+        assert_eq!(
+            envelope(&optimize_preview)["error"]["code"],
+            "optimize_preflight_unavailable"
+        );
+    }
 
     let software_stale = devsweep(&[
         "software",
