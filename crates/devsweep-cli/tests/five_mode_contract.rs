@@ -8,8 +8,13 @@ use std::{
 use tempfile::TempDir;
 
 fn devsweep(args: &[&str]) -> Output {
+    let isolated = TempDir::new().unwrap();
     Command::new(env!("CARGO_BIN_EXE_devsweep"))
         .args(args)
+        .env("LOCALAPPDATA", isolated.path())
+        .env("APPDATA", isolated.path())
+        .env("XDG_CONFIG_HOME", isolated.path())
+        .env("HOME", isolated.path())
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -281,7 +286,7 @@ fn partial_and_unavailable_states_stay_truthful() {
     if code == Some(5) {
         assert_eq!(outcome, "partial");
     } else {
-        assert_eq!(outcome, "succeeded");
+        assert_eq!(outcome, "success");
     }
     let unsupported = document["data"]["unsupported_capabilities"]
         .as_array()

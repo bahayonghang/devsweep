@@ -943,11 +943,11 @@ mod tests {
         );
         assert_eq!(
             english,
-            include_str!("../../tests/fixtures/cli/human-en.txt")
+            include_str!("../../tests/fixtures/cli/human-en.txt").replace("\r\n", "\n")
         );
         assert_eq!(
             chinese,
-            include_str!("../../tests/fixtures/cli/human-zh-CN.txt")
+            include_str!("../../tests/fixtures/cli/human-zh-CN.txt").replace("\r\n", "\n")
         );
     }
 }

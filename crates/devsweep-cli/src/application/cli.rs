@@ -1647,9 +1647,10 @@ mod tests {
         lines.join("\n")
     }
 
-    fn documented_manifest(document: &str) -> &str {
+    fn documented_manifest(document: &str) -> String {
         const START: &str = "<!-- cli-contract-manifest:start -->\n```text\n";
         const END: &str = "\n```\n<!-- cli-contract-manifest:end -->";
+        let document = document.replace("\r\n", "\n");
         let after_start = document
             .split_once(START)
             .expect("reference contains generated manifest start")
@@ -1658,6 +1659,7 @@ mod tests {
             .split_once(END)
             .expect("reference contains generated manifest end")
             .0
+            .to_string()
     }
 
     #[test]
