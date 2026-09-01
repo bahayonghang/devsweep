@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Confirm digest invalidation and Inspect Only still hold."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Confirm no percentage, no space-freed copy."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Confirm preview still cannot reconstruct a plan."}
+{"file": "CONTEXT.md", "reason": "Confirm visible copy uses Estimated Recoverable."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/design.md", "reason": "Confirm grouped review is presentation-only."}

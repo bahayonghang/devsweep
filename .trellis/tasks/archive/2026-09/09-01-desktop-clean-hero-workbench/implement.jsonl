@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Clean idle/scanning/reviewed/dry-run/confirm/execute invariants."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Immersive first-screen and no-percentage Scan Progress rules."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Scan Preview has no execute authority."}
+{"file": ".trellis/tasks/09-01-desktop-mole-visual-redesign/design.md", "reason": "Parent Clean flow table."}
+{"file": "CONTEXT.md", "reason": "Estimated Recoverable, Inspect Only, Scan Progress terms."}
