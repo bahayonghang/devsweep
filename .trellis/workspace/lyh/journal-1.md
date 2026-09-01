@@ -1446,3 +1446,41 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 51: Desktop 沉浸式界面按 Mole 思路重构
+
+**Date**: 2026-09-01
+**Task**: Desktop 沉浸式界面按 Mole 思路重构
+**Branch**: `dev`
+
+### Summary
+
+将 Tauri desktop 从灰绿工作台改成沉浸式深色画布：胶囊导航、原创扫掠体、Clean 分组复审，以及其余四模式暗色第一屏。
+
+### Main Changes
+
+- 改写 desktop-frontend 视觉合同并落地胶囊壳层与 shell.v1.more
+- Clean 第一屏改为扫掠体加可见扫描范围，复审按 kind/scope 分组
+- Software/Optimize/Analyze/Status 使用分模式深色画布
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6b6db93` | (see git log) |
+
+### Testing
+
+- [OK] desktop lint/typecheck/test/build 通过
+- [OK] just ci 在目录变更后通过
+- [OK] 三个子任务 trellis-check PASS
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 需要时采集本机 390/800/1024/1440 双语截图
+- 软件更新、启动项、托盘 HUD 另开父任务
