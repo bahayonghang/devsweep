@@ -23,8 +23,45 @@ clippy:
 build:
     cargo build --locked -p devsweep-cli --bin devsweep
 
+# Install the CLI into Cargo's bin directory
 install:
     cargo install --locked --path crates/devsweep-cli --bin devsweep
+
+# Copy skill packages from skills/ into local agent skill directories
+[script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
+install-skill:
+    $ErrorActionPreference = 'Stop'
+    $srcRoot = Join-Path (Get-Location) 'skills'
+    if (-not (Test-Path -LiteralPath $srcRoot)) {
+        throw "skill source directory missing: $srcRoot"
+    }
+    $packages = @(Get-ChildItem -LiteralPath $srcRoot -Directory |
+        Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'SKILL.md') })
+    if ($packages.Count -eq 0) {
+        throw 'no skill packages with SKILL.md under skills/'
+    }
+    $destRoots = @(
+        (Join-Path (Get-Location) '.agents\skills'),
+        (Join-Path (Get-Location) '.claude\skills')
+    )
+    foreach ($destRoot in $destRoots) {
+        New-Item -ItemType Directory -Force -Path $destRoot | Out-Null
+        foreach ($pkg in $packages) {
+            $dest = Join-Path $destRoot $pkg.Name
+            if (Test-Path -LiteralPath $dest) {
+                Remove-Item -LiteralPath $dest -Recurse -Force
+            }
+            Copy-Item -LiteralPath $pkg.FullName -Destination $dest -Recurse
+            if (-not (Test-Path -LiteralPath (Join-Path $dest 'SKILL.md'))) {
+                throw "skill install missing SKILL.md: $dest"
+            }
+            Write-Output ('installed skill: ' + $dest)
+        }
+    }
+
+# Install CLI, desktop app, and local agent skills
+install-all: install tinstall install-skill
+    @echo "install-all complete"
 
 [script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
 release-archive:
