@@ -22,6 +22,7 @@ interface ReviewProps {
   selectedIds: Set<string>;
   allSelected: boolean;
   disabled: boolean;
+  showSelectAll?: boolean;
   onSelect: (id: string, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
 }
@@ -40,7 +41,7 @@ export function TargetTable(props: PreviewProps | ReviewProps) {
   return <div className="table-frame">
     <table className={props.mode === "preview" ? "preview-table" : undefined}>
       <thead><tr>
-        {props.mode === "review" && <th className="select-cell"><input ref={selectAllRef} type="checkbox" aria-label="Select all executable targets" checked={props.allSelected} disabled={props.disabled || executableCount === 0} onChange={(event) => props.onSelectAll(event.target.checked)} /></th>}
+        {props.mode === "review" && <th className="select-cell">{props.showSelectAll === false ? null : <input ref={selectAllRef} type="checkbox" aria-label="Select all executable targets" checked={props.allSelected} disabled={props.disabled || executableCount === 0} onChange={(event) => props.onSelectAll(event.target.checked)} />}</th>}
         <th>{message(locale, "clean.v1.table.target")}</th><th>{message(locale, "clean.v1.table.category")}</th><th>{message(locale, "clean.v1.table.capacity")}</th><th>{message(locale, "clean.v1.table.risk")}</th><th>{props.mode === "preview" ? message(locale, "clean.v1.status.ready") : message(locale, "clean.v1.action.execute")}</th><th>{message(locale, "clean.v1.table.evidence")}</th>
       </tr></thead>
       <tbody>{props.targets.map((target) => {

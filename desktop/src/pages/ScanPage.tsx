@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ScanOptions, ScanPhase } from "../api/types.gen";
+import { SweepBody } from "../app-shell";
 import { message, type PresentationLanguageTag } from "../i18n";
 import type { ActiveScan } from "../state/app-state";
 
@@ -15,10 +16,12 @@ function phaseState(phase: ScanPhase, requested: ScanPhase[], current: ScanPhase
 
 export function ScanPage(props: {
   locale?: PresentationLanguageTag;
+  hero?: boolean;
   activeScan: ActiveScan | null; busy: boolean; options: ScanOptions;
   onOptions: (options: ScanOptions) => void; onScan: () => void; onCancel: () => void;
 }) {
   const locale = props.locale ?? "en";
+  const hero = props.hero ?? true;
   const scanning = props.activeScan !== null;
   const setScope = (key: "include_projects" | "include_global", checked: boolean) => props.onOptions({ ...props.options, [key]: checked });
   const requested: ScanPhase[] = [];
@@ -76,7 +79,7 @@ export function ScanPage(props: {
   useEffect(() => () => {
     if (liveTimer.current !== null) clearTimeout(liveTimer.current);
   }, []);
-  return <section className="scan-toolbar" aria-label={message(locale, "clean.v1.action.scan")}>
+  const controls = <>
     <div className="scope-controls">
       <label><input type="checkbox" checked={props.options.include_projects} disabled={scanning || props.busy} onChange={(event) => setScope("include_projects", event.target.checked)} /> {projectsLabel}</label>
       <label><input type="checkbox" checked={props.options.include_global} disabled={scanning || props.busy} onChange={(event) => setScope("include_global", event.target.checked)} /> {globalLabel}</label>
@@ -97,5 +100,10 @@ export function ScanPage(props: {
       </> : <span className="ready-status">{message(locale, "clean.v1.status.ready")}</span>}
     </div>
     {scanning ? <button className="secondary-button fixed-action" onClick={props.onCancel} disabled={props.activeScan?.cancelRequested}>{props.activeScan?.cancelRequested ? message(locale, "clean.v1.action.cancel") : message(locale, "clean.v1.action.cancel_scan")}</button> : <button className="primary-button fixed-action" onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global)}>{message(locale, "clean.v1.action.scan")}</button>}
+  </>;
+  return <section className={hero ? "clean-hero" : "scan-toolbar"} aria-label={message(locale, "clean.v1.action.scan")}>
+    {hero && <SweepBody size="hero" />}
+    {hero && !scanning && <p className="clean-hero-hint">{message(locale, "clean.v1.review.empty_hint")}</p>}
+    {hero ? <div className="scan-toolbar clean-hero-controls">{controls}</div> : controls}
   </section>;
 }

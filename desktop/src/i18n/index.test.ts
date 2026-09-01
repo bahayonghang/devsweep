@@ -64,6 +64,7 @@ describe("desktop canonical catalogue adapter", () => {
     const expected = {
       en: [
         "Help",
+        "More",
         "Saving language preference…",
         "Language preference was not changed. Close Settings, check the presentation settings file, and try again.",
         "Dismiss",
@@ -88,6 +89,7 @@ describe("desktop canonical catalogue adapter", () => {
       ],
       "zh-CN": [
         "帮助",
+        "更多",
         "正在保存语言偏好…",
         "语言偏好未更改。请关闭设置、检查显示设置文件后重试。",
         "关闭",

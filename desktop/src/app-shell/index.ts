@@ -3,6 +3,7 @@ export {
   AppShell,
   MODE_IDS,
   SUPPORTING_DESTINATION_IDS,
+  SweepBody,
   parseModeRoute,
   parseShellRoute,
   type ModeId,

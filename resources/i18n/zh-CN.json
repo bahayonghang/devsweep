@@ -331,6 +331,7 @@
     "rules.v1.source.shipped": { "forms": { "other": "来源：内置注册表。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "support.v1.menu": { "forms": { "other": "支持目的地。1 保护。2 规则。3 历史。这些不是产品模式。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.help": { "forms": { "other": "帮助" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "shell.v1.more": { "forms": { "other": "更多" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.persistence.saving": { "forms": { "other": "正在保存语言偏好…" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.persistence.unavailable": { "forms": { "other": "语言偏好未更改。请关闭设置、检查显示设置文件后重试。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.route.dismiss": { "forms": { "other": "关闭" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },

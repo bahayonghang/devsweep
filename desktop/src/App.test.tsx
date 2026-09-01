@@ -99,11 +99,24 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge()} presentationSettings={fakePresentationSettings("zh-CN")} userLocales={["zh-CN"]} />);
     expect(await screen.findByRole("button", { name: "扫描" })).toBeInTheDocument();
     expect(screen.getByText("项目")).toBeInTheDocument();
+    expect(screen.getByText("全局缓存")).toBeInTheDocument();
     expect(screen.getByText("就绪")).toBeInTheDocument();
     expect(screen.queryByText("Projects")).not.toBeInTheDocument();
     expect(screen.queryByText("Scan")).not.toBeInTheDocument();
     expect(screen.queryByText("Search")).not.toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
+    expect(screen.queryByText("没有扫描结果")).not.toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).toBeInTheDocument();
+  });
+
+  it("idle Clean home is a sweep hero with visible scope, not a light empty heading", async () => {
+    render(<App bridge={fakeBridge()} presentationSettings={fakePresentationSettings()} />);
+    expect(await screen.findByRole("button", { name: "Scan" })).toBeInTheDocument();
+    expect(screen.getByText("Projects")).toBeInTheDocument();
+    expect(screen.getByText("Global caches")).toBeInTheDocument();
+    expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).toBeInTheDocument();
   });
 
   it("keeps the shell absent while presentation settings are loading", () => {
@@ -533,7 +546,7 @@ describe("desktop workflow", () => {
     expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
     expect(planDryRun).toHaveBeenCalledTimes(2);
     expect(screen.getByText("Selected 2")).toBeInTheDocument();
-    expect(screen.getByText(/500\.0 MiB \+ at least 128\.0 MiB/)).toBeInTheDocument();
+    expect(screen.getAllByText(/500\.0 MiB \+ at least 128\.0 MiB/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(twoTargetDryRun.digest, { exact: false }).length).toBeGreaterThan(0);
     expect(twoTargetDryRun.digest).not.toBe(dryRun.digest);
 
@@ -543,6 +556,8 @@ describe("desktop workflow", () => {
     await user.click(screen.getByRole("button", { name: "Execute" }));
     expect((await screen.findAllByText("Execution completed.")).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/capacity becomes available after trash is emptied/).length).toBeGreaterThan(0);
+    expect(document.querySelector(".display-capacity")).toHaveTextContent(/500\.0 MiB \+ at least 128\.0 MiB/);
+    expect(screen.queryByText(/space freed|released space|4K/i)).not.toBeInTheDocument();
     expect(planExecute).toHaveBeenCalledWith(scanReport.plan, expect.arrayContaining(["cargo.target:C:/work/app/target", "npm.cache.clean:global"]), twoTargetDryRun.digest);
   });
 

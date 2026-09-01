@@ -70,10 +70,24 @@ function canRestoreFocus(element: HTMLElement | null): element is HTMLElement {
   return style?.display !== "none" && style?.visibility !== "hidden";
 }
 
+function revealFocusTarget(element: HTMLElement | null): HTMLElement | null {
+  const disclosure = element?.closest("details");
+  if (disclosure && !disclosure.open) disclosure.open = true;
+  return element;
+}
+
 /** Visual ellipsis is allowed only for user data that remains available in
  * full to assistive technology and native hover text. */
 export function AccessibleUserData({ value }: { readonly value: string }) {
   return <span className="user-data-ellipsis" title={value} aria-label={value}>{value}</span>;
+}
+
+/** CSS-native sweep body. Non-informational; still under reduced motion. */
+export function SweepBody({ size = "shell" }: { readonly size?: "shell" | "hero" }) {
+  return <span className={size === "hero" ? "sweep-body sweep-body-hero" : "sweep-body"} aria-hidden="true">
+    <span className="sweep-body-ring" />
+    <span className="sweep-body-core" />
+  </span>;
 }
 
 export function parseModeRoute(hash: string, availableModes: readonly ModeId[]): ModeId | null {
@@ -182,6 +196,7 @@ export function AppShell({
     } else if (pending.intent.route.startsWith("support:")) {
       target = supportingButtons.current.get(pending.intent.route.slice(8) as SupportingDestinationId) ?? null;
     } else target = settingsButton.current;
+    target = revealFocusTarget(target);
     if (canRestoreFocus(target)) target.focus();
     else contentHeading.current?.focus();
   }, [activeRoute, focusCommitRequest]);
@@ -190,13 +205,13 @@ export function AppShell({
     const failed = failedFocusRestore.current;
     if (transitioning || !routeError || !failed || failed.request !== requestSequence.current) return;
     failedFocusRestore.current = null;
-    const target = failed.intent.kind === "activator"
+    const target = revealFocusTarget(failed.intent.kind === "activator"
       ? failed.intent.element
       : failed.intent.route.startsWith("mode:")
         ? navButtons.current.get(failed.intent.route.slice(5) as ModeId) ?? null
         : failed.intent.route.startsWith("support:")
           ? supportingButtons.current.get(failed.intent.route.slice(8) as SupportingDestinationId) ?? null
-          : settingsButton.current;
+          : settingsButton.current);
     if (canRestoreFocus(target)) target.focus();
     else contentHeading.current?.focus();
   }, [routeError, transitioning]);
@@ -280,66 +295,74 @@ export function AppShell({
       ? message(locale, SUPPORTING_MESSAGE_KEYS[activeSupporting.id])
       : message(locale, "shell.v1.settings.title");
   const headingId = `route-heading-${activeRoute.replace(":", "-")}`;
-  return <div className="app-shell" data-locale={locale}>
+  const canvasMode = activeMode ?? "shell";
+  return <div className="app-shell" data-locale={locale} data-mode={canvasMode}>
     <header className="shell-header">
-      <div className="shell-brand">
+      <div className="shell-header-balance" aria-hidden="true" />
+      <div className="mode-capsule">
         <img src={iconUrl} alt="" aria-hidden="true" className="shell-brand-icon" />
-        <div><strong>{message(locale, "app.title")}</strong><span>{message(locale, "shell.v1.workbench")}</span></div>
-      </div>
-      <nav className="mode-navigation" role="tablist" aria-label={`${message(locale, "app.title")} ${message(locale, "shell.v1.workbench")}`}>
-        {modes.map((mode) => {
-          const key = MODE_MESSAGE_KEYS[mode.id];
-          const accelerator = accelerators.get(key);
-          const label = message(locale, key);
-          return <button
-            key={mode.id}
-            ref={(element) => { if (element) navButtons.current.set(mode.id, element); else navButtons.current.delete(mode.id); }}
-            type="button"
-            role="tab"
-            aria-selected={activeRoute === `mode:${mode.id}`}
-            aria-controls="mode-panel"
-            tabIndex={activeRoute === `mode:${mode.id}` ? 0 : -1}
-            disabled={transitioning}
-            title={accelerator ? `Alt+${accelerator.toUpperCase()}` : undefined}
-            onClick={(event) => void navigate(
-              `mode:${mode.id}`,
-              "push",
-              { kind: "activator", element: event.currentTarget },
-            )}
-            onKeyDown={(event) => moveFocus(event, mode.id)}
-          >{label}</button>;
-        })}
-      </nav>
-      <div className="shell-support">
-        <nav className="support-navigation" aria-label={message(locale, "shell.v1.supporting")}>
-          {supporting.map((destination) => <button
-            key={destination.id}
-            ref={(element) => {
-              if (element) supportingButtons.current.set(destination.id, element);
-              else supportingButtons.current.delete(destination.id);
-            }}
-            type="button"
-            aria-current={activeRoute === `support:${destination.id}` ? "page" : undefined}
-            disabled={transitioning}
-            onClick={(event) => void navigate(
-              `support:${destination.id}`,
-              "push",
-              { kind: "activator", element: event.currentTarget },
-            )}
-          >{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</button>)}
-          <button
-            ref={settingsButton}
-            type="button"
-            aria-current={activeRoute === "settings" ? "page" : undefined}
-            disabled={transitioning}
-            onClick={(event) => void navigate(
-              "settings",
-              "push",
-              { kind: "activator", element: event.currentTarget },
-            )}
-          >{message(locale, "shell.v1.settings.action")}</button>
+        <SweepBody />
+        <span className="sr-only">{message(locale, "app.title")}</span>
+        <nav className="mode-navigation" role="tablist" aria-label={`${message(locale, "app.title")} ${message(locale, "shell.v1.workbench")}`}>
+          {modes.map((mode) => {
+            const key = MODE_MESSAGE_KEYS[mode.id];
+            const accelerator = accelerators.get(key);
+            const label = message(locale, key);
+            return <button
+              key={mode.id}
+              ref={(element) => { if (element) navButtons.current.set(mode.id, element); else navButtons.current.delete(mode.id); }}
+              type="button"
+              role="tab"
+              aria-selected={activeRoute === `mode:${mode.id}`}
+              aria-controls="mode-panel"
+              tabIndex={activeRoute === `mode:${mode.id}` ? 0 : -1}
+              disabled={transitioning}
+              title={accelerator ? `Alt+${accelerator.toUpperCase()}` : undefined}
+              onClick={(event) => void navigate(
+                `mode:${mode.id}`,
+                "push",
+                { kind: "activator", element: event.currentTarget },
+              )}
+              onKeyDown={(event) => moveFocus(event, mode.id)}
+            >{label}</button>;
+          })}
         </nav>
-        <a href="https://github.com/bahayonghang/devsweep#readme" target="_blank" rel="noreferrer">{message(locale, "shell.v1.help")}</a>
+      </div>
+      <div className="shell-support">
+        <details className="shell-more">
+          <summary>{message(locale, "shell.v1.more")}</summary>
+          <div className="shell-more-panel">
+            <nav className="support-navigation" aria-label={message(locale, "shell.v1.supporting")}>
+              {supporting.map((destination) => <button
+                key={destination.id}
+                ref={(element) => {
+                  if (element) supportingButtons.current.set(destination.id, element);
+                  else supportingButtons.current.delete(destination.id);
+                }}
+                type="button"
+                aria-current={activeRoute === `support:${destination.id}` ? "page" : undefined}
+                disabled={transitioning}
+                onClick={(event) => void navigate(
+                  `support:${destination.id}`,
+                  "push",
+                  { kind: "activator", element: event.currentTarget },
+                )}
+              >{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</button>)}
+              <button
+                ref={settingsButton}
+                type="button"
+                aria-current={activeRoute === "settings" ? "page" : undefined}
+                disabled={transitioning}
+                onClick={(event) => void navigate(
+                  "settings",
+                  "push",
+                  { kind: "activator", element: event.currentTarget },
+                )}
+              >{message(locale, "shell.v1.settings.action")}</button>
+            </nav>
+            <a href="https://github.com/bahayonghang/devsweep#readme" target="_blank" rel="noreferrer">{message(locale, "shell.v1.help")}</a>
+          </div>
+        </details>
       </div>
     </header>
     {localeSaving && <p className="persistence-warning" role="status">{message(locale, "shell.v1.persistence.saving")}</p>}

@@ -92,8 +92,10 @@ screenshots.
 - [ ] Desktop/TUI use the same closed locale store and CLI-owned catalogue
       metadata; corrupt/unknown bytes are preserved and machine output is
       unaffected.
-- [ ] Deep gray-green tokens, original brand, high contrast, reduced motion,
-      bounded non-hero motifs, and 390/800/1024/1440 layouts pass in both locales.
+- [ ] Dark-only canvas, original brand, per-mode mineral/forest tokens,
+      compact CSS sweep body (still under reduced motion), high contrast, and
+      390/800/1024/1440 layouts pass in both locales. No planet photograph,
+      five-planet metaphor, or light workbench pane.
 - [ ] Accelerators are collision-free; binary units remain canonical; user data
       truncation preserves complete accessible/copyable text; authority/action
       copy never truncates.

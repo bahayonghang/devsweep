@@ -3,11 +3,11 @@
 ## Product Mode
 
 This is a five-mode Operate surface for repeated Clean, Software, Optimize,
-Analyze, and Status work. Use one quiet workbench shell with native Windows
-chrome, a compact original DevSweep brand, deterministic primary navigation,
-supporting destinations, a mode-local workbench slot, and a persistent
-action/status boundary. Unavailable modes are absent from navigation and deep
-links; never render a clickable placeholder.
+Analyze, and Status work. Use one quiet immersive shell with native Windows
+chrome, a compact original DevSweep brand, centered capsule navigation,
+supporting destinations behind a labelled disclosure, a mode-local canvas
+slot, and a persistent action/status boundary. Unavailable modes are absent
+from navigation and deep links; never render a clickable placeholder.
 
 The shell is presentation and lifecycle infrastructure only. It never invents
 targets, plans, digests, command arguments, authorization, or mode results.
@@ -22,10 +22,12 @@ Settings, and language are supporting destinations, not sixth primary modes.
 - Register routes from one typed feature registry. Preserve deterministic deep
   links/back behavior, restore focus to the activating navigation control, and
   omit unavailable registrations atomically.
-- At wide widths keep the five primary modes in one labelled segment; at narrow
-  widths use a labelled menu or horizontally scrollable segment strip. Names,
-  authority, warnings, and critical actions are never icon-only or hidden by
-  responsive layout.
+- At wide widths keep the five primary modes in one labelled capsule with the
+  decorative brand icon; at narrow widths keep the same capsule and allow
+  horizontal scrolling. Supporting destinations, Language, and Help sit in a
+  labelled More disclosure with visible names when open. Names, authority,
+  warnings, and critical actions are never icon-only or hidden by responsive
+  layout.
 - Put repeated target presentation in focused components such as `TargetTable`,
   `RiskBadge`, `CapacityLabel`, and `EvidenceList`.
 - Use a real table for comparable target data. Completed-review mode keeps
@@ -82,21 +84,32 @@ Settings, and language are supporting destinations, not sixth primary modes.
 ## Visual System
 
 - Use Segoe UI Variable with system UI fallbacks and tabular numerals for byte
-  values.
-- Keep radii at 8px or below for tool surfaces.
-- Use original deep gray-green neutral tokens for chrome, workbench surfaces,
-  borders, and the single DevSweep accent. Semantic amber/red/green remains
-  reserved for risk, error, and safe actions; modes do not recolor the page.
-- The original product icon may appear in native shell and compact brand
-  placement. When adjacent DevSweep text supplies the accessible product name,
-  the image is decorative so the product name is announced once.
-- Optional sweep/orbit motifs must be CSS-native, non-informational, non-
-  interactive, local to structural chrome, and absent under
-  `prefers-reduced-motion`. They are never heroes, illustrations, status
-  evidence, or copied geometry.
-- Continue to prohibit gradients, glow, glass, photographic/planet heroes,
-  decorative illustration panels, page-wide ornamental palette changes,
-  oversized display type, and viewport-scaled fonts.
+  values. Estimated Recoverable and live metrics may use a display-size tabular
+  number. Do not scale the whole UI from viewport fonts.
+- Keep radii at 8px or below for tool surfaces. Capsule navigation and primary
+  actions may use a full pill radius.
+- Use a dark-only canvas. There is no light workbench pane. Shared tokens are
+  `--canvas`, `--text`, `--muted`, `--border`, `--accent`, `--focus`,
+  `--danger`, `--warning`, and `--ok`. Each primary mode sets `--canvas` and
+  `--accent` from an original mineral/forest family:
+  `--canvas-clean` / `--accent-clean` (pine),
+  `--canvas-software` / `--accent-software` (oxide),
+  `--canvas-optimize` / `--accent-optimize` (olive),
+  `--canvas-analyze` / `--accent-analyze` (umber),
+  `--canvas-status` / `--accent-status` (gold-green).
+  Supporting destinations use the shell canvas. Semantic amber/red/green remain
+  reserved for risk, error, and safe actions.
+- The original product icon may appear in native chrome and the capsule. When
+  adjacent DevSweep text supplies the accessible product name, the image is
+  decorative so the product name is announced once.
+- The sweep body is CSS-native, one shape family, five accent tints,
+  non-informational, non-interactive, and still under
+  `prefers-reduced-motion`. It is an abstract ring/body, not a globe map, not
+  a five-planet metaphor, and not status evidence. Mode first screens may
+  place a larger instance of the same class; the shell keeps a compact one.
+- Prohibit glass, glow, photographic or planet heroes, NASA imagery, Mole
+  geometry, fake macOS traffic lights, `linear-gradient`, `radial-gradient`,
+  `backdrop-filter`, and copy that says space was freed or released.
 - Test stable shell behavior at 390, 800, 1024, and 1440 CSS pixels, forced
   colors/high contrast, reduced motion, keyboard-only navigation, and both
   locales. Native Windows scaling evidence is direct and separately recorded;

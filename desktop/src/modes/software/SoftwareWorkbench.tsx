@@ -10,7 +10,7 @@ import type {
   SoftwareEntryV1,
   SoftwareExecutionOutcome,
 } from "../../api/types.gen";
-import { AccessibleUserData } from "../../app-shell/AppShell";
+import { AccessibleUserData, SweepBody } from "../../app-shell/AppShell";
 import { formatBinaryBytes, message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { selectSoftwareEntries, selectedSoftwareEntries, softwareIdentityText, softwareSource, summarizeSoftwareSize } from "./selectors";
@@ -185,6 +185,7 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
     </div> : null}
 
     {!state.inventory ? <section className="software-empty">
+      <SweepBody size="hero" />
       <h2>{message(locale, "software.v1.state.empty.title")}</h2>
       <p>{message(locale, "software.v1.state.empty.detail")}</p>
     </section> : <section className="software-inventory" aria-busy={active}>

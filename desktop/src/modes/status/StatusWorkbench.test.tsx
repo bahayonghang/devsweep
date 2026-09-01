@@ -42,7 +42,9 @@ describe("StatusWorkbench", () => {
     expect(statusStyles).toContain("@media (max-width: 430px)");
     expect(statusStyles).toContain("@media (forced-colors: active)");
     expect(statusStyles).toContain("animation: none !important");
-    expect(statusStyles).toContain("--surface-raised: #fff;");
+    expect(statusStyles).toContain("--surface-raised: var(--raised);");
+    expect(statusStyles).toContain(".status-mode .secondary-button { color: var(--text); background: var(--canvas);");
+    expect(statusStyles).not.toMatch(/#fff|#ffffff/i);
     expect(statusStyles).not.toMatch(/gpu 0/i);
   });
 });

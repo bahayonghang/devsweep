@@ -1,18 +1,20 @@
 .optimize-mode {
-  --text-primary: #18201d;
-  --text-muted: #52605a;
-  --surface: #fff;
-  --surface-raised: #fff;
-  --border: #c9d0cc;
-  --border-strong: #8d9b94;
-  --success: #1a6542;
-  --warning: #8a5a12;
-  --danger: #8f2c26;
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
+  --surface: var(--canvas);
+  --surface-raised: var(--raised);
+  --border-strong: var(--border);
+  --success: var(--ok);
   display: grid;
   min-height: 0;
   gap: 12px;
+  padding: 12px 24px 24px;
   color: var(--text-primary);
+  color-scheme: dark;
 }
+.optimize-mode .secondary-button { color: var(--text); background: var(--canvas); border-color: var(--border); }
+.optimize-mode .secondary-button:hover:not(:disabled) { background: var(--raised); }
+.optimize-mode .error-banner { color: var(--danger); background: var(--raised); border-bottom-color: var(--danger); }
 
 .optimize-toolbar,
 .optimize-catalogue-header,
@@ -29,6 +31,8 @@
 .optimize-toolbar { flex-wrap: wrap; }
 .optimize-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
 
+.optimize-empty { display: grid; place-content: center; justify-items: center; text-align: center; min-height: 280px; }
+.optimize-empty h2 { margin: 12px 0 0; }
 .optimize-empty,
 .optimize-catalogue,
 .optimize-preview,
@@ -95,6 +99,9 @@
 .optimize-confirm-dialog::backdrop {
   background: rgb(16 25 20 / 55%);
 }
+.optimize-confirm-dialog p { color: var(--text-muted); }
+.optimize-confirm-dialog h2,
+.optimize-confirm-dialog strong { color: var(--text-primary); }
 .optimize-confirm-actions { justify-content: flex-end; }
 
 @media (max-width: 800px) {

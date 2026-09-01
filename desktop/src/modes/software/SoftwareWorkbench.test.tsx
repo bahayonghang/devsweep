@@ -1,9 +1,13 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { fixtureBridge } from "../../api/fixture-bridge";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { SoftwareWorkbench } from "./SoftwareWorkbench";
+
+const softwareStyles = readFileSync(resolve(process.cwd(), "src/modes/software/styles.css"), "utf8");
 
 describe("SoftwareWorkbench", () => {
   it("renders manual rows, exact identity detail, preview, and second confirmation", async () => {
@@ -29,5 +33,15 @@ describe("SoftwareWorkbench", () => {
     await user.click(screen.getByRole("button", { name: "刷新软件清单" }));
     expect((await screen.findAllByText("Contoso Tools")).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Software V1 仅手动处理 MSI 卸载/).length).toBeGreaterThan(0);
+  });
+
+  it("locks canvas tokens, sticky summary, and no light surface palette", () => {
+    expect(softwareStyles).toContain("--surface-raised: var(--raised);");
+    expect(softwareStyles).toContain(".software-summary-bar");
+    expect(softwareStyles).toContain("position: sticky");
+    expect(softwareStyles).toContain(".software-mode .secondary-button { color: var(--text); background: var(--canvas);");
+    expect(softwareStyles).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(softwareStyles).toContain("@media (forced-colors: active)");
+    expect(softwareStyles).not.toMatch(/#fff|#ffffff/i);
   });
 });

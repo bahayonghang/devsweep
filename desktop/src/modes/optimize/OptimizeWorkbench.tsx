@@ -11,7 +11,7 @@ import type {
   MaintenanceCatalogueEntryV1,
   MaintenanceExecutionOutcome,
 } from "../../api/types.gen";
-import { AccessibleUserData } from "../../app-shell/AppShell";
+import { AccessibleUserData, SweepBody } from "../../app-shell/AppShell";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
 import { OperationCoordinator } from "../../state/operation-coordinator";
@@ -250,6 +250,7 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
     {state.error ? <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
 
     {!state.entries ? <section className="optimize-empty">
+      <SweepBody size="hero" />
       <h2>{message(locale, "optimize.v1.state.empty.title")}</h2>
       <p>{message(locale, "optimize.v1.state.empty.detail")}</p>
     </section> : <section className="optimize-catalogue" aria-busy={active}>

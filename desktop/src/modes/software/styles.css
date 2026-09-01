@@ -1,9 +1,29 @@
 .software-mode {
+  --text-primary: var(--text);
+  --text-muted: var(--muted);
+  --surface: var(--canvas);
+  --surface-raised: var(--raised);
+  --border-strong: var(--border);
+  --success: var(--ok);
   display: grid;
   min-height: 0;
   gap: 12px;
+  padding: 12px 24px 24px;
   color: var(--text-primary);
+  color-scheme: dark;
 }
+.software-mode input[type="search"],
+.software-mode select {
+  min-height: 36px;
+  padding: 0 10px;
+  color: var(--text);
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.software-mode .secondary-button { color: var(--text); background: var(--canvas); border-color: var(--border); }
+.software-mode .secondary-button:hover:not(:disabled) { background: var(--raised); }
+.software-mode .error-banner { color: var(--danger); background: var(--raised); border-bottom-color: var(--danger); }
 
 .software-toolbar,
 .software-inventory-header,
@@ -21,6 +41,8 @@
 .software-toolbar label { display: grid; gap: 4px; min-width: min(260px, 100%); }
 .software-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
 
+.software-empty { display: grid; place-content: center; justify-items: center; text-align: center; min-height: 280px; }
+.software-empty h2 { margin: 12px 0 0; }
 .software-empty,
 .software-inventory,
 .software-preview,
@@ -79,6 +101,9 @@
   padding: 20px;
   z-index: 20;
 }
+.software-confirm-dialog p { color: var(--text-muted); }
+.software-confirm-dialog h2,
+.software-confirm-dialog strong { color: var(--text-primary); }
 .software-confirm-actions { justify-content: flex-end; }
 
 @media (max-width: 800px) {

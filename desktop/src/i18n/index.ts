@@ -8,6 +8,7 @@ export type TruncationContract = "never" | "user_data_visual_only";
 
 export const SHELL_V1_KEYS = [
   "shell.v1.help",
+  "shell.v1.more",
   "shell.v1.persistence.saving",
   "shell.v1.persistence.unavailable",
   "shell.v1.route.dismiss",

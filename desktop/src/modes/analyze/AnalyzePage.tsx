@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useS
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type { AnalyzeNodeV1, CommandError, DesktopAnalyzeResult } from "../../api/types.gen";
-import { AccessibleUserData } from "../../app-shell/AppShell";
+import { AccessibleUserData, SweepBody } from "../../app-shell/AppShell";
 import { formatBinaryBytes, message, type PresentationLanguageTag } from "../../i18n";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { createAnalyzeIndex, pageForNode, selectBreadcrumbs, selectDirectory, selectPage, selectVisibleChildren, type AnalyzeSort } from "./selectors";
@@ -254,6 +254,7 @@ export function AnalyzePage({
     </div> : null}
 
     {!state.snapshot ? <section className="analyze-empty">
+      <SweepBody size="hero" />
       <h2>{message(locale, "analyze.v1.state.empty.title")}</h2>
       <p>{message(locale, "analyze.v1.state.empty.detail")}</p>
     </section> : <div className="analyze-workspace">

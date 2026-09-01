@@ -331,6 +331,7 @@
     "rules.v1.source.shipped": { "forms": { "other": "Source: shipped registry." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "support.v1.menu": { "forms": { "other": "Supporting destinations. 1 Protection. 2 Rules. 3 History. These are not product modes." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.help": { "forms": { "other": "Help" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "shell.v1.more": { "forms": { "other": "More" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.persistence.saving": { "forms": { "other": "Saving language preference…" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.persistence.unavailable": { "forms": { "other": "Language preference was not changed. Close Settings, check the presentation settings file, and try again." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "shell.v1.route.dismiss": { "forms": { "other": "Dismiss" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },

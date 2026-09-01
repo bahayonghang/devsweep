@@ -30,7 +30,9 @@ describe("AppShell", () => {
     expect(screen.queryByRole("tab", { name: "Software" })).not.toBeInTheDocument();
     expect(SUPPORTING_DESTINATION_IDS).toEqual(["protection", "rules", "history"]);
     expect(screen.queryByRole("button", { name: "Protection" })).not.toBeInTheDocument();
+    expect(screen.getByText("More")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Language" })).toBeInTheDocument();
+    expect(document.querySelector(".app-shell")).toHaveAttribute("data-mode", "clean");
   });
 
   it("supports exact deep links, keyboard navigation, focus restoration, and unique accelerators", async () => {
@@ -49,6 +51,17 @@ describe("AppShell", () => {
     expect(window.location.hash).toBe("#/software");
   });
 
+  it("reveals supporting destinations by name from the More disclosure", async () => {
+    const user = userEvent.setup();
+    render(<AppShell modes={registrations} supporting={supporting} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
+    await user.click(screen.getByText("More"));
+    expect(screen.getByRole("button", { name: "Protection" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rules" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Language" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Help" })).toBeInTheDocument();
+  });
+
   it("restores the actual primary and supporting activators after composition", async () => {
     const user = userEvent.setup();
     render(<AppShell modes={registrations} supporting={supporting} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
@@ -62,6 +75,18 @@ describe("AppShell", () => {
     await user.click(history);
     expect(await screen.findByText("history support content")).toBeInTheDocument();
     expect(history).toHaveFocus();
+    expect(document.querySelector(".app-shell")).toHaveAttribute("data-mode", "shell");
+    expect(document.querySelector(".shell-more")).toHaveProperty("open", true);
+  });
+
+  it("opens More when a supporting deep link restores the destination control", async () => {
+    render(<AppShell modes={registrations} supporting={supporting} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
+    window.history.pushState(null, "", "#/history");
+    fireEvent.popState(window);
+    expect(await screen.findByText("history support content")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "History" })).toHaveFocus();
+    expect(document.querySelector(".shell-more")).toHaveProperty("open", true);
+    expect(document.querySelector(".app-shell")).toHaveAttribute("data-mode", "shell");
   });
 
   it("renders Chinese canonical labels and writes language selection through the adapter", async () => {
@@ -70,6 +95,7 @@ describe("AppShell", () => {
     render(<AppShell modes={registrations} locale="zh-CN" onLocaleChange={save} coordinator={new OperationCoordinator()} />);
     expect(screen.getByRole("tab", { name: "清理" })).not.toHaveAttribute("title");
     expect(screen.getByRole("tab", { name: "软件" })).toHaveAttribute("title", "Alt+R");
+    expect(screen.getByText("更多")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "支持目的地" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "语言" }));
     await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");

@@ -55,8 +55,10 @@ describe("OptimizeWorkbench", () => {
     expect(optimizeStyles).toContain("@media (max-width: 430px)");
     expect(optimizeStyles).toContain("@media (forced-colors: active)");
     expect(optimizeStyles).toContain("animation: none !important");
-    expect(optimizeStyles).toContain("--surface-raised: #fff;");
+    expect(optimizeStyles).toContain("--surface-raised: var(--raised);");
+    expect(optimizeStyles).toContain(".optimize-mode .secondary-button { color: var(--text); background: var(--canvas);");
     expect(optimizeStyles).toContain(".optimize-confirm-dialog::backdrop");
+    expect(optimizeStyles).not.toMatch(/#fff|#ffffff/i);
     expect(optimizeStyles).not.toMatch(/optimization complete/i);
   });
 });

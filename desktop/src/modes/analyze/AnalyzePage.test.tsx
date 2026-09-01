@@ -179,8 +179,14 @@ describe("AnalyzePage", () => {
   });
 
   it("keeps text contrast, keyboard focus, reduced motion, and forced-colors contracts explicit", () => {
-    expect(analyzeStyles).toContain(".analyze-tile.evidence-incomplete { fill: #8f671f; }");
-    expect(contrastRatio("#8f671f", "#ffffff")).toBeGreaterThanOrEqual(4.5);
+    expect(analyzeStyles).toContain(".analyze-tile.evidence-incomplete { fill: var(--warning); }");
+    expect(analyzeStyles).toContain(".analyze-treemap text { overflow: hidden; fill: var(--canvas);");
+    expect(analyzeStyles).toContain('button[aria-current="location"] { color: var(--canvas); background: var(--text); }');
+    expect(analyzeStyles).toContain(".analyze-mode .secondary-button { color: var(--text); background: var(--canvas);");
+    expect(analyzeStyles).not.toMatch(/#fff|#ffffff|#0c1210/i);
+    expect(contrastRatio("#d4a24a", "#16120e")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#c49a62", "#16120e")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#9aaba0", "#16120e")).toBeGreaterThanOrEqual(4.5);
     expect(analyzeStyles).toContain(".analyze-tile:focus-visible");
     expect(analyzeStyles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(analyzeStyles).toContain("@media (forced-colors: active)");

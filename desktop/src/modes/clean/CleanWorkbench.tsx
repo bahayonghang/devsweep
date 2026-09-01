@@ -147,6 +147,9 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
     : state.stoppedPreview
       ? { status: state.stoppedPreview.kind, progress: state.stoppedPreview.progress, preview: state.stoppedPreview.preview }
       : null;
+  const reported = state.execution !== null && state.phase === "reported";
+  const showMain = reported || Boolean(showDryRun && state.dryRun) || preview !== null || state.scan !== null;
+  const hero = state.activeScan !== null || (state.scan === null && state.stoppedPreview === null);
   const filteredState = query.trim() && state.scan
     ? {
         ...state,
@@ -162,15 +165,15 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
       }
     : state;
   return <div className="clean-mode">
-    <ScanPage locale={locale} activeScan={state.activeScan} busy={state.phase === "executing" || state.pending !== null} options={options} onOptions={setOptions} onScan={() => void scan()} onCancel={() => void cancel()} />
+    <ScanPage locale={locale} hero={hero} activeScan={state.activeScan} busy={state.phase === "executing" || state.pending !== null} options={options} onOptions={setOptions} onScan={() => void scan()} onCancel={() => void cancel()} />
     {state.phase !== "scanning" && state.scan ? <div className="scan-toolbar"><label>{message(locale, "clean.v1.search.label")} <input value={query} onChange={(event) => setQuery(event.target.value)} /></label></div> : null}
     {state.error && <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} />}
-    <div className="main-content">
-      {state.execution && state.phase === "reported" ? <ExecutePage locale={locale} report={state.execution} final onConfirm={() => undefined} onReturn={() => dispatch({ type: "review_requested" })} />
+    {showMain ? <div className="main-content">
+      {reported && state.execution ? <ExecutePage locale={locale} report={state.execution} final onConfirm={() => undefined} onReturn={() => dispatch({ type: "review_requested" })} />
         : showDryRun && state.dryRun ? <ExecutePage locale={locale} report={state.dryRun.report} final={false} onConfirm={() => dispatch({ type: "confirmation_opened" })} onReturn={() => dispatch({ type: "review_requested" })} />
         : preview ? <ScanPreviewPage locale={locale} status={preview.status} progress={preview.progress} preview={preview.preview} canReturnToReport={state.scan !== null} onReturnToReport={() => dispatch({ type: "stopped_preview_dismissed" })} />
         : <ReviewPage locale={locale} state={filteredState} onSelect={(targetId, selected) => dispatch({ type: "selection_changed", targetId, selected })} onSelectAll={(selected) => dispatch({ type: "select_all_changed", selected })} onDryRun={() => void dryRun()} />}
-    </div>
+    </div> : null}
     <ConfirmDialog locale={locale} open={state.phase === "confirming" || state.phase === "executing"} digest={state.dryRun?.digest ?? ""} irreversible={hasIrreversibleSelection(state)} busy={state.phase === "executing"} onCancel={() => dispatch({ type: "confirmation_closed" })} onConfirm={() => void execute()} />
   </div>;
 }

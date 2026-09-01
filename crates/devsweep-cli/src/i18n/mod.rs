@@ -7,8 +7,9 @@ use std::{
 const EN_JSON: &str = include_str!("../../../../resources/i18n/en.json");
 const ZH_CN_JSON: &str = include_str!("../../../../resources/i18n/zh-CN.json");
 
-pub(crate) const SHELL_V1_KEYS: [&str; 22] = [
+pub(crate) const SHELL_V1_KEYS: [&str; 23] = [
     "shell.v1.help",
+    "shell.v1.more",
     "shell.v1.persistence.saving",
     "shell.v1.persistence.unavailable",
     "shell.v1.route.dismiss",
@@ -759,6 +760,7 @@ mod tests {
     fn canonical_shell_v1_namespace_has_exact_copy_and_closed_metadata() {
         let expected = [
             ("shell.v1.help", "Help", "帮助"),
+            ("shell.v1.more", "More", "更多"),
             (
                 "shell.v1.persistence.saving",
                 "Saving language preference…",
