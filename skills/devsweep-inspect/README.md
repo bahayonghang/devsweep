@@ -8,22 +8,40 @@ Agent 在「磁盘满了」「帮我清理」上容易改用 `du`、`Remove-Item
 
 ## 安装
 
-仓库内直接使用：
+语义真源是仓库内的 `skills/devsweep-inspect/`。工具发现的是下面两份**仓库内**副本，不要为每个 harness 再写一份业务正文，也不要拷到用户全局 skill 目录：
 
-```text
-skills/devsweep-inspect/SKILL.md
+| 发现根 | 适用（已核实的共享路径） |
+|---|---|
+| `.agents/skills/devsweep-inspect/` | Codex 写入/发现；Grok 兼容发现；Kimi 官方也列出该共享根 |
+| `.claude/skills/devsweep-inspect/` | Claude Code |
+
+这两份副本被 gitignore；源提交不会自动更新它们。在仓库根同步与检查：
+
+```powershell
+just install-skill
+just check-skills
 ```
+
+`just install-skill` 只幂等替换上述两个仓库内 skill 目录。`just check-skills` 只读比较相对文件集合和字节哈希：缺文件、陈旧额外文件或内容漂移都会失败，**不会**隐式修复副本。
+
+静态输出契约（fixture，**不是**五套 harness 的运行时测试）：
+
+```powershell
+python -X utf8 skills/devsweep-inspect/scripts/output_eval.py skills/devsweep-inspect
+```
+
+验证方式（发现 ≠ 运行）：
+
+- 副本与源一致：`just check-skills`（只读哈希；失败不修复）
+- 静态输出契约：上面的 `output_eval.py`（4 个 fixture，不是五套 harness 运行时测试）
+- Grok 只读 discovery：`grok inspect --json` 的 `skills[].source.path` 指向 `.agents/skills/devsweep-inspect/SKILL.md`（兼容发现，不证明 hook/agent 已执行）
+- Claude Code / Codex / Kimi / OMP 新会话是否加载并遵循该副本：UNVERIFIED，归 harness-alignment
+
 
 若以后作为独立 skill 发布：
 
 ```bash
 npx skills add bahayonghang/devsweep --skill devsweep-inspect
-```
-
-验证：
-
-```powershell
-python C:\Users\lyh\.claude\skills\qiaomu-meta\scripts\validate_skill.py skills/devsweep-inspect
 ```
 
 前置：PATH 上已有 `devsweep.exe`（例如 `just install` 装到 `~\.cargo\bin`）。不要用本仓库 `target\` 里的二进制做清理。
@@ -48,13 +66,13 @@ python C:\Users\lyh\.claude\skills\qiaomu-meta\scripts\validate_skill.py skills/
 ## 前置条件
 
 - [ ] 全局 `devsweep --version` 可用，且路径不在本仓库 `target\` 下
-- [ ] Python 3：用于本 skill 的辅助脚本和 `validate_skill.py`
+- [ ] Python 3：用于本 skill 的辅助脚本、`just check-skills` 和静态 `output_eval.py`
 - [ ] 本仓库 `CONTEXT.md` 作为领域词真源
 
 ## 输出示例
 
 ```text
-Inspect: C:\Users\<you>\.cargo\bin\devsweep.exe clean scan --root D:\Documents\Code --scope all --format json --output inspect.json
+Inspect: C:\Users\<you>\.cargo\bin\devsweep.exe clean scan --root D:\path\to\projects --scope all --format json --output inspect.json
 Estimated Recoverable: verified 12.4 GiB; partial-lower-bound 3.1 GiB; unknown 2 rows
 Cleanup Target table: id / path / evidence / risk / class / advice
 若要清理：先展示可选项并等待确认，不要在同一轮执行。
