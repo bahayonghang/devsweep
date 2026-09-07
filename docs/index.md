@@ -4,7 +4,7 @@ layout: home
 hero:
   name: DevSweep
   text: Safety-first developer cleanup
-  tagline: Inspect disk usage, create an auditable plan, and execute only after explicit review.
+  tagline: Inspect disk usage, save an observation, create an auditable plan, and execute only after a live preview digest and --confirm.
   actions:
     - theme: brand
       text: Get started
@@ -15,19 +15,19 @@ hero:
 
 features:
   - title: Plan before cleanup
-    details: Scans produce versioned reports with target evidence, risk, size completeness, and a typed cleanup intent.
+    details: Scans produce versioned observations with target evidence, risk, size completeness, and a typed cleanup intent.
   - title: Fail closed
-    details: Plans are validated and actions are reconstructed from DevSweep's built-in rule registry before execution.
+    details: A new saved plan is validated and actions are reconstructed from DevSweep's built-in rule registry before execution.
   - title: Inspectable by design
-    details: Inventory, rule listing, dry runs, and execution audit logs make the cleanup decision visible at every step.
+    details: Preview digests, nested protection and rules commands, and fixed V1 audit stores make the cleanup decision visible at every step.
 ---
 
 ## The normal workflow
 
-1. [Scan](/guide/scan) a project, global providers, or both.
-2. Review the generated plan, including its health diagnostics and size bounds.
-3. Run [`clean` without `--execute`](/guide/clean) to dry-run a saved plan.
-4. Add `--execute` only when the saved plan and its selected targets are ready.
+1. [Scan](/guide/scan) a project, global providers, or both, and **save the observation**.
+2. Select exact target IDs and save a **new** plan. Observation JSON is not a runnable plan.
+3. Run [`clean preview`](/guide/clean) for a live digest. Preview is the dry-run.
+4. Execute only with that live digest and `--confirm`.
 
 DevSweep is deliberately conservative. It does not permanently delete files,
 does not clean Docker, and treats Cargo home as inspect-only. Start with the

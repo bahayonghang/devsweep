@@ -1,5 +1,8 @@
 # CLI Migration
 
+This page is a labeled old→new mapping, not a current tutorial. Use the
+right-hand column. Left-hand invocations are rejected (exit 2).
+
 The redesigned command surface is intentionally breaking. Old roots and
 options are rejected rather than retained as aliases, and old reports or plans
 never become new execution authority.

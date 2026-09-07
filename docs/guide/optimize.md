@@ -10,13 +10,21 @@ The catalogue is the only rendering source. Each row has a stable id and one of 
 
 Storage and Search Settings rows require Windows build 22000 or later. Energy recommendations require build 22624 or later. DevSweep consumes the core typed build query (`RtlGetVersion`). If that query fails, the Settings rows are unavailable; DevSweep does not guess a version.
 
-List, plan, preview, and run stay on one selected id. Preview returns a digest. Run requires that digest and `--confirm`. Guidance cannot be planned. Cancellation before dispatch, failure, timeout, and unknown after dispatch are distinct terminals. Recovery reads the Optimize audit journal and does not redispatch. The journal is stored under the current user's local application-data directory at `DevSweep/audit/v1/optimize.jsonl`.
+Optimize follows the same authority chain as Clean: list the catalogue, plan one exact operation, preview for a live digest, then `--confirm`. Guidance cannot be planned. The list/catalogue document is not a runnable plan.
 
 ```powershell
-cargo run --locked --bin devsweep -- optimize list
-cargo run --locked --bin devsweep -- optimize plan --operation dns.flush --output dns-plan.json
-cargo run --locked --bin devsweep -- optimize preview --plan dns-plan.json
-cargo run --locked --bin devsweep -- optimize run --plan dns-plan.json --preview-digest sha256:<64-hex> --confirm
+devsweep optimize list --format json --output optimize-list.json
+devsweep optimize plan --operation dns.flush --output dns-plan.json
+devsweep optimize preview --plan dns-plan.json
 ```
+
+Run requires the saved plan, the live `sha256:` digest from that preview, and `--confirm`. Confirm the grammar with `--help`; do not run `optimize run` as a documentation check:
+
+```powershell
+devsweep optimize run --help
+devsweep optimize run --plan dns-plan.json --preview-digest sha256:DIGEST --confirm
+```
+
+Cancellation before dispatch, failure, timeout, and unknown after dispatch are distinct terminals. Recovery reads the Optimize audit journal and does not redispatch. The journal is stored only at `%LOCALAPPDATA%\DevSweep\audit\v1\optimize.jsonl`. Legacy `%APPDATA%\devsweep\audit.jsonl` is not used or imported.
 
 TUI and Desktop follow the same staged states: checking, ready, selected, previewing, preview-ready, confirming, running (DNS only) or launching (Settings only), then terminal or unknown. The sticky summary never calls a Settings launch or guidance display a completed optimization.

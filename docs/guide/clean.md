@@ -2,14 +2,27 @@
 
 Clean follows a frozen authority chain:
 
-scan observation → completed report → exact selection → saved untrusted plan → live preview → digest → confirm → execution → Clean V1 audit.
+save observation → exact select → save **new** plan → live preview digest → `--confirm` → execution → Clean V1 audit.
+
+Observation JSON is not a runnable plan. `clean preview` and `clean execute`
+require the new plan file.
 
 ```powershell
-devsweep clean scan --root . --scope all
-devsweep clean plan --observation report.json --select TARGET_ID --output plan.json
+devsweep clean scan --root . --scope all --format json --output observation.json
+devsweep clean plan --observation observation.json --select TARGET_ID --output plan.json
 devsweep clean preview --plan plan.json
+```
+
+Read `TARGET_ID` values from `data.plan.targets[].id` in the observation
+envelope. Execute only after the live digest. Confirm the grammar with
+`--help` before using it:
+
+```powershell
+devsweep clean execute --help
 devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ```
+
+There is no `--execute` flag.
 
 ## Safety
 
@@ -22,6 +35,17 @@ devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ## Capacity
 
 Size labels show verified, partial lower-bound, or unknown evidence. Incomplete totals are never shown as exact. A trash success says the target was moved to trash; capacity becomes available after trash is emptied.
+
+## Protect and rules
+
+Protection and rules are nested under Clean:
+
+```powershell
+devsweep clean protect list
+devsweep clean protect add --path PATH --confirm
+devsweep clean protect remove --path PATH --confirm
+devsweep clean rules list
+```
 
 ## Audit
 

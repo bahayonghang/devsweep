@@ -2,14 +2,25 @@
 
 Clean 使用冻结的授权链：
 
-扫描观察 → 完成报告 → 精确选择 → 已保存的不可信计划 → 实时预览 → 摘要 → 确认 → 执行 → Clean V1 审计。
+保存观察结果 → 精确选择 → 保存**新**计划 → 实时预览摘要 → `--confirm` → 执行 → Clean V1 审计。
+
+观察 JSON 不是可运行计划。`clean preview` 和 `clean execute` 需要这份新计划文件。
 
 ```powershell
-devsweep clean scan --root . --scope all
-devsweep clean plan --observation report.json --select TARGET_ID --output plan.json
+devsweep clean scan --root . --scope all --format json --output observation.json
+devsweep clean plan --observation observation.json --select TARGET_ID --output plan.json
 devsweep clean preview --plan plan.json
+```
+
+从观察信封中的 `data.plan.targets[].id` 读取 `TARGET_ID`。仅在取得实时摘要后再
+执行。使用前用 `--help` 核对契约：
+
+```powershell
+devsweep clean execute --help
 devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ```
+
+没有 `--execute` 参数。
 
 ## 安全
 
@@ -22,6 +33,17 @@ devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ## 容量
 
 容量标签区分已验证、部分下限和未知证据。不完整合计不会显示为精确值。回收站成功表示目标已移入回收站；清空回收站后容量才会可用。
+
+## 保护与规则
+
+保护列表和规则嵌套在 Clean 下：
+
+```powershell
+devsweep clean protect list
+devsweep clean protect add --path PATH --confirm
+devsweep clean protect remove --path PATH --confirm
+devsweep clean rules list
+```
 
 ## 审计
 

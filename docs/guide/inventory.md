@@ -1,28 +1,29 @@
 # Inventory
 
-`inventory` measures immediate contents of a root as read-only capacity
-observations. It never creates cleanup targets and its output cannot be passed
-to `clean` as a plan.
+Disk-capacity observation is `analyze scan`. The old root `inventory` is
+rejected (exit 2). This command never creates cleanup targets, and its output
+cannot be passed to `clean` as a plan.
 
 ```powershell
-cargo run --locked --bin devsweep -- inventory [ROOT]
+devsweep analyze scan --root PATH
 ```
 
-Use `--json` when another tool needs the report:
+Use `--format json` when another tool needs the report, and optional create-new
+`--output`:
 
 ```powershell
-cargo run --locked --bin devsweep -- inventory C:\code --json > inventory.json
+devsweep analyze scan --root C:\code --format json --output analyze.json
 ```
+
+Installed-software listing is a different mode: [`software inventory`](/guide/software).
 
 ## What the report means
 
-Each observation has a path, an estimated size, and a completeness indication.
-The report also carries scan-style health diagnostics and totals. A size may be
-verified, a partial lower bound, or unknown; do not treat a lower bound as an
-exact capacity figure.
+Analyze walks one root and emits a versioned snapshot of nodes, accounted size,
+and warnings. A size may be verified, a partial lower bound, or unknown; do not
+treat a lower bound as an exact capacity figure. The document has no cleanup
+intent and no executable action.
 
-For pnpm, inventory can surface an inspect-only orphan-store finding. That is a
-capacity observation, not permission to clean the store.
-
-Use [scan](/guide/scan) when you want to discover candidates according to
-DevSweep's cleanup rules. Use inventory when the goal is observation only.
+Use [scan](/guide/scan) (`clean scan`) when you want to discover candidates
+according to DevSweep's cleanup rules. Use Analyze when the goal is observation
+only.

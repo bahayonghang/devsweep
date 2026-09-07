@@ -1,14 +1,26 @@
 # Terminal UI
 
-Start the interactive terminal UI with:
+Start the interactive terminal UI with bare `devsweep` from an interactive
+stdin and stdout TTY:
 
 ```powershell
-just dev
+devsweep
 ```
 
-The UI is an interactive view over the same scanning, inventory, rule, plan,
-and execution contracts used by the CLI. It does not create a separate cleanup
-policy.
+From this repository:
+
+```powershell
+cargo run --locked --bin devsweep
+```
+
+There is no `tui` subcommand. `devsweep tui` is rejected (exit 2). `just dev`
+currently still passes `tui`; that recipe is a later release-contract fix and is
+not the current tutorial.
+
+The UI is an interactive view over the same scanning, planning, rule, and
+execution contracts used by the CLI. It does not create a separate cleanup
+policy. Bare invocation requires both stdin and stdout to be TTYs; redirected
+streams exit 2 with `tty_required`.
 
 ## Use it for review
 
@@ -19,9 +31,10 @@ authoritative controls for the current build.
 
 ## Keep the safety boundary
 
-The UI does not make cleanup implicit. Scanning and inventory remain
-observational. Any execution path still depends on a validated plan, selected
-targets, and the same live authorization checks used by `clean --execute`.
+The UI does not make cleanup implicit. Scanning remains observational. Any
+execution path still depends on a validated plan, selected targets, a live
+preview digest, and `--confirm` (or the matching in-UI confirmation).
 
-For a scriptable or auditable workflow, use [scan](/guide/scan) to save JSON,
-then follow the [saved-plan cleanup](/guide/clean) flow.
+For a scriptable or auditable workflow, use [scan](/guide/scan) to save an
+observation, then follow the [saved-plan cleanup](/guide/clean) flow: exact
+select, new plan, live preview digest, then confirm.

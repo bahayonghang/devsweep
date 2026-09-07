@@ -10,13 +10,21 @@
 
 存储与搜索设置行需要 Windows 内部版本 22000 或更高；能源建议需要 22624 或更高。DevSweep 使用核心的类型化内部版本查询（`RtlGetVersion`）。若查询失败，设置行不可用；DevSweep 不会猜测版本。
 
-列表、计划、预览与运行始终针对一个所选标识。预览返回摘要。运行需要该摘要和 `--confirm`。指引项不能进入计划。派发前取消、失败、超时以及派发后未知是不同的终态。恢复只读取优化审计日志，不会再次派发。日志位于当前用户本地应用数据目录下的 `DevSweep/audit/v1/optimize.jsonl`。
+Optimize 与 Clean 使用同一条授权链：列出目录、为一项精确操作保存计划、预览取得实时摘要，然后 `--confirm`。指引项不能进入计划。目录列表文档不是可运行计划。
 
 ```powershell
-cargo run --locked --bin devsweep -- optimize list
-cargo run --locked --bin devsweep -- optimize plan --operation dns.flush --output dns-plan.json
-cargo run --locked --bin devsweep -- optimize preview --plan dns-plan.json
-cargo run --locked --bin devsweep -- optimize run --plan dns-plan.json --preview-digest sha256:<64-hex> --confirm
+devsweep optimize list --format json --output optimize-list.json
+devsweep optimize plan --operation dns.flush --output dns-plan.json
+devsweep optimize preview --plan dns-plan.json
 ```
+
+运行必须同时提供已保存计划、该次预览的实时 `sha256:` 摘要和 `--confirm`。用 `--help` 核对契约；不要把 `optimize run` 当作文档检查命令：
+
+```powershell
+devsweep optimize run --help
+devsweep optimize run --plan dns-plan.json --preview-digest sha256:DIGEST --confirm
+```
+
+派发前取消、失败、超时以及派发后未知是不同的终态。恢复只读取优化审计日志，不会再次派发。日志只写入 `%LOCALAPPDATA%\DevSweep\audit\v1\optimize.jsonl`。不会使用或导入遗留的 `%APPDATA%\devsweep\audit.jsonl`。
 
 TUI 与桌面端使用相同的阶段性状态：检查、就绪、已选择、预览中、预览就绪、确认中、运行中（仅 DNS）或启动中（仅设置），然后进入终态或未知。底部摘要绝不会把设置启动或指引显示称为已完成的优化。

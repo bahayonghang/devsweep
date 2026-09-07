@@ -1,51 +1,68 @@
 # devsweep
 
-`devsweep` is a safety-first developer cleanup planner and executor. It scans project build artifacts and global developer caches, emits an auditable cleanup plan, and keeps cleanup actions explicit.
+`devsweep` is a safety-first developer cleanup planner and executor. It scans project build artifacts and global developer caches, writes an observation, lets you save an explicit plan, and executes only after a live preview digest and `--confirm`.
 
 ## Safety Model
 
-- `devsweep clean` is a dry-run by default. Add `--execute` only when you want to run selected actions from a saved plan.
-- Saved plans are declarative v2 documents. They carry observed facts and a typed
-  cleanup intent; devsweep validates them and reconstructs trusted actions from
-  its built-in rule registry before either dry-run or execution.
-- Every cleanup target carries evidence and a risk level. Evidence explains why
-  the target was considered cleanable.
-- Global package-manager cleanup is command-backed. npm, pip, pnpm, and Yarn
-  actions use registry-owned argv templates, not shell strings from a plan file.
+- Cleanup is observational until you save a **new** plan. `clean scan` JSON is an observation, not executable authority.
+- Dry-run is `clean preview`. It prints a live `sha256:` digest and performs no cleanup.
+- Execution requires a saved plan, that live digest, and `--confirm`. There is no `--execute` flag and no `--audit-log` path.
+- Saved plans are declarative v2 documents. They carry observed facts and a typed cleanup intent; DevSweep validates them and reconstructs trusted actions from its built-in rule registry.
+- Every cleanup target carries evidence and a risk level. Evidence explains why the target was considered cleanable.
+- Global package-manager cleanup is command-backed. npm, pip, pnpm, and Yarn actions use registry-owned argv templates, not shell strings from a plan file.
 - Project cleanup is trash-backed by default for directories such as `node_modules`, `.venv`, and tool caches.
 - Rust project `target` cleanup prefers `cargo clean --manifest-path <Cargo.toml>`.
 - Cargo home is inspect-only in the MVP. `devsweep` does not delete `%USERPROFILE%\.cargo`, `~/.cargo`, credentials, installed binaries, registry internals, or git cache internals.
 - Permanent delete is disabled in this build and is not exposed as a CLI flag.
 - Docker cleanup is deferred and is not part of the MVP.
+- Mutating commands append only to the fixed stores under `%LOCALAPPDATA%\DevSweep\audit\v1\<domain>.jsonl`. Legacy `%APPDATA%\devsweep\audit.jsonl` is not used, imported, or searched.
 
 The scanner does not follow symlinked cleanup directories. On Windows, reparse-point directories are skipped by the same guard; junction-specific behavior depends on the OS exposing the reparse-point metadata.
 
 ## Usage
 
-Open the TUI:
+Shipped roots are `clean`, `software`, `optimize`, `analyze`, `status`, and `history`. Old `tui`, `scan`, `inventory`, `protect`, and `rules` roots are unknown commands, not aliases.
+
+Open the TUI from an interactive stdin/stdout TTY (no `tui` subcommand):
 
 ```powershell
-cargo run --bin devsweep -- tui
+devsweep
 ```
 
-Scan the current directory and global providers as JSON:
+From this repository, the equivalent is `cargo run --locked --bin devsweep` with both streams attached to a TTY. `devsweep tui` is rejected (exit 2). `just dev` still passes `tui` today; that recipe belongs to a later release-contract fix and is not the current tutorial.
+
+Save an observation, create a new plan from exact target IDs, then dry-run with a live preview digest:
 
 ```powershell
-cargo run --bin devsweep -- scan --json
+devsweep clean scan --root . --scope all --format json --output observation.json
+devsweep clean plan --observation observation.json --select TARGET_ID --output plan.json
+devsweep clean preview --plan plan.json
 ```
 
-Save a plan, then dry-run cleanup:
+Read target IDs from the observation JSON (`data.plan.targets[].id` in the V1 envelope). Observation JSON is not a runnable plan; `clean preview` and `clean execute` require the **new** plan file.
+
+Execute only after the live digest and explicit confirmation. Confirm the grammar with `--help`; do not treat this as a first-run command:
 
 ```powershell
-cargo run --bin devsweep -- scan . --json > plan.json
-cargo run --bin devsweep -- clean --plan plan.json
+devsweep clean execute --help
+devsweep clean execute --plan plan.json --preview-digest sha256:DIGEST --confirm
 ```
 
-Execute selected targets from a plan:
+Related inspect commands:
 
 ```powershell
-cargo run --bin devsweep -- clean --plan plan.json --execute --audit-log devsweep-audit.jsonl
+devsweep analyze scan --root . --format json
+devsweep software inventory --source all
+devsweep optimize list
+devsweep status snapshot
+devsweep history list
+devsweep clean protect list
+devsweep clean rules list
 ```
+
+`--language <en|zh-CN>` localizes human output only. It is invalid with JSON or NDJSON.
+
+See [`docs/guide/cli-migration.md`](docs/guide/cli-migration.md) for labeled old→new mappings. Native Windows evidence is historical; see [`docs/validation/five-mode-native.md`](docs/validation/five-mode-native.md).
 
 ## Desktop Development
 
@@ -82,10 +99,7 @@ The complete English and Simplified Chinese documentation site lives in
 
 The accepted Windows product exposes five primary modes together: Clean,
 Software, Optimize, Analyze, and Status, plus read-only History, Protection,
-and Rules. Bare `devsweep` from an interactive TTY opens the TUI. The shipped
-roots are `clean`, `software`, `optimize`, `analyze`, `status`, and `history`.
-Old `tui`, `scan`, `inventory`, `protect`, and `rules` roots are unknown
-commands, not aliases.
+and Rules. Bare `devsweep` from an interactive TTY opens the TUI.
 
 Machine JSON, NDJSON, plan identities, digests, and audit records stay
 locale-neutral. Human CLI/TUI/desktop copy is English or Simplified Chinese.
@@ -95,12 +109,9 @@ executes DNS cache flush and can launch frozen Settings URIs; a Settings launch
 is not maintenance completion. Analyze and Status never create cleanup
 authority.
 
-See [`docs/guide/cli-migration.md`](docs/guide/cli-migration.md) and
-[`docs/safety-capability-matrix.md`](docs/safety-capability-matrix.md). Native
-Windows evidence is recorded in
-[`docs/validation/five-mode-native.md`](docs/validation/five-mode-native.md).
-Local packaging remains unsigned. This task does not push, sign, publish, or
-release.
+See [`docs/safety-capability-matrix.md`](docs/safety-capability-matrix.md).
+Local packaging remains unsigned. This repository does not push, sign, publish,
+or release from documentation tasks.
 
 ## Validation
 
