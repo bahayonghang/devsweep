@@ -72,12 +72,21 @@ npm run docs:build
 
 ## 发布归档
 
+`just dev` 以不带额外 argv 的方式运行工作区 CLI 二进制。交互式终端入口是裸的
+`devsweep`，并且要求 stdin 与 stdout 都是 TTY。没有 `tui` 子命令。
+
 构建带有可执行文件、`LICENSE`、`README.md` 和 SHA-256 校验文件的主机三元组归档：
 
 ```powershell
 just release-archive
 just release-smoke
 ```
+
+`just release-smoke` 使用该新归档中的精确 `devsweep.exe`，而不是 `target/release`
+里的旧二进制。它会准备一份任务独占的临时项目 fixture，然后仅以
+`--scope projects` 运行 `clean scan` → `clean plan` → `clean preview`。它不会运行
+`clean execute`、`software uninstall` 或 `optimize run`，也不会用 `--help` 或手拼
+空计划代替这些命令。
 
 归档写入 `dist/`，它是生成输出，不应提交。
 

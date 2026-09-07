@@ -100,26 +100,92 @@ release-archive:
 [script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
 release-smoke:
     $ErrorActionPreference = 'Stop'
-    $triple = (rustc -vV | Select-String 'host:').ToString().Split(' ')[1]
+    $tripleLine = rustc -vV | Select-String 'host:'
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    $triple = $tripleLine.ToString().Split(' ')[1]
     $zip = Join-Path 'dist' ("devsweep-" + $triple + '.zip')
-    if (-not (Test-Path $zip)) { throw "missing archive $zip; run just release-archive first" }
+    $sidecar = $zip + '.sha256'
+    if (-not (Test-Path -LiteralPath $zip)) { throw "missing archive $zip; run just release-archive first" }
+    if (-not (Test-Path -LiteralPath $sidecar)) { throw "missing sidecar $sidecar; run just release-archive first" }
+    $stream = [System.IO.File]::OpenRead($zip)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $hashBytes = $sha256.ComputeHash($stream)
+        } finally {
+            $sha256.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+    $zipHash = ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+    $sidecarLine = (Get-Content -LiteralPath $sidecar -Raw).Trim()
+    if ($sidecarLine -notmatch '^([0-9a-fA-F]{64})\s+\S+') {
+        throw ("invalid sha256 sidecar: " + $sidecar)
+    }
+    $sidecarHash = $Matches[1].ToLowerInvariant()
+    if ($zipHash -ne $sidecarHash) {
+        throw ("archive hash mismatch for " + $zip + ": file=" + $zipHash + " sidecar=" + $sidecarHash)
+    }
+    $zipPath = (Resolve-Path -LiteralPath $zip).Path
+    Write-Output ("release archive: " + $zipPath)
+    Write-Output ("sidecar sha256: " + $sidecarHash)
     $tmp = Join-Path $env:TEMP ("devsweep-smoke-" + [guid]::NewGuid().ToString())
-    New-Item -ItemType Directory -Force -Path $tmp | Out-Null
-    Expand-Archive -LiteralPath $zip -DestinationPath $tmp
-    $bin = Get-ChildItem -Path $tmp -Recurse -Filter 'devsweep*' | Where-Object { -not $_.PSIsContainer } | Select-Object -First 1
-    if ($null -eq $bin) { throw "release archive contains no devsweep binary: $zip" }
-    & $bin.FullName --version
-    if ($LASTEXITCODE -ne 0) { throw 'release --version smoke failed' }
-    & $bin.FullName scan --json | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'release scan smoke failed' }
-    $emptyPlan = Join-Path $tmp 'empty-plan.json'
-    '{"version":2,"targets":[]}' | Set-Content -LiteralPath $emptyPlan
-    & $bin.FullName clean --plan $emptyPlan
-    if ($LASTEXITCODE -ne 0) { throw 'release clean dry-run smoke failed' }
-    Write-Output 'release smoke ok'
+    try {
+        New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+        $extract = Join-Path $tmp 'archive'
+        $fixture = Join-Path $tmp 'fixture'
+        $work = Join-Path $tmp 'work'
+        $isolatedHome = Join-Path $tmp 'home'
+        New-Item -ItemType Directory -Force -Path $extract, $fixture, $work, $isolatedHome | Out-Null
+        Expand-Archive -LiteralPath $zip -DestinationPath $extract
+        $bin = Join-Path $extract 'devsweep.exe'
+        if (-not (Test-Path -LiteralPath $bin)) {
+            throw ("release archive contains no devsweep.exe: " + $zip)
+        }
+        if ($bin -match '[\\/]target[\\/]release[\\/]') {
+            throw 'release-smoke must use the archived binary, not target/release'
+        }
+        $env:LOCALAPPDATA = $isolatedHome
+        $env:APPDATA = $isolatedHome
+        $env:XDG_CONFIG_HOME = $isolatedHome
+        $env:HOME = $isolatedHome
+        & $bin --version
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Set-Content -LiteralPath (Join-Path $fixture 'package.json') -Value '{}' -Encoding ascii
+        New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'node_modules\pkg') | Out-Null
+        Set-Content -LiteralPath (Join-Path $fixture 'node_modules\pkg\index.js') -Value 'module.exports = {}' -Encoding ascii
+        $observation = Join-Path $work 'observation.json'
+        $plan = Join-Path $work 'plan.json'
+        & $bin clean scan --root $fixture --scope projects --format json --output $observation
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $document = Get-Content -LiteralPath $observation -Raw | ConvertFrom-Json
+        $targets = @()
+        if ($null -ne $document.data -and $null -ne $document.data.plan) {
+            $targets = @($document.data.plan.targets)
+        }
+        if ($targets.Count -lt 1) {
+            throw 'release-smoke observation contained no cleanup targets'
+        }
+        $targetId = [string]$targets[0].id
+        if ([string]::IsNullOrWhiteSpace($targetId)) {
+            throw 'release-smoke observation target id was empty'
+        }
+        Write-Output ("selected target: " + $targetId)
+        & $bin clean plan --observation $observation --select $targetId --output $plan
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & $bin clean preview --plan $plan --format json
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Write-Output 'release smoke ok'
+    }
+    finally {
+        if ($tmp -and (Test-Path -LiteralPath $tmp)) {
+            Remove-Item -LiteralPath $tmp -Recurse -Force
+        }
+    }
 
 dev:
-    cargo run --locked -p devsweep-cli --bin devsweep -- tui
+    cargo run --locked -p devsweep-cli --bin devsweep
 
 docs:
     npm run docs:dev

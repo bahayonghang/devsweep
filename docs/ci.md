@@ -79,6 +79,10 @@ and does not publish anything.
 
 ## Release archive
 
+`just dev` runs the workspace CLI binary with no extra argv. Interactive
+terminal entry is bare `devsweep` and requires stdin and stdout TTYs. There is
+no `tui` subcommand.
+
 Build a host-triple archive containing the executable, `LICENSE`, `README.md`,
 and a SHA-256 sidecar:
 
@@ -86,6 +90,12 @@ and a SHA-256 sidecar:
 just release-archive
 just release-smoke
 ```
+
+`just release-smoke` uses the exact `devsweep.exe` from that new archive, not a
+`target/release` leftover. It prepares a task-owned temporary project fixture,
+then runs `clean scan` → `clean plan` → `clean preview` with `--scope projects`
+only. It does not run `clean execute`, `software uninstall`, or `optimize run`,
+and it does not substitute `--help` or a handmade empty plan for those commands.
 
 The archive is written below `dist/`, which is generated output and is not
 committed.
