@@ -1,0 +1,36 @@
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+MOCK npm run types:generate
+MOCK npm run lint
+MOCK npm run typecheck
+MOCK npm test
+MOCK npm run build
+INJECTED=types:generate mock_exit=23 recipe_exit=0
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+MOCK npm run types:generate
+MOCK npm run lint
+MOCK npm run typecheck
+MOCK npm test
+MOCK npm run build
+INJECTED=lint mock_exit=23 recipe_exit=0
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+MOCK npm run types:generate
+MOCK npm run lint
+MOCK npm run typecheck
+MOCK npm test
+MOCK npm run build
+INJECTED=typecheck mock_exit=23 recipe_exit=0
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+MOCK npm run types:generate
+MOCK npm run lint
+MOCK npm run typecheck
+MOCK npm test
+MOCK npm run build
+INJECTED=test mock_exit=23 recipe_exit=0
+cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+MOCK npm run types:generate
+MOCK npm run lint
+MOCK npm run typecheck
+MOCK npm test
+MOCK npm run build
+error: recipe `desktop-web-check` failed on line 128 with exit code 1
+INJECTED=build mock_exit=23 recipe_exit=1

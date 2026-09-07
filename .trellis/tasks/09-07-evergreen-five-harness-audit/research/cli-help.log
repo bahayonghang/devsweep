@@ -1,0 +1,20 @@
+   Compiling devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.58s
+     Running `target\debug\devsweep.exe --help`
+Inspect, plan, and explicitly execute developer maintenance.
+
+Usage: devsweep.exe [OPTIONS] [COMMAND]
+
+Commands:
+  clean     Inspect and plan filesystem cleanup
+  software  Inspect installed software and plan current-user MSIX removal
+  optimize  Inspect and plan one bounded Windows optimization
+  analyze   Analyze disk usage without creating executable plans
+  status    Inspect current system status
+  history   Read the fixed DevSweep audit stores
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+      --language <LANGUAGE>  Language for human-readable output [possible values: en, zh-CN]
+  -h, --help                 Print help
+  -V, --version              Print version

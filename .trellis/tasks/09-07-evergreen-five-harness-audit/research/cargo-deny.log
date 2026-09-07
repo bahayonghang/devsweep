@@ -1,0 +1,7 @@
+error: unexpected argument '--all-features' found
+
+  tip: to pass '--all-features' as a value, use '-- --all-features'
+
+Usage: cargo-deny.exe check [OPTIONS] [WHICH]...
+
+For more information, try '--help'.

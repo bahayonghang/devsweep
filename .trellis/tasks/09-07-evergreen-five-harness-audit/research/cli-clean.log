@@ -1,0 +1,10 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running `target\debug\devsweep.exe clean --plan does-not-exist.json`
+error: unexpected argument '--plan' found
+
+  tip: a similar argument exists: '--language'
+
+Usage: devsweep.exe clean --language <LANGUAGE> <COMMAND>
+
+For more information, try '--help'.
+error: process didn't exit successfully: `target\debug\devsweep.exe clean --plan does-not-exist.json` (exit code: 2)

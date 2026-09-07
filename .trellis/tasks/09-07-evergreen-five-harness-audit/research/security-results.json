@@ -1,0 +1,13 @@
+{
+  "audit_exit": 0,
+  "audit_allowed_warnings": 18,
+  "deny_exit": 0,
+  "deny_command": "cargo deny --all-features check",
+  "deny_log": "cargo-deny-corrected.log",
+  "initial_invocation_error": {
+    "command": "cargo deny check --all-features",
+    "exit": 2,
+    "classification": "reviewer command error, not repository failure",
+    "log": "cargo-deny.log"
+  }
+}

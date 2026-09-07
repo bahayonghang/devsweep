@@ -1,0 +1,19 @@
+{
+  "source": "skills/devsweep-inspect",
+  "copies": [".agents/skills/devsweep-inspect", ".claude/skills/devsweep-inspect"],
+  "method": "Enumerate relative files excluding __pycache__, compare byte SHA256 and file sets separately for each copy",
+  "same_result_for_both_copies": true,
+  "different_common_count": 16,
+  "source_only_count": 7,
+  "copy_only_count": 0,
+  "source_only": [
+    "evals/fixtures/bad-cargo-run.md",
+    "evals/fixtures/confirmation-list.md",
+    "references/confirmed-clean.md",
+    "reports/prior-art-candidates.json",
+    "scripts/list_selectable.py",
+    "scripts/plan_selected.py",
+    "scripts/resolve_devsweep.py"
+  ],
+  "note": "Main-thread recomputation corrects an earlier subagent summary that counted six source-only files."
+}

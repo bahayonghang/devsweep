@@ -1,0 +1,4 @@
+{"gate":"lint","exit":0,"node":"22.23.2","npm":"10.9.8"}
+{"gate":"typecheck","exit":0,"node":"22.23.2","npm":"10.9.8"}
+{"gate":"test","exit":0,"node":"22.23.2","npm":"10.9.8"}
+{"gate":"build","exit":0,"node":"22.23.2","npm":"10.9.8"}

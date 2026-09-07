@@ -1,0 +1,32 @@
+{
+  "id": "evergreen-five-harness-audit",
+  "name": "evergreen-five-harness-audit",
+  "title": "常青项目审查与五套 Harness 对齐改造",
+  "description": "只读审查 DevSweep 结构、现有测试与失败工作流，对照五套 Harness 并形成五个待批准子任务；不开始产品实施。",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-07",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-07-evergreen-validation-gates",
+    "09-07-evergreen-cli-documentation",
+    "09-07-evergreen-release-contract",
+    "09-07-evergreen-skill-integrity",
+    "09-07-evergreen-harness-alignment"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

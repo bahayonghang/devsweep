@@ -1,0 +1,55 @@
+
+> devsweep-desktop-ui@0.2.0 test
+> vitest run
+
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/state/app-state.test.ts (10 tests) 5ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 74ms
+ ✓ src/api/bridge.test.ts (4 tests) 8ms
+ ✓ src/modes/analyze/treemap.test.ts (3 tests) 13ms
+ ✓ src/lifecycle.test.ts (4 tests) 69ms
+ ✓ src/i18n/index.test.ts (5 tests) 8ms
+ ✓ src/modes/analyze/selectors.test.ts (2 tests) 4ms
+ ✓ src/modes/software/parity.test.ts (2 tests) 4ms
+ ✓ src/api/contract.test.ts (34 tests) 10ms
+ ✓ src/modes/optimize/parity.test.ts (2 tests) 3ms
+ ✓ src/modes/optimize/state.test.ts (4 tests) 4ms
+ ✓ src/components/TargetTable.test.tsx (1 test) 302ms
+   ✓ TargetTable headers > uses Chinese catalogue headers instead of English Target Category Capacity Risk Evidence  301ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 6ms
+ ✓ src/pages/ReviewPage.test.tsx (2 tests) 241ms
+ ✓ src/modes/status/StatusWorkbench.test.tsx (3 tests) 544ms
+   ✓ StatusWorkbench > loads a snapshot first, starts live explicitly, and never shows GPU zero cards  496ms
+ ✓ src/pages/ScanPage.test.tsx (4 tests) 315ms
+ ✓ src/support/SupportViews.test.tsx (6 tests) 649ms
+   ✓ support views > keeps protection add behind confirmation  572ms
+ ✓ src/modes/software/SoftwareWorkbench.test.tsx (3 tests) 848ms
+   ✓ SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  717ms
+ ✓ src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 967ms
+   ✓ OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  880ms
+ ✓ src/modes/analyze/parity.test.ts (1 test) 4ms
+ ✓ src/app-shell/AppShell.test.tsx (17 tests) 1704ms
+ ✓ src/styles.test.ts (5 tests) 3ms
+ ✓ src/modes/status/parity.test.ts (2 tests) 3ms
+ ✓ src/modes/software/state.test.ts (4 tests) 4ms
+ ✓ src/modes/status/state.test.ts (3 tests) 4ms
+ ✓ src/modes/analyze/state.test.ts (2 tests) 3ms
+ ✓ src/modes/clean/reducer.test.ts (1 test) 2ms
+ ✓ src/app-shell/registry.test.ts (2 tests) 3ms
+ ✓ src/modes/analyze/AnalyzePage.test.tsx (6 tests) 2258ms
+   ✓ AnalyzePage > renders bilingual empty/complete states with canonical list and supplemental labelled rectangles  395ms
+   ✓ AnalyzePage > restores the focused directory on its canonical 200-row parent page  1012ms
+   ✓ AnalyzePage > covers empty/loading/canceling/canceled/partial/error/complete copy in 'en'  350ms
+ ✓ src/api/types-generation.test.ts (2 tests) 3779ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  2029ms
+   ✓ IPC type generation > changes when a named fixture changes  1749ms
+ ✓ src/App.test.tsx (35 tests) 4905ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  417ms
+
+ Test Files  31 passed (31)
+      Tests  181 passed (181)
+   Start at  14:39:34
+   Duration  9.82s (transform 7.58s, setup 8.26s, collect 22.47s, tests 16.74s, environment 47.68s, prepare 4.36s)
+

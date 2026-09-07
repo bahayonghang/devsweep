@@ -1,0 +1,4 @@
+npm notice run docs:build
+npm notice run vitepress build docs
+'vitepress' is not recognized as an internal or external command,
+operable program or batch file.

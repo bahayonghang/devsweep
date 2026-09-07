@@ -1,0 +1,59 @@
+npm notice run devsweep-desktop-ui@0.2.0 test
+npm notice run vitest run
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/modes/analyze/selectors.test.ts (2 tests) 12ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 92ms
+ ✓ src/modes/analyze/treemap.test.ts (3 tests) 22ms
+ ✓ src/modes/status/parity.test.ts (2 tests) 3ms
+ ✓ src/modes/analyze/parity.test.ts (1 test) 8ms
+ ✓ src/lifecycle.test.ts (4 tests) 61ms
+ ✓ src/i18n/index.test.ts (5 tests) 17ms
+ ✓ src/state/app-state.test.ts (10 tests) 35ms
+ ✓ src/modes/optimize/state.test.ts (4 tests) 23ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 35ms
+ ✓ src/api/contract.test.ts (34 tests) 207ms
+ ✓ src/components/TargetTable.test.tsx (1 test) 1295ms
+   ✓ TargetTable headers > uses Chinese catalogue headers instead of English Target Category Capacity Risk Evidence  1292ms
+ ✓ src/api/bridge.test.ts (4 tests) 73ms
+ ✓ src/styles.test.ts (5 tests) 9ms
+ ✓ src/modes/analyze/state.test.ts (2 tests) 2ms
+ ✓ src/modes/status/state.test.ts (3 tests) 4ms
+ ✓ src/modes/software/parity.test.ts (2 tests) 9ms
+ ✓ src/modes/optimize/parity.test.ts (2 tests) 11ms
+ ✓ src/modes/software/state.test.ts (4 tests) 4ms
+ ✓ src/modes/clean/reducer.test.ts (1 test) 2ms
+ ✓ src/modes/status/StatusWorkbench.test.tsx (3 tests) 570ms
+   ✓ StatusWorkbench > loads a snapshot first, starts live explicitly, and never shows GPU zero cards  516ms
+ ✓ src/app-shell/registry.test.ts (2 tests) 3ms
+ ✓ src/app-shell/AppShell.test.tsx (17 tests) 2950ms
+   ✓ AppShell > keeps the frozen five-mode identity but omits unavailable registrations  1114ms
+ ✓ src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 1057ms
+   ✓ OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  944ms
+ ✓ src/pages/ScanPage.test.tsx (4 tests) 399ms
+   ✓ ScanPage announcements > throttles same-phase screen-reader updates while keeping visual copy current  309ms
+ ✓ src/pages/ReviewPage.test.tsx (2 tests) 344ms
+   ✓ ReviewPage > groups by kind then scope, keeps Inspect Only unselectable, and uses one page-level select-all  333ms
+ ✓ src/support/SupportViews.test.tsx (6 tests) 761ms
+   ✓ support views > keeps protection add behind confirmation  684ms
+ ✓ src/modes/software/SoftwareWorkbench.test.tsx (3 tests) 978ms
+   ✓ SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  877ms
+ ✓ src/api/types-generation.test.ts (2 tests) 5608ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  3725ms
+   ✓ IPC type generation > changes when a named fixture changes  1882ms
+ ✓ src/modes/analyze/AnalyzePage.test.tsx (6 tests) 2418ms
+   ✓ AnalyzePage > renders bilingual empty/complete states with canonical list and supplemental labelled rectangles  384ms
+   ✓ AnalyzePage > restores the focused directory on its canonical 200-row parent page  1223ms
+   ✓ AnalyzePage > covers empty/loading/canceling/canceled/partial/error/complete copy in 'en'  345ms
+ ✓ src/App.test.tsx (35 tests) 5306ms
+   ✓ desktop workflow > zh-CN Clean workbench does not show English Projects Scan Search Ready  310ms
+   ✓ desktop workflow > keeps scan IPC arguments locale-neutral across presentation changes  327ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  548ms
+   ✓ desktop workflow > disables conflicting scan controls during dry run and execution  309ms
+
+ Test Files  31 passed (31)
+      Tests  181 passed (181)
+   Start at  14:37:57
+   Duration  15.32s (transform 24.59s, setup 30.20s, collect 52.08s, tests 22.32s, environment 69.29s, prepare 7.06s)
+

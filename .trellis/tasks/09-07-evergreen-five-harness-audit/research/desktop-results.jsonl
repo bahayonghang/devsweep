@@ -1,0 +1,4 @@
+{"gate":"lint","exit":0,"seconds":14.21}
+{"gate":"typecheck","exit":0,"seconds":8.97}
+{"gate":"test","exit":0,"seconds":18.61}
+{"gate":"build","exit":0,"seconds":5.64}

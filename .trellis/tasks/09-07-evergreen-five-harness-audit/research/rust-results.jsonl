@@ -1,0 +1,4 @@
+{"gate":"fmt","exit":0,"seconds":4.3}
+{"gate":"check","exit":0,"seconds":18.91}
+{"gate":"test","exit":0,"seconds":52.7}
+{"gate":"clippy","exit":0,"seconds":3.34}

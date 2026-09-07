@@ -1,0 +1,10 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.36s
+     Running `target\debug\devsweep.exe scan --json`
+error: unrecognized subcommand 'scan'
+
+  tip: a similar subcommand exists: 'clean'
+
+Usage: devsweep.exe [OPTIONS] [COMMAND]
+
+For more information, try '--help'.
+error: process didn't exit successfully: `target\debug\devsweep.exe scan --json` (exit code: 2)

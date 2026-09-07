@@ -1,0 +1,28 @@
+PARENT_CARGO_TARGET_DIR_SET=False
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.37s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-738507f7e9ef84ed.exe)
+
+running 19 tests
+test process::tests::injected_cancel_observer_yields_canceled ... ok
+test process::tests::sanitize_strips_control_sequences_and_marks_truncation ... ok
+test status::process::tests::access_denial_is_partial_not_zero_rows_as_available ... ok
+test status::process::tests::ceiling_and_budget_flags_are_exact ... ok
+test status::process::tests::process_dto_omits_sensitive_fields ... ok
+test status::process::tests::requested_limit_is_clamped_to_one_hundred ... ok
+test status::process::tests::pair_delta_skips_reset_and_zero_window ... ok
+test status::process::tests::truncation_metadata_is_set_before_sorting_and_limit ... ok
+test process::tests::not_found_program_returns_typed_status ... ok
+test process::tests::explicit_cwd_is_honored ... ok
+test process::tests::noop_cancel_preserves_success_path ... ok
+test process::tests::neutral_cwd_is_not_caller_project_dir ... ok
+test process::tests::non_utf8_and_nonzero_exit_are_typed_without_panic ... ok
+test process::tests::cancel_during_run_terminates_and_returns_canceled ... ok
+test process::tests::job_deadline_can_beat_per_command_timeout ... ok
+test process::tests::hung_child_times_out_within_policy ... ok
+test process::tests::endless_stderr_is_capped_with_truncation_mark ... ok
+test process::tests::endless_stdout_is_capped_with_truncation_mark ... ok
+test process::tests::hung_child_and_grandchild_are_terminated ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 308 filtered out; finished in 0.51s
+
+PROCESS_TESTS_EXIT=0
