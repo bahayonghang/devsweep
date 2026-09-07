@@ -8,16 +8,21 @@ broad grep or repo-wide search so navigation starts from the maintained map.
 
 - `just ci` is the canonical local gate; it runs format, check, tests, and
   clippy.
-- `just dev` runs the TUI with `cargo run -- tui`.
-- `just build` runs `cargo build`.
-- `just release-archive` builds a Windows release binary and writes
-  `dist/devsweep-x86_64-pc-windows-msvc.zip`.
+- `just dev` runs the CLI binary with
+  `cargo run --locked -p devsweep-cli --bin devsweep` (no extra argv).
+- Interactive TUI is bare `devsweep` with stdin and stdout TTYs.
+- `just build` runs
+  `cargo build --locked -p devsweep-cli --bin devsweep`.
+- `just release-archive` builds a locked release binary for the rustc host
+  triple and writes `dist/devsweep-<triple>.zip`.
 
 ## Safety Contracts
 
-- Cleanup is dry-run by default. Execute only from an explicit saved plan.
-- Permanent delete remains disabled in this build, including when
-  `--allow-permanent-delete` is present.
+- Cleanup dry-run is `clean preview`. Execute only from an explicit saved
+  plan plus a live `sha256:` preview digest and `--confirm`. There is no
+  `--execute` flag.
+- Permanent delete remains disabled in this build and is not a CLI option.
+  There is no `--allow-permanent-delete` flag.
 - Scanner and model code must only create cleanup plans; do not delete files,
   move paths to trash, or execute external cleanup commands from those layers.
 - Command-backed cleanup must keep program and argv separate. Do not compose
@@ -45,6 +50,12 @@ Use the default canonical labels: `needs-triage`, `needs-info`,
 This repo uses a single-context domain-doc layout. See
 `docs/agents/domain.md`.
 
+### Harnesses
+
+Claude Code, Codex, Grok Build, Kimi Code, and OMP (Oh My Pi) share this
+file as the project contract. See `docs/agents/harnesses.md` for the
+five-harness matrix, adapter kinds, and evidence levels.
+
 ### Inspect and advise
 
 When the user asks to inspect this machine, recommend cleanup, or give
@@ -59,6 +70,8 @@ run `clean execute` with a live preview digest and `--confirm`. Do not run
 
 - For backend changes, read `.trellis/spec/backend/index.md` before editing.
 - For TUI changes, read `.trellis/spec/frontend/index.md` before editing.
+- For desktop React/Tauri changes, read
+  `.trellis/spec/desktop-frontend/index.md` before editing.
 - Project Codex hooks and agents are optional local scaffolding. Do not assume
   `.codex/hooks.json` hooks are active unless the user-level Codex config
   enables hooks and the hook has been approved.
