@@ -76,17 +76,50 @@ jobs:
         working-directory: desktop
         run: npm ci
 
-      - name: Check desktop frontend
+      - name: Check generated types
         working-directory: desktop
-        run: |
-          npm run types:generate
-          npm run lint
-          npm run typecheck
-          npm test
+        run: npm run types:generate -- --check
+
+      - name: Lint desktop frontend
+        working-directory: desktop
+        run: npm run lint
+
+      - name: Typecheck desktop frontend
+        working-directory: desktop
+        run: npm run typecheck
+
+      - name: Test desktop frontend
+        working-directory: desktop
+        run: npm test
+
+      - name: Build desktop frontend
+        working-directory: desktop
+        run: npm run build
 
       - name: Compile Tauri application
         working-directory: desktop
         run: npm run tauri -- build --no-bundle
+
+  docs:
+    name: Docs (Node 22)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install documentation dependencies
+        run: npm ci
+
+      - name: Build documentation
+        run: npm run docs:build
 
   msrv:
     name: MSRV (${{ matrix.os }})

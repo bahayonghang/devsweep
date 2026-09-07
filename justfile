@@ -124,8 +124,20 @@ dev:
 docs:
     npm run docs:dev
 
+[script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
 desktop-web-check:
-    cd desktop; npm run types:generate; npm run lint; npm run typecheck; npm test; npm run build
+    $ErrorActionPreference = 'Stop'
+    Set-Location -LiteralPath (Join-Path (Get-Location) 'desktop')
+    npm run types:generate -- --check
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    npm run lint
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    npm run typecheck
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    npm test
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    npm run build
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 desktop-test:
     cargo test --locked -p devsweep-desktop
@@ -157,5 +169,5 @@ tinstall: desktop-build
     }
     Write-Output 'desktop install complete'
 
-ci: fmt sync-lock check test clippy
+ci: fmt check test clippy
     @echo "ci complete"

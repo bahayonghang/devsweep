@@ -13,6 +13,8 @@ const args = process.argv.slice(2);
 const fixtureArg = args.indexOf("--fixtures");
 const fixtureRoot = fixtureArg >= 0 ? path.resolve(args[fixtureArg + 1]) : path.join(root, "src/api/fixtures");
 const stdout = args.includes("--stdout");
+const check = args.includes("--check");
+const typesPath = path.join(root, "src/api/types.gen.ts");
 
 const rootFixtures = {
   ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json"],
@@ -319,9 +321,24 @@ async function generate() {
 }
 
 const output = await generate();
-if (stdout) {
+if (check) {
+  let committed;
+  try {
+    committed = await readFile(typesPath, "utf8");
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      console.error(`generated types file missing: ${typesPath}`);
+      process.exit(1);
+    }
+    throw error;
+  }
+  if (committed !== output) {
+    console.error("desktop/src/api/types.gen.ts does not match generate-types.mjs --stdout");
+    process.exit(1);
+  }
+} else if (stdout) {
   process.stdout.write(output);
 } else {
-  await writeFile(path.join(root, "src/api/types.gen.ts"), output, "utf8");
+  await writeFile(typesPath, output, "utf8");
   console.log(`generated src/api/types.gen.ts from ${Object.values(rootFixtures).flat().length + 1} named fixture files`);
 }

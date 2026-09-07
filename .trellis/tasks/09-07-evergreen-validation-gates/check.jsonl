@@ -1,0 +1,7 @@
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"确认跨 CLI/文档/工具的共享契约和证据边界"}
+{"file":".trellis/tasks/09-07-evergreen-five-harness-audit/research/audit-report.md","reason":"当前基线、发现和授权范围"}
+{"file":".trellis/tasks/09-07-evergreen-five-harness-audit/research/test-results.md","reason":"实际命令、退出码和未验证项"}
+{"file":".trellis/tasks/09-07-evergreen-five-harness-audit/research/harness-matrix.md","reason":"五工具能力边界、强模型与有界低成本执行分工"}
+{"file":".trellis/spec/backend/index.md","reason":"后端规范入口；依照 bounded-spec-context.md 分段读取完整相关规范，避免注入截断"}
+{"file":".trellis/spec/desktop-frontend/index.md","reason":"Node版本、桌面生成类型与构建验收"}
+{"file":".trellis/tasks/09-07-evergreen-five-harness-audit/research/bounded-spec-context.md","reason":"大规范的显式分段读取要求与证据边界"}
