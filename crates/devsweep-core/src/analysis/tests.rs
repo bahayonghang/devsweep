@@ -1,12 +1,14 @@
 use std::{
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
-    time::Instant,
 };
 
 use crate::process::FlagCancelObserver;
 #[cfg(all(windows, not(debug_assertions)))]
-use std::{thread, time::Duration};
+use std::{
+    thread,
+    time::{Duration, Instant},
+};
 
 #[cfg(all(windows, not(debug_assertions)))]
 use super::AnalyzeSnapshotV1;
@@ -189,17 +191,23 @@ fn cancel_joins_and_marks_canceled() {
     let fs = Fake250k::analysis_250k_v1();
     let cancel = FlagCancelObserver::new();
     cancel.request_cancel();
-    let started = Instant::now();
     let (outcome, stats) =
         analyze_with_fs_and_stats(&Fake250k::root(), &fs, Some(&cancel), None, false)
             .expect("canceled analyze");
-    let join_ms = started.elapsed().as_millis() as u64;
     assert!(matches!(
         outcome.snapshot().completeness,
         AnalyzeCompleteness::Canceled
     ));
-    assert!(join_ms < 5_000);
-    assert!(stats.cancel_to_join_ms.is_some());
+    // Wall-clock around this helper includes waiting for ANALYZE_JOB, which
+    // sibling 250k tests may hold for several seconds on slow Windows MSRV
+    // runners. Join latency is measured after that lock is acquired.
+    let join_ms = stats
+        .cancel_to_join_ms
+        .expect("pre-requested cancel must record join latency");
+    assert!(
+        join_ms < 5_000,
+        "cancel_to_join_ms={join_ms} exceeded 5s after ANALYZE_JOB was held"
+    );
 }
 
 #[test]
