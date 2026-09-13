@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Confirm completion checklist items for the sidebar chrome."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Confirm no gradient, glow, glass, icon-only destination, or space-freed copy."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Confirm Inspect Only, digest invalidation, and read-only modes still hold."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Confirm rejected PureMac items did not ship."}
+{"file": "docs/provenance.md", "reason": "Confirm PureMac is listed as a reviewed reference with nothing copied."}

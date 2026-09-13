@@ -1,0 +1,30 @@
+{
+  "id": "desktop-puremac-visual-refactor",
+  "name": "desktop-puremac-visual-refactor",
+  "title": "Refactor desktop UI from PureMac visual language",
+  "description": "Clean-room refactor of the Tauri desktop shell and five-mode workbenches using ref/repo/PureMac sidebar, page-header, stage-hero, card, and row patterns, without copying PureMac source, copy, or assets and without weakening DevSweep safety contracts.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-13",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-13-desktop-sidebar-spec-shell",
+    "09-13-desktop-clean-stage-workbench",
+    "09-13-desktop-modes-card-restyle"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

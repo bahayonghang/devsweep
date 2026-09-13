@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Confirm Inspect Only, digest invalidation, and second confirmation still hold."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Confirm no percentage, no space-freed copy, no gradient or glow."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Confirm preview cannot reconstruct a plan."}
+{"file": "CONTEXT.md", "reason": "Confirm visible copy uses Estimated Recoverable and Inspect Only."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Confirm headline and lede are not PureMac copy."}

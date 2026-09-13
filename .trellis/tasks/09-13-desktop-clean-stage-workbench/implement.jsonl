@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Clean idle, scanning, reviewed, dry-run, confirm, execute invariants."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Rewritten card, header, and no-percentage Scan Progress rules."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Scan Preview has no execute authority; no DTO changes."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/design.md", "reason": "Parent section 4 Clean flow table and additive key list."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Rejected count-up, shimmer, and PureMac headline copy."}
+{"file": "CONTEXT.md", "reason": "Estimated Recoverable, Inspect Only, Scan Preview, Scan Report terms."}

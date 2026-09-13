@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop pre-development and completion checklists."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Current visual contract that child 1 rewrites first."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Authority invariants that every child must preserve."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "IPC contract ownership; no DTO changes."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Accept / adapt / reject table and provenance boundary."}
+{"file": "CONTEXT.md", "reason": "Cleanup Target, Scan Progress, Scan Preview, Estimated Recoverable, Inspect Only terms."}
+{"file": "docs/provenance.md", "reason": "No-copy policy that the audit and provenance update must satisfy."}

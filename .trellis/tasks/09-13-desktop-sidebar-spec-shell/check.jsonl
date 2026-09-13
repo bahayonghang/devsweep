@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Confirm the rewritten contract matches the shipped shell and nothing icon-only remains."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Confirm routing, focus restore, and accelerator invariants."}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Confirm completion checklist items."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Confirm no PureMac string, symbol, or hex shipped."}
+{"file": "docs/provenance.md", "reason": "Confirm PureMac paragraph exists."}

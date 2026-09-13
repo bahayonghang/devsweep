@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Completion checklist to rewrite for the sidebar chrome."}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Product Mode, Composition, and Visual System clauses to rewrite first."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Shell routing, focus restore, and presentation settings invariants."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Catalogue and IPC boundary rules."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/design.md", "reason": "Parent sections 2, 3, and 6: spec rewrite, shell DOM, tokens, glyphs."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Rejected items: gradient, glow, SF Symbols, PureMac copy."}
+{"file": "docs/provenance.md", "reason": "Format of the no-copy record to extend with PureMac."}
+{"file": "CONTEXT.md", "reason": "Domain terms for subtitle copy."}

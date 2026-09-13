@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Rewritten card, tile row, header slot, and prohibition rules."}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Software, Optimize, Analyze, Status authority and read-only invariants."}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "No new IPC; generated types stay."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/design.md", "reason": "Parent section 5 per-mode restyle rules."}
+{"file": ".trellis/tasks/09-13-desktop-puremac-visual-refactor/research/puremac-visual-audit.md", "reason": "Rejected uninstaller flow changes and onboarding."}
+{"file": "docs/validation/five-mode-native.md", "reason": "Format and UNVERIFIED conventions for the new validation page."}
+{"file": "CONTEXT.md", "reason": "Domain terms for chip and empty-state copy."}
