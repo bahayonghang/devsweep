@@ -17,7 +17,8 @@
 
 所有作业只授予读取仓库内容的权限，使用 cancel-in-progress 并发控制，并配置了时限。托管
 Desktop 前端检查按每个 npm 脚本拆成独立步骤，避免原生非零退出被后续命令掩盖。类型漂移
-在任何生成写入之前比较。
+在任何生成写入之前比较。比较前会把换行规范为 LF，因此 Windows 工作区里的 CRLF 不会被
+当成漂移。
 
 ## Node 与 npm
 
@@ -59,7 +60,8 @@ just desktop-web-check
 npm 调用后检查 `$LASTEXITCODE`，而不是依赖最后一条命令的退出码。
 
 `types:generate --check` 会将已提交的 `desktop/src/api/types.gen.ts` 与生成器的 `--stdout`
-结果比较，并且不会写入。不带旗标的 `npm run types:generate` 仍会写入，这是显式维护路径。
+结果比较，并且不会写入。比较前会把换行规范为 LF，因此 Windows 工作区里的 CRLF 不会被当成
+漂移。不带旗标的 `npm run types:generate` 仍会写入，这是显式维护路径。
 
 ## 文档构建
 

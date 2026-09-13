@@ -18,7 +18,8 @@ Hosted CI runs on `pull_request` and `workflow_dispatch` only. Direct pushes to
 All jobs use read-only contents permission, cancel-in-progress concurrency, and
 bounded timeouts. Hosted Desktop frontend checks are split into one step per npm
 script so a native non-zero exit cannot be swallowed by a later command. Types
-drift is compared before any generate-write.
+drift is compared before any generate-write. The comparison ignores
+working-tree CRLF so Windows checkouts of the LF blob do not fail.
 
 ## Node and npm
 
@@ -63,8 +64,10 @@ early failure. This recipe therefore checks `$LASTEXITCODE` after each npm
 invocation instead of relying on the last command.
 
 `types:generate --check` compares committed `desktop/src/api/types.gen.ts` to
-the generator's `--stdout` result and does not write. Unflagged
-`npm run types:generate` still writes and is the explicit maintenance path.
+the generator's `--stdout` result and does not write. Newlines are canonicalized
+to LF before comparison, so a Windows CRLF working tree is not treated as drift.
+Unflagged `npm run types:generate` still writes and is the explicit maintenance
+path.
 
 ## Documentation build
 

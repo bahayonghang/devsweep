@@ -219,6 +219,25 @@ class TestTypesDriftCheck(unittest.TestCase):
             "the repository types.gen.ts must stay clean after the drift probe",
         )
 
+    def test_crlf_working_copy_still_passes_check(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="devsweep-types-crlf-", ignore_cleanup_errors=True
+        ) as tmp_name:
+            desktop = self._isolated_desktop(Path(tmp_name))
+            types_path = desktop / "src" / "api" / "types.gen.ts"
+            lf = types_path.read_bytes().replace(b"\r\n", b"\n")
+            types_path.write_bytes(lf.replace(b"\n", b"\r\n"))
+            result = _run_types_check(desktop)
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=(
+                    "types --check must accept a CRLF working copy of the LF blob\n"
+                    f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+                ),
+            )
+
+
 def _unbounded_on_event(header: str, event: str) -> bool:
     match = re.search(rf"(?m)^  {re.escape(event)}:\s*(.*)$", header)
     if match is None:

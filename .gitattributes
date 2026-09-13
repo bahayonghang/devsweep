@@ -7,3 +7,7 @@
 # picking either side (task state lives in task.json, not index.md). See
 # .trellis/spec/cli/backend/directory-structure.md for details.
 .trellis/workspace/*/journal-*.md merge=union
+
+# Hosted Windows checkouts otherwise turn this LF blob into CRLF, which used
+# to fail the desktop types --check byte comparison.
+desktop/src/api/types.gen.ts text eol=lf

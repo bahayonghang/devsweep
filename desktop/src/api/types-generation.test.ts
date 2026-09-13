@@ -9,11 +9,17 @@ const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const generator = path.join(desktopRoot, "scripts/generate-types.mjs");
 const fixtures = path.join(desktopRoot, "src/api/fixtures");
 
+function canonicalizeNewlines(text: string): string {
+  return text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+}
+
 function generate(fixtureRoot = fixtures): string {
-  return execFileSync(process.execPath, [generator, "--fixtures", fixtureRoot, "--stdout"], {
-    cwd: desktopRoot,
-    encoding: "utf8",
-  });
+  return canonicalizeNewlines(
+    execFileSync(process.execPath, [generator, "--fixtures", fixtureRoot, "--stdout"], {
+      cwd: desktopRoot,
+      encoding: "utf8",
+    }),
+  );
 }
 
 describe("IPC type generation", () => {
@@ -21,7 +27,9 @@ describe("IPC type generation", () => {
     const first = generate();
     const second = generate();
     expect(second).toBe(first);
-    expect(first).toBe(readFileSync(path.join(desktopRoot, "src/api/types.gen.ts"), "utf8"));
+    expect(first).toBe(
+      canonicalizeNewlines(readFileSync(path.join(desktopRoot, "src/api/types.gen.ts"), "utf8")),
+    );
     expect([...first].every((character) => character.charCodeAt(0) <= 127)).toBe(true);
     expect(first).not.toContain("export class Convert");
   });
