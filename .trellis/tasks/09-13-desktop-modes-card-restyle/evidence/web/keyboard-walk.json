@@ -1,0 +1,114 @@
+[
+  {
+    "step": 0,
+    "tag": "BUTTON",
+    "role": "tab",
+    "name": "Clean",
+    "className": "mode-tab"
+  },
+  {
+    "step": 1,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Protection",
+    "className": "support-link"
+  },
+  {
+    "step": 2,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Rules",
+    "className": "support-link"
+  },
+  {
+    "step": 3,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "History",
+    "className": "support-link"
+  },
+  {
+    "step": 4,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Language",
+    "className": ""
+  },
+  {
+    "step": 5,
+    "tag": "A",
+    "role": null,
+    "name": "Help",
+    "className": ""
+  },
+  {
+    "step": 6,
+    "tag": "INPUT",
+    "role": null,
+    "name": "",
+    "className": ""
+  },
+  {
+    "step": 7,
+    "tag": "INPUT",
+    "role": null,
+    "name": "",
+    "className": ""
+  },
+  {
+    "step": 8,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Scan",
+    "className": "primary-button fixed-action"
+  },
+  {
+    "step": 9,
+    "tag": "BODY",
+    "role": null,
+    "name": "DevSweepModesCleanSoftwareOptimizeAnalyzeStatusSupporting destinationsProtection",
+    "className": ""
+  },
+  {
+    "step": 10,
+    "tag": "BUTTON",
+    "role": "tab",
+    "name": "Clean",
+    "className": "mode-tab"
+  },
+  {
+    "step": 11,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Protection",
+    "className": "support-link"
+  },
+  {
+    "step": 12,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Rules",
+    "className": "support-link"
+  },
+  {
+    "step": 13,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "History",
+    "className": "support-link"
+  },
+  {
+    "step": 14,
+    "tag": "BUTTON",
+    "role": null,
+    "name": "Language",
+    "className": ""
+  },
+  {
+    "step": 15,
+    "tag": "A",
+    "role": null,
+    "name": "Help",
+    "className": ""
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "status": "UNVERIFIED",
+  "reason": "Native WebView2 remote debugging did not expose a tauri.localhost page. cargo build -p devsweep-desktop --release succeeded. Binary SHA-256 237706b3a1ab1f8e2d79a1c5501c354434ea6109223e749f59fa11e0707f3afe. Launch used isolated LOCALAPPDATA and WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=2208 --remote-allow-origins=*. CDP json/list on that port only showed leftover http://127.0.0.1:4180/ (fixture Vite). First attempt: app-shell did not mount. Second attempt: cdp timeout port 2208 waiting for tauri.localhost. OS display scale was not changed.",
+  "sha256": "237706b3a1ab1f8e2d79a1c5501c354434ea6109223e749f59fa11e0707f3afe",
+  "exe": "target/release/devsweep-desktop.exe"
+}
