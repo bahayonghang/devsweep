@@ -6,8 +6,8 @@ surfaces, and glyph tile rows after
 CDP `Emulation.setDeviceMetricsOverride`. The host OS global scale was
 not changed.
 
-This page points at **task-local** evidence from
-`.trellis/tasks/09-13-desktop-modes-card-restyle/evidence/`.
+This page points at **archived** evidence from
+`.trellis/tasks/archive/2026-09/09-13-desktop-modes-card-restyle/evidence/`.
 
 Web PASS rows are fixture Vite (`npm run dev:fixture`, port 4180) driven
 by CDP Chrome. They are not a native WebView2 PASS. Native rows below
@@ -15,14 +15,13 @@ are UNVERIFIED.
 
 Evidence root used below:
 
-`.trellis/tasks/09-13-desktop-modes-card-restyle/evidence/`
+`.trellis/tasks/archive/2026-09/09-13-desktop-modes-card-restyle/evidence/`
 
 ## Environment
 
 Windows 11 build 26200, AMD64, rustc 1.98.0, Node v26.7.0, Chrome
 `C:\Program Files\Google\Chrome\Application\chrome.exe`. Working tree
-on branch `dev` (HEAD `88bfc64` plus this task's uncommitted desktop
-restyle). Fixture language starts English; zh-CN is set through
+on branch `dev` after `21c00b5`. Fixture language starts English; zh-CN is set through
 `#/settings` then the Language select. Isolated native
 `LOCALAPPDATA` under `evidence/native-localappdata/`. Desktop release
 SHA-256
