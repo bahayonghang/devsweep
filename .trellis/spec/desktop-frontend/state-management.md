@@ -12,7 +12,8 @@ may call `invoke` or `listen` directly.
 
 Shell state contains no targets, plans, selections, digests, confirmation
 authority, or mode results. Unavailable mode registrations are absent rather
-than represented by disabled placeholder state.
+than represented by disabled placeholder state. The shell never derives counts,
+sizes, or status for sidebar rows.
 
 ## Shell Routing And Mode State
 

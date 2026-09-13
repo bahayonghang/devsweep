@@ -4,15 +4,29 @@
 
 This is a five-mode Operate surface for repeated Clean, Software, Optimize,
 Analyze, and Status work. Use one quiet immersive shell with native Windows
-chrome, a compact original DevSweep brand, centered capsule navigation,
-supporting destinations behind a labelled disclosure, a mode-local canvas
-slot, and a persistent action/status boundary. Unavailable modes are absent
-from navigation and deep links; never render a clickable placeholder.
+chrome, a compact original DevSweep brand, a persistent left sidebar workbench
+(not a centered capsule), a visible page header, a mode-local canvas slot, and
+a persistent action/status boundary. Unavailable modes are absent from
+navigation and deep links; never render a clickable placeholder. There is no
+More disclosure.
+
+The sidebar has two sections. Modes is a `role=tablist` with
+`aria-orientation="vertical"` and one tab per available primary mode.
+Supporting destinations are named buttons for Protection, Rules, and History.
+The footer holds Language and Help. Below 800 CSS pixels the same list is a
+horizontal top strip: `overflow-x: auto`, destination names stay fully
+visible and do not overlap, and section labels may be visually hidden while
+remaining accessible. Names, authority, warnings, and critical actions are
+never icon-only or hidden by responsive layout.
 
 The shell is presentation and lifecycle infrastructure only. It never invents
-targets, plans, digests, command arguments, authorization, or mode results.
-Mode children own their typed pages and reducers. Protection, Rules, History,
-Settings, and language are supporting destinations, not sixth primary modes.
+targets, plans, digests, command arguments, authorization, mode results,
+counts, sizes, or status. Mode children own their typed pages and reducers.
+Protection, Rules, History, Settings, and language are supporting destinations,
+not sixth primary modes.
+
+The default window is 1080x720 CSS pixels with a 900x600 minimum. The window
+title is `DevSweep`.
 
 ## Composition
 
@@ -22,12 +36,17 @@ Settings, and language are supporting destinations, not sixth primary modes.
 - Register routes from one typed feature registry. Preserve deterministic deep
   links/back behavior, restore focus to the activating navigation control, and
   omit unavailable registrations atomically.
-- At wide widths keep the five primary modes in one labelled capsule with the
-  decorative brand icon; at narrow widths keep the same capsule and allow
-  horizontal scrolling. Supporting destinations, Language, and Help sit in a
-  labelled More disclosure with visible names when open. Names, authority,
-  warnings, and critical actions are never icon-only or hidden by responsive
-  layout.
+- Compose the shell as a persistent sidebar plus a workbench column. The
+  workbench starts with a page header: a visible `h1` title, a subtitle, and an
+  optional status chip in the header slot. Do not use an `sr-only` page
+  heading.
+- Card surfaces use the raised card token, a 1px hairline border, radius 12,
+  and padding 16. Controls, inputs, badges, and rows stay at radius 8 or below.
+  Primary actions keep the pill radius.
+- Destination and kind marks use a tinted 24px icon tile, radius 6, 16% accent
+  tint, and an original inline SVG glyph with `aria-hidden`. Glyphs come from
+  one DevSweep glyph module. No icon font, no SF Symbols, no image sprite.
+  Names and authority are never icon-only.
 - Put repeated target presentation in focused components such as `TargetTable`,
   `RiskBadge`, `CapacityLabel`, and `EvidenceList`.
 - Use a real table for comparable target data. Completed-review mode keeps
@@ -52,8 +71,9 @@ Settings, and language are supporting destinations, not sixth primary modes.
 - Provide visible `:focus-visible` states and never rely on color alone for risk,
   status, or selection.
 - Primary/support navigation implements arrow/Home/End keyboard movement and a
-  stable active-page announcement. Route changes restore focus; language
-  changes do not reset mode-local state.
+  stable active-page announcement. ArrowDown and ArrowRight move to the next
+  mode tab; ArrowUp and ArrowLeft move to the previous tab. Route changes
+  restore focus; language changes do not reset mode-local state.
 - Bind catalogue-owned locale accelerators only when the accelerator is unique
   in the currently visible scope. A collision removes the conflicting shortcut;
   it never makes two controls fire or silently chooses one.
@@ -86,12 +106,13 @@ Settings, and language are supporting destinations, not sixth primary modes.
 - Use Segoe UI Variable with system UI fallbacks and tabular numerals for byte
   values. Estimated Recoverable and live metrics may use a display-size tabular
   number. Do not scale the whole UI from viewport fonts.
-- Keep radii at 8px or below for tool surfaces. Capsule navigation and primary
-  actions may use a full pill radius.
+- Card surfaces may use radius 12. Controls, inputs, badges, and rows stay at
+  radius 8 or below. Primary actions may use a full pill radius.
 - Use a dark-only canvas. There is no light workbench pane. Shared tokens are
   `--canvas`, `--text`, `--muted`, `--border`, `--accent`, `--focus`,
-  `--danger`, `--warning`, and `--ok`. Each primary mode sets `--canvas` and
-  `--accent` from an original mineral/forest family:
+  `--danger`, `--warning`, `--ok`, `--sidebar`, `--card`, `--card-border`, and
+  `--tile-alpha`. Each primary mode sets `--canvas` and `--accent` from an
+  original mineral/forest family:
   `--canvas-clean` / `--accent-clean` (pine),
   `--canvas-software` / `--accent-software` (oxide),
   `--canvas-optimize` / `--accent-optimize` (olive),
@@ -99,14 +120,18 @@ Settings, and language are supporting destinations, not sixth primary modes.
   `--canvas-status` / `--accent-status` (gold-green).
   Supporting destinations use the shell canvas. Semantic amber/red/green remain
   reserved for risk, error, and safe actions.
-- The original product icon may appear in native chrome and the capsule. When
-  adjacent DevSweep text supplies the accessible product name, the image is
-  decorative so the product name is announced once.
+- The original product icon may appear in native chrome and the sidebar brand
+  row. When adjacent DevSweep text supplies the accessible product name, the
+  image is decorative so the product name is announced once.
 - The sweep body is CSS-native, one shape family, five accent tints,
   non-informational, non-interactive, and still under
   `prefers-reduced-motion`. It is an abstract ring/body, not a globe map, not
-  a five-planet metaphor, and not status evidence. Mode first screens may
-  place a larger instance of the same class; the shell keeps a compact one.
+  a five-planet metaphor, and not status evidence. Keep only a compact instance
+  as the sidebar brand mark. Do not place a hero instance.
+- A status chip is a pill, 11px semibold, dot plus text, and semantic tint only.
+- A stacked meter uses solid segments with 2px separators and no animation
+  beyond width transition, still under reduced motion. Segments are verified
+  and partial lower bound only. Unknown is labelled, never drawn.
 - Prohibit glass, glow, photographic or planet heroes, NASA imagery, Mole
   geometry, fake macOS traffic lights, `linear-gradient`, `radial-gradient`,
   `backdrop-filter`, and copy that says space was freed or released.

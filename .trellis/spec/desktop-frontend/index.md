@@ -93,8 +93,9 @@ screenshots.
       metadata; corrupt/unknown bytes are preserved and machine output is
       unaffected.
 - [ ] Dark-only canvas, original brand, per-mode mineral/forest tokens,
-      compact CSS sweep body (still under reduced motion), high contrast, and
-      390/800/1024/1440 layouts pass in both locales. No planet photograph,
+      persistent sidebar workbench, visible page header, card surfaces, compact
+      sidebar sweep-body brand mark (still under reduced motion), high contrast,
+      and 390/800/1024/1440 layouts pass in both locales. No planet photograph,
       five-planet metaphor, or light workbench pane.
 - [ ] Accelerators are collision-free; binary units remain canonical; user data
       truncation preserves complete accessible/copyable text; authority/action
