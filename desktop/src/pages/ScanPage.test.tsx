@@ -49,14 +49,16 @@ describe("ScanPage announcements", () => {
     expect(screen.getByText("项目")).toBeInTheDocument();
     expect(screen.getByText("全局缓存")).toBeInTheDocument();
     expect(screen.getByText("就绪")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "先逐项审核，再移动任何文件。" })).toBeInTheDocument();
     expect(screen.queryByText("Projects")).not.toBeInTheDocument();
     expect(screen.queryByText("Scan")).not.toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
     expect(screen.queryByText("没有扫描结果")).not.toBeInTheDocument();
-    expect(document.querySelector(".sweep-body-hero")).toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
+    expect(document.querySelector(".clean-stage")).toBeInTheDocument();
   });
 
-  it("idle home is a sweep hero with visible scope and Scan, not a light empty heading", () => {
+  it("idle home is a stage card with visible scope and Scan, not a ring hero", () => {
     render(
       <ScanPage activeScan={null} busy={false} options={options} onOptions={noOp} onScan={noOp} onCancel={noOp} />,
     );
@@ -64,17 +66,32 @@ describe("ScanPage announcements", () => {
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Global caches")).toBeInTheDocument();
     expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Review every target before anything moves." })).toBeInTheDocument();
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
-    expect(document.querySelector(".sweep-body-hero")).toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
+    expect(document.querySelector(".clean-stage")).toBeInTheDocument();
+    expect(document.querySelector(".capacity-plaque")).toBeInTheDocument();
   });
 
   it("scanning shows indeterminate progress and the backend message without a percentage", () => {
     render(
       <ScanPage activeScan={activeScan("Scanning controlled project roots", 1)} busy={false} options={options} onOptions={noOp} onScan={noOp} onCancel={noOp} />,
     );
+    expect(screen.getByRole("heading", { name: "Scanning. Targets appear as they are found." })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Scan" })).not.toHaveAttribute("aria-valuenow");
     expect(screen.getByText("Scanning controlled project roots")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Cancel scan" })).toBeInTheDocument();
     expect(screen.queryByText(/%|percent/i)).not.toBeInTheDocument();
+  });
+
+  it("zh-CN scanning uses catalogue copy and an indeterminate progressbar", () => {
+    render(
+      <ScanPage locale="zh-CN" activeScan={activeScan("Scanning controlled project roots", 1)} busy={false} options={options} onOptions={noOp} onScan={noOp} onCancel={noOp} />,
+    );
+    expect(screen.getByRole("heading", { name: "扫描中。发现的目标会即时列出。" })).toBeInTheDocument();
+    expect(screen.getByRole("progressbar", { name: "扫描" })).not.toHaveAttribute("aria-valuenow");
+    expect(screen.getByRole("button", { name: "取消扫描" })).toBeInTheDocument();
+    expect(screen.queryByText(/%|percent/i)).not.toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
   });
 });

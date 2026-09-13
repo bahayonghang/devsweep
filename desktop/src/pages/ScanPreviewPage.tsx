@@ -24,6 +24,23 @@ function capacitySummary(locale: PresentationLanguageTag, preview: ScanPreviewSn
   return parts.join(" · ") || message(locale, "clean.v1.capacity.unknown");
 }
 
+function PreviewGroups({ locale, projects, globals }: {
+  locale: PresentationLanguageTag;
+  projects: ScanPreviewTarget[];
+  globals: ScanPreviewTarget[];
+}) {
+  return <div className="preview-groups">
+    {projects.length > 0 && <section className="preview-group card" aria-labelledby="preview-projects">
+      <header><h3 id="preview-projects">{message(locale, "clean.v1.scope.projects")} <span>{projects.length}</span></h3><p>{ecosystemCounts(projects)}</p></header>
+      <TargetTable locale={locale} mode="preview" targets={projects} />
+    </section>}
+    {globals.length > 0 && <section className="preview-group card" aria-labelledby="preview-globals">
+      <header><h3 id="preview-globals">{message(locale, "clean.v1.scope.global")} <span>{globals.length}</span></h3><p>{ecosystemCounts(globals)}</p></header>
+      <TargetTable locale={locale} mode="preview" targets={globals} />
+    </section>}
+  </div>;
+}
+
 export function ScanPreviewPage(props: {
   locale?: PresentationLanguageTag;
   status: PreviewStatus;
@@ -40,26 +57,28 @@ export function ScanPreviewPage(props: {
   const statusText = props.status === "canceled" || props.status === "failed"
     ? message(locale, "clean.v1.scan.canceled")
     : message(locale, "clean.v1.scan.partial");
-  return <section className="workspace preview-workspace" aria-busy={active || undefined}>
+  const groups = targets.length === 0
+    ? <div className="active-empty">
+        {!active && <h3>{message(locale, "clean.v1.scan.empty")}</h3>}
+        <p>{active ? props.progress?.message ?? message(locale, "clean.v1.status.ready") : message(locale, "clean.v1.review.empty_hint")}</p>
+      </div>
+    : <PreviewGroups locale={locale} projects={projects} globals={globals} />;
+  if (active) {
+    return <section className="card found-so-far" aria-busy="true">
+      <h2>{message(locale, "clean.v1.preview.found_so_far")}</h2>
+      <p>{statusText}</p>
+      {props.preview && <div className="preview-total" aria-label={message(locale, "clean.v1.preview.estimated", { bytes: "" })}><strong>{message(locale, "clean.v1.scan.complete", { count: String(props.preview.totals.target_count) })}</strong><span>{capacitySummary(locale, props.preview)}</span></div>}
+      {groups}
+    </section>;
+  }
+  return <section className="workspace preview-workspace">
     <header className="section-heading preview-heading">
       <div><h2>{message(locale, "clean.v1.action.scan")}</h2><p>{statusText}</p></div>
       <div className="preview-heading-actions">
         {props.preview && <div className="preview-total" aria-label={message(locale, "clean.v1.preview.estimated", { bytes: "" })}><strong>{message(locale, "clean.v1.scan.complete", { count: String(props.preview.totals.target_count) })}</strong><span>{capacitySummary(locale, props.preview)}</span></div>}
-        {!active && props.canReturnToReport && <button className="secondary-button" onClick={props.onReturnToReport}>{message(locale, "clean.v1.action.cancel")}</button>}
+        {props.canReturnToReport && <button className="secondary-button" onClick={props.onReturnToReport}>{message(locale, "clean.v1.action.cancel")}</button>}
       </div>
     </header>
-    {targets.length === 0 ? <div className="active-empty">
-      <h3>{active ? message(locale, "clean.v1.action.scan") : message(locale, "clean.v1.scan.empty")}</h3>
-      <p>{active ? props.progress?.message ?? message(locale, "clean.v1.status.ready") : message(locale, "clean.v1.review.empty_hint")}</p>
-    </div> : <div className="preview-groups">
-      {projects.length > 0 && <section className="preview-group" aria-labelledby="preview-projects">
-        <header><h3 id="preview-projects">{message(locale, "clean.v1.scope.projects")} <span>{projects.length}</span></h3><p>{ecosystemCounts(projects)}</p></header>
-        <TargetTable locale={locale} mode="preview" targets={projects} />
-      </section>}
-      {globals.length > 0 && <section className="preview-group" aria-labelledby="preview-globals">
-        <header><h3 id="preview-globals">{message(locale, "clean.v1.scope.global")} <span>{globals.length}</span></h3><p>{ecosystemCounts(globals)}</p></header>
-        <TargetTable locale={locale} mode="preview" targets={globals} />
-      </section>}
-    </div>}
+    {groups}
   </section>;
 }

@@ -15,6 +15,8 @@ describe("SoftwareWorkbench", () => {
     render(<SoftwareWorkbench bridge={fixtureBridge} coordinator={new OperationCoordinator()} locale="en" />);
     await user.click(screen.getByRole("button", { name: "Refresh inventory" }));
     expect((await screen.findAllByText("Contoso Tools")).length).toBeGreaterThan(0);
+    expect(document.querySelector(".tile-row")).toBeInTheDocument();
+    expect(document.querySelector(".software-inventory.card")).toBeInTheDocument();
     const manual = screen.getByRole("checkbox", { name: /Contoso Tools: MSI uninstall is manual/ });
     expect(manual).toBeDisabled();
     const eligible = screen.getByRole("checkbox", { name: /Contoso Tools: Eligible current-user MSIX/ });

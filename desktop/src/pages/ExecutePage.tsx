@@ -23,7 +23,7 @@ function OutcomeTable({ locale, report }: { locale: PresentationLanguageTag; rep
 export function ExecutePage(props: { locale?: PresentationLanguageTag; report: ExecutionReport; final: boolean; onConfirm: () => void; onReturn: () => void }) {
   const locale = props.locale ?? "en";
   const totals = formatTotals(props.report.estimated_recoverable);
-  return <section className="execute-panel">
+  return <section className="card execute-panel">
     <header className="section-heading"><div><h2>{props.final ? message(locale, "clean.v1.execute.completed") : message(locale, "clean.v1.preview.title")}</h2><p>{message(locale, "clean.v1.preview.selected", { count: String(props.report.selected) })}</p></div><div className="capacity-total"><strong className="display-capacity">{totals}</strong><span>{message(locale, "clean.v1.preview.estimated", { bytes: totals })}</span>{props.final ? <span>{message(locale, "clean.v1.trash.moved")}</span> : null}</div></header>
     <OutcomeTable locale={locale} report={props.report} />
     <div className="digest-line"><span>{message(locale, "clean.v1.preview.digest", { digest: props.report.confirmation_digest })}</span></div>

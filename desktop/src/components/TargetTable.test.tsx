@@ -22,10 +22,10 @@ describe("TargetTable headers", () => {
   it("uses Chinese catalogue headers instead of English Target Category Capacity Risk Evidence", () => {
     render(<TargetTable locale="zh-CN" mode="preview" targets={[target]} />);
     expect(screen.getByRole("columnheader", { name: "目标" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "类别" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "容量" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "风险" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "证据" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "类别" })).not.toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Target" })).not.toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Category" })).not.toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Capacity" })).not.toBeInTheDocument();

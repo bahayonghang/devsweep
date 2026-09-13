@@ -41,30 +41,16 @@
 .software-toolbar label { display: grid; gap: 4px; min-width: min(260px, 100%); }
 .software-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
 
-.software-empty { display: grid; place-content: center; justify-items: center; text-align: center; min-height: 280px; }
-.software-empty h2 { margin: 12px 0 0; }
-.software-empty,
-.software-inventory,
-.software-preview,
-.software-results,
-.software-audit {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
-  padding: 14px;
-}
-
 .software-inventory-header { justify-content: space-between; flex-wrap: wrap; }
-.software-list { display: grid; gap: 8px; list-style: none; margin: 12px 0 0; padding: 0; }
-.software-row { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
-.software-row article { display: grid; gap: 8px; padding: 12px; }
+.software-list { display: grid; gap: 0; list-style: none; margin: 12px 0 0; padding: 0; }
+.software-row { min-width: 0; }
 .software-row-primary { justify-content: space-between; min-width: 0; }
 .software-selection { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .software-selection strong { min-width: 0; }
 .software-source { color: var(--text-muted); white-space: nowrap; }
-.software-row-facts { display: grid; grid-template-columns: minmax(130px, .8fr) minmax(220px, 1.2fr) minmax(180px, 1fr); align-items: start; }
-.software-row-facts .manual { color: var(--warning); font-weight: 650; }
-.software-row-facts .eligible { color: var(--success); font-weight: 650; }
+.software-row-facts { min-width: 0; }
+.software-row-facts .manual, .software-mode .manual { color: var(--warning); font-weight: 650; }
+.software-row-facts .eligible, .software-mode .eligible { color: var(--success); font-weight: 650; }
 .software-row details { border-top: 1px solid var(--border); padding-top: 8px; }
 .software-row dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
 .software-row dd { margin: 0; overflow-wrap: anywhere; user-select: text; }
@@ -110,6 +96,8 @@
   .software-row-primary { align-items: flex-start; flex-direction: column; }
   .software-source { white-space: normal; }
   .software-row-facts { grid-template-columns: 1fr; }
+  .software-mode .tile-row { grid-template-columns: auto auto minmax(0, 1fr); }
+  .software-mode .tile-row-actions { grid-column: 1 / -1; }
   .software-summary-bar { align-items: stretch; flex-direction: column; }
   .software-summary-actions > * { flex: 1; }
 }

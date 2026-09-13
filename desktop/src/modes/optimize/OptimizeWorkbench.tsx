@@ -11,7 +11,8 @@ import type {
   MaintenanceCatalogueEntryV1,
   MaintenanceExecutionOutcome,
 } from "../../api/types.gen";
-import { AccessibleUserData, SweepBody } from "../../app-shell/AppShell";
+import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { DestinationGlyph, type GlyphName } from "../../app-shell/glyphs";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
 import { OperationCoordinator } from "../../state/operation-coordinator";
@@ -76,6 +77,14 @@ function riskKey(actionClass: MaintenanceActionClass): MessageKey {
 
 function outcomeLabel(locale: PresentationLanguageTag, outcome: MaintenanceExecutionOutcome): string {
   return message(locale, `optimize.v1.outcome.${outcome}` as MessageKey);
+}
+
+function actionGlyph(actionClass: MaintenanceActionClass): GlyphName {
+  switch (actionClass) {
+    case "execute": return "optimize";
+    case "settings_handoff": return "language";
+    case "guidance": return "help";
+  }
 }
 
 function summaryText(
@@ -234,10 +243,13 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
   const reportOutcome = state.report?.outcomes[0]?.outcome ?? null;
 
   return <div className="optimize-mode" data-status={state.status}>
+    <PageHeaderSlot>
+      {statusText ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null}
+    </PageHeaderSlot>
     <section className="optimize-toolbar" aria-label={message(locale, "command.optimize")}>
-      <button type="button" className="primary-button" disabled={active} onClick={refreshCatalogue}>
+      {state.entries ? <button type="button" className="primary-button" disabled={active} onClick={refreshCatalogue}>
         {message(locale, "optimize.v1.action.refresh")}
-      </button>
+      </button> : null}
       <button type="button" className="secondary-button" disabled={active} onClick={refreshAudit}>
         {message(locale, "optimize.v1.action.audit")}
       </button>
@@ -249,11 +261,14 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
 
     {state.error ? <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
 
-    {!state.entries ? <section className="optimize-empty">
-      <SweepBody size="hero" />
+    {!state.entries ? <section className="card mode-empty">
+      <span className="glyph-tile"><DestinationGlyph name="optimize" /></span>
       <h2>{message(locale, "optimize.v1.state.empty.title")}</h2>
       <p>{message(locale, "optimize.v1.state.empty.detail")}</p>
-    </section> : <section className="optimize-catalogue" aria-busy={active}>
+      <button type="button" className="primary-button" disabled={active} onClick={refreshCatalogue}>
+        {message(locale, "optimize.v1.action.refresh")}
+      </button>
+    </section> : <section className="card optimize-catalogue" aria-busy={active}>
       <header className="optimize-catalogue-header">
         <p>{message(locale, "optimize.v1.list.summary", {
           count: String(state.entries.length),
@@ -264,55 +279,56 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
         {state.entries.map((entry) => {
           const title = message(locale, titleKey(entry.id));
           const badge = message(locale, badgeKey(entry.action_class));
-          return <li key={entry.id} className="optimize-row" data-action-class={entry.action_class} data-selected={state.selectedId === entry.id}>
-            <article>
-              <div className="optimize-row-primary">
-                <label className="optimize-selection">
-                  <input
-                    type="radio"
-                    name="optimize-selection"
-                    checked={state.selectedId === entry.id}
-                    disabled={active}
-                    aria-label={`${entry.id}: ${badge}`}
-                    onChange={() => dispatch({ type: "selection_changed", catalogueId: entry.id })}
-                  />
-                  <strong><AccessibleUserData value={entry.id} /></strong>
-                </label>
-                <span className={`optimize-badge optimize-badge-${entry.action_class}`}>{badge}</span>
-              </div>
-              <div className="optimize-row-facts">
-                <span>{title}</span>
-                {entry.action_class === "guidance" ? <span className="optimize-no-run">{message(locale, "optimize.v1.guidance.no_run")}</span> : null}
-                {entry.build_floor !== null ? <span>{message(locale, "optimize.v1.predicate.settings", { floor: String(entry.build_floor) })}</span> : null}
-              </div>
-              <details open={state.expandedId === entry.id} onToggle={(event) => dispatch({ type: "expanded_changed", catalogueId: event.currentTarget.open ? entry.id : null })}>
-                <summary>{message(locale, "optimize.v1.detail.capability")}</summary>
-                <dl>
-                  <dt>{message(locale, "optimize.v1.detail.identity")}</dt><dd><AccessibleUserData value={entry.id} /></dd>
-                  <dt>{message(locale, badgeKey(entry.action_class))}</dt><dd>{message(locale, effectKey(entry.action_class))}</dd>
-                  <dt>{message(locale, "optimize.v1.detail.capability")}</dt><dd>{message(locale, riskKey(entry.action_class))}</dd>
-                </dl>
-              </details>
-            </article>
+          return <li key={entry.id} className="tile-row optimize-row" data-action-class={entry.action_class} data-selected={state.selectedId === entry.id}>
+            <label className="optimize-selection">
+              <input
+                type="radio"
+                name="optimize-selection"
+                checked={state.selectedId === entry.id}
+                disabled={active}
+                aria-label={`${entry.id}: ${badge}`}
+                onChange={() => dispatch({ type: "selection_changed", catalogueId: entry.id })}
+              />
+            </label>
+            <span className="glyph-tile"><DestinationGlyph name={actionGlyph(entry.action_class)} /></span>
+            <div className="tile-row-text">
+              <strong><AccessibleUserData value={entry.id} /></strong>
+              <span className="secondary optimize-row-facts">
+                {title}
+                {entry.build_floor !== null ? ` · ${message(locale, "optimize.v1.predicate.settings", { floor: String(entry.build_floor) })}` : ""}
+                {entry.action_class === "guidance" ? <> · <span className="optimize-no-run">{message(locale, "optimize.v1.guidance.no_run")}</span></> : null}
+              </span>
+            </div>
+            <div className="tile-row-actions">
+              <span className={`optimize-badge optimize-badge-${entry.action_class}`}>{badge}</span>
+            </div>
+            <details open={state.expandedId === entry.id} onToggle={(event) => dispatch({ type: "expanded_changed", catalogueId: event.currentTarget.open ? entry.id : null })}>
+              <summary>{message(locale, "optimize.v1.detail.capability")}</summary>
+              <dl>
+                <dt>{message(locale, "optimize.v1.detail.identity")}</dt><dd><AccessibleUserData value={entry.id} /></dd>
+                <dt>{message(locale, badgeKey(entry.action_class))}</dt><dd>{message(locale, effectKey(entry.action_class))}</dd>
+                <dt>{message(locale, "optimize.v1.detail.capability")}</dt><dd>{message(locale, riskKey(entry.action_class))}</dd>
+              </dl>
+            </details>
           </li>;
         })}
       </ul>
     </section>}
 
-    {state.preview ? <section className="optimize-preview" aria-labelledby="optimize-preview-title">
+    {state.preview ? <section className="card optimize-preview" aria-labelledby="optimize-preview-title">
       <h2 id="optimize-preview-title">{message(locale, "optimize.v1.action.preview")}</h2>
       <p className="optimize-handoff-note">{message(locale, "optimize.v1.preview.note")}</p>
       <p><code>{state.preview.digest}</code></p>
     </section> : null}
 
-    {state.report ? <section className="optimize-results" aria-live="polite">
+    {state.report ? <section className="card optimize-results" aria-live="polite">
       <h2>{state.status === "unknown" ? message(locale, "optimize.v1.outcome.unknown_after_dispatch") : message(locale, "optimize.v1.results.title")}</h2>
       <ul>{state.report.outcomes.map((item) => <li key={item.operation_id} data-outcome={item.outcome}>
         <AccessibleUserData value={item.catalogue_id} /> — {outcomeLabel(locale, item.outcome)}
       </li>)}</ul>
     </section> : null}
 
-    {state.audit ? <section className="optimize-audit" aria-live="polite">
+    {state.audit ? <section className="card optimize-audit" aria-live="polite">
       <p>{message(locale, "optimize.v1.audit.summary", { records: String(state.audit.records.length), recovered: String(state.audit.recovered.length) })}</p>
       <details><summary>{message(locale, "optimize.v1.audit.transitions")}</summary>
         <ol>{state.audit.records.map((record, index) => <li key={`${record.operation_id}-${index}`}><AccessibleUserData value={`${record.operation_id} · ${record.status_code}`} /></li>)}</ol>

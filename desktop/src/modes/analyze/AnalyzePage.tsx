@@ -2,7 +2,8 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useS
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type { AnalyzeNodeV1, CommandError, DesktopAnalyzeResult } from "../../api/types.gen";
-import { AccessibleUserData, SweepBody } from "../../app-shell/AppShell";
+import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { DestinationGlyph } from "../../app-shell/glyphs";
 import { formatBinaryBytes, message, type PresentationLanguageTag } from "../../i18n";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { createAnalyzeIndex, pageForNode, selectBreadcrumbs, selectDirectory, selectPage, selectVisibleChildren, type AnalyzeSort } from "./selectors";
@@ -237,6 +238,9 @@ export function AnalyzePage({
       : null;
 
   return <div className="analyze-mode" data-status={state.status}>
+    <PageHeaderSlot>
+      {statusCopy ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusCopy}</span> : null}
+    </PageHeaderSlot>
     <section className="analyze-toolbar" aria-label={message(locale, "command.analyze")}>
       <label className="analyze-root-input">
         <span>{message(locale, "analyze.v1.path.label")}</span>
@@ -244,7 +248,9 @@ export function AnalyzePage({
       </label>
       {["loading", "canceling"].includes(state.status)
         ? <button type="button" className="secondary-button" disabled={state.status === "canceling"} onClick={() => void cancelAnalysis()}>{message(locale, "analyze.v1.action.cancel")}</button>
-        : <button type="button" className="primary-button" disabled={root.trim().length === 0} onClick={() => void runAnalysis()}>{message(locale, "analyze.v1.action.start")}</button>}
+        : state.snapshot
+          ? <button type="button" className="primary-button" disabled={root.trim().length === 0} onClick={() => void runAnalysis()}>{message(locale, "analyze.v1.action.start")}</button>
+          : null}
       {statusCopy ? <p className="analyze-live-status" role="status" aria-live="polite">{statusCopy}</p> : null}
     </section>
 
@@ -253,12 +259,13 @@ export function AnalyzePage({
       <button type="button" onClick={() => dispatch({ type: "error_dismissed" })}>×</button>
     </div> : null}
 
-    {!state.snapshot ? <section className="analyze-empty">
-      <SweepBody size="hero" />
+    {!state.snapshot ? <section className="card mode-empty">
+      <span className="glyph-tile"><DestinationGlyph name="analyze" /></span>
       <h2>{message(locale, "analyze.v1.state.empty.title")}</h2>
       <p>{message(locale, "analyze.v1.state.empty.detail")}</p>
+      <button type="button" className="primary-button" disabled={["loading", "canceling"].includes(state.status) || root.trim().length === 0} onClick={() => void runAnalysis()}>{message(locale, "analyze.v1.action.start")}</button>
     </section> : <div className="analyze-workspace">
-      <header className="analyze-summary">
+      <header className="card analyze-summary">
         <div>
           <strong>{state.status === "complete"
             ? message(locale, "analyze.v1.scan.complete", { count: String(state.snapshot.nodes.length), bytes: formatBinaryBytes(state.snapshot.nodes[0]?.bytes ?? 0) })
@@ -275,7 +282,7 @@ export function AnalyzePage({
         </nav>
       </header>
 
-      <section className="analyze-controls">
+      <section className="card analyze-controls">
         <label>{message(locale, "analyze.v1.search.label")}<input value={state.query} onChange={(event) => dispatch({ type: "query_changed", query: event.target.value })} /></label>
         <label>{message(locale, "analyze.v1.sort.label")}<select value={state.sort} onChange={(event) => dispatch({ type: "sort_changed", sort: event.target.value as AnalyzeSort })}>
           <option value="size_desc">{message(locale, "analyze.v1.sort.size_desc")}</option>
@@ -287,7 +294,7 @@ export function AnalyzePage({
       </section>
 
       <div className="analyze-columns">
-        <section className="analyze-treemap-panel" aria-labelledby="analyze-treemap-title">
+        <section className="card analyze-treemap-panel" aria-labelledby="analyze-treemap-title">
           <header><h2 id="analyze-treemap-title">{message(locale, "analyze.v1.treemap.title")}</h2><p>{message(locale, "analyze.v1.treemap.description")}</p></header>
           <div className="analyze-treemap-host" ref={treemapHost}>
             <svg className="analyze-treemap" viewBox={`0 0 ${bounds.width} ${bounds.height}`} role="group" aria-labelledby="analyze-treemap-title">
@@ -310,7 +317,7 @@ export function AnalyzePage({
           </div>
         </section>
 
-        <section className="analyze-list-panel" aria-labelledby="analyze-list-title">
+        <section className="card analyze-list-panel" aria-labelledby="analyze-list-title">
           <header><h2 id="analyze-list-title">{message(locale, "analyze.v1.list.title")}</h2><p id="analyze-list-instruction">{message(locale, "analyze.v1.list.instruction")}</p></header>
           <select
             ref={listbox}

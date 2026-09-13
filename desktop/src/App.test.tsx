@@ -106,17 +106,25 @@ describe("desktop workflow", () => {
     expect(screen.queryByText("Search")).not.toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
     expect(screen.queryByText("没有扫描结果")).not.toBeInTheDocument();
-    expect(document.querySelector(".sweep-body-hero")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "先逐项审核，再移动任何文件。" })).toBeInTheDocument();
+    expect(screen.queryByText("Found so far")).not.toBeInTheDocument();
+    expect(screen.queryByText("目前已发现")).not.toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
+    expect(document.querySelector(".clean-stage")).toBeInTheDocument();
   });
 
-  it("idle Clean home is a sweep hero with visible scope, not a light empty heading", async () => {
+  it("idle Clean home is a stage card with visible scope, not a ring hero", async () => {
     render(<App bridge={fakeBridge()} presentationSettings={fakePresentationSettings()} />);
     expect(await screen.findByRole("button", { name: "Scan" })).toBeInTheDocument();
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Global caches")).toBeInTheDocument();
     expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Review every target before anything moves." })).toBeInTheDocument();
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
-    expect(document.querySelector(".sweep-body-hero")).toBeInTheDocument();
+    expect(screen.queryByText("Found so far")).not.toBeInTheDocument();
+    expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
+    expect(document.querySelector(".clean-stage")).toBeInTheDocument();
+    expect(document.querySelector(".capacity-plaque")).toBeInTheDocument();
   });
 
   it("keeps the shell absent while presentation settings are loading", () => {
@@ -411,6 +419,7 @@ describe("desktop workflow", () => {
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     expect(screen.getByText("Scan completed with partial evidence. Totals are not exact.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Scan" })).not.toHaveAttribute("aria-valuenow");
     expect(screen.queryByRole("checkbox", { name: /Select node.node_modules/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Review dry run" })).not.toBeInTheDocument();
@@ -433,7 +442,8 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings()} />);
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
-    expect(screen.getAllByRole("heading", { name: "Scan" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "Scanning. Targets appear as they are found." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
     const scanId = scanStart.mock.calls[0][0] as string;
     act(() => finish({ type: "completed", scan_id: scanId, report: { ...scanReport, plan: { ...scanReport.plan, targets: [] } } }));
@@ -514,6 +524,7 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings()} />);
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
+    expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Global caches 1" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Scanning controlled global providers");
@@ -532,6 +543,10 @@ describe("desktop workflow", () => {
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
+    expect(screen.getByText("Build artifacts")).toBeInTheDocument();
+    expect(screen.getByText("Package caches")).toBeInTheDocument();
+    expect(screen.queryByText("build_artifacts")).not.toBeInTheDocument();
+    expect(screen.queryByText("dangerous")).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /C:\/Users\/dev\/\.cargo/ })).toBeDisabled();
     expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Select all executable targets" }).indeterminate).toBe(true);
     await user.click(screen.getByRole("button", { name: "Review dry run" }));

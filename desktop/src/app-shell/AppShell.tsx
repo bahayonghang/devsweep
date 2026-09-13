@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import iconUrl from "../assets/devsweep-icon-master.png";
 import {
   message,
@@ -7,6 +7,7 @@ import {
   type PresentationLanguageTag,
 } from "../i18n";
 import type { ShellRouteCoordinator } from "../lifecycle";
+import { DestinationGlyph, type GlyphName } from "./glyphs";
 
 export const MODE_IDS = ["clean", "software", "optimize", "analyze", "status"] as const;
 export type ModeId = typeof MODE_IDS[number];
@@ -27,6 +28,36 @@ const SUPPORTING_MESSAGE_KEYS: Readonly<Record<SupportingDestinationId, MessageK
   rules: "shell.v1.supporting.rules",
   history: "shell.v1.supporting.history",
 };
+
+const MODE_SUBTITLE_KEYS: Readonly<Record<ModeId, MessageKey>> = {
+  clean: "shell.v1.subtitle.clean",
+  software: "shell.v1.subtitle.software",
+  optimize: "shell.v1.subtitle.optimize",
+  analyze: "shell.v1.subtitle.analyze",
+  status: "shell.v1.subtitle.status",
+};
+
+const SUPPORTING_SUBTITLE_KEYS: Readonly<Record<SupportingDestinationId, MessageKey>> = {
+  protection: "shell.v1.subtitle.protection",
+  rules: "shell.v1.subtitle.rules",
+  history: "shell.v1.subtitle.history",
+};
+
+const PageHeaderSlotContext = createContext<(node: ReactNode) => void>(() => undefined);
+
+/** Mode pages render a chip into the shell page-header slot. */
+export function PageHeaderSlot({ children }: { readonly children?: ReactNode }) {
+  const setSlot = useContext(PageHeaderSlotContext);
+  useLayoutEffect(() => {
+    setSlot(children ?? null);
+    return () => setSlot(null);
+  }, [children, setSlot]);
+  return null;
+}
+
+function DestinationMark({ name }: { readonly name: GlyphName }) {
+  return <span className="glyph-tile"><DestinationGlyph name={name} /></span>;
+}
 
 export interface ModeRegistration {
   readonly id: ModeId;
@@ -82,9 +113,9 @@ export function AccessibleUserData({ value }: { readonly value: string }) {
   return <span className="user-data-ellipsis" title={value} aria-label={value}>{value}</span>;
 }
 
-/** CSS-native sweep body. Non-informational; still under reduced motion. */
-export function SweepBody({ size = "shell" }: { readonly size?: "shell" | "hero" }) {
-  return <span className={size === "hero" ? "sweep-body sweep-body-hero" : "sweep-body"} aria-hidden="true">
+/** CSS-native sweep body. Non-informational; still under reduced motion. Compact brand mark only. */
+export function SweepBody() {
+  return <span className="sweep-body" aria-hidden="true">
     <span className="sweep-body-ring" />
     <span className="sweep-body-core" />
   </span>;
@@ -138,6 +169,7 @@ export function AppShell({
   const [transitioning, setTransitioning] = useState(false);
   const [routeError, setRouteError] = useState(false);
   const [focusCommitRequest, setFocusCommitRequest] = useState(0);
+  const [headerSlot, setHeaderSlot] = useState<ReactNode>(null);
   const contentHeading = useRef<HTMLHeadingElement>(null);
   const navButtons = useRef(new Map<ModeId, HTMLButtonElement>());
   const supportingButtons = useRef(new Map<SupportingDestinationId, HTMLButtonElement>());
@@ -294,16 +326,29 @@ export function AppShell({
     : activeSupporting
       ? message(locale, SUPPORTING_MESSAGE_KEYS[activeSupporting.id])
       : message(locale, "shell.v1.settings.title");
-  const headingId = `route-heading-${activeRoute.replace(":", "-")}`;
+  const activeSubtitle = activeRegistration
+    ? message(locale, MODE_SUBTITLE_KEYS[activeRegistration.id])
+    : activeSupporting
+      ? message(locale, SUPPORTING_SUBTITLE_KEYS[activeSupporting.id])
+      : message(locale, "shell.v1.subtitle.settings");
+  const headingId = "mode-heading";
   const canvasMode = activeMode ?? "shell";
-  return <div className="app-shell" data-locale={locale} data-mode={canvasMode}>
-    <header className="shell-header">
-      <div className="shell-header-balance" aria-hidden="true" />
-      <div className="mode-capsule">
-        <img src={iconUrl} alt="" aria-hidden="true" className="shell-brand-icon" />
-        <SweepBody />
-        <span className="sr-only">{message(locale, "app.title")}</span>
-        <nav className="mode-navigation" role="tablist" aria-label={`${message(locale, "app.title")} ${message(locale, "shell.v1.workbench")}`}>
+  const productTitle = message(locale, "app.title");
+  return <PageHeaderSlotContext.Provider value={setHeaderSlot}>
+    <div className="app-shell" data-locale={locale} data-mode={canvasMode}>
+      <aside className="shell-sidebar" aria-label={productTitle}>
+        <div className="shell-brand">
+          <SweepBody />
+          <img src={iconUrl} alt="" aria-hidden="true" className="shell-brand-icon" />
+          <span className="shell-brand-name">{productTitle}</span>
+        </div>
+        <p className="shell-section-label">{message(locale, "shell.v1.section.modes")}</p>
+        <nav
+          className="mode-navigation"
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label={`${productTitle} ${message(locale, "shell.v1.workbench")}`}
+        >
           {modes.map((mode) => {
             const key = MODE_MESSAGE_KEYS[mode.id];
             const accelerator = accelerators.get(key);
@@ -312,6 +357,7 @@ export function AppShell({
               key={mode.id}
               ref={(element) => { if (element) navButtons.current.set(mode.id, element); else navButtons.current.delete(mode.id); }}
               type="button"
+              className="mode-tab"
               role="tab"
               aria-selected={activeRoute === `mode:${mode.id}`}
               aria-controls="mode-panel"
@@ -324,74 +370,81 @@ export function AppShell({
                 { kind: "activator", element: event.currentTarget },
               )}
               onKeyDown={(event) => moveFocus(event, mode.id)}
-            >{label}</button>;
+            ><DestinationMark name={mode.id} /><span className="mode-tab-label">{label}</span></button>;
           })}
         </nav>
-      </div>
-      <div className="shell-support">
-        <details className="shell-more">
-          <summary>{message(locale, "shell.v1.more")}</summary>
-          <div className="shell-more-panel">
-            <nav className="support-navigation" aria-label={message(locale, "shell.v1.supporting")}>
-              {supporting.map((destination) => <button
-                key={destination.id}
-                ref={(element) => {
-                  if (element) supportingButtons.current.set(destination.id, element);
-                  else supportingButtons.current.delete(destination.id);
-                }}
-                type="button"
-                aria-current={activeRoute === `support:${destination.id}` ? "page" : undefined}
-                disabled={transitioning}
-                onClick={(event) => void navigate(
-                  `support:${destination.id}`,
-                  "push",
-                  { kind: "activator", element: event.currentTarget },
-                )}
-              >{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</button>)}
-              <button
-                ref={settingsButton}
-                type="button"
-                aria-current={activeRoute === "settings" ? "page" : undefined}
-                disabled={transitioning}
-                onClick={(event) => void navigate(
-                  "settings",
-                  "push",
-                  { kind: "activator", element: event.currentTarget },
-                )}
-              >{message(locale, "shell.v1.settings.action")}</button>
-            </nav>
-            <a href="https://github.com/bahayonghang/devsweep#readme" target="_blank" rel="noreferrer">{message(locale, "shell.v1.help")}</a>
+        {supporting.length > 0 && <>
+          <p className="shell-section-label">{message(locale, "shell.v1.supporting")}</p>
+          <nav className="support-navigation" aria-label={message(locale, "shell.v1.supporting")}>
+            {supporting.map((destination) => <button
+              key={destination.id}
+              ref={(element) => {
+                if (element) supportingButtons.current.set(destination.id, element);
+                else supportingButtons.current.delete(destination.id);
+              }}
+              type="button"
+              className="support-link"
+              aria-current={activeRoute === `support:${destination.id}` ? "page" : undefined}
+              disabled={transitioning}
+              onClick={(event) => void navigate(
+                `support:${destination.id}`,
+                "push",
+                { kind: "activator", element: event.currentTarget },
+              )}
+            ><DestinationMark name={destination.id} /><span>{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</span></button>)}
+          </nav>
+        </>}
+        <div className="shell-footer">
+          <button
+            ref={settingsButton}
+            type="button"
+            aria-current={activeRoute === "settings" ? "page" : undefined}
+            disabled={transitioning}
+            onClick={(event) => void navigate(
+              "settings",
+              "push",
+              { kind: "activator", element: event.currentTarget },
+            )}
+          ><DestinationMark name="language" /><span>{message(locale, "shell.v1.settings.action")}</span></button>
+          <a href="https://github.com/bahayonghang/devsweep#readme" target="_blank" rel="noreferrer">
+            <DestinationMark name="help" /><span>{message(locale, "shell.v1.help")}</span>
+          </a>
+        </div>
+      </aside>
+      <main id="mode-workbench" className="mode-workbench">
+        <header className="page-header">
+          <div className="page-header-text">
+            <h1 id={headingId} tabIndex={-1} ref={contentHeading}>{activeLabel}</h1>
+            <p className="page-subtitle">{activeSubtitle}</p>
           </div>
-        </details>
-      </div>
-    </header>
-    {localeSaving && <p className="persistence-warning" role="status">{message(locale, "shell.v1.persistence.saving")}</p>}
-    {persistenceError && <p className="persistence-warning" role="alert">{message(locale, "shell.v1.persistence.unavailable")}</p>}
-    {routeError && <div className="persistence-warning" role="alert">
-      <span>{message(locale, "shell.v1.route.error")}</span>{" "}
-      <button type="button" onClick={() => setRouteError(false)}>{message(locale, "shell.v1.route.dismiss")}</button>
-    </div>}
-    <main id="mode-workbench" className="mode-workbench">
-      <section id="mode-panel" className="mode-panel" role={activeRegistration ? "tabpanel" : undefined} aria-labelledby={headingId}>
-        <h1 id={headingId} className="sr-only" tabIndex={-1} ref={contentHeading}>{activeLabel}</h1>
-        {activeRegistration?.render()}
-        {activeSupporting?.render()}
-        {activeRoute === "settings" && <div className="settings-panel">
-          <label>
-            <span>{message(locale, "shell.v1.settings.action")}</span>
-            <select
-              aria-label={message(locale, "shell.v1.settings.action")}
-              value={locale}
-              disabled={localeSaving}
-              aria-busy={localeSaving}
-              onChange={(event) => void onLocaleChange(event.target.value as PresentationLanguageTag)}
-            >
-              <option value="en">{message(locale, "shell.v1.settings.option.en")}</option>
-              <option value="zh-CN">{message(locale, "shell.v1.settings.option.zh_cn")}</option>
-            </select>
-          </label>
+          <div className="page-header-slot">{headerSlot}</div>
+        </header>
+        {localeSaving && <p className="persistence-warning" role="status">{message(locale, "shell.v1.persistence.saving")}</p>}
+        {persistenceError && <p className="persistence-warning" role="alert">{message(locale, "shell.v1.persistence.unavailable")}</p>}
+        {routeError && <div className="persistence-warning" role="alert">
+          <span>{message(locale, "shell.v1.route.error")}</span>{" "}
+          <button type="button" onClick={() => setRouteError(false)}>{message(locale, "shell.v1.route.dismiss")}</button>
         </div>}
-      </section>
-    </main>
-  </div>;
+        <section id="mode-panel" className="mode-panel" role={activeRegistration ? "tabpanel" : undefined} aria-labelledby={headingId}>
+          {activeRegistration?.render()}
+          {activeSupporting?.render()}
+          {activeRoute === "settings" && <div className="settings-panel">
+            <label>
+              <span>{message(locale, "shell.v1.settings.action")}</span>
+              <select
+                aria-label={message(locale, "shell.v1.settings.action")}
+                value={locale}
+                disabled={localeSaving}
+                aria-busy={localeSaving}
+                onChange={(event) => void onLocaleChange(event.target.value as PresentationLanguageTag)}
+              >
+                <option value="en">{message(locale, "shell.v1.settings.option.en")}</option>
+                <option value="zh-CN">{message(locale, "shell.v1.settings.option.zh_cn")}</option>
+              </select>
+            </label>
+          </div>}
+        </section>
+      </main>
+    </div>
+  </PageHeaderSlotContext.Provider>;
 }

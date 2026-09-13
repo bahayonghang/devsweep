@@ -28,6 +28,13 @@ another third-party cleanup tool:
 Audit-remediation work under `.trellis/tasks/` is derived from DevSweep's own
 audit reports and invariant descriptions.
 
+## PureMac
+
+DevSweep reviewed PureMac (`https://github.com/momenbasel/PureMac`) as an
+MIT-licensed reference for sidebar workbench layout topology and interaction
+ideas. DevSweep did not copy PureMac source, strings, screenshots, SF Symbols,
+or hex values.
+
 ## Future review
 
 If a future change introduces material derived from a GPL-licensed work, stop

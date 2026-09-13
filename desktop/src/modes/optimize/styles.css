@@ -31,23 +31,9 @@
 .optimize-toolbar { flex-wrap: wrap; }
 .optimize-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
 
-.optimize-empty { display: grid; place-content: center; justify-items: center; text-align: center; min-height: 280px; }
-.optimize-empty h2 { margin: 12px 0 0; }
-.optimize-empty,
-.optimize-catalogue,
-.optimize-preview,
-.optimize-results,
-.optimize-audit {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
-  padding: 14px;
-}
-
 .optimize-catalogue-header { justify-content: space-between; flex-wrap: wrap; }
-.optimize-list { display: grid; gap: 8px; list-style: none; margin: 12px 0 0; padding: 0; }
-.optimize-row { border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
-.optimize-row article { display: grid; gap: 8px; padding: 12px; }
+.optimize-list { display: grid; gap: 0; list-style: none; margin: 12px 0 0; padding: 0; }
+.optimize-row { min-width: 0; }
 .optimize-row-primary { justify-content: space-between; min-width: 0; }
 .optimize-selection { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .optimize-selection strong { min-width: 0; }
@@ -55,7 +41,7 @@
 .optimize-badge-execute { color: var(--success); }
 .optimize-badge-settings_handoff { color: var(--warning); }
 .optimize-badge-guidance { color: var(--text-muted); }
-.optimize-row-facts { display: grid; grid-template-columns: minmax(160px, 1.1fr) minmax(140px, 1fr) minmax(180px, 1fr); align-items: start; }
+.optimize-row-facts { min-width: 0; }
 .optimize-no-run { color: var(--warning); font-weight: 650; }
 .optimize-row details { border-top: 1px solid var(--border); padding-top: 8px; }
 .optimize-row dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
@@ -108,6 +94,8 @@
   .optimize-row-primary { align-items: flex-start; flex-direction: column; }
   .optimize-badge { white-space: normal; }
   .optimize-row-facts { grid-template-columns: 1fr; }
+  .optimize-mode .tile-row { grid-template-columns: auto auto minmax(0, 1fr); }
+  .optimize-mode .tile-row-actions { grid-column: 1 / -1; }
   .optimize-summary-bar { align-items: stretch; flex-direction: column; }
   .optimize-summary-actions > * { flex: 1; }
 }

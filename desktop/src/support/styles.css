@@ -10,6 +10,7 @@
   min-height: 0;
 }
 .support-page h1, .support-page h2 { margin: 0; }
+.support-page .card { display: grid; gap: 12px; }
 .support-page table { width: 100%; border-collapse: collapse; }
 .support-page th, .support-page td { text-align: left; padding: 8px; border-bottom: 1px solid var(--shell-border, #385044); }
 .support-page label { display: grid; gap: 4px; max-width: 480px; }

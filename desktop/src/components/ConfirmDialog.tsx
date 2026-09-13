@@ -13,7 +13,7 @@ export function ConfirmDialog(props: {
     if (props.open && !dialog.open) dialog.showModal();
     if (!props.open && dialog.open) dialog.close();
   }, [props.open]);
-  return <dialog ref={ref} aria-labelledby="confirm-cleanup-title" aria-describedby="confirm-cleanup-description" onCancel={(event) => { event.preventDefault(); props.onCancel(); }}>
+  return <dialog ref={ref} className="card" aria-labelledby="confirm-cleanup-title" aria-describedby="confirm-cleanup-description" onCancel={(event) => { event.preventDefault(); props.onCancel(); }}>
     <form method="dialog" onSubmit={(event) => event.preventDefault()}>
       <h2 id="confirm-cleanup-title">{message(locale, "clean.v1.confirm.title")}</h2>
       <p id="confirm-cleanup-description">{message(locale, "clean.v1.trash.moved")}</p>

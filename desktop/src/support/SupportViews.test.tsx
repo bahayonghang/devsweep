@@ -23,7 +23,7 @@ describe("support views", () => {
       protectionList: vi.fn().mockResolvedValue(["C:/keep"]),
       protectionAdd,
     })} locale="en" />);
-    expect(await screen.findByRole("heading", { name: "Protection" })).toBeInTheDocument();
+    expect(await screen.findByText("Protected paths: 1.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Add path"), "C:/other");
     await user.click(screen.getByRole("button", { name: "Add path" }));
     expect(await screen.findByRole("heading", { name: /Add this exact path/ })).toBeInTheDocument();
@@ -34,7 +34,6 @@ describe("support views", () => {
     render(<ProtectionPage bridge={bridge({
       protectionList: vi.fn().mockRejectedValue({ code: "protection_store_unavailable", message: "corrupt" }),
     })} locale="zh-CN" />);
-    expect(await screen.findByRole("heading", { name: "保护" })).toBeInTheDocument();
     expect(await screen.findByText(/保护存储不可用/)).toBeInTheDocument();
   });
 
@@ -90,7 +89,6 @@ describe("support views", () => {
     render(<HistoryPage bridge={bridge({
       historyList: vi.fn().mockResolvedValue({ operations: [], stores: [] }),
     })} locale="zh-CN" />);
-    expect(await screen.findByRole("heading", { name: "历史" })).toBeInTheDocument();
     expect(await screen.findByText(/历史仅供检查/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /执行|重放|execute|replay/i })).not.toBeInTheDocument();
   });

@@ -8,7 +8,8 @@ import type {
   StatusEventV1,
   StatusSnapshotV1,
 } from "../../api/types.gen";
-import { AccessibleUserData } from "../../app-shell/AppShell";
+import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { DestinationGlyph, type GlyphName } from "../../app-shell/glyphs";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { formatBytes } from "../../components/format";
 import { message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
@@ -137,6 +138,34 @@ function chartSegments(points: readonly ChartPoint[], present: (point: ChartPoin
   return segments;
 }
 
+function metricGlyph(family: "cpu" | "memory" | "power" | "volume" | "network"): GlyphName {
+  switch (family) {
+    case "cpu": return "status";
+    case "memory": return "package_cache";
+    case "power": return "tool_cache";
+    case "volume": return "dependency_directory";
+    case "network": return "node";
+  }
+}
+
+function StatusMetricCard({
+  family,
+  title,
+  value,
+}: {
+  readonly family: "cpu" | "memory" | "power" | "volume" | "network";
+  readonly title?: string;
+  readonly value: string;
+}) {
+  return <article className="card status-card">
+    <span className="glyph-tile"><DestinationGlyph name={metricGlyph(family)} /></span>
+    <div>
+      {title ? <h3>{title}</h3> : null}
+      <p><AccessibleUserData value={value} /></p>
+    </div>
+  </article>;
+}
+
 function StatusChart({
   locale,
   labelKey,
@@ -257,17 +286,25 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
     : state.status === "live" ? message(locale, "status.v1.state.live")
       : state.status === "canceling" ? message(locale, "status.v1.state.canceling")
         : state.status === "failed" ? message(locale, "status.v1.state.failed")
-          : null;
+          : state.status === "ready" ? message(locale, "status.v1.state.ready")
+            : null;
+  const chipTone = state.status === "failed" ? "status-chip-danger"
+    : state.status === "live" || state.status === "ready" ? "status-chip-ok"
+      : state.status === "canceling" ? "status-chip-warning"
+        : "";
   const processes = sortedProcesses(state);
   const processGroup = state.snapshot ? availableValue(state.snapshot.processes) : null;
   const decodeError = typeof state.error === "string" ? state.error : null;
   const commandErr = state.error && typeof state.error !== "string" ? state.error : null;
 
   return <div className="status-mode" data-status={state.status}>
+    <PageHeaderSlot>
+      {statusText ? <span className={`status-chip ${chipTone}`.trim()}><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null}
+    </PageHeaderSlot>
     <section className="status-toolbar" aria-label={message(locale, "command.status")}>
-      <button type="button" className="primary-button" disabled={active} onClick={captureSnapshot}>
+      {state.snapshot ? <button type="button" className="primary-button" disabled={active} onClick={captureSnapshot}>
         {message(locale, "status.v1.action.snapshot")}
-      </button>
+      </button> : null}
       {live
         ? <button type="button" className="danger-button" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>
             {message(locale, "status.v1.action.live.stop")}
@@ -300,26 +337,30 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
       <button type="button" className="icon-button" onClick={() => dispatch({ type: "error_dismissed" })} aria-label="Dismiss error">×</button>
     </div> : null}
 
-    {!state.snapshot ? <section className="status-capability">
-      <p>{message(locale, "status.v1.chart.empty")}</p>
+    {!state.snapshot ? <section className="card mode-empty">
+      <span className="glyph-tile"><DestinationGlyph name="status" /></span>
+      <h2>{message(locale, "status.v1.chart.empty")}</h2>
       <p>{message(locale, "status.v1.capability.note")}</p>
+      <button type="button" className="primary-button" disabled={active} onClick={captureSnapshot}>
+        {message(locale, "status.v1.action.snapshot")}
+      </button>
     </section> : <>
-      <section className="status-capability">
+      <section className="card status-capability">
         <p>{message(locale, "status.v1.snapshot.title", { id: state.snapshot.snapshot_id })}</p>
         <p>{message(locale, "status.v1.sampled_at", { timestamp: String(state.snapshot.sampled_at_unix_ms) })}</p>
         <p>{message(locale, "status.v1.logical.processors", { count: String(state.snapshot.logical_processor_count) })}</p>
         <p>{message(locale, "status.v1.capability.note")}</p>
       </section>
       <section className="status-cards" aria-label={message(locale, "command.status")}>
-        <article className="status-card"><h3>{message(locale, "status.v1.chart.cpu")}</h3><p><AccessibleUserData value={cpuCard(locale, state.snapshot)} /></p></article>
-        <article className="status-card"><h3>{message(locale, "status.v1.chart.memory")}</h3><p><AccessibleUserData value={memoryCard(locale, state.snapshot)} /></p></article>
-        <article className="status-card"><p><AccessibleUserData value={powerCard(locale, state.snapshot)} /></p></article>
-        {volumeCards(locale, state.snapshot).map((line) => <article className="status-card" key={line}><p><AccessibleUserData value={line} /></p></article>)}
-        {networkCards(locale, state.snapshot).map((line) => <article className="status-card" key={line}><p><AccessibleUserData value={line} /></p></article>)}
+        <StatusMetricCard family="cpu" title={message(locale, "status.v1.chart.cpu")} value={cpuCard(locale, state.snapshot)} />
+        <StatusMetricCard family="memory" title={message(locale, "status.v1.chart.memory")} value={memoryCard(locale, state.snapshot)} />
+        <StatusMetricCard family="power" value={powerCard(locale, state.snapshot)} />
+        {volumeCards(locale, state.snapshot).map((line) => <StatusMetricCard family="volume" key={line} value={line} />)}
+        {networkCards(locale, state.snapshot).map((line) => <StatusMetricCard family="network" key={line} value={line} />)}
       </section>
     </>}
 
-    <section className="status-charts">
+    <section className="card status-charts">
       <h2>{message(locale, "status.v1.state.live")}</h2>
       {state.chart.length === 0
         ? <p>{message(locale, "status.v1.chart.empty")}</p>
@@ -331,7 +372,7 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         </>}
     </section>
 
-    <section className="status-processes">
+    <section className="card status-processes">
       <h2>{message(locale, "status.v1.process.summary", {
         returned: String(processGroup?.returned_count ?? 0),
         enumerated: String(processGroup?.enumerated_count ?? 0),

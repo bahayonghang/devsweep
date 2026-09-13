@@ -10,7 +10,8 @@ import type {
   SoftwareEntryV1,
   SoftwareExecutionOutcome,
 } from "../../api/types.gen";
-import { AccessibleUserData, SweepBody } from "../../app-shell/AppShell";
+import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { DestinationGlyph } from "../../app-shell/glyphs";
 import { formatBinaryBytes, message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { selectSoftwareEntries, selectedSoftwareEntries, softwareIdentityText, softwareSource, summarizeSoftwareSize } from "./selectors";
@@ -156,10 +157,13 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
           : null;
 
   return <div className="software-mode" data-status={state.status}>
+    <PageHeaderSlot>
+      {statusText ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null}
+    </PageHeaderSlot>
     <section className="software-toolbar" aria-label={message(locale, "command.software")}>
-      <button type="button" className="primary-button" disabled={active} onClick={refreshInventory}>
+      {state.inventory ? <button type="button" className="primary-button" disabled={active} onClick={refreshInventory}>
         {message(locale, "software.v1.action.inventory")}
-      </button>
+      </button> : null}
       <label>
         <span>{message(locale, "software.v1.search.label")}</span>
         <input type="search" value={state.query} onChange={(event) => dispatch({ type: "query_changed", query: event.target.value })} />
@@ -184,11 +188,14 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
       <button type="button" onClick={() => dispatch({ type: "error_dismissed" })}>×</button>
     </div> : null}
 
-    {!state.inventory ? <section className="software-empty">
-      <SweepBody size="hero" />
+    {!state.inventory ? <section className="card mode-empty">
+      <span className="glyph-tile"><DestinationGlyph name="software" /></span>
       <h2>{message(locale, "software.v1.state.empty.title")}</h2>
       <p>{message(locale, "software.v1.state.empty.detail")}</p>
-    </section> : <section className="software-inventory" aria-busy={active}>
+      <button type="button" className="primary-button" disabled={active} onClick={refreshInventory}>
+        {message(locale, "software.v1.action.inventory")}
+      </button>
+    </section> : <section className="card software-inventory" aria-busy={active}>
       <header className="software-inventory-header">
         <p>{message(locale, "software.v1.inventory.summary", {
           count: String(state.inventory.entries.length),
@@ -203,57 +210,59 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
         {visibleEntries.map((entry) => {
           const selectable = entry.eligibility.state === "selectable";
           const name = entry.display_name ?? entry.id;
-          return <li key={entry.id} className="software-row" data-selectable={selectable}>
-            <article>
-              <div className="software-row-primary">
-                <label className="software-selection">
-                  <input
-                    type="checkbox"
-                    checked={state.selectedIds.has(entry.id)}
-                    disabled={!selectable || active}
-                    aria-label={`${name}: ${eligibilityLabel(locale, entry)}`}
-                    onChange={(event) => dispatch({ type: "selection_changed", softwareId: entry.id, selected: event.target.checked })}
-                  />
-                  <strong><AccessibleUserData value={name} /></strong>
-                </label>
-                <span className="software-source">{sourceLabel(locale, entry)} · {scopeLabel(locale, entry)}</span>
-              </div>
-              <div className="software-row-facts">
-                <span>{sizeLabel(locale, entry)}</span>
-                <span className={selectable ? "eligible" : "manual"}>{eligibilityLabel(locale, entry)}</span>
-                <span>{message(locale, "software.v1.last_used.unknown")}</span>
-              </div>
-              <details open={state.expandedId === entry.id} onToggle={(event) => dispatch({ type: "expanded_changed", softwareId: event.currentTarget.open ? entry.id : null })}>
-                <summary>{message(locale, "software.v1.detail.identity")}</summary>
-                <dl>
-                  <dt>ID</dt><dd><AccessibleUserData value={entry.id} /></dd>
-                  <dt>{message(locale, "software.v1.detail.identity")}</dt><dd><AccessibleUserData value={softwareIdentityText(entry.identity)} /></dd>
-                  <dt>Publisher</dt><dd><AccessibleUserData value={entry.publisher ?? "—"} /></dd>
-                  <dt>Version</dt><dd><AccessibleUserData value={entry.version ?? "—"} /></dd>
-                  <dt>{message(locale, "software.v1.detail.last_used")}</dt><dd>{message(locale, "software.v1.last_used.unknown")}</dd>
-                </dl>
-              </details>
-            </article>
+          const source = sourceLabel(locale, entry);
+          return <li key={entry.id} className="tile-row software-row" data-selectable={selectable}>
+            <label className="software-selection">
+              <input
+                type="checkbox"
+                checked={state.selectedIds.has(entry.id)}
+                disabled={!selectable || active}
+                aria-label={`${name}: ${eligibilityLabel(locale, entry)}`}
+                onChange={(event) => dispatch({ type: "selection_changed", softwareId: entry.id, selected: event.target.checked })}
+              />
+            </label>
+            <span className="glyph-tile"><DestinationGlyph name="software" /></span>
+            <div className="tile-row-text">
+              <strong><AccessibleUserData value={name} /></strong>
+              <span className="secondary">
+                {entry.publisher ? <AccessibleUserData value={entry.publisher} /> : source}
+                {entry.publisher ? ` · ${source}` : ""}
+                {` · ${scopeLabel(locale, entry)} · ${sizeLabel(locale, entry)} · ${message(locale, "software.v1.last_used.unknown")}`}
+              </span>
+            </div>
+            <div className="tile-row-actions software-row-facts">
+              <span className={selectable ? "eligible" : "manual"}>{eligibilityLabel(locale, entry)}</span>
+            </div>
+            <details open={state.expandedId === entry.id} onToggle={(event) => dispatch({ type: "expanded_changed", softwareId: event.currentTarget.open ? entry.id : null })}>
+              <summary>{message(locale, "software.v1.detail.identity")}</summary>
+              <dl>
+                <dt>ID</dt><dd><AccessibleUserData value={entry.id} /></dd>
+                <dt>{message(locale, "software.v1.detail.identity")}</dt><dd><AccessibleUserData value={softwareIdentityText(entry.identity)} /></dd>
+                <dt>Publisher</dt><dd><AccessibleUserData value={entry.publisher ?? "—"} /></dd>
+                <dt>Version</dt><dd><AccessibleUserData value={entry.version ?? "—"} /></dd>
+                <dt>{message(locale, "software.v1.detail.last_used")}</dt><dd>{message(locale, "software.v1.last_used.unknown")}</dd>
+              </dl>
+            </details>
           </li>;
         })}
       </ul>
     </section>}
 
-    {state.preview ? <section className="software-preview" aria-labelledby="software-preview-title">
+    {state.preview ? <section className="card software-preview" aria-labelledby="software-preview-title">
       <h2 id="software-preview-title">{message(locale, "software.v1.action.preview")}</h2>
       <p className="software-irrevocable">{message(locale, "software.v1.confirm.detail")}</p>
       <p><code>{state.preview.digest}</code></p>
       <ul>{state.preview.selected.map((item) => <li key={item.id}><AccessibleUserData value={softwareIdentityText(item.identity)} /></li>)}</ul>
     </section> : null}
 
-    {state.report ? <section className="software-results" aria-live="polite">
+    {state.report ? <section className="card software-results" aria-live="polite">
       <h2>{state.status === "unknown" ? message(locale, "software.v1.outcome.unknown_after_dispatch") : message(locale, "software.v1.results.title")}</h2>
       <ul>{state.report.outcomes.map((item) => <li key={item.operation_id} data-outcome={item.outcome}>
         <AccessibleUserData value={item.software_id} /> — {outcomeLabel(locale, item.outcome)}
       </li>)}</ul>
     </section> : null}
 
-    {state.audit ? <section className="software-audit" aria-live="polite">
+    {state.audit ? <section className="card software-audit" aria-live="polite">
       <p>{message(locale, "software.v1.audit.summary", { records: String(state.audit.records.length), recovered: String(state.audit.recovered.length) })}</p>
       <details><summary>{message(locale, "software.v1.audit.transitions")}</summary>
         <ol>{state.audit.records.map((record, index) => <li key={`${record.operation_id}-${index}`}><AccessibleUserData value={`${record.operation_id} · ${record.status_code}`} /></li>)}</ol>

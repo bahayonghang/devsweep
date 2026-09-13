@@ -12,6 +12,7 @@ import { message, type PresentationLanguageTag } from "../../i18n";
 import { hasIrreversibleSelection } from "../../state/selectors";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { cleanReducer, initialCleanState } from "./reducer";
+import "./styles.css";
 
 function commandError(error: unknown): CommandError {
   try { return decodeCommandError(error); }
@@ -148,8 +149,11 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
       ? { status: state.stoppedPreview.kind, progress: state.stoppedPreview.progress, preview: state.stoppedPreview.preview }
       : null;
   const reported = state.execution !== null && state.phase === "reported";
-  const showMain = reported || Boolean(showDryRun && state.dryRun) || preview !== null || state.scan !== null;
-  const hero = state.activeScan !== null || (state.scan === null && state.stoppedPreview === null);
+  const scanning = state.activeScan !== null;
+  const emptyReport = Boolean(state.scan && state.scan.plan.targets.length === 0 && !scanning && !state.stoppedPreview);
+  const idleHome = state.scan === null && state.stoppedPreview === null && !scanning;
+  const showStage = scanning || idleHome || emptyReport;
+  const showMain = reported || Boolean(showDryRun && state.dryRun) || preview !== null || (state.scan !== null && !emptyReport);
   const filteredState = query.trim() && state.scan
     ? {
         ...state,
@@ -165,8 +169,8 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
       }
     : state;
   return <div className="clean-mode">
-    <ScanPage locale={locale} hero={hero} activeScan={state.activeScan} busy={state.phase === "executing" || state.pending !== null} options={options} onOptions={setOptions} onScan={() => void scan()} onCancel={() => void cancel()} />
-    {state.phase !== "scanning" && state.scan ? <div className="scan-toolbar"><label>{message(locale, "clean.v1.search.label")} <input value={query} onChange={(event) => setQuery(event.target.value)} /></label></div> : null}
+    <ScanPage locale={locale} stage={showStage} empty={emptyReport} activeScan={state.activeScan} busy={state.phase === "executing" || state.pending !== null} options={options} onOptions={setOptions} onScan={() => void scan()} onCancel={() => void cancel()} />
+    {state.phase !== "scanning" && state.scan && !emptyReport ? <div className="scan-toolbar"><label>{message(locale, "clean.v1.search.label")} <input value={query} onChange={(event) => setQuery(event.target.value)} /></label></div> : null}
     {state.error && <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} />}
     {showMain ? <div className="main-content">
       {reported && state.execution ? <ExecutePage locale={locale} report={state.execution} final onConfirm={() => undefined} onReturn={() => dispatch({ type: "review_requested" })} />

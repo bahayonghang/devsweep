@@ -40,38 +40,39 @@ export function HistoryPage({ bridge, locale }: HistoryPageProps) {
       : listed.operations;
   }, [listed, query]);
 
-  return <section className="support-page" aria-labelledby="history-title">
-    <h1 id="history-title">{message(locale, "shell.v1.supporting.history")}</h1>
-    <p>{message(locale, "history.v1.no_replay")}</p>
-    {error && <ErrorBanner error={error} onDismiss={() => setError(null)} />}
-    {listed.stores.filter((store) => store.state === "unavailable" || store.state === "unsupported").map((store) => (
-      <p key={store.domain} role="status">
-        {message(locale, store.state === "unsupported" ? "history.v1.unsupported" : "history.v1.store.unavailable", { domain: store.domain })}
-      </p>
-    ))}
-    <label>
-      {message(locale, "history.v1.list.summary", { count: String(visible.length) })}
-      <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
-    </label>
-    {visible.length === 0 ? <p>{message(locale, "history.v1.empty")}</p> : (
-      <table>
-        <thead><tr><th>{message(locale, "history.v1.column.domain")}</th><th>{message(locale, "history.v1.column.operation")}</th><th>{message(locale, "history.v1.column.outcome")}</th></tr></thead>
-        <tbody>
-          {visible.map((operation) => (
-            <tr key={`${operation.domain}:${operation.operation_id}`}>
-              <td>{operation.domain}</td>
-              <td>
-                <button type="button" className="secondary-button" onClick={() => {
-                  void bridge.historyShow(operation.operation_id).then(setDetail).catch((caught) => setError(commandError(caught)));
-                }}>{operation.operation_id}</button>
-              </td>
-              <td>{operation.outcome_code}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-    {detail && <article aria-labelledby="history-detail-title">
+  return <section className="support-page" aria-labelledby="mode-heading">
+    <div className="card">
+      <p>{message(locale, "history.v1.no_replay")}</p>
+      {error && <ErrorBanner error={error} onDismiss={() => setError(null)} />}
+      {listed.stores.filter((store) => store.state === "unavailable" || store.state === "unsupported").map((store) => (
+        <p key={store.domain} role="status">
+          {message(locale, store.state === "unsupported" ? "history.v1.unsupported" : "history.v1.store.unavailable", { domain: store.domain })}
+        </p>
+      ))}
+      <label>
+        {message(locale, "history.v1.list.summary", { count: String(visible.length) })}
+        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
+      </label>
+      {visible.length === 0 ? <p>{message(locale, "history.v1.empty")}</p> : (
+        <table>
+          <thead><tr><th>{message(locale, "history.v1.column.domain")}</th><th>{message(locale, "history.v1.column.operation")}</th><th>{message(locale, "history.v1.column.outcome")}</th></tr></thead>
+          <tbody>
+            {visible.map((operation) => (
+              <tr key={`${operation.domain}:${operation.operation_id}`}>
+                <td>{operation.domain}</td>
+                <td>
+                  <button type="button" className="secondary-button" onClick={() => {
+                    void bridge.historyShow(operation.operation_id).then(setDetail).catch((caught) => setError(commandError(caught)));
+                  }}>{operation.operation_id}</button>
+                </td>
+                <td>{operation.outcome_code}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+    {detail && <article className="card" aria-labelledby="history-detail-title">
       <h2 id="history-detail-title">{message(locale, "history.v1.show.header", {
         id: detail.summary.operation_id,
         domain: detail.summary.domain,

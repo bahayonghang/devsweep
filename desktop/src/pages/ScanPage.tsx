@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import type { ScanOptions, ScanPhase } from "../api/types.gen";
-import { SweepBody } from "../app-shell";
 import { message, type PresentationLanguageTag } from "../i18n";
 import type { ActiveScan } from "../state/app-state";
 
@@ -16,12 +15,13 @@ function phaseState(phase: ScanPhase, requested: ScanPhase[], current: ScanPhase
 
 export function ScanPage(props: {
   locale?: PresentationLanguageTag;
-  hero?: boolean;
+  stage?: boolean;
+  empty?: boolean;
   activeScan: ActiveScan | null; busy: boolean; options: ScanOptions;
   onOptions: (options: ScanOptions) => void; onScan: () => void; onCancel: () => void;
 }) {
   const locale = props.locale ?? "en";
-  const hero = props.hero ?? true;
+  const stage = props.stage ?? true;
   const scanning = props.activeScan !== null;
   const setScope = (key: "include_projects" | "include_global", checked: boolean) => props.onOptions({ ...props.options, [key]: checked });
   const requested: ScanPhase[] = [];
@@ -34,6 +34,17 @@ export function ScanPage(props: {
     : props.activeScan?.progress?.message ?? message(locale, "clean.v1.action.scan");
   const projectsLabel = message(locale, "clean.v1.scope.projects");
   const globalLabel = message(locale, "clean.v1.scope.global");
+  const scanLabel = message(locale, "clean.v1.action.scan");
+  const readyLabel = message(locale, "clean.v1.status.ready");
+  const phaseLabel = current === "projects" ? projectsLabel : globalLabel;
+  const headline = scanning
+    ? message(locale, "clean.v1.stage.scanning_headline")
+    : props.empty
+      ? message(locale, "clean.v1.scan.empty")
+      : message(locale, "clean.v1.stage.headline");
+  const lede = props.empty
+    ? message(locale, "clean.v1.review.empty_hint")
+    : message(locale, "clean.v1.stage.lede");
   const liveRegion = useRef<HTMLSpanElement>(null);
   const liveTimer = useRef<number | null>(null);
   const pendingAnnouncement = useRef("");
@@ -54,7 +65,6 @@ export function ScanPage(props: {
       return;
     }
 
-    const phaseLabel = current === "projects" ? projectsLabel : globalLabel;
     const next = `${phaseLabel}. ${progressMessage}. ${discovered}`;
     const priorityKey = `${current}:${props.activeScan?.cancelRequested === true}`;
     const now = Date.now();
@@ -75,35 +85,50 @@ export function ScanPage(props: {
         if (liveRegion.current) liveRegion.current.textContent = pendingAnnouncement.current;
       }, remaining);
     }
-  }, [current, discovered, globalLabel, progressMessage, projectsLabel, props.activeScan?.cancelRequested, scanning]);
+  }, [current, discovered, phaseLabel, progressMessage, props.activeScan?.cancelRequested, scanning]);
   useEffect(() => () => {
     if (liveTimer.current !== null) clearTimeout(liveTimer.current);
   }, []);
-  const controls = <>
-    <div className="scope-controls">
-      <label><input type="checkbox" checked={props.options.include_projects} disabled={scanning || props.busy} onChange={(event) => setScope("include_projects", event.target.checked)} /> {projectsLabel}</label>
-      <label><input type="checkbox" checked={props.options.include_global} disabled={scanning || props.busy} onChange={(event) => setScope("include_global", event.target.checked)} /> {globalLabel}</label>
+  const scopeControls = <div className="scope-controls">
+    <label><input type="checkbox" checked={props.options.include_projects} disabled={scanning || props.busy} onChange={(event) => setScope("include_projects", event.target.checked)} /> {projectsLabel}</label>
+    <label><input type="checkbox" checked={props.options.include_global} disabled={scanning || props.busy} onChange={(event) => setScope("include_global", event.target.checked)} /> {globalLabel}</label>
+  </div>;
+  const action = scanning
+    ? <button className="secondary-button fixed-action" onClick={props.onCancel} disabled={props.activeScan?.cancelRequested}>{props.activeScan?.cancelRequested ? message(locale, "clean.v1.action.cancel") : message(locale, "clean.v1.action.cancel_scan")}</button>
+    : <button className="primary-button fixed-action" onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global)}>{scanLabel}</button>;
+  const scanStatus = scanning ? <div className="scan-status" aria-busy="true">
+    <ol className="phase-rail" aria-label={scanLabel}>
+      {requested.map((phase) => <li key={phase} data-state={phaseState(phase, requested, current)}>
+        <span aria-hidden="true" />{phase === "projects" ? projectsLabel : globalLabel}
+      </li>)}
+    </ol>
+    <progress aria-label={scanLabel}>{scanLabel}</progress>
+    <div className="scan-announcement">
+      <span className="scan-message">{progressMessage}</span>
+      <span className="scan-count">{discovered}</span>
     </div>
-    <div className="scan-status" aria-busy={scanning || undefined}>
-      {scanning ? <>
-        <ol className="phase-rail" aria-label={message(locale, "clean.v1.action.scan")}>
-          {requested.map((phase) => <li key={phase} data-state={phaseState(phase, requested, current)}>
-            <span aria-hidden="true" />{phase === "projects" ? projectsLabel : globalLabel}
-          </li>)}
-        </ol>
-        <progress aria-label={message(locale, "clean.v1.action.scan")}>{message(locale, "clean.v1.action.scan")}</progress>
-        <div className="scan-announcement">
-          <span className="scan-message">{progressMessage}</span>
-          <span className="scan-count">{discovered}</span>
-        </div>
-        <span ref={liveRegion} className="sr-only" role="status" aria-live="polite" aria-atomic="true" />
-      </> : <span className="ready-status">{message(locale, "clean.v1.status.ready")}</span>}
-    </div>
-    {scanning ? <button className="secondary-button fixed-action" onClick={props.onCancel} disabled={props.activeScan?.cancelRequested}>{props.activeScan?.cancelRequested ? message(locale, "clean.v1.action.cancel") : message(locale, "clean.v1.action.cancel_scan")}</button> : <button className="primary-button fixed-action" onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global)}>{message(locale, "clean.v1.action.scan")}</button>}
-  </>;
-  return <section className={hero ? "clean-hero" : "scan-toolbar"} aria-label={message(locale, "clean.v1.action.scan")}>
-    {hero && <SweepBody size="hero" />}
-    {hero && !scanning && <p className="clean-hero-hint">{message(locale, "clean.v1.review.empty_hint")}</p>}
-    {hero ? <div className="scan-toolbar clean-hero-controls">{controls}</div> : controls}
-  </section>;
+    <span ref={liveRegion} className="sr-only" role="status" aria-live="polite" aria-atomic="true" />
+  </div> : null;
+  if (!stage) {
+    return <section className="scan-toolbar" aria-label={scanLabel}>
+      {scopeControls}
+      <div className="scan-status"><span className="ready-status">{readyLabel}</span></div>
+      {action}
+    </section>;
+  }
+  return <div className="clean-stage-layout">
+    <section className="card clean-stage" aria-label={scanLabel}>
+      <p className="stage-eyebrow">{message(locale, "clean.v1.stage.eyebrow")}</p>
+      <h2 className="stage-headline">{headline}</h2>
+      {!scanning && <p className="stage-lede">{lede}</p>}
+      {scopeControls}
+      {scanStatus}
+      {action}
+    </section>
+    <section className="card capacity-plaque">
+      {scanning
+        ? <p className="plaque-phase">{phaseLabel}</p>
+        : <p className="ready-status">{readyLabel}</p>}
+    </section>
+  </div>;
 }

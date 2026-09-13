@@ -24,22 +24,15 @@
   border-radius: 5px;
 }
 
-.status-toolbar,
-.status-cards,
-.status-charts,
-.status-processes,
-.status-capability {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
-  padding: 12px;
-}
-
 .status-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  padding: 12px;
 }
 
 .status-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
@@ -49,7 +42,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
-.status-card { min-width: 0; }
+.status-card { min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
 .status-card h3, .status-charts h2, .status-processes h2 { margin: 0 0 8px; font-size: 14px; }
 .status-card p, .status-capability p { margin: 0; overflow-wrap: anywhere; }
 .status-muted { color: var(--text-muted); }
@@ -86,7 +79,7 @@
 }
 
 @media (forced-colors: active) {
-  .status-toolbar, .status-cards, .status-charts, .status-processes, .status-capability, .status-card {
+  .status-toolbar, .status-cards, .status-charts, .status-processes, .status-capability, .status-card, .status-mode .card {
     border: 1px solid CanvasText;
   }
   .status-chart-line { stroke: CanvasText; }
