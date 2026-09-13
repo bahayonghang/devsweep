@@ -219,6 +219,36 @@ class TestTypesDriftCheck(unittest.TestCase):
             "the repository types.gen.ts must stay clean after the drift probe",
         )
 
+def _unbounded_on_event(header: str, event: str) -> bool:
+    match = re.search(rf"(?m)^  {re.escape(event)}:\s*(.*)$", header)
+    if match is None:
+        return False
+    inline = match.group(1).strip()
+    if inline not in ("", "~", "null"):
+        return False
+    remainder = header[match.end() :].lstrip("\n")
+    if not remainder:
+        return True
+    next_line = remainder.split("\n", 1)[0]
+    if not next_line.strip():
+        return True
+    return not next_line.startswith("    ")
+
+
+class TestHostedCiTriggers(unittest.TestCase):
+    def test_ci_runs_on_pull_request_not_every_push(self) -> None:
+        text = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8"
+        )
+        header = text.split("\njobs:", 1)[0]
+        self.assertRegex(header, r"(?m)^on:\s*$")
+        self.assertRegex(header, r"(?m)^  pull_request:\s*$")
+        self.assertRegex(header, r"(?m)^  workflow_dispatch:\s*$")
+        self.assertFalse(
+            _unbounded_on_event(header, "push"),
+            "hosted CI must not use unbounded on.push; keep pull_request and workflow_dispatch",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

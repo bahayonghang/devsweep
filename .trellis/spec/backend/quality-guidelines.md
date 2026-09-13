@@ -756,6 +756,9 @@ GlobalCacheRule {
 #### 3. Contracts
 
 - `just ci` remains the canonical local quality gate.
+- Hosted `.github/workflows/ci.yml` runs on `pull_request` and
+  `workflow_dispatch` only. It must not use an unbounded `on.push` that
+  starts a full matrix on every push to `dev`.
 - CI must run the same four validation classes as `just ci`: format, check,
   tests, and clippy.
 - Process-runner tests in `devsweep-core` use the CLI-owned `process_fixture`
@@ -790,6 +793,8 @@ GlobalCacheRule {
 
 - Good: CI includes Windows and a non-Windows runner for the Rust validation
   matrix.
+- Good: hosted CI starts from `pull_request` or `workflow_dispatch`, not from
+  every push to `dev`.
 - Good: a clean `cargo test --target-dir <isolated> --workspace --locked
   --all-targets` passes without a pre-existing fixture binary.
 - Good: cross-platform validation passes `--target-dir /tmp/devsweep-check`
@@ -804,6 +809,8 @@ GlobalCacheRule {
   a scanner fixture resolves `<fixture>/target`.
 - Bad: documenting Docker cleanup, permanent delete, or package-manager
   distribution as released MVP behavior.
+- Bad: an unbounded `on: push:` in `.github/workflows/ci.yml` that reruns the
+  full matrix on every `dev` commit.
 
 #### 6. Tests Required
 

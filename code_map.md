@@ -8,7 +8,9 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `Cargo.toml` - virtual workspace membership and shared package metadata.
 - `justfile` - local command registry. `just ci` is the canonical gate.
 - `.github/workflows/ci.yml` - CI parity for format, check, test, and clippy on
-  Windows, Ubuntu, and macOS, plus Windows/Ubuntu MSRV jobs.
+  Windows, Ubuntu, and macOS, plus Windows/Ubuntu MSRV jobs. Hosted runs start
+  from pull requests and manual `workflow_dispatch`, not from every push to
+  `dev`.
 - `README.md` - current user-facing safety model, usage, validation, and release
   archive notes.
 - `design.md` - historical product and architecture design context. Treat

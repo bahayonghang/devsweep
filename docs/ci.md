@@ -12,6 +12,9 @@
 | `cargo-deny` | License, source, and advisory policy from `deny.toml`. |
 | `gitleaks` | Secret scan. |
 
+Hosted CI runs on `pull_request` and `workflow_dispatch` only. Direct pushes to
+`dev` or `main` do not start this workflow.
+
 All jobs use read-only contents permission, cancel-in-progress concurrency, and
 bounded timeouts. Hosted Desktop frontend checks are split into one step per npm
 script so a native non-zero exit cannot be swallowed by a later command. Types

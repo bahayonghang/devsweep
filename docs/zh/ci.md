@@ -12,6 +12,9 @@
 | `cargo-deny` | 依据 `deny.toml` 检查许可证、来源和公告策略。 |
 | `gitleaks` | 密钥扫描。 |
 
+托管 CI 只在 `pull_request` 与 `workflow_dispatch` 时运行。直接推送到 `dev` 或 `main`
+不会启动该工作流。
+
 所有作业只授予读取仓库内容的权限，使用 cancel-in-progress 并发控制，并配置了时限。托管
 Desktop 前端检查按每个 npm 脚本拆成独立步骤，避免原生非零退出被后续命令掩盖。类型漂移
 在任何生成写入之前比较。
