@@ -7,13 +7,14 @@ use std::{
 const EN_JSON: &str = include_str!("../../../../resources/i18n/en.json");
 const ZH_CN_JSON: &str = include_str!("../../../../resources/i18n/zh-CN.json");
 
-pub(crate) const SHELL_V1_KEYS: [&str; 23] = [
+pub(crate) const SHELL_V1_KEYS: [&str; 33] = [
     "shell.v1.help",
     "shell.v1.more",
     "shell.v1.persistence.saving",
     "shell.v1.persistence.unavailable",
     "shell.v1.route.dismiss",
     "shell.v1.route.error",
+    "shell.v1.section.modes",
     "shell.v1.settings.action",
     "shell.v1.settings.cancel",
     "shell.v1.settings.instruction",
@@ -26,6 +27,15 @@ pub(crate) const SHELL_V1_KEYS: [&str; 23] = [
     "shell.v1.store.unavailable.detail",
     "shell.v1.store.unavailable.recovery",
     "shell.v1.store.unavailable.title",
+    "shell.v1.subtitle.analyze",
+    "shell.v1.subtitle.clean",
+    "shell.v1.subtitle.history",
+    "shell.v1.subtitle.optimize",
+    "shell.v1.subtitle.protection",
+    "shell.v1.subtitle.rules",
+    "shell.v1.subtitle.settings",
+    "shell.v1.subtitle.software",
+    "shell.v1.subtitle.status",
     "shell.v1.supporting",
     "shell.v1.supporting.history",
     "shell.v1.supporting.protection",
@@ -777,6 +787,7 @@ mod tests {
                 "Could not change destination. The current page remains active.",
                 "无法切换目标页面；当前页面保持不变。",
             ),
+            ("shell.v1.section.modes", "Modes", "模式"),
             ("shell.v1.settings.action", "Language", "语言"),
             ("shell.v1.settings.cancel", "Cancel", "取消"),
             (
@@ -812,6 +823,51 @@ mod tests {
                 "shell.v1.store.unavailable.title",
                 "Presentation settings unavailable",
                 "显示设置不可用",
+            ),
+            (
+                "shell.v1.subtitle.analyze",
+                "Map disk use. This mode is read-only.",
+                "映射磁盘占用。此模式只读。",
+            ),
+            (
+                "shell.v1.subtitle.clean",
+                "Review every Cleanup Target before anything moves.",
+                "先审查每个清理目标，再移动任何内容。",
+            ),
+            (
+                "shell.v1.subtitle.history",
+                "Inspect past cleanup records.",
+                "查看既往清理记录。",
+            ),
+            (
+                "shell.v1.subtitle.optimize",
+                "Review catalogued actions before any run.",
+                "审查目录中的操作后再运行。",
+            ),
+            (
+                "shell.v1.subtitle.protection",
+                "Inspect protection policy without changing cleanup authority.",
+                "查看保护策略，不改变清理权限。",
+            ),
+            (
+                "shell.v1.subtitle.rules",
+                "Inspect the rule catalogue.",
+                "查看规则目录。",
+            ),
+            (
+                "shell.v1.subtitle.settings",
+                "Choose English or Simplified Chinese for this window.",
+                "为本窗口选择英语或简体中文。",
+            ),
+            (
+                "shell.v1.subtitle.software",
+                "Review current-user software inventory before uninstall.",
+                "审查当前用户软件清单后再卸载。",
+            ),
+            (
+                "shell.v1.subtitle.status",
+                "Host facts from collectors. No score.",
+                "来自采集器的主机事实。无评分。",
             ),
             (
                 "shell.v1.supporting",
