@@ -1484,3 +1484,43 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 
 - 需要时采集本机 390/800/1024/1440 双语截图
 - 软件更新、启动项、托盘 HUD 另开父任务
+
+
+## Session 52: Desktop sidebar workbench from PureMac visual language
+
+**Date**: 2026-09-13
+**Task**: Desktop sidebar workbench from PureMac visual language
+**Branch**: `dev`
+
+### Summary
+
+将 Tauri 桌面从胶囊壳改为侧栏工作台：规范先改、shell.v1 33 键、Clean 舞台与分类行、其余模式卡片。web 双语宽度证据已录；原生窗口 UNVERIFIED。
+
+### Main Changes
+
+- 侧栏壳、页头、字形、1080x720 窗口
+- Clean 舞台卡、Found so far、双语 kind/risk
+- Software/Optimize/Analyze/Status/支持页卡片与磁贴行
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8e216b9` | (see git log) |
+| `b80f51e` | (see git log) |
+| `21c00b5` | (see git log) |
+| `2ca3b02` | (see git log) |
+| `1b8d332` | (see git log) |
+| `c05ce60` | (see git log) |
+
+### Testing
+
+- [OK] just ci on children 1-3; desktop npm test after strip CSS; cargo test -p devsweep-cli i18n
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 原生 1080x720/900x600 证据仍 UNVERIFIED，需 WebView2 remote debugging 露出 tauri.localhost

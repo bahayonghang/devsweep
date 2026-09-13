@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 51
-- **Last Active**: 2026-09-01
+- **Total Sessions**: 52
+- **Last Active**: 2026-09-13
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1486 | Active |
+| `journal-1.md` | ~1526 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 52 | 2026-09-13 | Desktop sidebar workbench from PureMac visual language | `8e216b9`, `b80f51e`, `21c00b5`, `2ca3b02`, `1b8d332`, `c05ce60` | `dev` |
 | 51 | 2026-09-01 | Desktop 沉浸式界面按 Mole 思路重构 | `6b6db93` | `dev` |
 | 50 | 2026-09-01 | 添加 DevSweep 本机检查建议 skill | `f7bd65d` | `dev` |
 | 49 | 2026-08-29 | 实现桌面扫描进度与分类结果 | `53a4082`, `8fb4a86`, `9483ad1` | `dev` |
