@@ -181,5 +181,6 @@ remains read-only and backend discovery layers remain non-mutating.
 - `node_modules/` - documentation-site dependencies from root `npm ci`.
 - `desktop/node_modules/` and `desktop/dist/` - desktop dependency and web build output.
 - `docs/.vitepress/dist/` and `docs/.vitepress/.temp/` - VitePress build output.
+- `__pycache__/` and `*.pyc` - Python tool and test bytecode.
 - Do not add nested guidance for generated, vendored, dependency, cache, or
   build-output directories.

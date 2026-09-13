@@ -32,7 +32,7 @@ broad grep or repo-wide search so navigation starts from the maintained map.
 - Cargo home is inspect-only. Do not create cleanup actions for Cargo
   credentials, installed binaries, registry internals, or git cache internals.
 - Docker cleanup is not part of the current MVP behavior.
-- `target/` and `dist/` are generated outputs and must not be committed.
+- `target/`, `dist/`, and `__pycache__/` are generated outputs and must not be committed.
 
 ## Agent skills
 

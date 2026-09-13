@@ -1,20 +1,36 @@
+# Harness-local scaffolding
 .agents/
 .claude/
 .codex/
-/target/
-/dist/
-/node_modules/
-/desktop/node_modules/
-/desktop/dist/
-/desktop/src-tauri/target/
-/desktop/src-tauri/gen/
-/docs/.vitepress/cache/
-/docs/.vitepress/dist/
-
 .codegraph/
 .reasonix/
 
+# Cargo, Node, VitePress, and Tauri outputs
+target/
+dist/
+node_modules/
+desktop/src-tauri/gen/
+docs/.vitepress/cache/
+docs/.vitepress/.temp/
 
+# Python tooling
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Isolated Git worktrees
+.worktrees/
+
+# OS debris
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local secrets
+.env
+.env.local
+
+# Local reference checkout and audit dump
 ref/
-
 devsweep-audit.jsonl
