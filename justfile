@@ -171,6 +171,10 @@ release-smoke:
 dev:
     cargo run --locked -p devsweep-cli --bin devsweep
 
+# Start the Tauri desktop development window
+tdev:
+    cd desktop; npm run tauri -- dev
+
 docs:
     npm run docs:dev
 

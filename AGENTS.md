@@ -11,6 +11,8 @@ broad grep or repo-wide search so navigation starts from the maintained map.
 - `just dev` runs the CLI binary with
   `cargo run --locked -p devsweep-cli --bin devsweep` (no extra argv).
 - Interactive TUI is bare `devsweep` with stdin and stdout TTYs.
+- `just tdev` starts the Tauri desktop development window with
+  `cd desktop; npm run tauri -- dev`.
 - `just build` runs
   `cargo build --locked -p devsweep-cli --bin devsweep`.
 - `just release-archive` builds a locked release binary for the rustc host

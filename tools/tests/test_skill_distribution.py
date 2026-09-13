@@ -188,6 +188,7 @@ class TestJustfileSkillRecipes(unittest.TestCase):
         self.assertNotIn("check-skills", recipes["ci"])
         self.assertNotIn("install-skill", recipes["ci"])
         self.assertNotIn("check-skills", recipes["dev"])
+        self.assertNotIn("check-skills", recipes["tdev"])
         self.assertNotIn("check-skills", recipes["desktop-web-check"])
         self.assertNotIn("check-skills", recipes["release-archive"])
         self.assertNotIn("check-skills", recipes["release-smoke"])

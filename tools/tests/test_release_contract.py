@@ -93,6 +93,15 @@ class TestDevRecipe(unittest.TestCase):
         self.assertNotRegex(body, r"\btui\b")
         self.assertNotIn("--help", body)
 
+    def test_tdev_starts_tauri_desktop(self) -> None:
+        recipes = just_recipes(JUSTFILE.read_text(encoding="utf-8"))
+        self.assertIn("tdev", recipes)
+        body = recipes["tdev"]
+        self.assertIn("cd desktop", body)
+        self.assertIn("npm run tauri -- dev", body)
+        self.assertNotIn("tauri -- build", body)
+        self.assertNotIn("cargo run", body)
+
 
 class TestMetadataVersions(unittest.TestCase):
     def test_four_metadata_versions_equal_workspace_0_3_0(self) -> None:

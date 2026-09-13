@@ -84,3 +84,10 @@ just docs
 
 `just docs` starts this VitePress site; run `npm ci` first when the
 documentation dependencies are not installed.
+
+```powershell
+just tdev
+```
+
+`just tdev` starts the Tauri desktop development window from the repository
+root. Install `desktop/` dependencies with `npm ci` first (Node.js 22).

@@ -67,13 +67,20 @@ See [`docs/guide/cli-migration.md`](docs/guide/cli-migration.md) for labeled old
 ## Desktop Development
 
 The Tauri 2 desktop MVP targets Windows and requires Node.js 22. Install its
-locked frontend dependencies, then start the native development window:
+locked frontend dependencies, then start the native development window from the
+repository root:
 
 ```powershell
 cd desktop
 npm ci
-npm run tauri -- dev
 ```
+
+```powershell
+just tdev
+```
+
+`just tdev` runs `npm run tauri -- dev` in `desktop/`. The equivalent from that
+directory is `npm run tauri -- dev`.
 
 From the repository root, run the desktop frontend and Rust checks or build an
 unsigned NSIS installer:
@@ -82,6 +89,7 @@ unsigned NSIS installer:
 just desktop-web-check
 just desktop-test
 just desktop-build
+just tinstall
 ```
 
 The desktop app uses the same core validation, confirmation digest, and

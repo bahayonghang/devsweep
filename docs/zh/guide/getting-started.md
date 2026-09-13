@@ -80,3 +80,10 @@ just docs
 ```
 
 `just docs` 启动本文档站点；若尚未安装文档依赖，请先运行 `npm ci`。
+
+```powershell
+just tdev
+```
+
+`just tdev` 从仓库根目录启动 Tauri 桌面开发窗口。请先在 `desktop/` 下用
+`npm ci` 安装依赖（需要 Node.js 22）。
