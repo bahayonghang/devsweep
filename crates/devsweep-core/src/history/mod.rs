@@ -9,7 +9,10 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    execution::{CleanAuditError, CleanAuditRecordV1, ProtectionOutcomeCode, clean_audit_v1_path},
+    execution::{
+        CapacityClass, CleanAuditError, CleanAuditRecordV1, ExecutionOutcomeCode,
+        ProtectionOutcomeCode, RedactedActionKind, clean_audit_v1_path,
+    },
     optimize::{OptimizeAuditError, OptimizeAuditRecordV1, optimize_audit_v1_path},
     software::{SoftwareAuditError, SoftwareAuditRecordV1, software_audit_v1_path},
 };
@@ -114,6 +117,19 @@ pub struct HistoryListV1 {
 pub struct HistoryDetailV1 {
     pub summary: HistoryOperationSummaryV1,
     pub records: Vec<HistoryRecordV1>,
+}
+
+/// Cumulative bytes that Clean moved to the Recycle Bin, from the Clean V1 store.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CleanMovedTotalsV1 {
+    /// Sum of recorded `estimated_bytes` on succeeded trash moves.
+    pub known_bytes: u64,
+    /// Succeeded trash moves without a recorded size.
+    pub unknown_records: u32,
+    /// True when `known_bytes` is a lower bound: an unknown record, a partial
+    /// size, or an unreadable store line exists.
+    pub lower_bound: bool,
 }
 
 /// List filters. The reader never walks directories or legacy paths.
@@ -272,6 +288,49 @@ pub fn list_history(options: HistoryListOptions) -> Result<HistoryListV1, Histor
 /// Show one redacted operation. History never retries or replays the action.
 pub fn show_history(operation_id: &str) -> Result<HistoryDetailV1, HistoryError> {
     show_history_at(&history_store_paths()?, operation_id)
+}
+
+/// Sum the bytes that succeeded Clean trash moves recorded. Read-only.
+pub fn clean_moved_totals() -> Result<CleanMovedTotalsV1, HistoryError> {
+    clean_moved_totals_at(&history_store_paths()?.clean)
+}
+
+pub(crate) fn clean_moved_totals_at(path: &Path) -> Result<CleanMovedTotalsV1, HistoryError> {
+    let (status, records) = read_store(HistoryDomain::Clean, path)?;
+    let mut totals = CleanMovedTotalsV1 {
+        known_bytes: 0,
+        unknown_records: 0,
+        lower_bound: status.reason_code.is_some(),
+    };
+    for record in &records {
+        let HistoryRecordV1::Clean {
+            record:
+                CleanAuditRecordV1::ExecutionTransition {
+                    outcome_code: ExecutionOutcomeCode::Succeeded,
+                    evidence,
+                    ..
+                },
+        } = record
+        else {
+            continue;
+        };
+        if evidence.action_kind != RedactedActionKind::MoveToTrash {
+            continue;
+        }
+        match evidence.estimated_bytes {
+            Some(bytes) => {
+                totals.known_bytes = totals.known_bytes.saturating_add(bytes);
+                if evidence.capacity_class == CapacityClass::Partial {
+                    totals.lower_bound = true;
+                }
+            }
+            None => {
+                totals.unknown_records = totals.unknown_records.saturating_add(1);
+                totals.lower_bound = true;
+            }
+        }
+    }
+    Ok(totals)
 }
 
 pub(crate) fn list_history_at(
@@ -777,6 +836,97 @@ mod tests {
                 .iter()
                 .any(|operation| operation.unsupported)
         );
+    }
+
+    fn transition(
+        operation: &str,
+        outcome: &str,
+        action: &str,
+        capacity: &str,
+        bytes: Option<u64>,
+    ) -> String {
+        let bytes = bytes
+            .map(|value| format!(r#","estimated_bytes":{value}"#))
+            .unwrap_or_default();
+        format!(
+            r#"{{"record_kind":"execution_transition","schema_version":1,"domain":"clean","operation_id":"{operation}","timestamp_epoch_ms":1,"transition":2,"outcome_code":"{outcome}","error_code":null,"evidence":{{"target_identity_sha256":"ab","action_kind":"{action}","irreversible":false,"capacity_class":"{capacity}","duration_ms":3{bytes}}}}}"#
+        ) + "\n"
+    }
+
+    #[test]
+    fn clean_moved_totals_sum_succeeded_trash_moves_and_count_unknown_records() {
+        let fixture = TempDir::new().expect("temp");
+        let stores = paths(fixture.path());
+        assert_eq!(
+            clean_moved_totals_at(&stores.clean).expect("empty"),
+            CleanMovedTotalsV1 {
+                known_bytes: 0,
+                unknown_records: 0,
+                lower_bound: false,
+            }
+        );
+
+        let exact = [
+            transition("a", "succeeded", "move_to_trash", "verified", Some(1_000)),
+            transition("a", "started", "move_to_trash", "verified", None),
+            transition("a", "failed", "move_to_trash", "verified", None),
+            transition("b", "succeeded", "move_to_trash", "verified", Some(24)),
+            transition("b", "succeeded", "command", "verified", None),
+        ]
+        .concat();
+        write(&stores.clean, &exact);
+        assert_eq!(
+            clean_moved_totals_at(&stores.clean).expect("exact"),
+            CleanMovedTotalsV1 {
+                known_bytes: 1_024,
+                unknown_records: 0,
+                lower_bound: false,
+            }
+        );
+
+        let mixed = format!(
+            "{exact}{}{}",
+            include_str!("../../tests/fixtures/history/clean-v1/protection-mutation.jsonl"),
+            transition("c", "succeeded", "move_to_trash", "verified", None),
+        );
+        write(&stores.clean, &mixed);
+        assert_eq!(
+            clean_moved_totals_at(&stores.clean).expect("old record"),
+            CleanMovedTotalsV1 {
+                known_bytes: 1_024,
+                unknown_records: 1,
+                lower_bound: true,
+            }
+        );
+
+        write(
+            &stores.clean,
+            &transition("d", "succeeded", "move_to_trash", "partial", Some(8)),
+        );
+        let partial = clean_moved_totals_at(&stores.clean).expect("partial");
+        assert_eq!(partial.known_bytes, 8);
+        assert_eq!(partial.unknown_records, 0);
+        assert!(partial.lower_bound);
+
+        let encoded = serde_json::to_value(partial).expect("json");
+        assert_eq!(
+            encoded,
+            serde_json::json!({"known_bytes": 8, "unknown_records": 0, "lower_bound": true})
+        );
+    }
+
+    #[test]
+    fn clean_moved_totals_mark_corrupt_lines_as_lower_bound() {
+        let fixture = TempDir::new().expect("temp");
+        let stores = paths(fixture.path());
+        let text = format!(
+            "{}not json\n",
+            transition("a", "succeeded", "move_to_trash", "verified", Some(5))
+        );
+        write(&stores.clean, &text);
+        let totals = clean_moved_totals_at(&stores.clean).expect("corrupt line");
+        assert_eq!(totals.known_bytes, 5);
+        assert!(totals.lower_bound);
     }
 
     #[test]

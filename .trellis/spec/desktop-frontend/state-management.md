@@ -106,6 +106,16 @@ scan result or backend error remains authoritative.
   recovery copy.
 - Inspect-only targets are rejected again by reducer helpers even if a component
   dispatches an invalid selection intent.
+- Row Skip and Protect are review-local. `skippedIds` is cleared by a new scan;
+  `protectedIds` is cleared only when a completed report replaces the plan.
+  Both sets exclude their ids from selection, select-all, and restore. Skip,
+  Protect, and Restore use the selection-invalidation path, and Protect during a
+  pending dry run also drops that dry run. Protect calls
+  `protectionAdd(path, true)` only after its confirmation dialog, only for rows
+  with a path; it does not use the operation coordinator.
+- The Clean cumulative total comes only from `historyCleanTotals()` after a
+  matching execution report. A failed read hides the line; it never blocks the
+  result.
 
 ## Async Effects
 

@@ -177,6 +177,10 @@ pub struct ExecutionEvidence {
     pub irreversible: bool,
     pub capacity_class: CapacityClass,
     pub duration_ms: Option<u64>,
+    /// Bytes moved to the Recycle Bin. Present only on a succeeded trash move
+    /// with a verified or lower-bound size; older records omit it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub estimated_bytes: Option<u64>,
 }
 
 /// Redacted protection evidence. Identity is a SHA-256, never a raw path.
@@ -195,7 +199,8 @@ pub enum RedactedActionKind {
     MoveToTrash,
 }
 
-/// Capacity confidence without byte totals that could reconstruct a target.
+/// Capacity confidence class. A succeeded Recycle Bin move may also record
+/// `ExecutionEvidence::estimated_bytes` for the cumulative total.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CapacityClass {
@@ -356,6 +361,16 @@ impl CleanAuditRecordV1 {
     ) -> Result<Self, CleanAuditError> {
         let action_kind =
             redacted_action_kind(&target.action).ok_or(CleanAuditError::ForbiddenPayload)?;
+        let estimated_bytes = match (outcome_code, action_kind) {
+            (ExecutionOutcomeCode::Succeeded, RedactedActionKind::MoveToTrash) => {
+                match CapacityEstimate::from_target(target) {
+                    CapacityEstimate::Verified { bytes } => Some(bytes),
+                    CapacityEstimate::Partial { lower_bound_bytes } => Some(lower_bound_bytes),
+                    CapacityEstimate::Unknown => None,
+                }
+            }
+            _ => None,
+        };
         Ok(Self::ExecutionTransition {
             schema_version: SCHEMA_VERSION,
             domain: DOMAIN.to_string(),
@@ -376,6 +391,7 @@ impl CleanAuditRecordV1 {
                 ),
                 capacity_class: capacity_class(target),
                 duration_ms,
+                estimated_bytes,
             },
         })
     }
@@ -833,6 +849,80 @@ mod tests {
             .map(|line| serde_json::from_str(line).unwrap())
             .collect();
         assert_eq!(records.len(), 3);
+    }
+
+    #[test]
+    fn succeeded_trash_moves_record_estimated_bytes_only() {
+        let trash = fixture_target(CleanAction::MoveToTrash {
+            path: PathBuf::from(r"C:\secret\project\target"),
+        });
+        let record = |outcome, target: &CleanTarget| {
+            CleanAuditRecordV1::execution("op", 1, outcome, None, target, None).unwrap()
+        };
+        let evidence = |record: CleanAuditRecordV1| match record {
+            CleanAuditRecordV1::ExecutionTransition { evidence, .. } => evidence,
+            _ => panic!("expected execution transition"),
+        };
+
+        let succeeded = record(ExecutionOutcomeCode::Succeeded, &trash);
+        let line = serialize_record(&succeeded).unwrap();
+        assert!(line.contains("\"estimated_bytes\":42"), "{line}");
+        assert_eq!(evidence(succeeded).estimated_bytes, Some(42));
+
+        let partial = CleanTarget {
+            size_complete: false,
+            ..trash.clone()
+        };
+        assert_eq!(
+            evidence(record(ExecutionOutcomeCode::Succeeded, &partial)).estimated_bytes,
+            Some(42)
+        );
+        let unknown = CleanTarget {
+            size_complete: false,
+            estimated_bytes: 0,
+            ..trash.clone()
+        };
+        assert_eq!(
+            evidence(record(ExecutionOutcomeCode::Succeeded, &unknown)).estimated_bytes,
+            None
+        );
+
+        let started = record(ExecutionOutcomeCode::Started, &trash);
+        assert!(
+            !serialize_record(&started)
+                .unwrap()
+                .contains("estimated_bytes")
+        );
+        let failed = record(ExecutionOutcomeCode::Failed, &trash);
+        assert!(
+            !serialize_record(&failed)
+                .unwrap()
+                .contains("estimated_bytes")
+        );
+        let command = fixture_target(CleanAction::Command {
+            program: "cargo".to_string(),
+            args: Vec::new(),
+            cwd: None,
+            irreversible: true,
+        });
+        let command_line =
+            serialize_record(&record(ExecutionOutcomeCode::Succeeded, &command)).unwrap();
+        assert!(!command_line.contains("estimated_bytes"));
+    }
+
+    #[test]
+    fn records_without_estimated_bytes_still_parse() {
+        let fixture =
+            include_str!("../../tests/fixtures/history/clean-v1/execution-transition.jsonl");
+        for line in fixture.lines().filter(|line| !line.is_empty()) {
+            assert!(matches!(classify_line(line), ExistingJournal::Valid));
+            match serde_json::from_str::<CleanAuditRecordV1>(line).unwrap() {
+                CleanAuditRecordV1::ExecutionTransition { evidence, .. } => {
+                    assert_eq!(evidence.estimated_bytes, None);
+                }
+                _ => panic!("expected execution transition"),
+            }
+        }
     }
 
     #[test]

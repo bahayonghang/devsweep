@@ -5,6 +5,7 @@ import dryRunJson from "./fixtures/dry-run-outcome.json";
 import executionJson from "./fixtures/execution-report.json";
 import analyzeCompleteJson from "./fixtures/analyze/complete.json";
 import analyzeProgressJson from "./fixtures/analyze/progress.json";
+import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -52,6 +53,24 @@ describe("tauriBridge", () => {
     expect(mocks.invoke).toHaveBeenNthCalledWith(2, "plan_dry_run", { plan, selectedIds: ["cargo.target:C:/work/app/target"] });
     expect(mocks.invoke).toHaveBeenNthCalledWith(3, "plan_execute", { plan, selectedIds: ["cargo.target:C:/work/app/target", "npm.cache.clean:global"], digest: executionJson.confirmation_digest });
     expect(mocks.invoke).toHaveBeenNthCalledWith(4, "scan_cancel", { scanId: "scan-1" });
+  });
+
+  it("reads the cumulative Clean total through a closed decoder", async () => {
+    mocks.invoke.mockResolvedValueOnce(cleanMovedTotalsJson);
+    await expect(tauriBridge.historyCleanTotals()).resolves.toEqual(cleanMovedTotalsJson);
+    expect(mocks.invoke).toHaveBeenCalledWith("history_clean_totals", {});
+
+    for (const payload of [
+      { ...cleanMovedTotalsJson, path: "C:/secret" },
+      { known_bytes: 1, unknown_records: 0 },
+      { ...cleanMovedTotalsJson, known_bytes: -1 },
+      { ...cleanMovedTotalsJson, known_bytes: 2 ** 53 },
+      { ...cleanMovedTotalsJson, unknown_records: 1, lower_bound: false },
+      { ...cleanMovedTotalsJson, lower_bound: "yes" },
+    ]) {
+      mocks.invoke.mockResolvedValueOnce(payload);
+      await expect(tauriBridge.historyCleanTotals()).rejects.toThrow();
+    }
   });
 
   it("routes malformed channel payloads to the invocation-local error callback", async () => {

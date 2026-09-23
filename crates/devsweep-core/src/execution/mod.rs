@@ -30,7 +30,8 @@ pub use safety::{
 
 #[cfg(test)]
 use audit::JournalIo;
-use audit::{AuditJournal, ExecutionErrorCode, ExecutionOutcomeCode};
+use audit::{AuditJournal, ExecutionErrorCode};
+pub(crate) use audit::{CapacityClass, ExecutionOutcomeCode, RedactedActionKind};
 use command::command_argv;
 
 use crate::{

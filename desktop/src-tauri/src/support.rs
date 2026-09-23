@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use devsweep_core::{
     execution::{ProtectionMutationAction, ProtectionMutationReport, UserProtectionList},
     history::{
-        HistoryDetailV1, HistoryDomain, HistoryListOptions, HistoryListV1, list_history,
-        show_history,
+        CleanMovedTotalsV1, HistoryDetailV1, HistoryDomain, HistoryListOptions, HistoryListV1,
+        clean_moved_totals, list_history, show_history,
     },
     rules::{RuleProjectionV1, rule_projection_by_id, rule_projections},
 };
@@ -95,6 +95,13 @@ pub(crate) async fn history_show(operation_id: String) -> Result<HistoryDetailV1
     })
     .await
     .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub(crate) async fn history_clean_totals() -> Result<CleanMovedTotalsV1, CommandError> {
+    tauri::async_runtime::spawn_blocking(|| clean_moved_totals().map_err(CommandError::history))
+        .await
+        .map_err(CommandError::io)?
 }
 
 #[cfg(test)]

@@ -79,6 +79,12 @@ export interface CapacityEstimateVerified {
     type:  "verified";
 }
 
+export interface CleanMovedTotalsV1 {
+    known_bytes:     number;
+    lower_bound:     boolean;
+    unknown_records: number;
+}
+
 export interface CleanupIntentInspectOnly {
     rule_id: string;
     type:    "inspect_only";

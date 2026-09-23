@@ -7,6 +7,7 @@ import type {
   ProtectionMutationReport,
   RuleProjectionV1,
 } from "./types";
+import type { CleanMovedTotalsV1 } from "../api/types.gen";
 
 const FORBIDDEN = new Set(["argv", "args", "program", "cwd", "env", "environment", "action_path", "plan", "message", "command", "path"]);
 
@@ -123,5 +124,28 @@ export function decodeHistoryDetail(value: unknown): HistoryDetailV1 {
   return {
     summary: decodeSummary(input.summary),
     records: Array.isArray(input.records) ? input.records.map((item) => record(item, "history record")) : [],
+  };
+}
+
+const CLEAN_MOVED_TOTALS_KEYS = ["known_bytes", "lower_bound", "unknown_records"];
+
+function count(value: unknown, name: string): number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error(`Invalid ${name}`);
+  return value;
+}
+
+export function decodeCleanMovedTotals(value: unknown): CleanMovedTotalsV1 {
+  const input = record(value, "clean moved totals");
+  const keys = Object.keys(input).sort();
+  if (keys.length !== CLEAN_MOVED_TOTALS_KEYS.length || keys.some((key, index) => key !== CLEAN_MOVED_TOTALS_KEYS[index])) {
+    throw new Error("Invalid clean moved totals fields");
+  }
+  if (typeof input.lower_bound !== "boolean") throw new Error("Invalid lower_bound");
+  const unknownRecords = count(input.unknown_records, "unknown_records");
+  if (unknownRecords > 0 && !input.lower_bound) throw new Error("Unknown records require a lower bound");
+  return {
+    known_bytes: count(input.known_bytes, "known_bytes"),
+    unknown_records: unknownRecords,
+    lower_bound: input.lower_bound,
   };
 }

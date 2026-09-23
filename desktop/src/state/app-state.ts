@@ -33,6 +33,10 @@ export interface AppState {
   stoppedPreview: StoppedPreview | null;
   scan: ScanReport | null;
   selectedIds: Set<string>;
+  /** Rows the operator skipped in this review. Never persisted; never part of the plan. */
+  skippedIds: Set<string>;
+  /** Rows protected in this review. Treated as inspect-only until a new report replaces the plan. */
+  protectedIds: Set<string>;
   dryRun: DryRunOutcome | null;
   execution: ExecutionReport | null;
   error: CommandError | null;
@@ -49,6 +53,9 @@ export type AppAction =
   | { type: "command_failed"; error: CommandError }
   | { type: "selection_changed"; targetId: string; selected: boolean }
   | { type: "select_all_changed"; selected: boolean }
+  | { type: "target_skipped"; targetId: string }
+  | { type: "target_restored"; targetId: string }
+  | { type: "target_protected"; targetId: string }
   | { type: "dry_run_requested" }
   | { type: "dry_run_succeeded"; outcome: DryRunOutcome }
   | { type: "confirmation_opened" }
@@ -65,6 +72,8 @@ export const initialState: AppState = {
   stoppedPreview: null,
   scan: null,
   selectedIds: new Set(),
+  skippedIds: new Set(),
+  protectedIds: new Set(),
   dryRun: null,
   execution: null,
   error: null,
@@ -74,16 +83,29 @@ export function isExecutable(target: UntrustedTarget): boolean {
   return target.intent.type !== "inspect_only";
 }
 
-function executableIds(state: AppState): Set<string> {
-  return new Set((state.scan?.plan.targets ?? []).filter(isExecutable).map((target) => target.id));
+/** Executable, not protected in this review, and not skipped. */
+export function isSelectable(state: Pick<AppState, "skippedIds" | "protectedIds">, target: UntrustedTarget): boolean {
+  return isExecutable(target) && !state.protectedIds.has(target.id) && !state.skippedIds.has(target.id);
 }
 
-function defaultSelectedIds(report: ScanReport | null): Set<string> {
+function executableIds(state: AppState): Set<string> {
+  return new Set((state.scan?.plan.targets ?? []).filter((target) => isSelectable(state, target)).map((target) => target.id));
+}
+
+function defaultSelectedIds(report: ScanReport | null, protectedIds: ReadonlySet<string> = new Set()): Set<string> {
   return new Set(
     (report?.plan.targets ?? [])
-      .filter((target) => target.selected_by_default && isExecutable(target))
+      .filter((target) => target.selected_by_default && isExecutable(target) && !protectedIds.has(target.id))
       .map((target) => target.id),
   );
+}
+
+function reviewing(state: AppState): boolean {
+  return state.scan !== null && !state.activeScan && !state.stoppedPreview && state.phase !== "executing" && state.pending === null;
+}
+
+function planTarget(state: AppState, targetId: string): UntrustedTarget | undefined {
+  return state.scan?.plan.targets.find((target) => target.id === targetId);
 }
 
 function invalidatePreview(state: AppState, selectedIds: Set<string>): AppState {
@@ -124,6 +146,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         },
         stoppedPreview: null,
         selectedIds: new Set(),
+        skippedIds: new Set(),
         dryRun: null,
         execution: null,
         error: null,
@@ -185,7 +208,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         phase: state.scan ? "reviewed" : "idle",
         stoppedPreview: null,
-        selectedIds: defaultSelectedIds(state.scan),
+        selectedIds: defaultSelectedIds(state.scan, state.protectedIds),
         dryRun: null,
         execution: null,
         error: null,
@@ -201,6 +224,33 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "select_all_changed":
       if (state.activeScan || state.stoppedPreview) return state;
       return invalidatePreview(state, action.selected ? executableIds(state) : new Set());
+    case "target_skipped": {
+      const target = planTarget(state, action.targetId);
+      if (!reviewing(state) || !target || !isSelectable(state, target)) return state;
+      const selectedIds = new Set(state.selectedIds);
+      selectedIds.delete(action.targetId);
+      return invalidatePreview({ ...state, skippedIds: new Set(state.skippedIds).add(action.targetId) }, selectedIds);
+    }
+    case "target_restored": {
+      if (!reviewing(state) || !state.skippedIds.has(action.targetId)) return state;
+      const skippedIds = new Set(state.skippedIds);
+      skippedIds.delete(action.targetId);
+      const target = planTarget(state, action.targetId);
+      const selectedIds = new Set(state.selectedIds);
+      if (target && isExecutable(target) && !state.protectedIds.has(target.id)) selectedIds.add(target.id);
+      return invalidatePreview({ ...state, skippedIds }, selectedIds);
+    }
+    case "target_protected": {
+      const target = planTarget(state, action.targetId);
+      if (!target || state.protectedIds.has(action.targetId)) return state;
+      const protectedIds = new Set(state.protectedIds).add(action.targetId);
+      if (!reviewing(state) && state.pending !== "dry_run") return { ...state, protectedIds };
+      const skippedIds = new Set(state.skippedIds);
+      skippedIds.delete(action.targetId);
+      const selectedIds = new Set(state.selectedIds);
+      selectedIds.delete(action.targetId);
+      return invalidatePreview({ ...state, protectedIds, skippedIds }, selectedIds);
+    }
     case "dry_run_requested":
       return state.scan && !state.activeScan && !state.stoppedPreview && state.selectedIds.size > 0 && state.phase !== "executing"
         ? { ...state, pending: "dry_run", error: null, execution: null }

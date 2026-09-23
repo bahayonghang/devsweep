@@ -24,8 +24,10 @@ import statusStartedJson from "./fixtures/status/event-started.json";
 import statusLiveSnapshotJson from "./fixtures/status/event-snapshot.json";
 import statusSkippedJson from "./fixtures/status/event-skipped.json";
 import statusTerminalJson from "./fixtures/status/event-terminal.json";
+import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
 import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeStatusEvent } from "./contract";
 import type { DesktopBridge } from "./bridge";
+import { decodeCleanMovedTotals } from "../support/decode";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
 
 const scanReport = decodeScanReport(scanJson);
@@ -33,6 +35,7 @@ const projectProgress = decodeDesktopScanProgress(progressJson);
 const dryRun = decodeDryRunOutcome(dryRunJson);
 const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
 const execution = decodeExecutionReport(executionJson);
+const cleanMovedTotals = decodeCleanMovedTotals(cleanMovedTotalsJson);
 const analyzeComplete = decodeDesktopAnalyzeResult(analyzeCompleteJson);
 const analyzeProgress = decodeDesktopAnalyzeProgress(analyzeProgressJson);
 const softwareInventory = decodeSoftwareInventory(softwareInventoryJson);
@@ -244,4 +247,5 @@ export const fixtureBridge: DesktopBridge = {
   rulesShow: async (id) => { throw { code: "rule_not_found", message: id }; },
   historyList: async () => ({ operations: [], stores: [] }),
   historyShow: async () => { throw { code: "history_not_found", message: "missing" }; },
+  historyCleanTotals: async () => cleanMovedTotals,
 };

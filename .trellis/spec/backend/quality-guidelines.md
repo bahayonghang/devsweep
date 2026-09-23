@@ -216,6 +216,16 @@ mod status;
   `%LOCALAPPDATA%\DevSweep\audit\v1\clean.jsonl` store under an exclusive lock.
   The removed `--audit-log` path and legacy `%APPDATA%\devsweep\audit.jsonl`
   file are never discovered, imported, converted, or modified.
+- `ExecutionEvidence.estimated_bytes` is optional and additive
+  (`serde(default, skip_serializing_if = "Option::is_none")`; the record keeps
+  `deny_unknown_fields`). Only a `succeeded` `move_to_trash` transition sets it,
+  from the verified or lower-bound target size. Old lines parse with `None`.
+- `history::clean_moved_totals()` is read-only. It reads the fixed Clean V1
+  store through the history reader and returns `CleanMovedTotalsV1` with
+  `known_bytes`, `unknown_records`, and `lower_bound`. `lower_bound` is true
+  when a succeeded trash move has no size or a partial size, or when the store
+  reports a corrupt or unsupported line. Copy says "moved to Recycle Bin",
+  never freed.
 - Whole-list protection updates validate and normalize every requested path
   before replacing the persisted snapshot. Callers use
   `UserProtectionList::replace`; they must not emulate set semantics with a

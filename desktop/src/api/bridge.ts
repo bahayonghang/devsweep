@@ -1,7 +1,8 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, StatusEventV1, UntrustedPlan } from "./types.gen";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, StatusEventV1, UntrustedPlan } from "./types.gen";
 import {
+  decodeCleanMovedTotals,
   decodeHistoryDetail,
   decodeHistoryList,
   decodeProtectionMutation,
@@ -44,6 +45,7 @@ export interface DesktopBridge {
   rulesShow(id: string): Promise<RuleProjectionV1>;
   historyList(domain?: HistoryDomain, limit?: number): Promise<HistoryListV1>;
   historyShow(operationId: string): Promise<HistoryDetailV1>;
+  historyCleanTotals(): Promise<CleanMovedTotalsV1>;
 }
 
 function bridgeError(error: unknown) {
@@ -153,4 +155,5 @@ export const tauriBridge: DesktopBridge = {
   rulesShow: (id) => call("rules_show", { id }, decodeRuleProjection),
   historyList: (domain, limit) => call("history_list", { domain: domain ?? null, limit: limit ?? null }, decodeHistoryList),
   historyShow: (operationId) => call("history_show", { operationId }, decodeHistoryDetail),
+  historyCleanTotals: () => call("history_clean_totals", {}, decodeCleanMovedTotals),
 };

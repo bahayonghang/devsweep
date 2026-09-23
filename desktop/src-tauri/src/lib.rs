@@ -45,6 +45,7 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "rules_show",
     "history_list",
     "history_show",
+    "history_clean_totals",
     "presentation_settings_get",
     "presentation_settings_set",
 ];
@@ -87,6 +88,7 @@ pub fn run() {
             support::rules_show,
             support::history_list,
             support::history_show,
+            support::history_clean_totals,
             commands::presentation_settings_get,
             commands::presentation_settings_set,
             #[cfg(debug_assertions)]
@@ -128,7 +130,7 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 30);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 31);
     }
 
     #[test]

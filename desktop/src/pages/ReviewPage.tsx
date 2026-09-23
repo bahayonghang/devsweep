@@ -1,39 +1,14 @@
 import { useEffect, useRef } from "react";
-import type { ScanTotals, TargetKind, UntrustedTarget } from "../api/types.gen";
+import type { ScanTotals, UntrustedTarget } from "../api/types.gen";
 import { DestinationGlyph } from "../app-shell";
 import { formatBytes, formatTotals } from "../components/format";
 import { TargetTable } from "../components/TargetTable";
 import { message, type PresentationLanguageTag } from "../i18n";
+import { orderGroups } from "../modes/clean/impact";
 import { kindLabel, scopeLabel } from "../modes/clean/labels";
 import type { AppState } from "../state/app-state";
-import { isExecutable } from "../state/app-state";
+import { isSelectable } from "../state/app-state";
 import { allExecutableSelected, selectedTotals } from "../state/selectors";
-
-function groupTargets(targets: readonly UntrustedTarget[]): readonly {
-  readonly kind: TargetKind;
-  readonly scope: UntrustedTarget["scope"]["type"];
-  readonly targets: UntrustedTarget[];
-}[] {
-  const kindOrder: TargetKind[] = [];
-  const byKind = new Map<TargetKind, { project: UntrustedTarget[]; global: UntrustedTarget[] }>();
-  for (const target of targets) {
-    let bucket = byKind.get(target.kind);
-    if (!bucket) {
-      kindOrder.push(target.kind);
-      bucket = { project: [], global: [] };
-      byKind.set(target.kind, bucket);
-    }
-    bucket[target.scope.type].push(target);
-  }
-  return kindOrder.flatMap((kind) => {
-    const bucket = byKind.get(kind);
-    if (!bucket) return [];
-    const groups: { kind: TargetKind; scope: UntrustedTarget["scope"]["type"]; targets: UntrustedTarget[] }[] = [];
-    if (bucket.project.length > 0) groups.push({ kind, scope: "project", targets: bucket.project });
-    if (bucket.global.length > 0) groups.push({ kind, scope: "global", targets: bucket.global });
-    return groups;
-  });
-}
 
 function groupTotals(targets: readonly UntrustedTarget[]): ScanTotals {
   return targets.reduce<ScanTotals>((totals, target) => {
@@ -72,12 +47,17 @@ export function ReviewPage(props: {
   onSelect: (id: string, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
   onDryRun: () => void;
+  onSkip?: (id: string) => void;
+  onRestore?: (id: string) => void;
+  onProtect?: (target: UntrustedTarget) => void;
 }) {
   const locale = props.locale ?? "en";
   const targets = props.state.scan?.plan.targets ?? [];
   const busy = props.state.pending !== null || props.state.phase === "executing";
-  const groups = groupTargets(targets);
-  const executable = targets.filter(isExecutable);
+  const skippedIds = props.state.skippedIds;
+  const groups = orderGroups(targets.filter((target) => !skippedIds.has(target.id)));
+  const skipped = targets.filter((target) => skippedIds.has(target.id));
+  const executable = targets.filter((target) => isSelectable(props.state, target));
   const selectedExecutable = executable.filter((target) => props.state.selectedIds.has(target.id)).length;
   const totals = selectedTotals(props.state);
   const formatted = formatTotals(totals);
@@ -106,6 +86,7 @@ export function ReviewPage(props: {
         {message(locale, "clean.v1.preview.selected", { count: String(props.state.selectedIds.size) })}
       </label>
       {props.state.scan.health.diagnostics.length > 0 && <details className="diagnostics"><summary>{props.state.scan.health.diagnostics.length}</summary>{props.state.scan.health.diagnostics.map((item, index) => <p key={`${item.path}-${index}`}><strong>{item.stage}:</strong> {item.detail}</p>)}</details>}
+      {props.state.protectedIds.size > 0 && <p className="rescan-hint" role="status">{message(locale, "clean.v1.review.rescan_hint")}</p>}
       <button className="primary-button wide-action" disabled={props.state.selectedIds.size === 0 || busy} onClick={props.onDryRun}>{message(locale, "clean.v1.action.preview")}</button>
     </section>
     <div className="preview-groups">
@@ -121,13 +102,33 @@ export function ReviewPage(props: {
           mode="review"
           targets={group.targets}
           selectedIds={props.state.selectedIds}
+          protectedIds={props.state.protectedIds}
           allSelected={false}
           showSelectAll={false}
           disabled={busy}
           onSelect={props.onSelect}
           onSelectAll={() => undefined}
+          onSkip={props.onSkip}
+          onProtect={props.onProtect}
         />
       </section>)}
+      {skipped.length > 0 && <details className="preview-group card skipped-group">
+        <summary>{message(locale, "clean.v1.review.skipped", { count: String(skipped.length) })}</summary>
+        <TargetTable
+          locale={locale}
+          mode="review"
+          targets={skipped}
+          selectedIds={props.state.selectedIds}
+          protectedIds={props.state.protectedIds}
+          skipped
+          allSelected={false}
+          showSelectAll={false}
+          disabled={busy}
+          onSelect={props.onSelect}
+          onSelectAll={() => undefined}
+          onRestore={props.onRestore}
+        />
+      </details>}
     </div>
   </section>;
 }

@@ -1,6 +1,6 @@
 import type { ScanTotals, UntrustedTarget } from "../api/types.gen";
 import type { AppState } from "./app-state";
-import { isExecutable } from "./app-state";
+import { isSelectable } from "./app-state";
 
 export function selectedTargets(state: AppState): UntrustedTarget[] {
   return (state.scan?.plan.targets ?? []).filter((target) => state.selectedIds.has(target.id));
@@ -16,7 +16,7 @@ export function selectedTotals(state: AppState): ScanTotals {
 }
 
 export function allExecutableSelected(state: AppState): boolean {
-  const executable = (state.scan?.plan.targets ?? []).filter(isExecutable);
+  const executable = (state.scan?.plan.targets ?? []).filter((target) => isSelectable(state, target));
   return executable.length > 0 && executable.every((target) => state.selectedIds.has(target.id));
 }
 

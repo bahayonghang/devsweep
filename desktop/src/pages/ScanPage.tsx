@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ScanOptions, ScanPhase } from "../api/types.gen";
+import { formatBytes } from "../components/format";
 import { message, type PresentationLanguageTag } from "../i18n";
 import { Stage } from "../stage";
 import type { ActiveScan } from "../state/app-state";
@@ -30,6 +31,8 @@ export function ScanPage(props: {
   if (props.options.include_global) requested.push("global");
   const current = props.activeScan?.progress?.phase ?? requested[0] ?? "projects";
   const discovered = props.activeScan?.preview?.totals.target_count ?? 0;
+  const foundTotals = props.activeScan?.preview?.totals;
+  const foundBytes = (foundTotals?.verified_bytes ?? 0) + (foundTotals?.partial_lower_bound_bytes ?? 0);
   const progressMessage = props.activeScan?.cancelRequested
     ? message(locale, "clean.v1.action.cancel_scan")
     : props.activeScan?.progress?.message ?? message(locale, "clean.v1.action.scan");
@@ -123,7 +126,13 @@ export function ScanPage(props: {
     className="clean-stage"
     busy={scanning}
     title={headline}
-    meta={scanning ? undefined : <p className="stage-lede">{lede}</p>}
+    meta={scanning
+      ? <p className="stage-found">
+          <span className="stage-result-caption">{message(locale, "clean.v1.preview.found_so_far")}</span>
+          {" "}
+          <span className="stage-result-value">{formatBytes(foundBytes)}</span>
+        </p>
+      : <p className="stage-lede">{lede}</p>}
     controls={<>{scopeControls}{scanStatus}</>}
     primary={action("stage-action", "stage-action")}
     secondary={scanning

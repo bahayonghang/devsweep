@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import scanJson from "./api/fixtures/scan-report.json";
@@ -438,7 +438,9 @@ describe("desktop workflow", () => {
     expect(screen.getByText("Cancel scan")).toBeInTheDocument();
     const firstScanId = scanStart.mock.calls[0][0] as string;
     act(() => finishFirst({ type: "canceled", scan_id: firstScanId }));
-    expect(await screen.findByText("Scan canceled. Results stay non-selectable.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Scan canceled. Results stay non-selectable." })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Clean" }).querySelector(".planet")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show details" }));
     expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Scan" }));
     expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
@@ -478,6 +480,7 @@ describe("desktop workflow", () => {
     const rescanId = scanStart.mock.calls[1][0] as string;
     act(() => finishRescan({ type: "canceled", scan_id: rescanId }));
 
+    await user.click(await screen.findByRole("button", { name: "Show details" }));
     const returnButton = await screen.findByRole("button", { name: "Cancel" });
     expect(screen.queryByRole("button", { name: "Review dry run" })).not.toBeInTheDocument();
     await user.click(returnButton);
@@ -502,7 +505,7 @@ describe("desktop workflow", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Malformed scan progress");
     const scanId = scanStart.mock.calls[0][0] as string;
     act(() => finish({ type: "canceled", scan_id: scanId }));
-    expect(await screen.findByText("Scan canceled. Results stay non-selectable.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Scan stopped with an error. Found targets stay non-selectable." })).toBeInTheDocument();
   });
 
   it("groups cumulative preview rows by scope without announcing the table", async () => {
@@ -553,6 +556,8 @@ describe("desktop workflow", () => {
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Found in this scan 628.0 MiB");
+    await user.click(screen.getByRole("button", { name: "Review targets" }));
     expect(screen.getByText("Build artifacts")).toBeInTheDocument();
     expect(screen.getByText("Package caches")).toBeInTheDocument();
     expect(screen.queryByText("build_artifacts")).not.toBeInTheDocument();
@@ -579,8 +584,14 @@ describe("desktop workflow", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent(twoTargetDryRun.digest);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Execute" }));
+    const result = await screen.findByRole("region", { name: "Clean" });
+    expect(within(result).getByRole("heading", { level: 2 })).toHaveTextContent("Moved to Recycle Bin 500.0 MiB");
+    expect(within(result).getByText("2 succeeded · 0 skipped · 0 failed")).toBeInTheDocument();
+    expect(within(result).getByText(/capacity becomes available after trash is emptied/)).toBeInTheDocument();
+    expect(await within(result).findByText("Total moved to Recycle Bin by DevSweep: at least 12.0 GiB")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/freed|released|释放/i);
+    await user.click(within(result).getByRole("button", { name: "Show details" }));
     expect((await screen.findAllByText("Execution completed.")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/capacity becomes available after trash is emptied/).length).toBeGreaterThan(0);
     expect(document.querySelector(".display-capacity")).toHaveTextContent(/500\.0 MiB \+ at least 128\.0 MiB/);
     expect(screen.queryByText(/space freed|released space|4K/i)).not.toBeInTheDocument();
     expect(planExecute).toHaveBeenCalledWith(scanReport.plan, expect.arrayContaining(["cargo.target:C:/work/app/target", "npm.cache.clean:global"]), twoTargetDryRun.digest);
@@ -597,6 +608,7 @@ describe("desktop workflow", () => {
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     await screen.findByText("Scan complete. 3 targets.");
+    await user.click(screen.getByRole("button", { name: "Review targets" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(screen.getByRole("button", { name: "Scan" })).toBeDisabled();
     await act(async () => resolveDryRun(dryRun));
@@ -605,7 +617,7 @@ describe("desktop workflow", () => {
     await user.click(screen.getByRole("button", { name: "Execute" }));
     expect(screen.getByRole("button", { name: "Scan" })).toBeDisabled();
     await act(async () => resolveExecution(oneTargetExecution));
-    expect((await screen.findAllByText("Execution completed.")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Moved to Recycle Bin")).toBeInTheDocument();
   });
 
   it.each([
@@ -654,6 +666,7 @@ describe("desktop workflow", () => {
 
     events.length = 0;
     await armActiveOperation(coordinator, events, "dry-run-old");
+    await user.click(screen.getByRole("button", { name: "Review targets" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
     expect(events).toEqual(["dry-run-old.cancel", "dry-run-old.join", "dry-run.start"]);

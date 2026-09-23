@@ -9,6 +9,7 @@
 use devsweep_core::{
     analysis::AnalyzeSnapshotV1,
     execution::ExecutionReport,
+    history::CleanMovedTotalsV1,
     model::ScanReport,
     optimize::{OPTIMIZE_CATALOGUE_VERSION, catalogue_entries},
     software::SoftwareInventoryV1,
@@ -256,6 +257,14 @@ fn status_fixtures_match_the_status_command_wire_types() {
     ] {
         assert_round_trip::<StatusEventV1>(label, raw);
     }
+}
+
+#[test]
+fn history_clean_totals_fixture_matches_the_core_wire_type() {
+    assert_round_trip::<CleanMovedTotalsV1>(
+        "history/clean-moved-totals.json",
+        include_str!("../../src/api/fixtures/history/clean-moved-totals.json"),
+    );
 }
 
 /// Names one `CommandError` variant.

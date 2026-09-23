@@ -43,6 +43,7 @@ const rootFixtures = {
   StatusSnapshotV1: ["status/snapshot.json", "status/live-snapshot.json"],
   DesktopStatusSnapshotResult: ["status/snapshot-completed.json"],
   DesktopStatusLiveResult: ["status/live-completed.json"],
+  CleanMovedTotalsV1: ["history/clean-moved-totals.json"],
 };
 
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,

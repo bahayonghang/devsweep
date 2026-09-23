@@ -45,3 +45,11 @@
 @media (prefers-reduced-motion: reduce) {
   .clean-mode *, .clean-mode *::before, .clean-mode *::after { animation: none !important; transition: none !important; }
 }
+.clean-mode .row-actions { white-space: nowrap; }
+.clean-mode .row-actions button + button { margin-left: 6px; }
+.skipped-group > summary { cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 650; }
+.skipped-group[open] > summary { margin-bottom: 10px; }
+.rescan-hint { margin: 0; color: var(--warning); font-size: 12px; }
+.clean-stage .stage-found { display: grid; justify-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.clean-stage .clean-cumulative { color: var(--text); font-weight: 600; }
+.protect-dialog .protect-path { overflow-wrap: anywhere; font-family: var(--mono, monospace); }

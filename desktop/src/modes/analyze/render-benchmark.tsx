@@ -172,6 +172,7 @@ function benchmarkBridge(snapshot: AnalyzeSnapshotV1): DesktopBridge {
     rulesShow: async () => { throw new Error("unused benchmark bridge method"); },
     historyList: async () => { throw new Error("unused benchmark bridge method"); },
     historyShow: async () => { throw new Error("unused benchmark bridge method"); },
+    historyCleanTotals: async () => { throw new Error("unused benchmark bridge method"); },
   };
 }
 

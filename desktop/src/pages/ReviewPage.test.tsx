@@ -14,7 +14,7 @@ function reviewedState() {
 }
 
 describe("ReviewPage", () => {
-  it("groups by kind then scope, keeps Inspect Only unselectable, and uses one page-level select-all", () => {
+  it("orders groups by impact rank then size, keeps Inspect Only unselectable, and uses one page-level select-all", () => {
     const state = reviewedState();
     const [build, inspect] = state.scan!.plan.targets;
     const splitKind = {
@@ -30,8 +30,8 @@ describe("ReviewPage", () => {
     render(<ReviewPage state={splitKind} onSelect={noOp} onSelectAll={noOp} onDryRun={noOp} />);
     const kinds = [...document.querySelectorAll(".preview-group h3")].map((node) => node.childNodes[0].textContent?.trim());
     const scopes = [...document.querySelectorAll(".preview-group header p")].map((node) => node.textContent);
-    expect(kinds).toEqual(["Build artifacts", "Build artifacts", "Package caches"]);
-    expect(scopes).toEqual(["Projects", "Global caches", "Global caches"]);
+    expect(kinds).toEqual(["Package caches", "Build artifacts", "Build artifacts"]);
+    expect(scopes).toEqual(["Global caches", "Global caches", "Projects"]);
     expect(screen.getAllByRole("checkbox", { name: "Select all executable targets" })).toHaveLength(1);
     expect(screen.getByRole("checkbox", { name: /C:\/Users\/dev\/\.cargo/ })).toBeDisabled();
     expect(screen.getByRole("checkbox", { name: /C:\/Users\/dev\/\.cargo/ })).toHaveAttribute("title", "Inspect-only targets cannot be selected.");
@@ -42,7 +42,7 @@ describe("ReviewPage", () => {
   it("uses Chinese kind and risk labels instead of raw keys", () => {
     render(<ReviewPage locale="zh-CN" state={reviewedState()} onSelect={noOp} onSelectAll={noOp} onDryRun={noOp} />);
     const kinds = [...document.querySelectorAll(".preview-group h3")].map((node) => node.childNodes[0].textContent?.trim());
-    expect(kinds).toEqual(["构建产物", "包缓存"]);
+    expect(kinds).toEqual(["包缓存", "构建产物"]);
     expect(screen.getByText("低")).toBeInTheDocument();
     expect(screen.getByText("高")).toBeInTheDocument();
     expect(screen.getByText("中")).toBeInTheDocument();
