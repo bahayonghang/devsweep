@@ -2,4 +2,4 @@
 {"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Generated wire types and decoders"}
 {"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Audit and history contracts"}
 {"file": ".trellis/spec/backend/directory-structure.md", "reason": "Thin Tauri adapter rule"}
-{"file": ".trellis/tasks/09-23-desktop-mole-capsule-shell/design.md", "reason": "Stage components consumed by Clean"}
+{"file": ".trellis/tasks/archive/2026-09/09-23-desktop-mole-capsule-shell/design.md", "reason": "Stage components consumed by Clean"}
