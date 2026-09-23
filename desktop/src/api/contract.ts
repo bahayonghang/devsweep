@@ -2,6 +2,10 @@ import type {
   ActionKind,
   AnalyzeNodeV1,
   AnalyzeSnapshotV1,
+  AnalyzeTrashItemV1,
+  AnalyzeTrashPreviewV1,
+  AnalyzeTrashRefusalV1,
+  AnalyzeTrashReportV1,
   AnalyzeWarningV1,
   CapacityEstimate,
   CleanupIntent,
@@ -204,6 +208,82 @@ export function decodeDesktopAnalyzeResult(value: unknown): DesktopAnalyzeResult
     operation_id: nonEmptyString(input.operation_id, "analyze result.operation_id"),
     snapshot: decodeAnalyzeSnapshot(input.snapshot),
   };
+}
+
+const ANALYZE_TRASH_REFUSAL_CODES = [
+  "protected", "system_location", "volume_root", "profile_root",
+  "analysis_root", "reparse_point", "changed_since_snapshot", "not_found",
+] as const;
+const CONFIRMATION_DIGEST = /^[0-9a-f]{64}$/;
+
+function analyzeTrashTargetId(operationId: string, nodeId: number): string {
+  return `analyze.trash:${operationId}:${nodeId}`;
+}
+
+function decodeAnalyzeTrashItem(value: unknown, operationId: string): AnalyzeTrashItemV1 {
+  const input = record(value, "analyze trash item");
+  exact(input, ["node_id", "target_id", "path", "kind", "bytes", "evidence"], "analyze trash item");
+  const item: AnalyzeTrashItemV1 = {
+    node_id: unsignedInteger(input.node_id, "analyze trash item.node_id"),
+    target_id: string(input.target_id, "analyze trash item.target_id"),
+    path: nonEmptyString(input.path, "analyze trash item.path"),
+    kind: oneOf(input.kind, ["directory", "file", "reparse"] as const, "analyze trash item.kind"),
+    bytes: unsignedInteger(input.bytes, "analyze trash item.bytes"),
+    evidence: oneOf(input.evidence, ["complete", "incomplete", "unknown"] as const, "analyze trash item.evidence"),
+  };
+  if (item.target_id !== analyzeTrashTargetId(operationId, item.node_id)) throw new Error("Invalid analyze trash item target identity");
+  if (item.kind === "reparse") throw new Error("Invalid analyze trash item kind");
+  return item;
+}
+
+function decodeAnalyzeTrashRefusal(value: unknown): AnalyzeTrashRefusalV1 {
+  const input = record(value, "analyze trash refusal");
+  exact(input, ["node_id", "reason_code"], "analyze trash refusal");
+  return {
+    node_id: unsignedInteger(input.node_id, "analyze trash refusal.node_id"),
+    reason_code: oneOf(input.reason_code, ANALYZE_TRASH_REFUSAL_CODES, "analyze trash refusal.reason_code"),
+  };
+}
+
+export function decodeAnalyzeTrashPreview(value: unknown): AnalyzeTrashPreviewV1 {
+  const input = record(value, "analyze trash preview");
+  exact(input, ["version", "operation_id", "items", "refused", "digest"], "analyze trash preview");
+  const operation_id = nonEmptyString(input.operation_id, "analyze trash preview.operation_id");
+  const preview: AnalyzeTrashPreviewV1 = {
+    version: unsignedInteger(input.version, "analyze trash preview.version"),
+    operation_id,
+    items: array(input.items, "analyze trash preview.items", (item) => decodeAnalyzeTrashItem(item, operation_id)),
+    refused: array(input.refused, "analyze trash preview.refused", decodeAnalyzeTrashRefusal),
+    digest: patternString(input.digest, CONFIRMATION_DIGEST, "analyze trash preview.digest"),
+  };
+  if (preview.version !== 1) throw new Error("Unsupported analyze trash preview version");
+  const ids = [...preview.items.map((item) => item.node_id), ...preview.refused.map((refusal) => refusal.node_id)];
+  if (new Set(ids).size !== ids.length) throw new Error("Invalid analyze trash preview duplicate node");
+  return preview;
+}
+
+export function decodeAnalyzeTrashReport(value: unknown): AnalyzeTrashReportV1 {
+  const input = record(value, "analyze trash report");
+  exact(input, ["version", "operation_id", "moved_node_ids", "report"], "analyze trash report");
+  const operation_id = nonEmptyString(input.operation_id, "analyze trash report.operation_id");
+  const result: AnalyzeTrashReportV1 = {
+    version: unsignedInteger(input.version, "analyze trash report.version"),
+    operation_id,
+    moved_node_ids: array(input.moved_node_ids, "analyze trash report.moved_node_ids", (item) => unsignedInteger(item, "analyze trash report.moved_node_id")),
+    report: decodeExecutedReport(input.report),
+  };
+  if (result.version !== 1) throw new Error("Unsupported analyze trash report version");
+  const prefix = analyzeTrashTargetId(operation_id, 0).slice(0, -1);
+  if (result.report.outcomes.some((outcome) => !outcome.target_id.startsWith(prefix) || outcome.action.type !== "move_to_trash")) {
+    throw new Error("Invalid analyze trash report target");
+  }
+  const succeeded = result.report.outcomes
+    .filter((outcome) => outcome.status.type === "succeeded")
+    .map((outcome) => outcome.target_id)
+    .sort();
+  const moved = result.moved_node_ids.map((nodeId) => analyzeTrashTargetId(operation_id, nodeId)).sort();
+  if (new Set(moved).size !== moved.length || moved.join(",") !== succeeded.join(",")) throw new Error("Invalid analyze trash report moved nodes");
+  return result;
 }
 
 const SOFTWARE_ELIGIBILITY_REASONS = [
@@ -1189,7 +1269,7 @@ export function decodeDesktopScanResult(value: unknown): DesktopScanResult {
 export function decodeCommandError(value: unknown): CommandError {
   const input = record(value, "command error");
   const code = oneOf(input.code, [
-    "scan_already_running", "scan_failed", "analyze_already_running", "analyze_failed",
+    "scan_already_running", "scan_failed", "analyze_already_running", "analyze_failed", "analyze_stale_operation",
     "software_already_running", "software_failed", "software_stale_authority", "software_audit_unavailable",
     "optimize_already_running", "optimize_failed", "optimize_stale_authority", "optimize_unavailable",
     "optimize_audit_unavailable", "status_already_running", "status_failed", "invalid_plan", "stale_confirmation", "unknown_target", "inspect_only_target", "io",
@@ -1205,6 +1285,7 @@ export function decodeCommandError(value: unknown): CommandError {
       exact(input, ["code"], "command error"); return { code };
     case "scan_failed":
     case "analyze_failed":
+    case "analyze_stale_operation":
     case "software_failed":
     case "software_stale_authority":
     case "software_audit_unavailable":

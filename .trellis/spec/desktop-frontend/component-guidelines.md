@@ -76,6 +76,14 @@ title is `DevSweep`.
   facts aligned.
 - Keep the persistent summary/action bar outside the table frame. It must remain
   stable when selection, errors, or result counts change.
+- Analyze tiles and list rows open a context menu from right-click,
+  Shift+F10, or the ContextMenu key. The menu is a real `role=menu` with
+  `role=menuitem` entries "Show in Explorer" and "Move to Recycle Bin".
+  Arrow/Home/End move inside it; Escape and Tab close it and return focus to
+  the tile or row. A refused or moved node keeps the Move item disabled with
+  a visible "view only" reason. Enter and double-click still drill down.
+  The Move item opens a preview `DetailView` (paths, sizes, refusals) and
+  then the shared second-confirmation dialog.
 - Use a dialog only for the destructive second confirmation. Trap focus through
   the native `<dialog>` element and provide clear cancel/confirm actions.
 - Keep Clean observation, completed-report authority, selection, dry-run digest,

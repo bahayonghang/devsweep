@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "operation_id": "analyze-op-1",
+  "items": [
+    {
+      "node_id": 1,
+      "target_id": "analyze.trash:analyze-op-1:1",
+      "path": "C:/fixture/analyze/a.bin",
+      "kind": "file",
+      "bytes": 4096,
+      "evidence": "complete"
+    }
+  ],
+  "refused": [
+    { "node_id": 0, "reason_code": "analysis_root" }
+  ],
+  "digest": "5b0e2f7c1d9a4e3b8c6f0a2d4e6b8c0a1f3e5d7c9b1a3e5f7d9c1b3a5e7f9d1c"
+}

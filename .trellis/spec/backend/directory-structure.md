@@ -144,6 +144,12 @@ one integration test proving use from an external crate boundary.
   `leftovers.rs` owns leftover discovery, the leftover plan digest, and the
   Recycle Bin move. Registry access stays in the `arp.rs` `native_registry`
   helper, and every support record goes through `execution/audit.rs`.
+- Keep the Analyze walker and snapshot types in
+  `crates/devsweep-core/src/analysis/` read-only. `analysis/actions.rs` is the
+  only Analyze file that may reach a side effect: it rebuilds node paths from
+  a retained snapshot, runs the `explorer.exe /select,` reveal through
+  `ProcessRunner`, and builds the `analyze.trash` Recycle Bin plan that the
+  Clean `Executor` runs with the Clean audit journal.
 - Keep `crates/devsweep-cli/src/main.rs` to `devsweep::run()` delegation only. It must not parse
   arguments, initialize tracing, decode files, format output, or dispatch
   individual commands.

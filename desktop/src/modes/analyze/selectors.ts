@@ -123,3 +123,58 @@ export function pageForNode(rows: readonly AnalyzeNodeV1[], nodeId: number): num
   const index = rows.findIndex((node) => node.id === nodeId);
   return index < 0 ? 0 : Math.floor(index / ANALYZE_PAGE_SIZE);
 }
+
+export interface MovedProjection {
+  readonly index: AnalyzeIndex;
+  /** Moved nodes and every node under them. */
+  readonly moved: ReadonlySet<number>;
+  /** Snapshot bytes of the outermost moved nodes. */
+  readonly movedBytes: number;
+}
+
+function ancestorsOf(index: AnalyzeIndex, node: AnalyzeNodeV1): AnalyzeNodeV1[] {
+  const result: AnalyzeNodeV1[] = [];
+  const visited = new Set<number>([node.id]);
+  let cursor = node.parent_id === null ? undefined : index.nodesById.get(node.parent_id);
+  while (cursor && !visited.has(cursor.id)) {
+    result.push(cursor);
+    visited.add(cursor.id);
+    cursor = cursor.parent_id === null ? undefined : index.nodesById.get(cursor.parent_id);
+  }
+  return result;
+}
+
+/**
+ * Display-only projection after a Recycle Bin move. Moved subtrees show zero
+ * bytes and their bytes are subtracted from each ancestor. The retained
+ * snapshot is never edited.
+ */
+export function projectMoved(index: AnalyzeIndex, movedIds: readonly number[]): MovedProjection {
+  if (movedIds.length === 0) return { index, moved: new Set(), movedBytes: 0 };
+  const requested = new Set(movedIds.filter((id) => index.nodesById.has(id)));
+  const outermost = [...requested]
+    .map((id) => index.nodesById.get(id)!)
+    .filter((node) => !ancestorsOf(index, node).some((ancestor) => requested.has(ancestor.id)));
+  const moved = new Set<number>();
+  const pending = outermost.map((node) => node.id);
+  while (pending.length > 0) {
+    const id = pending.pop()!;
+    if (moved.has(id)) continue;
+    moved.add(id);
+    for (const child of index.childrenByParent.get(id) ?? []) pending.push(child.id);
+  }
+  const subtract = new Map<number, number>();
+  for (const node of outermost) {
+    for (const ancestor of ancestorsOf(index, node)) subtract.set(ancestor.id, (subtract.get(ancestor.id) ?? 0) + node.bytes);
+  }
+  const nodes = index.snapshot.nodes.map((node) => {
+    if (moved.has(node.id)) return { ...node, bytes: 0 };
+    const minus = subtract.get(node.id);
+    return minus === undefined ? node : { ...node, bytes: Math.max(0, node.bytes - minus) };
+  });
+  return {
+    index: createAnalyzeIndex({ ...index.snapshot, nodes }),
+    moved,
+    movedBytes: outermost.reduce((sum, node) => sum + node.bytes, 0),
+  };
+}

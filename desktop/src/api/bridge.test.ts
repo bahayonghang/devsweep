@@ -5,6 +5,8 @@ import dryRunJson from "./fixtures/dry-run-outcome.json";
 import executionJson from "./fixtures/execution-report.json";
 import analyzeCompleteJson from "./fixtures/analyze/complete.json";
 import analyzeProgressJson from "./fixtures/analyze/progress.json";
+import analyzeTrashPreviewJson from "./fixtures/analyze/trash-preview.json";
+import analyzeTrashReportJson from "./fixtures/analyze/trash-report.json";
 import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
 import softwareInventoryJson from "./fixtures/software/inventory.json";
 import softwareUpdatesJson from "./fixtures/software/updates-available.json";
@@ -106,6 +108,37 @@ describe("tauriBridge", () => {
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ operation_id: "analyze-current", sequence: 1 }));
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "analyze_start", { operationId: "analyze-current", root: "C:/fixture", onProgress: expect.any(mocks.Channel) });
     expect(mocks.invoke).toHaveBeenNthCalledWith(2, "analyze_cancel", { operationId: "analyze-current" });
+  });
+
+  it("sends only Analyze operation and node ids for reveal and Recycle Bin moves", async () => {
+    mocks.invoke
+      .mockResolvedValueOnce("C:\\")
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(analyzeTrashPreviewJson)
+      .mockResolvedValueOnce(analyzeTrashReportJson);
+
+    await expect(tauriBridge.analyzeDefaultRoot()).resolves.toBe("C:\\");
+    await tauriBridge.analyzeReveal("analyze-op-1", 1);
+    const preview = await tauriBridge.analyzeTrashPreview("analyze-op-1", [0, 1]);
+    const report = await tauriBridge.analyzeTrashExecute("analyze-op-1", [0, 1], preview.digest, true);
+
+    expect(report.moved_node_ids).toEqual([1]);
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "analyze_default_root", {});
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "analyze_reveal", { operationId: "analyze-op-1", nodeId: 1 });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "analyze_trash_preview", { operationId: "analyze-op-1", nodeIds: [0, 1] });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(4, "analyze_trash_execute", { operationId: "analyze-op-1", nodeIds: [0, 1], digest: preview.digest, confirmed: true });
+    for (const [, args] of mocks.invoke.mock.calls) {
+      expect(JSON.stringify(args)).not.toMatch(/fixture|a\.bin|[A-Z]:[\\/]/);
+    }
+
+    mocks.invoke.mockResolvedValueOnce(analyzeTrashPreviewJson);
+    await expect(tauriBridge.analyzeTrashPreview("other-op", [0, 1])).rejects.toThrow("does not match the request");
+    mocks.invoke.mockResolvedValueOnce(analyzeTrashPreviewJson);
+    await expect(tauriBridge.analyzeTrashPreview("analyze-op-1", [1])).rejects.toThrow("does not match the request");
+    mocks.invoke.mockResolvedValueOnce(analyzeTrashReportJson);
+    await expect(tauriBridge.analyzeTrashExecute("analyze-op-1", [1], "0".repeat(64), true)).rejects.toThrow("does not match the confirmed request");
+    mocks.invoke.mockRejectedValueOnce({ code: "analyze_stale_operation", message: "analysis analyze-op-1 is not the retained snapshot" });
+    await expect(tauriBridge.analyzeReveal("analyze-op-1", 1)).rejects.toEqual({ code: "analyze_stale_operation", message: "analysis analyze-op-1 is not the retained snapshot" });
   });
 
   it("sends Software support commands with camelCase arguments and correlates results", async () => {

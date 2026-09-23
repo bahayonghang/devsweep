@@ -206,6 +206,60 @@ pub fn validate_plan(plan: &UntrustedPlan) -> Result<ValidatedPlan> {
     Ok(ValidatedPlan { targets, digest })
 }
 
+/// Builds a validated Recycle Bin plan from targets that core rebuilt from a
+/// retained snapshot. Plan files and IPC payloads never reach this path; they
+/// still go through [`validate_plan`], whose registry has no rule for
+/// `rule_id`.
+pub(crate) fn validated_trash_plan(
+    targets: Vec<CleanTarget>,
+    rule_id: &str,
+) -> Result<ValidatedPlan> {
+    let action_identity = format!("{rule_id}:move_to_trash");
+    let mut ids = HashSet::new();
+    let mut fingerprints = HashSet::new();
+    let mut validated = Vec::with_capacity(targets.len());
+    for target in targets {
+        let CleanAction::MoveToTrash { path } = &target.action else {
+            bail!(
+                "trusted trash target {} has no trash action",
+                target.id.as_str()
+            )
+        };
+        if target.path.as_ref() != Some(path) {
+            bail!(
+                "trusted trash target {} has a mismatched path",
+                target.id.as_str()
+            )
+        }
+        if !ids.insert(target.id.clone()) {
+            bail!("duplicate cleanup target id: {}", target.id.as_str())
+        }
+        let fingerprint = ActionFingerprint(format!(
+            "{action_identity}|{}",
+            normalize_absolute_path(path)?
+        ));
+        if !fingerprints.insert(fingerprint.clone()) {
+            bail!(
+                "duplicate canonical action fingerprint: {}",
+                fingerprint.as_str()
+            )
+        }
+        let path_identity = capture_path_identity(path).ok();
+        validated.push(ValidatedTarget {
+            target,
+            rule_id: rule_id.to_string(),
+            action_identity: action_identity.clone(),
+            fingerprint,
+            path_identity,
+        });
+    }
+    let digest = digest_for_targets(&validated)?;
+    Ok(ValidatedPlan {
+        targets: validated,
+        digest,
+    })
+}
+
 /// Converts an in-memory scan result into the only JSON-facing v2 DTO. This
 /// boundary is intentionally strict: a scanner bug must not serialize a direct
 /// executable action as a saved plan.

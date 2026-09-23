@@ -21,6 +21,10 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "scan_cancel",
     "analyze_start",
     "analyze_cancel",
+    "analyze_default_root",
+    "analyze_reveal",
+    "analyze_trash_preview",
+    "analyze_trash_execute",
     "software_inventory_start",
     "software_preview",
     "software_uninstall",
@@ -69,6 +73,10 @@ pub fn run() {
             commands::scan_cancel,
             analyze::analyze_start,
             analyze::analyze_cancel,
+            analyze::analyze_default_root,
+            analyze::analyze_reveal,
+            analyze::analyze_trash_preview,
+            analyze::analyze_trash_execute,
             software::software_inventory_start,
             software::software_preview,
             software::software_uninstall,
@@ -140,7 +148,7 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 36);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 40);
     }
 
     #[test]

@@ -7,7 +7,7 @@
 //! field added, removed, or renamed on either side fails here.
 
 use devsweep_core::{
-    analysis::AnalyzeSnapshotV1,
+    analysis::{AnalyzeSnapshotV1, AnalyzeTrashPreviewV1, AnalyzeTrashReportV1},
     execution::ExecutionReport,
     history::CleanMovedTotalsV1,
     model::ScanReport,
@@ -115,6 +115,14 @@ fn analyze_fixtures_match_the_analyze_command_wire_types() {
     assert_round_trip::<CommandError>(
         "analyze/error.json",
         include_str!("../../src/api/fixtures/analyze/error.json"),
+    );
+    assert_round_trip::<AnalyzeTrashPreviewV1>(
+        "analyze/trash-preview.json",
+        include_str!("../../src/api/fixtures/analyze/trash-preview.json"),
+    );
+    assert_round_trip::<AnalyzeTrashReportV1>(
+        "analyze/trash-report.json",
+        include_str!("../../src/api/fixtures/analyze/trash-report.json"),
     );
 }
 
@@ -311,6 +319,7 @@ fn error_code(error: &CommandError) -> &'static str {
         CommandError::ScanFailed { .. } => "scan_failed",
         CommandError::AnalyzeAlreadyRunning => "analyze_already_running",
         CommandError::AnalyzeFailed { .. } => "analyze_failed",
+        CommandError::AnalyzeStaleOperation { .. } => "analyze_stale_operation",
         CommandError::SoftwareAlreadyRunning => "software_already_running",
         CommandError::SoftwareFailed { .. } => "software_failed",
         CommandError::SoftwareStaleAuthority { .. } => "software_stale_authority",
@@ -338,7 +347,7 @@ fn error_code(error: &CommandError) -> &'static str {
 }
 
 /// Count of `CommandError` variants the shared fixture must carry.
-const COMMAND_ERROR_VARIANT_COUNT: usize = 27;
+const COMMAND_ERROR_VARIANT_COUNT: usize = 28;
 
 #[test]
 fn shared_error_fixture_covers_every_command_error_variant() {

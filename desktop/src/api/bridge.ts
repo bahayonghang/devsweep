@@ -1,6 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwareLeftoversResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeSoftwareStartupList, decodeSoftwareStartupToggleReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwareLeftoversPreviewResult, DesktopSoftwareLeftoversResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopSoftwareUpdatesResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareLeftoverPlanV1, SoftwareLeftoverSelectionV1, SoftwareSelectionPlanV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1, StatusEventV1, UntrustedPlan } from "./types.gen";
+import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwareLeftoversResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeSoftwareStartupList, decodeSoftwareStartupToggleReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
+import type { AnalyzeTrashPreviewV1, AnalyzeTrashReportV1, DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwareLeftoversPreviewResult, DesktopSoftwareLeftoversResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopSoftwareUpdatesResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareLeftoverPlanV1, SoftwareLeftoverSelectionV1, SoftwareSelectionPlanV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1, StatusEventV1, UntrustedPlan } from "./types.gen";
 import {
   decodeCleanMovedTotals,
   decodeHistoryDetail,
@@ -21,6 +21,10 @@ import type {
 export interface DesktopBridge {
   analyzeStart(operationId: string, root: string, onProgress: (progress: DesktopAnalyzeProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopAnalyzeResult>;
   analyzeCancel(operationId: string): Promise<void>;
+  analyzeDefaultRoot(): Promise<string>;
+  analyzeReveal(operationId: string, nodeId: number): Promise<void>;
+  analyzeTrashPreview(operationId: string, nodeIds: number[]): Promise<AnalyzeTrashPreviewV1>;
+  analyzeTrashExecute(operationId: string, nodeIds: number[], digest: string, confirmed: boolean): Promise<AnalyzeTrashReportV1>;
   softwareInventoryStart(operationId: string): Promise<DesktopSoftwareInventoryResult>;
   softwarePreview(operationId: string, inventory: SoftwareInventoryV1, selectedIds: string[]): Promise<DesktopSoftwarePreviewResult>;
   softwareUninstall(operationId: string, plan: SoftwareSelectionPlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopSoftwareUninstallResult>;
@@ -76,6 +80,27 @@ export const tauriBridge: DesktopBridge = {
     return result;
   },
   analyzeCancel: async (operationId) => { try { await invoke("analyze_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
+  analyzeDefaultRoot: () => call("analyze_default_root", {}, (value) => {
+    if (typeof value !== "string" || value.length === 0) throw new Error("Invalid analyze default root");
+    return value;
+  }),
+  analyzeReveal: async (operationId, nodeId) => { try { await invoke("analyze_reveal", { operationId, nodeId }); } catch (error) { throw bridgeError(error); } },
+  analyzeTrashPreview: (operationId, nodeIds) => call("analyze_trash_preview", { operationId, nodeIds }, (value) => {
+    const preview = decodeAnalyzeTrashPreview(value);
+    const requested = new Set(nodeIds);
+    if (preview.operation_id !== operationId || [...preview.items, ...preview.refused].some((entry) => !requested.has(entry.node_id))) {
+      throw new Error("Analyze trash preview does not match the request");
+    }
+    return preview;
+  }),
+  analyzeTrashExecute: (operationId, nodeIds, digest, confirmed) => call("analyze_trash_execute", { operationId, nodeIds, digest, confirmed }, (value) => {
+    const report = decodeAnalyzeTrashReport(value);
+    const requested = new Set(nodeIds);
+    if (report.operation_id !== operationId || report.report.confirmation_digest !== digest || report.moved_node_ids.some((nodeId) => !requested.has(nodeId))) {
+      throw new Error("Analyze trash report does not match the confirmed request");
+    }
+    return report;
+  }),
   softwareInventoryStart: async (operationId) => {
     const result = await call("software_inventory_start", { operationId }, decodeDesktopSoftwareInventoryResult);
     if (result.operation_id !== operationId) throw new Error("Software inventory result does not match the active operation");

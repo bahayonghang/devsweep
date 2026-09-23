@@ -3,6 +3,10 @@
   { "code": "scan_failed", "message": "scan worker failed" },
   { "code": "analyze_already_running" },
   { "code": "analyze_failed", "message": "analyze worker failed" },
+  {
+    "code": "analyze_stale_operation",
+    "message": "analysis analyze-op-0 is not the retained snapshot"
+  },
   { "code": "software_already_running" },
   { "code": "software_failed", "message": "software worker failed" },
   {

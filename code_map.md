@@ -70,10 +70,12 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 ### Five-mode core
 
 - `crates/devsweep-core/src/analysis/mod.rs` - bounded read-only Analyze walker and snapshots.
-  Never creates cleanup authority.
+  The walker never creates cleanup authority.
 - `crates/devsweep-core/src/analysis/model.rs` - Analyze V1 snapshot, node, warning, and budget
   types.
 - `crates/devsweep-core/src/analysis/walker.rs` - two-worker traversal with accounted caps.
+- `crates/devsweep-core/src/analysis/actions.rs` - node path rebuild, Explorer reveal, and the
+  confirmed `analyze.trash` Recycle Bin plan run by the Clean executor.
 - `crates/devsweep-core/src/software/mod.rs` - installed-software inventory and preview planning.
   Never reads vendor uninstall command fields as authority.
 - `crates/devsweep-core/src/software/plan.rs` - Software selection plan validation.

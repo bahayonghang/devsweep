@@ -5,6 +5,8 @@ import twoTargetDryRunJson from "./fixtures/dry-run-outcome-two-targets.json";
 import executionJson from "./fixtures/execution-report.json";
 import analyzeCompleteJson from "./fixtures/analyze/complete.json";
 import analyzeProgressJson from "./fixtures/analyze/progress.json";
+import analyzeTrashPreviewJson from "./fixtures/analyze/trash-preview.json";
+import analyzeTrashReportJson from "./fixtures/analyze/trash-report.json";
 import softwareInventoryJson from "./fixtures/software/inventory.json";
 import softwarePreviewJson from "./fixtures/software/preview.json";
 import softwareExecutionJson from "./fixtures/software/execution-five-terminal.json";
@@ -29,7 +31,7 @@ import statusLiveSnapshotJson from "./fixtures/status/event-snapshot.json";
 import statusSkippedJson from "./fixtures/status/event-skipped.json";
 import statusTerminalJson from "./fixtures/status/event-terminal.json";
 import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeSoftwareStartupList, decodeStatusEvent } from "./contract";
+import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeSoftwareStartupList, decodeStatusEvent } from "./contract";
 import type { DesktopBridge } from "./bridge";
 import { decodeCleanMovedTotals } from "../support/decode";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
@@ -42,6 +44,8 @@ const execution = decodeExecutionReport(executionJson);
 const cleanMovedTotals = decodeCleanMovedTotals(cleanMovedTotalsJson);
 const analyzeComplete = decodeDesktopAnalyzeResult(analyzeCompleteJson);
 const analyzeProgress = decodeDesktopAnalyzeProgress(analyzeProgressJson);
+const analyzeTrashPreview = decodeAnalyzeTrashPreview(analyzeTrashPreviewJson);
+const analyzeTrashReport = decodeAnalyzeTrashReport(analyzeTrashReportJson);
 const softwareInventory = decodeSoftwareInventory(softwareInventoryJson);
 const softwarePreview = decodeDesktopSoftwarePreviewResult(softwarePreviewJson);
 const softwareExecution = decodeDesktopSoftwareUninstallResult(softwareExecutionJson);
@@ -80,6 +84,18 @@ let pendingStatusLive: { operationId: string; resolve: (result: { type: "cancele
 
 function correlatedAnalyzeProgress(operationId: string): DesktopAnalyzeProgress {
   return { ...analyzeProgress, operation_id: operationId };
+}
+
+function fixtureTrashPreview(operationId: string, nodeIds: number[]) {
+  const requested = new Set(nodeIds);
+  return {
+    ...analyzeTrashPreview,
+    operation_id: operationId,
+    items: analyzeTrashPreview.items
+      .filter((item) => requested.has(item.node_id))
+      .map((item) => ({ ...item, target_id: `analyze.trash:${operationId}:${item.node_id}` })),
+    refused: analyzeTrashPreview.refused.filter((refusal) => requested.has(refusal.node_id)),
+  };
 }
 
 function correlatedProjectProgress(scanId: string): DesktopScanProgress {
@@ -134,6 +150,25 @@ export const fixtureBridge: DesktopBridge = {
       });
       pendingAnalyzeCancellation = undefined;
     }
+  },
+  analyzeDefaultRoot: async () => "C:\\",
+  analyzeReveal: async () => {},
+  analyzeTrashPreview: async (operationId, nodeIds) => fixtureTrashPreview(operationId, nodeIds),
+  analyzeTrashExecute: async (operationId, nodeIds, digest, confirmed) => {
+    const preview = fixtureTrashPreview(operationId, nodeIds);
+    if (!confirmed || digest !== preview.digest || preview.items.length === 0) {
+      throw { code: "stale_confirmation", expected_digest: digest, actual_digest: preview.digest };
+    }
+    const moved = preview.items.map((item) => item.node_id);
+    return {
+      ...analyzeTrashReport,
+      operation_id: operationId,
+      moved_node_ids: moved,
+      report: {
+        ...analyzeTrashReport.report,
+        outcomes: analyzeTrashReport.report.outcomes.map((outcome, index) => ({ ...outcome, target_id: `analyze.trash:${operationId}:${moved[index]}` })),
+      },
+    };
   },
   softwareInventoryStart: async (operationId) => ({ type: "completed", operation_id: operationId, inventory: softwareInventory }),
   softwarePreview: async (operationId, _inventory, selectedIds) => {

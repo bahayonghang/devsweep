@@ -53,6 +53,37 @@ through the frontend `OperationCoordinator` as kind `analyze.trash`.
 - Desktop spec and backend spec: replace "Analyze is read-only" with the R4
   boundary. `docs/safety-capability-matrix.md`: add "Analyze → Recycle Bin".
 
+## Implementation note
+
+The implementation differs from the design above in these points:
+
+- The preview (`AnalyzeTrashPreviewV1`) carries `items` (node id, target id,
+  path, kind, bytes, evidence), `refused`, and `digest`. It carries no plan.
+  `analyze_trash_execute` takes `(operation_id, node_ids, digest, confirmed)`.
+  Core rebuilds the plan from the retained snapshot and the live file system,
+  and the Clean executor rejects the call when the live digest differs. The
+  webview therefore never sends a plan or a path.
+- No audit origin field is added. The execution writes Clean V1 audit records
+  (`domain: "clean"`). The target id `analyze.trash:<operation_id>:<node_id>`
+  and the rule id `analyze.trash` identify the origin. Plan files cannot carry
+  the `analyze.trash` rule id.
+- Targets use `Scope::Global`, `TargetKind::ToolCache` as a placeholder kind,
+  risk `High`, and `MoveToTrash`. No new `TargetKind` is added.
+- The Tauri adapter retains a canceled snapshot as well as a completed one.
+  A new run clears the retained snapshot. A mismatch returns the new
+  `analyze_stale_operation` command error.
+- A stale digest keeps the Clean `stale_confirmation` error shape because the
+  Clean executor detects it.
+- One extra command, `analyze_default_root`, gives the system drive for R1.
+  The shipped command count is 40.
+- `profile_root` also covers the Desktop, Documents, and Downloads folders and
+  any folder that contains the user profile. `protected` also covers the Clean
+  protected profile subtrees and any folder that contains the running
+  executable.
+- The shell subtitle for Analyze still says the mode is read-only. The key is
+  in the frozen `shell.v1` set that the CLI and desktop tests check, and the
+  TUI Analyze mode stays read-only. The subtitle was not changed.
+
 ## Rollback
 
 Reveal and trash are separate commands; revert trash alone if safety tests

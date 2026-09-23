@@ -5,7 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import snapshotFixture from "../../api/fixtures/analyze/snapshot.json";
 import progressFixture from "../../api/fixtures/analyze/progress.json";
-import { decodeAnalyzeSnapshot, decodeDesktopAnalyzeProgress } from "../../api/contract";
+import trashPreviewFixture from "../../api/fixtures/analyze/trash-preview.json";
+import { decodeAnalyzeSnapshot, decodeAnalyzeTrashPreview, decodeDesktopAnalyzeProgress } from "../../api/contract";
 import type { DesktopBridge } from "../../api/bridge";
 import { fixtureBridge } from "../../api/fixture-bridge";
 import type { DesktopAnalyzeResult } from "../../api/types.gen";
@@ -16,6 +17,7 @@ const analyzeStyles = readFileSync(resolve(process.cwd(), "src/modes/analyze/sty
 
 const snapshot = decodeAnalyzeSnapshot(snapshotFixture);
 const progress = decodeDesktopAnalyzeProgress(progressFixture);
+const trashPreview = decodeAnalyzeTrashPreview(trashPreviewFixture);
 
 function bridge(): DesktopBridge {
   return {
@@ -44,6 +46,97 @@ describe("AnalyzePage", () => {
     expect(screen.getByRole("button", { name: /a\.bin/ })).toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.queryByText(/delete|cleanup/i)).not.toBeInTheDocument();
+  });
+
+  it("defaults the root to the system drive from the host", async () => {
+    const custom = bridge();
+    custom.analyzeDefaultRoot = vi.fn().mockResolvedValue("D:\\");
+    render(<AnalyzePage bridge={custom} coordinator={new OperationCoordinator()} locale="en" />);
+    expect(await screen.findByDisplayValue("D:\\")).toBeInTheDocument();
+    expect(custom.analyzeDefaultRoot).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { locale: "en" as const, start: "Analyze path", reveal: "Show in Explorer", move: "Move to Recycle Bin", viewOnly: /View only: analysis root/, review: "Review and confirm", execute: "Execute", reported: /Moved 1 items to the Recycle Bin/, close: "Close preview", moved: /In Recycle Bin/, suggest: /Run a new analysis/ },
+    { locale: "zh-CN" as const, start: "分析路径", reveal: "在资源管理器中显示", move: "移到回收站", viewOnly: /仅查看：分析根目录/, review: "复核并确认", execute: "执行", reported: /已将 1 个项目移到回收站/, close: "关闭预览", moved: /已移到回收站/, suggest: /运行新的分析/ },
+  ])("opens the context menu from the keyboard, reveals, and moves after a second confirmation in $locale", async (copy) => {
+    const user = userEvent.setup();
+    const custom = bridge();
+    custom.analyzeReveal = vi.fn().mockResolvedValue(undefined);
+    custom.analyzeTrashPreview = vi.fn(fixtureBridge.analyzeTrashPreview);
+    custom.analyzeTrashExecute = vi.fn(fixtureBridge.analyzeTrashExecute);
+    render(<AnalyzePage bridge={custom} coordinator={new OperationCoordinator()} locale={copy.locale} />);
+    await screen.findByDisplayValue("C:\\");
+    await user.click(screen.getByRole("button", { name: copy.start }));
+
+    const tile = await screen.findByRole("button", { name: /a\.bin/ });
+    tile.focus();
+    fireEvent.keyDown(tile, { key: "F10", shiftKey: true });
+    const menu = screen.getByRole("menu");
+    expect(screen.getByRole("menuitem", { name: copy.reveal })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "End" });
+    expect(screen.getByRole("menuitem", { name: copy.move })).toHaveFocus();
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(tile).toHaveFocus();
+
+    fireEvent.keyDown(tile, { key: "ContextMenu" });
+    await user.click(screen.getByRole("menuitem", { name: copy.reveal }));
+    const operationId = vi.mocked(custom.analyzeStart).mock.calls[0][0];
+    expect(custom.analyzeReveal).toHaveBeenCalledWith(operationId, 1);
+    expect(tile).toHaveFocus();
+
+    const list = screen.getByRole("listbox");
+    fireEvent.keyDown(list, { key: "ContextMenu" });
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Tab" });
+    expect(list).toHaveFocus();
+
+    fireEvent.keyDown(tile, { key: "ContextMenu" });
+    await user.click(screen.getByRole("menuitem", { name: copy.move }));
+    expect(custom.analyzeTrashPreview).toHaveBeenCalledWith(operationId, [1]);
+    expect(await screen.findByText("C:/fixture/analyze/a.bin")).toBeInTheDocument();
+    expect(custom.analyzeTrashExecute).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: copy.review }));
+    expect(screen.getByRole("dialog")).toHaveTextContent(trashPreview.digest);
+    await user.click(screen.getByRole("button", { name: copy.execute }));
+    expect(custom.analyzeTrashExecute).toHaveBeenCalledWith(operationId, [1], trashPreview.digest, true);
+    expect(await screen.findByText(copy.reported)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/freed|released|释放/i);
+    await user.click(screen.getByRole("button", { name: copy.close }));
+    expect(await screen.findByRole("option", { name: copy.moved })).toBeInTheDocument();
+    expect(screen.getByText(copy.suggest)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/freed|released|释放/i);
+  });
+
+  it("shows a refused node as view only and keeps its Move item disabled", async () => {
+    const user = userEvent.setup();
+    const custom = bridge();
+    custom.analyzeTrashPreview = vi.fn().mockImplementation(async (operationId: string) => ({
+      ...trashPreview,
+      operation_id: operationId,
+      items: [],
+      refused: [{ node_id: 1, reason_code: "system_location" }],
+    }));
+    custom.analyzeTrashExecute = vi.fn();
+    render(<AnalyzePage bridge={custom} coordinator={new OperationCoordinator()} locale="en" />);
+    await screen.findByDisplayValue("C:\\");
+    await user.click(screen.getByRole("button", { name: "Analyze path" }));
+    const tile = await screen.findByRole("button", { name: /a\.bin/ });
+    fireEvent.contextMenu(tile, { clientX: 20, clientY: 30 });
+    await user.click(screen.getByRole("menuitem", { name: "Move to Recycle Bin" }));
+    expect(await screen.findByText("No item in this selection can move to the Recycle Bin.")).toBeInTheDocument();
+    expect(screen.getByText("View only: system location")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review and confirm" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Close preview" }));
+
+    const again = await screen.findByRole("button", { name: /a\.bin/ });
+    fireEvent.keyDown(again, { key: "ContextMenu" });
+    const move = screen.getByRole("menuitem", { name: "Move to Recycle Bin" });
+    expect(move).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menu")).toHaveTextContent("View only: system location");
+    await user.click(move);
+    expect(custom.analyzeTrashPreview).toHaveBeenCalledOnce();
+    expect(custom.analyzeTrashExecute).not.toHaveBeenCalled();
   });
 
   it("links a treemap focus to the paged list and supports keyboard up", async () => {

@@ -1,4 +1,5 @@
 use devsweep_core::{
+    analysis::AnalyzeActionError,
     execution::ExecutionError,
     optimize::{MaintenanceExecutionError, OptimizeAuditError, OptimizePlanError},
     software::{
@@ -20,6 +21,9 @@ pub(crate) enum CommandError {
     },
     AnalyzeAlreadyRunning,
     AnalyzeFailed {
+        message: String,
+    },
+    AnalyzeStaleOperation {
         message: String,
     },
     SoftwareAlreadyRunning,
@@ -104,6 +108,22 @@ impl CommandError {
     pub(crate) fn analyze_failed(error: anyhow::Error) -> Self {
         Self::AnalyzeFailed {
             message: format!("{error:#}"),
+        }
+    }
+
+    /// Maps reveal and Recycle Bin errors. A stale digest keeps the Clean
+    /// `stale_confirmation` shape because the Clean executor detects it.
+    pub(crate) fn analyze_action(error: AnalyzeActionError) -> Self {
+        match error {
+            AnalyzeActionError::UnknownNode(_) => Self::AnalyzeStaleOperation {
+                message: error.to_string(),
+            },
+            AnalyzeActionError::Execution(error) if error.is::<ExecutionError>() => {
+                Self::execution(error)
+            }
+            _ => Self::AnalyzeFailed {
+                message: error.to_string(),
+            },
         }
     }
 
@@ -295,6 +315,31 @@ mod tests {
                 target_id: TargetId::new("missing")
             }
         );
+    }
+
+    #[test]
+    fn analyze_action_errors_keep_stale_confirmation_and_stale_operation_codes() {
+        let stale =
+            AnalyzeActionError::Execution(anyhow::Error::new(ExecutionError::StaleConfirmation {
+                expected_digest: ConfirmationDigest::new("old"),
+                actual_digest: ConfirmationDigest::new("new"),
+            }));
+        assert!(matches!(
+            CommandError::analyze_action(stale),
+            CommandError::StaleConfirmation { .. }
+        ));
+        assert!(matches!(
+            CommandError::analyze_action(AnalyzeActionError::UnknownNode(7)),
+            CommandError::AnalyzeStaleOperation { .. }
+        ));
+        assert!(matches!(
+            CommandError::analyze_action(AnalyzeActionError::ConfirmationRequired),
+            CommandError::AnalyzeFailed { .. }
+        ));
+        assert!(matches!(
+            CommandError::analyze_action(AnalyzeActionError::RevealUnavailable),
+            CommandError::AnalyzeFailed { .. }
+        ));
     }
 
     #[test]

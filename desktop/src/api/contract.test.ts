@@ -6,12 +6,14 @@ import progressFixture from "./fixtures/scan-progress.json";
 import analyzeSnapshotFixture from "./fixtures/analyze/snapshot.json";
 import analyzeProgressFixture from "./fixtures/analyze/progress.json";
 import analyzeCompleteFixture from "./fixtures/analyze/complete.json";
+import analyzeTrashPreviewFixture from "./fixtures/analyze/trash-preview.json";
+import analyzeTrashReportFixture from "./fixtures/analyze/trash-report.json";
 import statusSnapshotFixture from "./fixtures/status/snapshot.json";
 import statusCompletedFixture from "./fixtures/status/snapshot-completed.json";
 import statusStartedFixture from "./fixtures/status/event-started.json";
 import statusUnknownFixture from "./fixtures/status/unknown-event.json";
 import commandErrorFixtures from "./fixtures/errors/command-errors.json";
-import { decodeAnalyzeSnapshot, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport, decodeStatusEvent, decodeStatusSnapshot } from "./contract";
+import { decodeAnalyzeSnapshot, decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport, decodeStatusEvent, decodeStatusSnapshot } from "./contract";
 
 describe("IPC decoders", () => {
   it("decodes archived command and event fixtures", () => {
@@ -33,6 +35,26 @@ describe("IPC decoders", () => {
     badParent.nodes[1].parent_id = 99;
     expect(() => decodeAnalyzeSnapshot(badParent)).toThrow("parent identity");
     expect(() => decodeAnalyzeSnapshot({ ...analyzeSnapshotFixture, cleanup: true })).toThrow("unknown field");
+  });
+
+  it("decodes Analyze Recycle Bin previews and reports as closed, id-bound shapes", () => {
+    const preview = decodeAnalyzeTrashPreview(analyzeTrashPreviewFixture);
+    expect(preview.items.map((item) => item.target_id)).toEqual(["analyze.trash:analyze-op-1:1"]);
+    expect(preview.refused).toEqual([{ node_id: 0, reason_code: "analysis_root" }]);
+    expect(decodeAnalyzeTrashReport(analyzeTrashReportFixture).moved_node_ids).toEqual([1]);
+
+    const otherTarget = structuredClone(analyzeTrashPreviewFixture);
+    otherTarget.items[0].target_id = "analyze.trash:other:1";
+    expect(() => decodeAnalyzeTrashPreview(otherTarget)).toThrow("target identity");
+    const badRefusal = structuredClone(analyzeTrashPreviewFixture);
+    badRefusal.refused[0].reason_code = "permanent_delete";
+    expect(() => decodeAnalyzeTrashPreview(badRefusal)).toThrow("reason_code");
+    expect(() => decodeAnalyzeTrashPreview({ ...analyzeTrashPreviewFixture, digest: `sha256:${"a".repeat(64)}` })).toThrow("digest");
+    expect(() => decodeAnalyzeTrashPreview({ ...analyzeTrashPreviewFixture, command: "cmd.exe" })).toThrow("unknown field");
+    expect(() => decodeAnalyzeTrashReport({ ...analyzeTrashReportFixture, moved_node_ids: [1, 2] })).toThrow("moved nodes");
+    const deleted = structuredClone(analyzeTrashReportFixture);
+    (deleted.report.outcomes[0].action as { type: string }).type = "permanent_delete";
+    expect(() => decodeAnalyzeTrashReport(deleted)).toThrow();
   });
 
   it("rejects missing safety fields", () => {
@@ -97,7 +119,7 @@ describe("IPC decoders", () => {
   // CommandError, so one payload set covers both surfaces.
   it("carries one payload for every structured error the decoder accepts", () => {
     expect(new Set(commandErrorFixtures.map((error) => error.code)).size).toBe(commandErrorFixtures.length);
-    expect(commandErrorFixtures).toHaveLength(27);
+    expect(commandErrorFixtures).toHaveLength(28);
     expect(() => decodeCommandError({ code: "not_a_command_error" })).toThrow("Invalid error.code");
   });
 });

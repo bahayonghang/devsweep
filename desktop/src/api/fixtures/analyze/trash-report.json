@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "operation_id": "analyze-op-1",
+  "moved_node_ids": [1],
+  "report": {
+    "dry_run": false,
+    "selected": 1,
+    "attempted": 1,
+    "succeeded": 1,
+    "failed": 0,
+    "skipped": 0,
+    "failures": [],
+    "outcomes": [
+      {
+        "target_id": "analyze.trash:analyze-op-1:1",
+        "action": { "type": "move_to_trash" },
+        "status": { "type": "succeeded" },
+        "estimated_recoverable": { "type": "verified", "bytes": 4096 }
+      }
+    ],
+    "notes": [],
+    "estimated_recoverable": { "verified_bytes": 4096, "partial_lower_bound_bytes": 0, "unknown_target_count": 0 },
+    "confirmation_digest": "5b0e2f7c1d9a4e3b8c6f0a2d4e6b8c0a1f3e5d7c9b1a3e5f7d9c1b3a5e7f9d1c",
+    "audit_log": "C:/Users/dev/AppData/Local/DevSweep/audit/v1/clean.jsonl"
+  }
+}

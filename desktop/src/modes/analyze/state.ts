@@ -1,11 +1,31 @@
-import type { AnalyzeSnapshotV1, CommandError, DesktopAnalyzeProgress } from "../../api/types.gen";
+import type { AnalyzeSnapshotV1, AnalyzeTrashPreviewV1, AnalyzeTrashRefusalCode, AnalyzeTrashReportV1, CommandError, DesktopAnalyzeProgress } from "../../api/types.gen";
 import type { AnalyzeSort } from "./selectors";
 
 export type AnalyzeStatus = "idle" | "loading" | "canceling" | "complete" | "partial" | "canceled" | "error";
 
+export type AnalyzeTrashPhase = "idle" | "previewing" | "reviewed" | "confirming" | "executing" | "reported";
+
+export interface AnalyzeTrashState {
+  readonly phase: AnalyzeTrashPhase;
+  readonly nodeIds: readonly number[];
+  readonly preview: AnalyzeTrashPreviewV1 | null;
+  readonly report: AnalyzeTrashReportV1 | null;
+  readonly error: CommandError | null;
+}
+
+export const initialAnalyzeTrashState: AnalyzeTrashState = {
+  phase: "idle",
+  nodeIds: [],
+  preview: null,
+  report: null,
+  error: null,
+};
+
 export interface AnalyzeState {
   readonly status: AnalyzeStatus;
   readonly operationId: string | null;
+  /** Operation id of the terminal snapshot. Reveal and trash calls send only this id and node ids. */
+  readonly snapshotOperationId: string | null;
   readonly lastSequence: number;
   readonly storedNodes: number;
   readonly accountedOwnedBytes: number;
@@ -17,11 +37,17 @@ export interface AnalyzeState {
   readonly focusedNodeId: number | null;
   readonly focusAnchors: Readonly<Record<string, number>>;
   readonly error: CommandError | null;
+  /** Node ids from `moved_node_ids` of execution reports for this snapshot. */
+  readonly movedIds: readonly number[];
+  /** Review-local refusal hints from previews. They are never authority. */
+  readonly refusalHints: Readonly<Record<string, AnalyzeTrashRefusalCode>>;
+  readonly trash: AnalyzeTrashState;
 }
 
 export const initialAnalyzeState: AnalyzeState = {
   status: "idle",
   operationId: null,
+  snapshotOperationId: null,
   lastSequence: 0,
   storedNodes: 0,
   accountedOwnedBytes: 0,
@@ -33,6 +59,9 @@ export const initialAnalyzeState: AnalyzeState = {
   focusedNodeId: null,
   focusAnchors: {},
   error: null,
+  movedIds: [],
+  refusalHints: {},
+  trash: initialAnalyzeTrashState,
 };
 
 export type AnalyzeAction =
@@ -49,6 +78,15 @@ export type AnalyzeAction =
   | { readonly type: "directory_opened"; readonly nodeId: number; readonly page: number }
   | { readonly type: "directory_up"; readonly parentId: number; readonly childId: number; readonly page: number }
   | { readonly type: "error_dismissed" }
+  | { readonly type: "trash_preview_requested"; readonly operationId: string; readonly nodeIds: readonly number[] }
+  | { readonly type: "trash_preview_loaded"; readonly preview: AnalyzeTrashPreviewV1 }
+  | { readonly type: "trash_preview_failed"; readonly operationId: string; readonly error: CommandError }
+  | { readonly type: "trash_confirm_opened" }
+  | { readonly type: "trash_confirm_closed" }
+  | { readonly type: "trash_execute_requested" }
+  | { readonly type: "trash_executed"; readonly report: AnalyzeTrashReportV1 }
+  | { readonly type: "trash_execute_failed"; readonly operationId: string; readonly error: CommandError }
+  | { readonly type: "trash_dismissed" }
   | { readonly type: "released" };
 
 function terminalStatus(snapshot: AnalyzeSnapshotV1): AnalyzeStatus {
@@ -88,6 +126,7 @@ export function analyzeReducer(state: AnalyzeState, action: AnalyzeAction): Anal
         ...state,
         status: terminalStatus(action.snapshot),
         operationId: null,
+        snapshotOperationId: action.operationId,
         snapshot: action.snapshot,
         storedNodes: action.snapshot.nodes.length,
         accountedOwnedBytes: action.snapshot.accounted_owned_bytes,
@@ -133,5 +172,43 @@ export function analyzeReducer(state: AnalyzeState, action: AnalyzeAction): Anal
       return { ...state, error: null, status: state.snapshot ? terminalStatus(state.snapshot) : "idle" };
     case "released":
       return { ...initialAnalyzeState, query: state.query, sort: state.sort };
+    case "trash_preview_requested":
+      if (state.snapshotOperationId !== action.operationId
+        || state.operationId !== null
+        || ["previewing", "confirming", "executing"].includes(state.trash.phase)
+        || action.nodeIds.length === 0) return state;
+      return { ...state, trash: { ...initialAnalyzeTrashState, phase: "previewing", nodeIds: [...action.nodeIds] } };
+    case "trash_preview_loaded": {
+      const requested = new Set(state.trash.nodeIds);
+      if (state.trash.phase !== "previewing"
+        || action.preview.operation_id !== state.snapshotOperationId
+        || [...action.preview.items, ...action.preview.refused].some((entry) => !requested.has(entry.node_id))) return state;
+      const refusalHints = { ...state.refusalHints };
+      for (const refusal of action.preview.refused) refusalHints[String(refusal.node_id)] = refusal.reason_code;
+      return { ...state, refusalHints, trash: { ...state.trash, phase: "reviewed", preview: action.preview } };
+    }
+    case "trash_preview_failed":
+      return state.trash.phase === "previewing" && state.snapshotOperationId === action.operationId
+        ? { ...state, trash: { ...state.trash, phase: "reported", error: action.error } }
+        : state;
+    case "trash_confirm_opened":
+      return state.trash.phase === "reviewed" && (state.trash.preview?.items.length ?? 0) > 0
+        ? { ...state, trash: { ...state.trash, phase: "confirming" } }
+        : state;
+    case "trash_confirm_closed":
+      return state.trash.phase === "confirming" ? { ...state, trash: { ...state.trash, phase: "reviewed" } } : state;
+    case "trash_execute_requested":
+      return state.trash.phase === "confirming" ? { ...state, trash: { ...state.trash, phase: "executing" } } : state;
+    case "trash_executed": {
+      if (state.trash.phase !== "executing" || action.report.operation_id !== state.snapshotOperationId) return state;
+      const movedIds = [...new Set([...state.movedIds, ...action.report.moved_node_ids])];
+      return { ...state, movedIds, trash: { ...state.trash, phase: "reported", report: action.report } };
+    }
+    case "trash_execute_failed":
+      return state.trash.phase === "executing" && state.snapshotOperationId === action.operationId
+        ? { ...state, trash: { ...state.trash, phase: "reported", error: action.error } }
+        : state;
+    case "trash_dismissed":
+      return ["previewing", "executing"].includes(state.trash.phase) ? state : { ...state, trash: initialAnalyzeTrashState };
   }
 }

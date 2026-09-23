@@ -20,6 +20,7 @@ pub use command::{
     CommandOutcome, CommandRequest, CommandRunner, ProcessCommandRunner, SystemTrashRunner,
     TrashRunner,
 };
+pub(crate) use safety::resolve_home_dir;
 use safety::{
     AuthorizationContext, AuthorizedAction, ProtectionCategory, SELF_CLEAN_SKIP_MESSAGE,
     SafetyPolicy,

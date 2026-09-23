@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AnalyzeNodeV1, AnalyzeSnapshotV1 } from "../../api/types.gen";
-import { ANALYZE_PAGE_SIZE, createAnalyzeIndex, pageForNode, selectBreadcrumbs, selectDirectory, selectPage, selectVisibleChildren } from "./selectors";
+import { ANALYZE_PAGE_SIZE, createAnalyzeIndex, pageForNode, projectMoved, selectBreadcrumbs, selectDirectory, selectPage, selectVisibleChildren } from "./selectors";
 
 function node(id: number, parentId: number | null, name: string, bytes: number, kind: AnalyzeNodeV1["kind"] = "file"): AnalyzeNodeV1 {
   return { id, parent_id: parentId, kind, name, bytes, immediate_count: kind === "directory" ? 0 : 0, recursive_count: 0, evidence: "complete", warnings: [], mtime_ms: null };
@@ -11,6 +11,26 @@ function snapshot(nodes: AnalyzeNodeV1[]): AnalyzeSnapshotV1 {
 }
 
 describe("Analyze selectors", () => {
+  it("projects moved subtrees to zero bytes and subtracts them from ancestors only", () => {
+    const source = snapshot([
+      { ...node(0, null, "root", 100, "directory") },
+      { ...node(1, 0, "folder", 60, "directory") },
+      node(2, 1, "inner.bin", 40),
+      node(3, 1, "keep.bin", 20),
+      node(4, 0, "other.bin", 40),
+    ]);
+    const index = createAnalyzeIndex(source);
+    const projection = projectMoved(index, [2, 1]);
+    expect(projection.movedBytes).toBe(60);
+    expect([...projection.moved].sort()).toEqual([1, 2, 3]);
+    expect(projection.index.nodesById.get(0)?.bytes).toBe(40);
+    expect(projection.index.nodesById.get(1)?.bytes).toBe(0);
+    expect(projection.index.nodesById.get(4)?.bytes).toBe(40);
+    expect(source.nodes[0].bytes).toBe(100);
+    expect(projectMoved(index, []).index).toBe(index);
+  });
+
+
   it("selects one immutable directory, deterministic search/sort, and 200-row pages", () => {
     const children = Array.from({ length: 450 }, (_, index) => node(index + 1, 0, `file-${String(index).padStart(3, "0")}`, index));
     const root = { ...node(0, null, "root", 0, "directory"), immediate_count: children.length };

@@ -16,7 +16,9 @@ roadmap. Rejected actions stay rejected.
 | Optimize list / preview | CLI / TUI / Desktop | Closed eight-id catalogue | Digest for executable ids | Guidance cannot be planned. |
 | Optimize DNS flush | CLI / TUI / Desktop | `dns.flush` digest + confirm | Succeeded / failed / unknown | Native System32 `ipconfig /flushdns` only. |
 | Optimize Settings launch | CLI / TUI / Desktop | Frozen URI + digest + confirm | **Launched**, not completed | Storage / Search / Energy only. OS Settings lifetime is not a DevSweep total. |
-| Analyze scan | CLI / TUI / Desktop | Read-only walker | Snapshot, never a cleanup plan | 250,000-node / 256 MiB accounted cap, two workers. |
+| Analyze scan | CLI / TUI / Desktop | Read-only walker | Snapshot, never a cleanup plan | 250,000-node / 256 MiB accounted cap, two workers. Read-only by default. |
+| Analyze reveal | Desktop | Retained snapshot + node id | Explorer window | `explorer.exe` with argv `["/select,", path]` through `ProcessRunner`. The UI sends ids, never a path. |
+| Analyze → Recycle Bin | Desktop | Retained snapshot + node ids + core-built `analyze.trash` plan digest + second confirmation | Moved to the Recycle Bin + Clean audit record | System locations, volume roots, the profile root, the analysis root, protected paths, reparse points, and changed nodes are view only. No permanent delete. |
 | Status snapshot / live | CLI / TUI / Desktop | Read-only collectors | Available / partial / unsupported | GPU, VRAM, thermal, fan, SMART, physical-disk activity are unsupported. |
 | History / Protection / Rules | CLI / TUI / Desktop | Inspect or explicit protect mutation | Redacted history | Unknown audit versions are preserved, not replayed. |
 | Docker cleanup | None | Rejected | Absent | Not an MVP command. |

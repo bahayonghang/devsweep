@@ -65,6 +65,70 @@ export interface AnalyzeWarningV1 {
     node_id: number | null;
 }
 
+export interface AnalyzeTrashItemV1 {
+    bytes:     number;
+    evidence:  AnalyzeEvidence;
+    kind:      AnalyzeNodeKind;
+    node_id:   number;
+    path:      string;
+    target_id: string;
+}
+
+export interface AnalyzeTrashPreviewV1 {
+    digest:       string;
+    items:        AnalyzeTrashItemV1[];
+    operation_id: string;
+    refused:      AnalyzeTrashRefusalV1[];
+    version:      number;
+}
+
+export interface AnalyzeTrashRefusalV1 {
+    node_id:     number;
+    reason_code: AnalyzeTrashRefusalCode;
+}
+
+export type AnalyzeTrashRefusalCode = "analysis_root" | "changed_since_snapshot" | "not_found" | "profile_root" | "protected" | "reparse_point" | "system_location" | "volume_root";
+
+export interface AnalyzeTrashReportV1 {
+    moved_node_ids: number[];
+    operation_id:   string;
+    report:         ExecutionReport;
+    version:        number;
+}
+
+export interface ExecutionReport {
+    attempted:             number;
+    audit_log:             null | string;
+    confirmation_digest:   string;
+    dry_run:               boolean;
+    estimated_recoverable: ScanTotals;
+    failed:                number;
+    failures:              ActionFailure[];
+    notes:                 ExecutionNote[];
+    outcomes:              TargetOutcome[];
+    selected:              number;
+    skipped:               number;
+    succeeded:             number;
+}
+
+export interface ScanTotals {
+    partial_lower_bound_bytes: number;
+    unknown_target_count:      number;
+    verified_bytes:            number;
+}
+
+export interface ExecutionNote {
+    target_id: string;
+    type:      "duplicate_selection_removed";
+}
+
+export interface TargetOutcome {
+    action:                ActionKind;
+    estimated_recoverable: CapacityEstimate;
+    status:                OutcomeStatus;
+    target_id:             string;
+}
+
 export interface CapacityEstimatePartial {
     lower_bound_bytes: number;
     type:              "partial";
@@ -107,6 +171,11 @@ export interface CommandErrorAnalyzeAlreadyRunning {
 
 export interface CommandErrorAnalyzeFailed {
     code:    "analyze_failed";
+    message: string;
+}
+
+export interface CommandErrorAnalyzeStaleOperation {
+    code:    "analyze_stale_operation";
     message: string;
 }
 
@@ -447,12 +516,6 @@ export interface ScanProcessOutput {
 }
 
 export type ScanDiagnosticStage = "cargo_metadata" | "discovery" | "provider" | "sizing";
-
-export interface ScanTotals {
-    partial_lower_bound_bytes: number;
-    unknown_target_count:      number;
-    verified_bytes:            number;
-}
 
 export interface UntrustedPlan {
     targets: UntrustedTarget[];
@@ -879,33 +942,6 @@ export interface DryRunOutcome {
     report: ExecutionReport;
 }
 
-export interface ExecutionReport {
-    attempted:             number;
-    audit_log:             null | string;
-    confirmation_digest:   string;
-    dry_run:               boolean;
-    estimated_recoverable: ScanTotals;
-    failed:                number;
-    failures:              ActionFailure[];
-    notes:                 ExecutionNote[];
-    outcomes:              TargetOutcome[];
-    selected:              number;
-    skipped:               number;
-    succeeded:             number;
-}
-
-export interface ExecutionNote {
-    target_id: string;
-    type:      "duplicate_selection_removed";
-}
-
-export interface TargetOutcome {
-    action:                ActionKind;
-    estimated_recoverable: CapacityEstimate;
-    status:                OutcomeStatus;
-    target_id:             string;
-}
-
 export interface EvidenceKnownCacheDir {
     path:   string;
     source: string;
@@ -1213,7 +1249,7 @@ export type ScanProcessStatus = ScanProcessStatusCanceled | ScanProcessStatusExi
 export type ActionKind = ActionKindCommand | ActionKindInspectOnly | ActionKindMoveToTrash | ActionKindPermanentDelete;
 export type CapacityEstimate = CapacityEstimatePartial | CapacityEstimateUnknown | CapacityEstimateVerified;
 export type OutcomeStatus = OutcomeStatusFailed | OutcomeStatusSkipped | OutcomeStatusSucceeded;
-export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorHistoryNotFound | CommandErrorHistoryStoreUnavailable | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorOptimizeAlreadyRunning | CommandErrorOptimizeAuditUnavailable | CommandErrorOptimizeFailed | CommandErrorOptimizeStaleAuthority | CommandErrorOptimizeUnavailable | CommandErrorProtectionAuditUnknown | CommandErrorProtectionConfirmationRequired | CommandErrorProtectionPathMissing | CommandErrorProtectionStoreUnavailable | CommandErrorRuleNotFound | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorStatusAlreadyRunning | CommandErrorStatusFailed | CommandErrorUnknownTarget;
+export type CommandError = CommandErrorAnalyzeAlreadyRunning | CommandErrorAnalyzeFailed | CommandErrorAnalyzeStaleOperation | CommandErrorHistoryNotFound | CommandErrorHistoryStoreUnavailable | CommandErrorInspectOnlyTarget | CommandErrorInvalidPlan | CommandErrorIo | CommandErrorOptimizeAlreadyRunning | CommandErrorOptimizeAuditUnavailable | CommandErrorOptimizeFailed | CommandErrorOptimizeStaleAuthority | CommandErrorOptimizeUnavailable | CommandErrorProtectionAuditUnknown | CommandErrorProtectionConfirmationRequired | CommandErrorProtectionPathMissing | CommandErrorProtectionStoreUnavailable | CommandErrorRuleNotFound | CommandErrorScanAlreadyRunning | CommandErrorScanFailed | CommandErrorSoftwareAlreadyRunning | CommandErrorSoftwareAuditUnavailable | CommandErrorSoftwareFailed | CommandErrorSoftwareStaleAuthority | CommandErrorStaleConfirmation | CommandErrorStatusAlreadyRunning | CommandErrorStatusFailed | CommandErrorUnknownTarget;
 export type DesktopScanResult = DesktopScanResultCanceled | DesktopScanResultCompleted;
 export type DesktopAnalyzeResult = DesktopAnalyzeResultCanceled | DesktopAnalyzeResultCompleted;
 export type SoftwareSourceId = SoftwareSourceIdArp | SoftwareSourceIdMsi | SoftwareSourceIdMsixCurrentUser;

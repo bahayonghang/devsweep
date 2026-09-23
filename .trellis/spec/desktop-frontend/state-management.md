@@ -38,8 +38,8 @@ sizes, or status for capsule tabs or brand-menu items.
 ## Operation Coordinator
 
 The coordinator accepts only a typed operation kind, opaque operation id,
-cancellation callback, and join promise. It serializes Scan, Analyze, Software,
-Optimize, and live Status work. Switching mode, closing/unmounting, or starting
+cancellation callback, and join promise. It serializes Scan, Analyze, the Analyze
+Recycle Bin move (`analyze.trash`), Software, Optimize, and live Status work. Switching mode, closing/unmounting, or starting
 another heavy operation requests cancellation and awaits join before new work
 starts. Rapid requests are ordered; stale completions/events from superseded ids
 are ignored. Close drains owned work. The coordinator never grants domain
@@ -116,6 +116,23 @@ scan result or backend error remains authoritative.
 - The Clean cumulative total comes only from `historyCleanTotals()` after a
   matching execution report. A failed read hides the line; it never blocks the
   result.
+- Analyze keeps the operation id of its terminal snapshot as
+  `snapshotOperationId`. Reveal and trash calls send only that id and node
+  ids; they never send a path. Analyze is read-only by default; the only
+  mutation is a Recycle Bin move through a core-built plan, a live digest,
+  and the second confirmation.
+- The Analyze trash flow is `previewing -> reviewed -> confirming ->
+  executing -> reported`. A preview is accepted only for the current
+  `snapshotOperationId`. Execute is ignored unless a reviewed preview with
+  at least one item exists and the confirmation dialog is open. The digest
+  sent to `analyze_trash_execute` is copied only from that preview.
+- `movedIds` holds node ids from `moved_node_ids` of an execution report. The
+  display projection sets moved subtrees to zero bytes and subtracts their
+  bytes from ancestors. It never edits the retained snapshot; a new analysis
+  clears `movedIds`, and the stage suggests a new analysis for exact totals.
+- Refusal reasons from a preview are review-local hints for the context menu.
+  Before a preview, the menu derives a hint from the node kind and depth
+  only; that hint is never authority.
 
 ## Async Effects
 

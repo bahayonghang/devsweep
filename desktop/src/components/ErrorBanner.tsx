@@ -6,6 +6,7 @@ function errorMessage(error: CommandError): string {
     case "scan_failed": return `Scan failed: ${error.message}`;
     case "analyze_already_running": return "An analysis is already running. Cancel it or wait for it to finish.";
     case "analyze_failed": return `Analysis failed: ${error.message}`;
+    case "analyze_stale_operation": return `The analysis snapshot is no longer current. Run a new analysis: ${error.message}`;
     case "software_already_running": return "A Software operation is already running. Cancel it or wait for it to finish.";
     case "software_failed": return `Software operation failed: ${error.message}`;
     case "software_stale_authority": return `Software authority is stale: ${error.message}`;

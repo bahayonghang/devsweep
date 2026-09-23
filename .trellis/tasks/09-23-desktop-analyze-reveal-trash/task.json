@@ -3,7 +3,7 @@
   "name": "desktop-analyze-reveal-trash",
   "title": "Analyze parity: reveal in Explorer and confirmed move to trash",
   "description": "Reveal a node in Explorer and move user-owned nodes to the Recycle Bin through plan, digest, and second confirmation.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

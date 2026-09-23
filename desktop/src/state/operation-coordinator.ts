@@ -1,4 +1,4 @@
-export type OperationKind = "clean.scan" | "clean.dry-run" | "clean.execute" | "software" | "optimize" | "analyze" | "status";
+export type OperationKind = "clean.scan" | "clean.dry-run" | "clean.execute" | "software" | "optimize" | "analyze" | "analyze.trash" | "status";
 
 export interface CoordinatedOperation<T> {
   readonly kind: OperationKind;

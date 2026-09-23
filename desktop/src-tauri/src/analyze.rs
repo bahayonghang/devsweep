@@ -2,7 +2,11 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
 use devsweep_core::{
-    analysis::{AnalyzeProgressV1, AnalyzeRunOutcome, AnalyzeSnapshotV1, analyze_path},
+    analysis::{
+        AnalyzeProgressV1, AnalyzeRunOutcome, AnalyzeSnapshotV1, AnalyzeTrashExecutionRequest,
+        AnalyzeTrashPreviewV1, AnalyzeTrashReportV1, analyze_path, default_analyze_root,
+        execute_analyze_trash, preview_analyze_trash, reveal_analyze_node,
+    },
     process::FlagCancelObserver,
 };
 use serde::Serialize;
@@ -41,9 +45,17 @@ struct RunningAnalyze {
     cancel: Arc<FlagCancelObserver>,
 }
 
+/// Last terminal snapshot. Reveal and trash commands name its operation id.
+#[derive(Clone)]
+struct RetainedSnapshot {
+    operation_id: String,
+    snapshot: Arc<AnalyzeSnapshotV1>,
+}
+
 #[derive(Clone, Default)]
 pub(crate) struct AnalyzeCoordinator {
     running: Arc<Mutex<Option<RunningAnalyze>>>,
+    retained: Arc<Mutex<Option<RetainedSnapshot>>>,
 }
 
 impl AnalyzeCoordinator {
@@ -60,6 +72,8 @@ impl AnalyzeCoordinator {
         if running.is_some() {
             return Err(CommandError::AnalyzeAlreadyRunning);
         }
+        // A new run replaces the retained snapshot.
+        *self.retained.lock().map_err(CommandError::io)? = None;
         let cancel = Arc::new(FlagCancelObserver::new());
         *running = Some(RunningAnalyze {
             operation_id,
@@ -89,6 +103,39 @@ impl AnalyzeCoordinator {
             *running = None;
         }
         Ok(())
+    }
+
+    pub(crate) fn retain(&self, result: &DesktopAnalyzeResult) -> Result<(), CommandError> {
+        let (operation_id, snapshot) = match result {
+            DesktopAnalyzeResult::Completed {
+                operation_id,
+                snapshot,
+            }
+            | DesktopAnalyzeResult::Canceled {
+                operation_id,
+                snapshot,
+            } => (operation_id, snapshot),
+        };
+        *self.retained.lock().map_err(CommandError::io)? = Some(RetainedSnapshot {
+            operation_id: operation_id.clone(),
+            snapshot: Arc::new(snapshot.clone()),
+        });
+        Ok(())
+    }
+
+    /// Returns the retained snapshot only for its own operation id.
+    pub(crate) fn snapshot(
+        &self,
+        operation_id: &str,
+    ) -> Result<Arc<AnalyzeSnapshotV1>, CommandError> {
+        match self.retained.lock().map_err(CommandError::io)?.as_ref() {
+            Some(retained) if retained.operation_id == operation_id => {
+                Ok(Arc::clone(&retained.snapshot))
+            }
+            _ => Err(CommandError::AnalyzeStaleOperation {
+                message: format!("analysis {operation_id} is not the retained snapshot"),
+            }),
+        }
     }
 }
 
@@ -144,7 +191,13 @@ pub(crate) async fn analyze_start(
             on_progress.send(progress).map_err(anyhow::Error::from)
         })
         .map_err(CommandError::analyze_failed);
+        // Release the running slot even when retention fails.
+        let retained = match &result {
+            Ok(completed) => worker_state.retain(completed),
+            Err(_) => Ok(()),
+        };
         worker_state.finish(&operation_id, &worker_cancel)?;
+        retained?;
         result
     })
     .await
@@ -160,9 +213,123 @@ pub(crate) async fn analyze_cancel(
     state.cancel(&operation_id)
 }
 
+#[tauri::command]
+pub(crate) async fn analyze_default_root() -> Result<String, CommandError> {
+    Ok(default_analyze_root().to_string_lossy().into_owned())
+}
+
+/// The webview sends only ids. Core rebuilds the path from the retained snapshot.
+#[tauri::command]
+pub(crate) async fn analyze_reveal(
+    state: tauri::State<'_, AnalyzeCoordinator>,
+    operation_id: String,
+    node_id: u32,
+) -> Result<(), CommandError> {
+    let snapshot = state.snapshot(&operation_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        reveal_analyze_node(&snapshot, node_id).map_err(CommandError::analyze_action)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub(crate) async fn analyze_trash_preview(
+    state: tauri::State<'_, AnalyzeCoordinator>,
+    operation_id: String,
+    node_ids: Vec<u32>,
+) -> Result<AnalyzeTrashPreviewV1, CommandError> {
+    let snapshot = state.snapshot(&operation_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        preview_analyze_trash(&operation_id, &snapshot, &node_ids)
+            .map_err(CommandError::analyze_action)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
+#[tauri::command]
+pub(crate) async fn analyze_trash_execute(
+    state: tauri::State<'_, AnalyzeCoordinator>,
+    operation_id: String,
+    node_ids: Vec<u32>,
+    digest: String,
+    confirmed: bool,
+) -> Result<AnalyzeTrashReportV1, CommandError> {
+    let snapshot = state.snapshot(&operation_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        execute_analyze_trash(AnalyzeTrashExecutionRequest {
+            operation_id: &operation_id,
+            snapshot: &snapshot,
+            node_ids: &node_ids,
+            expected_digest: &digest,
+            confirmed,
+            cancel: None,
+        })
+        .map_err(CommandError::analyze_action)
+    })
+    .await
+    .map_err(CommandError::io)?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn empty_snapshot() -> AnalyzeSnapshotV1 {
+        AnalyzeSnapshotV1 {
+            version: 1,
+            root: devsweep_core::analysis::AnalyzeRootIdentity {
+                input: "C:/root".into(),
+                normalized: "C:/root".into(),
+                volume: "vol".into(),
+            },
+            nodes: Vec::new(),
+            warnings: Vec::new(),
+            completeness: devsweep_core::analysis::AnalyzeCompleteness::Complete,
+            accounted_owned_bytes: 0,
+        }
+    }
+
+    #[test]
+    fn reveal_and_trash_resolve_only_the_retained_operation() {
+        let coordinator = AnalyzeCoordinator::default();
+        assert!(matches!(
+            coordinator.snapshot("op"),
+            Err(CommandError::AnalyzeStaleOperation { .. })
+        ));
+        let running = coordinator.begin("op".into()).expect("run starts");
+        coordinator
+            .retain(&DesktopAnalyzeResult::Completed {
+                operation_id: "op".into(),
+                snapshot: empty_snapshot(),
+            })
+            .expect("snapshot retained");
+        coordinator.finish("op", &running).expect("run ends");
+        assert_eq!(
+            *coordinator.snapshot("op").expect("retained"),
+            empty_snapshot()
+        );
+        assert!(matches!(
+            coordinator.snapshot("other"),
+            Err(CommandError::AnalyzeStaleOperation { .. })
+        ));
+
+        let next = coordinator.begin("next".into()).expect("next run starts");
+        assert!(matches!(
+            coordinator.snapshot("op"),
+            Err(CommandError::AnalyzeStaleOperation { .. })
+        ));
+        coordinator
+            .retain(&DesktopAnalyzeResult::Canceled {
+                operation_id: "next".into(),
+                snapshot: empty_snapshot(),
+            })
+            .expect("canceled snapshot retained");
+        coordinator.finish("next", &next).expect("run ends");
+        assert!(coordinator.snapshot("next").is_ok());
+        assert!(coordinator.snapshot("op").is_err());
+    }
 
     #[test]
     fn concurrent_analyze_is_rejected() {

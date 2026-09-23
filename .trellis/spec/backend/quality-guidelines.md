@@ -512,6 +512,126 @@ Correct:
 const WINGET_UPGRADE_ARGS: [&str; 2] = ["upgrade", "--disable-interactivity"];
 ```
 
+### Scenario: Analyze reveal and Recycle Bin move
+
+#### 1. Scope / Trigger
+
+- Trigger: code changes `analysis/actions.rs`, the Analyze snapshot retention
+  in `desktop/src-tauri/src/analyze.rs`, or the desktop commands
+  `analyze_default_root`, `analyze_reveal`, `analyze_trash_preview`, and
+  `analyze_trash_execute`.
+
+#### 2. Signatures
+
+- `analyze_node_path(snapshot, node_id) -> Result<PathBuf, AnalyzeActionError>`.
+- `reveal_analyze_node(snapshot, node_id) -> Result<(), AnalyzeActionError>`.
+- `preview_analyze_trash(operation_id, snapshot, node_ids) ->
+  AnalyzeTrashPreviewV1 { version, operation_id, items, refused, digest }`.
+- `execute_analyze_trash(AnalyzeTrashExecutionRequest { operation_id,
+  snapshot, node_ids, expected_digest, confirmed, cancel }) ->
+  AnalyzeTrashReportV1 { version, operation_id, moved_node_ids, report }`.
+- Refusal codes: `protected`, `system_location`, `volume_root`,
+  `profile_root`, `analysis_root`, `reparse_point`,
+  `changed_since_snapshot`, `not_found`.
+
+#### 3. Contracts
+
+- Analyze is read-only by default. The only mutation is a Recycle Bin move
+  through a core-built plan, a live confirmation digest, and an explicit
+  second confirmation. The walker, snapshot, and progress types still carry
+  no cleanup field.
+- The desktop sends only `(operation_id, node_id)` or
+  `(operation_id, node_ids)`. The Tauri `AnalyzeCoordinator` retains the last
+  terminal snapshot for one operation id; any other id is
+  `analyze_stale_operation`. Core rebuilds each path from `root.input` (or
+  `root.normalized`) plus node names along `parent_id` links and rejects
+  unknown ids and cycles.
+- Reveal runs program `explorer.exe` with argv `["/select,", <path>]`
+  through `ProcessRunner`, neutral cwd, and a 10-second deadline. Only a
+  launch failure (`NotFound` or `InvalidOutput`) is an error, because
+  Explorer exits with code 1 on success. Reveal is allowed for every node.
+- Trash preview refuses: a path on or overlapping the user protection list
+  or a Clean protected subtree (`.ssh`, `.aws`, `.gnupg`, `.docker`, Cargo
+  credentials, `.npmrc`, `.config/gh`) or containing the running executable
+  (`protected`); a path overlapping `%WINDIR%`, `%SystemRoot%`,
+  `%ProgramFiles%`, `%ProgramFiles(x86)%`, `%ProgramW6432%`, or
+  `%ProgramData%`, or a path under a volume-root `$Recycle.Bin` or
+  `System Volume Information` folder (`system_location`); a volume root
+  (`volume_root`); the user profile, a folder that contains it, its
+  top-level Desktop, Documents, or Downloads folder, or any other folder
+  under the parent of the user profile, such as another account's profile
+  (`profile_root`); the analysis root
+  (`analysis_root`); a snapshot or live reparse point (`reparse_point`); a
+  live type or modification-time mismatch with the snapshot
+  (`changed_since_snapshot`); and a missing path or unknown id
+  (`not_found`). When one selected node is an ancestor of another accepted
+  node, only the ancestor stays.
+- Accepted nodes become in-memory Clean targets with
+  `CleanAction::MoveToTrash`, rule id `analyze.trash`, `Scope::Global`, and
+  target id `analyze.trash:<operation_id>:<node_id>`. A crate-private
+  constructor builds the `ValidatedPlan` from these trusted targets; the
+  rules registry has no `analyze.trash` rule, so `validate_plan` and
+  `plan_execute` still reject such a target from a plan file or IPC payload.
+- The preview digest is the Clean `ConfirmationDigest` of that plan. It binds
+  the operation id (through the target ids), the exact normalized paths, the
+  snapshot sizes, and modification times. Execution rebuilds the plan from the
+  retained snapshot, re-applies every refusal, and runs the Clean `Executor`
+  with the expected digest, so live authorization, the self-clean guard, and
+  the fixed Clean V1 audit journal apply unchanged. Moved bytes count in
+  `history::clean_moved_totals()`.
+- The audit record keeps the closed Clean V1 shape. It carries no origin
+  field; the `analyze.trash` rule id stays in the in-memory plan and digest.
+  Adding an origin field would make older builds classify the journal as
+  corrupt.
+- Permanent delete, Recycle Bin emptying, and moves to other locations are
+  not available.
+
+#### 4. Validation & Error Matrix
+
+- Unknown operation id -> `analyze_stale_operation`, no path rebuilt.
+- `confirmed: false` or no accepted node -> error before the executor runs.
+- Stale digest (any live change, a different operation id, or a changed
+  selection) -> `stale_confirmation`, no audit record, no trash move.
+- Protection list cannot load -> `analyze_failed`, no preview and no move.
+- Reveal launch failure -> `analyze_failed`.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: a user file under the analysis root previews with its size and a
+  digest, and execution writes `started` and `succeeded` Clean audit
+  records with `action_kind: move_to_trash`.
+- Base: selecting a folder and a file inside it previews one item, the folder.
+- Bad: the desktop sends a path string, or `plan_execute` accepts an
+  `analyze.trash` target from JSON.
+
+#### 6. Tests Required
+
+- Core tests for each refusal class, nested selection, unknown id and cycle
+  rejection, digest stability and staleness, operation-id binding, and an
+  execution through a fake trash runner that writes Clean audit records.
+- Reveal argv test through a captured `ProcessRequest`, and a launch-failure
+  test.
+- Tauri tests for snapshot retention, stale operation refusal, and the
+  command inventory; a bridge test that proves only ids cross the boundary.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+Command::new("cmd").args(["/C", &format!("explorer /select,{path}")]);
+```
+
+Correct:
+
+```rust
+ProcessRequest {
+    program: OsString::from("explorer.exe"),
+    args: vec![OsString::from("/select,"), path.into_os_string()],
+    ..
+}
+```
+
 ### Scenario: Declarative plan trust boundary
 
 #### 1. Scope / Trigger
