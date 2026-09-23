@@ -48,19 +48,19 @@ against the new shell.
 
 ## Acceptance Criteria
 
-- [ ] AC1: All five modes render through the existing typed registry with no
+- [x] AC1: All five modes render through the existing typed registry with no
       placeholder route, and route/back/focus/keyboard tests remain green.
-- [ ] AC2: The shell and each mode use the same dark card/row/action grammar;
+- [x] AC2: The shell and each mode use the same dark card/row/action grammar;
       no light workbench pane, Mole asset, copied string, or “space freed” copy
       appears in production or tests.
-- [ ] AC3: Clean's inspect-only, selection invalidation, dry-run digest, and
+- [x] AC3: Clean's inspect-only, selection invalidation, dry-run digest, and
       second-confirmation behavior are unchanged by visual composition.
-- [ ] AC4: Analyze stays read-only; Software and Optimize expose only existing
+- [x] AC4: Analyze stays read-only; Software and Optimize expose only existing
       capabilities; Status never renders unsupported values as zero.
-- [ ] AC5: Frontend tests cover both locales, responsive breakpoints,
+- [x] AC5: Frontend tests cover both locales, responsive breakpoints,
       reduced-motion/forced-colors selectors, accessible long data, and all
       meaningful mode states.
-- [ ] AC6: `mise exec node@22 -- npm run lint`, `typecheck`, `test`, and `build`
+- [x] AC6: `mise exec node@22 -- npm run lint`, `typecheck`, `test`, and `build`
       pass in `desktop/`; no Rust/CLI contract files change without a traced
       parent decision.
 
@@ -72,3 +72,30 @@ against the new shell.
   pixel-identical layout.
 - Native Windows scaling and process/resource claims; those belong to
   `desktop-native-acceptance` and `desktop-operation-performance`.
+
+## Closure recheck (2026-09-24)
+
+Rechecked against the capsule shell (`2fc15c0`) and the four 09-23 parity
+children. Evidence:
+
+- AC1: `AppShell.test.tsx` covers the typed registry, deep links, back
+  navigation, focus return, and keyboard movement on the capsule tablist.
+- AC2: `styles.test.ts` locks the dark canvas, radius tokens, and shared
+  grammar. `resources/i18n/*.json` contain no "freed" copy. The planets are
+  procedural (`desktop/src/stage/`); no Mole asset or string is present.
+- AC3: `App.test.tsx` "invalidates a dry run after selection changes, then
+  confirms and reports execution"; `CleanWorkbench.test.tsx` covers
+  skip/protect with confirmation.
+- AC4: The "Analyze stays read-only" clause is superseded by the parent
+  2026-09-23 revision. Analyze now reveals paths and moves them to the Recycle
+  Bin only after a digest-checked confirmation (`8dd88d0`). Software and
+  Optimize expose only shipped capabilities. Status renders unsupported
+  GPU/thermal values as unavailable, not zero (`StatusWorkbench.test.tsx`).
+- AC5: `styles.test.ts` covers the narrow layout, reduced motion, and forced
+  colors. Each mode has a zh-CN render test. `AppShell.test.tsx` covers
+  accessible, copyable truncated data.
+- AC6: On 2026-09-24, `npm run lint`, `typecheck`, `test` (43 files, 295
+  tests), and `build` passed in `desktop/`. Rust and CLI contract changes
+  came from the 09-23 children under the parent revision, not from this child.
+
+Native scaling and resource claims stay with `09-20-desktop-native-acceptance`.
