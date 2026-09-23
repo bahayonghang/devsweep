@@ -6,6 +6,7 @@
   --border-strong: var(--border);
   --success: var(--ok);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   gap: 12px;
   padding: 12px 24px 24px;
@@ -43,6 +44,8 @@
   gap: 10px;
 }
 .status-card { min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
+.status-card > div { min-width: 0; }
+.status-card .user-data-ellipsis { white-space: normal; }
 .status-card h3, .status-charts h2, .status-processes h2 { margin: 0 0 8px; font-size: 14px; }
 .status-card p, .status-capability p { margin: 0; overflow-wrap: anywhere; }
 .status-muted { color: var(--text-muted); }
