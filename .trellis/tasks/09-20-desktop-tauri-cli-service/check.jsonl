@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend compliance review"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Adapter boundary review"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error and lifecycle review"}
+{"file": ".trellis/tasks/09-20-desktop-tauri-cli-service/prd.md", "reason": "Service child acceptance requirements"}
+{"file": ".trellis/tasks/09-20-desktop-tauri-cli-service/design.md", "reason": "Service child technical design"}

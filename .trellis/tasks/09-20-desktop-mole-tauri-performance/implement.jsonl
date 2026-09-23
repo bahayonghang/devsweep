@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop architecture and validation boundary"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Tauri adapter and core ownership boundary"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/research/current-state-and-mole-reference.md", "reason": "Current code and Mole provenance evidence"}
+{"file": ".trellis/tasks/archive/2026-09/08-29-five-mode-native-integration/design.md", "reason": "Historical performance thresholds to recapture"}

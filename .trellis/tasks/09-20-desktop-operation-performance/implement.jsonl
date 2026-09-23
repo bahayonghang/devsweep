@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Coordinator and state lifecycle"}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop test/build commands"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Lifecycle and failure evidence boundary"}
+{"file": ".trellis/tasks/archive/2026-09/08-29-five-mode-native-integration/design.md", "reason": "Performance thresholds and protocol reference"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/design.md", "reason": "Parent performance evidence boundary"}

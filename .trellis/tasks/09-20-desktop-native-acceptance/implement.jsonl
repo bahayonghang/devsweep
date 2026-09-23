@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop acceptance commands and structure"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/design.md", "reason": "Parent native evidence boundary"}
+{"file": ".trellis/tasks/archive/2026-09/08-29-five-mode-native-integration/design.md", "reason": "Resource and quiescence protocol"}
+{"file": ".trellis/tasks/09-20-desktop-native-acceptance/design.md", "reason": "Native matrix and evidence rules"}
+{"file": ".trellis/tasks/09-20-desktop-operation-performance/design.md", "reason": "Operation cancel/completion table and same-PID desktop Status stop window consumed by lifecycle rows (TPR-02/06)"}
+{"file": "desktop/src-tauri/tauri.conf.json", "reason": "Product name, version, window title, and NSIS settings for local identity checks (TPR-03)"}

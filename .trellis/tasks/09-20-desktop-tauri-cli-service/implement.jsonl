@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend service and adapter contract"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Thin Tauri adapter and no CLI import"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Typed errors and cancellation semantics"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer service contract reasoning"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Frontend wire contract boundary"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/design.md", "reason": "Shared typed-service parent design"}

@@ -1,0 +1,31 @@
+{
+  "id": "desktop-mole-tauri-performance",
+  "name": "desktop-mole-tauri-performance",
+  "title": "Rebuild Tauri desktop around Mole-inspired workbench and CLI-backed performance",
+  "description": "",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-20",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-20-desktop-mole-workbench-ux",
+    "09-20-desktop-tauri-cli-service",
+    "09-20-desktop-operation-performance",
+    "09-20-desktop-native-acceptance"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

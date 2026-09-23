@@ -1,0 +1,45 @@
+{
+  "protocol": "five-mode-v1",
+  "recorded_at_utc": "2026-09-23T02:13:46.6808160Z",
+  "cpu_name": "Intel(R) Core(TM) Ultra 9 275HX",
+  "logical_cores": 24,
+  "ram_bytes": 68143853568,
+  "arch": "AMD64",
+  "windows_caption": "Microsoft Windows 11 专业版",
+  "windows_build": "26200",
+  "power_plan": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)",
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)\r\nbinary: rustc\r\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\r\ncommit-date: 2026-08-18\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.98.0\r\nLLVM version: 22.1.8",
+  "node": "v26.7.0",
+  "commit": "fc4269fe5c1bc65bf53df97e5c09c6b36081deda",
+  "cli_exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep.exe",
+  "cli_sha256": "79cd6f6b2bb43524ede37d9e5dcc39cb44906c2c41eb87215afb05b5e747e5c9",
+  "desktop_exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "desktop_sha256": "288e29ac92b1f5c94e1d05e4e8d9d3dadc9c334dc928828ba900c8acb66e4b56",
+  "defender": {
+    "AMServiceEnabled": false,
+    "AntivirusEnabled": false,
+    "RealTimeProtectionEnabled": false,
+    "NisEnabled": false
+  },
+  "locale": "zh-CN",
+  "integrity": "Mandatory Label\\Medium Mandatory Level Label            S-1-16-8192                                                                                      ",
+  "consent_count": 0,
+  "user": "lyh",
+  "fixture_digests": {
+    "analysis_250k_v1_root": "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-five-mode-v1\\analysis-250k-v1",
+    "analysis_250k_v1_manifest_sha256": "39dbf7b1599250733bc6384fb271d69ba1c4d8e6f9be66d4fa9904b990d5e664",
+    "clean_scan_root": "D:\\Documents\\Code\\Rust\\Exp\\devsweep",
+    "clean_scan_entry_count": 64368,
+    "clean_scan_command": "clean scan --root <repo> --scope projects --format json",
+    "clean_comparability": "paired baseline and candidate runs on one host, one toolchain, one absolute root, and the projects scope; comparability is gated, not assumed"
+  },
+  "clean_baseline": {
+    "manifest_path": "D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/09-20-desktop-operation-performance/evidence/clean-baseline.json",
+    "commit": "fc4269fe5c1bc65bf53df97e5c09c6b36081deda",
+    "exe": "D:/dsb/target/release/devsweep.exe",
+    "sha256_recorded": "7995850527da06c8e805bf89f219807649f8f9a385a97b6c5e782c7697f937b0",
+    "sha256_live": "7995850527da06c8e805bf89f219807649f8f9a385a97b6c5e782c7697f937b0",
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: x86_64-pc-windows-msvc\nrelease: 1.98.0\nLLVM version: 22.1.8",
+    "build_command": "cargo build --locked --release -p devsweep-cli --bin devsweep"
+  }
+}

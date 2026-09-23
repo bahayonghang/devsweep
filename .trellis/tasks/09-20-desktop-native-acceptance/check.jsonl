@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop gate review"}
+{"file": ".trellis/tasks/09-20-desktop-native-acceptance/prd.md", "reason": "Native acceptance requirements"}
+{"file": ".trellis/tasks/09-20-desktop-native-acceptance/design.md", "reason": "Native evidence design review"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Desktop quality and accessibility review"}
+{"file": ".trellis/tasks/09-20-desktop-operation-performance/design.md", "reason": "Lifecycle row predicates and evidence status rules (TPR-02/06/07)"}

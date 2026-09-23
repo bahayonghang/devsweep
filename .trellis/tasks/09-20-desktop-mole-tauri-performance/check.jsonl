@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop compliance review"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend boundary review"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/prd.md", "reason": "Parent acceptance requirements"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/design.md", "reason": "Parent technical design"}
+{"file": ".trellis/tasks/archive/2026-09/08-29-five-mode-native-integration/design.md", "reason": "Performance gate arithmetic and evidence boundary"}

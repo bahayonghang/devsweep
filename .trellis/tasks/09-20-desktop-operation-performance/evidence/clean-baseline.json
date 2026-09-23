@@ -1,0 +1,17 @@
+{
+  "role": "clean-baseline",
+  "commit": "fc4269fe5c1bc65bf53df97e5c09c6b36081deda",
+  "worktree": "D:/dsb",
+  "exe": "D:/dsb/target/release/devsweep.exe",
+  "sha256": "7995850527da06c8e805bf89f219807649f8f9a385a97b6c5e782c7697f937b0",
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: x86_64-pc-windows-msvc\nrelease: 1.98.0\nLLVM version: 22.1.8",
+  "built_at_utc": "2026-09-22T08:54:24.653174+00:00",
+  "build_command": "cargo build --locked --release -p devsweep-cli --bin devsweep",
+  "host": {
+    "cpu_name": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logical_cores": 24,
+    "windows_build": "26200",
+    "power_plan": "Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)"
+  },
+  "rustc_note": "rustc -vV, the same form the sampler host manifest records"
+}
