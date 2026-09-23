@@ -22,7 +22,12 @@
     "09-20-desktop-mole-workbench-ux",
     "09-20-desktop-tauri-cli-service",
     "09-20-desktop-operation-performance",
-    "09-20-desktop-native-acceptance"
+    "09-20-desktop-native-acceptance",
+    "09-23-desktop-mole-capsule-shell",
+    "09-23-desktop-clean-mole-parity",
+    "09-23-desktop-software-updates-startup",
+    "09-23-desktop-analyze-reveal-trash",
+    "09-23-desktop-status-hud"
   ],
   "parent": null,
   "relatedFiles": [],

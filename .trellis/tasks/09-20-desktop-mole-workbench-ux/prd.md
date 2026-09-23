@@ -7,6 +7,16 @@ workbench: review-first, dense where data is comparable, progressive where
 evidence is detailed, and calm during long operations. Use Mole's information
 hierarchy as a reference while keeping DevSweep's original Windows identity.
 
+## 2026-09-23 revision
+
+The user selected a Mole-style capsule shell with procedural planets. The
+sidebar clauses of R1, the "no planet metaphors" clause of R2, and the shell
+parts of AC1/AC2 move to `09-23-desktop-mole-capsule-shell`, which supersedes
+them. This child keeps R3 (state truthfulness through existing reducers), R4
+(state/locale/width coverage), and R5 (accessible long data). Close this child
+after the capsule shell child lands and its remaining ACs are rechecked
+against the new shell.
+
 ## Dependency and boundary
 
 - Parent: `09-20-desktop-mole-tauri-performance`.

@@ -136,6 +136,18 @@ unrelated working-tree dirt.
   plus the unchanged current Windows scale; other actual OS scale factors are
   non-gating `UNVERIFIED` evidence (TPR-05). Package acceptance covers the local
   build and running executable, not installer execution or installed shortcuts.
+- **2026-09-23 layout and parity revision:** the user compared the sidebar
+  shell with the Mole desktop app and selected (a) a top-centered capsule
+  navigation with supporting destinations in a brand-mark menu, (b) original
+  procedural planets as the per-mode hero, and (c) four parity children:
+  Clean impact order/skip/protect/cumulative total, Software update
+  check/startup items/leftovers, Analyze reveal/Recycle Bin move, Status
+  GPU/thermal/process pin/tray HUD. This supersedes the sidebar clauses of R1
+  and the "Analyze remains read-only" clause of R5: Analyze may now move
+  user-owned items to the Recycle Bin only through a core-built plan, digest,
+  and second confirmation. Mole code, images, textures, copy, and colour
+  values stay excluded; only layout topology is informed by the public
+  product page. Performance work stays paused (user decision, 2026-09-23).
 - **Evidence before implementation:** this task may write planning artifacts
   and manifests, but no product file or `task.py start` runs until the final
   summary is reviewed and explicitly approved.
@@ -187,13 +199,30 @@ unrelated working-tree dirt.
 | `desktop-operation-performance` | Coordinator/backpressure/cancellation improvements, release benchmark harness, paired Clean baseline, same-live-PID Status stop window, and the operation cancel/completion table. | After service boundary; may share UI fixtures.         |
 | `desktop-native-acceptance`     | Native Windows matrix, local package/executable identity, resource gates, and final cross-mode evidence.                                                                           | Last; depends on all prior children.                   |
 
+2026-09-23 additions (ordering: capsule shell first; the four parity
+children after it in any order; `desktop-native-acceptance` stays last):
+
+| Child                              | Responsibility                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `desktop-mole-capsule-shell`       | Capsule navigation, brand menu, procedural planet stage, big-number result grammar, spec rewrite. |
+| `desktop-clean-mole-parity`        | Impact ordering, row skip/protect, run and cumulative Recycle Bin totals.                         |
+| `desktop-software-updates-startup` | Read-only winget update check, current-user startup toggle, leftover review and Recycle Bin move. |
+| `desktop-analyze-reveal-trash`     | Reveal in Explorer and confirmed Recycle Bin move from Analyze.                                   |
+| `desktop-status-hud`               | GPU/thermal probes, battery on stage, process sort/pin, tray HUD.                                 |
+
+`desktop-mole-workbench-ux` keeps only its non-sidebar requirements (state
+truthfulness, long-data accessibility); its sidebar requirements are
+superseded by `desktop-mole-capsule-shell`.
+
 The parent owns requirement convergence, dependency links, shared spec updates,
 and final integration review. It is not an implementation target.
 
 ## Out of scope
 
-- Mole GPL code/assets/copy, pixel-identical recreation, or macOS-only menu-bar,
-  Touch ID, fan, screen, or broad privilege features.
+- Mole GPL code/assets/copy/textures, photographic planets, pixel-identical
+  recreation, or macOS-only Touch ID, fan control, screen, or broad privilege
+  features. (A Windows tray HUD bound to the running app is in scope of
+  `desktop-status-hud` since 2026-09-23.)
 - Permanent deletion, arbitrary commands, UAC elevation, privileged helpers,
   background daemons, telemetry, new production dependencies, or unrelated
   cleanup providers.

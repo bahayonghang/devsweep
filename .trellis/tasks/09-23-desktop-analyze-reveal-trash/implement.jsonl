@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Plan, digest, execution, and audit contracts"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Core/Tauri ownership"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Analyze state and coordinator rules"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Menu and dialog accessibility"}
+{"file": "docs/safety-capability-matrix.md", "reason": "Capability row to add"}

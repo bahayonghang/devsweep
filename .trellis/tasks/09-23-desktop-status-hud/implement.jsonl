@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Status availability and no-fake-zero rules"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Core/Tauri ownership"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Live stream stop-and-join lifecycle"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Generated wire types and decoders"}

@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop shell and package contract"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Shell composition, tokens, and visual prohibitions to rewrite"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Route, focus, and lifecycle rules the capsule must keep"}
+{"file": "docs/provenance.md", "reason": "Third-party reference boundary"}
+{"file": ".trellis/tasks/09-20-desktop-mole-tauri-performance/prd.md", "reason": "Parent requirements and 09-23 decision"}
