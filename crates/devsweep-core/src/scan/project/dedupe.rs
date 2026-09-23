@@ -81,6 +81,7 @@ fn same_action_identity(left: &CleanTarget, right: &CleanTarget) -> bool {
 fn same_footprint(left: &CleanTarget, right: &CleanTarget) -> bool {
     match (&left.path, &right.path) {
         (Some(left), Some(right)) => canonical_footprint(left) == canonical_footprint(right),
+        (None, None) => left.id == right.id,
         _ => false,
     }
 }

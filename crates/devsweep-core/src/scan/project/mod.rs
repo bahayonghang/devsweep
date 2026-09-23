@@ -1547,6 +1547,35 @@ mod tests {
     }
 
     #[test]
+    fn dedupe_targets_merges_repeated_unresolved_command_target() {
+        let fixture = Fixture::new();
+        fixture.file("cache/item", "payload");
+        let root = fixture.path().to_path_buf();
+        let mut target = build_path_target(PathTargetInput {
+            rule_id: "pip.cache.purge",
+            ecosystem: Ecosystem::Python,
+            kind: TargetKind::PackageCache,
+            project_root: root.clone(),
+            path: root.join("cache"),
+            risk: RiskLevel::Low,
+            selected_by_default: false,
+            evidence: Vec::new(),
+        });
+        target.id = TargetId::new("pip.cache.purge:unresolved");
+        target.path = None;
+        target.action = CleanAction::Command {
+            program: "python".to_string(),
+            args: vec!["-m".to_string(), "pip".to_string()],
+            cwd: None,
+            irreversible: true,
+        };
+
+        let deduped = dedupe_targets(vec![target.clone(), target]);
+
+        assert_eq!(deduped.len(), 1);
+    }
+
+    #[test]
     fn dedupe_targets_removes_nested_cleanup_paths() {
         let root = PathBuf::from("C:/workspace/app");
         let parent = build_path_target(PathTargetInput {
