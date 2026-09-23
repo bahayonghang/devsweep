@@ -262,6 +262,8 @@
     "clean.v1.execute.completed": { "forms": { "other": "执行完成。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.execute.failed": { "forms": { "other": "执行失败。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.execute.partial": { "forms": { "other": "执行以部分结果结束。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "clean.v1.outcome.dry_run": { "forms": { "other": "未执行（试运行）" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "clean.v1.outcome.skipped": { "forms": { "other": "已跳过：{reason}" }, "placeholders": ["reason"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.kind.build_artifacts": { "forms": { "other": "构建产物" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.kind.dependency_directory": { "forms": { "other": "依赖目录" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.kind.package_cache": { "forms": { "other": "包缓存" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },

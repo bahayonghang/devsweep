@@ -262,6 +262,8 @@
     "clean.v1.execute.completed": { "forms": { "other": "Execution completed." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.execute.failed": { "forms": { "other": "Execution failed." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.execute.partial": { "forms": { "other": "Execution finished with partial results." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "clean.v1.outcome.dry_run": { "forms": { "other": "Not executed (dry run)" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "clean.v1.outcome.skipped": { "forms": { "other": "Skipped: {reason}" }, "placeholders": ["reason"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.kind.build_artifacts": { "forms": { "other": "Build artifacts" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.kind.dependency_directory": { "forms": { "other": "Dependency directories" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.kind.package_cache": { "forms": { "other": "Package caches" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
