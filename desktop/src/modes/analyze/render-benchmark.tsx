@@ -247,7 +247,9 @@ function nearestRank95(samples: readonly number[]): { readonly rank: number; rea
 
 async function runBenchmark(rootElement: HTMLElement): Promise<AnalyzeRenderBenchmarkResult> {
   const startButton = await waitFor(
-    () => document.querySelector<HTMLButtonElement>(".analyze-toolbar .primary-button"),
+    // Before the first snapshot the start control lives in the empty-state
+    // card; the toolbar copy appears only once a snapshot exists.
+    () => document.querySelector<HTMLButtonElement>(".analyze-toolbar .primary-button, .mode-empty .primary-button"),
     "the Analyze start button",
   );
   startButton.click();
