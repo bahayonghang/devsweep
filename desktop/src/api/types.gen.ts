@@ -590,6 +590,89 @@ export interface DesktopSoftwareInventoryResultCompleted {
     type:         "completed";
 }
 
+export interface SoftwareLeftoverPlanV1 {
+    display_name?:          string;
+    identity:               SoftwareIdentity;
+    publisher?:             string;
+    selected_candidate_ids: string[];
+    software_id:            string;
+    uninstall_operation_id: string;
+    version:                number;
+}
+
+export interface SoftwareLeftoverAppV1 {
+    app_size:      SoftwareSizeEvidence;
+    candidates:    SoftwareLeftoverCandidateV1[];
+    display_name?: string;
+    identity:      SoftwareIdentity;
+    publisher?:    string;
+    software_id:   string;
+}
+
+export interface SoftwareLeftoverCandidateV1 {
+    certainty:           SoftwareLeftoverCertainty;
+    id:                  string;
+    origin:              SoftwareLeftoverOrigin;
+    path:                string;
+    selected_by_default: boolean;
+    size:                SoftwareSizeEvidence;
+}
+
+export type SoftwareLeftoverCertainty = "certain" | "uncertain";
+
+export type SoftwareLeftoverOrigin = "install_location" | "local_app_data" | "program_data" | "roaming_app_data";
+
+export interface DesktopSoftwareLeftoversPreviewResultDiscovered {
+    operation_id: string;
+    preview:      SoftwareLeftoverPreviewV1;
+    type:         "discovered";
+}
+
+export interface SoftwareLeftoverPreviewV1 {
+    apps:    SoftwareLeftoverAppV1[];
+    version: number;
+}
+
+export interface DesktopSoftwareLeftoversPreviewResultPlanned {
+    operation_id: string;
+    plan:         SoftwareLeftoverPlanV1;
+    preview:      SoftwareLeftoverPlanPreviewV1;
+    type:         "planned";
+}
+
+export interface SoftwareLeftoverPlanPreviewV1 {
+    digest:  string;
+    items:   SoftwareLeftoverCandidateV1[];
+    version: number;
+}
+
+export interface DesktopSoftwareLeftoversResult {
+    operation_id: string;
+    report:       SoftwareLeftoverReportV1;
+}
+
+export interface SoftwareLeftoverReportV1 {
+    lower_bound:            boolean;
+    moved_known_bytes:      number;
+    operation_id:           string;
+    outcomes:               SoftwareLeftoverOutcomeV1[];
+    software_id:            string;
+    uninstall_operation_id: string;
+    version:                number;
+}
+
+export interface SoftwareLeftoverOutcomeV1 {
+    candidate_id:     string;
+    certainty:        SoftwareLeftoverCertainty;
+    error_code?:      SoftwareSupportErrorCode;
+    estimated_bytes?: number;
+    outcome:          SoftwareSupportOutcomeCode;
+}
+
+export type SoftwareSupportErrorCode = "canceled" | "not_present" | "protected" | "registry_write_failed" | "trash_failed" | "unsafe_path" | "verification_failed";
+
+export type SoftwareSupportOutcomeCode = "failed" | "skipped" | "succeeded";
+
 export interface DesktopSoftwarePreviewResult {
     operation_id: string;
     plan:         SoftwareSelectionPlanV1;
@@ -632,6 +715,23 @@ export interface SoftwareExecutionReportV1 {
     irreversible: boolean;
     outcomes:     SoftwareActionOutcomeV1[];
     version:      number;
+}
+
+export interface DesktopSoftwareUpdatesResult {
+    operation_id: string;
+    updates:      SoftwareUpdatesV1;
+}
+
+export type SoftwareUpdatesReason = "canceled" | "non_zero_exit" | "output_truncated" | "process_failed" | "source_agreement_pending" | "timed_out" | "unrecognized_output" | "winget_missing";
+
+export interface SoftwareUpdateRowV1 {
+    available_version:    string;
+    id:                   string;
+    installed_version:    string;
+    matched_software_ids: string[];
+    name:                 string;
+    name_truncated:       boolean;
+    source:               string;
 }
 
 export interface DesktopStatusLiveResultCanceled {
@@ -949,7 +1049,13 @@ export interface SoftwareIdentityMsix {
 
 export type SoftwareLastUsedReason = "no_supported_exact_source";
 
-export type SoftwareSizeBasis = "measured_installed_location" | "reported_estimate";
+export interface SoftwareLeftoverSelectionV1 {
+    selected_candidate_ids: string[];
+    software_id:            string;
+    uninstall_operation_id: string;
+}
+
+export type SoftwareSizeBasis = "measured_directory" | "measured_installed_location" | "reported_estimate";
 
 export interface SoftwareSizeEvidenceAvailable {
     basis:               string;
@@ -973,7 +1079,7 @@ export interface SoftwareSizeEvidenceUnknown {
     state:       "unknown";
 }
 
-export type SoftwareSizeSourceCode = "arp_estimated_size_kib" | "msi_estimated_size_kib" | "msix_installed_path";
+export type SoftwareSizeSourceCode = "arp_estimated_size_kib" | "leftover_directory" | "msi_estimated_size_kib" | "msix_installed_path";
 
 export interface SoftwareSourceIdArp {
     hive:   string;
@@ -988,6 +1094,57 @@ export interface SoftwareSourceIdMsi {
 
 export interface SoftwareSourceIdMsixCurrentUser {
     source: "msix_current_user";
+}
+
+export interface SoftwareStartupEntryV1 {
+    id:       string;
+    location: SoftwareStartupLocation;
+    name:     string;
+    scope:    SoftwareScope;
+    state:    SoftwareStartupState;
+    toggle:   SoftwareStartupToggle;
+}
+
+export type SoftwareStartupLocation = "current_user_run" | "current_user_startup_folder" | "machine_run" | "machine_run32";
+
+export type SoftwareStartupState = "disabled" | "enabled" | "unknown";
+
+export type SoftwareStartupToggle = "allowed" | "requires_administrator";
+
+export interface SoftwareStartupListV1 {
+    entries:             SoftwareStartupEntryV1[];
+    observed_at_unix_ms: number;
+    sources:             SoftwareStartupSourceV1[];
+    version:             number;
+}
+
+export interface SoftwareStartupSourceV1 {
+    location:     SoftwareStartupLocation;
+    reason_code?: string;
+    state:        SoftwareSourceState;
+}
+
+export interface SoftwareStartupToggleReportV1 {
+    entry:             SoftwareStartupEntryV1;
+    error_code?:       SoftwareSupportErrorCode;
+    operation_id:      string;
+    outcome:           SoftwareSupportOutcomeCode;
+    requested_enabled: boolean;
+    version:           number;
+}
+
+export interface SoftwareUpdatesV1Available {
+    observed_at_unix_ms: number;
+    rows:                SoftwareUpdateRowV1[];
+    state:               "available";
+    version:             number;
+}
+
+export interface SoftwareUpdatesV1Unavailable {
+    observed_at_unix_ms: number;
+    reason_code:         SoftwareUpdatesReason;
+    state:               "unavailable";
+    version:             number;
 }
 
 export interface StatusEventV1Snapshot {
@@ -1068,4 +1225,6 @@ export type DesktopOptimizeListResult = DesktopOptimizeListResultCanceled | Desk
 export type DesktopStatusSnapshotResult = DesktopStatusSnapshotResultCanceled | DesktopStatusSnapshotResultCompleted;
 export type DesktopStatusLiveResult = DesktopStatusLiveResultCanceled | DesktopStatusLiveResultCompleted;
 export type StatusEventV1 = StatusEventV1Snapshot | StatusEventV1Started | StatusEventV1Terminal | StatusEventV1TickSkipped;
+export type SoftwareUpdatesV1 = SoftwareUpdatesV1Available | SoftwareUpdatesV1Unavailable;
+export type DesktopSoftwareLeftoversPreviewResult = DesktopSoftwareLeftoversPreviewResultDiscovered | DesktopSoftwareLeftoversPreviewResultPlanned;
 export type OptimizeAuditTransition = OptimizeAuditTransitionAdapterCompleted | OptimizeAuditTransitionDispatchStarted | OptimizeAuditTransitionTerminal | OptimizeAuditTransitionValidated;

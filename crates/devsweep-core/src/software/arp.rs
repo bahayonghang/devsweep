@@ -66,6 +66,32 @@ fn windows_inventory(observed_at_unix_ms: u64) -> SourceInventory {
     }
 }
 
+/// Reads the allowlisted `InstallLocation` value of one exact ARP identity.
+/// The value is display and leftover-review evidence only.
+#[cfg(windows)]
+pub(super) fn install_location(
+    hive: RegistryHive,
+    view: RegistryView,
+    subkey: &str,
+) -> Option<std::path::PathBuf> {
+    use native_registry::*;
+
+    let root = RegKey::open(predefined_hive(hive), UNINSTALL_ROOT, view).ok()??;
+    let key = RegKey::open(root.raw(), subkey, view).ok()??;
+    let value = key.string("InstallLocation").ok()??;
+    let trimmed = value.trim().trim_matches('"').trim_end_matches(['\\', '/']);
+    (!trimmed.is_empty()).then(|| std::path::PathBuf::from(trimmed))
+}
+
+#[cfg(not(windows))]
+pub(super) fn install_location(
+    _hive: RegistryHive,
+    _view: RegistryView,
+    _subkey: &str,
+) -> Option<std::path::PathBuf> {
+    None
+}
+
 #[cfg(windows)]
 struct EnumeratedArp {
     state: SoftwareSourceState,
@@ -258,24 +284,26 @@ fn enumerate_source(hive: RegistryHive, view: RegistryView) -> EnumeratedArp {
 }
 
 #[cfg(windows)]
-mod native_registry {
+pub(super) mod native_registry {
     use std::{ffi::c_void, ptr};
 
     use super::{RegistryHive, RegistryView};
 
-    type Hkey = *mut c_void;
+    pub(in crate::software) type Hkey = *mut c_void;
     const HKEY_CURRENT_USER: Hkey = -2_147_483_647_i32 as isize as Hkey;
     const HKEY_LOCAL_MACHINE: Hkey = -2_147_483_646_i32 as isize as Hkey;
     const KEY_READ: u32 = 0x0002_0019;
+    const KEY_SET_VALUE: u32 = 0x0002;
     const KEY_WOW64_64KEY: u32 = 0x0100;
     const KEY_WOW64_32KEY: u32 = 0x0200;
     const ERROR_SUCCESS: i32 = 0;
     const ERROR_FILE_NOT_FOUND: i32 = 2;
-    pub(super) const ERROR_ACCESS_DENIED: i32 = 5;
+    pub(in crate::software) const ERROR_ACCESS_DENIED: i32 = 5;
     const ERROR_MORE_DATA: i32 = 234;
     const ERROR_NO_MORE_ITEMS: i32 = 259;
     const REG_SZ: u32 = 1;
     const REG_EXPAND_SZ: u32 = 2;
+    const REG_BINARY: u32 = 3;
     const REG_DWORD: u32 = 4;
     const MAX_VALUE_BYTES: u32 = 64 * 1024;
 
@@ -307,29 +335,63 @@ mod native_registry {
             data: *mut u8,
             data_len: *mut u32,
         ) -> i32;
+        fn RegEnumValueW(
+            key: Hkey,
+            index: u32,
+            value_name: *mut u16,
+            value_name_len: *mut u32,
+            reserved: *mut u32,
+            value_type: *mut u32,
+            data: *mut u8,
+            data_len: *mut u32,
+        ) -> i32;
+        fn RegCreateKeyExW(
+            key: Hkey,
+            subkey: *const u16,
+            reserved: u32,
+            class: *const u16,
+            options: u32,
+            access: u32,
+            security_attributes: *const c_void,
+            result: *mut Hkey,
+            disposition: *mut u32,
+        ) -> i32;
+        fn RegSetValueExW(
+            key: Hkey,
+            value_name: *const u16,
+            reserved: u32,
+            value_type: u32,
+            data: *const u8,
+            data_len: u32,
+        ) -> i32;
+        #[cfg(test)]
+        fn RegDeleteTreeW(key: Hkey, subkey: *const u16) -> i32;
     }
 
-    pub(super) fn predefined_hive(hive: RegistryHive) -> Hkey {
+    pub(in crate::software) fn predefined_hive(hive: RegistryHive) -> Hkey {
         match hive {
             RegistryHive::CurrentUser => HKEY_CURRENT_USER,
             RegistryHive::LocalMachine => HKEY_LOCAL_MACHINE,
         }
     }
 
-    pub(super) struct RegKey(Hkey);
+    pub(in crate::software) struct RegKey(Hkey);
+
+    fn view_flag(view: RegistryView) -> u32 {
+        match view {
+            RegistryView::Registry32 => KEY_WOW64_32KEY,
+            RegistryView::Registry64 => KEY_WOW64_64KEY,
+        }
+    }
 
     impl RegKey {
-        pub(super) fn open(
+        pub(in crate::software) fn open(
             parent: Hkey,
             subkey: &str,
             view: RegistryView,
         ) -> Result<Option<Self>, i32> {
             let subkey = wide(subkey);
-            let access = KEY_READ
-                | match view {
-                    RegistryView::Registry32 => KEY_WOW64_32KEY,
-                    RegistryView::Registry64 => KEY_WOW64_64KEY,
-                };
+            let access = KEY_READ | view_flag(view);
             let mut result = ptr::null_mut();
             // SAFETY: all pointers refer to live buffers and `result` is writable.
             let status = unsafe { RegOpenKeyExW(parent, subkey.as_ptr(), 0, access, &mut result) };
@@ -340,11 +402,102 @@ mod native_registry {
             }
         }
 
-        pub(super) fn raw(&self) -> Hkey {
+        /// Opens or creates one key with read and set-value access only.
+        pub(in crate::software) fn create_writable(
+            parent: Hkey,
+            subkey: &str,
+            view: RegistryView,
+        ) -> Result<Self, i32> {
+            let subkey = wide(subkey);
+            let mut result = ptr::null_mut();
+            let mut disposition = 0;
+            // SAFETY: all pointers refer to live buffers and `result` is writable.
+            let status = unsafe {
+                RegCreateKeyExW(
+                    parent,
+                    subkey.as_ptr(),
+                    0,
+                    ptr::null(),
+                    0,
+                    KEY_READ | KEY_SET_VALUE | view_flag(view),
+                    ptr::null(),
+                    &mut result,
+                    &mut disposition,
+                )
+            };
+            if status == ERROR_SUCCESS {
+                Ok(Self(result))
+            } else {
+                Err(status)
+            }
+        }
+
+        pub(in crate::software) fn raw(&self) -> Hkey {
             self.0
         }
 
-        pub(super) fn enum_subkey(&self, index: u32) -> Result<Option<String>, ()> {
+        /// Enumerates value names. Value data is never read here.
+        pub(in crate::software) fn value_names(&self) -> Result<Vec<String>, ()> {
+            let mut names = Vec::new();
+            let mut index = 0;
+            loop {
+                let mut buffer = vec![0_u16; 16_384];
+                let mut len = u32::try_from(buffer.len()).map_err(|_| ())?;
+                // SAFETY: the name buffer is writable for `len` UTF-16 code units
+                // and no data buffer is requested.
+                let status = unsafe {
+                    RegEnumValueW(
+                        self.0,
+                        index,
+                        buffer.as_mut_ptr(),
+                        &mut len,
+                        ptr::null_mut(),
+                        ptr::null_mut(),
+                        ptr::null_mut(),
+                        ptr::null_mut(),
+                    )
+                };
+                match status {
+                    ERROR_SUCCESS => {
+                        let len = usize::try_from(len).map_err(|_| ())?;
+                        let name =
+                            String::from_utf16(buffer.get(..len).ok_or(())?).map_err(|_| ())?;
+                        names.push(name);
+                        index += 1;
+                    }
+                    ERROR_NO_MORE_ITEMS => return Ok(names),
+                    _ => return Err(()),
+                }
+            }
+        }
+
+        /// Reads one `REG_BINARY` value. A different value type is an error.
+        pub(in crate::software) fn binary(&self, name: &str) -> Result<Option<Vec<u8>>, ()> {
+            let Some((value_type, bytes)) = self.value(name)? else {
+                return Ok(None);
+            };
+            if value_type != REG_BINARY {
+                return Err(());
+            }
+            Ok(Some(bytes))
+        }
+
+        /// Writes one `REG_BINARY` value on a key opened by `create_writable`.
+        pub(in crate::software) fn set_binary(&self, name: &str, bytes: &[u8]) -> Result<(), i32> {
+            let name = wide(name);
+            let len = u32::try_from(bytes.len()).map_err(|_| ERROR_MORE_DATA)?;
+            // SAFETY: `name` is NUL-terminated and `bytes` is readable for `len`.
+            let status = unsafe {
+                RegSetValueExW(self.0, name.as_ptr(), 0, REG_BINARY, bytes.as_ptr(), len)
+            };
+            if status == ERROR_SUCCESS {
+                Ok(())
+            } else {
+                Err(status)
+            }
+        }
+
+        pub(in crate::software) fn enum_subkey(&self, index: u32) -> Result<Option<String>, ()> {
             let mut buffer = [0_u16; 256];
             let mut len = u32::try_from(buffer.len()).expect("registry name bound fits u32");
             // SAFETY: the name buffer is writable for `len` UTF-16 code units.
@@ -373,7 +526,7 @@ mod native_registry {
             }
         }
 
-        pub(super) fn string(&self, name: &str) -> Result<Option<String>, ()> {
+        pub(in crate::software) fn string(&self, name: &str) -> Result<Option<String>, ()> {
             let Some((value_type, bytes)) = self.value(name)? else {
                 return Ok(None);
             };
@@ -392,7 +545,7 @@ mod native_registry {
             String::from_utf16(&utf16).map(Some).map_err(|_| ())
         }
 
-        pub(super) fn dword(&self, name: &str) -> Result<Option<u32>, ()> {
+        pub(in crate::software) fn dword(&self, name: &str) -> Result<Option<u32>, ()> {
             let Some((value_type, bytes)) = self.value(name)? else {
                 return Ok(None);
             };
@@ -448,6 +601,14 @@ mod native_registry {
             // SAFETY: this wrapper uniquely owns the key returned by RegOpenKeyExW.
             let _ = unsafe { RegCloseKey(self.0) };
         }
+    }
+
+    /// Test-only removal of a temporary test key tree.
+    #[cfg(test)]
+    pub(in crate::software) fn delete_tree(parent: Hkey, subkey: &str) -> i32 {
+        let subkey = wide(subkey);
+        // SAFETY: `subkey` is NUL-terminated and `parent` is a predefined hive.
+        unsafe { RegDeleteTreeW(parent, subkey.as_ptr()) }
     }
 
     fn wide(value: &str) -> Vec<u16> {

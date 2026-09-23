@@ -1,6 +1,6 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareSelectionPlanV1, StatusEventV1, UntrustedPlan } from "./types.gen";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwareLeftoversResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeSoftwareStartupList, decodeSoftwareStartupToggleReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwareLeftoversPreviewResult, DesktopSoftwareLeftoversResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopSoftwareUpdatesResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareLeftoverPlanV1, SoftwareLeftoverSelectionV1, SoftwareSelectionPlanV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1, StatusEventV1, UntrustedPlan } from "./types.gen";
 import {
   decodeCleanMovedTotals,
   decodeHistoryDetail,
@@ -26,6 +26,11 @@ export interface DesktopBridge {
   softwareUninstall(operationId: string, plan: SoftwareSelectionPlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopSoftwareUninstallResult>;
   softwareAudit(operationId: string): Promise<DesktopSoftwareAuditResult>;
   softwareCancel(operationId: string): Promise<void>;
+  softwareUpdatesCheck(operationId: string, inventory: SoftwareInventoryV1 | null): Promise<DesktopSoftwareUpdatesResult>;
+  softwareStartupList(): Promise<SoftwareStartupListV1>;
+  softwareStartupSet(entryId: string, enabled: boolean, confirmed: boolean): Promise<SoftwareStartupToggleReportV1>;
+  softwareLeftoversPreview(operationId: string, inventory: SoftwareInventoryV1, selectedIds: string[], selection: SoftwareLeftoverSelectionV1 | null): Promise<DesktopSoftwareLeftoversPreviewResult>;
+  softwareLeftoversExecute(operationId: string, plan: SoftwareLeftoverPlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopSoftwareLeftoversResult>;
   optimizeListStart(operationId: string): Promise<DesktopOptimizeListResult>;
   optimizePreview(operationId: string, catalogueId: string): Promise<DesktopOptimizePreviewResult>;
   optimizeRun(operationId: string, plan: MaintenancePlanV1, previewDigest: string, confirmed: boolean): Promise<DesktopOptimizeRunResult>;
@@ -92,6 +97,27 @@ export const tauriBridge: DesktopBridge = {
     return result;
   },
   softwareCancel: async (operationId) => { try { await invoke("software_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
+  softwareUpdatesCheck: async (operationId, inventory) => {
+    const result = await call("software_updates_check", { operationId, inventory }, decodeDesktopSoftwareUpdatesResult);
+    if (result.operation_id !== operationId) throw new Error("Software updates result does not match the active operation");
+    return result;
+  },
+  softwareStartupList: () => call("software_startup_list", {}, decodeSoftwareStartupList),
+  softwareStartupSet: (entryId, enabled, confirmed) => call("software_startup_set", { entryId, enabled, confirmed }, (value) => {
+    const report = decodeSoftwareStartupToggleReport(value);
+    if (report.entry.id !== entryId || report.requested_enabled !== enabled) throw new Error("Startup toggle report does not match the request");
+    return report;
+  }),
+  softwareLeftoversPreview: async (operationId, inventory, selectedIds, selection) => {
+    const result = await call("software_leftovers_preview", { operationId, inventory, selectedIds, selection }, decodeDesktopSoftwareLeftoversPreviewResult);
+    if (result.operation_id !== operationId) throw new Error("Software leftovers result does not match the active operation");
+    return result;
+  },
+  softwareLeftoversExecute: async (operationId, plan, previewDigest, confirmed) => {
+    const result = await call("software_leftovers_execute", { operationId, plan, previewDigest, confirmed }, decodeDesktopSoftwareLeftoversResult);
+    if (result.operation_id !== operationId) throw new Error("Software leftovers result does not match the active operation");
+    return result;
+  },
   optimizeListStart: async (operationId) => {
     const result = await call("optimize_list", { operationId }, decodeDesktopOptimizeListResult);
     if (result.operation_id !== operationId) throw new Error("Optimize list result does not match the active operation");

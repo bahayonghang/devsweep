@@ -14,11 +14,15 @@ mod arp;
 #[path = "execution/audit.rs"]
 mod audit;
 mod execution;
+mod leftovers;
 mod model;
 mod msi;
 mod msix;
 mod plan;
+mod startup;
+mod updates;
 
+pub use audit::SoftwareSupportAuditRecordV1;
 pub use execution::{
     MSIX_CANCEL_GRACE, MSIX_MONITOR_TIMEOUT, MSIX_REQUERY_OFFSETS, SOFTWARE_AUDIT_VERSION,
     SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1, SoftwareAuditError,
@@ -27,6 +31,14 @@ pub use execution::{
     SoftwareExecutionOutcome, SoftwareExecutionReportV1, SoftwareExecutionRequest,
     SoftwareExecutor, SoftwareInstalledState, SoftwareRebootEvidence, ValidatedSoftwareAction,
     software_audit_v1_path,
+};
+pub use leftovers::{
+    SOFTWARE_LEFTOVER_VERSION, SoftwareLeftoverAppV1, SoftwareLeftoverCandidateV1,
+    SoftwareLeftoverCertainty, SoftwareLeftoverError, SoftwareLeftoverExecutionRequest,
+    SoftwareLeftoverOrigin, SoftwareLeftoverOutcomeV1, SoftwareLeftoverPlanPreviewV1,
+    SoftwareLeftoverPlanV1, SoftwareLeftoverPreviewV1, SoftwareLeftoverReportV1,
+    SoftwareLeftoverSelectionV1, discover_software_leftovers, execute_software_leftovers,
+    plan_software_leftovers,
 };
 pub use model::{
     MsiContext, RegistryHive, RegistryView, SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION,
@@ -40,6 +52,16 @@ pub use model::{
 pub use plan::{
     SOFTWARE_INVENTORY_TTL_MS, SoftwarePlanError, build_selection_plan, preview_selection_plan,
     preview_selection_plan_live, validate_preview_digest,
+};
+pub use startup::{
+    SOFTWARE_STARTUP_VERSION, SoftwareStartupEntryV1, SoftwareStartupError, SoftwareStartupListV1,
+    SoftwareStartupLocation, SoftwareStartupSourceV1, SoftwareStartupState, SoftwareStartupToggle,
+    SoftwareStartupToggleReportV1, SoftwareSupportErrorCode, SoftwareSupportOutcomeCode,
+    list_startup_entries, set_startup_enabled,
+};
+pub use updates::{
+    SOFTWARE_UPDATES_VERSION, SoftwareUpdateRowV1, SoftwareUpdatesReason, SoftwareUpdatesV1,
+    check_software_updates,
 };
 
 use model::{EligibilityFlags, SoftwareObservation};

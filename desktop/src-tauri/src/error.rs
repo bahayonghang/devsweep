@@ -1,7 +1,10 @@
 use devsweep_core::{
     execution::ExecutionError,
     optimize::{MaintenanceExecutionError, OptimizeAuditError, OptimizePlanError},
-    software::{SoftwareAuditError, SoftwareExecutionError, SoftwarePlanError},
+    software::{
+        SoftwareAuditError, SoftwareExecutionError, SoftwareLeftoverError, SoftwarePlanError,
+        SoftwareStartupError,
+    },
 };
 use serde::Serialize;
 
@@ -173,6 +176,30 @@ impl CommandError {
         }
         if let Some(error) = error.downcast_ref::<SoftwarePlanError>() {
             return Self::software_plan(error);
+        }
+        if let Some(error) = error.downcast_ref::<SoftwareLeftoverError>() {
+            let message = error.to_string();
+            return match error {
+                SoftwareLeftoverError::UnsupportedPlanVersion(_)
+                | SoftwareLeftoverError::StaleCandidate(_)
+                | SoftwareLeftoverError::DigestMismatch => Self::SoftwareStaleAuthority { message },
+                SoftwareLeftoverError::Audit(
+                    SoftwareAuditError::LockUnavailable(_)
+                    | SoftwareAuditError::LocalAppDataUnavailable,
+                ) => Self::SoftwareAuditUnavailable { message },
+                _ => Self::SoftwareFailed { message },
+            };
+        }
+        if let Some(error) = error.downcast_ref::<SoftwareStartupError>() {
+            let message = error.to_string();
+            return match error {
+                SoftwareStartupError::UnknownEntry(_) => Self::SoftwareStaleAuthority { message },
+                SoftwareStartupError::Audit(
+                    SoftwareAuditError::LockUnavailable(_)
+                    | SoftwareAuditError::LocalAppDataUnavailable,
+                ) => Self::SoftwareAuditUnavailable { message },
+                _ => Self::SoftwareFailed { message },
+            };
         }
         Self::software_failed(error)
     }

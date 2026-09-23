@@ -1,0 +1,39 @@
+{
+  "operation_id": "software-updates-1",
+  "updates": {
+    "state": "available",
+    "version": 1,
+    "observed_at_unix_ms": 1788100000000,
+    "rows": [
+      {
+        "id": "Contoso.Tools",
+        "name": "Contoso Tools",
+        "name_truncated": false,
+        "installed_version": "1.0.0.0",
+        "available_version": "1.2.0.0",
+        "source": "winget",
+        "matched_software_ids": [
+          "software:v1:msix:eligible-contoso"
+        ]
+      },
+      {
+        "id": "Nutstore.Nutstore",
+        "name": "坚果云",
+        "name_truncated": false,
+        "installed_version": "7.2.3",
+        "available_version": "7.2.5",
+        "source": "winget",
+        "matched_software_ids": []
+      },
+      {
+        "id": "Microsoft.VCRedist.2015+.x64",
+        "name": "Microsoft Visual C++ 2015-2022 Redistr",
+        "name_truncated": true,
+        "installed_version": "14.40.33810.0",
+        "available_version": "14.44.35211.0",
+        "source": "winget",
+        "matched_software_ids": []
+      }
+    ]
+  }
+}

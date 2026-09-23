@@ -92,6 +92,15 @@
 .software-confirm-dialog strong { color: var(--text-primary); }
 .software-confirm-actions { justify-content: flex-end; }
 
+.software-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.software-table th,
+.software-table td { padding: 6px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.software-table th { color: var(--text-muted); font-weight: 650; }
+.software-note { color: var(--text-muted); }
+.software-updates-unavailable { border-left: 4px solid var(--warning); padding-left: 10px; }
+.software-leftover-app { display: grid; gap: 8px; margin-top: 12px; }
+.software-leftovers [data-certainty="uncertain"] .secondary { color: var(--warning); }
+
 @media (max-width: 800px) {
   .software-row-primary { align-items: flex-start; flex-direction: column; }
   .software-source { white-space: normal; }

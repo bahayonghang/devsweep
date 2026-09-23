@@ -1,0 +1,9 @@
+{
+  "operation_id": "software-updates-2",
+  "updates": {
+    "state": "unavailable",
+    "version": 1,
+    "observed_at_unix_ms": 1788100000000,
+    "reason_code": "source_agreement_pending"
+  }
+}

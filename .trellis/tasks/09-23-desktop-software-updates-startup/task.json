@@ -3,7 +3,7 @@
   "name": "desktop-software-updates-startup",
   "title": "Software parity: update check, startup items, leftover size",
   "description": "Read-only winget update check, current-user startup item toggle, and uninstall leftover review with size.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

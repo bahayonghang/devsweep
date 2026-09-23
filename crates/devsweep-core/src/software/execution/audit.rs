@@ -1,7 +1,7 @@
 //! Locked, append-only, redacted Software V1 execution journal.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     ffi::OsString,
     fs::{self, File, OpenOptions},
     io::{self, Write},
@@ -14,7 +14,10 @@ use super::execution::{
     AdapterEvidence, AdapterOutcome, SoftwareExecutionOutcome, SoftwareInstalledState,
     SoftwareRebootEvidence, classify_terminal, merge_requery_state,
 };
-use crate::software::SoftwareIdentity;
+use crate::software::{
+    SoftwareIdentity, SoftwareLeftoverCertainty, SoftwareStartupLocation, SoftwareSupportErrorCode,
+    SoftwareSupportOutcomeCode,
+};
 
 pub const SOFTWARE_AUDIT_VERSION: u32 = 1;
 const SOFTWARE_AUDIT_DOMAIN: &str = "software";
@@ -141,6 +144,137 @@ impl SoftwareAuditRecordV1 {
             requery_result: event.installed_state.map(SoftwareAuditRequeryResult::from),
             adapter_outcome: event.adapter_outcome,
             irreversible: true,
+        }
+    }
+}
+
+/// One complete Software support action in the same fixed journal. These
+/// records are separate from MSIX removal transitions and carry no path,
+/// command line, argv, or localized text.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "record_kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum SoftwareSupportAuditRecordV1 {
+    /// One current-user `StartupApproved` value write and its re-read result.
+    StartupToggled {
+        schema_version: u32,
+        domain: String,
+        operation_id: String,
+        timestamp_unix_ms: u64,
+        startup_id: String,
+        location: SoftwareStartupLocation,
+        requested_enabled: bool,
+        outcome_code: SoftwareSupportOutcomeCode,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        error_code: Option<SoftwareSupportErrorCode>,
+    },
+    /// One leftover directory move to the Recycle Bin after a succeeded uninstall.
+    LeftoverMoved {
+        schema_version: u32,
+        domain: String,
+        operation_id: String,
+        timestamp_unix_ms: u64,
+        uninstall_operation_id: String,
+        identity: SoftwareIdentity,
+        candidate_id: String,
+        certainty: SoftwareLeftoverCertainty,
+        outcome_code: SoftwareSupportOutcomeCode,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        estimated_bytes: Option<u64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        error_code: Option<SoftwareSupportErrorCode>,
+    },
+}
+
+impl SoftwareSupportAuditRecordV1 {
+    pub(in crate::software) fn startup_toggled(
+        operation_id: &str,
+        timestamp_unix_ms: u64,
+        startup_id: &str,
+        location: SoftwareStartupLocation,
+        requested_enabled: bool,
+        outcome_code: SoftwareSupportOutcomeCode,
+        error_code: Option<SoftwareSupportErrorCode>,
+    ) -> Self {
+        Self::StartupToggled {
+            schema_version: SOFTWARE_AUDIT_VERSION,
+            domain: SOFTWARE_AUDIT_DOMAIN.to_string(),
+            operation_id: operation_id.to_string(),
+            timestamp_unix_ms,
+            startup_id: startup_id.to_string(),
+            location,
+            requested_enabled,
+            outcome_code,
+            error_code,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::software) fn leftover_moved(
+        operation_id: &str,
+        timestamp_unix_ms: u64,
+        uninstall_operation_id: &str,
+        identity: &SoftwareIdentity,
+        candidate_id: &str,
+        certainty: SoftwareLeftoverCertainty,
+        outcome_code: SoftwareSupportOutcomeCode,
+        estimated_bytes: Option<u64>,
+        error_code: Option<SoftwareSupportErrorCode>,
+    ) -> Self {
+        Self::LeftoverMoved {
+            schema_version: SOFTWARE_AUDIT_VERSION,
+            domain: SOFTWARE_AUDIT_DOMAIN.to_string(),
+            operation_id: operation_id.to_string(),
+            timestamp_unix_ms,
+            uninstall_operation_id: uninstall_operation_id.to_string(),
+            identity: identity.clone(),
+            candidate_id: candidate_id.to_string(),
+            certainty,
+            outcome_code,
+            estimated_bytes,
+            error_code,
+        }
+    }
+
+    #[must_use]
+    pub fn operation_id(&self) -> &str {
+        match self {
+            Self::StartupToggled { operation_id, .. }
+            | Self::LeftoverMoved { operation_id, .. } => operation_id,
+        }
+    }
+
+    #[must_use]
+    pub fn timestamp_unix_ms(&self) -> u64 {
+        match self {
+            Self::StartupToggled {
+                timestamp_unix_ms, ..
+            }
+            | Self::LeftoverMoved {
+                timestamp_unix_ms, ..
+            } => *timestamp_unix_ms,
+        }
+    }
+
+    #[must_use]
+    pub fn outcome_code(&self) -> SoftwareSupportOutcomeCode {
+        match self {
+            Self::StartupToggled { outcome_code, .. }
+            | Self::LeftoverMoved { outcome_code, .. } => *outcome_code,
+        }
+    }
+
+    fn header(&self) -> (u32, &str) {
+        match self {
+            Self::StartupToggled {
+                schema_version,
+                domain,
+                ..
+            }
+            | Self::LeftoverMoved {
+                schema_version,
+                domain,
+                ..
+            } => (*schema_version, domain),
         }
     }
 }
@@ -291,15 +425,16 @@ impl OperationState {
     }
 }
 
-pub(super) struct SoftwareAuditJournal {
+pub(in crate::software) struct SoftwareAuditJournal {
     path: PathBuf,
     file: File,
     _lock: SidecarLock,
     states: BTreeMap<String, OperationState>,
+    support_operation_ids: BTreeSet<String>,
 }
 
 impl SoftwareAuditJournal {
-    pub(super) fn open(path: &Path) -> Result<Self, SoftwareAuditError> {
+    pub(in crate::software) fn open(path: &Path) -> Result<Self, SoftwareAuditError> {
         let parent = path
             .parent()
             .filter(|parent| !parent.as_os_str().is_empty())
@@ -316,7 +451,7 @@ impl SoftwareAuditJournal {
         } else {
             Vec::new()
         };
-        let (records, states) = parse_journal(path, &bytes)?;
+        let (records, states, support_operation_ids) = parse_journal(path, &bytes)?;
         let _ = records;
         let file = OpenOptions::new()
             .create(true)
@@ -329,6 +464,7 @@ impl SoftwareAuditJournal {
             file,
             _lock: lock,
             states,
+            support_operation_ids,
         })
     }
 
@@ -337,10 +473,47 @@ impl SoftwareAuditJournal {
         record: SoftwareAuditRecordV1,
     ) -> Result<(), SoftwareAuditError> {
         validate_record(&record)?;
+        if self.support_operation_ids.contains(&record.operation_id) {
+            return Err(SoftwareAuditError::InvalidTransition {
+                operation_id: record.operation_id.clone(),
+                detail: "operation id belongs to a support record",
+            });
+        }
         let mut next = self.states.clone();
         apply_record(&mut next, &record)?;
-        let mut line = serde_json::to_vec(&record)
+        let line = serde_json::to_vec(&record)
             .map_err(|_| SoftwareAuditError::Corrupt(self.path.clone()))?;
+        self.write_line(line)?;
+        self.states = next;
+        Ok(())
+    }
+
+    /// Appends one durable support record. Leftover records require a
+    /// succeeded uninstall terminal for the same identity.
+    pub(in crate::software) fn append_support(
+        &mut self,
+        record: SoftwareSupportAuditRecordV1,
+    ) -> Result<(), SoftwareAuditError> {
+        validate_support_record(&self.states, &record)?;
+        let line = serde_json::to_vec(&record)
+            .map_err(|_| SoftwareAuditError::Corrupt(self.path.clone()))?;
+        self.write_line(line)?;
+        self.support_operation_ids
+            .insert(record.operation_id().to_string());
+        Ok(())
+    }
+
+    /// True when `operation_id` reached `removed` or `reboot_required` for
+    /// exactly `identity`.
+    pub(in crate::software) fn uninstall_succeeded(
+        &self,
+        operation_id: &str,
+        identity: &SoftwareIdentity,
+    ) -> bool {
+        uninstall_succeeded(&self.states, operation_id, identity)
+    }
+
+    fn write_line(&mut self, mut line: Vec<u8>) -> Result<(), SoftwareAuditError> {
         line.push(b'\n');
         self.file
             .write_all(&line)
@@ -351,7 +524,6 @@ impl SoftwareAuditJournal {
         self.file
             .sync_all()
             .map_err(|error| io_error("sync", &self.path, error))?;
-        self.states = next;
         Ok(())
     }
 
@@ -363,12 +535,15 @@ impl SoftwareAuditJournal {
     }
 }
 
-fn parse_journal(
-    path: &Path,
-    bytes: &[u8],
-) -> Result<(Vec<SoftwareAuditRecordV1>, BTreeMap<String, OperationState>), SoftwareAuditError> {
+type ParsedJournal = (
+    Vec<SoftwareAuditRecordV1>,
+    BTreeMap<String, OperationState>,
+    BTreeSet<String>,
+);
+
+fn parse_journal(path: &Path, bytes: &[u8]) -> Result<ParsedJournal, SoftwareAuditError> {
     if bytes.is_empty() {
-        return Ok((Vec::new(), BTreeMap::new()));
+        return Ok((Vec::new(), BTreeMap::new(), BTreeSet::new()));
     }
     let text =
         std::str::from_utf8(bytes).map_err(|_| SoftwareAuditError::Corrupt(path.to_path_buf()))?;
@@ -377,6 +552,7 @@ fn parse_journal(
     }
     let mut records = Vec::new();
     let mut states = BTreeMap::new();
+    let mut support_operation_ids = BTreeSet::new();
     for line in text.lines() {
         let value: serde_json::Value = serde_json::from_str(line)
             .map_err(|_| SoftwareAuditError::Corrupt(path.to_path_buf()))?;
@@ -391,13 +567,101 @@ fn parse_journal(
         if value.get("domain").and_then(serde_json::Value::as_str) != Some(SOFTWARE_AUDIT_DOMAIN) {
             return Err(SoftwareAuditError::Corrupt(path.to_path_buf()));
         }
+        if value.get("record_kind").is_some() {
+            let record: SoftwareSupportAuditRecordV1 = serde_json::from_value(value)
+                .map_err(|_| SoftwareAuditError::Corrupt(path.to_path_buf()))?;
+            validate_support_record(&states, &record)?;
+            support_operation_ids.insert(record.operation_id().to_string());
+            continue;
+        }
         let record: SoftwareAuditRecordV1 = serde_json::from_value(value)
             .map_err(|_| SoftwareAuditError::Corrupt(path.to_path_buf()))?;
         validate_record(&record)?;
+        if support_operation_ids.contains(&record.operation_id) {
+            return Err(SoftwareAuditError::Corrupt(path.to_path_buf()));
+        }
         apply_record(&mut states, &record)?;
         records.push(record);
     }
-    Ok((records, states))
+    Ok((records, states, support_operation_ids))
+}
+
+fn uninstall_succeeded(
+    states: &BTreeMap<String, OperationState>,
+    operation_id: &str,
+    identity: &SoftwareIdentity,
+) -> bool {
+    states.get(operation_id).is_some_and(|state| {
+        &state.identity == identity
+            && matches!(
+                state.last_transition,
+                SoftwareAuditTransition::Terminal { outcome } if outcome.is_success()
+            )
+    })
+}
+
+fn validate_support_record(
+    states: &BTreeMap<String, OperationState>,
+    record: &SoftwareSupportAuditRecordV1,
+) -> Result<(), SoftwareAuditError> {
+    let invalid = |detail| SoftwareAuditError::InvalidTransition {
+        operation_id: record.operation_id().to_string(),
+        detail,
+    };
+    let (schema_version, domain) = record.header();
+    if schema_version != SOFTWARE_AUDIT_VERSION
+        || domain != SOFTWARE_AUDIT_DOMAIN
+        || record.operation_id().is_empty()
+        || states.contains_key(record.operation_id())
+    {
+        return Err(invalid("support record shape is not Software V1"));
+    }
+    match record {
+        SoftwareSupportAuditRecordV1::StartupToggled {
+            startup_id,
+            location,
+            outcome_code,
+            error_code,
+            ..
+        } => {
+            let current_user = matches!(
+                location,
+                SoftwareStartupLocation::CurrentUserRun
+                    | SoftwareStartupLocation::CurrentUserStartupFolder
+            );
+            let consistent = match outcome_code {
+                SoftwareSupportOutcomeCode::Succeeded => error_code.is_none(),
+                SoftwareSupportOutcomeCode::Failed => error_code.is_some(),
+                SoftwareSupportOutcomeCode::Skipped => false,
+            };
+            if startup_id.is_empty() || !current_user || !consistent {
+                return Err(invalid("startup record is inconsistent"));
+            }
+        }
+        SoftwareSupportAuditRecordV1::LeftoverMoved {
+            uninstall_operation_id,
+            identity,
+            candidate_id,
+            outcome_code,
+            estimated_bytes,
+            error_code,
+            ..
+        } => {
+            let consistent = match outcome_code {
+                SoftwareSupportOutcomeCode::Succeeded => error_code.is_none(),
+                SoftwareSupportOutcomeCode::Failed | SoftwareSupportOutcomeCode::Skipped => {
+                    error_code.is_some() && estimated_bytes.is_none()
+                }
+            };
+            if candidate_id.is_empty() || !consistent {
+                return Err(invalid("leftover record is inconsistent"));
+            }
+            if !uninstall_succeeded(states, uninstall_operation_id, identity) {
+                return Err(invalid("leftover record has no succeeded uninstall"));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditError> {

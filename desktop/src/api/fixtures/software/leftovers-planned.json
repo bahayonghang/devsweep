@@ -1,0 +1,38 @@
+{
+  "type": "planned",
+  "operation_id": "software-leftovers-2",
+  "plan": {
+    "version": 1,
+    "software_id": "software:v1:msix:eligible-contoso",
+    "identity": {
+      "source": "msix",
+      "package_full_name": "Contoso.Tools_1.0.0.0_x64__8wekyb3d8bbwe"
+    },
+    "display_name": "Contoso Tools",
+    "publisher": "Contoso",
+    "uninstall_operation_id": "software-op-1788100000000-1",
+    "selected_candidate_ids": [
+      "leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ]
+  },
+  "preview": {
+    "version": 1,
+    "items": [
+      {
+        "id": "leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "path": "C:\\Users\\fixture\\AppData\\Roaming\\Contoso\\Contoso Tools",
+        "origin": "roaming_app_data",
+        "certainty": "uncertain",
+        "selected_by_default": false,
+        "size": {
+          "state": "available",
+          "value_bytes": 52428800,
+          "basis": "measured_directory",
+          "source_code": "leftover_directory",
+          "observed_at_unix_ms": 1788100000000
+        }
+      }
+    ],
+    "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+  }
+}

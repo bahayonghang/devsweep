@@ -20,8 +20,8 @@
     "SoftwareScope": ["current_user", "machine"],
     "SoftwareEligibilityState": ["selectable", "manual"],
     "SoftwareEligibilityReason": ["protected_product", "source_incomplete", "conflicting_identity", "no_remove", "hidden_entry", "system_or_update", "dependency_package", "stub_package", "unhealthy_package", "msi_execution_not_supported_v1", "registry_only_manual", "unsupported_source", "eligible_current_user_msix"],
-    "SoftwareSizeBasis": ["reported_estimate", "measured_installed_location"],
-    "SoftwareSizeSourceCode": ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path"],
+    "SoftwareSizeBasis": ["reported_estimate", "measured_installed_location", "measured_directory"],
+    "SoftwareSizeSourceCode": ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path", "leftover_directory"],
     "SoftwareLastUsedReason": ["no_supported_exact_source"],
     "SoftwareActionClass": ["remove_current_user_msix"],
     "SoftwareExecutionOutcome": ["canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch"],
@@ -31,6 +31,14 @@
     "SoftwareAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_reboot_required", "requery_present", "requery_absent", "requery_unavailable", "requery_conflicting", "canceled_before_start", "removed", "reboot_required", "still_present", "failed", "unknown_after_dispatch", "recovered_before_dispatch"],
     "SoftwareAuditRequeryResult": ["present", "absent", "unavailable", "conflicting"],
     "SoftwareAdapterOutcome": ["success", "failure", "reboot_required", "unfinished"],
+    "SoftwareUpdatesReason": ["winget_missing", "source_agreement_pending", "non_zero_exit", "timed_out", "canceled", "output_truncated", "unrecognized_output", "process_failed"],
+    "SoftwareStartupLocation": ["current_user_run", "machine_run", "machine_run32", "current_user_startup_folder"],
+    "SoftwareStartupState": ["enabled", "disabled", "unknown"],
+    "SoftwareStartupToggle": ["allowed", "requires_administrator"],
+    "SoftwareSupportOutcomeCode": ["succeeded", "failed", "skipped"],
+    "SoftwareSupportErrorCode": ["registry_write_failed", "verification_failed", "trash_failed", "not_present", "unsafe_path", "protected", "canceled"],
+    "SoftwareLeftoverOrigin": ["install_location", "roaming_app_data", "local_app_data", "program_data"],
+    "SoftwareLeftoverCertainty": ["certain", "uncertain"],
     "MaintenanceActionClass": ["execute", "settings_handoff", "guidance"],
     "MaintenanceExecutionOutcome": ["canceled_before_start", "succeeded", "launched", "failed", "unknown_after_dispatch"],
     "OptimizeAuditStatusCode": ["validated", "dispatch_started", "adapter_succeeded", "adapter_failed", "adapter_unfinished", "canceled_before_start", "recovered_before_dispatch", "succeeded", "launched", "failed", "unknown_after_dispatch"],
@@ -298,6 +306,146 @@
         "data": { "reason": "completed", "error_code": null }
       }]
     }},
+    "SoftwareUpdatesV1": { "tag": "state", "variants": {
+      "SoftwareUpdatesV1Available": [{
+        "state": "available",
+        "version": 1,
+        "observed_at_unix_ms": 1788100000000,
+        "rows": [
+          {
+            "id": "Contoso.Tools",
+            "name": "Contoso Tools",
+            "name_truncated": false,
+            "installed_version": "1.0.0.0",
+            "available_version": "1.2.0.0",
+            "source": "winget",
+            "matched_software_ids": [
+              "software:v1:msix:eligible-contoso"
+            ]
+          },
+          {
+            "id": "Nutstore.Nutstore",
+            "name": "坚果云",
+            "name_truncated": false,
+            "installed_version": "7.2.3",
+            "available_version": "7.2.5",
+            "source": "winget",
+            "matched_software_ids": []
+          },
+          {
+            "id": "Microsoft.VCRedist.2015+.x64",
+            "name": "Microsoft Visual C++ 2015-2022 Redistr",
+            "name_truncated": true,
+            "installed_version": "14.40.33810.0",
+            "available_version": "14.44.35211.0",
+            "source": "winget",
+            "matched_software_ids": []
+          }
+        ]
+      }],
+      "SoftwareUpdatesV1Unavailable": [{
+        "state": "unavailable",
+        "version": 1,
+        "observed_at_unix_ms": 1788100000000,
+        "reason_code": "source_agreement_pending"
+      }]
+    }},
+    "DesktopSoftwareLeftoversPreviewResult": { "variants": {
+      "DesktopSoftwareLeftoversPreviewResultDiscovered": [{
+        "type": "discovered",
+        "operation_id": "software-leftovers-1",
+        "preview": {
+          "version": 1,
+          "apps": [
+            {
+              "software_id": "software:v1:msix:eligible-contoso",
+              "identity": {
+                "source": "msix",
+                "package_full_name": "Contoso.Tools_1.0.0.0_x64__8wekyb3d8bbwe"
+              },
+              "display_name": "Contoso Tools",
+              "publisher": "Contoso",
+              "app_size": {
+                "state": "available",
+                "value_bytes": 268435456,
+                "basis": "measured_installed_location",
+                "source_code": "msix_installed_path",
+                "observed_at_unix_ms": 1788100000000
+              },
+              "candidates": [
+                {
+                  "id": "leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "path": "C:\\Users\\fixture\\AppData\\Roaming\\Contoso\\Contoso Tools",
+                  "origin": "roaming_app_data",
+                  "certainty": "uncertain",
+                  "selected_by_default": false,
+                  "size": {
+                    "state": "available",
+                    "value_bytes": 52428800,
+                    "basis": "measured_directory",
+                    "source_code": "leftover_directory",
+                    "observed_at_unix_ms": 1788100000000
+                  }
+                },
+                {
+                  "id": "leftover:v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "path": "C:\\Users\\fixture\\AppData\\Local\\Contoso Tools",
+                  "origin": "local_app_data",
+                  "certainty": "uncertain",
+                  "selected_by_default": false,
+                  "size": {
+                    "state": "partial",
+                    "lower_bound_bytes": 8388608,
+                    "basis": "measured_directory",
+                    "source_code": "leftover_directory",
+                    "reason_code": "entry_budget_exhausted",
+                    "observed_at_unix_ms": 1788100000000
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }],
+      "DesktopSoftwareLeftoversPreviewResultPlanned": [{
+        "type": "planned",
+        "operation_id": "software-leftovers-2",
+        "plan": {
+          "version": 1,
+          "software_id": "software:v1:msix:eligible-contoso",
+          "identity": {
+            "source": "msix",
+            "package_full_name": "Contoso.Tools_1.0.0.0_x64__8wekyb3d8bbwe"
+          },
+          "display_name": "Contoso Tools",
+          "publisher": "Contoso",
+          "uninstall_operation_id": "software-op-1788100000000-1",
+          "selected_candidate_ids": [
+            "leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        },
+        "preview": {
+          "version": 1,
+          "items": [
+            {
+              "id": "leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "path": "C:\\Users\\fixture\\AppData\\Roaming\\Contoso\\Contoso Tools",
+              "origin": "roaming_app_data",
+              "certainty": "uncertain",
+              "selected_by_default": false,
+              "size": {
+                "state": "available",
+                "value_bytes": 52428800,
+                "basis": "measured_directory",
+                "source_code": "leftover_directory",
+                "observed_at_unix_ms": 1788100000000
+              }
+            }
+          ],
+          "digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888"
+        }
+      }]
+    }},
     "OptimizeAuditTransition": { "tag": "kind", "variants": {
       "OptimizeAuditTransitionValidated": [{ "kind": "validated" }],
       "OptimizeAuditTransitionDispatchStarted": [{ "kind": "dispatch_started" }],
@@ -396,6 +544,65 @@
         "outcome": "canceled_before_start",
         "reboot_evidence": "none",
         "irreversible": true
+      }
+    ],
+    "SoftwareStartupToggleReportV1": [
+      {
+        "version": 1,
+        "operation_id": "software-startup-op-1788100000000-2",
+        "requested_enabled": true,
+        "outcome": "failed",
+        "error_code": "verification_failed",
+        "entry": {
+          "id": "startup:v1:2222222222222222222222222222222222222222222222222222222222222222",
+          "location": "current_user_startup_folder",
+          "scope": "current_user",
+          "name": "Notes.lnk",
+          "state": "disabled",
+          "toggle": "allowed"
+        }
+      }
+    ],
+    "SoftwareLeftoverCandidateV1": [
+      {
+        "id": "leftover:v1:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "path": "C:\\Users\\fixture\\AppData\\Local\\Programs\\Contoso Notes",
+        "origin": "install_location",
+        "certainty": "certain",
+        "selected_by_default": true,
+        "size": { "state": "unknown", "reason_code": "measurement_unavailable" }
+      }
+    ],
+    "SoftwareLeftoverAppV1": [
+      {
+        "software_id": "software:v1:msix:no-display-name",
+        "identity": { "source": "msix", "package_full_name": "NoDisplay_1.0.0.0_x64__publisher" },
+        "app_size": { "state": "unknown", "reason_code": "not_reported" },
+        "candidates": []
+      }
+    ],
+    "SoftwareLeftoverPlanV1": [
+      {
+        "version": 1,
+        "software_id": "software:v1:msix:no-display-name",
+        "identity": { "source": "msix", "package_full_name": "NoDisplay_1.0.0.0_x64__publisher" },
+        "uninstall_operation_id": "software-op-1788100000000-2",
+        "selected_candidate_ids": ["leftover:v1:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"]
+      }
+    ],
+    "SoftwareLeftoverSelectionV1": [
+      {
+        "software_id": "software:v1:msix:eligible-contoso",
+        "uninstall_operation_id": "software-op-1788100000000-1",
+        "selected_candidate_ids": ["leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"]
+      }
+    ],
+    "SoftwareLeftoverOutcomeV1": [
+      {
+        "candidate_id": "leftover:v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "certainty": "uncertain",
+        "outcome": "failed",
+        "error_code": "trash_failed"
       }
     ],
     "CpuAvailabilityV1": [

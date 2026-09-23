@@ -10,9 +10,14 @@ use devsweep_core::{
     software::{
         SOFTWARE_AUDIT_VERSION, SoftwareActionOutcomeV1, SoftwareAuditRecordV1,
         SoftwareExecutionReportV1, SoftwareExecutionRequest, SoftwareExecutor,
-        SoftwareInventorySource, SoftwareInventoryV1, SoftwarePreviewV1, SoftwareSelectionPlanV1,
-        build_selection_plan, inventory_software, preview_selection_plan_live,
-        software_audit_v1_path,
+        SoftwareInventorySource, SoftwareInventoryV1, SoftwareLeftoverExecutionRequest,
+        SoftwareLeftoverPlanPreviewV1, SoftwareLeftoverPlanV1, SoftwareLeftoverPreviewV1,
+        SoftwareLeftoverReportV1, SoftwareLeftoverSelectionV1, SoftwarePreviewV1,
+        SoftwareSelectionPlanV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1,
+        SoftwareUpdatesV1, build_selection_plan, check_software_updates,
+        discover_software_leftovers, execute_software_leftovers, inventory_software,
+        list_startup_entries, plan_software_leftovers, preview_selection_plan_live,
+        set_startup_enabled, software_audit_v1_path,
     },
 };
 use serde::Serialize;
@@ -55,6 +60,39 @@ pub(crate) struct DesktopSoftwareAuditResult {
     pub operation_id: String,
     pub recovered: Vec<SoftwareActionOutcomeV1>,
     pub records: Vec<SoftwareAuditRecordV1>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[serde(deny_unknown_fields)]
+pub(crate) struct DesktopSoftwareUpdatesResult {
+    pub operation_id: String,
+    pub updates: SoftwareUpdatesV1,
+}
+
+/// Leftover review result: discovery during the uninstall preview, or a
+/// removal plan with its live digest after a succeeded uninstall.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub(crate) enum DesktopSoftwareLeftoversPreviewResult {
+    Discovered {
+        operation_id: String,
+        preview: SoftwareLeftoverPreviewV1,
+    },
+    Planned {
+        operation_id: String,
+        plan: SoftwareLeftoverPlanV1,
+        preview: SoftwareLeftoverPlanPreviewV1,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
+#[serde(deny_unknown_fields)]
+pub(crate) struct DesktopSoftwareLeftoversResult {
+    pub operation_id: String,
+    pub report: SoftwareLeftoverReportV1,
 }
 
 #[derive(Clone)]
@@ -179,6 +217,13 @@ fn read_audit_records() -> Result<Vec<SoftwareAuditRecordV1>> {
         if line.trim().is_empty() {
             continue;
         }
+        // Startup and leftover support records share the journal. This view
+        // lists MSIX removal transitions only.
+        if serde_json::from_str::<serde_json::Value>(line)
+            .is_ok_and(|value| value.get("record_kind").is_some())
+        {
+            continue;
+        }
         let record: SoftwareAuditRecordV1 = serde_json::from_str(line)
             .with_context(|| format!("invalid Software audit record on line {}", index + 1))?;
         if record.schema_version != SOFTWARE_AUDIT_VERSION || record.domain != "software" {
@@ -281,6 +326,132 @@ pub(crate) async fn software_audit(
             })
         })()
         .map_err(CommandError::software);
+        worker_state.finish(&operation_id, &worker_cancel)?;
+        result
+    })
+    .await
+    .map_err(CommandError::io)
+    .and_then(|result| result)
+}
+
+fn run_leftovers_preview(
+    operation_id: String,
+    inventory: SoftwareInventoryV1,
+    selected_ids: Vec<String>,
+    selection: Option<SoftwareLeftoverSelectionV1>,
+    cancel: &Arc<FlagCancelObserver>,
+) -> Result<DesktopSoftwareLeftoversPreviewResult> {
+    Ok(match selection {
+        Some(selection) => {
+            let (plan, preview) = plan_software_leftovers(&inventory, &selection, Some(cancel))?;
+            DesktopSoftwareLeftoversPreviewResult::Planned {
+                operation_id,
+                plan,
+                preview,
+            }
+        }
+        None => DesktopSoftwareLeftoversPreviewResult::Discovered {
+            operation_id,
+            preview: discover_software_leftovers(&inventory, &selected_ids, Some(cancel))?,
+        },
+    })
+}
+
+#[tauri::command]
+pub(crate) async fn software_updates_check(
+    state: tauri::State<'_, SoftwareCoordinator>,
+    operation_id: String,
+    inventory: Option<SoftwareInventoryV1>,
+) -> Result<DesktopSoftwareUpdatesResult, CommandError> {
+    let cancel = state.begin(operation_id.clone())?;
+    let worker_cancel = Arc::clone(&cancel);
+    let worker_state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let updates = check_software_updates(inventory.as_ref(), Some(&worker_cancel));
+        worker_state.finish(&operation_id, &worker_cancel)?;
+        Ok(DesktopSoftwareUpdatesResult {
+            operation_id,
+            updates,
+        })
+    })
+    .await
+    .map_err(CommandError::io)
+    .and_then(|result| result)
+}
+
+#[tauri::command]
+pub(crate) async fn software_startup_list() -> Result<SoftwareStartupListV1, CommandError> {
+    tauri::async_runtime::spawn_blocking(list_startup_entries)
+        .await
+        .map_err(CommandError::io)
+}
+
+#[tauri::command]
+pub(crate) async fn software_startup_set(
+    entry_id: String,
+    enabled: bool,
+    confirmed: bool,
+) -> Result<SoftwareStartupToggleReportV1, CommandError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        set_startup_enabled(&entry_id, enabled, confirmed)
+            .map_err(|error| CommandError::software(error.into()))
+    })
+    .await
+    .map_err(CommandError::io)
+    .and_then(|result| result)
+}
+
+#[tauri::command]
+pub(crate) async fn software_leftovers_preview(
+    state: tauri::State<'_, SoftwareCoordinator>,
+    operation_id: String,
+    inventory: SoftwareInventoryV1,
+    selected_ids: Vec<String>,
+    selection: Option<SoftwareLeftoverSelectionV1>,
+) -> Result<DesktopSoftwareLeftoversPreviewResult, CommandError> {
+    let cancel = state.begin(operation_id.clone())?;
+    let worker_cancel = Arc::clone(&cancel);
+    let worker_state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = run_leftovers_preview(
+            operation_id.clone(),
+            inventory,
+            selected_ids,
+            selection,
+            &worker_cancel,
+        )
+        .map_err(CommandError::software);
+        worker_state.finish(&operation_id, &worker_cancel)?;
+        result
+    })
+    .await
+    .map_err(CommandError::io)
+    .and_then(|result| result)
+}
+
+#[tauri::command]
+pub(crate) async fn software_leftovers_execute(
+    state: tauri::State<'_, SoftwareCoordinator>,
+    operation_id: String,
+    plan: SoftwareLeftoverPlanV1,
+    preview_digest: String,
+    confirmed: bool,
+) -> Result<DesktopSoftwareLeftoversResult, CommandError> {
+    let cancel = state.begin(operation_id.clone())?;
+    let worker_cancel = Arc::clone(&cancel);
+    let worker_state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = execute_software_leftovers(SoftwareLeftoverExecutionRequest {
+            plan: &plan,
+            expected_preview_digest: &preview_digest,
+            confirmed,
+            cancel: Some(Arc::clone(&worker_cancel)),
+        })
+        .map(|report| DesktopSoftwareLeftoversResult {
+            operation_id: operation_id.clone(),
+            report,
+        })
+        .map_err(|error| CommandError::software(error.into()));
         worker_state.finish(&operation_id, &worker_cancel)?;
         result
     })

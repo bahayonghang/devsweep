@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "operation_id": "software-startup-op-1788100000000-1",
+  "requested_enabled": false,
+  "outcome": "succeeded",
+  "entry": {
+    "id": "startup:v1:1111111111111111111111111111111111111111111111111111111111111111",
+    "location": "current_user_run",
+    "scope": "current_user",
+    "name": "Contoso Sync",
+    "state": "disabled",
+    "toggle": "allowed"
+  }
+}

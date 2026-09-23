@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "observed_at_unix_ms": 1788100000000,
+  "sources": [
+    {
+      "location": "current_user_run",
+      "state": "available"
+    },
+    {
+      "location": "machine_run",
+      "state": "available"
+    },
+    {
+      "location": "machine_run32",
+      "state": "permission",
+      "reason_code": "access_denied"
+    },
+    {
+      "location": "current_user_startup_folder",
+      "state": "available"
+    }
+  ],
+  "entries": [
+    {
+      "id": "startup:v1:1111111111111111111111111111111111111111111111111111111111111111",
+      "location": "current_user_run",
+      "scope": "current_user",
+      "name": "Contoso Sync",
+      "state": "enabled",
+      "toggle": "allowed"
+    },
+    {
+      "id": "startup:v1:2222222222222222222222222222222222222222222222222222222222222222",
+      "location": "current_user_startup_folder",
+      "scope": "current_user",
+      "name": "Notes.lnk",
+      "state": "disabled",
+      "toggle": "allowed"
+    },
+    {
+      "id": "startup:v1:3333333333333333333333333333333333333333333333333333333333333333",
+      "location": "machine_run",
+      "scope": "machine",
+      "name": "SecurityHealth",
+      "state": "enabled",
+      "toggle": "requires_administrator"
+    },
+    {
+      "id": "startup:v1:4444444444444444444444444444444444444444444444444444444444444444",
+      "location": "machine_run32",
+      "scope": "machine",
+      "name": "Contoso Updater",
+      "state": "unknown",
+      "toggle": "requires_administrator"
+    }
+  ]
+}

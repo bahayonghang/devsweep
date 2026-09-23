@@ -1,0 +1,8 @@
+名称                                    ID                            版本            可用            源
+--------------------------------------------------------------------------------------------------------
+Bandizip Professional                   Bandisoft.Bandizip            7.43            7.46            winget
+NVIDIA PhysX 系统软件 9.23.1019         Nvidia.PhysX                  9.23.1019       9.26.0703       winget
+坚果云                                  Nutstore.Nutstore             7.2.7           7.2.12          winget
+Microsoft Visual C++ 2015-2022 Redistr… Microsoft.VCRedist.2015+.x64  14.40.33810.0   14.44.35211.0   winget
+4 升级可用。
+1 个程序包的版本号无法确定。使用 --include-unknown 查看所有结果。

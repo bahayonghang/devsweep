@@ -1,0 +1,19 @@
+{
+  "operation_id": "software-leftovers-3",
+  "report": {
+    "version": 1,
+    "operation_id": "software-leftover-op-1788100000000-1",
+    "software_id": "software:v1:msix:eligible-contoso",
+    "uninstall_operation_id": "software-op-1788100000000-1",
+    "outcomes": [
+      {
+        "candidate_id": "leftover:v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "certainty": "uncertain",
+        "outcome": "succeeded",
+        "estimated_bytes": 52428800
+      }
+    ],
+    "moved_known_bytes": 52428800,
+    "lower_bound": false
+  }
+}

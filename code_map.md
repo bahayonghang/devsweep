@@ -78,6 +78,9 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
   Never reads vendor uninstall command fields as authority.
 - `crates/devsweep-core/src/software/plan.rs` - Software selection plan validation.
 - `crates/devsweep-core/src/software/execution/mod.rs` - current-user MSIX dispatch only.
+- `crates/devsweep-core/src/software/updates.rs` - read-only `winget upgrade` probe and table parser.
+- `crates/devsweep-core/src/software/startup.rs` - startup items; current-user `StartupApproved` write only.
+- `crates/devsweep-core/src/software/leftovers.rs` - leftover discovery, plan digest, and Recycle Bin move.
 - `crates/devsweep-core/src/optimize/mod.rs` - closed eight-id Windows maintenance catalogue.
 - `crates/devsweep-core/src/optimize/catalogue.rs` - exhaustive operation ids and badges.
 - `crates/devsweep-core/src/optimize/plan.rs` - one-operation plan and live preview digest.

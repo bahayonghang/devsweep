@@ -199,6 +199,8 @@ pub enum SoftwareSizeEvidence {
 pub enum SoftwareSizeBasis {
     ReportedEstimate,
     MeasuredInstalledLocation,
+    /// Bounded no-follow measurement of one leftover review directory.
+    MeasuredDirectory,
 }
 
 /// Exact provider for size evidence.
@@ -208,6 +210,7 @@ pub enum SoftwareSizeSourceCode {
     ArpEstimatedSizeKib,
     MsiEstimatedSizeKib,
     MsixInstalledPath,
+    LeftoverDirectory,
 }
 
 /// V1 deliberately has no available last-used variant.

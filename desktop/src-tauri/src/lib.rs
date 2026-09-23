@@ -26,6 +26,11 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "software_uninstall",
     "software_audit",
     "software_cancel",
+    "software_updates_check",
+    "software_startup_list",
+    "software_startup_set",
+    "software_leftovers_preview",
+    "software_leftovers_execute",
     "optimize_list",
     "optimize_preview",
     "optimize_run",
@@ -69,6 +74,11 @@ pub fn run() {
             software::software_uninstall,
             software::software_audit,
             software::software_cancel,
+            software::software_updates_check,
+            software::software_startup_list,
+            software::software_startup_set,
+            software::software_leftovers_preview,
+            software::software_leftovers_execute,
             optimize::optimize_list,
             optimize::optimize_preview,
             optimize::optimize_run,
@@ -130,7 +140,7 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 31);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 36);
     }
 
     #[test]

@@ -14,7 +14,10 @@ use crate::{
         ProtectionOutcomeCode, RedactedActionKind, clean_audit_v1_path,
     },
     optimize::{OptimizeAuditError, OptimizeAuditRecordV1, optimize_audit_v1_path},
-    software::{SoftwareAuditError, SoftwareAuditRecordV1, software_audit_v1_path},
+    software::{
+        SoftwareAuditError, SoftwareAuditRecordV1, SoftwareSupportAuditRecordV1,
+        software_audit_v1_path,
+    },
 };
 
 const FORBIDDEN_KEYS: &[&str] = &[
@@ -93,6 +96,10 @@ pub enum HistoryRecordV1 {
     },
     Software {
         record: SoftwareAuditRecordV1,
+    },
+    /// Startup toggle or leftover move record from the Software store.
+    SoftwareSupport {
+        record: SoftwareSupportAuditRecordV1,
     },
     Optimize {
         record: OptimizeAuditRecordV1,
@@ -516,6 +523,11 @@ fn decode_line(domain: HistoryDomain, line: &str) -> LineDecode {
         HistoryDomain::Clean => serde_json::from_str::<CleanAuditRecordV1>(line)
             .ok()
             .map(|record| HistoryRecordV1::Clean { record }),
+        HistoryDomain::Software if value.get("record_kind").is_some() => {
+            serde_json::from_str::<SoftwareSupportAuditRecordV1>(line)
+                .ok()
+                .map(|record| HistoryRecordV1::SoftwareSupport { record })
+        }
         HistoryDomain::Software => serde_json::from_str::<SoftwareAuditRecordV1>(line)
             .ok()
             .map(|record| HistoryRecordV1::Software { record }),
@@ -570,7 +582,9 @@ fn json_contains_forbidden_key(value: &serde_json::Value) -> bool {
 fn record_domain(record: &HistoryRecordV1) -> HistoryDomain {
     match record {
         HistoryRecordV1::Clean { .. } => HistoryDomain::Clean,
-        HistoryRecordV1::Software { .. } => HistoryDomain::Software,
+        HistoryRecordV1::Software { .. } | HistoryRecordV1::SoftwareSupport { .. } => {
+            HistoryDomain::Software
+        }
         HistoryRecordV1::Optimize { .. } => HistoryDomain::Optimize,
         HistoryRecordV1::Unsupported { domain, .. } => *domain,
     }
@@ -583,6 +597,7 @@ fn record_operation_id(record: &HistoryRecordV1) -> Option<String> {
             | CleanAuditRecordV1::ProtectionMutation { operation_id, .. } => operation_id.clone(),
         }),
         HistoryRecordV1::Software { record } => Some(record.operation_id.clone()),
+        HistoryRecordV1::SoftwareSupport { record } => Some(record.operation_id().to_string()),
         HistoryRecordV1::Optimize { record } => Some(record.operation_id.clone()),
         HistoryRecordV1::Unsupported { operation_id, .. } => operation_id.clone(),
     }
@@ -599,6 +614,7 @@ fn record_timestamp(record: &HistoryRecordV1) -> u64 {
             } => *timestamp_epoch_ms,
         },
         HistoryRecordV1::Software { record } => record.timestamp_unix_ms,
+        HistoryRecordV1::SoftwareSupport { record } => record.timestamp_unix_ms(),
         HistoryRecordV1::Optimize { record } => record.timestamp_unix_ms,
         HistoryRecordV1::Unsupported { .. } => 0,
     }
@@ -622,6 +638,7 @@ fn record_codes(record: &HistoryRecordV1) -> Vec<String> {
             }
         },
         HistoryRecordV1::Software { record } => vec![json_code(record.status_code)],
+        HistoryRecordV1::SoftwareSupport { record } => vec![json_code(record.outcome_code())],
         HistoryRecordV1::Optimize { record } => vec![json_code(record.status_code)],
         HistoryRecordV1::Unsupported { reason_code, .. } => vec![(*reason_code).to_string()],
     }
@@ -935,5 +952,32 @@ mod tests {
         let stores = paths(fixture.path());
         let error = show_history_at(&stores, "missing-op").expect_err("missing");
         assert_eq!(error.code(), "history_not_found");
+    }
+
+    #[test]
+    fn history_reader_decodes_software_support_records_without_paths() {
+        let fixture = TempDir::new().expect("temp");
+        let stores = paths(fixture.path());
+        write(
+            &stores.software,
+            concat!(
+                r#"{"record_kind":"startup_toggled","schema_version":1,"domain":"software","operation_id":"software-startup-op-1","timestamp_unix_ms":10,"startup_id":"startup:v1:abc","location":"current_user_run","requested_enabled":false,"outcome_code":"succeeded"}"#,
+                "
+"
+            ),
+        );
+        let listed = list_history_at(&stores, HistoryListOptions::default()).expect("list");
+        assert_eq!(listed.operations.len(), 1);
+        assert_eq!(listed.operations[0].operation_id, "software-startup-op-1");
+        assert_eq!(listed.operations[0].outcome_code, "succeeded");
+        assert!(!listed.operations[0].unsupported);
+        let detail = show_history_at(&stores, "software-startup-op-1").expect("show");
+        assert!(matches!(
+            detail.records[0],
+            HistoryRecordV1::SoftwareSupport { .. }
+        ));
+        let encoded = serde_json::to_string(&detail).expect("json");
+        assert!(encoded.contains("\"history_kind\":\"software_support\""));
+        assert!(!encoded.contains("path"));
     }
 }

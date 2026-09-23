@@ -12,7 +12,7 @@ use devsweep_core::{
     history::CleanMovedTotalsV1,
     model::ScanReport,
     optimize::{OPTIMIZE_CATALOGUE_VERSION, catalogue_entries},
-    software::SoftwareInventoryV1,
+    software::{SoftwareInventoryV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1},
     status::{StatusEventV1, StatusSnapshotV1},
 };
 use serde::{Serialize, de::DeserializeOwned};
@@ -26,7 +26,9 @@ use crate::{
     },
     scan::DesktopScanProgress,
     software::{
-        DesktopSoftwareAuditResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult,
+        DesktopSoftwareAuditResult, DesktopSoftwareLeftoversPreviewResult,
+        DesktopSoftwareLeftoversResult, DesktopSoftwarePreviewResult,
+        DesktopSoftwareUninstallResult, DesktopSoftwareUpdatesResult,
     },
     status::{DesktopStatusLiveResult, DesktopStatusSnapshotResult},
 };
@@ -141,6 +143,38 @@ fn software_fixtures_match_the_software_command_wire_types() {
     assert_round_trip::<DesktopSoftwareAuditResult>(
         "software/audit-restart.json",
         include_str!("../../src/api/fixtures/software/audit-restart.json"),
+    );
+}
+
+#[test]
+fn software_support_fixtures_match_the_support_command_wire_types() {
+    assert_round_trip::<DesktopSoftwareUpdatesResult>(
+        "software/updates-available.json",
+        include_str!("../../src/api/fixtures/software/updates-available.json"),
+    );
+    assert_round_trip::<DesktopSoftwareUpdatesResult>(
+        "software/updates-unavailable.json",
+        include_str!("../../src/api/fixtures/software/updates-unavailable.json"),
+    );
+    assert_round_trip::<SoftwareStartupListV1>(
+        "software/startup-list.json",
+        include_str!("../../src/api/fixtures/software/startup-list.json"),
+    );
+    assert_round_trip::<SoftwareStartupToggleReportV1>(
+        "software/startup-toggle.json",
+        include_str!("../../src/api/fixtures/software/startup-toggle.json"),
+    );
+    assert_round_trip::<DesktopSoftwareLeftoversPreviewResult>(
+        "software/leftovers-discovered.json",
+        include_str!("../../src/api/fixtures/software/leftovers-discovered.json"),
+    );
+    assert_round_trip::<DesktopSoftwareLeftoversPreviewResult>(
+        "software/leftovers-planned.json",
+        include_str!("../../src/api/fixtures/software/leftovers-planned.json"),
+    );
+    assert_round_trip::<DesktopSoftwareLeftoversResult>(
+        "software/leftovers-report.json",
+        include_str!("../../src/api/fixtures/software/leftovers-report.json"),
     );
 }
 

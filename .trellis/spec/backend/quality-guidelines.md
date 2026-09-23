@@ -420,6 +420,98 @@ SoftwareExecutionRequest {
 }
 ```
 
+### Scenario: Software update check, startup toggle, and leftover move
+
+#### 1. Scope / Trigger
+
+- Trigger: code changes `software/updates.rs`, `software/startup.rs`,
+  `software/leftovers.rs`, the Software support audit records, or the desktop
+  commands `software_updates_check`, `software_startup_list`,
+  `software_startup_set`, `software_leftovers_preview`, and
+  `software_leftovers_execute`.
+
+#### 2. Signatures
+
+- `check_software_updates(inventory, cancel) -> SoftwareUpdatesV1`
+  (`state: available { rows } | unavailable { reason_code }`).
+- `list_startup_entries() -> SoftwareStartupListV1` and
+  `set_startup_enabled(entry_id, enabled, confirmed)`.
+- `discover_software_leftovers`, `plan_software_leftovers`, and
+  `execute_software_leftovers(SoftwareLeftoverExecutionRequest { plan,
+  expected_preview_digest, confirmed, cancel })`.
+- Audit: `SoftwareSupportAuditRecordV1` tagged by `record_kind`
+  (`startup_toggled`, `leftover_moved`) in the same fixed Software journal.
+
+#### 3. Contracts
+
+- The update probe runs program `winget` with argv
+  `["upgrade", "--disable-interactivity"]` through `ProcessRunner`, neutral cwd,
+  and the 30-second provider deadline. Never pass
+  `--accept-source-agreements` or `--accept-package-agreements`, and never run
+  an upgrade.
+- The parser reads column starts from display-width offsets of the header
+  tokens above the dash separator (East Asian Wide/Fullwidth count as 2),
+  requires exactly five columns, and never interprets header words. Only the
+  known English and zh-CN no-update messages give an empty success. Any other
+  mismatch, non-zero exit, timeout, truncation, or missing winget gives
+  `unavailable` with a stable reason code.
+- The only registry write in DevSweep is the current-user
+  `Explorer\StartupApproved` value. The write uses 12 bytes (`0x02` or `0x03`,
+  three zero bytes, then a zero or current FILETIME), re-reads the value, and
+  appends `startup_toggled`. HKLM rows are view-only
+  (`requires_administrator`). No Run value or Startup-folder file is deleted.
+- Leftover candidates are the ARP `InstallLocation` (certain, selected by
+  default) and exact-name directories under `%APPDATA%`, `%LOCALAPPDATA%`, and
+  `%PROGRAMDATA%` (uncertain, unselected by default). Protected paths, system
+  roots, shared vendor folders, and the running executable are never
+  candidates.
+- Leftover removal needs a terminal `removed` or `reboot_required` uninstall
+  audit for the same identity and operation, a live plan digest, and explicit
+  confirmation. Execution rediscovers live, rechecks each path, moves it to the
+  Recycle Bin, and appends one `leftover_moved` record per item. Sizes are
+  "moved to the Recycle Bin", never "freed".
+- Support records carry no path, command, argv, or localized text.
+
+#### 4. Validation & Error Matrix
+
+- Unrecognized winget output -> `unavailable: unrecognized_output`, never
+  `available` with zero rows.
+- Unconfirmed toggle, unknown entry id, or machine entry -> no registry write.
+- Missing succeeded uninstall, stale candidate, digest mismatch, or protection
+  load failure -> no Recycle Bin move.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: a disabled current-user Run entry is enabled by writing `0x02` plus
+  eleven zero bytes, and the re-read state is `enabled`.
+- Base: a truncated winget name keeps `name_truncated: true` and no inventory
+  match.
+- Bad: an update check that treats a changed table layout as "no updates".
+
+#### 6. Tests Required
+
+- Parser tests on the captured EN fixture and the zh-CN fixture, CJK width,
+  truncation, the no-update message, non-zero exit, and unknown output.
+- An argv test that proves no agreement flag and a `ProcessRunner` request.
+- Startup decoding tests and one registry test under a temporary test key,
+  never the real Run key.
+- Leftover certainty, exclusion, size evidence, and removal precondition
+  tests with a fake trash runner.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+let args = ["upgrade", "--accept-source-agreements", "--disable-interactivity"];
+```
+
+Correct:
+
+```rust
+const WINGET_UPGRADE_ARGS: [&str; 2] = ["upgrade", "--disable-interactivity"];
+```
+
 ### Scenario: Declarative plan trust boundary
 
 #### 1. Scope / Trigger

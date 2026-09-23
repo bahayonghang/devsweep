@@ -12,8 +12,11 @@ import type {
   DesktopScanResult,
   DesktopSoftwareAuditResult,
   DesktopSoftwareInventoryResult,
+  DesktopSoftwareLeftoversPreviewResult,
+  DesktopSoftwareLeftoversResult,
   DesktopSoftwarePreviewResult,
   DesktopSoftwareUninstallResult,
+  DesktopSoftwareUpdatesResult,
   DesktopOptimizeAuditResult,
   DesktopOptimizeListResult,
   DesktopOptimizePreviewResult,
@@ -45,12 +48,25 @@ import type {
   SoftwareIdentity,
   SoftwareInventoryV1,
   SoftwareLastUsedEvidence,
+  SoftwareLeftoverAppV1,
+  SoftwareLeftoverCandidateV1,
+  SoftwareLeftoverOutcomeV1,
+  SoftwareLeftoverPlanPreviewV1,
+  SoftwareLeftoverPlanV1,
+  SoftwareLeftoverPreviewV1,
+  SoftwareLeftoverReportV1,
   SoftwarePreviewItemV1,
   SoftwarePreviewV1,
   SoftwareSelectionPlanV1,
   SoftwareSizeEvidence,
   SoftwareSourceEvidence,
   SoftwareSourceId,
+  SoftwareStartupEntryV1,
+  SoftwareStartupListV1,
+  SoftwareStartupSourceV1,
+  SoftwareStartupToggleReportV1,
+  SoftwareUpdateRowV1,
+  SoftwareUpdatesV1,
   StatusEventV1,
   StatusSnapshotV1,
   UntrustedTarget,
@@ -265,6 +281,12 @@ function decodeSoftwareIdentity(value: unknown): SoftwareIdentity {
   return { source, package_full_name: nonEmptyString(input.package_full_name, "software identity.package_full_name") };
 }
 
+const SOFTWARE_SIZE_SOURCES = {
+  reported_estimate: ["arp_estimated_size_kib", "msi_estimated_size_kib"],
+  measured_installed_location: ["msix_installed_path"],
+  measured_directory: ["leftover_directory"],
+} as const;
+
 function decodeSoftwareSize(value: unknown): SoftwareSizeEvidence {
   const input = record(value, "software size evidence");
   const state = oneOf(input.state, ["available", "partial", "unknown"] as const, "software size evidence.state");
@@ -272,11 +294,12 @@ function decodeSoftwareSize(value: unknown): SoftwareSizeEvidence {
     exact(input, ["state", "reason_code"], "software size evidence");
     return { state, reason_code: nonEmptyString(input.reason_code, "software size evidence.reason_code") };
   }
-  const basis = oneOf(input.basis, ["reported_estimate", "measured_installed_location"] as const, "software size evidence.basis");
-  const source_code = oneOf(input.source_code, ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path"] as const, "software size evidence.source_code");
+  const basis = oneOf(input.basis, ["reported_estimate", "measured_installed_location", "measured_directory"] as const, "software size evidence.basis");
+  const source_code = oneOf(input.source_code, ["arp_estimated_size_kib", "msi_estimated_size_kib", "msix_installed_path", "leftover_directory"] as const, "software size evidence.source_code");
+  if (!(SOFTWARE_SIZE_SOURCES[basis] as readonly string[]).includes(source_code)) throw new Error("Invalid software size basis");
   if (state === "partial") {
     exact(input, ["state", "lower_bound_bytes", "basis", "source_code", "reason_code", "observed_at_unix_ms"], "software size evidence");
-    if (basis !== "measured_installed_location" || source_code !== "msix_installed_path") throw new Error("Invalid software partial size basis");
+    if (basis === "reported_estimate") throw new Error("Invalid software partial size basis");
     return {
       state,
       lower_bound_bytes: unsignedInteger(input.lower_bound_bytes, "software size evidence.lower_bound_bytes"),
@@ -287,7 +310,6 @@ function decodeSoftwareSize(value: unknown): SoftwareSizeEvidence {
     };
   }
   exact(input, ["state", "value_bytes", "basis", "source_code", "observed_at_unix_ms"], "software size evidence");
-  if ((basis === "measured_installed_location") !== (source_code === "msix_installed_path")) throw new Error("Invalid software available size basis");
   return {
     state,
     value_bytes: unsignedInteger(input.value_bytes, "software size evidence.value_bytes"),
@@ -498,6 +520,246 @@ export function decodeDesktopSoftwareAuditResult(value: unknown): DesktopSoftwar
     recovered: array(input.recovered, "software audit result.recovered", decodeSoftwareOutcome),
     records: array(input.records, "software audit result.records", decodeSoftwareAuditRecord),
   };
+}
+
+const SOFTWARE_UPDATES_REASONS = [
+  "winget_missing", "source_agreement_pending", "non_zero_exit", "timed_out",
+  "canceled", "output_truncated", "unrecognized_output", "process_failed",
+] as const;
+const SOFTWARE_STARTUP_LOCATIONS = ["current_user_run", "machine_run", "machine_run32", "current_user_startup_folder"] as const;
+const SOFTWARE_SUPPORT_OUTCOMES = ["succeeded", "failed", "skipped"] as const;
+const SOFTWARE_SUPPORT_ERROR_CODES = [
+  "registry_write_failed", "verification_failed", "trash_failed", "not_present", "unsafe_path", "protected", "canceled",
+] as const;
+const SOFTWARE_LEFTOVER_CERTAINTIES = ["certain", "uncertain"] as const;
+const LEFTOVER_ID = /^leftover:v1:[0-9a-f]{64}$/;
+const STARTUP_ID = /^startup:v1:[0-9a-f]{64}$/;
+
+function patternString(value: unknown, pattern: RegExp, name: string): string {
+  const decoded = string(value, name);
+  if (!pattern.test(decoded)) throw new Error(`Invalid ${name}`);
+  return decoded;
+}
+
+function decodeSoftwareUpdateRow(value: unknown): SoftwareUpdateRowV1 {
+  const input = record(value, "software update row");
+  exact(input, ["id", "name", "name_truncated", "installed_version", "available_version", "source", "matched_software_ids"], "software update row");
+  return {
+    id: nonEmptyString(input.id, "software update row.id"),
+    name: string(input.name, "software update row.name"),
+    name_truncated: boolean(input.name_truncated, "software update row.name_truncated"),
+    installed_version: string(input.installed_version, "software update row.installed_version"),
+    available_version: nonEmptyString(input.available_version, "software update row.available_version"),
+    source: string(input.source, "software update row.source"),
+    matched_software_ids: array(input.matched_software_ids, "software update row.matched_software_ids", (item) => nonEmptyString(item, "software update row.matched_software_id")),
+  };
+}
+
+function decodeSoftwareUpdates(value: unknown): SoftwareUpdatesV1 {
+  const input = record(value, "software updates");
+  const state = oneOf(input.state, ["available", "unavailable"] as const, "software updates.state");
+  const version = unsignedInteger(input.version, "software updates.version");
+  if (version !== 1) throw new Error("Unsupported software updates version");
+  const observed_at_unix_ms = unsignedInteger(input.observed_at_unix_ms, "software updates.observed_at_unix_ms");
+  if (state === "unavailable") {
+    exact(input, ["state", "version", "observed_at_unix_ms", "reason_code"], "software updates");
+    return { state, version, observed_at_unix_ms, reason_code: oneOf(input.reason_code, SOFTWARE_UPDATES_REASONS, "software updates.reason_code") };
+  }
+  exact(input, ["state", "version", "observed_at_unix_ms", "rows"], "software updates");
+  return { state, version, observed_at_unix_ms, rows: array(input.rows, "software updates.rows", decodeSoftwareUpdateRow) };
+}
+
+export function decodeDesktopSoftwareUpdatesResult(value: unknown): DesktopSoftwareUpdatesResult {
+  const input = record(value, "desktop software updates result");
+  exact(input, ["operation_id", "updates"], "desktop software updates result");
+  return { operation_id: nonEmptyString(input.operation_id, "software updates result.operation_id"), updates: decodeSoftwareUpdates(input.updates) };
+}
+
+function decodeSoftwareStartupEntry(value: unknown): SoftwareStartupEntryV1 {
+  const input = record(value, "software startup entry");
+  exact(input, ["id", "location", "scope", "name", "state", "toggle"], "software startup entry");
+  const location = oneOf(input.location, SOFTWARE_STARTUP_LOCATIONS, "software startup entry.location");
+  const scope = oneOf(input.scope, ["current_user", "machine"] as const, "software startup entry.scope");
+  const toggle = oneOf(input.toggle, ["allowed", "requires_administrator"] as const, "software startup entry.toggle");
+  const machine = location === "machine_run" || location === "machine_run32";
+  if (machine !== (scope === "machine") || machine !== (toggle === "requires_administrator")) throw new Error("Invalid software startup entry scope");
+  return {
+    id: patternString(input.id, STARTUP_ID, "software startup entry.id"),
+    location,
+    scope,
+    name: nonEmptyString(input.name, "software startup entry.name"),
+    state: oneOf(input.state, ["enabled", "disabled", "unknown"] as const, "software startup entry.state"),
+    toggle,
+  };
+}
+
+function decodeSoftwareStartupSource(value: unknown): SoftwareStartupSourceV1 {
+  const input = record(value, "software startup source");
+  exact(input, input.reason_code === undefined ? ["location", "state"] : ["location", "state", "reason_code"], "software startup source");
+  const state = oneOf(input.state, ["available", "partial", "permission", "unsupported"] as const, "software startup source.state");
+  const reason_code = optionalString(input.reason_code, "software startup source.reason_code");
+  if ((state === "available") !== (reason_code === undefined)) throw new Error("Invalid software startup source reason");
+  return { location: oneOf(input.location, SOFTWARE_STARTUP_LOCATIONS, "software startup source.location"), state, ...(reason_code === undefined ? {} : { reason_code }) };
+}
+
+export function decodeSoftwareStartupList(value: unknown): SoftwareStartupListV1 {
+  const input = record(value, "software startup list");
+  exact(input, ["version", "observed_at_unix_ms", "sources", "entries"], "software startup list");
+  const list = {
+    version: unsignedInteger(input.version, "software startup list.version"),
+    observed_at_unix_ms: unsignedInteger(input.observed_at_unix_ms, "software startup list.observed_at_unix_ms"),
+    sources: array(input.sources, "software startup list.sources", decodeSoftwareStartupSource),
+    entries: array(input.entries, "software startup list.entries", decodeSoftwareStartupEntry),
+  };
+  if (list.version !== 1) throw new Error("Unsupported software startup list version");
+  if (new Set(list.entries.map((entry) => entry.id)).size !== list.entries.length) throw new Error("Duplicate software startup entry");
+  return list;
+}
+
+export function decodeSoftwareStartupToggleReport(value: unknown): SoftwareStartupToggleReportV1 {
+  const input = record(value, "software startup toggle report");
+  exact(input, ["version", "operation_id", "requested_enabled", "outcome", "error_code", "entry"].filter((key) => input[key] !== undefined), "software startup toggle report");
+  const outcome = oneOf(input.outcome, SOFTWARE_SUPPORT_OUTCOMES, "software startup toggle report.outcome");
+  const error_code = input.error_code === undefined ? undefined : oneOf(input.error_code, SOFTWARE_SUPPORT_ERROR_CODES, "software startup toggle report.error_code");
+  if ((outcome === "succeeded") !== (error_code === undefined)) throw new Error("Invalid software startup toggle outcome");
+  const entry = decodeSoftwareStartupEntry(input.entry);
+  if (entry.toggle !== "allowed") throw new Error("Invalid software startup toggle scope");
+  const version = unsignedInteger(input.version, "software startup toggle report.version");
+  if (version !== 1) throw new Error("Unsupported software startup toggle report version");
+  return {
+    version,
+    operation_id: nonEmptyString(input.operation_id, "software startup toggle report.operation_id"),
+    requested_enabled: boolean(input.requested_enabled, "software startup toggle report.requested_enabled"),
+    outcome,
+    ...(error_code === undefined ? {} : { error_code }),
+    entry,
+  };
+}
+
+function decodeSoftwareLeftoverCandidate(value: unknown): SoftwareLeftoverCandidateV1 {
+  const input = record(value, "software leftover candidate");
+  exact(input, ["id", "path", "origin", "certainty", "selected_by_default", "size"], "software leftover candidate");
+  const origin = oneOf(input.origin, ["install_location", "roaming_app_data", "local_app_data", "program_data"] as const, "software leftover candidate.origin");
+  const certainty = oneOf(input.certainty, SOFTWARE_LEFTOVER_CERTAINTIES, "software leftover candidate.certainty");
+  const selected_by_default = boolean(input.selected_by_default, "software leftover candidate.selected_by_default");
+  if ((origin === "install_location") !== (certainty === "certain") || selected_by_default !== (certainty === "certain")) throw new Error("Invalid software leftover certainty");
+  return {
+    id: patternString(input.id, LEFTOVER_ID, "software leftover candidate.id"),
+    path: nonEmptyString(input.path, "software leftover candidate.path"),
+    origin,
+    certainty,
+    selected_by_default,
+    size: decodeSoftwareSize(input.size),
+  };
+}
+
+function decodeSoftwareLeftoverApp(value: unknown): SoftwareLeftoverAppV1 {
+  const input = record(value, "software leftover app");
+  exact(input, ["software_id", "identity", "display_name", "publisher", "app_size", "candidates"].filter((key) => input[key] !== undefined), "software leftover app");
+  const candidates = array(input.candidates, "software leftover app.candidates", decodeSoftwareLeftoverCandidate);
+  if (new Set(candidates.map((candidate) => candidate.id)).size !== candidates.length) throw new Error("Duplicate software leftover candidate");
+  return {
+    software_id: nonEmptyString(input.software_id, "software leftover app.software_id"),
+    identity: decodeSoftwareIdentity(input.identity),
+    ...(input.display_name === undefined ? {} : { display_name: string(input.display_name, "software leftover app.display_name") }),
+    ...(input.publisher === undefined ? {} : { publisher: string(input.publisher, "software leftover app.publisher") }),
+    app_size: decodeSoftwareSize(input.app_size),
+    candidates,
+  };
+}
+
+function decodeSoftwareLeftoverPreview(value: unknown): SoftwareLeftoverPreviewV1 {
+  const input = record(value, "software leftover preview");
+  exact(input, ["version", "apps"], "software leftover preview");
+  const version = unsignedInteger(input.version, "software leftover preview.version");
+  if (version !== 1) throw new Error("Unsupported software leftover preview version");
+  return { version, apps: array(input.apps, "software leftover preview.apps", decodeSoftwareLeftoverApp) };
+}
+
+function decodeSoftwareLeftoverPlan(value: unknown): SoftwareLeftoverPlanV1 {
+  const input = record(value, "software leftover plan");
+  exact(input, ["version", "software_id", "identity", "display_name", "publisher", "uninstall_operation_id", "selected_candidate_ids"].filter((key) => input[key] !== undefined), "software leftover plan");
+  const selected_candidate_ids = array(input.selected_candidate_ids, "software leftover plan.selected_candidate_ids", (item) => patternString(item, LEFTOVER_ID, "software leftover plan.selected_candidate_id"));
+  const version = unsignedInteger(input.version, "software leftover plan.version");
+  if (version !== 1 || selected_candidate_ids.length === 0 || new Set(selected_candidate_ids).size !== selected_candidate_ids.length) throw new Error("Invalid software leftover plan invariant");
+  return {
+    version,
+    software_id: nonEmptyString(input.software_id, "software leftover plan.software_id"),
+    identity: decodeSoftwareIdentity(input.identity),
+    ...(input.display_name === undefined ? {} : { display_name: string(input.display_name, "software leftover plan.display_name") }),
+    ...(input.publisher === undefined ? {} : { publisher: string(input.publisher, "software leftover plan.publisher") }),
+    uninstall_operation_id: nonEmptyString(input.uninstall_operation_id, "software leftover plan.uninstall_operation_id"),
+    selected_candidate_ids,
+  };
+}
+
+function decodeSoftwareLeftoverPlanPreview(value: unknown): SoftwareLeftoverPlanPreviewV1 {
+  const input = record(value, "software leftover plan preview");
+  exact(input, ["version", "items", "digest"], "software leftover plan preview");
+  const version = unsignedInteger(input.version, "software leftover plan preview.version");
+  if (version !== 1) throw new Error("Unsupported software leftover plan preview version");
+  return {
+    version,
+    items: array(input.items, "software leftover plan preview.items", decodeSoftwareLeftoverCandidate),
+    digest: digest(input.digest, "software leftover plan preview.digest"),
+  };
+}
+
+export function decodeDesktopSoftwareLeftoversPreviewResult(value: unknown): DesktopSoftwareLeftoversPreviewResult {
+  const input = record(value, "desktop software leftovers preview result");
+  const type = oneOf(input.type, ["discovered", "planned"] as const, "software leftovers preview result.type");
+  const operation_id = nonEmptyString(input.operation_id, "software leftovers preview result.operation_id");
+  if (type === "discovered") {
+    exact(input, ["type", "operation_id", "preview"], "desktop software leftovers preview result");
+    return { type, operation_id, preview: decodeSoftwareLeftoverPreview(input.preview) };
+  }
+  exact(input, ["type", "operation_id", "plan", "preview"], "desktop software leftovers preview result");
+  const plan = decodeSoftwareLeftoverPlan(input.plan);
+  const preview = decodeSoftwareLeftoverPlanPreview(input.preview);
+  if (plan.selected_candidate_ids.join("\n") !== preview.items.map((item) => item.id).join("\n")) throw new Error("Software leftover preview does not match its plan");
+  return { type, operation_id, plan, preview };
+}
+
+function decodeSoftwareLeftoverOutcome(value: unknown): SoftwareLeftoverOutcomeV1 {
+  const input = record(value, "software leftover outcome");
+  exact(input, ["candidate_id", "certainty", "outcome", "estimated_bytes", "error_code"].filter((key) => input[key] !== undefined), "software leftover outcome");
+  const outcome = oneOf(input.outcome, SOFTWARE_SUPPORT_OUTCOMES, "software leftover outcome.outcome");
+  const error_code = input.error_code === undefined ? undefined : oneOf(input.error_code, SOFTWARE_SUPPORT_ERROR_CODES, "software leftover outcome.error_code");
+  if ((outcome === "succeeded") !== (error_code === undefined)) throw new Error("Invalid software leftover outcome");
+  const estimated_bytes = input.estimated_bytes === undefined ? undefined : unsignedInteger(input.estimated_bytes, "software leftover outcome.estimated_bytes");
+  return {
+    candidate_id: patternString(input.candidate_id, LEFTOVER_ID, "software leftover outcome.candidate_id"),
+    certainty: oneOf(input.certainty, SOFTWARE_LEFTOVER_CERTAINTIES, "software leftover outcome.certainty"),
+    outcome,
+    ...(estimated_bytes === undefined ? {} : { estimated_bytes }),
+    ...(error_code === undefined ? {} : { error_code }),
+  };
+}
+
+function decodeSoftwareLeftoverReport(value: unknown): SoftwareLeftoverReportV1 {
+  const input = record(value, "software leftover report");
+  exact(input, ["version", "operation_id", "software_id", "uninstall_operation_id", "outcomes", "moved_known_bytes", "lower_bound"], "software leftover report");
+  const version = unsignedInteger(input.version, "software leftover report.version");
+  if (version !== 1) throw new Error("Unsupported software leftover report version");
+  const outcomes = array(input.outcomes, "software leftover report.outcomes", decodeSoftwareLeftoverOutcome);
+  const moved_known_bytes = unsignedInteger(input.moved_known_bytes, "software leftover report.moved_known_bytes");
+  const known = outcomes.reduce((sum, item) => sum + (item.outcome === "succeeded" ? item.estimated_bytes ?? 0 : 0), 0);
+  if (known !== moved_known_bytes) throw new Error("Invalid software leftover moved total");
+  return {
+    version,
+    operation_id: nonEmptyString(input.operation_id, "software leftover report.operation_id"),
+    software_id: nonEmptyString(input.software_id, "software leftover report.software_id"),
+    uninstall_operation_id: nonEmptyString(input.uninstall_operation_id, "software leftover report.uninstall_operation_id"),
+    outcomes,
+    moved_known_bytes,
+    lower_bound: boolean(input.lower_bound, "software leftover report.lower_bound"),
+  };
+}
+
+export function decodeDesktopSoftwareLeftoversResult(value: unknown): DesktopSoftwareLeftoversResult {
+  const input = record(value, "desktop software leftovers result");
+  exact(input, ["operation_id", "report"], "desktop software leftovers result");
+  return { operation_id: nonEmptyString(input.operation_id, "software leftovers result.operation_id"), report: decodeSoftwareLeftoverReport(input.report) };
 }
 
 const OPTIMIZE_IDS = [

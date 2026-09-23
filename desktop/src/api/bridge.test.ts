@@ -6,6 +6,12 @@ import executionJson from "./fixtures/execution-report.json";
 import analyzeCompleteJson from "./fixtures/analyze/complete.json";
 import analyzeProgressJson from "./fixtures/analyze/progress.json";
 import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
+import softwareInventoryJson from "./fixtures/software/inventory.json";
+import softwareUpdatesJson from "./fixtures/software/updates-available.json";
+import softwareStartupJson from "./fixtures/software/startup-list.json";
+import softwareStartupToggleJson from "./fixtures/software/startup-toggle.json";
+import softwareLeftoversPlanJson from "./fixtures/software/leftovers-planned.json";
+import softwareLeftoversReportJson from "./fixtures/software/leftovers-report.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -21,7 +27,7 @@ const mocks = vi.hoisted(() => {
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke, Channel: mocks.Channel }));
 
 import { tauriBridge } from "./bridge";
-import { decodeScanReport } from "./contract";
+import { decodeDesktopSoftwareLeftoversPreviewResult, decodeScanReport, decodeSoftwareInventory } from "./contract";
 
 const plan = decodeScanReport(scanJson).plan;
 
@@ -100,6 +106,40 @@ describe("tauriBridge", () => {
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ operation_id: "analyze-current", sequence: 1 }));
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "analyze_start", { operationId: "analyze-current", root: "C:/fixture", onProgress: expect.any(mocks.Channel) });
     expect(mocks.invoke).toHaveBeenNthCalledWith(2, "analyze_cancel", { operationId: "analyze-current" });
+  });
+
+  it("sends Software support commands with camelCase arguments and correlates results", async () => {
+    const inventory = decodeSoftwareInventory(softwareInventoryJson);
+    const planned = decodeDesktopSoftwareLeftoversPreviewResult(softwareLeftoversPlanJson);
+    if (planned.type !== "planned") throw new Error("fixture must be planned");
+    const selection = {
+      software_id: planned.plan.software_id,
+      uninstall_operation_id: planned.plan.uninstall_operation_id,
+      selected_candidate_ids: planned.plan.selected_candidate_ids,
+    };
+    mocks.invoke
+      .mockResolvedValueOnce(softwareUpdatesJson)
+      .mockResolvedValueOnce(softwareStartupJson)
+      .mockResolvedValueOnce(softwareStartupToggleJson)
+      .mockResolvedValueOnce(softwareLeftoversPlanJson)
+      .mockResolvedValueOnce(softwareLeftoversReportJson);
+
+    await tauriBridge.softwareUpdatesCheck("software-updates-1", null);
+    await tauriBridge.softwareStartupList();
+    await tauriBridge.softwareStartupSet(softwareStartupToggleJson.entry.id, false, true);
+    await tauriBridge.softwareLeftoversPreview("software-leftovers-2", inventory, [selection.software_id], selection);
+    await tauriBridge.softwareLeftoversExecute("software-leftovers-3", planned.plan, planned.preview.digest, true);
+
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "software_updates_check", { operationId: "software-updates-1", inventory: null });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "software_startup_list", {});
+    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "software_startup_set", { entryId: softwareStartupToggleJson.entry.id, enabled: false, confirmed: true });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(4, "software_leftovers_preview", { operationId: "software-leftovers-2", inventory, selectedIds: [selection.software_id], selection });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(5, "software_leftovers_execute", { operationId: "software-leftovers-3", plan: planned.plan, previewDigest: planned.preview.digest, confirmed: true });
+
+    mocks.invoke.mockResolvedValueOnce(softwareUpdatesJson);
+    await expect(tauriBridge.softwareUpdatesCheck("other", null)).rejects.toThrow("does not match the active operation");
+    mocks.invoke.mockResolvedValueOnce(softwareStartupToggleJson);
+    await expect(tauriBridge.softwareStartupSet(softwareStartupToggleJson.entry.id, true, true)).rejects.toThrow("does not match the request");
   });
 
   it("rejects a terminal result correlated to another scan", async () => {

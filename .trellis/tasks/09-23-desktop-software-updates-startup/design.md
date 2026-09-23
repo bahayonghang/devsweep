@@ -71,3 +71,28 @@ rows disabled with the administrator label).
 
 Each of R1, R2, R3/R4 is an independent module and command set; revert one
 without the others.
+
+## Implementation note
+
+`leftovers.rs` does not use `plan/digest.rs` or the Clean `Executor`. Clean
+plans come from the rule catalogue; leftover paths do not. The module keeps
+the same guarantees:
+
+- The digest is SHA-256 over a domain-separated canonical form of the plan
+  (software id, identity, names, uninstall operation id) and each selected
+  item (candidate id, normalized absolute path, origin, certainty).
+- Plan and execute both require a `removed` or `reboot_required` terminal for
+  the same identity and uninstall operation id. The journal checks this again
+  when it appends each `leftover_moved` record.
+- Execute requires `confirmed`, rediscovers candidates live, and rejects a
+  stale candidate or a digest mismatch before any move.
+- Each path is checked again just before the move: system roots and trees,
+  shared folders, protection list, running executable, no-follow reparse
+  probe, and plain directory.
+- The move uses the Clean `SystemTrashRunner`. No permanent delete exists.
+- The journal lock is held for the whole run. Each item gets one
+  `leftover_moved` record without a path.
+
+Current limit: only current-user MSIX uninstall can succeed, and MSIX has no
+`InstallLocation` candidate. Leftover removal therefore acts on name-match
+candidates only.

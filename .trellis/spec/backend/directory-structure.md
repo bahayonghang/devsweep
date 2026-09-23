@@ -137,6 +137,13 @@ one integration test proving use from an external crate boundary.
   audit. Keep program and argv separate; never shell-compose or shell out to
   `kill` / `taskkill`. Cancellation is observed through `CancelObserver`; the
   shared token type is owned by the true-cancellation task.
+- Keep Software support actions in `crates/devsweep-core/src/software/`:
+  `updates.rs` owns the read-only `winget upgrade --disable-interactivity`
+  probe and its column-position table parser; `startup.rs` owns startup
+  listing and the current-user `Explorer\StartupApproved` write;
+  `leftovers.rs` owns leftover discovery, the leftover plan digest, and the
+  Recycle Bin move. Registry access stays in the `arp.rs` `native_registry`
+  helper, and every support record goes through `execution/audit.rs`.
 - Keep `crates/devsweep-cli/src/main.rs` to `devsweep::run()` delegation only. It must not parse
   arguments, initialize tracing, decode files, format output, or dispatch
   individual commands.

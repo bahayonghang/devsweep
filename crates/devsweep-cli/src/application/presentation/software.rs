@@ -193,6 +193,7 @@ fn size(locale: Locale, size: &SoftwareSizeEvidence) -> Result<String, Catalogue
             let key = match basis {
                 SoftwareSizeBasis::ReportedEstimate => "software.v1.size.estimated",
                 SoftwareSizeBasis::MeasuredInstalledLocation => "software.v1.size.measured",
+                SoftwareSizeBasis::MeasuredDirectory => "software.v1.size.measured_directory",
             };
             render(locale, key, &[("bytes", &bytes)], None)
         }

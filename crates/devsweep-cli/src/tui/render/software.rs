@@ -256,7 +256,9 @@ fn render_summary(frame: &mut Frame<'_>, area: Rect, app: &App) {
                 } => estimated = estimated.saturating_add(value_bytes),
                 SoftwareSizeEvidence::Available {
                     value_bytes,
-                    basis: SoftwareSizeBasis::MeasuredInstalledLocation,
+                    basis:
+                        SoftwareSizeBasis::MeasuredInstalledLocation
+                        | SoftwareSizeBasis::MeasuredDirectory,
                     ..
                 } => measured = measured.saturating_add(value_bytes),
                 SoftwareSizeEvidence::Partial {
@@ -445,7 +447,8 @@ fn size_label(size: &SoftwareSizeEvidence, zh: bool) -> String {
         ),
         SoftwareSizeEvidence::Available {
             value_bytes,
-            basis: SoftwareSizeBasis::MeasuredInstalledLocation,
+            basis:
+                SoftwareSizeBasis::MeasuredInstalledLocation | SoftwareSizeBasis::MeasuredDirectory,
             ..
         } => format!(
             "{} ({})",

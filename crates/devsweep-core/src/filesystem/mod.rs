@@ -15,7 +15,8 @@ pub(crate) use reparse::ReparseProbeResult;
 #[cfg(all(test, windows))]
 pub(crate) use reparse::is_unsafe_link;
 pub(crate) use reparse::{
-    PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_path_no_follow,
+    PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_entry_no_follow,
+    inspect_path_no_follow,
 };
 pub(crate) use sizing::estimate_tree_with_budget_and_cancel_and_probe;
 pub(crate) use sizing::{

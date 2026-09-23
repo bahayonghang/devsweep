@@ -1,0 +1,17 @@
+Name                                           Id                         Version                      Available  Source
+------------------------------------------------------------------------------------------------------------------------
+Bandizip Professional                          Bandisoft.Bandizip         7.43                         7.46       winget
+ImageGlass 10.0.4.819                          DuongDieuPhap.ImageGlass   10.0.4.819                   10.0.906.0 winget
+Netcatty 1.1.82                                binaricat.Netcatty         1.1.82                       1.1.83     winget
+NVIDIA CUDA Toolkit 13.3                       Nvidia.CUDA                13.3                         13.4       winget
+NVIDIA PhysX 系统软件 9.23.1019                Nvidia.PhysX               9.23.1019                    9.26.0703  winget
+OBS Studio                                     OBSProject.OBSStudio       31.0.3                       32.2.2     winget
+Obsidian                                       Obsidian.Obsidian          1.12.7                       1.13.7     winget
+PremiumSoft Navicat Premium 17.3               PremiumSoft.NavicatPremium 17.3.6                       17.3.11    winget
+Qoder 0.3.4                                    Alibaba.Qoder              0.3.4                        1.106.3    winget
+Sparkle                                        xishang0128.Sparkle        1.26.7                       1.26.8     winget
+T3 Code (Nightly) 0.0.38-nightly.20260831.1236 T3Tools.T3Code             0.0.38-nightly.20260831.1236 0.0.42     winget
+Typora                                         appmakes.Typora            1.14.9                       1.14.10    winget
+坚果云                                         Nutstore.Nutstore          7.2.7                        7.2.12     winget
+13 upgrades available.
+1 package(s) have version numbers that cannot be determined. Use --include-unknown to see all results.

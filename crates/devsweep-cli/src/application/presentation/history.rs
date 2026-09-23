@@ -101,6 +101,13 @@ fn record_kind_and_code(record: &HistoryRecordV1) -> (&'static str, String) {
                 .and_then(|value| value.as_str().map(str::to_string))
                 .unwrap_or_else(|| "unknown".to_string()),
         ),
+        HistoryRecordV1::SoftwareSupport { record } => (
+            "software",
+            serde_json::to_value(record.outcome_code())
+                .ok()
+                .and_then(|value| value.as_str().map(str::to_string))
+                .unwrap_or_else(|| "unknown".to_string()),
+        ),
         HistoryRecordV1::Optimize { record } => (
             "optimize",
             serde_json::to_value(record.status_code)

@@ -9,6 +9,10 @@ import softwareInventoryJson from "./fixtures/software/inventory.json";
 import softwarePreviewJson from "./fixtures/software/preview.json";
 import softwareExecutionJson from "./fixtures/software/execution-five-terminal.json";
 import softwareAuditJson from "./fixtures/software/audit-restart.json";
+import softwareUpdatesJson from "./fixtures/software/updates-available.json";
+import softwareStartupJson from "./fixtures/software/startup-list.json";
+import softwareLeftoversJson from "./fixtures/software/leftovers-discovered.json";
+import softwareLeftoversPlanJson from "./fixtures/software/leftovers-planned.json";
 import optimizeCatalogueJson from "./fixtures/optimize/catalogue.json";
 import optimizePreviewDnsJson from "./fixtures/optimize/preview-dns.json";
 import optimizePreviewSearchJson from "./fixtures/optimize/preview-settings-search.json";
@@ -25,7 +29,7 @@ import statusLiveSnapshotJson from "./fixtures/status/event-snapshot.json";
 import statusSkippedJson from "./fixtures/status/event-skipped.json";
 import statusTerminalJson from "./fixtures/status/event-terminal.json";
 import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
-import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeStatusEvent } from "./contract";
+import { decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeSoftwareStartupList, decodeStatusEvent } from "./contract";
 import type { DesktopBridge } from "./bridge";
 import { decodeCleanMovedTotals } from "../support/decode";
 import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
@@ -42,6 +46,12 @@ const softwareInventory = decodeSoftwareInventory(softwareInventoryJson);
 const softwarePreview = decodeDesktopSoftwarePreviewResult(softwarePreviewJson);
 const softwareExecution = decodeDesktopSoftwareUninstallResult(softwareExecutionJson);
 const softwareAudit = decodeDesktopSoftwareAuditResult(softwareAuditJson);
+const softwareUpdates = decodeDesktopSoftwareUpdatesResult(softwareUpdatesJson);
+const softwareStartup = decodeSoftwareStartupList(softwareStartupJson);
+const softwareLeftovers = decodeDesktopSoftwareLeftoversPreviewResult(softwareLeftoversJson);
+const softwareLeftoversPlan = decodeDesktopSoftwareLeftoversPreviewResult(softwareLeftoversPlanJson);
+const softwareLeftoverDigest = softwareLeftoversPlan.type === "planned" ? softwareLeftoversPlan.preview.digest : "";
+const softwareLeftoverApps = softwareLeftovers.type === "discovered" ? softwareLeftovers.preview.apps : [];
 const optimizeCatalogue = decodeDesktopOptimizeListResult(optimizeCatalogueJson);
 const optimizePreviewById = {
   "dns.flush": decodeDesktopOptimizePreviewResult(optimizePreviewDnsJson),
@@ -141,6 +151,71 @@ export const fixtureBridge: DesktopBridge = {
   },
   softwareAudit: async (operationId) => ({ ...softwareAudit, operation_id: operationId }),
   softwareCancel: async () => undefined,
+  softwareUpdatesCheck: async (operationId) => ({ ...softwareUpdates, operation_id: operationId }),
+  softwareStartupList: async () => softwareStartup,
+  softwareStartupSet: async (entryId, enabled, confirmed) => {
+    const entry = softwareStartup.entries.find((item) => item.id === entryId);
+    if (!entry) throw { code: "software_stale_authority", message: "Controlled fixture startup entry is missing" };
+    if (!confirmed || entry.toggle !== "allowed") throw { code: "software_failed", message: "Controlled fixture startup entry is view-only" };
+    return {
+      version: 1,
+      operation_id: `software-startup-op-fixture-${entryId.slice(-8)}`,
+      requested_enabled: enabled,
+      outcome: "succeeded",
+      entry: { ...entry, state: enabled ? "enabled" : "disabled" },
+    };
+  },
+  softwareLeftoversPreview: async (operationId, _inventory, selectedIds, selection) => {
+    if (!selection) {
+      return {
+        type: "discovered",
+        operation_id: operationId,
+        preview: { version: 1, apps: softwareLeftoverApps.filter((app) => selectedIds.includes(app.software_id)) },
+      };
+    }
+    const app = softwareLeftoverApps.find((item) => item.software_id === selection.software_id);
+    const items = app?.candidates.filter((candidate) => selection.selected_candidate_ids.includes(candidate.id)) ?? [];
+    if (!app || items.length === 0 || items.length !== selection.selected_candidate_ids.length) {
+      throw { code: "software_stale_authority", message: "Controlled fixture leftover selection differs" };
+    }
+    return {
+      type: "planned",
+      operation_id: operationId,
+      plan: {
+        version: 1,
+        software_id: app.software_id,
+        identity: app.identity,
+        ...(app.display_name === undefined ? {} : { display_name: app.display_name }),
+        ...(app.publisher === undefined ? {} : { publisher: app.publisher }),
+        uninstall_operation_id: selection.uninstall_operation_id,
+        selected_candidate_ids: items.map((item) => item.id),
+      },
+      preview: { version: 1, items, digest: softwareLeftoverDigest },
+    };
+  },
+  softwareLeftoversExecute: async (operationId, plan, previewDigest, confirmed) => {
+    const app = softwareLeftoverApps.find((item) => item.software_id === plan.software_id);
+    const items = app?.candidates.filter((candidate) => plan.selected_candidate_ids.includes(candidate.id)) ?? [];
+    if (!confirmed || previewDigest !== softwareLeftoverDigest || items.length === 0) {
+      throw { code: "software_stale_authority", message: "Controlled fixture leftover preview is stale" };
+    }
+    const outcomes = items.map((item) => {
+      const bytes = item.size.state === "available" ? item.size.value_bytes : item.size.state === "partial" ? item.size.lower_bound_bytes : undefined;
+      return { candidate_id: item.id, certainty: item.certainty, outcome: "succeeded" as const, ...(bytes === undefined ? {} : { estimated_bytes: bytes }) };
+    });
+    return {
+      operation_id: operationId,
+      report: {
+        version: 1,
+        operation_id: `software-leftover-op-fixture-${operationId}`,
+        software_id: plan.software_id,
+        uninstall_operation_id: plan.uninstall_operation_id,
+        outcomes,
+        moved_known_bytes: outcomes.reduce((sum, item) => sum + (item.estimated_bytes ?? 0), 0),
+        lower_bound: items.some((item) => item.size.state !== "available"),
+      },
+    };
+  },
   optimizeListStart: async (operationId) => (
     optimizeCatalogue.type === "completed"
       ? { ...optimizeCatalogue, operation_id: operationId }
