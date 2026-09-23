@@ -56,22 +56,22 @@ must exercise the shared service contract rather than a second mock protocol.
 
 ## Acceptance Criteria
 
-- [ ] AC1 (R1): No production Tauri source launches a `devsweep`/CLI child
+- [x] AC1 (R1): No production Tauri source launches a `devsweep`/CLI child
       process or imports the CLI crate; the adapter uses the shared core owner.
       Domain IPC stays in DesktopBridge; existing typed settings/lifecycle
       exceptions remain separately tested, with no component-level IPC.
-- [ ] AC2 (R2, R4): CLI and Tauri parity fixtures agree on core request, event,
+- [x] AC2 (R2, R4): CLI and Tauri parity fixtures agree on core request, event,
       result, error, cancellation and audit semantics; transport-specific
       operation IDs/envelopes are correlated without requiring identical bytes.
-- [ ] AC3 (R3): CLI Clean execute requires the saved plan, live `sha256:`
+- [x] AC3 (R3): CLI Clean execute requires the saved plan, live `sha256:`
       preview digest and `--confirm`; desktop requires its validated plan,
       matching current digest and second confirmation. Inventory/preview alone
       cannot authorize either path.
-- [ ] AC4 (R2, R4): Cooperative cancellation produces a joined terminal result;
+- [x] AC4 (R2, R4): Cooperative cancellation produces a joined terminal result;
       wait-only Clean actions finish before replacement/close. Stale events or
       terminal results cannot replace the active operation. Timing is checked
       against the performance design's operation table, not a global timeout.
-- [ ] AC5 (R4): Focused contract tests, read-only generated-type checks, and the canonical
+- [x] AC5 (R4): Focused contract tests, read-only generated-type checks, and the canonical
       `just ci` gate pass, with any unavailable native evidence recorded rather
       than inferred.
 
@@ -82,3 +82,29 @@ must exercise the shared service contract rather than a second mock protocol.
 - React workbench layout, visual tokens, and manual Windows acceptance.
 - New cleanup capabilities, permanent deletion, Docker cleanup, or provider
   integrations.
+
+## Closure recheck (2026-09-24)
+
+The implementation landed in `21e0c13`. It was rechecked after the 09-23
+children added `hud.rs`, `tray.rs`, and new commands. Evidence:
+
+- AC1: `desktop/src-tauri/src/service_boundary.rs` lists every adapter module,
+  including `hud.rs` and `tray.rs`. It refuses CLI imports, `Command::new`, and
+  shell strings in production code. The manifest depends on `devsweep-core`
+  only. `desktop/src/api/ipc-boundary.test.ts` keeps domain IPC in
+  `DesktopBridge`.
+- AC2: `desktop/src-tauri/src/wire_parity.rs` round-trips the Clean, Analyze,
+  Software, Optimize, Status, HUD, history-total, and shared error fixtures
+  through the core wire types. The CLI uses the same core types.
+- AC3: `crates/devsweep-cli/tests/five_mode_contract.rs`
+  (`preview_digest_mismatch_is_stale_authority_before_side_effects`) and
+  `commands/clean.rs` (`stale_execute_is_invalid_authority`) cover the CLI.
+  `desktop/src-tauri/src/clean.rs` (`stale_digest_is_structured`) and
+  `desktop/src/App.test.tsx` (dry-run invalidation, second confirmation) cover
+  the desktop.
+- AC4: `operation-coordinator.test.ts` covers cancel-then-join and stale
+  completion. `analyze.rs` (`cancel_joins_before_terminal_result`,
+  `stale_progress_sequences_are_discarded`) and `hud.rs` cover join on the
+  Rust side. Latency limits stay with `09-20-desktop-operation-performance`.
+- AC5: On 2026-09-24, `just ci` and `npm run types:generate -- --check`
+  passed. Native evidence stays with `09-20-desktop-native-acceptance`.
