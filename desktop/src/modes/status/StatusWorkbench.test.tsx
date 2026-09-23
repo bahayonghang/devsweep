@@ -13,6 +13,9 @@ describe("StatusWorkbench", () => {
   it("loads a snapshot first, starts live explicitly, and never shows GPU zero cards", async () => {
     const user = userEvent.setup();
     render(<StatusWorkbench bridge={fixtureBridge} coordinator={new OperationCoordinator()} locale="en" />);
+    expect(await screen.findByRole("heading", { level: 2, name: /CPU\s*43\.21\s*%/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start live" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show details" }));
     expect(await screen.findByText(/Status snapshot snapshot-fixture/)).toBeInTheDocument();
     expect(screen.getByText(/CPU: 43.21%/)).toBeInTheDocument();
     expect(screen.getByText(/No battery present/)).toBeInTheDocument();
@@ -29,7 +32,9 @@ describe("StatusWorkbench", () => {
   });
 
   it("renders Simplified Chinese snapshot copy without inventing GPU values", async () => {
+    const user = userEvent.setup();
     render(<StatusWorkbench bridge={fixtureBridge} coordinator={new OperationCoordinator()} locale="zh-CN" />);
+    await user.click(await screen.findByRole("button", { name: "查看详情" }));
     expect(await screen.findByText(/状态快照 snapshot-fixture/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "开始实时" })).toBeInTheDocument();
     expect(screen.getByText(/无电池/)).toBeInTheDocument();

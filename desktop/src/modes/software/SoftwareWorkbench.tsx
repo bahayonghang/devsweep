@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type {
@@ -10,9 +10,10 @@ import type {
   SoftwareEntryV1,
   SoftwareExecutionOutcome,
 } from "../../api/types.gen";
-import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { AccessibleUserData } from "../../app-shell/AppShell";
 import { DestinationGlyph } from "../../app-shell/glyphs";
 import { formatBinaryBytes, message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
+import { DetailView, Stage, StageResult } from "../../stage";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { selectSoftwareEntries, selectedSoftwareEntries, softwareIdentityText, softwareSource, summarizeSoftwareSize } from "./selectors";
 import { initialSoftwareState, softwareReducer, type SoftwareOperation } from "./state";
@@ -62,6 +63,7 @@ function outcomeLabel(locale: PresentationLanguageTag, outcome: SoftwareExecutio
 
 export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkbenchProps) {
   const [state, dispatch] = useReducer(softwareReducer, initialSoftwareState);
+  const [overview, setOverview] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
   const visibleEntries = useMemo(
@@ -156,10 +158,47 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
         : state.status === "canceling" ? message(locale, "software.v1.state.canceling")
           : null;
 
+  const statusChip = statusText ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null;
+  const liveStatus = statusText ? <p className="software-live-status" role="status" aria-live="polite">{statusText}</p> : null;
+  const inventorySummary = state.inventory ? message(locale, "software.v1.inventory.summary", {
+    count: String(state.inventory.entries.length),
+    selectable: String(state.inventory.entries.filter((entry) => entry.eligibility.state === "selectable").length),
+    manual: String(state.inventory.entries.filter((entry) => entry.eligibility.state === "manual").length),
+  }) : "";
+  const errorBanner = state.error ? <div className="error-banner" role="alert">
+    <span>{"message" in state.error ? state.error.message : state.error.code}</span>
+    <button type="button" onClick={() => dispatch({ type: "error_dismissed" })}>×</button>
+  </div> : null;
+  const auditCard = state.audit ? <section className="card software-audit" aria-live="polite">
+    <p>{message(locale, "software.v1.audit.summary", { records: String(state.audit.records.length), recovered: String(state.audit.recovered.length) })}</p>
+    <details><summary>{message(locale, "software.v1.audit.transitions")}</summary>
+      <ol>{state.audit.records.map((record, index) => <li key={`${record.operation_id}-${index}`}><AccessibleUserData value={`${record.operation_id} · ${record.status_code}`} /></li>)}</ol>
+    </details>
+  </section> : null;
+
   return <div className="software-mode" data-status={state.status}>
-    <PageHeaderSlot>
-      {statusText ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null}
-    </PageHeaderSlot>
+    {!state.inventory || overview ? <>
+      {!state.inventory ? <Stage
+        mode="software"
+        label={message(locale, "command.software")}
+        busy={active}
+        title={message(locale, "software.v1.state.empty.title")}
+        meta={<><p>{message(locale, "software.v1.state.empty.detail")}</p>{liveStatus}</>}
+        primary={active
+          ? <button type="button" className="stage-action" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>{message(locale, "software.v1.action.cancel")}</button>
+          : <button type="button" className="stage-action" onClick={refreshInventory}>{message(locale, "software.v1.action.inventory")}</button>}
+        secondary={<button type="button" className="stage-link" disabled={active} onClick={refreshAudit}>{message(locale, "software.v1.action.audit")}</button>}
+      /> : <StageResult
+        mode="software"
+        label={message(locale, "command.software")}
+        caption={message(locale, "stage.v1.caption.software")}
+        value={String(state.inventory.entries.length)}
+        meta={<><p>{inventorySummary}</p>{liveStatus}</>}
+        action={<button type="button" className="stage-action" onClick={() => setOverview(false)}>{message(locale, "stage.v1.action.details")}</button>}
+      />}
+      {errorBanner}
+      {!state.inventory ? auditCard : null}
+    </> : <DetailView locale={locale} onBack={() => setOverview(true)} status={statusChip}>
     <section className="software-toolbar" aria-label={message(locale, "command.software")}>
       {state.inventory ? <button type="button" className="primary-button" disabled={active} onClick={refreshInventory}>
         {message(locale, "software.v1.action.inventory")}
@@ -180,28 +219,14 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
       {active ? <button type="button" className="danger-button" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>
         {message(locale, "software.v1.action.cancel")}
       </button> : null}
-      {statusText ? <p className="software-live-status" role="status" aria-live="polite">{statusText}</p> : null}
+      {liveStatus}
     </section>
 
-    {state.error ? <div className="error-banner" role="alert">
-      <span>{"message" in state.error ? state.error.message : state.error.code}</span>
-      <button type="button" onClick={() => dispatch({ type: "error_dismissed" })}>×</button>
-    </div> : null}
+    {errorBanner}
 
-    {!state.inventory ? <section className="card mode-empty">
-      <span className="glyph-tile"><DestinationGlyph name="software" /></span>
-      <h2>{message(locale, "software.v1.state.empty.title")}</h2>
-      <p>{message(locale, "software.v1.state.empty.detail")}</p>
-      <button type="button" className="primary-button" disabled={active} onClick={refreshInventory}>
-        {message(locale, "software.v1.action.inventory")}
-      </button>
-    </section> : <section className="card software-inventory" aria-busy={active}>
+    <section className="card software-inventory" aria-busy={active}>
       <header className="software-inventory-header">
-        <p>{message(locale, "software.v1.inventory.summary", {
-          count: String(state.inventory.entries.length),
-          selectable: String(state.inventory.entries.filter((entry) => entry.eligibility.state === "selectable").length),
-          manual: String(state.inventory.entries.filter((entry) => entry.eligibility.state === "manual").length),
-        })}</p>
+        <p>{inventorySummary}</p>
         <button type="button" className="secondary-button" disabled={active} onClick={() => dispatch({ type: "select_all", selected: state.selectedIds.size === 0 })}>
           {state.selectedIds.size === 0 ? message(locale, "software.v1.action.select_all") : message(locale, "software.v1.action.clear_selection")}
         </button>
@@ -246,7 +271,7 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
           </li>;
         })}
       </ul>
-    </section>}
+    </section>
 
     {state.preview ? <section className="card software-preview" aria-labelledby="software-preview-title">
       <h2 id="software-preview-title">{message(locale, "software.v1.action.preview")}</h2>
@@ -262,12 +287,7 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
       </li>)}</ul>
     </section> : null}
 
-    {state.audit ? <section className="card software-audit" aria-live="polite">
-      <p>{message(locale, "software.v1.audit.summary", { records: String(state.audit.records.length), recovered: String(state.audit.recovered.length) })}</p>
-      <details><summary>{message(locale, "software.v1.audit.transitions")}</summary>
-        <ol>{state.audit.records.map((record, index) => <li key={`${record.operation_id}-${index}`}><AccessibleUserData value={`${record.operation_id} · ${record.status_code}`} /></li>)}</ol>
-      </details>
-    </section> : null}
+    {auditCard}
 
     <footer className="software-summary-bar">
       <p>{message(locale, "software.v1.summary", {
@@ -286,6 +306,7 @@ export function SoftwareWorkbench({ bridge, coordinator, locale }: SoftwareWorkb
         </button>
       </div>
     </footer>
+    </DetailView>}
 
     <dialog className="software-confirm-dialog" open={state.status === "confirming"} aria-labelledby="software-confirm-title">
       <h2 id="software-confirm-title">{message(locale, "software.v1.confirm.title")}</h2>

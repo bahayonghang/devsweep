@@ -54,6 +54,15 @@ function fakeLifecycle(overrides: Partial<DesktopLifecycleBridge> = {}): Desktop
   };
 }
 
+async function openLanguageSettings(
+  user: ReturnType<typeof userEvent.setup>,
+  brand = "DevSweep menu",
+  language = "Language",
+) {
+  await user.click(await screen.findByRole("button", { name: brand }));
+  await user.click(screen.getByRole("menuitem", { name: language }));
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -113,7 +122,7 @@ describe("desktop workflow", () => {
     expect(document.querySelector(".clean-stage")).toBeInTheDocument();
   });
 
-  it("idle Clean home is a stage card with visible scope, not a ring hero", async () => {
+  it("idle Clean home is a planet stage with visible scope and no cards", async () => {
     render(<App bridge={fakeBridge()} presentationSettings={fakePresentationSettings()} />);
     expect(await screen.findByRole("button", { name: "Scan" })).toBeInTheDocument();
     expect(screen.getByText("Projects")).toBeInTheDocument();
@@ -124,7 +133,8 @@ describe("desktop workflow", () => {
     expect(screen.queryByText("Found so far")).not.toBeInTheDocument();
     expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
     expect(document.querySelector(".clean-stage")).toBeInTheDocument();
-    expect(document.querySelector(".capacity-plaque")).toBeInTheDocument();
+    expect(document.querySelector(".clean-stage .planet")).toBeInTheDocument();
+    expect(document.querySelector(".clean-stage .card")).not.toBeInTheDocument();
   });
 
   it("keeps the shell absent while presentation settings are loading", () => {
@@ -232,7 +242,7 @@ describe("desktop workflow", () => {
     };
     const user = userEvent.setup();
     const view = render(<App bridge={fakeBridge()} presentationSettings={oldSettings} userLocales={userLocales} />);
-    await user.click(await screen.findByRole("button", { name: "Language" }));
+    await openLanguageSettings(user);
     await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
     expect(oldSettings.save).toHaveBeenCalledWith("zh-CN");
 
@@ -294,7 +304,7 @@ describe("desktop workflow", () => {
     await user.click(softwareTab);
     expect(screen.getByRole("region", { name: "软件" })).toBeInTheDocument();
     expect(document.querySelector(".shell-brand-icon")).toHaveAttribute("src", "/src/assets/devsweep-icon-master.png");
-    await user.click(screen.getByRole("button", { name: "语言" }));
+    await openLanguageSettings(user, "DevSweep 菜单", "语言");
     await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");
     await waitFor(() => expect(presentationSettings.save).toHaveBeenCalledWith("en"));
     expect(screen.getByRole("tab", { name: "Clean" })).toHaveAttribute("title", "Alt+C");
@@ -309,7 +319,7 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge()} presentationSettings={presentationSettings} />);
 
-    await user.click(await screen.findByRole("button", { name: "Language" }));
+    await openLanguageSettings(user);
     const select = screen.getByRole("combobox", { name: "Language" });
     await user.selectOptions(select, "zh-CN");
     expect(presentationSettings.save).toHaveBeenCalledWith("zh-CN");
@@ -331,7 +341,7 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge()} presentationSettings={presentationSettings} />);
 
-    await user.click(await screen.findByRole("button", { name: "Language" }));
+    await openLanguageSettings(user);
     await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Language preference was not changed");
@@ -348,7 +358,7 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge()} presentationSettings={presentationSettings} />);
 
-    await user.click(await screen.findByRole("button", { name: "Language" }));
+    await openLanguageSettings(user);
     await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Language preference was not changed");
@@ -377,7 +387,7 @@ describe("desktop workflow", () => {
     };
     const user = userEvent.setup();
     const readyView = render(<App bridge={fakeBridge()} presentationSettings={saveSettings} />);
-    await user.click(await screen.findByRole("button", { name: "Language" }));
+    await openLanguageSettings(user);
     await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
     readyView.unmount();
     await act(async () => {
@@ -395,7 +405,7 @@ describe("desktop workflow", () => {
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     await screen.findByText("Scan complete. 3 targets.");
-    await user.click(screen.getByRole("button", { name: "Language" }));
+    await openLanguageSettings(user);
     await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
     await user.click(screen.getByRole("tab", { name: "清理" }));
     await user.click(screen.getByRole("button", { name: "扫描" }));
@@ -816,21 +826,21 @@ describe("desktop workflow", () => {
       presentationSettings={fakePresentationSettings()}
       lifecycle={lifecycle}
     />);
-    const language = await screen.findByRole("button", { name: "Language" });
+    const brand = await screen.findByRole("button", { name: "DevSweep menu" });
     await waitFor(() => expect(lifecycle.nativeFaultMode).toHaveBeenCalledOnce());
     await act(async () => { await Promise.resolve(); });
 
-    await user.click(language);
+    await openLanguageSettings(user);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Could not change destination. The current page remains active.",
     );
     expect(window.location.hash).toBe("#/clean");
-    expect(language).toHaveFocus();
+    expect(brand).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText("Could not change destination. The current page remains active.")).not.toBeInTheDocument();
-    await user.click(language);
+    await openLanguageSettings(user);
     expect(await screen.findByRole("combobox", { name: "Language" })).toHaveValue("en");
     expect(window.location.hash).toBe("#/settings");
   });

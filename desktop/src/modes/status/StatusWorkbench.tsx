@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type {
@@ -8,11 +8,12 @@ import type {
   StatusEventV1,
   StatusSnapshotV1,
 } from "../../api/types.gen";
-import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { AccessibleUserData } from "../../app-shell/AppShell";
 import { DestinationGlyph, type GlyphName } from "../../app-shell/glyphs";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { formatBytes } from "../../components/format";
 import { message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
+import { DetailView, Stage, StageResult } from "../../stage";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import {
   DEFAULT_PROCESS_LIMIT,
@@ -196,6 +197,7 @@ function StatusChart({
 
 export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbenchProps) {
   const [state, dispatch] = useReducer(statusReducer, initialStatusState);
+  const [details, setDetails] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => {
     mounted.current = false;
@@ -297,21 +299,51 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
   const decodeError = typeof state.error === "string" ? state.error : null;
   const commandErr = state.error && typeof state.error !== "string" ? state.error : null;
 
+  const statusChip = statusText ? <span className={`status-chip ${chipTone}`.trim()}><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null;
+  const liveStatus = statusText ? <p className="status-live-status" role="status" aria-live="polite" aria-label={statusText}>{statusText}</p> : null;
+  const liveToggle = (className: string, stopClassName: string) => live
+    ? <button type="button" className={stopClassName} disabled={state.status === "canceling"} onClick={() => void cancelActive()}>
+        {message(locale, "status.v1.action.live.stop")}
+      </button>
+    : <button type="button" className={className} disabled={active} onClick={() => startLive()}>
+        {message(locale, "status.v1.action.live.start")}
+      </button>;
+  const errors = <>
+    {commandErr ? <ErrorBanner error={commandErr} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
+    {decodeError ? <div className="error-banner" role="alert">
+      <span>{message(locale, "status.v1.decode.error", { reason: decodeError })}</span>
+      <button type="button" className="icon-button" onClick={() => dispatch({ type: "error_dismissed" })} aria-label="Dismiss error">×</button>
+    </div> : null}
+  </>;
+  const cpu = state.snapshot ? availableValue(state.snapshot.cpu) : null;
+
   return <div className="status-mode" data-status={state.status}>
-    <PageHeaderSlot>
-      {statusText ? <span className={`status-chip ${chipTone}`.trim()}><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null}
-    </PageHeaderSlot>
+    {!details || !state.snapshot ? <>
+      {!state.snapshot ? <Stage
+        mode="status"
+        label={message(locale, "command.status")}
+        busy={active}
+        title={message(locale, "status.v1.chart.empty")}
+        meta={<><p>{message(locale, "status.v1.capability.note")}</p>{liveStatus}</>}
+        primary={<button type="button" className="stage-action" disabled={active} onClick={captureSnapshot}>{message(locale, "status.v1.action.snapshot")}</button>}
+        secondary={liveToggle("stage-link", "stage-link")}
+      /> : <StageResult
+        mode="status"
+        label={message(locale, "command.status")}
+        caption={message(locale, "status.v1.chart.cpu")}
+        value={cpu ? formatBasisPoints(cpu.system_utilization_basis_points) : cpuCard(locale, state.snapshot)}
+        unit={cpu ? "%" : undefined}
+        meta={<><p><AccessibleUserData value={memoryCard(locale, state.snapshot)} /></p>{liveStatus}</>}
+        action={liveToggle("stage-action", "stage-action")}
+        secondary={<button type="button" className="stage-link" onClick={() => setDetails(true)}>{message(locale, "stage.v1.action.details")}</button>}
+      />}
+      {errors}
+    </> : <DetailView locale={locale} onBack={() => setDetails(false)} status={statusChip}>
     <section className="status-toolbar" aria-label={message(locale, "command.status")}>
       {state.snapshot ? <button type="button" className="primary-button" disabled={active} onClick={captureSnapshot}>
         {message(locale, "status.v1.action.snapshot")}
       </button> : null}
-      {live
-        ? <button type="button" className="danger-button" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>
-            {message(locale, "status.v1.action.live.stop")}
-          </button>
-        : <button type="button" className="secondary-button" disabled={active} onClick={() => startLive()}>
-            {message(locale, "status.v1.action.live.start")}
-          </button>}
+      {liveToggle("secondary-button", "danger-button")}
       <label>
         <span>{message(locale, "status.v1.interval.label")}</span>
         <select
@@ -328,23 +360,12 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
           ))}
         </select>
       </label>
-      {statusText ? <p className="status-live-status" role="status" aria-live="polite" aria-label={statusText}>{statusText}</p> : null}
+      {liveStatus}
     </section>
 
-    {commandErr ? <ErrorBanner error={commandErr} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
-    {decodeError ? <div className="error-banner" role="alert">
-      <span>{message(locale, "status.v1.decode.error", { reason: decodeError })}</span>
-      <button type="button" className="icon-button" onClick={() => dispatch({ type: "error_dismissed" })} aria-label="Dismiss error">×</button>
-    </div> : null}
+    {errors}
 
-    {!state.snapshot ? <section className="card mode-empty">
-      <span className="glyph-tile"><DestinationGlyph name="status" /></span>
-      <h2>{message(locale, "status.v1.chart.empty")}</h2>
-      <p>{message(locale, "status.v1.capability.note")}</p>
-      <button type="button" className="primary-button" disabled={active} onClick={captureSnapshot}>
-        {message(locale, "status.v1.action.snapshot")}
-      </button>
-    </section> : <>
+    <>
       <section className="card status-capability">
         <p>{message(locale, "status.v1.snapshot.title", { id: state.snapshot.snapshot_id })}</p>
         <p>{message(locale, "status.v1.sampled_at", { timestamp: String(state.snapshot.sampled_at_unix_ms) })}</p>
@@ -358,7 +379,7 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         {volumeCards(locale, state.snapshot).map((line) => <StatusMetricCard family="volume" key={line} value={line} />)}
         {networkCards(locale, state.snapshot).map((line) => <StatusMetricCard family="network" key={line} value={line} />)}
       </section>
-    </>}
+    </>
 
     <section className="card status-charts">
       <h2>{message(locale, "status.v1.state.live")}</h2>
@@ -420,5 +441,6 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         </table>
       </div>
     </section>
+    </DetailView>}
   </div>;
 }

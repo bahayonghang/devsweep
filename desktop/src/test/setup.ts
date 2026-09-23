@@ -10,3 +10,7 @@ if (!HTMLDialogElement.prototype.showModal) {
 if (!HTMLDialogElement.prototype.close) {
   HTMLDialogElement.prototype.close = function close() { this.removeAttribute("open"); };
 }
+
+// jsdom has no 2D canvas. Planet treats a null context as "draw nothing";
+// Planet tests install their own context mock.
+HTMLCanvasElement.prototype.getContext = function getContext() { return null; } as typeof HTMLCanvasElement.prototype.getContext;

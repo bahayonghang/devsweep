@@ -13,7 +13,7 @@ may call `invoke` or `listen` directly.
 Shell state contains no targets, plans, selections, digests, confirmation
 authority, or mode results. Unavailable mode registrations are absent rather
 than represented by disabled placeholder state. The shell never derives counts,
-sizes, or status for sidebar rows.
+sizes, or status for capsule tabs or brand-menu items.
 
 ## Shell Routing And Mode State
 
@@ -26,7 +26,14 @@ sizes, or status for sidebar rows.
   state. Each registered mode keeps its own state across route and language
   changes.
 - Route transitions capture the activating navigation element and restore focus
-  after composition. Closing settings restores its opener.
+  after composition. Mode routes restore focus to their capsule tab. Supporting
+  destinations and Language open from the brand menu; the menu closes before
+  navigation, so those routes restore focus to the brand button. Closing
+  settings restores its opener.
+- The supporting-route back control navigates to the last active mode route
+  through the same registry and coordinator path as a capsule tab.
+- Stage/detail view choice is mode-local presentation state. It never changes
+  plans, selections, digests, confirmation state, or operation ownership.
 
 ## Operation Coordinator
 

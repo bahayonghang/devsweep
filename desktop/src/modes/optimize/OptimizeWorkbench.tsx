@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type {
@@ -11,10 +11,11 @@ import type {
   MaintenanceCatalogueEntryV1,
   MaintenanceExecutionOutcome,
 } from "../../api/types.gen";
-import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
+import { AccessibleUserData } from "../../app-shell/AppShell";
 import { DestinationGlyph, type GlyphName } from "../../app-shell/glyphs";
 import { ErrorBanner } from "../../components/ErrorBanner";
 import { message, type MessageKey, type PresentationLanguageTag } from "../../i18n";
+import { DetailView, Stage, StageResult } from "../../stage";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { dispatchable, initialOptimizeState, optimizeReducer, selectedEntry, type OptimizeOperation } from "./state";
 import "./styles.css";
@@ -143,6 +144,7 @@ function closeConfirmDialog(node: HTMLDialogElement): void {
 
 export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkbenchProps) {
   const [state, dispatch] = useReducer(optimizeReducer, initialOptimizeState);
+  const [overview, setOverview] = useState(false);
   const mounted = useRef(true);
   const confirmDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -242,10 +244,43 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
             : null;
   const reportOutcome = state.report?.outcomes[0]?.outcome ?? null;
 
+  const statusChip = statusText ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null;
+  const liveStatus = statusText ? <p className="optimize-live-status" role="status" aria-live="polite">{statusText}</p> : null;
+  const catalogueSummary = state.entries ? message(locale, "optimize.v1.list.summary", {
+    count: String(state.entries.length),
+    version: "1",
+  }) : "";
+  const errorBanner = state.error ? <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null;
+  const auditCard = state.audit ? <section className="card optimize-audit" aria-live="polite">
+    <p>{message(locale, "optimize.v1.audit.summary", { records: String(state.audit.records.length), recovered: String(state.audit.recovered.length) })}</p>
+    <details><summary>{message(locale, "optimize.v1.audit.transitions")}</summary>
+      <ol>{state.audit.records.map((record, index) => <li key={`${record.operation_id}-${index}`}><AccessibleUserData value={`${record.operation_id} · ${record.status_code}`} /></li>)}</ol>
+    </details>
+  </section> : null;
+
   return <div className="optimize-mode" data-status={state.status}>
-    <PageHeaderSlot>
-      {statusText ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusText}</span> : null}
-    </PageHeaderSlot>
+    {!state.entries || overview ? <>
+      {!state.entries ? <Stage
+        mode="optimize"
+        label={message(locale, "command.optimize")}
+        busy={active}
+        title={message(locale, "optimize.v1.state.empty.title")}
+        meta={<><p>{message(locale, "optimize.v1.state.empty.detail")}</p>{liveStatus}</>}
+        primary={active
+          ? <button type="button" className="stage-action" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>{message(locale, "optimize.v1.action.cancel")}</button>
+          : <button type="button" className="stage-action" onClick={refreshCatalogue}>{message(locale, "optimize.v1.action.refresh")}</button>}
+        secondary={<button type="button" className="stage-link" disabled={active} onClick={refreshAudit}>{message(locale, "optimize.v1.action.audit")}</button>}
+      /> : <StageResult
+        mode="optimize"
+        label={message(locale, "command.optimize")}
+        caption={message(locale, "stage.v1.caption.optimize")}
+        value={String(state.entries.length)}
+        meta={<><p>{catalogueSummary}</p>{liveStatus}</>}
+        action={<button type="button" className="stage-action" onClick={() => setOverview(false)}>{message(locale, "stage.v1.action.details")}</button>}
+      />}
+      {errorBanner}
+      {!state.entries ? auditCard : null}
+    </> : <DetailView locale={locale} onBack={() => setOverview(true)} status={statusChip}>
     <section className="optimize-toolbar" aria-label={message(locale, "command.optimize")}>
       {state.entries ? <button type="button" className="primary-button" disabled={active} onClick={refreshCatalogue}>
         {message(locale, "optimize.v1.action.refresh")}
@@ -256,24 +291,14 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
       {active ? <button type="button" className="danger-button" disabled={state.status === "canceling"} onClick={() => void cancelActive()}>
         {message(locale, "optimize.v1.action.cancel")}
       </button> : null}
-      {statusText ? <p className="optimize-live-status" role="status" aria-live="polite">{statusText}</p> : null}
+      {liveStatus}
     </section>
 
-    {state.error ? <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
+    {errorBanner}
 
-    {!state.entries ? <section className="card mode-empty">
-      <span className="glyph-tile"><DestinationGlyph name="optimize" /></span>
-      <h2>{message(locale, "optimize.v1.state.empty.title")}</h2>
-      <p>{message(locale, "optimize.v1.state.empty.detail")}</p>
-      <button type="button" className="primary-button" disabled={active} onClick={refreshCatalogue}>
-        {message(locale, "optimize.v1.action.refresh")}
-      </button>
-    </section> : <section className="card optimize-catalogue" aria-busy={active}>
+    <section className="card optimize-catalogue" aria-busy={active}>
       <header className="optimize-catalogue-header">
-        <p>{message(locale, "optimize.v1.list.summary", {
-          count: String(state.entries.length),
-          version: "1",
-        })}</p>
+        <p>{catalogueSummary}</p>
       </header>
       <ul className="optimize-list" aria-label={message(locale, "command.optimize")}>
         {state.entries.map((entry) => {
@@ -313,7 +338,7 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
           </li>;
         })}
       </ul>
-    </section>}
+    </section>
 
     {state.preview ? <section className="card optimize-preview" aria-labelledby="optimize-preview-title">
       <h2 id="optimize-preview-title">{message(locale, "optimize.v1.action.preview")}</h2>
@@ -328,12 +353,7 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
       </li>)}</ul>
     </section> : null}
 
-    {state.audit ? <section className="card optimize-audit" aria-live="polite">
-      <p>{message(locale, "optimize.v1.audit.summary", { records: String(state.audit.records.length), recovered: String(state.audit.recovered.length) })}</p>
-      <details><summary>{message(locale, "optimize.v1.audit.transitions")}</summary>
-        <ol>{state.audit.records.map((record, index) => <li key={`${record.operation_id}-${index}`}><AccessibleUserData value={`${record.operation_id} · ${record.status_code}`} /></li>)}</ol>
-      </details>
-    </section> : null}
+    {auditCard}
 
     <footer className="optimize-summary-bar">
       <p>{summaryText(locale, selected, state.preview?.digest ?? null, reportOutcome)}</p>
@@ -348,6 +368,7 @@ export function OptimizeWorkbench({ bridge, coordinator, locale }: OptimizeWorkb
         </>}
       </div>
     </footer>
+    </DetailView>}
 
     <dialog
       ref={confirmDialog}

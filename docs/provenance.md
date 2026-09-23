@@ -35,6 +35,21 @@ MIT-licensed reference for sidebar workbench layout topology and interaction
 ideas. DevSweep did not copy PureMac source, strings, screenshots, SF Symbols,
 or hex values.
 
+## Mole desktop layout
+
+On 2026-09-23 DevSweep reviewed the public Mole desktop product page
+(`https://mole.fit`) as a layout reference. The capsule navigation shell took
+three topology ideas from that page: one top-centered pill navigation bar, one
+centered planet visual per mode, and one large primary number with a single
+action below it.
+
+DevSweep did not copy Mole code, images, textures, planet renders, copy,
+taglines, labels, or colour values. The planets are drawn at runtime by
+DevSweep code (`desktop/src/stage/Planet.tsx`) from seeded value noise and
+palettes chosen for this project (`desktop/src/stage/planet-palettes.ts`).
+No photograph, NASA image, or texture file backs them. All interface copy is
+original DevSweep text in English and Simplified Chinese.
+
 ## Future review
 
 If a future change introduces material derived from a GPL-licensed work, stop

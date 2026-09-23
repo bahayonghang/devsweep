@@ -58,7 +58,7 @@ describe("ScanPage announcements", () => {
     expect(document.querySelector(".clean-stage")).toBeInTheDocument();
   });
 
-  it("idle home is a stage card with visible scope and Scan, not a ring hero", () => {
+  it("idle home is a planet stage with visible scope and Scan", () => {
     render(
       <ScanPage activeScan={null} busy={false} options={options} onOptions={noOp} onScan={noOp} onCancel={noOp} />,
     );
@@ -70,7 +70,8 @@ describe("ScanPage announcements", () => {
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
     expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
     expect(document.querySelector(".clean-stage")).toBeInTheDocument();
-    expect(document.querySelector(".capacity-plaque")).toBeInTheDocument();
+    expect(document.querySelector(".clean-stage .planet")).toHaveAttribute("aria-hidden", "true");
+    expect(document.querySelector(".clean-stage .card")).not.toBeInTheDocument();
   });
 
   it("scanning shows indeterminate progress and the backend message without a percentage", () => {

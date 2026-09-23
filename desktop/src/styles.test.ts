@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 const styles = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
 const cleanStyles = readFileSync(resolve(process.cwd(), "src/modes/clean/styles.css"), "utf8");
+const stageStyles = readFileSync(resolve(process.cwd(), "src/stage/styles.css"), "utf8");
 
 describe("responsive scan workbench styles", () => {
   it("contains table overflow and an explicit narrow layout", () => {
@@ -15,41 +16,39 @@ describe("responsive scan workbench styles", () => {
   it("honors reduced motion without removing semantic progress", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(styles).toContain("animation-duration: .01ms !important");
-    expect(styles).toContain(".sweep-body-ring { animation: none;");
     expect(styles).not.toContain("linear-gradient");
     expect(styles).not.toContain("radial-gradient");
   });
 
-  it("locks shell tokens, target widths, focus, and high-contrast behavior", () => {
-    for (const token of ["--shell-deep", "--shell-surface", "--canvas-clean", "--accent", "--focus"]) expect(styles).toContain(token);
-    for (const width of ["max-width: 1024px", "max-width: 800px", "max-width: 520px", "min-width: 1440px"]) expect(styles).toContain(width);
+  it("locks capsule tokens, target widths, focus, and high-contrast behavior", () => {
+    for (const token of ["--stage-canvas", "--capsule-bg", "--capsule-border", "--capsule-active-bg", "--capsule-active-text", "--accent", "--focus"]) expect(styles).toContain(token);
+    for (const width of ["max-width: 800px", "max-width: 520px", "min-width: 1440px"]) expect(styles).toContain(width);
     expect(styles).toContain("@media (forced-colors: active)");
     expect(styles).toContain("outline: 3px solid var(--focus)");
     expect(styles).toContain(".shell-brand-icon");
-    expect(styles).toContain(".shell-sidebar");
-    expect(styles).toContain(".page-header");
+    expect(styles).toContain(".mode-tab[aria-selected=\"true\"] { color: var(--capsule-active-text); background: var(--capsule-active-bg); }");
+    for (const removed of [".shell-sidebar", ".page-header", "--sidebar", "--canvas-clean", "--canvas-software", ".sweep-body"]) expect(styles).not.toContain(removed);
     expect(styles).toContain(".card { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-card); padding: 16px; }");
     expect(styles).not.toContain(".mode-capsule");
     expect(styles).not.toContain(".shell-more");
     expect(styles).not.toContain(".sweep-body-hero");
     expect(styles).not.toContain("--capsule-track");
-    expect(styles).toContain(".mode-workbench { min-width: 0; display: flex; flex: 1; flex-direction: column; background: transparent; }");
+    expect(styles).toContain(".stage-host { min-width: 0; display: flex; flex: 1; flex-direction: column; background: transparent; }");
     expect(styles).toContain('font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;');
   });
 
-  it("turns the sidebar into a horizontal top strip below 800px", () => {
+  it("scrolls the pill capsule horizontally and shrinks the planet below 800px", () => {
+    expect(styles).toMatch(/\.capsule \{[^}]*overflow-x: auto;[^}]*border-radius: 999px;/);
     const start = styles.indexOf("@media (max-width: 800px)");
     const next = styles.indexOf("@media", start + 1);
     const block = styles.slice(start, next === -1 ? undefined : next);
-    expect(block).toContain("overflow-x: auto");
-    expect(block).toContain("flex-direction: row");
-    expect(block).toContain("min-width: max-content");
-    expect(block).toContain("grid-template-columns: minmax(0, 1fr)");
+    expect(block).toContain(".capsule-bar");
+    const stageBlock = stageStyles.slice(stageStyles.indexOf("@media (max-width: 800px)"));
+    expect(stageBlock).toMatch(/--planet-size: 168px/);
   });
 
-  it("keeps motifs decorative, bounded, and non-interactive", () => {
-    expect(styles).toContain(".sweep-body");
-    expect(styles).toContain("pointer-events: none");
+  it("keeps the planet decorative, bounded, and non-interactive", () => {
+    expect(stageStyles).toMatch(/\.planet \{[^}]*pointer-events: none;/);
     expect(styles).not.toContain("backdrop-filter");
     expect(styles).not.toContain("filter: blur");
   });

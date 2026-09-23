@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ScanOptions, ScanPhase } from "../api/types.gen";
 import { message, type PresentationLanguageTag } from "../i18n";
+import { Stage } from "../stage";
 import type { ActiveScan } from "../state/app-state";
 
 type PhaseState = "pending" | "current" | "complete";
@@ -93,9 +94,9 @@ export function ScanPage(props: {
     <label><input type="checkbox" checked={props.options.include_projects} disabled={scanning || props.busy} onChange={(event) => setScope("include_projects", event.target.checked)} /> {projectsLabel}</label>
     <label><input type="checkbox" checked={props.options.include_global} disabled={scanning || props.busy} onChange={(event) => setScope("include_global", event.target.checked)} /> {globalLabel}</label>
   </div>;
-  const action = scanning
-    ? <button className="secondary-button fixed-action" onClick={props.onCancel} disabled={props.activeScan?.cancelRequested}>{props.activeScan?.cancelRequested ? message(locale, "clean.v1.action.cancel") : message(locale, "clean.v1.action.cancel_scan")}</button>
-    : <button className="primary-button fixed-action" onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global)}>{scanLabel}</button>;
+  const action = (scanClass: string, cancelClass: string) => scanning
+    ? <button className={cancelClass} onClick={props.onCancel} disabled={props.activeScan?.cancelRequested}>{props.activeScan?.cancelRequested ? message(locale, "clean.v1.action.cancel") : message(locale, "clean.v1.action.cancel_scan")}</button>
+    : <button className={scanClass} onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global)}>{scanLabel}</button>;
   const scanStatus = scanning ? <div className="scan-status" aria-busy="true">
     <ol className="phase-rail" aria-label={scanLabel}>
       {requested.map((phase) => <li key={phase} data-state={phaseState(phase, requested, current)}>
@@ -113,22 +114,20 @@ export function ScanPage(props: {
     return <section className="scan-toolbar" aria-label={scanLabel}>
       {scopeControls}
       <div className="scan-status"><span className="ready-status">{readyLabel}</span></div>
-      {action}
+      {action("primary-button fixed-action", "secondary-button fixed-action")}
     </section>;
   }
-  return <div className="clean-stage-layout">
-    <section className="card clean-stage" aria-label={scanLabel}>
-      <p className="stage-eyebrow">{message(locale, "clean.v1.stage.eyebrow")}</p>
-      <h2 className="stage-headline">{headline}</h2>
-      {!scanning && <p className="stage-lede">{lede}</p>}
-      {scopeControls}
-      {scanStatus}
-      {action}
-    </section>
-    <section className="card capacity-plaque">
-      {scanning
-        ? <p className="plaque-phase">{phaseLabel}</p>
-        : <p className="ready-status">{readyLabel}</p>}
-    </section>
-  </div>;
+  return <Stage
+    mode="clean"
+    label={scanLabel}
+    className="clean-stage"
+    busy={scanning}
+    title={headline}
+    meta={scanning ? undefined : <p className="stage-lede">{lede}</p>}
+    controls={<>{scopeControls}{scanStatus}</>}
+    primary={action("stage-action", "stage-action")}
+    secondary={scanning
+      ? <p className="plaque-phase">{phaseLabel}</p>
+      : <p className="ready-status">{readyLabel}</p>}
+  />;
 }

@@ -1,5 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import iconUrl from "../assets/devsweep-icon-master.png";
 import {
   message,
@@ -8,7 +7,6 @@ import {
   type PresentationLanguageTag,
 } from "../i18n";
 import type { ShellRouteCoordinator } from "../lifecycle";
-import { DestinationGlyph, type GlyphName } from "./glyphs";
 
 export const MODE_IDS = ["clean", "software", "optimize", "analyze", "status"] as const;
 export type ModeId = typeof MODE_IDS[number];
@@ -30,34 +28,13 @@ const SUPPORTING_MESSAGE_KEYS: Readonly<Record<SupportingDestinationId, MessageK
   history: "shell.v1.supporting.history",
 };
 
-const MODE_SUBTITLE_KEYS: Readonly<Record<ModeId, MessageKey>> = {
-  clean: "shell.v1.subtitle.clean",
-  software: "shell.v1.subtitle.software",
-  optimize: "shell.v1.subtitle.optimize",
-  analyze: "shell.v1.subtitle.analyze",
-  status: "shell.v1.subtitle.status",
-};
-
 const SUPPORTING_SUBTITLE_KEYS: Readonly<Record<SupportingDestinationId, MessageKey>> = {
   protection: "shell.v1.subtitle.protection",
   rules: "shell.v1.subtitle.rules",
   history: "shell.v1.subtitle.history",
 };
 
-const PageHeaderSlotContext = createContext<HTMLElement | null>(null);
-
-/** Mode pages render a chip into the shell page-header slot. A portal keeps the
- * chip out of shell state: writing the element into shell state made every mode
- * render produce a new element, which re-ran the effect, which re-rendered the
- * mode, until React aborted the tree (error #185). */
-export function PageHeaderSlot({ children }: { readonly children?: ReactNode }) {
-  const container = useContext(PageHeaderSlotContext);
-  return container ? createPortal(children ?? null, container) : null;
-}
-
-function DestinationMark({ name }: { readonly name: GlyphName }) {
-  return <span className="glyph-tile"><DestinationGlyph name={name} /></span>;
-}
+const HELP_URL = "https://github.com/bahayonghang/devsweep#readme";
 
 export interface ModeRegistration {
   readonly id: ModeId;
@@ -113,14 +90,6 @@ export function AccessibleUserData({ value }: { readonly value: string }) {
   return <span className="user-data-ellipsis" title={value} aria-label={value}>{value}</span>;
 }
 
-/** CSS-native sweep body. Non-informational; still under reduced motion. Compact brand mark only. */
-export function SweepBody() {
-  return <span className="sweep-body" aria-hidden="true">
-    <span className="sweep-body-ring" />
-    <span className="sweep-body-core" />
-  </span>;
-}
-
 export function parseModeRoute(hash: string, availableModes: readonly ModeId[]): ModeId | null {
   const route = parseShellRoute(hash, availableModes, []);
   return route?.startsWith("mode:") ? route.slice(5) as ModeId : null;
@@ -169,11 +138,12 @@ export function AppShell({
   const [transitioning, setTransitioning] = useState(false);
   const [routeError, setRouteError] = useState(false);
   const [focusCommitRequest, setFocusCommitRequest] = useState(0);
-  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [lastMode, setLastMode] = useState<ModeId>(initial.startsWith("mode:") ? initial.slice(5) as ModeId : availableIds[0]);
   const contentHeading = useRef<HTMLHeadingElement>(null);
   const navButtons = useRef(new Map<ModeId, HTMLButtonElement>());
-  const supportingButtons = useRef(new Map<SupportingDestinationId, HTMLButtonElement>());
-  const settingsButton = useRef<HTMLButtonElement>(null);
+  const brandButton = useRef<HTMLButtonElement>(null);
+  const brandMenu = useRef<HTMLDivElement>(null);
   const settingsOpener = useRef<HTMLElement | null>(null);
   const pendingFocusRestore = useRef<PendingFocusRestore | null>(null);
   const failedFocusRestore = useRef<FailedFocusRestore | null>(null);
@@ -225,13 +195,17 @@ export function AppShell({
     if (pending.intent.kind === "activator") target = pending.intent.element;
     else if (pending.intent.route.startsWith("mode:")) {
       target = navButtons.current.get(pending.intent.route.slice(5) as ModeId) ?? null;
-    } else if (pending.intent.route.startsWith("support:")) {
-      target = supportingButtons.current.get(pending.intent.route.slice(8) as SupportingDestinationId) ?? null;
-    } else target = settingsButton.current;
+    } else target = brandButton.current;
     target = revealFocusTarget(target);
     if (canRestoreFocus(target)) target.focus();
     else contentHeading.current?.focus();
   }, [activeRoute, focusCommitRequest]);
+
+  useEffect(() => {
+    // At narrow widths the capsule scrolls; keep the active tab visible.
+    if (!activeRoute.startsWith("mode:")) return;
+    navButtons.current.get(activeRoute.slice(5) as ModeId)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [activeRoute]);
 
   useLayoutEffect(() => {
     const failed = failedFocusRestore.current;
@@ -241,9 +215,7 @@ export function AppShell({
       ? failed.intent.element
       : failed.intent.route.startsWith("mode:")
         ? navButtons.current.get(failed.intent.route.slice(5) as ModeId) ?? null
-        : failed.intent.route.startsWith("support:")
-          ? supportingButtons.current.get(failed.intent.route.slice(8) as SupportingDestinationId) ?? null
-          : settingsButton.current);
+        : brandButton.current);
     if (canRestoreFocus(target)) target.focus();
     else contentHeading.current?.focus();
   }, [routeError, transitioning]);
@@ -271,6 +243,18 @@ export function AppShell({
     return () => window.removeEventListener("keydown", handleAccelerator);
   });
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    brandMenu.current?.querySelector<HTMLElement>("[role='menuitem']")?.focus();
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && (brandMenu.current?.contains(target) || brandButton.current?.contains(target))) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [menuOpen]);
+
   async function navigate(
     route: ShellRoute,
     history: "push" | "replace" | "none",
@@ -280,6 +264,7 @@ export function AppShell({
     if ((route === activeRoute && !canonicalReplace) || !availableRoutes.includes(route)) return;
     const request = ++requestSequence.current;
     failedFocusRestore.current = null;
+    setMenuOpen(false);
     setTransitioning(true);
     try {
       await coordinator.cancelAndJoin();
@@ -288,6 +273,7 @@ export function AppShell({
       if (route === "settings" && focus.kind === "activator") settingsOpener.current = focus.element;
       pendingFocusRestore.current = { request, route, intent: focus };
       setActiveRoute(route);
+      if (route.startsWith("mode:")) setLastMode(route.slice(5) as ModeId);
       const hash = routeHash(route);
       observedHash.current = hash;
       if (history === "push") window.history.pushState({ route }, "", hash);
@@ -321,33 +307,73 @@ export function AppShell({
     navButtons.current.get(availableIds[next])?.focus();
   }
 
+  function moveMenuFocus(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape" || event.key === "Tab") {
+      // The menu unmounts on close; move focus first so it is not lost to the document body.
+      event.preventDefault();
+      setMenuOpen(false);
+      brandButton.current?.focus();
+      return;
+    }
+    const items = Array.from(brandMenu.current?.querySelectorAll<HTMLElement>("[role='menuitem']") ?? []);
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    let next = index;
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") next = (index + 1) % items.length;
+    else if (event.key === "ArrowUp" || event.key === "ArrowLeft") next = (index - 1 + items.length) % items.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = items.length - 1;
+    else return;
+    event.preventDefault();
+    items[next]?.focus();
+  }
+
+  function openFromMenu(route: ShellRoute) {
+    const element = brandButton.current;
+    void navigate(route, "push", element ? { kind: "activator", element } : { kind: "route-control", route });
+  }
+
   const activeLabel = activeRegistration
     ? message(locale, MODE_MESSAGE_KEYS[activeRegistration.id])
     : activeSupporting
       ? message(locale, SUPPORTING_MESSAGE_KEYS[activeSupporting.id])
       : message(locale, "shell.v1.settings.title");
-  const activeSubtitle = activeRegistration
-    ? message(locale, MODE_SUBTITLE_KEYS[activeRegistration.id])
-    : activeSupporting
-      ? message(locale, SUPPORTING_SUBTITLE_KEYS[activeSupporting.id])
-      : message(locale, "shell.v1.subtitle.settings");
+  const activeSubtitle = activeSupporting
+    ? message(locale, SUPPORTING_SUBTITLE_KEYS[activeSupporting.id])
+    : message(locale, "shell.v1.subtitle.settings");
   const headingId = "mode-heading";
   const canvasMode = activeMode ?? "shell";
   const productTitle = message(locale, "app.title");
-  return <PageHeaderSlotContext.Provider value={headerSlot}>
-    <div className="app-shell" data-locale={locale} data-mode={canvasMode}>
-      <aside className="shell-sidebar" aria-label={productTitle}>
-        <div className="shell-brand">
-          <SweepBody />
+  const backMode = availableIds.includes(lastMode) ? lastMode : availableIds[0];
+  const backRoute: ShellRoute = `mode:${backMode}`;
+  return <div className="app-shell" data-locale={locale} data-mode={canvasMode}>
+    <header className="capsule-bar">
+      <div className="capsule-anchor">
+      <div className="capsule">
+        <button
+          ref={brandButton}
+          type="button"
+          className="capsule-brand"
+          aria-label={message(locale, "stage.v1.brand.menu")}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-controls={menuOpen ? "brand-menu" : undefined}
+          disabled={transitioning}
+          onClick={() => setMenuOpen((open) => !open)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" && !menuOpen) {
+              event.preventDefault();
+              setMenuOpen(true);
+            }
+          }}
+        >
           <img src={iconUrl} alt="" aria-hidden="true" className="shell-brand-icon" />
-          <span className="shell-brand-name">{productTitle}</span>
-        </div>
-        <p className="shell-section-label">{message(locale, "shell.v1.section.modes")}</p>
-        <nav
-          className="mode-navigation"
+          <span className="capsule-brand-name">{productTitle}</span>
+        </button>
+        <div
+          className="capsule-tabs"
           role="tablist"
-          aria-orientation="vertical"
-          aria-label={`${productTitle} ${message(locale, "shell.v1.workbench")}`}
+          aria-orientation="horizontal"
+          aria-label={message(locale, "shell.v1.section.modes")}
         >
           {modes.map((mode) => {
             const key = MODE_MESSAGE_KEYS[mode.id];
@@ -370,81 +396,92 @@ export function AppShell({
                 { kind: "activator", element: event.currentTarget },
               )}
               onKeyDown={(event) => moveFocus(event, mode.id)}
-            ><DestinationMark name={mode.id} /><span className="mode-tab-label">{label}</span></button>;
+            >{label}</button>;
           })}
-        </nav>
-        {supporting.length > 0 && <>
-          <p className="shell-section-label">{message(locale, "shell.v1.supporting")}</p>
-          <nav className="support-navigation" aria-label={message(locale, "shell.v1.supporting")}>
-            {supporting.map((destination) => <button
-              key={destination.id}
-              ref={(element) => {
-                if (element) supportingButtons.current.set(destination.id, element);
-                else supportingButtons.current.delete(destination.id);
-              }}
-              type="button"
-              className="support-link"
-              aria-current={activeRoute === `support:${destination.id}` ? "page" : undefined}
-              disabled={transitioning}
-              onClick={(event) => void navigate(
-                `support:${destination.id}`,
-                "push",
-                { kind: "activator", element: event.currentTarget },
-              )}
-            ><DestinationMark name={destination.id} /><span>{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</span></button>)}
-          </nav>
-        </>}
-        <div className="shell-footer">
-          <button
-            ref={settingsButton}
-            type="button"
-            aria-current={activeRoute === "settings" ? "page" : undefined}
-            disabled={transitioning}
-            onClick={(event) => void navigate(
-              "settings",
-              "push",
-              { kind: "activator", element: event.currentTarget },
-            )}
-          ><DestinationMark name="language" /><span>{message(locale, "shell.v1.settings.action")}</span></button>
-          <a href="https://github.com/bahayonghang/devsweep#readme" target="_blank" rel="noreferrer">
-            <DestinationMark name="help" /><span>{message(locale, "shell.v1.help")}</span>
-          </a>
         </div>
-      </aside>
-      <main id="mode-workbench" className="mode-workbench">
-        <header className="page-header">
-          <div className="page-header-text">
-            <h1 id={headingId} tabIndex={-1} ref={contentHeading}>{activeLabel}</h1>
-            <p className="page-subtitle">{activeSubtitle}</p>
-          </div>
-          <div className="page-header-slot" ref={setHeaderSlot} />
-        </header>
-        {localeSaving && <p className="persistence-warning" role="status">{message(locale, "shell.v1.persistence.saving")}</p>}
-        {persistenceError && <p className="persistence-warning" role="alert">{message(locale, "shell.v1.persistence.unavailable")}</p>}
-        {routeError && <div className="persistence-warning" role="alert">
-          <span>{message(locale, "shell.v1.route.error")}</span>{" "}
-          <button type="button" onClick={() => setRouteError(false)}>{message(locale, "shell.v1.route.dismiss")}</button>
+      </div>
+      {menuOpen && <div
+        ref={brandMenu}
+        id="brand-menu"
+        className="brand-menu"
+        role="menu"
+        aria-label={message(locale, "shell.v1.supporting")}
+        onKeyDown={moveMenuFocus}
+      >
+        {supporting.map((destination) => <button
+          key={destination.id}
+          type="button"
+          role="menuitem"
+          tabIndex={-1}
+          className="brand-menu-item"
+          aria-current={activeRoute === `support:${destination.id}` ? "page" : undefined}
+          onClick={() => openFromMenu(`support:${destination.id}`)}
+        >{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</button>)}
+        {supporting.length > 0 && <div role="separator" className="brand-menu-separator" />}
+        <button
+          type="button"
+          role="menuitem"
+          tabIndex={-1}
+          className="brand-menu-item"
+          aria-current={activeRoute === "settings" ? "page" : undefined}
+          onClick={() => openFromMenu("settings")}
+        >{message(locale, "shell.v1.settings.action")}</button>
+        <a
+          role="menuitem"
+          tabIndex={-1}
+          className="brand-menu-item"
+          href={HELP_URL}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => {
+            setMenuOpen(false);
+            brandButton.current?.focus();
+          }}
+        >{message(locale, "shell.v1.help")}</a>
+      </div>}
+      </div>
+    </header>
+    <main id="mode-workbench" className="stage-host">
+      {localeSaving && <p className="persistence-warning" role="status">{message(locale, "shell.v1.persistence.saving")}</p>}
+      {persistenceError && <p className="persistence-warning" role="alert">{message(locale, "shell.v1.persistence.unavailable")}</p>}
+      {routeError && <div className="persistence-warning" role="alert">
+        <span>{message(locale, "shell.v1.route.error")}</span>{" "}
+        <button type="button" onClick={() => setRouteError(false)}>{message(locale, "shell.v1.route.dismiss")}</button>
+      </div>}
+      {activeRegistration
+        ? <h1 id={headingId} tabIndex={-1} ref={contentHeading} className="sr-only">{activeLabel}</h1>
+        : <header className="support-header">
+          <button
+            type="button"
+            className="detail-back"
+            disabled={transitioning}
+            onClick={() => void navigate(backRoute, "push", { kind: "route-control", route: backRoute })}
+          >
+            <span aria-hidden="true">‹</span>
+            <span>{message(locale, "stage.v1.support.back", { mode: message(locale, MODE_MESSAGE_KEYS[backMode]) })}</span>
+          </button>
+          <h1 id={headingId} tabIndex={-1} ref={contentHeading}>{activeLabel}</h1>
+          <p className="page-subtitle">{activeSubtitle}</p>
+        </header>}
+      <section id="mode-panel" className="mode-panel" role={activeRegistration ? "tabpanel" : undefined} aria-labelledby={headingId}>
+        {activeRegistration?.render()}
+        {activeSupporting?.render()}
+        {activeRoute === "settings" && <div className="settings-panel">
+          <label>
+            <span>{message(locale, "shell.v1.settings.action")}</span>
+            <select
+              aria-label={message(locale, "shell.v1.settings.action")}
+              value={locale}
+              disabled={localeSaving}
+              aria-busy={localeSaving}
+              onChange={(event) => void onLocaleChange(event.target.value as PresentationLanguageTag)}
+            >
+              <option value="en">{message(locale, "shell.v1.settings.option.en")}</option>
+              <option value="zh-CN">{message(locale, "shell.v1.settings.option.zh_cn")}</option>
+            </select>
+          </label>
         </div>}
-        <section id="mode-panel" className="mode-panel" role={activeRegistration ? "tabpanel" : undefined} aria-labelledby={headingId}>
-          {activeRegistration?.render()}
-          {activeSupporting?.render()}
-          {activeRoute === "settings" && <div className="settings-panel">
-            <label>
-              <span>{message(locale, "shell.v1.settings.action")}</span>
-              <select
-                aria-label={message(locale, "shell.v1.settings.action")}
-                value={locale}
-                disabled={localeSaving}
-                aria-busy={localeSaving}
-                onChange={(event) => void onLocaleChange(event.target.value as PresentationLanguageTag)}
-              >
-                <option value="en">{message(locale, "shell.v1.settings.option.en")}</option>
-                <option value="zh-CN">{message(locale, "shell.v1.settings.option.zh_cn")}</option>
-              </select>
-            </label>
-          </div>}
-        </section>
-      </main>
-    </div>
-  </PageHeaderSlotContext.Provider>;
+      </section>
+    </main>
+  </div>;
 }

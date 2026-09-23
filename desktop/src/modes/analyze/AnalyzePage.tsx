@@ -2,9 +2,9 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useS
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type { AnalyzeNodeV1, CommandError, DesktopAnalyzeResult } from "../../api/types.gen";
-import { AccessibleUserData, PageHeaderSlot } from "../../app-shell/AppShell";
-import { DestinationGlyph } from "../../app-shell/glyphs";
+import { AccessibleUserData } from "../../app-shell/AppShell";
 import { formatBinaryBytes, message, type PresentationLanguageTag } from "../../i18n";
+import { DetailView, Stage, StageResult } from "../../stage";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { createAnalyzeIndex, pageForNode, selectBreadcrumbs, selectDirectory, selectPage, selectVisibleChildren, type AnalyzeSort } from "./selectors";
 import { analyzeReducer, initialAnalyzeState } from "./state";
@@ -78,6 +78,7 @@ export function AnalyzePage({
   const [state, dispatch] = useReducer(analyzeReducer, initialAnalyzeState);
   const [root, setRoot] = useState(initialRoot);
   const [bounds, setBounds] = useState({ width: 900, height: 460 });
+  const [overview, setOverview] = useState(false);
   const mounted = useRef(true);
   const treemapHost = useRef<HTMLDivElement>(null);
   const listbox = useRef<HTMLSelectElement>(null);
@@ -237,41 +238,60 @@ export function AnalyzePage({
       ? message(locale, "analyze.v1.state.canceling")
       : null;
 
+  const busy = ["loading", "canceling"].includes(state.status);
+  const statusChip = statusCopy ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusCopy}</span> : null;
+  const liveStatus = statusCopy ? <p className="analyze-live-status" role="status" aria-live="polite">{statusCopy}</p> : null;
+  const rootInput = <label className="analyze-root-input">
+    <span>{message(locale, "analyze.v1.path.label")}</span>
+    <input value={root} disabled={busy} onChange={(event) => setRoot(event.target.value)} />
+  </label>;
+  const errorBanner = state.error ? <div className="error-banner" role="alert">
+    <span>{message(locale, "analyze.v1.state.error")} {state.error.code === "analyze_failed" || state.error.code === "io" ? state.error.message : ""}</span>
+    <button type="button" onClick={() => dispatch({ type: "error_dismissed" })}>×</button>
+  </div> : null;
+  const summaryText = state.snapshot
+    ? message(locale, `analyze.v1.scan.${state.status === "complete" ? "complete" : state.status === "partial" ? "partial" : "canceled"}`, { count: String(state.snapshot.nodes.length), bytes: formatBinaryBytes(state.snapshot.nodes[0]?.bytes ?? 0) })
+    : "";
+
   return <div className="analyze-mode" data-status={state.status}>
-    <PageHeaderSlot>
-      {statusCopy ? <span className="status-chip"><span className="status-chip-dot" aria-hidden="true" />{statusCopy}</span> : null}
-    </PageHeaderSlot>
+    {!state.snapshot || overview ? <>
+      {!state.snapshot ? <Stage
+        mode="analyze"
+        label={message(locale, "command.analyze")}
+        className="analyze-stage"
+        busy={busy}
+        title={message(locale, "analyze.v1.state.empty.title")}
+        meta={<><p>{message(locale, "analyze.v1.state.empty.detail")}</p>{liveStatus}</>}
+        controls={rootInput}
+        primary={busy
+          ? <button type="button" className="stage-action" disabled={state.status === "canceling"} onClick={() => void cancelAnalysis()}>{message(locale, "analyze.v1.action.cancel")}</button>
+          : <button type="button" className="stage-action" disabled={root.trim().length === 0} onClick={() => void runAnalysis()}>{message(locale, "analyze.v1.action.start")}</button>}
+      /> : <StageResult
+        mode="analyze"
+        label={message(locale, "command.analyze")}
+        caption={message(locale, "stage.v1.caption.analyze")}
+        value={state.snapshot.nodes[0]?.evidence === "unknown" ? message(locale, "analyze.v1.evidence.unknown") : formatBinaryBytes(state.snapshot.nodes[0]?.bytes ?? 0)}
+        meta={<><p>{summaryText}</p><p><AccessibleUserData value={message(locale, "analyze.v1.scan.root", { path: state.snapshot.root.normalized })} /></p>{liveStatus}</>}
+        action={<button type="button" className="stage-action" onClick={() => setOverview(false)}>{message(locale, "stage.v1.action.details")}</button>}
+      />}
+      {errorBanner}
+    </> : <DetailView locale={locale} onBack={() => setOverview(true)} status={statusChip}>
     <section className="analyze-toolbar" aria-label={message(locale, "command.analyze")}>
-      <label className="analyze-root-input">
-        <span>{message(locale, "analyze.v1.path.label")}</span>
-        <input value={root} disabled={["loading", "canceling"].includes(state.status)} onChange={(event) => setRoot(event.target.value)} />
-      </label>
-      {["loading", "canceling"].includes(state.status)
+      {rootInput}
+      {busy
         ? <button type="button" className="secondary-button" disabled={state.status === "canceling"} onClick={() => void cancelAnalysis()}>{message(locale, "analyze.v1.action.cancel")}</button>
         : state.snapshot
           ? <button type="button" className="primary-button" disabled={root.trim().length === 0} onClick={() => void runAnalysis()}>{message(locale, "analyze.v1.action.start")}</button>
           : null}
-      {statusCopy ? <p className="analyze-live-status" role="status" aria-live="polite">{statusCopy}</p> : null}
+      {liveStatus}
     </section>
 
-    {state.error ? <div className="error-banner" role="alert">
-      <span>{message(locale, "analyze.v1.state.error")} {state.error.code === "analyze_failed" || state.error.code === "io" ? state.error.message : ""}</span>
-      <button type="button" onClick={() => dispatch({ type: "error_dismissed" })}>×</button>
-    </div> : null}
+    {errorBanner}
 
-    {!state.snapshot ? <section className="card mode-empty">
-      <span className="glyph-tile"><DestinationGlyph name="analyze" /></span>
-      <h2>{message(locale, "analyze.v1.state.empty.title")}</h2>
-      <p>{message(locale, "analyze.v1.state.empty.detail")}</p>
-      <button type="button" className="primary-button" disabled={["loading", "canceling"].includes(state.status) || root.trim().length === 0} onClick={() => void runAnalysis()}>{message(locale, "analyze.v1.action.start")}</button>
-    </section> : <div className="analyze-workspace">
+    <div className="analyze-workspace">
       <header className="card analyze-summary">
         <div>
-          <strong>{state.status === "complete"
-            ? message(locale, "analyze.v1.scan.complete", { count: String(state.snapshot.nodes.length), bytes: formatBinaryBytes(state.snapshot.nodes[0]?.bytes ?? 0) })
-            : state.status === "partial"
-              ? message(locale, "analyze.v1.scan.partial", { count: String(state.snapshot.nodes.length), bytes: formatBinaryBytes(state.snapshot.nodes[0]?.bytes ?? 0) })
-              : message(locale, "analyze.v1.scan.canceled", { count: String(state.snapshot.nodes.length), bytes: formatBinaryBytes(state.snapshot.nodes[0]?.bytes ?? 0) })}</strong>
+          <strong>{summaryText}</strong>
           <span>{message(locale, "analyze.v1.scan.root", { path: state.snapshot.root.normalized })}</span>
         </div>
         <nav className="analyze-breadcrumbs" aria-label={message(locale, "analyze.v1.breadcrumbs.label")}>
@@ -344,6 +364,7 @@ export function AnalyzePage({
           </p> : null}
         </section>
       </div>
-    </div>}
+    </div>
+    </DetailView>}
   </div>;
 }

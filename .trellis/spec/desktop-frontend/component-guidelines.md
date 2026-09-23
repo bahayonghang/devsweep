@@ -4,20 +4,26 @@
 
 This is a five-mode Operate surface for repeated Clean, Software, Optimize,
 Analyze, and Status work. Use one quiet immersive shell with native Windows
-chrome, a compact original DevSweep brand, a persistent left sidebar workbench
-(not a centered capsule), a visible page header, a mode-local canvas slot, and
-a persistent action/status boundary. Unavailable modes are absent from
-navigation and deep links; never render a clickable placeholder. There is no
-More disclosure.
+chrome, one top-centered capsule navigation bar, a stage host below it, and a
+mode-local stage/detail slot. There is no sidebar and no page header block.
+Unavailable modes are absent from navigation and deep links; never render a
+clickable placeholder. There is no More disclosure.
 
-The sidebar has two sections. Modes is a `role=tablist` with
-`aria-orientation="vertical"` and one tab per available primary mode.
-Supporting destinations are named buttons for Protection, Rules, and History.
-The footer holds Language and Help. Below 800 CSS pixels the same list is a
-horizontal top strip: `overflow-x: auto`, destination names stay fully
-visible and do not overlap, and section labels may be visually hidden while
-remaining accessible. Names, authority, warnings, and critical actions are
-never icon-only or hidden by responsive layout.
+The capsule is one pill-shaped bar, horizontally centered near the top of the
+window. Its left end is the brand-mark button (original DevSweep icon plus the
+visible product name). After the brand button comes a `role=tablist` with
+`aria-orientation="horizontal"` and one tab per available primary mode in the
+order Clean, Software, Optimize, Analyze, Status. The active tab has a solid
+light fill and dark text; inactive tabs use muted light text. The brand button
+is outside the tablist and opens the brand menu: a real `role=menu` popover
+with `role=menuitem` entries for the available supporting destinations
+(Protection, Rules, History), Language (the settings route), and Help
+(external link). Arrow/Home/End move inside the menu, Escape and Tab close it,
+and closing returns focus to the brand button. Below 800 CSS pixels the
+capsule scrolls horizontally (`overflow-x: auto`); tab names stay fully
+visible, nothing overlaps the capsule, and the planet shrinks. Names,
+authority, warnings, and critical actions are never icon-only or hidden by
+responsive layout.
 
 The shell is presentation and lifecycle infrastructure only. It never invents
 targets, plans, digests, command arguments, authorization, mode results,
@@ -36,10 +42,25 @@ title is `DevSweep`.
 - Register routes from one typed feature registry. Preserve deterministic deep
   links/back behavior, restore focus to the activating navigation control, and
   omit unavailable registrations atomically.
-- Compose the shell as a persistent sidebar plus a workbench column. The
-  workbench starts with a page header: a visible `h1` title, a subtitle, and an
-  optional status chip in the header slot. Do not use an `sr-only` page
-  heading.
+- Compose the shell as the capsule bar plus a stage host. Mode routes carry a
+  visually hidden `h1` that names the mode; the active capsule tab is the
+  visible identity. Supporting and Language routes render in the stage host
+  with a visible back control to the last mode, a visible `h1`, and a
+  subtitle.
+- Every mode's first screen uses the shared `Stage` stack from
+  `desktop/src/stage/`: planet hero, one primary number or state title, one
+  secondary line, one primary action, and an optional secondary action.
+  Mode controls that the first action needs (scope, path) sit between the
+  secondary line and the primary action. `StageResult` shows one number with
+  unit, one secondary line of facts, and one action. The first screen has no
+  cards.
+- Detail content (review lists, tables, treemap, process table, previews,
+  results, audits) renders in `DetailView`: a full-width card region below the
+  capsule that replaces the stage and has a "Back to overview" control. A
+  mode may show a detail region below the stage while its first action runs
+  (for example, the Clean scan preview); that region has no back control.
+- Status chips render in the stage secondary line or the detail header. There
+  is no page-header portal.
 - Card surfaces use the raised card token, a 1px hairline border, radius 12,
   and padding 16. Controls, inputs, badges, and rows stay at radius 8 or below.
   Primary actions keep the pill radius.
@@ -70,10 +91,12 @@ title is `DevSweep`.
   explain their state in adjacent text and a title.
 - Provide visible `:focus-visible` states and never rely on color alone for risk,
   status, or selection.
-- Primary/support navigation implements arrow/Home/End keyboard movement and a
-  stable active-page announcement. ArrowDown and ArrowRight move to the next
-  mode tab; ArrowUp and ArrowLeft move to the previous tab. Route changes
-  restore focus; language changes do not reset mode-local state.
+- Capsule and brand-menu navigation implement arrow/Home/End keyboard
+  movement and a stable active-page announcement. ArrowRight and ArrowDown
+  move to the next mode tab; ArrowLeft and ArrowUp move to the previous tab.
+  Route changes restore focus (mode routes to the mode tab, supporting and
+  Language routes to the brand button); language changes do not reset
+  mode-local state.
 - Bind catalogue-owned locale accelerators only when the accelerator is unique
   in the currently visible scope. A collision removes the conflicting shortcut;
   it never makes two controls fire or silently chooses one.
@@ -118,31 +141,38 @@ title is `DevSweep`.
   `desktop/src/styles.test.ts` holds the list of removed light values.
   Shared tokens are
   `--canvas`, `--text`, `--muted`, `--border`, `--accent`, `--focus`,
-  `--danger`, `--warning`, `--ok`, `--sidebar`, `--card`, `--card-border`, and
-  `--tile-alpha`. Each primary mode sets `--canvas` and `--accent` from an
-  original mineral/forest family:
-  `--canvas-clean` / `--accent-clean` (pine),
-  `--canvas-software` / `--accent-software` (oxide),
-  `--canvas-optimize` / `--accent-optimize` (olive),
-  `--canvas-analyze` / `--accent-analyze` (umber),
-  `--canvas-status` / `--accent-status` (gold-green).
-  Supporting destinations use the shell canvas. Semantic amber/red/green remain
-  reserved for risk, error, and safe actions.
-- The original product icon may appear in native chrome and the sidebar brand
-  row. When adjacent DevSweep text supplies the accessible product name, the
-  image is decorative so the product name is announced once.
-- The sweep body is CSS-native, one shape family, five accent tints,
-  non-informational, non-interactive, and still under
-  `prefers-reduced-motion`. It is an abstract ring/body, not a globe map, not
-  a five-planet metaphor, and not status evidence. Keep only a compact instance
-  as the sidebar brand mark. Do not place a hero instance.
+  `--danger`, `--warning`, `--ok`, `--card`, `--card-border`, `--tile-alpha`,
+  and the capsule tokens `--capsule-bg`, `--capsule-border`,
+  `--capsule-active-bg`, `--capsule-active-text`, and `--stage-canvas`.
+  All modes share one near-black blue `--stage-canvas`. Mode identity comes
+  only from the planet palette and the per-mode accent:
+  `--accent-clean`, `--accent-software`, `--accent-optimize`,
+  `--accent-analyze`, and `--accent-status`. Supporting destinations use the
+  Clean accent. Semantic amber/red/green remain reserved for risk, error, and
+  safe actions.
+- The original product icon may appear in native chrome and the brand button.
+  When adjacent DevSweep text supplies the accessible product name, the image
+  is decorative so the product name is announced once.
+- The procedural planet (`desktop/src/stage/Planet.tsx`) is the only stage
+  hero. It is drawn by DevSweep code on a `<canvas>` from a per-mode seed and
+  an original palette in `planet-palettes.ts` (Clean ocean/land, Software
+  rust-red, Optimize grey-silver, Analyze banded amber, Status warm
+  yellow-white). It is `aria-hidden`, non-interactive, and carries no data.
+  It renders at a capped source resolution (256 px diameter), rotates at no
+  more than 30 frames per second only while the mode is active and the
+  document is visible, stops on route change, `visibilitychange` to hidden,
+  and unmount, and draws exactly one still frame under
+  `prefers-reduced-motion`. Under `forced-colors: active` it renders as a
+  plain outlined circle. No image asset, texture file, photograph, WebGL, or
+  new dependency backs it.
 - A status chip is a pill, 11px semibold, dot plus text, and semantic tint only.
 - A stacked meter uses solid segments with 2px separators and no animation
   beyond width transition, still under reduced motion. Segments are verified
   and partial lower bound only. Unknown is labelled, never drawn.
-- Prohibit glass, glow, photographic or planet heroes, NASA imagery, Mole
-  geometry, fake macOS traffic lights, `linear-gradient`, `radial-gradient`,
-  `backdrop-filter`, and copy that says space was freed or released.
+- Prohibit glass, glow, photographic planets, NASA imagery, Mole assets,
+  textures, geometry, or colour values, fake macOS traffic lights,
+  `linear-gradient`, `radial-gradient`, `backdrop-filter`, and copy that says
+  space was freed or released. Shading exists only inside the planet canvas.
 - Test stable shell behavior at 390, 800, 1024, and 1440 CSS pixels, forced
   colors/high contrast, reduced motion, keyboard-only navigation, and both
   locales. Native Windows scaling evidence is direct and separately recorded;

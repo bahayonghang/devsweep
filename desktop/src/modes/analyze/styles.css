@@ -6,7 +6,7 @@
 .analyze-root-input, .analyze-controls label { min-width: 0; display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 650; }
 .analyze-root-input input, .analyze-controls input, .analyze-controls select { width: 100%; min-height: 36px; padding: 0 10px; color: var(--text); background: var(--canvas); border: 1px solid var(--border); border-radius: 5px; }
 .analyze-live-status { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
-.analyze-mode > .mode-empty { margin: 16px 24px 24px; }
+.analyze-stage .analyze-root-input { width: 100%; text-align: left; }
 .analyze-workspace { width: 100%; max-width: 1800px; margin: 0 auto; padding: 16px 24px 24px; display: grid; gap: 14px; }
 .analyze-summary { display: grid; gap: 9px; margin-bottom: 0; }
 .analyze-summary strong, .analyze-summary span { display: block; }
