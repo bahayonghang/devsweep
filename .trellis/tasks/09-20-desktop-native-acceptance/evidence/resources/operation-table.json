@@ -1,0 +1,93 @@
+[
+  {
+    "operation": "Analyze",
+    "cancel": "cooperative",
+    "request": "bridge.analyzeCancel",
+    "acknowledgement": ".analyze-mode[data-status] = canceling",
+    "join": "data-status in canceled/partial/complete/idle",
+    "bound": "ack p95 <= 500 ms over 5 runs, all joined",
+    "evidence_source": "release sampler: analyzeCancel driver action",
+    "request_ack_p95_ms": 12.0,
+    "ack_join_p95_ms": 26.0,
+    "joined": true,
+    "gate": "analyze.cancel_ack_p95_le_500ms"
+  },
+  {
+    "operation": "Status live",
+    "cancel": "cooperative stop",
+    "request": "bridge.statusCancel",
+    "acknowledgement": ".status-mode[data-status] = canceling",
+    "join": "data-status = ready/idle",
+    "bound": "joined; 25 same-PID post-stop samples; final-five hold",
+    "evidence_source": "release sampler: desktop status stop experiment",
+    "request_ack_p95_ms": 2.0,
+    "ack_join_p95_ms": 267.0,
+    "joined": true,
+    "gate": "status.desktop.stop_joined"
+  },
+  {
+    "operation": "Clean scan",
+    "cancel": "cooperative",
+    "request": "bridge.scanCancel",
+    "acknowledgement": "reducer scan_cancel_requested",
+    "join": "scan_canceled or terminal report",
+    "bound": "joined; latency recorded, no numeric bound",
+    "evidence_source": "focused coordinator and mode tests",
+    "request_ack_p95_ms": null,
+    "ack_join_p95_ms": null,
+    "joined": null,
+    "gate": null
+  },
+  {
+    "operation": "Clean dry-run / execute",
+    "cancel": "wait-only",
+    "request": "none",
+    "acknowledgement": "none",
+    "join": "planDryRun or planExecute result",
+    "bound": "completes before replacement or close; never force-killed",
+    "evidence_source": "focused tests",
+    "request_ack_p95_ms": null,
+    "ack_join_p95_ms": null,
+    "joined": null,
+    "gate": null
+  },
+  {
+    "operation": "Software inventory/preview/uninstall",
+    "cancel": "cooperative",
+    "request": "bridge.softwareCancel",
+    "acknowledgement": "reducer cancel_requested",
+    "join": "terminal result after finish",
+    "bound": "joined; latency recorded, no numeric bound",
+    "evidence_source": "focused tests",
+    "request_ack_p95_ms": null,
+    "ack_join_p95_ms": null,
+    "joined": null,
+    "gate": null
+  },
+  {
+    "operation": "Optimize list/preview/run",
+    "cancel": "cooperative",
+    "request": "bridge.optimizeCancel",
+    "acknowledgement": "reducer cancel_requested",
+    "join": "terminal result after finish",
+    "bound": "joined; latency recorded, no numeric bound",
+    "evidence_source": "focused tests",
+    "request_ack_p95_ms": null,
+    "ack_join_p95_ms": null,
+    "joined": null,
+    "gate": null
+  },
+  {
+    "operation": "Route change / window close",
+    "cancel": "coordinator cancelAndJoin or close",
+    "request": "shell route or close request",
+    "acknowledgement": "active operation's cancel",
+    "join": "operation.join resolved",
+    "bound": "no owned work after join",
+    "evidence_source": "lifecycle tests",
+    "request_ack_p95_ms": null,
+    "ack_join_p95_ms": null,
+    "joined": null,
+    "gate": null
+  }
+]

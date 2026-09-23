@@ -62,17 +62,30 @@ executable's main window title, process name, and executable path match the
 local build. Do not run the installer, sign, publish, or check installed
 shortcuts; those rows are non-gating `UNVERIFIED`.
 
+### R5. 2026-09-23 capability rows
+
+The 09-23 children added native surfaces that the matrix must also cover:
+the capsule shell and procedural planet, Clean skip/protect and the
+cumulative total, Software update check / startup toggle / leftover review,
+Analyze reveal and Recycle Bin move, and the Status GPU/thermal probes,
+process sort/pin, tray icon, and HUD window. Rows that need a human at the
+Windows shell (tray menu, Task Manager startup state, Explorer selection,
+Recycle Bin restore, Quit from the tray) are operator rows. The agent
+records them as `UNVERIFIED` with owner `operator` until the operator
+reports a result. The agent never toggles a real startup item, moves a real
+user path to the Recycle Bin, or runs a winget upgrade.
+
 ## Acceptance Criteria
 
-- [ ] AC1 (R1, R2): A matrix records every mode, locale, width/scale,
+- [x] AC1 (R1, R2): A matrix records every mode, locale, width/scale,
       interaction path, and result with screenshots/logs or an explicit
       unavailable reason. Each scale row is one of the four WebView device
       scales or the unchanged current actual Windows scale, labelled by
       evidence level; other actual Windows scales are `UNVERIFIED` and
       non-gating.
-- [ ] AC2 (R3): Clean remains review-first and requires plan, live digest, and
+- [x] AC2 (R3): Clean remains review-first and requires plan, live digest, and
       explicit confirmation; no native run authorizes a different path.
-- [ ] AC3 (R3): Cancel/restart leaves no stale completion, orphan worker, or
+- [x] AC3 (R3): Cancel/restart leaves no stale completion, orphan worker, or
       unexpected child process; each row records request, acknowledgement,
       and join per the performance operation table, and desktop Status stop
       rows show 25 same-live-PID post-stop samples meeting the performance
@@ -80,13 +93,20 @@ shortcuts; those rows are non-gating `UNVERIFIED`.
       post-stop thread floor that does not grow across stops). A resource row is `pass` or `fail` when
       measured; `UNVERIFIED` is only for evidence that could not be captured,
       with reason and owner, and never replaces a measured `fail` (TPR-07).
-- [ ] AC4 (R4): The local release executable and NSIS installer hashes,
+- [x] AC4 (R4): The local release executable and NSIS installer hashes,
       version-resource product name/version, unsigned status, and the
       running window title/process/executable path are recorded and match
       the local build; no installer is executed.
 - [ ] AC5 (R1–R4): Automated gates (including the read-only generated-type
       check) and the native matrix pass, with failures routed to owning
       children and linked from the parent plan.
+- [ ] AC6 (R5): The 09-23 rows are recorded. Agent-measured rows carry
+      screenshots or logs. Operator rows carry the operator result or
+      `UNVERIFIED` with owner `operator`.
+
+Evidence: `evidence/record.md` (2026-09-24). AC5 is open because
+`idle.max_threads_le_40` measured 45 threads. AC6 is open until the operator
+records OP-1 to OP-13 in `evidence/operator-checklist.md`.
 
 ## Out of scope
 

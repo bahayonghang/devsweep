@@ -1,0 +1,206 @@
+{
+  "label": "en-cancel",
+  "pid": 63000,
+  "window_title": "DevSweep",
+  "tree": [
+    {
+      "pid": 63000,
+      "ppid": 41784,
+      "name": "devsweep-desktop.exe",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+    },
+    {
+      "pid": 48676,
+      "ppid": 63000,
+      "name": "msedgewebview2.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": 52700,
+      "ppid": 48676,
+      "name": "msedgewebview2.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": 54020,
+      "ppid": 48676,
+      "name": "msedgewebview2.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": 51860,
+      "ppid": 48676,
+      "name": "msedgewebview2.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": 49452,
+      "ppid": 48676,
+      "name": "msedgewebview2.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": 20876,
+      "ppid": 48676,
+      "name": "msedgewebview2.exe",
+      "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    }
+  ],
+  "cancel": [
+    {
+      "operation": "Clean scan",
+      "reps": [
+        {
+          "rep": 1,
+          "started": true,
+          "request_ack_ms": 0,
+          "ack_join_ms": 2136,
+          "joined": true,
+          "requested_at": 1790207145757,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 2,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 2070,
+          "joined": true,
+          "requested_at": 1790207148904,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 3,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1870,
+          "joined": true,
+          "requested_at": 1790207151985,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 4,
+          "started": true,
+          "request_ack_ms": 0,
+          "ack_join_ms": 1884,
+          "joined": true,
+          "requested_at": 1790207154867,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 5,
+          "started": true,
+          "request_ack_ms": 0,
+          "ack_join_ms": 1953,
+          "joined": true,
+          "requested_at": 1790207157760,
+          "non_webview_children_after_join": []
+        }
+      ]
+    },
+    {
+      "operation": "Software inventory",
+      "reps": [
+        {
+          "rep": 1,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1336,
+          "joined": true,
+          "requested_at": 1790207162236,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 2,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1572,
+          "joined": true,
+          "requested_at": 1790207164576,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 3,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1413,
+          "joined": true,
+          "requested_at": 1790207167153,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 4,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1566,
+          "joined": true,
+          "requested_at": 1790207169570,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 5,
+          "started": true,
+          "request_ack_ms": 0,
+          "ack_join_ms": 1521,
+          "joined": true,
+          "requested_at": 1790207172140,
+          "non_webview_children_after_join": []
+        }
+      ]
+    },
+    {
+      "operation": "Optimize catalogue",
+      "reps": [
+        {
+          "rep": 1,
+          "started": true,
+          "request_ack_ms": 2,
+          "ack_join_ms": 1380,
+          "joined": true,
+          "requested_at": 1790207176180,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 2,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1246,
+          "joined": true,
+          "requested_at": 1790207180593,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 3,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1428,
+          "joined": true,
+          "requested_at": 1790207184873,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 4,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1299,
+          "joined": true,
+          "requested_at": 1790207189327,
+          "non_webview_children_after_join": []
+        },
+        {
+          "rep": 5,
+          "started": true,
+          "request_ack_ms": 1,
+          "ack_join_ms": 1411,
+          "joined": true,
+          "requested_at": 1790207193653,
+          "non_webview_children_after_join": []
+        }
+      ]
+    }
+  ],
+  "close": {
+    "exited": true,
+    "exit_ms": 4661,
+    "leftovers": []
+  }
+}

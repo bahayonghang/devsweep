@@ -1,0 +1,33 @@
+{
+    "commit":  "4d18afcb2227c8fd9963ef91376410fe7839528f",
+    "os_caption":  "Microsoft Windows 11 ×¨Òµ°æ",
+    "os_build":  "26200",
+    "arch":  "AMD64",
+    "ui_culture":  "en-US",
+    "applied_dpi":  120,
+    "actual_windows_scale_percent":  125,
+    "artifacts":  [
+                      {
+                          "file":  ".\\target\\release\\devsweep-desktop.exe",
+                          "sha256":  "d949af24658821d36a037b682c665fa496fd5e7204497a15d9d6dc80d8a6fef6",
+                          "bytes":  13147136,
+                          "product_name":  "devsweep",
+                          "product_version":  "0.3.0",
+                          "file_version":  "0.3.0",
+                          "authenticode":  "NotSigned",
+                          "expected_product":  "devsweep",
+                          "expected_version":  "0.3.0"
+                      },
+                      {
+                          "file":  ".\\target\\release\\bundle\\nsis\\devsweep_0.3.0_x64-setup.exe",
+                          "sha256":  "1cf17b394f5c9cf03f38e2da2ba1dbae5a62af9eba733bfca2802068be4b750e",
+                          "bytes":  3932425,
+                          "product_name":  "devsweep",
+                          "product_version":  "0.3.0",
+                          "file_version":  "0.3.0",
+                          "authenticode":  "NotSigned",
+                          "expected_product":  "devsweep",
+                          "expected_version":  "0.3.0"
+                      }
+                  ]
+}

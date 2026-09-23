@@ -214,6 +214,16 @@ children after it in any order; `desktop-native-acceptance` stays last):
 truthfulness, long-data accessibility); its sidebar requirements are
 superseded by `desktop-mole-capsule-shell`.
 
+Status on 2026-09-24:
+
+- Closed and archived: the five 09-23 children, `desktop-mole-workbench-ux`,
+  and `desktop-tauri-cli-service` (AC rechecks recorded in each PRD).
+- `desktop-native-acceptance`: evidence in
+  `09-20-desktop-native-acceptance/evidence/record.md`. AC1-AC4 pass. AC5
+  is blocked by the measured `fail` of `idle.max_threads_le_40` (45 threads),
+  owned by `desktop-operation-performance`. AC6 waits for operator rows
+  OP-1 to OP-13.
+
 The parent owns requirement convergence, dependency links, shared spec updates,
 and final integration review. It is not an implementation target.
 

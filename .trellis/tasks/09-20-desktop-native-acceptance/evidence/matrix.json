@@ -1,0 +1,2526 @@
+[
+  {
+    "label": "en-actual",
+    "locale": "en",
+    "scale": "actual",
+    "pid": 45108,
+    "tree": [
+      {
+        "pid": 45108,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 54728,
+        "ppid": 45108,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 50976,
+        "ppid": 54728,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 62272,
+        "ppid": 54728,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 53996,
+        "ppid": 54728,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 33684,
+        "ppid": 54728,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 41028,
+        "ppid": 54728,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Clean",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-actual-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Software",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-actual-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Optimize",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-actual-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Analyze",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-actual-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Status",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-actual-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 4580,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "en-s100",
+    "locale": "en",
+    "scale": 1,
+    "pid": 34072,
+    "tree": [
+      {
+        "pid": 34072,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 7048,
+        "ppid": 34072,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 41180,
+        "ppid": 7048,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 42624,
+        "ppid": 7048,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 41564,
+        "ppid": 7048,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 47960,
+        "ppid": 7048,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 41528,
+        "ppid": 7048,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Clean",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s100-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Software",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s100-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Optimize",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s100-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Analyze",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s100-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Status",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s100-status.png"
+      }
+    },
+    "widths": {
+      "390": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Clean",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w390-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Software",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w390-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Optimize",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w390-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Analyze",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w390-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Status",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w390-status.png"
+        }
+      },
+      "800": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Clean",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w800-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Software",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w800-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Optimize",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w800-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Analyze",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w800-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Status",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w800-status.png"
+        }
+      },
+      "1024": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Clean",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1024-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Software",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1024-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Optimize",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1024-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Analyze",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1024-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Status",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1024-status.png"
+        }
+      },
+      "1440": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Clean",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1440-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Software",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1440-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Optimize",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1440-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Analyze",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1440-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "en",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "Status",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 0,
+          "screenshot": "screenshots/en-s100-w1440-status.png"
+        }
+      }
+    },
+    "keyboard": {
+      "before": "#/clean",
+      "after_arrow": {
+        "hash": "#/clean",
+        "focused": "Software",
+        "focus_visible": true
+      },
+      "after_enter": {
+        "hash": "#/software",
+        "focused": "Software",
+        "focus_visible": true
+      },
+      "after_end": {
+        "hash": "#/software",
+        "focused": "Status",
+        "focus_visible": true
+      }
+    },
+    "close": {
+      "exited": true,
+      "exit_ms": 4950,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "en-s125",
+    "locale": "en",
+    "scale": 1.25,
+    "pid": 62224,
+    "tree": [
+      {
+        "pid": 62224,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 7016,
+        "ppid": 62224,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 57424,
+        "ppid": 7016,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 16660,
+        "ppid": 7016,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 54020,
+        "ppid": 7016,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 28648,
+        "ppid": 7016,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 15732,
+        "ppid": 7016,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Clean",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s125-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Software",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s125-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Optimize",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s125-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Analyze",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s125-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Status",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s125-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 4647,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "en-s150",
+    "locale": "en",
+    "scale": 1.5,
+    "pid": 37388,
+    "tree": [
+      {
+        "pid": 37388,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 24808,
+        "ppid": 37388,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 40380,
+        "ppid": 24808,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 53116,
+        "ppid": 24808,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 41124,
+        "ppid": 24808,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 55464,
+        "ppid": 24808,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 62732,
+        "ppid": 24808,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Clean",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s150-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Software",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s150-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Optimize",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s150-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Analyze",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s150-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Status",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s150-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 4823,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "en-s200",
+    "locale": "en",
+    "scale": 2,
+    "pid": 7420,
+    "tree": [
+      {
+        "pid": 7420,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 19824,
+        "ppid": 7420,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 55000,
+        "ppid": 19824,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 52860,
+        "ppid": 19824,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 43792,
+        "ppid": 19824,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 60684,
+        "ppid": 19824,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 56516,
+        "ppid": 19824,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Clean",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s200-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Software",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s200-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Optimize",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s200-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Analyze",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s200-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "en",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "Status",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 0,
+        "screenshot": "screenshots/en-s200-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 4825,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "zh-CN-actual",
+    "locale": "zh-CN",
+    "scale": "actual",
+    "pid": 38848,
+    "tree": [
+      {
+        "pid": 38848,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 60980,
+        "ppid": 38848,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 58748,
+        "ppid": 60980,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 54392,
+        "ppid": 60980,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 48328,
+        "ppid": 60980,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 13988,
+        "ppid": 60980,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 37020,
+        "ppid": 60980,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "清理",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 59,
+        "screenshot": "screenshots/zh-CN-actual-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "软件",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 86,
+        "screenshot": "screenshots/zh-CN-actual-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "优化",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 46,
+        "screenshot": "screenshots/zh-CN-actual-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "分析",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 36,
+        "screenshot": "screenshots/zh-CN-actual-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "状态",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 35,
+        "screenshot": "screenshots/zh-CN-actual-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 4540,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "zh-CN-s100",
+    "locale": "zh-CN",
+    "scale": 1,
+    "pid": 15312,
+    "tree": [
+      {
+        "pid": 15312,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 43200,
+        "ppid": 15312,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 34728,
+        "ppid": 43200,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 47716,
+        "ppid": 43200,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 56380,
+        "ppid": 43200,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 61672,
+        "ppid": 43200,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 51468,
+        "ppid": 43200,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "清理",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 59,
+        "screenshot": "screenshots/zh-CN-s100-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "软件",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 86,
+        "screenshot": "screenshots/zh-CN-s100-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "优化",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 46,
+        "screenshot": "screenshots/zh-CN-s100-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "分析",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 36,
+        "screenshot": "screenshots/zh-CN-s100-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1,
+        "inner": [
+          1350,
+          900
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "状态",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          232,
+          232
+        ],
+        "han_chars": 35,
+        "screenshot": "screenshots/zh-CN-s100-status.png"
+      }
+    },
+    "widths": {
+      "390": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "清理",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 59,
+          "screenshot": "screenshots/zh-CN-s100-w390-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "软件",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 86,
+          "screenshot": "screenshots/zh-CN-s100-w390-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "优化",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 46,
+          "screenshot": "screenshots/zh-CN-s100-w390-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "分析",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 36,
+          "screenshot": "screenshots/zh-CN-s100-w390-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            390,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "状态",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            136,
+            136
+          ],
+          "han_chars": 35,
+          "screenshot": "screenshots/zh-CN-s100-w390-status.png"
+        }
+      },
+      "800": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "清理",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 59,
+          "screenshot": "screenshots/zh-CN-s100-w800-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "软件",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 86,
+          "screenshot": "screenshots/zh-CN-s100-w800-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "优化",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 46,
+          "screenshot": "screenshots/zh-CN-s100-w800-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "分析",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 36,
+          "screenshot": "screenshots/zh-CN-s100-w800-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            800,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "状态",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            168,
+            168
+          ],
+          "han_chars": 35,
+          "screenshot": "screenshots/zh-CN-s100-w800-status.png"
+        }
+      },
+      "1024": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "清理",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 59,
+          "screenshot": "screenshots/zh-CN-s100-w1024-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "软件",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 86,
+          "screenshot": "screenshots/zh-CN-s100-w1024-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "优化",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 46,
+          "screenshot": "screenshots/zh-CN-s100-w1024-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "分析",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 36,
+          "screenshot": "screenshots/zh-CN-s100-w1024-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1024,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "状态",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 35,
+          "screenshot": "screenshots/zh-CN-s100-w1024-status.png"
+        }
+      },
+      "1440": {
+        "clean": {
+          "hash": "#/clean",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "清理",
+          "mode_status": null,
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 59,
+          "screenshot": "screenshots/zh-CN-s100-w1440-clean.png"
+        },
+        "software": {
+          "hash": "#/software",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "软件",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 86,
+          "screenshot": "screenshots/zh-CN-s100-w1440-software.png"
+        },
+        "optimize": {
+          "hash": "#/optimize",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "优化",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 46,
+          "screenshot": "screenshots/zh-CN-s100-w1440-optimize.png"
+        },
+        "analyze": {
+          "hash": "#/analyze",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "分析",
+          "mode_status": "idle",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 36,
+          "screenshot": "screenshots/zh-CN-s100-w1440-analyze.png"
+        },
+        "status": {
+          "hash": "#/status",
+          "locale": "zh-CN",
+          "title": "devsweep",
+          "dpr": 1,
+          "inner": [
+            1440,
+            800
+          ],
+          "horizontal_overflow": false,
+          "active_tab": "状态",
+          "mode_status": "ready",
+          "raw_keys": [],
+          "has_undefined": false,
+          "planet_canvas": [
+            232,
+            232
+          ],
+          "han_chars": 35,
+          "screenshot": "screenshots/zh-CN-s100-w1440-status.png"
+        }
+      }
+    },
+    "keyboard": {
+      "before": "#/clean",
+      "after_arrow": {
+        "hash": "#/clean",
+        "focused": "软件",
+        "focus_visible": true
+      },
+      "after_enter": {
+        "hash": "#/software",
+        "focused": "软件",
+        "focus_visible": true
+      },
+      "after_end": {
+        "hash": "#/software",
+        "focused": "状态",
+        "focus_visible": true
+      }
+    },
+    "close": {
+      "exited": true,
+      "exit_ms": 6270,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "zh-CN-s125",
+    "locale": "zh-CN",
+    "scale": 1.25,
+    "pid": 62796,
+    "tree": [
+      {
+        "pid": 62796,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 48844,
+        "ppid": 62796,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 53328,
+        "ppid": 48844,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 51480,
+        "ppid": 48844,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 33924,
+        "ppid": 48844,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 50940,
+        "ppid": 48844,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 44364,
+        "ppid": 48844,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "清理",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 59,
+        "screenshot": "screenshots/zh-CN-s125-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "软件",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 86,
+        "screenshot": "screenshots/zh-CN-s125-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "优化",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 46,
+        "screenshot": "screenshots/zh-CN-s125-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "分析",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 36,
+        "screenshot": "screenshots/zh-CN-s125-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "inner": [
+          1080,
+          720
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "状态",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          290,
+          290
+        ],
+        "han_chars": 35,
+        "screenshot": "screenshots/zh-CN-s125-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 7203,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "zh-CN-s150",
+    "locale": "zh-CN",
+    "scale": 1.5,
+    "pid": 39660,
+    "tree": [
+      {
+        "pid": 39660,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 46388,
+        "ppid": 39660,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 54744,
+        "ppid": 46388,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 59420,
+        "ppid": 46388,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 33336,
+        "ppid": 46388,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 3416,
+        "ppid": 46388,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 62888,
+        "ppid": 46388,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "清理",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 59,
+        "screenshot": "screenshots/zh-CN-s150-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "软件",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 86,
+        "screenshot": "screenshots/zh-CN-s150-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "优化",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 46,
+        "screenshot": "screenshots/zh-CN-s150-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "分析",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 36,
+        "screenshot": "screenshots/zh-CN-s150-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 1.5,
+        "inner": [
+          900,
+          600
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "状态",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          348,
+          348
+        ],
+        "han_chars": 35,
+        "screenshot": "screenshots/zh-CN-s150-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 6234,
+      "leftovers": []
+    }
+  },
+  {
+    "label": "zh-CN-s200",
+    "locale": "zh-CN",
+    "scale": 2,
+    "pid": 58100,
+    "tree": [
+      {
+        "pid": 58100,
+        "ppid": 27124,
+        "name": "devsweep-desktop.exe",
+        "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe"
+      },
+      {
+        "pid": 63484,
+        "ppid": 58100,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 31524,
+        "ppid": 63484,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 60312,
+        "ppid": 63484,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 34852,
+        "ppid": 63484,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 62280,
+        "ppid": 63484,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      },
+      {
+        "pid": 44552,
+        "ppid": 63484,
+        "name": "msedgewebview2.exe",
+        "path": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+      }
+    ],
+    "modes": {
+      "clean": {
+        "hash": "#/clean",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "清理",
+        "mode_status": null,
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 59,
+        "screenshot": "screenshots/zh-CN-s200-clean.png"
+      },
+      "software": {
+        "hash": "#/software",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "软件",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 86,
+        "screenshot": "screenshots/zh-CN-s200-software.png"
+      },
+      "optimize": {
+        "hash": "#/optimize",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "优化",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 46,
+        "screenshot": "screenshots/zh-CN-s200-optimize.png"
+      },
+      "analyze": {
+        "hash": "#/analyze",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "分析",
+        "mode_status": "idle",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 36,
+        "screenshot": "screenshots/zh-CN-s200-analyze.png"
+      },
+      "status": {
+        "hash": "#/status",
+        "locale": "zh-CN",
+        "title": "devsweep",
+        "dpr": 2,
+        "inner": [
+          675,
+          450
+        ],
+        "horizontal_overflow": false,
+        "active_tab": "状态",
+        "mode_status": "ready",
+        "raw_keys": [],
+        "has_undefined": false,
+        "planet_canvas": [
+          336,
+          336
+        ],
+        "han_chars": 35,
+        "screenshot": "screenshots/zh-CN-s200-status.png"
+      }
+    },
+    "widths": {},
+    "close": {
+      "exited": true,
+      "exit_ms": 6777,
+      "leftovers": []
+    }
+  }
+]

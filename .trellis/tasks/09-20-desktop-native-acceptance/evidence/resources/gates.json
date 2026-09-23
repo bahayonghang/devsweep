@@ -1,0 +1,146 @@
+{
+  "idle.median_cpu_le_1": {
+    "pass": true,
+    "detail": "medianCpu=0"
+  },
+  "idle.max_private_le_192mib": {
+    "pass": true,
+    "detail": "maxPrivate=12881920"
+  },
+  "idle.max_threads_le_40": {
+    "pass": false,
+    "detail": "maxThreads=45"
+  },
+  "status.snapshot.p95_le_2s": {
+    "pass": true,
+    "detail": "p95=955.653"
+  },
+  "status.snapshot.private_le_idle_plus_64mib": {
+    "pass": true,
+    "detail": "peak=7426048 idle=12881920"
+  },
+  "status.snapshot.threads_le_idle_plus_4": {
+    "pass": true,
+    "detail": "threads=4 idle=45"
+  },
+  "status.live.median_cpu_le_5": {
+    "pass": true,
+    "detail": "median=0"
+  },
+  "status.live.p95_cpu_le_15": {
+    "pass": true,
+    "detail": "p95=7.8324335433678"
+  },
+  "status.live.private_le_idle_plus_64mib": {
+    "pass": true,
+    "detail": "peak=9760768"
+  },
+  "status.live.threads_le_idle_plus_4": {
+    "pass": true,
+    "detail": "threads=5"
+  },
+  "status.live.poststop_25_samples": {
+    "pass": true,
+    "detail": "each measured live rep has exactly 25 post-stop samples"
+  },
+  "status.live.poststop_final_five_hold": {
+    "pass": true,
+    "detail": "cli-exit evidence: final five consecutive samples meet idle+0.5pp CPU and idle+1 threads"
+  },
+  "status.desktop.poststop_25_samples": {
+    "pass": true,
+    "detail": "every measured stop holds 25 present samples on the same live app PID with the same executable path; runs=5"
+  },
+  "status.desktop.poststop_final_five_hold": {
+    "pass": true,
+    "detail": "final five consecutive samples meet baseline+0.5pp CPU, where the baseline is this same app instance on the Status route before live started; no per-rep thread clause (WebView2 pool threads decay over 1-2 min)"
+  },
+  "status.desktop.stop_joined": {
+    "pass": true,
+    "detail": "ack via data-status=canceling, terminal data-status inside the 5.0 s window, the CPU hold, and a post-stop thread floor that does not grow across the stops (floors=46,44,42,44,42); request_ack_p95_ms=2 ack_join_p95_ms=267 join_poll_ms=250; the join ordering itself is proved by desktop/src-tauri/src/status.rs::run_live_returns_only_after_the_producer_thread_is_joined"
+  },
+  "clean.baseline_comparable": {
+    "pass": false,
+    "detail": "baseline_exe= sha_recorded= sha_live= rustc= vs rustc 1.98.0 (88d9e12ae 2026-08-18)\r\nbinary: rustc\r\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\r\ncommit-date: 2026-08-18\r\nhost: x86_64-pc-windows-msvc\r\nrelease: 1.98.0\r\nLLVM version: 22.1.8 root=D:\\Documents\\Code\\Rust\\Exp\\devsweep vs D:\\Documents\\Code\\Rust\\Exp\\devsweep entries=66014 to 66014 cores=24 vs 24 build=26200 vs 26200"
+  },
+  "clean.median_ratio_le_1_20": {
+    "pass": false,
+    "detail": "ratio= candidate_median=4618.26 baseline_median= order= comparable=False"
+  },
+  "clean.peak_private_le_baseline_plus_64mib": {
+    "pass": false,
+    "detail": "candidate_peak_private=3780608 baseline_peak_private= comparable=False"
+  },
+  "clean.max_threads_le_baseline_plus_2": {
+    "pass": false,
+    "detail": "candidate_max_threads=8 baseline_max_threads= comparable=False"
+  },
+  "analyze.accounted_le_256mib": {
+    "pass": true,
+    "detail": "accounted=38906299"
+  },
+  "analyze.peak_private_le_512mib": {
+    "pass": true,
+    "detail": "peak=481546240"
+  },
+  "analyze.p95_cpu_le_200": {
+    "pass": true,
+    "detail": "p95cpu=193.340427638092 window=walk-until-partial-or-complete"
+  },
+  "analyze.layout_p95_le_50ms": {
+    "pass": true,
+    "detail": "layout_p95_ms=1.59529999999999"
+  },
+  "analyze.react_commit_p95_le_100ms": {
+    "pass": true,
+    "detail": "react_commit_p95_ms=5.5 status=pass"
+  },
+  "analyze.cancel_ack_p95_le_500ms": {
+    "pass": true,
+    "detail": "p95=29 joined=True"
+  },
+  "software.p95_elapsed_le_5s": {
+    "pass": true,
+    "detail": "p95=2995.912"
+  },
+  "software.private_le_idle_plus_128mib": {
+    "pass": true,
+    "detail": "peak=6520832"
+  },
+  "software.threads_le_idle_plus_6": {
+    "pass": true,
+    "detail": "threads=10"
+  },
+  "software.no_uac": {
+    "pass": true,
+    "detail": "consent still 0"
+  },
+  "optimize.list_preview.p95_le_1s": {
+    "pass": true,
+    "detail": "p95=685.838"
+  },
+  "optimize.list_preview.private_le_idle_plus_32mib": {
+    "pass": true,
+    "detail": "peak=0"
+  },
+  "optimize.list_preview.threads_le_idle_plus_2": {
+    "pass": true,
+    "detail": "threads=0"
+  },
+  "optimize.dns.p95_le_10s": {
+    "pass": true,
+    "detail": "p95=1692.983"
+  },
+  "optimize.settings.storage_recommendations.launch_p95_le_2s": {
+    "pass": true,
+    "detail": "p95=828.004"
+  },
+  "optimize.settings.search.launch_p95_le_2s": {
+    "pass": true,
+    "detail": "p95=808.115"
+  },
+  "optimize.settings.energy_recommendations.launch_p95_le_2s": {
+    "pass": true,
+    "detail": "p95=1196.121"
+  }
+}

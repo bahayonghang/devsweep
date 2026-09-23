@@ -3,7 +3,7 @@
   "name": "desktop-native-acceptance",
   "title": "Validate native Windows desktop acceptance",
   "description": "Run final native, local package/executable identity, locale, scaling, resource, and cross-mode acceptance evidence.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
