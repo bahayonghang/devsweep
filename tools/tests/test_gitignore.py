@@ -1,4 +1,4 @@
-"""Generated and local-only paths must stay ignored by the root .gitignore."""
+"""Generated and local-only paths must stay ignored by a repository .gitignore."""
 
 from __future__ import annotations
 
@@ -25,7 +25,27 @@ IGNORED = (
     ".worktrees/feature-x/.git",
     ".DS_Store",
     "Thumbs.db",
+    "ehthumbs.db",
+    "desktop.ini",
     ".env",
+    ".env.production",
+    "desktop/.env.local",
+    ".ruff_cache/0.16.8/foo",
+    "crates/devsweep-core/src/lib.rs.bk",
+    "devsweep.pdb",
+    "rustc-ice-2026-09-23.txt",
+    "npm-debug.log",
+    "desktop/.eslintcache",
+    "desktop/coverage/index.html",
+    "desktop/src/api/types.gen.tsbuildinfo",
+    ".grok/skills/x",
+    ".kimi-code/skills/x",
+    ".omp/roles/x",
+    ".idea/workspace.xml",
+    "notes.swp",
+    "crash.stackdump",
+    "secret.pfx",
+    ".trellis/hooks.local.json",
 )
 
 TRACKED = (
@@ -35,6 +55,11 @@ TRACKED = (
     ".trellis/spec/backend/quality-guidelines.md",
     "skills/devsweep-inspect/SKILL.md",
     "desktop/src/api/types.gen.ts",
+    "desktop/.env.fixture",
+    ".env.example",
+    "Cargo.lock",
+    "package-lock.json",
+    "desktop/package-lock.json",
 )
 
 
@@ -48,6 +73,13 @@ def _git(*args: str) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         text=True,
     )
+
+
+def _matched_pattern(stdout: str) -> str:
+    """Return the deciding exclude pattern from `git check-ignore -v`."""
+    line = stdout.splitlines()[0]
+    source, _pathname = line.split("\t", 1)
+    return source.split(":", 2)[2]
 
 
 class TestGitignore(unittest.TestCase):
@@ -68,11 +100,17 @@ class TestGitignore(unittest.TestCase):
                     result.stdout.replace("\\", "/"),
                     msg=f"{path} was ignored by {result.stdout!r}, not a repo .gitignore",
                 )
+                self.assertFalse(
+                    _matched_pattern(result.stdout).startswith("!"),
+                    msg=f"{path} matched a negation, so it is trackable: {result.stdout!r}",
+                )
 
     def test_source_paths_are_not_ignored(self) -> None:
         for path in TRACKED:
             with self.subTest(path=path):
                 result = _git("check-ignore", "-v", "--no-index", "--", path)
+                if result.returncode == 0 and _matched_pattern(result.stdout).startswith("!"):
+                    continue
                 self.assertNotEqual(
                     result.returncode,
                     0,

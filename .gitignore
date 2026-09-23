@@ -1,9 +1,14 @@
-# Harness-local scaffolding
+# Harness-local scaffolding. Not the project contract.
 .agents/
 .claude/
 .codex/
 .codegraph/
 .reasonix/
+
+# Not project adapters. Ignore them if a tool creates them locally.
+.grok/
+.kimi-code/
+.omp/
 
 # Cargo, Node, VitePress, and Tauri outputs
 target/
@@ -12,24 +17,45 @@ node_modules/
 desktop/src-tauri/gen/
 docs/.vitepress/cache/
 docs/.vitepress/.temp/
+*.rs.bk
+*.pdb
+rustc-ice-*.txt
+npm-debug.log*
+.eslintcache
+*.tsbuildinfo
+coverage/
 
 # Python tooling
 __pycache__/
 *.pyc
 *.pyo
 .venv/
+.ruff_cache/
 
 # Isolated Git worktrees
 .worktrees/
 
-# OS debris
+# Editor and OS debris
 .DS_Store
 Thumbs.db
-Desktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+.idea/
+*.swp
+*.swo
+*~
+*.stackdump
+*.orig
+*.rej
 
-# Local secrets
+# Local secrets. desktop/.env.fixture and .env.example stay trackable.
 .env
-.env.local
+.env.*
+!.env.fixture
+!.env.example
+*.pfx
+*.p12
 
 # Local reference checkout and audit dump
 ref/
