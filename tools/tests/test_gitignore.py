@@ -46,6 +46,8 @@ IGNORED = (
     "crash.stackdump",
     "secret.pfx",
     ".trellis/hooks.local.json",
+    ".trellis/tasks/09-20-desktop-operation-performance/evidence/resources/raw-20260923T021341Z/analyze-250k-accounted.json",
+    ".trellis/tasks/09-20-desktop-operation-performance/evidence/resources/raw-latest.txt",
 )
 
 TRACKED = (
@@ -60,6 +62,7 @@ TRACKED = (
     "Cargo.lock",
     "package-lock.json",
     "desktop/package-lock.json",
+    ".trellis/tasks/09-20-desktop-operation-performance/evidence/record.md",
 )
 
 

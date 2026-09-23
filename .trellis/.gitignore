@@ -40,3 +40,5 @@ reviews/
 # Large task-evidence artifacts stay local-only (recorded by hash in evidence indexes)
 **/evidence/**/axtree/
 **/evidence/**/*.json.gz
+**/evidence/**/raw-*/
+**/evidence/**/raw-latest.txt
