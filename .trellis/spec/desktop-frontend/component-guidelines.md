@@ -107,8 +107,16 @@ title is `DevSweep`.
   values. Estimated Recoverable and live metrics may use a display-size tabular
   number. Do not scale the whole UI from viewport fonts.
 - Card surfaces may use radius 12. Controls, inputs, badges, and rows stay at
-  radius 8 or below. Primary actions may use a full pill radius.
-- Use a dark-only canvas. There is no light workbench pane. Shared tokens are
+  radius 8 or below. Primary actions may use a full pill radius. State a radius
+  through `--radius-card`, `--radius-control`, or `--radius-tile`, never as a
+  literal pixel value. The pill (`999px`) and circle (`50%`) shapes are the two
+  exceptions. `desktop/src/styles.test.ts` enforces this.
+- Use a dark-only canvas. There is no light workbench pane. State the shared
+  grammar once in the base rule; do not write a light default and darken it
+  again under `.clean-mode` or another mode selector, because the four modes
+  without that override then render the light surface.
+  `desktop/src/styles.test.ts` holds the list of removed light values.
+  Shared tokens are
   `--canvas`, `--text`, `--muted`, `--border`, `--accent`, `--focus`,
   `--danger`, `--warning`, `--ok`, `--sidebar`, `--card`, `--card-border`, and
   `--tile-alpha`. Each primary mode sets `--canvas` and `--accent` from an

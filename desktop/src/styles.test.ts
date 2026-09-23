@@ -54,6 +54,41 @@ describe("responsive scan workbench styles", () => {
     expect(styles).not.toContain("filter: blur");
   });
 
+  it("keeps shared controls, banners, badges, and dialogs on the dark canvas", () => {
+    // Every light surface removed when the five modes moved to one grammar.
+    // A reintroduced light fallback renders white on the dark canvas in the
+    // four modes that have no .clean-mode override.
+    for (const light of ["#fff0ef", "#ebf6ef", "#fff5d9", "#ffebe8", "#fff0e9", "#9fa9a4", "#4e5a54", "#6b7671", "#aeb9b3", "#f1f4f2"]) {
+      expect(styles).not.toContain(light);
+    }
+    expect(styles).toContain(".secondary-button { color: var(--text); background: var(--raised); border-color: var(--border); }");
+    expect(styles).toContain("color: var(--danger); background: var(--raised); border-bottom: 1px solid var(--danger);");
+    expect(styles).toContain("dialog { width: min(520px, calc(100vw - 32px)); padding: 0; color: var(--text); background: var(--raised); border: 1px solid var(--border); border-radius: var(--radius-card); }");
+    expect(styles).toContain(".risk-dangerous { color: var(--text); background: var(--danger); border-color: var(--danger); }");
+  });
+
+  it("draws every raised surface and control from the radius tokens", () => {
+    // A literal radius on a raised surface is a second visual system. The
+    // pill (999px) and circle (50%) shapes are primitives, not surface radii.
+    const surfaceRadii = (styles.match(/border-radius: \d+px/g) ?? []).filter((radius) => radius !== "border-radius: 999px");
+    expect(surfaceRadii).toEqual([]);
+    for (const token of ["--radius-card", "--radius-control", "--radius-tile"]) expect(styles).toContain(`border-radius: var(${token})`);
+  });
+
+  it("gives every shared surface a forced-colors rule", () => {
+    const start = styles.indexOf("@media (forced-colors: active)");
+    const block = styles.slice(start);
+    for (const selector of [".error-banner", "dialog", ".secondary-button", ".status-chip", ".badge", ".outcome-list", ".digest-line"]) {
+      expect(block).toContain(selector);
+    }
+  });
+
+  it("states the shared grammar once instead of patching it per mode", () => {
+    for (const patch of [".clean-mode .secondary-button", ".clean-mode .error-banner", ".clean-mode dialog", ".clean-mode .dialog-warning", ".clean-mode .digest"]) {
+      expect(styles).not.toContain(patch);
+    }
+  });
+
   it("restyles Clean tables and result capacity onto the dark canvas", () => {
     expect(styles).toContain(".table-frame { overflow: auto; background: var(--raised);");
     expect(styles).toContain(".capacity-total .display-capacity { font-size: clamp(2rem, 6vw, 3.5rem);");
