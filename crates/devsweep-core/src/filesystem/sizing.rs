@@ -13,9 +13,9 @@ use crate::{
 };
 
 #[cfg(all(test, windows))]
-use super::reparse::has_windows_reparse_point;
+use super::reparse::{InspectedEntry, has_windows_reparse_point, inspect_path_no_follow};
 use super::reparse::{
-    PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_path_no_follow,
+    PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_entry_no_follow,
 };
 #[cfg(test)]
 use super::reparse::{ReparseProbeResult, reparse_probe_result_from_tag_info};
@@ -221,8 +221,8 @@ fn estimate_tree_bounded(
     }
     *remaining = remaining.saturating_sub(1);
 
-    let metadata = match fs::symlink_metadata(path) {
-        Ok(metadata) => metadata,
+    let entry = match inspect_entry_no_follow(path, probe) {
+        Ok(entry) => entry,
         Err(error) => {
             return SizeEstimate {
                 logical_bytes: None,
@@ -235,16 +235,16 @@ fn estimate_tree_bounded(
             };
         }
     };
-    match inspect_path_no_follow(path, &metadata, probe) {
+    match entry.safety {
         PathSafety::Safe => {}
         PathSafety::ReparsePoint { .. } => {
-            return SizeEstimate::trusted(0, metadata.modified().ok());
+            return SizeEstimate::trusted(0, entry.modified);
         }
         PathSafety::Unverified { detail } => {
             return SizeEstimate {
                 logical_bytes: None,
                 complete: false,
-                last_modified: metadata.modified().ok(),
+                last_modified: entry.modified,
                 warnings: vec![sizing_warning(
                     SizingWarningKind::ReparseSafetyUnverified,
                     format!(
@@ -255,17 +255,17 @@ fn estimate_tree_bounded(
             };
         }
     }
-    if metadata.is_file() {
-        return SizeEstimate::trusted(metadata.len(), metadata.modified().ok());
+    if entry.is_file {
+        return SizeEstimate::trusted(entry.len, entry.modified);
     }
-    if !metadata.is_dir() {
-        return SizeEstimate::trusted(0, metadata.modified().ok());
+    if !entry.is_dir {
+        return SizeEstimate::trusted(0, entry.modified);
     }
     if depth >= max_depth {
         return SizeEstimate {
             logical_bytes: Some(0),
             complete: false,
-            last_modified: metadata.modified().ok(),
+            last_modified: entry.modified,
             warnings: vec![sizing_warning(
                 SizingWarningKind::MaxDepthReached,
                 format!("max depth reached at {}", path.display()),
@@ -273,7 +273,7 @@ fn estimate_tree_bounded(
         };
     }
 
-    let self_mtime = metadata.modified().ok();
+    let self_mtime = entry.modified;
     let entries = match fs::read_dir(path) {
         Ok(entries) => entries,
         Err(error) => {
@@ -736,6 +736,39 @@ mod tests {
         assert_eq!(estimate.logical_bytes, Some(0));
         assert!(estimate.complete);
         assert_eq!(estimate.last_modified, max_mtime(root_mtime, link_mtime));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn one_handle_entry_inspection_matches_metadata_plus_probe() {
+        let fixture = Fixture::new();
+        let file = fixture.file("root/data.bin", "twelve bytes");
+        fixture.file("outside/big.bin", "not counted");
+        let mut paths = vec![file, fixture.path("root")];
+        let link = fixture.path("root/link");
+        if create_dir_symlink(&fixture.path("outside"), &link).is_ok() {
+            paths.push(link);
+        }
+
+        let probe = SystemPathReparseProbe;
+        for path in &paths {
+            let one_handle = probe
+                .inspect_entry(path)
+                .expect("one-handle inspection serves a local path");
+            let metadata = fs::symlink_metadata(path).expect("metadata");
+            let two_step = InspectedEntry {
+                is_file: metadata.is_file(),
+                is_dir: metadata.is_dir(),
+                len: metadata.len(),
+                modified: metadata.modified().ok(),
+                safety: inspect_path_no_follow(path, &metadata, &probe),
+            };
+            assert_eq!(one_handle, two_step, "{}", path.display());
+        }
+
+        let missing = fixture.path("missing");
+        assert!(probe.inspect_entry(&missing).is_none());
+        assert!(inspect_entry_no_follow(&missing, &probe).is_err());
     }
 
     #[test]
