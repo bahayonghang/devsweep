@@ -14,6 +14,7 @@ use serde::Serialize;
 use crate::error::CommandError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub(crate) enum DesktopStatusSnapshotResult {
     Completed {
@@ -26,6 +27,7 @@ pub(crate) enum DesktopStatusSnapshotResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub(crate) enum DesktopStatusLiveResult {
     Completed { operation_id: String },
@@ -246,5 +248,46 @@ mod tests {
         coordinator
             .begin("second".to_string())
             .expect("next operation can start");
+    }
+
+    /// `run_live` must join the producer before it returns. The live producer
+    /// holds the single process permit for its whole life and releases it only
+    /// when the thread ends, so a second `spawn_live` that succeeds on the
+    /// first try — with no sleep and no retry — proves the thread was already
+    /// joined when `run_live` returned.
+    #[test]
+    fn run_live_returns_only_after_the_producer_thread_is_joined() {
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let observer = Arc::clone(&cancel);
+        let result = run_live(
+            "op-join".to_string(),
+            200,
+            1,
+            &cancel,
+            move |event: StatusEventV1| {
+                if !event.is_terminal() {
+                    observer.request_cancel();
+                }
+                Ok(())
+            },
+        )
+        .expect("live run reports a typed result");
+        assert_eq!(
+            result,
+            DesktopStatusLiveResult::Canceled {
+                operation_id: "op-join".to_string(),
+            }
+        );
+
+        let fresh = Arc::new(FlagCancelObserver::new());
+        let (rx, mut control) = spawn_live(LiveRequest {
+            interval_ms: 200,
+            process_limit: 1,
+            operation_id: "op-after-join".to_string(),
+            cancel: Some(&fresh),
+        })
+        .expect("the producer released the live permit before run_live returned");
+        control.join();
+        drop(rx);
     }
 }

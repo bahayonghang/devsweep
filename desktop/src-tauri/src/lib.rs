@@ -4,9 +4,13 @@ mod commands;
 mod error;
 mod optimize;
 mod scan;
+#[cfg(test)]
+mod service_boundary;
 mod software;
 mod status;
 mod support;
+#[cfg(test)]
+mod wire_parity;
 
 /// Frozen Tauri command names registered after every mode child passed
 /// recursive acceptance. Glue adds no compatibility alias and no domain

@@ -18,6 +18,7 @@ use crate::error::CommandError;
 pub(crate) const PREVIEW_EMISSION_INTERVAL: Duration = Duration::from_millis(100);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopScanProgress {
     pub scan_id: String,

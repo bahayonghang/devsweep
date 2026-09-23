@@ -32,6 +32,7 @@ pub(crate) enum DesktopOptimizeListResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopOptimizePreviewResult {
     pub operation_id: String,
@@ -40,6 +41,7 @@ pub(crate) struct DesktopOptimizePreviewResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopOptimizeRunResult {
     pub operation_id: String,
@@ -47,6 +49,7 @@ pub(crate) struct DesktopOptimizeRunResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopOptimizeAuditResult {
     pub operation_id: String,

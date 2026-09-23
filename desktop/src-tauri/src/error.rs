@@ -8,6 +8,7 @@ use serde::Serialize;
 use devsweep_core::{execution::ConfirmationDigest, model::TargetId};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize), serde(deny_unknown_fields))]
 #[serde(tag = "code", rename_all = "snake_case")]
 pub(crate) enum CommandError {
     ScanAlreadyRunning,

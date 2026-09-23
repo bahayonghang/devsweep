@@ -10,6 +10,7 @@ use serde::Serialize;
 use crate::error::CommandError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopAnalyzeProgress {
     pub operation_id: String,
@@ -21,6 +22,7 @@ pub(crate) struct DesktopAnalyzeProgress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub(crate) enum DesktopAnalyzeResult {
     Completed {

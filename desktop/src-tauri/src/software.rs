@@ -32,6 +32,7 @@ pub(crate) enum DesktopSoftwareInventoryResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopSoftwarePreviewResult {
     pub operation_id: String,
@@ -40,6 +41,7 @@ pub(crate) struct DesktopSoftwarePreviewResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopSoftwareUninstallResult {
     pub operation_id: String,
@@ -47,6 +49,7 @@ pub(crate) struct DesktopSoftwareUninstallResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DesktopSoftwareAuditResult {
     pub operation_id: String,

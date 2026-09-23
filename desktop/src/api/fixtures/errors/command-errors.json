@@ -1,0 +1,72 @@
+[
+  { "code": "scan_already_running" },
+  { "code": "scan_failed", "message": "scan worker failed" },
+  { "code": "analyze_already_running" },
+  { "code": "analyze_failed", "message": "analyze worker failed" },
+  { "code": "software_already_running" },
+  { "code": "software_failed", "message": "software worker failed" },
+  {
+    "code": "software_stale_authority",
+    "message": "software preview digest mismatch"
+  },
+  {
+    "code": "software_audit_unavailable",
+    "message": "software audit lock is unavailable"
+  },
+  { "code": "optimize_already_running" },
+  { "code": "optimize_failed", "message": "optimize worker failed" },
+  {
+    "code": "optimize_stale_authority",
+    "message": "optimize preview digest mismatch"
+  },
+  {
+    "code": "optimize_unavailable",
+    "message": "the Windows OS build query is unavailable"
+  },
+  {
+    "code": "optimize_audit_unavailable",
+    "message": "optimize audit lock is unavailable"
+  },
+  { "code": "status_already_running" },
+  { "code": "status_failed", "message": "status sampler failed" },
+  { "code": "invalid_plan", "issues": ["unsupported plan version"] },
+  {
+    "code": "stale_confirmation",
+    "expected_digest": "a1b2c3",
+    "actual_digest": "d4e5f6"
+  },
+  {
+    "code": "unknown_target",
+    "target_id": "cargo.target:C:/work/missing/target"
+  },
+  {
+    "code": "inspect_only_target",
+    "target_id": "cargo.home.inspect:C:/Users/dev/.cargo"
+  },
+  { "code": "io", "message": "the desktop command state lock is poisoned" },
+  {
+    "code": "protection_store_unavailable",
+    "message": "the protection store is unavailable"
+  },
+  {
+    "code": "protection_audit_unknown",
+    "message": "the protection audit outcome is unknown"
+  },
+  {
+    "code": "protection_path_missing",
+    "message": "the protected path is not present"
+  },
+  {
+    "code": "protection_confirmation_required",
+    "message": "protection mutation requires confirmation"
+  },
+  {
+    "code": "history_store_unavailable",
+    "message": "the history store is unavailable"
+  },
+  {
+    "code": "history_not_found",
+    "message": "no audit record for that operation id"
+  },
+  { "code": "rule_not_found", "message": "no rule with that id" }
+]

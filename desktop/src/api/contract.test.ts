@@ -10,6 +10,7 @@ import statusSnapshotFixture from "./fixtures/status/snapshot.json";
 import statusCompletedFixture from "./fixtures/status/snapshot-completed.json";
 import statusStartedFixture from "./fixtures/status/event-started.json";
 import statusUnknownFixture from "./fixtures/status/unknown-event.json";
+import commandErrorFixtures from "./fixtures/errors/command-errors.json";
 import { decodeAnalyzeSnapshot, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport, decodeStatusEvent, decodeStatusSnapshot } from "./contract";
 
 describe("IPC decoders", () => {
@@ -88,34 +89,16 @@ describe("IPC decoders", () => {
     expect(() => decodeDesktopScanProgress({ ...progressFixture, extra: true })).toThrow("unknown field");
   });
 
-  it.each([
-    { code: "scan_already_running" },
-    { code: "scan_failed", message: "failed" },
-    { code: "analyze_already_running" },
-    { code: "analyze_failed", message: "failed" },
-    { code: "invalid_plan", issues: ["bad version"] },
-    { code: "stale_confirmation", expected_digest: "old", actual_digest: "new" },
-    { code: "unknown_target", target_id: "missing" },
-    { code: "inspect_only_target", target_id: "inspect" },
-    { code: "io", message: "disk" },
-    { code: "software_already_running" },
-    { code: "software_failed", message: "failed" },
-    { code: "optimize_already_running" },
-    { code: "optimize_failed", message: "failed" },
-    { code: "optimize_stale_authority", message: "stale" },
-    { code: "optimize_unavailable", message: "the Windows OS build query is unavailable" },
-    { code: "optimize_audit_unavailable", message: "audit" },
-    { code: "status_already_running" },
-    { code: "status_failed", message: "failed" },
-    { code: "protection_store_unavailable", message: "store" },
-    { code: "protection_audit_unknown", message: "audit" },
-    { code: "protection_path_missing", message: "missing" },
-    { code: "protection_confirmation_required", message: "confirm" },
-    { code: "history_store_unavailable", message: "store" },
-    { code: "history_not_found", message: "missing" },
-    { code: "rule_not_found", message: "missing" },
-  ])("decodes structured error $code", (error) => {
+  it.each(commandErrorFixtures)("decodes structured error $code", (error) => {
     expect(decodeCommandError(error).code).toBe(error.code);
+  });
+
+  // desktop/src-tauri/src/wire_parity.rs decodes the same file into the Rust
+  // CommandError, so one payload set covers both surfaces.
+  it("carries one payload for every structured error the decoder accepts", () => {
+    expect(new Set(commandErrorFixtures.map((error) => error.code)).size).toBe(commandErrorFixtures.length);
+    expect(commandErrorFixtures).toHaveLength(27);
+    expect(() => decodeCommandError({ code: "not_a_command_error" })).toThrow("Invalid error.code");
   });
 });
 

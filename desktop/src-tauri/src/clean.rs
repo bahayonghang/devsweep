@@ -8,6 +8,7 @@ use serde::Serialize;
 use crate::error::CommandError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 #[serde(deny_unknown_fields)]
 pub(crate) struct DryRunOutcome {
     pub report: ExecutionReport,

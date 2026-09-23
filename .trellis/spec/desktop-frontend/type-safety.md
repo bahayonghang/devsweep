@@ -33,6 +33,37 @@ execution authority absent from backend payloads.
 - Exhaustively switch on command-error, action, outcome, capacity, evidence,
   scope, and diagnostic tags. Use an `assertNever` helper for render projections.
 
+## Typed Adapter Boundary
+
+The desktop shell and the CLI reach one typed `devsweep-core` service path. The
+Tauri adapter never imports the CLI crate and never launches a `devsweep` child
+process; `desktop/src-tauri/src/service_boundary.rs` proves both for every
+adapter file and for the crate manifest.
+
+Exactly three TypeScript files may import `@tauri-apps`:
+
+| File | Scope |
+| --- | --- |
+| `desktop/src/api/bridge.ts` | every five-mode and supporting-domain operation |
+| `desktop/src/i18n/index.ts` | presentation settings, a non-domain exception |
+| `desktop/src/lifecycle.ts` | window close and DEV fault injection, a non-domain exception |
+
+Components and reducers never call `invoke`. `desktop/src/api/ipc-boundary.test.ts`
+enforces the list. Adding a fourth adapter needs a spec change first.
+
+## Fixture Parity
+
+Files under `desktop/src/api/fixtures/` are the shipped wire, not a frontend
+mock. `desktop/src-tauri/src/wire_parity.rs` decodes each one into the Rust type
+the command returns and serializes it back, so a field either side adds, drops,
+or renames fails the Rust gate. A fixture must therefore carry exactly what the
+backend emits: a field the Rust type skips when empty is absent from the
+fixture too.
+
+`desktop/src/api/fixtures/errors/command-errors.json` holds one payload per
+`CommandError` variant and is read by both surfaces. Do not write error payloads
+inline in a test.
+
 ## Generation And Review
 
 `npm run types:generate` reads JSON samples under
