@@ -8,6 +8,8 @@
   "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+  "gpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+  "thermal": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "processes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "unsupported_capabilities": [
     { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },

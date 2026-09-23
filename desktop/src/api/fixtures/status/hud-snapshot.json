@@ -1,6 +1,5 @@
 {
-  "type": "completed",
-  "operation_id": "status-snapshot-1",
+  "type": "snapshot",
   "snapshot": {
     "snapshot_id": "snapshot-fixture",
     "sampled_at_unix_ms": 1788019200000,

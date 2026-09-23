@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::process::{CancelObserver, FlagCancelObserver};
 
 mod network;
+mod pdh;
 mod process;
 mod sampler;
 mod system;
@@ -130,6 +131,12 @@ impl<T> AvailabilityV1<T> {
         )
     }
 
+    /// True when the group carries a measured value (`available` or `partial`).
+    #[must_use]
+    pub fn has_value(&self) -> bool {
+        matches!(self, Self::Available { .. } | Self::Partial { .. })
+    }
+
     #[must_use]
     pub fn warning_codes(&self) -> &[String] {
         match self {
@@ -177,12 +184,17 @@ pub struct StatusSnapshotV1 {
     pub volumes: AvailabilityV1<VolumesV1>,
     pub network: AvailabilityV1<NetworkV1>,
     pub power: AvailabilityV1<PowerV1>,
+    pub gpu: AvailabilityV1<GpuV1>,
+    pub thermal: AvailabilityV1<ThermalV1>,
     pub processes: AvailabilityV1<ProcessesV1>,
     pub unsupported_capabilities: Vec<UnsupportedCapabilityV1>,
 }
 
 impl StatusSnapshotV1 {
     #[must_use]
+    /// GPU and thermal are optional host probes. Their absence is reported in
+    /// the group state and `unsupported_capabilities`; it does not degrade the
+    /// snapshot outcome, as before those probes existed.
     pub fn supported_group_is_degraded(&self) -> bool {
         self.cpu.is_degraded()
             || self.memory.is_degraded()
@@ -210,6 +222,8 @@ impl StatusSnapshotV1 {
             self.volumes.warning_codes(),
             self.network.warning_codes(),
             self.power.warning_codes(),
+            self.gpu.warning_codes(),
+            self.thermal.warning_codes(),
             self.processes.warning_codes(),
         ] {
             for code in group {
@@ -287,6 +301,33 @@ pub struct PowerV1 {
     pub remaining_seconds: Option<u64>,
 }
 
+/// GPU engine utilization from `\GPU Engine(*)\Utilization Percentage`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GpuV1 {
+    pub adapters: Vec<GpuAdapterV1>,
+}
+
+/// One adapter: the busiest engine type, summed over its engine instances, in
+/// basis points (0..=10000).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct GpuAdapterV1 {
+    pub adapter_id: String,
+    pub utilization_basis_points: u32,
+}
+
+/// ACPI thermal zones from `\Thermal Zone Information(*)\Temperature`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ThermalV1 {
+    pub zones: Vec<ThermalZoneV1>,
+}
+
+/// One thermal zone in tenths of a degree Celsius.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ThermalZoneV1 {
+    pub zone_id: String,
+    pub temperature_tenths_celsius: i32,
+}
+
 /// Bounded process group with truncation metadata populated before sorting.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProcessesV1 {
@@ -311,7 +352,8 @@ pub struct ProcessV1 {
     pub write_bytes_per_second: u64,
 }
 
-/// Static V1 unsupported capability.
+/// Unsupported V1 capability. GPU utilization and thermal are listed only when
+/// their probe has no value in the same snapshot.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnsupportedCapabilityV1 {
     pub code: UnsupportedCode,
@@ -331,7 +373,7 @@ pub enum UnsupportedCode {
     PhysicalDiskActivity,
 }
 
-/// Static capability state. V1 values are always `unsupported`.
+/// Capability state. V1 values are always `unsupported`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UnsupportedCapabilityState {
@@ -457,17 +499,24 @@ pub struct LiveRequest<'a> {
     pub cancel: Option<&'a Arc<FlagCancelObserver>>,
 }
 
+/// Unsupported capabilities for one snapshot, in the closed V1 order. VRAM,
+/// fan, SMART, and physical-disk activity are always listed. GPU utilization
+/// and thermal are listed only when their probe has no value.
 #[must_use]
-pub fn static_unsupported_capabilities() -> Vec<UnsupportedCapabilityV1> {
+pub fn unsupported_capabilities(
+    gpu: &AvailabilityV1<GpuV1>,
+    thermal: &AvailabilityV1<ThermalV1>,
+) -> Vec<UnsupportedCapabilityV1> {
     [
-        UnsupportedCode::GpuUtilization,
-        UnsupportedCode::Vram,
-        UnsupportedCode::Thermal,
-        UnsupportedCode::Fan,
-        UnsupportedCode::Smart,
-        UnsupportedCode::PhysicalDiskActivity,
+        (UnsupportedCode::GpuUtilization, !gpu.has_value()),
+        (UnsupportedCode::Vram, true),
+        (UnsupportedCode::Thermal, !thermal.has_value()),
+        (UnsupportedCode::Fan, true),
+        (UnsupportedCode::Smart, true),
+        (UnsupportedCode::PhysicalDiskActivity, true),
     ]
     .into_iter()
+    .filter_map(|(code, listed)| listed.then_some(code))
     .map(|code| UnsupportedCapabilityV1 {
         code,
         state: UnsupportedCapabilityState::Unsupported,

@@ -60,8 +60,11 @@ fn external_crate_can_use_the_supported_core_surface() {
     })
     .expect("analyze snapshot serializes externally");
     assert_eq!(devsweep_core::status::STATUS_SNAPSHOT_VERSION, 1);
-    serde_json::to_value(devsweep_core::status::static_unsupported_capabilities())
-        .expect("status capabilities serialize externally");
+    serde_json::to_value(devsweep_core::status::unsupported_capabilities(
+        &devsweep_core::status::AvailabilityV1::unavailable("counter_missing"),
+        &devsweep_core::status::AvailabilityV1::unavailable("counter_missing"),
+    ))
+    .expect("status capabilities serialize externally");
     assert_default::<Sweeper>();
     assert_default::<Executor>();
     assert_scan_service::<SweepScanService>();

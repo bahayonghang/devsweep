@@ -238,9 +238,10 @@
           "volumes": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "items": [{ "volume_id": "volume-fixture", "mount_points": ["C:\\"], "total_bytes": 1000000000, "available_bytes": 400000000 }], "complete": true } },
           "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048 }] } },
           "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null } },
+          "gpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "adapters": [{ "adapter_id": "luid_0x00000000_0x0000C0B6_phys_0", "utilization_basis_points": 1250 }] } },
+          "thermal": { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },
           "processes": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 3, "value": { "items": [{ "pid": 42, "name": "fixture.exe", "cpu_basis_points_of_one_logical_core": 12500, "private_bytes": 1048576, "read_bytes_per_second": 2048, "write_bytes_per_second": 1024 }], "enumerated_count": 4096, "returned_count": 1, "requested_limit": 15, "enumeration_ceiling": 4096, "detail_budget_ms": 150, "truncated_by_limit": true, "budget_exhausted": true }, "reason_codes": ["process_limit", "detail_budget_exhausted"] },
           "unsupported_capabilities": [
-            { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
@@ -254,6 +255,33 @@
     "DesktopStatusLiveResult": { "variants": {
       "DesktopStatusLiveResultCompleted": [{ "type": "completed", "operation_id": "status-live-1" }],
       "DesktopStatusLiveResultCanceled": [{ "type": "canceled", "operation_id": "status-live-1" }]
+    }},
+    "HudStatusEvent": { "variants": {
+      "HudStatusEventSampling": [{ "type": "sampling" }],
+      "HudStatusEventSnapshot": [{
+        "type": "snapshot",
+        "snapshot": {
+          "snapshot_id": "snapshot-fixture",
+          "sampled_at_unix_ms": 1788019200000,
+          "sample_window_ms": 1000,
+          "logical_processor_count": 16,
+          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321 } },
+          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184 }, "reason_codes": ["counter_lagged"] },
+          "volumes": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "items": [{ "volume_id": "volume-fixture", "mount_points": ["C:\\"], "total_bytes": 1000000000, "available_bytes": 400000000 }], "complete": true } },
+          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048 }] } },
+          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null } },
+          "gpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "adapters": [{ "adapter_id": "luid_0x00000000_0x0000C0B6_phys_0", "utilization_basis_points": 1250 }] } },
+          "thermal": { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },
+          "processes": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 3, "value": { "items": [{ "pid": 42, "name": "fixture.exe", "cpu_basis_points_of_one_logical_core": 12500, "private_bytes": 1048576, "read_bytes_per_second": 2048, "write_bytes_per_second": 1024 }], "enumerated_count": 4096, "returned_count": 1, "requested_limit": 15, "enumeration_ceiling": 4096, "detail_budget_ms": 150, "truncated_by_limit": true, "budget_exhausted": true }, "reason_codes": ["process_limit", "detail_budget_exhausted"] },
+          "unsupported_capabilities": [
+            { "code": "vram", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+          ]
+        }
+      }]
     }},
     "StatusEventV1": { "tag": "event", "variants": {
       "StatusEventV1Started": [{
@@ -280,6 +308,8 @@
           "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "gpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "thermal": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "processes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "unsupported_capabilities": [
             { "code": "gpu_utilization", "state": "unsupported", "reason_code": "not_supported_v1" },
@@ -606,6 +636,12 @@
         "outcome": "failed",
         "error_code": "trash_failed"
       }
+    ],
+    "GpuAvailabilityV1": [
+      { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" }
+    ],
+    "ThermalAvailabilityV1": [
+      { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "zones": [{ "zone_id": "\\_TZ.TZ00", "temperature_tenths_celsius": 279 }] } }
     ],
     "CpuAvailabilityV1": [
       { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },

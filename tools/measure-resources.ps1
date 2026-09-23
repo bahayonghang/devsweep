@@ -853,7 +853,8 @@ async function dispatch(session, argv) {
     for (let attempt = 0; attempt < 5 && !live; attempt += 1) {
       if ((await idleOf()) === "live") { live = true; break; }
       const clicked = await session.evaluate(`(() => {
-        const button = document.querySelector(".status-toolbar .secondary-button");
+        // After the enter snapshot, the Status stage action is the live toggle.
+        const button = document.querySelector(".status-mode .stage-action");
         if (!button || button.disabled) return false;
         button.click();
         return true;
@@ -870,7 +871,8 @@ async function dispatch(session, argv) {
     const before = await statusOf();
     const requestedAt = Date.now();
     const cancelClicked = await session.evaluate(`(() => {
-      const button = document.querySelector(".status-toolbar .danger-button");
+      // While live, the Status stage action is the stop control.
+      const button = document.querySelector(".status-mode .stage-action");
       if (button) button.click();
       return !!button;
     })()`);
@@ -1803,7 +1805,7 @@ function Measure-DesktopStatusStop([string]$Label) {
         final_five       = @((Get-SampleRows $post) | Select-Object -Last 5)
         live             = $live
         post_file        = $postFile
-        stop_control     = 'status-toolbar danger-button -> bridge.statusCancel -> status_cancel'
+        stop_control     = 'status-mode stage-action -> bridge.statusCancel -> status_cancel'
     }
 }
 

@@ -20,13 +20,18 @@ import {
   INTERVAL_STEPS_MS,
   availableValue,
   formatBasisPoints,
+  formatTenths,
   initialStatusState,
-  sortedProcesses,
+  memoryBasisPoints,
+  peakGpuBasisPoints,
+  peakTemperatureTenths,
+  processRows,
   statusReducer,
   type ChartPoint,
   type ProcessSort,
   type StatusOperation,
 } from "./state";
+import { MAX_PINNED_PROCESSES } from "./processes";
 import "./styles.css";
 
 interface StatusWorkbenchProps {
@@ -113,6 +118,52 @@ function powerCard(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1):
   })}`;
 }
 
+function gpuCards(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string[] {
+  const gpu = availableValue(snapshot.gpu);
+  if (!gpu) return [taggedLine(locale, "gpu", snapshot.gpu)];
+  return gpu.adapters.map((adapter) => message(locale, "status.v1.gpu.adapter", {
+    adapter: adapter.adapter_id,
+    percent: formatBasisPoints(adapter.utilization_basis_points),
+  }));
+}
+
+function thermalCards(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string[] {
+  const thermal = availableValue(snapshot.thermal);
+  if (!thermal) return [taggedLine(locale, "thermal", snapshot.thermal)];
+  return thermal.zones.map((zone) => message(locale, "status.v1.thermal.zone", {
+    zone: zone.zone_id,
+    celsius: formatTenths(zone.temperature_tenths_celsius),
+  }));
+}
+
+/** Memory, GPU, temperature, and battery for the one-line stage facts. */
+function stageFacts(locale: PresentationLanguageTag, snapshot: StatusSnapshotV1): string[] {
+  const facts: string[] = [];
+  const memory = memoryBasisPoints(snapshot);
+  facts.push(memory === null
+    ? message(locale, "status.v1.stage.memory.unavailable")
+    : message(locale, "status.v1.stage.memory", { percent: formatBasisPoints(memory) }));
+  const gpu = peakGpuBasisPoints(snapshot);
+  facts.push(gpu === null
+    ? message(locale, "status.v1.stage.gpu.unavailable")
+    : message(locale, "status.v1.stage.gpu", { percent: formatBasisPoints(gpu) }));
+  const temperature = peakTemperatureTenths(snapshot);
+  facts.push(temperature === null
+    ? message(locale, "status.v1.stage.temperature.unavailable")
+    : message(locale, "status.v1.stage.temperature", { celsius: formatTenths(temperature) }));
+  const power = availableValue(snapshot.power);
+  if (power?.battery_present) {
+    const battery = message(locale, "status.v1.stage.battery", {
+      percent: power.charge_basis_points === null ? "-" : formatBasisPoints(power.charge_basis_points),
+      ac: message(locale, `status.v1.ac.${power.ac_state}` as MessageKey),
+    });
+    facts.push(power.remaining_seconds === null
+      ? battery
+      : `${battery}, ${message(locale, "status.v1.stage.battery.remaining", { minutes: String(Math.floor(power.remaining_seconds / 60)) })}`);
+  }
+  return facts;
+}
+
 function chartValues(locale: PresentationLanguageTag, points: readonly ChartPoint[], present: (point: ChartPoint) => string | null): string {
   const gap = message(locale, "status.v1.chart.gap");
   return points.map((point) => present(point) ?? gap).join(", ");
@@ -139,13 +190,17 @@ function chartSegments(points: readonly ChartPoint[], present: (point: ChartPoin
   return segments;
 }
 
-function metricGlyph(family: "cpu" | "memory" | "power" | "volume" | "network"): GlyphName {
+type MetricFamily = "cpu" | "memory" | "power" | "volume" | "network" | "gpu" | "thermal";
+
+function metricGlyph(family: MetricFamily): GlyphName {
   switch (family) {
     case "cpu": return "status";
     case "memory": return "package_cache";
     case "power": return "tool_cache";
     case "volume": return "dependency_directory";
     case "network": return "node";
+    case "gpu": return "generic";
+    case "thermal": return "risk";
   }
 }
 
@@ -154,7 +209,7 @@ function StatusMetricCard({
   title,
   value,
 }: {
-  readonly family: "cpu" | "memory" | "power" | "volume" | "network";
+  readonly family: MetricFamily;
   readonly title?: string;
   readonly value: string;
 }) {
@@ -294,7 +349,8 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
     : state.status === "live" || state.status === "ready" ? "status-chip-ok"
       : state.status === "canceling" ? "status-chip-warning"
         : "";
-  const processes = sortedProcesses(state);
+  const processes = processRows(state);
+  const pinLimitReached = state.pins.length >= MAX_PINNED_PROCESSES;
   const processGroup = state.snapshot ? availableValue(state.snapshot.processes) : null;
   const decodeError = typeof state.error === "string" ? state.error : null;
   const commandErr = state.error && typeof state.error !== "string" ? state.error : null;
@@ -333,7 +389,7 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         caption={message(locale, "status.v1.chart.cpu")}
         value={cpu ? formatBasisPoints(cpu.system_utilization_basis_points) : cpuCard(locale, state.snapshot)}
         unit={cpu ? "%" : undefined}
-        meta={<><p><AccessibleUserData value={memoryCard(locale, state.snapshot)} /></p>{liveStatus}</>}
+        meta={<><p className="status-stage-facts">{stageFacts(locale, state.snapshot).join(" · ")}</p>{liveStatus}</>}
         action={liveToggle("stage-action", "stage-action")}
         secondary={<button type="button" className="stage-link" onClick={() => setDetails(true)}>{message(locale, "stage.v1.action.details")}</button>}
       />}
@@ -376,6 +432,8 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         <StatusMetricCard family="cpu" title={message(locale, "status.v1.chart.cpu")} value={cpuCard(locale, state.snapshot)} />
         <StatusMetricCard family="memory" title={message(locale, "status.v1.chart.memory")} value={memoryCard(locale, state.snapshot)} />
         <StatusMetricCard family="power" value={powerCard(locale, state.snapshot)} />
+        {gpuCards(locale, state.snapshot).map((line) => <StatusMetricCard family="gpu" key={line} title={message(locale, "status.v1.chart.gpu")} value={line} />)}
+        {thermalCards(locale, state.snapshot).map((line) => <StatusMetricCard family="thermal" key={line} title={message(locale, "status.v1.chart.temperature")} value={line} />)}
         {volumeCards(locale, state.snapshot).map((line) => <StatusMetricCard family="volume" key={line} value={line} />)}
         {networkCards(locale, state.snapshot).map((line) => <StatusMetricCard family="network" key={line} value={line} />)}
       </section>
@@ -410,33 +468,64 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
             budget: String(processGroup.detail_budget_ms),
           })}</p>
         : null}
+      {pinLimitReached
+        ? <p className="status-muted">{message(locale, "status.v1.process.pin.limit", { limit: String(MAX_PINNED_PROCESSES) })}</p>
+        : null}
       <div className="status-table-frame">
         <table className="status-table">
           <thead>
             <tr>
-              {(["name", "pid", "cpu", "memory"] as const).map((column) => {
-                const sort: ProcessSort = column === "name" ? "name" : column === "pid" ? "pid" : column === "cpu" ? "cpu" : "memory";
-                return <th key={column}>
-                  <button type="button" aria-pressed={state.processSort === sort} onClick={() => dispatch({ type: "sort_changed", sort })}>
-                    {message(locale, `status.v1.table.${column}` as MessageKey)}
+              <th scope="col">{message(locale, "status.v1.table.pin")}</th>
+              {(["name", "pid", "cpu", "memory"] as const satisfies readonly ProcessSort[]).map((sort) => {
+                const active = state.processSort === sort;
+                return <th key={sort} scope="col" aria-sort={active ? state.processSortDirection : undefined}>
+                  <button type="button" onClick={() => dispatch({ type: "sort_changed", sort })}>
+                    {message(locale, `status.v1.table.${sort}` as MessageKey)}
+                    {active ? <span aria-hidden="true">{state.processSortDirection === "ascending" ? " \u25B2" : " \u25BC"}</span> : null}
                   </button>
                 </th>;
               })}
-              <th>{message(locale, "status.v1.table.read")}</th>
-              <th>{message(locale, "status.v1.table.write")}</th>
+              <th scope="col">{message(locale, "status.v1.table.read")}</th>
+              <th scope="col">{message(locale, "status.v1.table.write")}</th>
             </tr>
           </thead>
           <tbody>
-            {processes.map((process) => (
-              <tr key={process.pid}>
+            {processes.map((row) => {
+              if (row.kind === "absent") {
+                return <tr key={`absent-${row.pid}`} className="status-row-pinned status-row-absent">
+                  <td>
+                    <button type="button" className="status-pin" aria-pressed="true" aria-label={message(locale, "status.v1.process.unpin", { name: row.name, pid: String(row.pid) })} onClick={() => dispatch({ type: "pin_toggled", pid: row.pid, name: row.name })}>
+                      {message(locale, "status.v1.action.unpin")}
+                    </button>
+                  </td>
+                  <td><AccessibleUserData value={row.name} /></td>
+                  <td>{row.pid}</td>
+                  <td colSpan={4}>{message(locale, row.status === "exited" ? "status.v1.process.exited" : "status.v1.process.unsampled")}</td>
+                </tr>;
+              }
+              const { process, pinned } = row;
+              const label = { name: process.name, pid: String(process.pid) };
+              return <tr key={process.pid} className={pinned ? "status-row-pinned" : undefined}>
+                <td>
+                  <button
+                    type="button"
+                    className="status-pin"
+                    aria-pressed={pinned}
+                    aria-label={message(locale, pinned ? "status.v1.process.unpin" : "status.v1.process.pin", label)}
+                    disabled={!pinned && pinLimitReached}
+                    onClick={() => dispatch({ type: "pin_toggled", pid: process.pid, name: process.name })}
+                  >
+                    {message(locale, pinned ? "status.v1.action.unpin" : "status.v1.action.pin")}
+                  </button>
+                </td>
                 <td><AccessibleUserData value={process.name} /></td>
                 <td>{process.pid}</td>
                 <td>{formatBasisPoints(process.cpu_basis_points_of_one_logical_core)}</td>
                 <td>{formatBytes(process.private_bytes)}</td>
                 <td>{formatBytes(process.read_bytes_per_second)}</td>
                 <td>{formatBytes(process.write_bytes_per_second)}</td>
-              </tr>
-            ))}
+              </tr>;
+            })}
           </tbody>
         </table>
       </div>

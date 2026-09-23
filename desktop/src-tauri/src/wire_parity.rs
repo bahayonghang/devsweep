@@ -21,6 +21,7 @@ use crate::{
     analyze::{DesktopAnalyzeProgress, DesktopAnalyzeResult},
     clean::DryRunOutcome,
     error::CommandError,
+    hud::HudStatusEvent,
     optimize::{
         DesktopOptimizeAuditResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult,
     },
@@ -299,6 +300,18 @@ fn status_fixtures_match_the_status_command_wire_types() {
     ] {
         assert_round_trip::<StatusEventV1>(label, raw);
     }
+}
+
+#[test]
+fn hud_fixtures_match_the_hud_event_wire_type() {
+    assert_round_trip::<HudStatusEvent>(
+        "status/hud-sampling.json",
+        include_str!("../../src/api/fixtures/status/hud-sampling.json"),
+    );
+    assert_round_trip::<HudStatusEvent>(
+        "status/hud-snapshot.json",
+        include_str!("../../src/api/fixtures/status/hud-snapshot.json"),
+    );
 }
 
 #[test]

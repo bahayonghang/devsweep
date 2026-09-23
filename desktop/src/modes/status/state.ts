@@ -4,6 +4,20 @@ import type {
   StatusEventV1,
   StatusSnapshotV1,
 } from "../../api/types.gen";
+import {
+  defaultDirection,
+  nextSort,
+  processTableRows,
+  reconcilePins,
+  sortProcesses,
+  togglePin,
+  type PinnedProcess,
+  type ProcessSort,
+  type ProcessTableRow,
+  type SortDirection,
+} from "./processes";
+
+export type { PinnedProcess, ProcessSort, ProcessTableRow, SortDirection } from "./processes";
 
 export const MAX_CHART_POINTS = 60;
 export const INTERVAL_STEPS_MS = [1_000, 2_000, 5_000, 10_000, 30_000, 60_000] as const;
@@ -12,7 +26,6 @@ export const DEFAULT_PROCESS_LIMIT = 15;
 
 export type StatusPhase = "idle" | "snapshot" | "ready" | "live" | "canceling" | "failed";
 export type StatusOperation = "snapshot" | "live";
-export type ProcessSort = "cpu" | "memory" | "name" | "pid";
 
 export interface ChartPoint {
   readonly sequence: number;
@@ -31,6 +44,8 @@ export interface StatusState {
   readonly snapshot: StatusSnapshotV1 | null;
   readonly chart: readonly ChartPoint[];
   readonly processSort: ProcessSort;
+  readonly processSortDirection: SortDirection;
+  readonly pins: readonly PinnedProcess[];
   readonly intervalMs: number;
   readonly processLimit: number;
   readonly lastSequence: number | null;
@@ -46,6 +61,8 @@ export const initialStatusState: StatusState = {
   snapshot: null,
   chart: [],
   processSort: "cpu",
+  processSortDirection: defaultDirection("cpu"),
+  pins: [],
   intervalMs: DEFAULT_INTERVAL_MS,
   processLimit: DEFAULT_PROCESS_LIMIT,
   lastSequence: null,
@@ -62,6 +79,7 @@ export type StatusAction =
   | { readonly type: "operation_failed"; readonly operationId: string; readonly error: CommandError | string }
   | { readonly type: "interval_changed"; readonly intervalMs: number }
   | { readonly type: "sort_changed"; readonly sort: ProcessSort }
+  | { readonly type: "pin_toggled"; readonly pid: number; readonly name: string }
   | { readonly type: "error_dismissed" }
   | { readonly type: "released" };
 
@@ -73,6 +91,33 @@ export function availableValue<T>(availability: { readonly state: string; readon
 
 export function formatBasisPoints(points: number): string {
   return `${Math.floor(points / 100)}.${String(points % 100).padStart(2, "0")}`;
+}
+
+export function formatTenths(tenths: number): string {
+  const sign = tenths < 0 ? "-" : "";
+  const magnitude = Math.abs(tenths);
+  return `${sign}${Math.floor(magnitude / 10)}.${magnitude % 10}`;
+}
+
+/** Used memory in basis points of total memory, or null without a value. */
+export function memoryBasisPoints(snapshot: StatusSnapshotV1): number | null {
+  const memory = availableValue(snapshot.memory);
+  if (!memory || memory.total_bytes <= 0) return null;
+  return Math.min(10_000, Math.floor((memory.used_bytes * 10_000) / memory.total_bytes));
+}
+
+/** The busiest GPU adapter, or null when the GPU probe has no value. */
+export function peakGpuBasisPoints(snapshot: StatusSnapshotV1): number | null {
+  const gpu = availableValue(snapshot.gpu);
+  if (!gpu || gpu.adapters.length === 0) return null;
+  return Math.max(...gpu.adapters.map((adapter) => adapter.utilization_basis_points));
+}
+
+/** The warmest thermal zone, or null when the thermal probe has no value. */
+export function peakTemperatureTenths(snapshot: StatusSnapshotV1): number | null {
+  const thermal = availableValue(snapshot.thermal);
+  if (!thermal || thermal.zones.length === 0) return null;
+  return Math.max(...thermal.zones.map((zone) => zone.temperature_tenths_celsius));
 }
 
 function gapPoint(sequence: number): ChartPoint {
@@ -155,6 +200,7 @@ function ingestLive(state: StatusState, event: StatusEventV1): StatusState {
     return {
       ...sequenced,
       snapshot: event.data,
+      pins: reconcilePins(sequenced.pins, event.data),
       chart: pushChart(sequenced.chart, pointFromSnapshot(event.sequence, event.data)),
     };
   }
@@ -175,20 +221,12 @@ function ingestLive(state: StatusState, event: StatusEventV1): StatusState {
 export function sortedProcesses(state: StatusState): readonly ProcessV1[] {
   const group = state.snapshot ? availableValue(state.snapshot.processes) : null;
   if (!group) return [];
-  const rows = [...group.items];
-  rows.sort((left, right) => {
-    if (state.processSort === "cpu") {
-      return right.cpu_basis_points_of_one_logical_core - left.cpu_basis_points_of_one_logical_core || left.pid - right.pid;
-    }
-    if (state.processSort === "memory") {
-      return right.private_bytes - left.private_bytes || left.pid - right.pid;
-    }
-    if (state.processSort === "name") {
-      return left.name.localeCompare(right.name) || left.pid - right.pid;
-    }
-    return left.pid - right.pid;
-  });
-  return rows;
+  return sortProcesses(group.items, state.processSort, state.processSortDirection);
+}
+
+export function processRows(state: StatusState): readonly ProcessTableRow[] {
+  const group = state.snapshot ? availableValue(state.snapshot.processes) : null;
+  return processTableRows(group?.items ?? [], state.pins, state.processSort, state.processSortDirection);
 }
 
 export function statusReducer(state: StatusState, action: StatusAction): StatusState {
@@ -213,6 +251,7 @@ export function statusReducer(state: StatusState, action: StatusAction): StatusS
       return {
         ...finish(state, "ready"),
         snapshot: action.snapshot,
+        pins: reconcilePins(state.pins, action.snapshot),
         error: null,
       };
     case "live_event":
@@ -226,8 +265,12 @@ export function statusReducer(state: StatusState, action: StatusAction): StatusS
       return { ...finish(state, "failed"), error: action.error };
     case "interval_changed":
       return { ...state, intervalMs: clampInterval(action.intervalMs) };
-    case "sort_changed":
-      return { ...state, processSort: action.sort };
+    case "sort_changed": {
+      const next = nextSort(state.processSort, state.processSortDirection, action.sort);
+      return { ...state, processSort: next.sort, processSortDirection: next.direction };
+    }
+    case "pin_toggled":
+      return { ...state, pins: togglePin(state.pins, action.pid, action.name) };
     case "error_dismissed":
       return { ...state, error: null };
     case "released":

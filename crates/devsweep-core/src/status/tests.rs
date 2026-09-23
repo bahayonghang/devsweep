@@ -18,12 +18,28 @@ fn snapshot_round_trips_without_field_loss_or_rename() {
         "volumes",
         "network",
         "power",
+        "gpu",
+        "thermal",
         "processes",
         "unsupported_capabilities",
     ] {
         assert!(object.contains_key(key), "missing {key}");
     }
-    assert_eq!(snapshot.unsupported_capabilities.len(), 6);
+    assert_eq!(object.len(), 13);
+    assert_eq!(
+        snapshot
+            .unsupported_capabilities
+            .iter()
+            .map(|capability| capability.code)
+            .collect::<Vec<_>>(),
+        [
+            UnsupportedCode::Vram,
+            UnsupportedCode::Thermal,
+            UnsupportedCode::Fan,
+            UnsupportedCode::Smart,
+            UnsupportedCode::PhysicalDiskActivity,
+        ]
+    );
 }
 
 #[test]
@@ -86,11 +102,81 @@ fn live_events_are_internally_tagged_with_sequence() {
 }
 
 #[test]
-fn static_capabilities_are_unsupported_not_zero() {
-    for capability in static_unsupported_capabilities() {
+fn capabilities_are_unsupported_not_zero() {
+    let gpu = AvailabilityV1::<GpuV1>::unavailable("counter_missing");
+    let thermal = AvailabilityV1::<ThermalV1>::unavailable("no_instances");
+    let listed = unsupported_capabilities(&gpu, &thermal);
+    assert_eq!(listed.len(), 6);
+    for capability in listed {
         assert_eq!(capability.state, UnsupportedCapabilityState::Unsupported);
         assert_eq!(capability.reason_code, "not_supported_v1");
     }
+}
+
+#[test]
+fn probed_capabilities_leave_the_unsupported_list_only_with_a_value() {
+    let gpu = AvailabilityV1::available(
+        1,
+        0,
+        GpuV1 {
+            adapters: vec![GpuAdapterV1 {
+                adapter_id: "luid_0x0_0x1_phys_0".into(),
+                utilization_basis_points: 0,
+            }],
+        },
+    );
+    let thermal = AvailabilityV1::available(
+        1,
+        0,
+        ThermalV1 {
+            zones: vec![ThermalZoneV1 {
+                zone_id: "zone".into(),
+                temperature_tenths_celsius: 279,
+            }],
+        },
+    );
+    let codes = |gpu: &AvailabilityV1<GpuV1>, thermal: &AvailabilityV1<ThermalV1>| {
+        unsupported_capabilities(gpu, thermal)
+            .into_iter()
+            .map(|capability| capability.code)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        codes(&gpu, &thermal),
+        [
+            UnsupportedCode::Vram,
+            UnsupportedCode::Fan,
+            UnsupportedCode::Smart,
+            UnsupportedCode::PhysicalDiskActivity,
+        ]
+    );
+    let missing_gpu = AvailabilityV1::<GpuV1>::unavailable("counter_missing");
+    assert_eq!(
+        codes(&missing_gpu, &thermal)[0],
+        UnsupportedCode::GpuUtilization
+    );
+    let unsupported_thermal = AvailabilityV1::<ThermalV1>::unsupported("platform_unsupported");
+    assert!(codes(&gpu, &unsupported_thermal).contains(&UnsupportedCode::Thermal));
+}
+
+#[test]
+fn missing_gpu_or_thermal_does_not_degrade_the_snapshot_outcome() {
+    let mut snapshot = fixture_snapshot();
+    snapshot.memory = AvailabilityV1::available(
+        1,
+        0,
+        MemoryV1 {
+            total_bytes: 2,
+            available_bytes: 1,
+            used_bytes: 1,
+        },
+    );
+    snapshot.processes = AvailabilityV1::unsupported("platform_unsupported");
+    snapshot.thermal = AvailabilityV1::unsupported("platform_unsupported");
+    assert_eq!(snapshot.envelope_outcome(), "success");
+    snapshot.gpu = AvailabilityV1::unavailable("counter_missing");
+    assert_eq!(snapshot.envelope_outcome(), "success");
+    assert!(snapshot.envelope_warnings().is_empty());
 }
 
 fn fixture_snapshot() -> StatusSnapshotV1 {
@@ -152,6 +238,17 @@ fn fixture_snapshot() -> StatusSnapshotV1 {
                 remaining_seconds: None,
             },
         ),
+        gpu: AvailabilityV1::available(
+            1_788_019_200_000,
+            0,
+            GpuV1 {
+                adapters: vec![GpuAdapterV1 {
+                    adapter_id: "luid_0x00000000_0x0000C0B6_phys_0".into(),
+                    utilization_basis_points: 1_250,
+                }],
+            },
+        ),
+        thermal: AvailabilityV1::unavailable("counter_missing"),
         processes: AvailabilityV1::partial(
             1_788_019_200_000,
             3,
@@ -174,6 +271,15 @@ fn fixture_snapshot() -> StatusSnapshotV1 {
             },
             vec!["process_limit".into(), "detail_budget_exhausted".into()],
         ),
-        unsupported_capabilities: static_unsupported_capabilities(),
+        unsupported_capabilities: unsupported_capabilities(
+            &AvailabilityV1::available(
+                1,
+                0,
+                GpuV1 {
+                    adapters: Vec::new(),
+                },
+            ),
+            &AvailabilityV1::<ThermalV1>::unavailable("counter_missing"),
+        ),
     }
 }

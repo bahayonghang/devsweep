@@ -16,15 +16,15 @@ use super::{
     StatusSnapshotV1, StatusStartedV1, StatusTerminalV1, TickSkipReason, TickSkippedV1,
     VOLUME_POWER_REFRESH_MS, clamp_interval_ms, clamp_process_limit, logical_processor_count,
     network::{InterfaceCounters, network_from_pair, sample_interfaces},
+    pdh::{PdhGroups, PdhProbe},
     process::{
         ProcessCounters, ProcessGroupMeta, ProcessIdentity, detail_processes, enumerate_identities,
         sample_process_group,
     },
-    static_unsupported_capabilities,
     system::{
         CpuTimes, cpu_availability, sample_cpu_times, sample_memory, sample_power, sample_volumes,
     },
-    unix_now_ms,
+    unix_now_ms, unsupported_capabilities,
 };
 
 const _: (u32, u32) = (DEFAULT_LIVE_INTERVAL_MS, DEFAULT_PROCESS_LIMIT);
@@ -92,6 +92,18 @@ struct SamplerCache {
     power_at_ms: u64,
     last_processes: Option<AvailabilityV1<super::ProcessesV1>>,
     last_sample_at: Option<Instant>,
+    pdh: Option<Arc<PdhProbe>>,
+}
+
+impl SamplerCache {
+    /// Open and prime the PDH query once per sampler. Later ticks collect once
+    /// and read the rate since the previous tick.
+    fn pdh_probe(&mut self) -> Arc<PdhProbe> {
+        Arc::clone(
+            self.pdh
+                .get_or_insert_with(|| Arc::new(PdhProbe::open_primed())),
+        )
+    }
 }
 
 impl StatusSampler {
@@ -371,6 +383,7 @@ fn collect_snapshot(
         }
     };
     let first_net = sample_interfaces().ok();
+    let pdh = cache.pdh_probe();
     let ProcessBaseline {
         counters: first_proc,
         identities,
@@ -471,6 +484,7 @@ fn collect_snapshot(
     }
     let volumes = age_group(cache.volumes.clone(), cache.volumes_at_ms, sampled_at);
     let power = age_group(cache.power.clone(), cache.power_at_ms, sampled_at);
+    let PdhGroups { gpu, thermal } = pdh.sample(sampled_at);
 
     let processes = if need_process_refresh {
         let second = detail_processes(
@@ -523,8 +537,10 @@ fn collect_snapshot(
         volumes,
         network,
         power,
+        unsupported_capabilities: unsupported_capabilities(&gpu, &thermal),
+        gpu,
+        thermal,
         processes,
-        unsupported_capabilities: static_unsupported_capabilities(),
     })
 }
 
@@ -537,10 +553,12 @@ fn compose_without_delta(
     need_power_refresh: bool,
     cancel: &dyn CancelObserver,
 ) -> Result<StatusSnapshotV1, StatusError> {
+    let pdh = cache.pdh_probe();
     if wait_with_cancel(Duration::from_millis(u64::from(SNAPSHOT_WINDOW_MS)), cancel) {
         return Err(StatusError::Canceled);
     }
     let sampled_at = unix_now_ms();
+    let PdhGroups { gpu, thermal } = pdh.sample(sampled_at);
     if need_volume_refresh {
         cache.volumes = Some(sample_volumes());
         cache.volumes_at_ms = monotonic_ms();
@@ -608,8 +626,10 @@ fn compose_without_delta(
         volumes: age_group(cache.volumes.clone(), cache.volumes_at_ms, sampled_at),
         network,
         power: age_group(cache.power.clone(), cache.power_at_ms, sampled_at),
+        unsupported_capabilities: unsupported_capabilities(&gpu, &thermal),
+        gpu,
+        thermal,
         processes,
-        unsupported_capabilities: static_unsupported_capabilities(),
     })
 }
 

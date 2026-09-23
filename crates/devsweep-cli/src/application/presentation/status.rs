@@ -1,7 +1,8 @@
 //! Bilingual Status V1 human renderer over the frozen snapshot DTO.
 
 use devsweep_core::status::{
-    AcState, AvailabilityV1, PowerV1, ProcessesV1, StatusEventV1, StatusSnapshotV1, TerminalReason,
+    AcState, AvailabilityV1, GpuV1, PowerV1, ProcessesV1, StatusEventV1, StatusSnapshotV1,
+    TerminalReason, ThermalV1,
 };
 
 use super::render;
@@ -25,6 +26,8 @@ pub(crate) fn snapshot(
     lines.extend(render_volumes(locale, &snapshot.volumes)?);
     lines.extend(render_network(locale, &snapshot.network)?);
     lines.push(render_power(locale, &snapshot.power)?);
+    lines.extend(render_gpu(locale, &snapshot.gpu)?);
+    lines.extend(render_thermal(locale, &snapshot.thermal)?);
     lines.extend(render_processes(locale, &snapshot.processes)?);
     Ok(lines.join("\n"))
 }
@@ -228,6 +231,73 @@ fn render_power(locale: Locale, power: &AvailabilityV1<PowerV1>) -> Result<Strin
     }
 }
 
+fn render_gpu(locale: Locale, gpu: &AvailabilityV1<GpuV1>) -> Result<Vec<String>, CatalogueError> {
+    match gpu {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+            let mut lines = value
+                .adapters
+                .iter()
+                .map(|adapter| {
+                    render(
+                        locale,
+                        "status.v1.gpu.adapter",
+                        &[
+                            ("adapter", adapter.adapter_id.as_str()),
+                            ("percent", &basis_points(adapter.utilization_basis_points)),
+                        ],
+                        None,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            if let AvailabilityV1::Partial { reason_codes, .. } = gpu {
+                lines.push(render(
+                    locale,
+                    "status.v1.group.partial",
+                    &[("group", "gpu"), ("reasons", &reason_codes.join(","))],
+                    None,
+                )?);
+            }
+            Ok(lines)
+        }
+        other => Ok(vec![tagged_group(locale, "gpu", other)?]),
+    }
+}
+
+fn render_thermal(
+    locale: Locale,
+    thermal: &AvailabilityV1<ThermalV1>,
+) -> Result<Vec<String>, CatalogueError> {
+    match thermal {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+            let mut lines = value
+                .zones
+                .iter()
+                .map(|zone| {
+                    render(
+                        locale,
+                        "status.v1.thermal.zone",
+                        &[
+                            ("zone", zone.zone_id.as_str()),
+                            ("celsius", &tenths(zone.temperature_tenths_celsius)),
+                        ],
+                        None,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            if let AvailabilityV1::Partial { reason_codes, .. } = thermal {
+                lines.push(render(
+                    locale,
+                    "status.v1.group.partial",
+                    &[("group", "thermal"), ("reasons", &reason_codes.join(","))],
+                    None,
+                )?);
+            }
+            Ok(lines)
+        }
+        other => Ok(vec![tagged_group(locale, "thermal", other)?]),
+    }
+}
+
 fn render_processes(
     locale: Locale,
     processes: &AvailabilityV1<ProcessesV1>,
@@ -331,11 +401,18 @@ fn basis_points(points: u32) -> String {
     format!("{}.{:02}", points / 100, points % 100)
 }
 
+fn tenths(value: i32) -> String {
+    let sign = if value < 0 { "-" } else { "" };
+    let magnitude = value.unsigned_abs();
+    format!("{sign}{}.{}", magnitude / 10, magnitude % 10)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use devsweep_core::status::{
-        CpuV1, MemoryV1, PowerV1, ProcessV1, ProcessesV1, static_unsupported_capabilities,
+        CpuV1, GpuAdapterV1, MemoryV1, PowerV1, ProcessV1, ProcessesV1, ThermalZoneV1,
+        unsupported_capabilities,
     };
 
     fn fixture() -> StatusSnapshotV1 {
@@ -372,6 +449,17 @@ mod tests {
                     remaining_seconds: None,
                 },
             ),
+            gpu: AvailabilityV1::available(
+                1,
+                0,
+                GpuV1 {
+                    adapters: vec![GpuAdapterV1 {
+                        adapter_id: "luid_0x0_0x1_phys_0".into(),
+                        utilization_basis_points: 1_250,
+                    }],
+                },
+            ),
+            thermal: AvailabilityV1::unavailable("counter_missing"),
             processes: AvailabilityV1::partial(
                 1,
                 0,
@@ -394,7 +482,7 @@ mod tests {
                 },
                 vec!["process_limit".into()],
             ),
-            unsupported_capabilities: static_unsupported_capabilities(),
+            unsupported_capabilities: Vec::new(),
         }
     }
 
@@ -409,9 +497,41 @@ mod tests {
         assert!(english.contains("process_limit"));
         assert!(chinese.contains("无电池"));
         assert!(chinese.contains("fixture.exe"));
+        assert!(english.contains("GPU luid_0x0_0x1_phys_0: 12.50%"));
+        assert!(english.contains("thermal: unavailable (counter_missing)"));
+        assert!(chinese.contains("GPU luid_0x0_0x1_phys_0：12.50%"));
         for text in [english, chinese] {
             assert!(!text.contains("cmdline"));
             assert!(!text.contains("CleanupPlan"));
         }
+    }
+
+    #[test]
+    fn thermal_rows_use_tenths_of_a_degree_and_missing_gpu_is_not_zero() {
+        let mut document = fixture();
+        document.gpu = AvailabilityV1::unavailable("counter_missing");
+        document.thermal = AvailabilityV1::available(
+            1,
+            0,
+            ThermalV1 {
+                zones: vec![
+                    ThermalZoneV1 {
+                        zone_id: "TZ00".into(),
+                        temperature_tenths_celsius: 279,
+                    },
+                    ThermalZoneV1 {
+                        zone_id: "COLD".into(),
+                        temperature_tenths_celsius: -5,
+                    },
+                ],
+            },
+        );
+        document.unsupported_capabilities =
+            unsupported_capabilities(&document.gpu, &document.thermal);
+        let english = snapshot(Locale::En, &document).unwrap();
+        assert!(english.contains("Temperature TZ00: 27.9 °C"));
+        assert!(english.contains("Temperature COLD: -0.5 °C"));
+        assert!(english.contains("gpu: unavailable (counter_missing)"));
+        assert!(!english.contains("GPU luid"));
     }
 }

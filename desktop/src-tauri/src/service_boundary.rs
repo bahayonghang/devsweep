@@ -14,11 +14,13 @@ const ADAPTER_SOURCES: &[(&str, &str)] = &[
     ("clean.rs", include_str!("clean.rs")),
     ("commands.rs", include_str!("commands.rs")),
     ("error.rs", include_str!("error.rs")),
+    ("hud.rs", include_str!("hud.rs")),
     ("optimize.rs", include_str!("optimize.rs")),
     ("scan.rs", include_str!("scan.rs")),
     ("software.rs", include_str!("software.rs")),
     ("status.rs", include_str!("status.rs")),
     ("support.rs", include_str!("support.rs")),
+    ("tray.rs", include_str!("tray.rs")),
 ];
 
 /// Returns the part of an adapter file before its test module.

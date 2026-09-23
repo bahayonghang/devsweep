@@ -30,6 +30,10 @@
   App exit (`RunEvent::ExitRequested`) → cancel + join before exit.
 - Main window close → `app.exit(0)`; the tray is dropped with the app.
 - Capabilities: allow the `hud` window the event listen permission only.
+- Command gate (implementation note): without an app ACL manifest, Tauri 2
+  lets every local window invoke every app command. `lib.rs` wraps
+  `generate_handler!` in `window_gated`: `main` may invoke all commands,
+  `hud` only `presentation_settings_get`, any other label nothing.
 
 ## Desktop
 

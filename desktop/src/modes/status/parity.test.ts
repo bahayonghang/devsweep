@@ -4,11 +4,13 @@ import startedJson from "../../api/fixtures/status/event-started.json";
 import { decodeStatusEvent, decodeStatusSnapshot } from "../../api/contract";
 
 describe("status cross-surface fixtures", () => {
-  it("keeps process rows on the closed privacy set and omits GPU as a measured card", () => {
+  it("keeps process rows on the closed privacy set and lists GPU as unsupported only without a value", () => {
     const snapshot = decodeStatusSnapshot(snapshotJson);
     expect(snapshot.unsupported_capabilities.map((item) => item.code)).toEqual([
-      "gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity",
+      "vram", "thermal", "fan", "smart", "physical_disk_activity",
     ]);
+    expect(snapshot.gpu.state).toBe("available");
+    expect(snapshot.thermal.state).toBe("unavailable");
     expect(snapshot.processes.state === "partial" ? snapshot.processes.value?.items[0] : undefined).toEqual({
       pid: 42,
       name: "fixture.exe",

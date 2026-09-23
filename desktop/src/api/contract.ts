@@ -71,6 +71,7 @@ import type {
   SoftwareStartupToggleReportV1,
   SoftwareUpdateRowV1,
   SoftwareUpdatesV1,
+  HudStatusEvent,
   StatusEventV1,
   StatusSnapshotV1,
   UntrustedTarget,
@@ -1321,7 +1322,7 @@ const UNSUPPORTED_CODES = [
 ] as const;
 const SNAPSHOT_KEYS = [
   "snapshot_id", "sampled_at_unix_ms", "sample_window_ms", "logical_processor_count",
-  "cpu", "memory", "volumes", "network", "power", "processes", "unsupported_capabilities",
+  "cpu", "memory", "volumes", "network", "power", "gpu", "thermal", "processes", "unsupported_capabilities",
 ] as const;
 
 function decodeAvailability<T>(
@@ -1429,6 +1430,35 @@ function decodePowerValue(value: unknown) {
   };
 }
 
+function decodeGpuValue(value: unknown) {
+  const input = record(value, "gpu.value");
+  exact(input, ["adapters"], "gpu.value");
+  return {
+    adapters: array(input.adapters, "gpu.adapters", (item) => {
+      const adapter = record(item, "gpu.adapter");
+      exact(adapter, ["adapter_id", "utilization_basis_points"], "gpu.adapter");
+      const utilization_basis_points = unsignedInteger(adapter.utilization_basis_points, "gpu.utilization_basis_points");
+      if (utilization_basis_points > 10_000) throw new Error("Invalid gpu.utilization_basis_points");
+      return { adapter_id: nonEmptyString(adapter.adapter_id, "gpu.adapter_id"), utilization_basis_points };
+    }),
+  };
+}
+
+function decodeThermalValue(value: unknown) {
+  const input = record(value, "thermal.value");
+  exact(input, ["zones"], "thermal.value");
+  return {
+    zones: array(input.zones, "thermal.zones", (item) => {
+      const zone = record(item, "thermal.zone");
+      exact(zone, ["zone_id", "temperature_tenths_celsius"], "thermal.zone");
+      return {
+        zone_id: nonEmptyString(zone.zone_id, "thermal.zone_id"),
+        temperature_tenths_celsius: signedInteger(zone.temperature_tenths_celsius, "thermal.temperature_tenths_celsius"),
+      };
+    }),
+  };
+}
+
 function decodeProcessRow(value: unknown) {
   const input = record(value, "process");
   exact(input, PROCESS_ROW_KEYS, "process");
@@ -1473,13 +1503,21 @@ function decodeUnsupportedCapability(value: unknown) {
   };
 }
 
+function hasMeasuredValue(availability: { readonly state: string }): boolean {
+  return availability.state === "available" || availability.state === "partial";
+}
+
 export function decodeStatusSnapshot(value: unknown): StatusSnapshotV1 {
   const input = record(value, "status snapshot");
   exact(input, SNAPSHOT_KEYS, "status snapshot");
+  const gpu = decodeAvailability(input.gpu, "gpu", decodeGpuValue) as StatusSnapshotV1["gpu"];
+  const thermal = decodeAvailability(input.thermal, "thermal", decodeThermalValue) as StatusSnapshotV1["thermal"];
   const unsupported_capabilities = array(input.unsupported_capabilities, "unsupported_capabilities", decodeUnsupportedCapability);
   const codes = unsupported_capabilities.map((item) => item.code);
-  if (codes.join("\n") !== UNSUPPORTED_CODES.join("\n")) {
-    throw new Error("Status V1 unsupported capabilities are not the closed set");
+  const expected = UNSUPPORTED_CODES.filter((code) =>
+    code === "gpu_utilization" ? !hasMeasuredValue(gpu) : code === "thermal" ? !hasMeasuredValue(thermal) : true);
+  if (codes.join("\n") !== expected.join("\n")) {
+    throw new Error("Status V1 unsupported capabilities do not match the GPU and thermal probes");
   }
   return {
     snapshot_id: nonEmptyString(input.snapshot_id, "snapshot.snapshot_id"),
@@ -1491,6 +1529,8 @@ export function decodeStatusSnapshot(value: unknown): StatusSnapshotV1 {
     volumes: decodeAvailability(input.volumes, "volumes", decodeVolumesValue) as StatusSnapshotV1["volumes"],
     network: decodeAvailability(input.network, "network", decodeNetworkValue) as StatusSnapshotV1["network"],
     power: decodeAvailability(input.power, "power", decodePowerValue) as StatusSnapshotV1["power"],
+    gpu,
+    thermal,
     processes: decodeAvailability(input.processes, "processes", decodeProcessesValue) as StatusSnapshotV1["processes"],
     unsupported_capabilities,
   };
@@ -1545,6 +1585,13 @@ export function decodeStatusEvent(value: unknown): StatusEventV1 {
       error_code: data.error_code === null ? null : nonEmptyString(data.error_code, "status_terminal.error_code"),
     },
   };
+}
+
+export function decodeHudStatusEvent(value: unknown): HudStatusEvent {
+  const input = record(value, "hud status event");
+  const type = oneOf(input.type, ["sampling", "snapshot"] as const, "hud status event.type");
+  exact(input, type === "snapshot" ? ["type", "snapshot"] : ["type"], "hud status event");
+  return type === "snapshot" ? { type, snapshot: decodeStatusSnapshot(input.snapshot) } : { type };
 }
 
 export function decodeDesktopStatusSnapshotResult(value: unknown): DesktopStatusSnapshotResult {

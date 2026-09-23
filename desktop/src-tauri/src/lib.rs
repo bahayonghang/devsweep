@@ -2,6 +2,7 @@ mod analyze;
 mod clean;
 mod commands;
 mod error;
+mod hud;
 mod optimize;
 mod scan;
 #[cfg(test)]
@@ -9,6 +10,7 @@ mod service_boundary;
 mod software;
 mod status;
 mod support;
+mod tray;
 #[cfg(test)]
 mod wire_parity;
 
@@ -59,6 +61,42 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "presentation_settings_set",
 ];
 
+/// App commands the tray HUD window may invoke. The HUD reads only the
+/// persisted presentation language; its samples arrive as `hud-status` events.
+const HUD_INVOKE_COMMANDS: &[&str] = &["presentation_settings_get"];
+
+/// Tauri allows every local window to invoke every app command when the app
+/// has no ACL manifest. This gate keeps cleanup, uninstall, and trash commands
+/// on the main window. The HUD gets its read-only allow-list; any other window
+/// gets nothing.
+fn window_may_invoke(window_label: &str, command: &str) -> bool {
+    match window_label {
+        tray::MAIN_WINDOW_LABEL => true,
+        hud::HUD_WINDOW_LABEL => HUD_INVOKE_COMMANDS.contains(&command),
+        _ => false,
+    }
+}
+
+fn window_gated<R: tauri::Runtime>(
+    handler: impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static,
+) -> impl Fn(tauri::ipc::Invoke<R>) -> bool + Send + Sync + 'static {
+    move |invoke| {
+        if window_may_invoke(
+            invoke.message.webview_ref().label(),
+            invoke.message.command(),
+        ) {
+            return handler(invoke);
+        }
+        let message = format!(
+            "Command {} is not allowed for window {}",
+            invoke.message.command(),
+            invoke.message.webview_ref().label()
+        );
+        invoke.resolver.reject(message);
+        true
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -68,7 +106,13 @@ pub fn run() {
         .manage(optimize::OptimizeCoordinator::default())
         .manage(status::StatusCoordinator::default())
         .manage(commands::PresentationSettingsCoordinator::default())
-        .invoke_handler(tauri::generate_handler![
+        .manage(tray::HudState::default())
+        .setup(|app| {
+            tray::setup(app)?;
+            Ok(())
+        })
+        .on_window_event(tray::on_window_event)
+        .invoke_handler(window_gated(tauri::generate_handler![
             commands::scan_start,
             commands::scan_cancel,
             analyze::analyze_start,
@@ -111,9 +155,10 @@ pub fn run() {
             commands::presentation_settings_set,
             #[cfg(debug_assertions)]
             commands::debug_native_fault_mode,
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        ]))
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| tray::on_run_event(app, &event));
 }
 
 #[cfg(test)]
@@ -172,5 +217,51 @@ mod tests {
                 "core:window:allow-destroy",
             ]
         );
+    }
+
+    #[test]
+    fn hud_capability_grants_only_event_subscription_to_the_hud_window() {
+        let capability: serde_json::Value =
+            serde_json::from_str(include_str!("../capabilities/hud.json"))
+                .expect("HUD capability must be valid JSON");
+        assert_eq!(capability["windows"], serde_json::json!(["hud"]));
+        assert_eq!(
+            capability["permissions"],
+            serde_json::json!(["core:event:allow-listen", "core:event:allow-unlisten"])
+        );
+        let default: serde_json::Value =
+            serde_json::from_str(include_str!("../capabilities/default.json"))
+                .expect("desktop capability must be valid JSON");
+        assert_eq!(default["windows"], serde_json::json!(["main"]));
+    }
+
+    #[test]
+    fn only_the_main_window_reaches_mutating_commands() {
+        use super::{HUD_INVOKE_COMMANDS, window_may_invoke};
+
+        for command in SHIPPED_INVOKE_COMMANDS {
+            assert!(window_may_invoke("main", command), "main lost {command}");
+            assert_eq!(
+                window_may_invoke("hud", command),
+                *command == "presentation_settings_get",
+                "hud access to {command}"
+            );
+            assert!(
+                !window_may_invoke("other", command),
+                "other reached {command}"
+            );
+        }
+        assert!(window_may_invoke("main", "debug_native_fault_mode"));
+        assert!(!window_may_invoke("hud", "debug_native_fault_mode"));
+        assert_eq!(HUD_INVOKE_COMMANDS, ["presentation_settings_get"]);
+        let source = include_str!("lib.rs");
+        assert!(source.contains(".invoke_handler(window_gated(tauri::generate_handler!["));
+    }
+
+    #[test]
+    fn tray_icon_feature_is_the_only_added_tauri_feature() {
+        let manifest = include_str!("../Cargo.toml");
+        assert!(manifest.contains(r#"tauri = { version = "2.11.3", features = ["tray-icon"] }"#));
+        assert!(!manifest.contains("autostart"));
     }
 }

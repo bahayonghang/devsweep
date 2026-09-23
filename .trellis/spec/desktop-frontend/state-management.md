@@ -153,6 +153,24 @@ scan result or backend error remains authoritative.
   its command promise settles. Only then may the reducer store a failed stopped
   preview, preventing a replacement scan from racing the still-running backend.
 
+## Status Process Table And Tray HUD
+
+- Status sort and pins are mode-local reducer state. `processes.ts` owns pure
+  selectors: sort by CPU, private bytes, name, or PID in either direction, and
+  expose the active column through `aria-sort` on its header cell.
+- Pins hold at most 5 `(pid, name)` pairs. Each snapshot reconciles them: a
+  PID absent from a complete row set, or reused by another name, shows
+  `exited` once and is removed on the next snapshot; a PID absent from a
+  truncated or partial row set shows `unsampled`. Pins never kill a process or
+  change its priority.
+- The tray HUD is a second Vite entry (`hud.html`, `src/hud/`). It renders
+  only closed-decoded `hud-status` events through `listenHudStatus` and
+  invokes one command, `presentation_settings_get`, through the i18n settings
+  bridge. The Tauri invoke gate rejects every other app command from the
+  `hud` window, and its capability grants only event listen/unlisten. The HUD
+  does not use the operation coordinator; the backend `HudSampler` owns its
+  sampling lifecycle.
+
 ## Scenario: Command-scoped scan preview
 
 ### 1. Scope / Trigger

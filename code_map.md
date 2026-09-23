@@ -89,6 +89,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/optimize/execution.rs` - DNS flush and frozen Settings URI launch.
 - `crates/devsweep-core/src/status/mod.rs` - bounded read-only Status snapshots and live sampling.
 - `crates/devsweep-core/src/status/sampler.rs` - snapshot/live producer and lifecycle events.
+- `crates/devsweep-core/src/status/pdh.rs` - read-only PDH probe for GPU engine and thermal-zone counters.
 - `crates/devsweep-core/src/history/mod.rs` - inspect-only reader for the three fixed V1 audit
   stores.
 
@@ -141,11 +142,14 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop/src-tauri/src/optimize.rs` - Optimize-mode IPC.
 - `desktop/src-tauri/src/analyze.rs` - Analyze-mode IPC.
 - `desktop/src-tauri/src/status.rs` - Status-mode IPC.
+- `desktop/src-tauri/src/tray.rs` - tray icon, menu, tooltip, HUD window toggle, and app exit.
+- `desktop/src-tauri/src/hud.rs` - `HudSampler` (2 s while the HUD is visible) and the `hud-status` event type.
 - `desktop/src-tauri/src/support.rs` - History, Protection, and Rules IPC.
 - `desktop/src-tauri/src/error.rs` - centralized structured command-error mapping.
 - `desktop/src/App.tsx` - React shell host: locale gate, operation coordinator, and AppShell.
 - `desktop/src/app-shell/` - five-mode registry, routing, and accessible shell chrome.
 - `desktop/src/modes/` - Clean, Software, Optimize, Analyze, and Status workbenches.
+- `desktop/src/hud/` - second Vite entry (`desktop/hud.html`) for the tray HUD window.
 - `desktop/src/support/` - History, Protection, and Rules pages.
 - `desktop/src/pages/` - remaining Clean workflow views composed by `CleanWorkbench` (scan,
   preview, review, execute). Not the primary five-mode surface.

@@ -321,13 +321,20 @@ mod tests {
             assert!(!text.contains("environment"));
             assert!(!text.contains("CleanupPlan"));
         }
-        assert_eq!(
-            en_doc["data"]["unsupported_capabilities"]
-                .as_array()
-                .unwrap()
-                .len(),
-            6
-        );
+        let codes = en_doc["data"]["unsupported_capabilities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|capability| capability["code"].as_str().unwrap())
+            .collect::<Vec<_>>();
+        for code in ["vram", "fan", "smart", "physical_disk_activity"] {
+            assert!(codes.contains(&code), "missing {code}");
+        }
+        for (group, code) in [("gpu", "gpu_utilization"), ("thermal", "thermal")] {
+            let state = en_doc["data"][group]["state"].as_str().unwrap();
+            let measured = state == "available" || state == "partial";
+            assert_eq!(codes.contains(&code), !measured, "{group} {state}");
+        }
     }
 
     #[test]

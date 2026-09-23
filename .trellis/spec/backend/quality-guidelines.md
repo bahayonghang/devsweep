@@ -632,6 +632,97 @@ ProcessRequest {
 }
 ```
 
+### Scenario: Status PDH probes and tray HUD sampler
+
+#### 1. Scope / Trigger
+
+- Trigger: code changes `status/pdh.rs`, the `gpu`/`thermal` groups of
+  `StatusSnapshotV1`, `unsupported_capabilities`, or the Tauri files
+  `hud.rs`, `tray.rs`, and the invoke-handler gate in `lib.rs`.
+
+#### 2. Signatures
+
+- `unsupported_capabilities(&AvailabilityV1<GpuV1>, &AvailabilityV1<ThermalV1>)
+  -> Vec<UnsupportedCapabilityV1>` (replaces the static list).
+- `GpuV1 { adapters: [{ adapter_id, utilization_basis_points }] }` and
+  `ThermalV1 { zones: [{ zone_id, temperature_tenths_celsius }] }`.
+- `HudSampler::start(sample, emit)`, `HudSampler::stop()`; event
+  `hud-status` with closed payload `{type: "sampling"}` or
+  `{type: "snapshot", snapshot}`.
+
+#### 3. Contracts
+
+- One PDH query per `StatusSampler` holds the English wildcard counters
+  `\GPU Engine(*)\Utilization Percentage` and
+  `\Thermal Zone Information(*)\Temperature`, added with
+  `PdhAddEnglishCounterW`. The query is primed once and collected once per
+  sample; `Drop` closes it on every path. Only the `windows-sys` feature
+  `Win32_System_Performance` is added; no new crate.
+- GPU: group instances by the `luid_..._phys_<n>` adapter key, sum per engine
+  type, keep the busiest type per adapter, and clamp to 10000 basis points.
+  Thermal: Kelvin to tenths of °C; drop 0 K and non-finite zones.
+- A missing query, counter, instance set, or valid value gives
+  `unavailable` with a reason code (`pdh_unavailable`, `counter_missing`,
+  `collect_failed`, `counter_read_failed`, `no_valid_data`, `no_instances`).
+  It never gives a zero. `gpu_utilization` and `thermal` stay in
+  `unsupported_capabilities` exactly when their group has no value. VRAM, fan,
+  SMART, and physical-disk activity are always listed.
+- Both groups join warning aggregation but not the outcome check: a host
+  without thermal zones or GPU counters still reports `success` when the
+  other groups are complete, as before the probes existed.
+- The HUD sampler owns one thread and one `FlagCancelObserver`. It samples
+  every 2 s only while the HUD window is visible. Hide, HUD destroy, main
+  window destroy, `RunEvent::ExitRequested`/`Exit`, and `Drop` cancel and
+  join it. A second start while running is refused. Tray tooltip updates are
+  posted to the event loop, so a join on the event loop cannot deadlock.
+- Closing the main window calls `app.exit(0)`; the tray icon goes with the
+  process. There is no autostart.
+- Without an app ACL manifest, Tauri lets every local window invoke every app
+  command. `window_gated` wraps `generate_handler!`: `main` may invoke all
+  commands, `hud` only `presentation_settings_get`, any other label nothing.
+  The `hud` capability grants only `core:event:allow-listen` and
+  `core:event:allow-unlisten`.
+
+#### 4. Validation & Error Matrix
+
+- PDH open or counter add fails -> both or one group `unavailable`; the code
+  stays in `unsupported_capabilities`.
+- All instances invalid on the first rate read -> `no_valid_data`, not zero.
+- HUD window invokes a cleanup, uninstall, or trash command -> rejected
+  before the command runs.
+
+#### 5. Good/Base/Bad Cases
+
+- Good: two engines of type 3D on one adapter at 70% and 55% report 10000.
+- Base: a desktop with no ACPI zones reports `thermal: unavailable` and lists
+  `thermal` as unsupported.
+- Bad: `thermal: available` with an empty zone list, or a HUD sampler thread
+  that survives hide.
+
+#### 6. Tests Required
+
+- PDH fixture tests for grouping, clamp, idle zero versus no instance, 0 K
+  drop, and reason codes; capability-list tests for each probe state.
+- HUD sampler tests for start on show, cancel and join on hide and drop, no
+  sample after stop, the 2 s cadence, and a refused second start.
+- A window-gate test over every shipped command for `main`, `hud`, and an
+  unknown label.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```rust
+// A missing counter reported as an idle GPU.
+Err(_) => AvailabilityV1::available(now, 0, GpuV1 { adapters: vec![] }),
+```
+
+Correct:
+
+```rust
+Err(reason) => AvailabilityV1::unavailable(reason),
+```
+
 ### Scenario: Declarative plan trust boundary
 
 #### 1. Scope / Trigger

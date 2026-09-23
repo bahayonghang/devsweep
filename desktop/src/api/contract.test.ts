@@ -13,7 +13,7 @@ import statusCompletedFixture from "./fixtures/status/snapshot-completed.json";
 import statusStartedFixture from "./fixtures/status/event-started.json";
 import statusUnknownFixture from "./fixtures/status/unknown-event.json";
 import commandErrorFixtures from "./fixtures/errors/command-errors.json";
-import { decodeAnalyzeSnapshot, decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeScanReport, decodeStatusEvent, decodeStatusSnapshot } from "./contract";
+import { decodeAnalyzeSnapshot, decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopScanProgress, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeExecutionReport, decodeHudStatusEvent, decodeScanReport, decodeStatusEvent, decodeStatusSnapshot } from "./contract";
 
 describe("IPC decoders", () => {
   it("decodes archived command and event fixtures", () => {
@@ -140,6 +140,63 @@ describe("Status V1 decoders", () => {
     leaked.processes.value.items[0].cmdline = "secret";
     expect(() => decodeStatusSnapshot(leaked)).toThrow("unknown field");
     expect(() => decodeStatusEvent(statusUnknownFixture)).toThrow("status event.event");
-    expect(() => decodeStatusSnapshot({ ...statusSnapshotFixture, gpu: 0 })).toThrow("unknown field");
+    expect(() => decodeStatusSnapshot({ ...statusSnapshotFixture, vram_bytes: 0 })).toThrow("unknown field");
+    expect(() => decodeStatusSnapshot({ ...statusSnapshotFixture, gpu: 0 })).toThrow("gpu");
+  });
+
+  it("decodes GPU and thermal groups closed and keeps missing probes unavailable", () => {
+    const snapshot = decodeStatusSnapshot(statusSnapshotFixture);
+    expect(snapshot.gpu.state === "available" ? snapshot.gpu.value?.adapters[0].utilization_basis_points : null).toBe(1250);
+    expect(snapshot.thermal).toEqual({ state: "unavailable", sampled_at_unix_ms: null, reason_code: "counter_missing" });
+    expect(snapshot.unsupported_capabilities.map((item) => item.code)).toEqual([
+      "vram", "thermal", "fan", "smart", "physical_disk_activity",
+    ]);
+
+    const extraAdapterField = structuredClone(statusSnapshotFixture) as unknown as {
+      gpu: { value: { adapters: Array<Record<string, unknown>> } };
+    };
+    extraAdapterField.gpu.value.adapters[0].vram_bytes = 0;
+    expect(() => decodeStatusSnapshot(extraAdapterField)).toThrow("unknown field");
+
+    const widened = structuredClone(statusSnapshotFixture) as unknown as {
+      gpu: { value: { adapters: Array<Record<string, unknown>> } };
+    };
+    widened.gpu.value.adapters[0].utilization_basis_points = 10001;
+    expect(() => decodeStatusSnapshot(widened)).toThrow("gpu.utilization_basis_points");
+
+    const fakeZero = {
+      ...statusSnapshotFixture,
+      thermal: { state: "unavailable", sampled_at_unix_ms: null, reason_code: "counter_missing", value: { zones: [] } },
+    };
+    expect(() => decodeStatusSnapshot(fakeZero)).toThrow("unknown field");
+
+    const gpuListedWithValue = {
+      ...statusSnapshotFixture,
+      unsupported_capabilities: [
+        { code: "gpu_utilization", state: "unsupported", reason_code: "not_supported_v1" },
+        ...statusSnapshotFixture.unsupported_capabilities,
+      ],
+    };
+    expect(() => decodeStatusSnapshot(gpuListedWithValue)).toThrow("GPU and thermal probes");
+
+    const thermalMeasured = {
+      ...statusSnapshotFixture,
+      thermal: { state: "available", sampled_at_unix_ms: 1, age_ms: 0, value: { zones: [{ zone_id: "\\_TZ.TZ00", temperature_tenths_celsius: -5 }] } },
+    };
+    expect(() => decodeStatusSnapshot(thermalMeasured)).toThrow("GPU and thermal probes");
+    const decoded = decodeStatusSnapshot({
+      ...thermalMeasured,
+      unsupported_capabilities: statusSnapshotFixture.unsupported_capabilities.filter((item) => item.code !== "thermal"),
+    });
+    expect(decoded.thermal.state === "available" ? decoded.thermal.value?.zones[0].temperature_tenths_celsius : null).toBe(-5);
+  });
+
+  it("decodes only the two closed HUD events", () => {
+    expect(decodeHudStatusEvent({ type: "sampling" })).toEqual({ type: "sampling" });
+    const snapshot = decodeHudStatusEvent({ type: "snapshot", snapshot: statusSnapshotFixture });
+    expect(snapshot.type === "snapshot" ? snapshot.snapshot.snapshot_id : null).toBe("snapshot-fixture");
+    expect(() => decodeHudStatusEvent({ type: "sampling", snapshot: statusSnapshotFixture })).toThrow("unknown field");
+    expect(() => decodeHudStatusEvent({ type: "hidden" })).toThrow("hud status event.type");
+    expect(() => decodeHudStatusEvent({ type: "snapshot" })).toThrow();
   });
 });

@@ -809,6 +809,7 @@ export interface DesktopStatusLiveResultCompleted {
 
 export interface StatusSnapshotV1 {
     cpu:                      CpuAvailabilityV1;
+    gpu:                      GpuAvailabilityV1;
     logical_processor_count:  number;
     memory:                   MemoryAvailabilityV1;
     network:                  NetworkAvailabilityV1;
@@ -817,8 +818,26 @@ export interface StatusSnapshotV1 {
     sample_window_ms:         number;
     sampled_at_unix_ms:       number;
     snapshot_id:              string;
+    thermal:                  ThermalAvailabilityV1;
     unsupported_capabilities: UnsupportedCapabilityV1[];
     volumes:                  VolumesAvailabilityV1;
+}
+
+export interface GpuAvailabilityV1 {
+    age_ms?:            number;
+    reason_code?:       string;
+    sampled_at_unix_ms: number | null;
+    state:              string;
+    value?:             GpuV1;
+}
+
+export interface GpuV1 {
+    adapters: GpuAdapterV1[];
+}
+
+export interface GpuAdapterV1 {
+    adapter_id:               string;
+    utilization_basis_points: number;
 }
 
 export interface MemoryAvailabilityV1 {
@@ -900,6 +919,23 @@ export interface ProcessV1 {
     write_bytes_per_second:               number;
 }
 
+export interface ThermalAvailabilityV1 {
+    age_ms?:            number;
+    reason_code?:       string;
+    sampled_at_unix_ms: number | null;
+    state:              string;
+    value?:             ThermalV1;
+}
+
+export interface ThermalV1 {
+    zones: ThermalZoneV1[];
+}
+
+export interface ThermalZoneV1 {
+    temperature_tenths_celsius: number;
+    zone_id:                    string;
+}
+
 export interface UnsupportedCapabilityV1 {
     code:        string;
     reason_code: string;
@@ -965,6 +1001,15 @@ export interface EvidenceRuleMatched {
 
 export interface EvidenceUserConfigured {
     type: "user_configured";
+}
+
+export interface HudStatusEventSampling {
+    type: "sampling";
+}
+
+export interface HudStatusEventSnapshot {
+    snapshot: StatusSnapshotV1;
+    type:     "snapshot";
 }
 
 export type MsiContext = "machine" | "user_managed" | "user_unmanaged";
@@ -1260,6 +1305,7 @@ export type DesktopSoftwareInventoryResult = DesktopSoftwareInventoryResultCance
 export type DesktopOptimizeListResult = DesktopOptimizeListResultCanceled | DesktopOptimizeListResultCompleted;
 export type DesktopStatusSnapshotResult = DesktopStatusSnapshotResultCanceled | DesktopStatusSnapshotResultCompleted;
 export type DesktopStatusLiveResult = DesktopStatusLiveResultCanceled | DesktopStatusLiveResultCompleted;
+export type HudStatusEvent = HudStatusEventSampling | HudStatusEventSnapshot;
 export type StatusEventV1 = StatusEventV1Snapshot | StatusEventV1Started | StatusEventV1Terminal | StatusEventV1TickSkipped;
 export type SoftwareUpdatesV1 = SoftwareUpdatesV1Available | SoftwareUpdatesV1Unavailable;
 export type DesktopSoftwareLeftoversPreviewResult = DesktopSoftwareLeftoversPreviewResultDiscovered | DesktopSoftwareLeftoversPreviewResultPlanned;

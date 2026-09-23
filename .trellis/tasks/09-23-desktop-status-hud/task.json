@@ -3,7 +3,7 @@
   "name": "desktop-status-hud",
   "title": "Status parity: GPU/thermal/battery, process sort and pin, tray HUD",
   "description": "Add supported Windows GPU and thermal probes, process sort and pin, and a tray HUD bound to the running app.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

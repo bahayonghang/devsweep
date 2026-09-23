@@ -357,8 +357,6 @@ fn reference_and_migration_documents_cover_the_breaking_surface() {
 mod status_v1_contract {
     #![allow(dead_code)]
 
-    use std::collections::BTreeSet;
-
     use serde_json::{Map, Value};
 
     type DecodeResult<T> = Result<T, String>;
@@ -388,8 +386,32 @@ mod status_v1_contract {
         volumes: AvailabilityV1<VolumesV1>,
         network: AvailabilityV1<NetworkV1>,
         power: AvailabilityV1<PowerV1>,
+        gpu: AvailabilityV1<GpuV1>,
+        thermal: AvailabilityV1<ThermalV1>,
         processes: AvailabilityV1<ProcessesV1>,
         unsupported_capabilities: Vec<UnsupportedCapabilityV1>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct GpuV1 {
+        adapters: Vec<GpuAdapterV1>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct GpuAdapterV1 {
+        adapter_id: String,
+        utilization_basis_points: u32,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct ThermalV1 {
+        zones: Vec<ThermalZoneV1>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct ThermalZoneV1 {
+        zone_id: String,
+        temperature_tenths_celsius: i32,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -723,6 +745,8 @@ mod status_v1_contract {
                 || self.volumes.is_degraded()
                 || self.network.is_degraded()
                 || self.power.is_degraded()
+                || self.gpu.is_degraded()
+                || self.thermal.is_degraded()
                 || self.processes.is_degraded()
         }
 
@@ -740,6 +764,8 @@ mod status_v1_contract {
             let volumes = decode_availability(object.take("volumes")?, "volumes", decode_volumes)?;
             let network = decode_availability(object.take("network")?, "network", decode_network)?;
             let power = decode_availability(object.take("power")?, "power", decode_power)?;
+            let gpu = decode_availability(object.take("gpu")?, "gpu", decode_gpu)?;
+            let thermal = decode_availability(object.take("thermal")?, "thermal", decode_thermal)?;
             let processes =
                 decode_availability(object.take("processes")?, "processes", decode_processes)?;
             validate_process_availability(&processes)?;
@@ -747,21 +773,24 @@ mod status_v1_contract {
                 .take_array("unsupported_capabilities", |value, index| {
                     decode_unsupported(value, index)
                 })?;
-            let unique = unsupported_capabilities
+            let actual = unsupported_capabilities
                 .iter()
                 .map(|capability| capability.code)
-                .collect::<BTreeSet<_>>();
-            let expected = BTreeSet::from([
-                UnsupportedCode::GpuUtilization,
-                UnsupportedCode::Vram,
-                UnsupportedCode::Thermal,
-                UnsupportedCode::Fan,
-                UnsupportedCode::Smart,
-                UnsupportedCode::PhysicalDiskActivity,
-            ]);
-            if unsupported_capabilities.len() != expected.len() || unique != expected {
+                .collect::<Vec<_>>();
+            let expected = [
+                (UnsupportedCode::GpuUtilization, !gpu.has_value()),
+                (UnsupportedCode::Vram, true),
+                (UnsupportedCode::Thermal, !thermal.has_value()),
+                (UnsupportedCode::Fan, true),
+                (UnsupportedCode::Smart, true),
+                (UnsupportedCode::PhysicalDiskActivity, true),
+            ]
+            .into_iter()
+            .filter_map(|(code, listed)| listed.then_some(code))
+            .collect::<Vec<_>>();
+            if actual != expected {
                 return Err(
-                    "Status V1 must contain each of the six unsupported capabilities exactly once"
+                    "Status V1 unsupported capabilities must list each static code once and GPU/thermal only without a probe value"
                         .to_string(),
                 );
             }
@@ -776,6 +805,8 @@ mod status_v1_contract {
                 volumes,
                 network,
                 power,
+                gpu,
+                thermal,
                 processes,
                 unsupported_capabilities,
             })
@@ -783,6 +814,10 @@ mod status_v1_contract {
     }
 
     impl<T> AvailabilityV1<T> {
+        fn has_value(&self) -> bool {
+            matches!(self, Self::Available { .. } | Self::Partial { .. })
+        }
+
         fn is_degraded(&self) -> bool {
             matches!(
                 self,
@@ -1008,6 +1043,47 @@ mod status_v1_contract {
             charge_basis_points,
             remaining_seconds,
         })
+    }
+
+    fn decode_gpu(value: Value) -> DecodeResult<GpuV1> {
+        let mut object = ClosedObject::decode(value, "GpuV1")?;
+        let adapters = object.take_array("adapters", |value, index| {
+            let mut item = ClosedObject::decode(value, format!("GpuAdapterV1[{index}]"))?;
+            let adapter_id = item.take_nonempty_string("adapter_id")?;
+            let utilization_basis_points = item.take_u32("utilization_basis_points")?;
+            if utilization_basis_points > 10_000 {
+                return Err("GPU basis points must be 0..10000".to_string());
+            }
+            item.finish()?;
+            Ok(GpuAdapterV1 {
+                adapter_id,
+                utilization_basis_points,
+            })
+        })?;
+        object.finish()?;
+        Ok(GpuV1 { adapters })
+    }
+
+    fn decode_thermal(value: Value) -> DecodeResult<ThermalV1> {
+        let mut object = ClosedObject::decode(value, "ThermalV1")?;
+        let zones = object.take_array("zones", |value, index| {
+            let mut item = ClosedObject::decode(value, format!("ThermalZoneV1[{index}]"))?;
+            let zone_id = item.take_nonempty_string("zone_id")?;
+            let temperature_tenths_celsius = item
+                .take("temperature_tenths_celsius")?
+                .as_i64()
+                .and_then(|value| i32::try_from(value).ok())
+                .ok_or_else(|| {
+                    format!("ThermalZoneV1[{index}] temperature must be an i32 integer")
+                })?;
+            item.finish()?;
+            Ok(ThermalZoneV1 {
+                zone_id,
+                temperature_tenths_celsius,
+            })
+        })?;
+        object.finish()?;
+        Ok(ThermalV1 { zones })
     }
 
     fn decode_processes(value: Value) -> DecodeResult<ProcessesV1> {
@@ -1274,7 +1350,6 @@ mod status_v1_contract {
                 .map(|capability| capability.code)
                 .collect::<Vec<_>>(),
             [
-                UnsupportedCode::GpuUtilization,
                 UnsupportedCode::Vram,
                 UnsupportedCode::Thermal,
                 UnsupportedCode::Fan,
@@ -1282,6 +1357,14 @@ mod status_v1_contract {
                 UnsupportedCode::PhysicalDiskActivity,
             ]
         );
+        let AvailabilityV1::Available { value: gpu, .. } = &cli_snapshot.data.gpu else {
+            panic!("GPU fixture must be available");
+        };
+        assert_eq!(gpu.adapters[0].utilization_basis_points, 1250);
+        assert!(matches!(
+            &cli_snapshot.data.thermal,
+            AvailabilityV1::Unavailable { reason_code, .. } if reason_code == "counter_missing"
+        ));
 
         let cli_stream_source = include_str!("fixtures/cli/status-live.ndjson");
         let tauri_stream_source = include_str!("fixtures/cli/status-live.tauri.ndjson");
@@ -1478,6 +1561,55 @@ mod status_v1_contract {
                 Value::String("字节".to_string()),
             );
         assert!(SnapshotEnvelopeV1::decode(nested_extra).is_err());
+
+        let mut missing_thermal = canonical.clone();
+        missing_thermal["data"]
+            .as_object_mut()
+            .unwrap()
+            .remove("thermal");
+        assert!(SnapshotEnvelopeV1::decode(missing_thermal).is_err());
+
+        let mut widened_gpu = canonical.clone();
+        widened_gpu["data"]["gpu"]["value"]["adapters"][0]["utilization_basis_points"] =
+            serde_json::json!(10001);
+        assert!(SnapshotEnvelopeV1::decode(widened_gpu).is_err());
+
+        let mut gpu_extra = canonical.clone();
+        gpu_extra["data"]["gpu"]["value"]["adapters"][0]
+            .as_object_mut()
+            .unwrap()
+            .insert("vram_bytes".to_string(), serde_json::json!(0));
+        assert!(SnapshotEnvelopeV1::decode(gpu_extra).is_err());
+
+        let mut gpu_listed_with_value = canonical.clone();
+        gpu_listed_with_value["data"]["unsupported_capabilities"]
+            .as_array_mut()
+            .unwrap()
+            .insert(
+                0,
+                serde_json::json!({
+                    "code": "gpu_utilization",
+                    "state": "unsupported",
+                    "reason_code": "not_supported_v1"
+                }),
+            );
+        assert!(SnapshotEnvelopeV1::decode(gpu_listed_with_value).is_err());
+
+        let mut thermal_unlisted_without_value = canonical.clone();
+        thermal_unlisted_without_value["data"]["unsupported_capabilities"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|capability| capability["code"] != "thermal");
+        assert!(SnapshotEnvelopeV1::decode(thermal_unlisted_without_value).is_err());
+
+        let mut fake_zero_gpu = canonical.clone();
+        fake_zero_gpu["data"]["gpu"] = serde_json::json!({
+            "state": "unavailable",
+            "sampled_at_unix_ms": null,
+            "reason_code": "counter_missing",
+            "value": { "adapters": [] }
+        });
+        assert!(SnapshotEnvelopeV1::decode(fake_zero_gpu).is_err());
 
         let mut luid = canonical;
         luid["data"]["network"]["value"]["interfaces"][0]["interface_luid"] =

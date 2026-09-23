@@ -303,8 +303,18 @@ fn partial_and_unavailable_states_stay_truthful() {
     }
     let unsupported = document["data"]["unsupported_capabilities"]
         .as_array()
-        .expect("unsupported capabilities");
-    assert_eq!(unsupported.len(), 6);
+        .expect("unsupported capabilities")
+        .iter()
+        .map(|capability| capability["code"].as_str().expect("code"))
+        .collect::<Vec<_>>();
+    for code in ["vram", "fan", "smart", "physical_disk_activity"] {
+        assert!(unsupported.contains(&code), "missing {code}");
+    }
+    for (group, code) in [("gpu", "gpu_utilization"), ("thermal", "thermal")] {
+        let state = document["data"][group]["state"].as_str().expect("state");
+        let measured = state == "available" || state == "partial";
+        assert_eq!(unsupported.contains(&code), !measured, "{group} {state}");
+    }
 
     let hostile = devsweep(&[
         "optimize",
