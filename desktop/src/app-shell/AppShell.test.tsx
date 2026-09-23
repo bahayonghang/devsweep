@@ -6,6 +6,7 @@ import {
   AccessibleUserData,
   AppShell,
   MODE_IDS,
+  PageHeaderSlot,
   SUPPORTING_DESTINATION_IDS,
   parseModeRoute,
   parseShellRoute,
@@ -21,6 +22,23 @@ const supporting: SupportingDestinationRegistration[] = SUPPORTING_DESTINATION_I
 
 describe("AppShell", () => {
   beforeEach(() => window.history.replaceState(null, "", "#/clean"));
+
+  it("renders a page-header chip without re-rendering the mode that owns it", () => {
+    // A mode builds a new chip element on every render. Routing that element
+    // through shell state re-rendered the mode for each write and React aborted
+    // the tree with error #185; the chip now goes through a portal instead.
+    let renders = 0;
+    const chip: ModeRegistration = {
+      id: "status",
+      render: () => {
+        renders += 1;
+        return <PageHeaderSlot><span className="status-chip">Snapshot ready</span></PageHeaderSlot>;
+      },
+    };
+    render(<AppShell modes={[chip]} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
+    expect(document.querySelector(".page-header-slot")).toHaveTextContent("Snapshot ready");
+    expect(renders).toBeLessThanOrEqual(4);
+  });
 
   it("keeps the frozen five-mode identity but omits unavailable registrations", () => {
     render(<AppShell modes={[registrations[0]]} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);

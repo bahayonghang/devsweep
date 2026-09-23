@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import iconUrl from "../assets/devsweep-icon-master.png";
 import {
   message,
@@ -43,16 +44,15 @@ const SUPPORTING_SUBTITLE_KEYS: Readonly<Record<SupportingDestinationId, Message
   history: "shell.v1.subtitle.history",
 };
 
-const PageHeaderSlotContext = createContext<(node: ReactNode) => void>(() => undefined);
+const PageHeaderSlotContext = createContext<HTMLElement | null>(null);
 
-/** Mode pages render a chip into the shell page-header slot. */
+/** Mode pages render a chip into the shell page-header slot. A portal keeps the
+ * chip out of shell state: writing the element into shell state made every mode
+ * render produce a new element, which re-ran the effect, which re-rendered the
+ * mode, until React aborted the tree (error #185). */
 export function PageHeaderSlot({ children }: { readonly children?: ReactNode }) {
-  const setSlot = useContext(PageHeaderSlotContext);
-  useLayoutEffect(() => {
-    setSlot(children ?? null);
-    return () => setSlot(null);
-  }, [children, setSlot]);
-  return null;
+  const container = useContext(PageHeaderSlotContext);
+  return container ? createPortal(children ?? null, container) : null;
 }
 
 function DestinationMark({ name }: { readonly name: GlyphName }) {
@@ -169,7 +169,7 @@ export function AppShell({
   const [transitioning, setTransitioning] = useState(false);
   const [routeError, setRouteError] = useState(false);
   const [focusCommitRequest, setFocusCommitRequest] = useState(0);
-  const [headerSlot, setHeaderSlot] = useState<ReactNode>(null);
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
   const contentHeading = useRef<HTMLHeadingElement>(null);
   const navButtons = useRef(new Map<ModeId, HTMLButtonElement>());
   const supportingButtons = useRef(new Map<SupportingDestinationId, HTMLButtonElement>());
@@ -334,7 +334,7 @@ export function AppShell({
   const headingId = "mode-heading";
   const canvasMode = activeMode ?? "shell";
   const productTitle = message(locale, "app.title");
-  return <PageHeaderSlotContext.Provider value={setHeaderSlot}>
+  return <PageHeaderSlotContext.Provider value={headerSlot}>
     <div className="app-shell" data-locale={locale} data-mode={canvasMode}>
       <aside className="shell-sidebar" aria-label={productTitle}>
         <div className="shell-brand">
@@ -417,7 +417,7 @@ export function AppShell({
             <h1 id={headingId} tabIndex={-1} ref={contentHeading}>{activeLabel}</h1>
             <p className="page-subtitle">{activeSubtitle}</p>
           </div>
-          <div className="page-header-slot">{headerSlot}</div>
+          <div className="page-header-slot" ref={setHeaderSlot} />
         </header>
         {localeSaving && <p className="persistence-warning" role="status">{message(locale, "shell.v1.persistence.saving")}</p>}
         {persistenceError && <p className="persistence-warning" role="alert">{message(locale, "shell.v1.persistence.unavailable")}</p>}
