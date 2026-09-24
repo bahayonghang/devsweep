@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
+import { DEV_SERVER_HOST, devServerPortFromEnv } from "./scripts/dev-server-port.mjs";
 
 export default defineConfig({
   plugins: [react()],
@@ -18,8 +19,9 @@ export default defineConfig({
   },
   clearScreen: false,
   server: {
-    host: "127.0.0.1",
-    port: 4180,
+    host: DEV_SERVER_HOST,
+    // scripts/tauri-dev.mjs sets this when the preferred port is already taken.
+    port: devServerPortFromEnv(process.env),
     strictPort: true,
   },
 });

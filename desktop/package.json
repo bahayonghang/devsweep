@@ -15,9 +15,9 @@
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node --test scripts/dev-server-port.node-test.mjs",
     "types:generate": "node scripts/generate-types.mjs",
-    "tauri": "tauri"
+    "tauri": "node scripts/tauri-dev.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
