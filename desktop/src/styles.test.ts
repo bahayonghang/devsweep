@@ -60,6 +60,7 @@ describe("responsive scan workbench styles", () => {
     for (const light of ["#fff0ef", "#ebf6ef", "#fff5d9", "#ffebe8", "#fff0e9", "#9fa9a4", "#4e5a54", "#6b7671", "#aeb9b3", "#f1f4f2"]) {
       expect(styles).not.toContain(light);
     }
+    expect(styles).toMatch(/:root \{[^}]*color-scheme: dark;/);
     expect(styles).toContain(".secondary-button { color: var(--text); background: var(--raised); border-color: var(--border); }");
     expect(styles).toContain("color: var(--danger); background: var(--raised); border-bottom: 1px solid var(--danger);");
     expect(styles).toContain("dialog { width: min(520px, calc(100vw - 32px)); padding: 0; color: var(--text); background: var(--raised); border: 1px solid var(--border); border-radius: var(--radius-card); }");

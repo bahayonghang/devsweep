@@ -33,6 +33,7 @@
   font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   color: var(--text);
   background: var(--canvas);
+  color-scheme: dark;
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
