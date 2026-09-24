@@ -1,9 +1,6 @@
 # Developer identity (local only)
 .developer
 
-# Local hook credentials
-hooks.local.json
-
 # Current task pointer (each dev works on different task)
 .current-task
 
@@ -20,9 +17,6 @@ hooks.local.json
 
 # Task directory runtime files
 .plan-log
-
-# Local plan review reports
-reviews/
 
 # Atomic update temp files
 *.tmp
