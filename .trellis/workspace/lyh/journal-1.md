@@ -1524,3 +1524,39 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - 原生 1080x720/900x600 证据仍 UNVERIFIED，需 WebView2 remote debugging 露出 tauri.localhost
+
+
+## Session 53: 修复开发窗口扫描点击无响应
+<!-- trellis-session: v=2 fp=5865c97f1f7ead16 -->
+
+**Date**: 2026-09-25
+**Task**: 修复开发窗口扫描点击无响应
+**Branch**: `dev`
+
+### Summary
+
+开发模式重放不再关闭仍在使用的协调器。Clean 扫描点击会离开就绪；空租约显示现有错误条。
+
+### Main Changes
+
+- App 生命周期清理在重放后保留协调器，真实卸载仍会关闭。
+- Clean 空租约显示现有 io 错误条，并在 effect setup 恢复挂载标记。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8f5599b3bf062d53ed1e20374f04a1f6dcb74018` | fix(desktop): 🐛 保持开发重放后扫描可用 |
+| `50304fec00a52eff593c60c75f1928f4350e3d7d` | docs(desktop): 📝 记录协调器重放与空租约约定 |
+
+### Testing
+
+- [OK] desktop: npm run lint、typecheck、test，299 个 Vitest 与 5 个 Node 测试通过。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 重启 just tdev 后点击扫描确认界面离开就绪。
