@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Lint, typecheck, and test commands for desktop/src"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Close still drains real unmount and native close; Clean null lease stays visible"}
+{"file": ".trellis/tasks/09-25-clean-scan-click/prd.md", "reason": "Acceptance criteria AC1 through AC5"}
+{"file": ".trellis/tasks/09-25-clean-scan-click/research/strict-mode-scan.md", "reason": "Symptom the R1 test has to turn green"}

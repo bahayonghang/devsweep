@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop frontend gate and the rule that Clean preview authority stays intact"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Operation coordinator close, Clean command_failed, and async effect ownership"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Command errors stay the generated union; this fix reuses the io variant"}
+{"file": ".trellis/tasks/09-25-clean-scan-click/research/strict-mode-scan.md", "reason": "Failing StrictMode click repro and the passing control case"}
+{"file": ".trellis/tasks/09-25-clean-scan-click/design.md", "reason": "Drain generation guard and the three Clean null-lease dispatches"}
