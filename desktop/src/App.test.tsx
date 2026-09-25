@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import scanJson from "./api/fixtures/scan-report.json";
 import dryRunJson from "./api/fixtures/dry-run-outcome.json";
@@ -120,6 +121,45 @@ describe("desktop workflow", () => {
     expect(screen.queryByText("目前已发现")).not.toBeInTheDocument();
     expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
     expect(document.querySelector(".clean-stage")).toBeInTheDocument();
+  });
+
+  it("starts a Clean scan after StrictMode replays the lifecycle effect", async () => {
+    const scanStart = vi.fn().mockImplementation(async (scanId: string, _options, onProgress: (value: DesktopScanProgress) => void) => {
+      onProgress({ ...progress, scan_id: scanId });
+      return { type: "completed", scan_id: scanId, report: scanReport };
+    });
+    const user = userEvent.setup();
+    render(<StrictMode>
+      <App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings("zh-CN")} userLocales={["zh-CN"]} />
+    </StrictMode>);
+
+    expect(await screen.findByRole("button", { name: "扫描" })).toBeInTheDocument();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await user.click(screen.getByRole("button", { name: "扫描" }));
+    expect(scanStart).toHaveBeenCalledOnce();
+    expect(screen.queryByText("就绪")).not.toBeInTheDocument();
+  });
+
+  it("starts Status live after StrictMode replays the lifecycle effect", async () => {
+    const statusLiveStart = vi.fn().mockResolvedValue({ type: "canceled", operation_id: "strict-status-live" });
+    const user = userEvent.setup();
+    render(<StrictMode>
+      <App bridge={fakeBridge({ statusLiveStart })} presentationSettings={fakePresentationSettings()} />
+    </StrictMode>);
+
+    expect(await screen.findByRole("button", { name: "Scan" })).toBeInTheDocument();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await user.click(screen.getByRole("tab", { name: "Status" }));
+    const startLive = await screen.findByRole("button", { name: "Start live" });
+    await waitFor(() => expect(startLive).toBeEnabled());
+    await user.click(startLive);
+    expect(statusLiveStart).toHaveBeenCalledOnce();
   });
 
   it("idle Clean home is a planet stage with visible scope and no cards", async () => {
@@ -691,11 +731,13 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     const closedView = render(<App
       bridge={closedBridge}
-      presentationSettings={fakePresentationSettings()}
+      presentationSettings={fakePresentationSettings("zh-CN")}
+      userLocales={["zh-CN"]}
       coordinator={closedCoordinator}
     />);
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "扫描" }));
     expect(closedBridge.scanStart).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Desktop operation failed: The desktop operation coordinator is closed.");
     expect(closedCoordinator.activeIdentity()).toBeNull();
     closedView.unmount();
 

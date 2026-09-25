@@ -55,7 +55,11 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
   const [cumulative, setCumulative] = useState<CleanMovedTotalsV1 | null>(null);
   const mounted = useRef(true);
 
-  useEffect(() => () => { mounted.current = false; }, []);
+  // StrictMode replays this effect. Setup must restore the flag after cleanup.
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const scan = async () => {
     if (state.phase === "scanning" || state.phase === "executing" || state.pending !== null) return;
@@ -89,7 +93,10 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
           );
         },
       });
-      if (!lease) return;
+      if (!lease) {
+        if (mounted.current) dispatch({ type: "command_failed", error: commandError(new Error("The desktop operation coordinator is closed.")) });
+        return;
+      }
       try {
         const result = await lease.result;
         if (!mounted.current) return;
@@ -129,7 +136,10 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
           return bridge.planDryRun(plan, selectedIds);
         },
       });
-      if (!lease) return;
+      if (!lease) {
+        if (mounted.current) dispatch({ type: "command_failed", error: commandError(new Error("The desktop operation coordinator is closed.")) });
+        return;
+      }
       try {
         const outcome = await lease.result;
         if (mounted.current) dispatch({ type: "dry_run_succeeded", outcome });
@@ -159,7 +169,10 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
           return bridge.planExecute(plan, selectedIds, digest);
         },
       });
-      if (!lease) return;
+      if (!lease) {
+        if (mounted.current) dispatch({ type: "command_failed", error: commandError(new Error("The desktop operation coordinator is closed.")) });
+        return;
+      }
       try {
         const report = await lease.result;
         if (mounted.current) {

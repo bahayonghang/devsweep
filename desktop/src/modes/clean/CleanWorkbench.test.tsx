@@ -361,6 +361,53 @@ describe("Clean review row controls", () => {
   });
 });
 
+const closedCoordinatorAlert = "Desktop operation failed: The desktop operation coordinator is closed.";
+
+describe("Clean closed coordinator", () => {
+  it("shows the closed coordinator alert for dry run and does not call planDryRun", async () => {
+    const coordinator = new OperationCoordinator();
+    const planDryRun = vi.fn(fixtureBridge.planDryRun);
+    const user = userEvent.setup();
+    render(
+      <CleanWorkbench
+        bridge={bridge({ planDryRun })}
+        coordinator={coordinator}
+        locale="en"
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await screen.findByRole("button", { name: "Review targets" });
+    await coordinator.close();
+    await user.click(screen.getByRole("button", { name: "Review targets" }));
+    await user.click(screen.getByRole("button", { name: "Review dry run" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(closedCoordinatorAlert);
+    expect(planDryRun).not.toHaveBeenCalled();
+  });
+
+  it("shows the closed coordinator alert for execute and does not call planExecute", async () => {
+    const coordinator = new OperationCoordinator();
+    const planDryRun = vi.fn(fixtureBridge.planDryRun);
+    const planExecute = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <CleanWorkbench
+        bridge={bridge({ planDryRun, planExecute })}
+        coordinator={coordinator}
+        locale="en"
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Review targets" }));
+    await user.click(screen.getByRole("button", { name: "Review dry run" }));
+    expect(await screen.findByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();
+    await coordinator.close();
+    await user.click(screen.getByRole("button", { name: "Confirm cleanup" }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Execute" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(closedCoordinatorAlert);
+    expect(planExecute).not.toHaveBeenCalled();
+  });
+});
+
 describe("Clean result copy", () => {
   it("never says freed or released in Clean or stage catalogue entries", () => {
     for (const catalogue of [englishCatalogue, chineseCatalogue]) {

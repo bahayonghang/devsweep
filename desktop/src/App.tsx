@@ -90,6 +90,7 @@ export function App({
     userLocales,
   }));
   const presentationGeneration = useRef(0);
+  const lifecycleGeneration = useRef(0);
   const saveInFlight = useRef(false);
 
   useEffect(() => {
@@ -117,6 +118,8 @@ export function App({
   }, [presentationSettings, userLocales]);
 
   useEffect(() => {
+    const generations = lifecycleGeneration;
+    const generation = ++generations.current;
     let disposed = false;
     let unlisten: (() => void) | undefined;
     void lifecycle.onCloseRequested(() => lifecycleController.requestClose())
@@ -133,7 +136,12 @@ export function App({
     return () => {
       disposed = true;
       unlisten?.();
-      void lifecycleController.drain();
+      queueMicrotask(() => {
+        // A replay increments the ref before this microtask, so this reads the latest value.
+        if (generations.current === generation) {
+          void lifecycleController.drain();
+        }
+      });
     };
   }, [lifecycle, lifecycleController, shellCoordinator]);
 
