@@ -42,7 +42,15 @@ cancellation callback, and join promise. It serializes Scan, Analyze, the Analyz
 Recycle Bin move (`analyze.trash`), Software, Optimize, and live Status work. Switching mode, closing/unmounting, or starting
 another heavy operation requests cancellation and awaits join before new work
 starts. Rapid requests are ordered; stale completions/events from superseded ids
-are ignored. Close drains owned work. The coordinator never grants domain
+are ignored. Close drains owned work. Effect replay and effect dependency
+changes do not close the coordinator still held by App. The unmount drain is
+one microtask later. Native close still drains immediately through
+`requestClose`. A Clean null lease while the workbench is mounted dispatches
+the existing `io` command error `The desktop operation coordinator is closed.`
+Clean sets its mounted flag true in the effect setup and false in that
+effect's cleanup. StrictMode replays the cleanup before the next setup, so
+the setup restores the flag before a click can run.
+The coordinator never grants domain
 authority or sees plans, digests, selected paths, commands, or audit records.
 
 ## Presentation Settings
