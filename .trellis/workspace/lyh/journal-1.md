@@ -1560,3 +1560,42 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - 重启 just tdev 后点击扫描确认界面离开就绪。
+
+
+## Session 54: 提交并归档桌面窗口控件与设置中心
+<!-- trellis-session: v=2 fp=34d77eaef921d0b6 -->
+
+**Date**: 2026-09-26
+**Task**: 提交并归档桌面窗口控件与设置中心
+**Branch**: `dev`
+
+### Summary
+
+提交自绘窗口控件、设置页面、配置持久化、运行参数及配置重载回归修复。用户已知检查结果并要求归档，父任务和两个子任务已归档；失败及未验收项保留原状态。
+
+### Main Changes
+
+- 新增主窗口自绘标题栏和窗口专用权限，保留关闭等待流程。
+- 新增主题、字体、字号、动效与 Status/HUD 采样设置，保留独立语言配置。
+- 归档 09-25-desktop-window-settings、09-25-desktop-custom-window-controls、09-25-desktop-settings-preferences，并关联功能提交。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3c4ce1174c094a5a82851a7ae9ca5f5b349450cd` | feat(desktop): ✨ 添加自绘窗口控件和设置中心 |
+
+### Testing
+
+- [OK] 此前检查：330 项 Vitest、5 项 Node、81 项 Tauri、203 项 CLI、1 项核心 public-API 测试通过。
+- [OK] 此前检查：类型生成、lint、typecheck、Web 构建、Rust 格式检查、workspace check 与 Clippy 通过；本次未重复运行。
+- [OK] just ci 失败：核心测试可执行文件缺失，核心单元测试未启动，原因未查明。
+- [OK] 原生窗口输入、显示缩放、托盘、持久化重启与跨窗口行为仍待验收；本次未使用图片功能。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 后续验收需保留核心测试启动失败和原生行为待验收记录，不将任务归档视为检查通过。
