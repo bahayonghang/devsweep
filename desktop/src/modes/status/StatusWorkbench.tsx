@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { usePreferences } from "../../preferences/context";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import type {
@@ -16,7 +17,6 @@ import { message, type MessageKey, type PresentationLanguageTag } from "../../i1
 import { DetailView, Stage, StageResult } from "../../stage";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import {
-  DEFAULT_PROCESS_LIMIT,
   INTERVAL_STEPS_MS,
   availableValue,
   formatBasisPoints,
@@ -251,12 +251,22 @@ function StatusChart({
 }
 
 export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbenchProps) {
+  const preferences = usePreferences();
   const [state, dispatch] = useReducer(statusReducer, initialStatusState);
+  const intervalMs = preferences.preferences.status_interval_seconds * 1000;
+  const processLimit = preferences.preferences.status_process_limit;
+  const intervalRequest = useRef(0);
+  const activeOperation = useRef(state.operationId);
+  useLayoutEffect(() => { activeOperation.current = state.operationId; }, [state.operationId]);
   const [details, setDetails] = useState(false);
   const mounted = useRef(true);
-  useEffect(() => () => {
-    mounted.current = false;
-    dispatch({ type: "released" });
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      intervalRequest.current += 1;
+      dispatch({ type: "released" });
+    };
   }, []);
 
   const runOperation = async <T,>(
@@ -294,20 +304,20 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
 
   const captureSnapshot = () => void runOperation<DesktopStatusSnapshotResult>(
     "snapshot",
-    (operationId) => bridge.statusSnapshot(operationId),
+    (operationId) => bridge.statusSnapshot(operationId, processLimit),
     (operationId, result) => {
       if (result.type === "completed") dispatch({ type: "snapshot_completed", operationId, snapshot: result.snapshot });
       else dispatch({ type: "operation_canceled", operationId });
     },
   );
 
-  const startLive = (intervalMs = state.intervalMs) => {
+  const startLive = (nextIntervalMs = intervalMs, nextProcessLimit = processLimit) => {
     void runOperation<DesktopStatusLiveResult>(
       "live",
       (operationId) => bridge.statusLiveStart(
         operationId,
-        intervalMs,
-        DEFAULT_PROCESS_LIMIT,
+        nextIntervalMs,
+        nextProcessLimit,
         (event: StatusEventV1) => {
           if (mounted.current) dispatch({ type: "live_event", operationId, event });
         },
@@ -322,6 +332,7 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
   };
 
   const cancelActive = async () => {
+    intervalRequest.current += 1;
     const operationId = state.operationId;
     if (!operationId) return;
     dispatch({ type: "cancel_requested", operationId });
@@ -332,8 +343,10 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
   };
 
   useEffect(() => {
-    captureSnapshot();
+    let disposed = false;
+    queueMicrotask(() => { if (!disposed) captureSnapshot(); });
     // Auto-load one snapshot on enter; live remains opt-in.
+    return () => { disposed = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -365,6 +378,7 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         {message(locale, "status.v1.action.live.start")}
       </button>;
   const errors = <>
+    {preferences.saveError && <p className="preferences-warning" role="alert">{message(locale, "preferences.v1.save.error")}</p>}
     {commandErr ? <ErrorBanner error={commandErr} onDismiss={() => dispatch({ type: "error_dismissed" })} /> : null}
     {decodeError ? <div className="error-banner" role="alert">
       <span>{message(locale, "status.v1.decode.error", { reason: decodeError })}</span>
@@ -404,11 +418,16 @@ export function StatusWorkbench({ bridge, coordinator, locale }: StatusWorkbench
         <span>{message(locale, "status.v1.interval.label")}</span>
         <select
           aria-label={message(locale, "status.v1.interval.label")}
-          value={String(state.intervalMs)}
+          value={String(intervalMs)}
+          disabled={preferences.saving || preferences.unavailable || preferences.loading || state.status === "canceling"}
           onChange={(event) => {
-            const intervalMs = Number(event.target.value);
-            dispatch({ type: "interval_changed", intervalMs });
-            if (state.status === "live") startLive(intervalMs);
+            const request = ++intervalRequest.current;
+            const wasLive = state.status === "live";
+            const previousOperation = state.operationId;
+            void preferences.update({ field: "status_interval_seconds", value: Number(event.target.value) / 1000 }).then((snapshot) => {
+              if (!snapshot || !mounted.current || request !== intervalRequest.current) return;
+              if (wasLive && previousOperation === activeOperation.current) startLive(snapshot.preferences.status_interval_seconds * 1000, snapshot.preferences.status_process_limit);
+            });
           }}
         >
           {INTERVAL_STEPS_MS.map((step) => (

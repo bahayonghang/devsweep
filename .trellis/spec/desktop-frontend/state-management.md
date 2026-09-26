@@ -27,7 +27,7 @@ sizes, or status for capsule tabs or brand-menu items.
   changes.
 - Route transitions capture the activating navigation element and restore focus
   after composition. Mode routes restore focus to their capsule tab. Supporting
-  destinations and Language open from the brand menu; the menu closes before
+  destinations and Settings open from the brand menu; the menu closes before
   navigation, so those routes restore focus to the brand button. Closing
   settings restores its opener.
 - The supporting-route back control navigates to the last active mode route
@@ -70,6 +70,15 @@ runtime locale/catalogue and pure precedence resolver. Core never imports CLI.
 The persisted selection affects interactive presentation only; explicit CLI
 `--language` remains session-only, and JSON/NDJSON/machine schemas never consult
 the persisted UI setting.
+
+## Desktop Preferences
+
+The separate core-owned desktop preference store, committed snapshot ordering,
+main/HUD read boundaries, and exact field/reset rules live in
+[Desktop Preferences Contract](../backend/desktop-preferences.md). Keep the
+shared language contract above unchanged. Theme/font updates retain domain
+reducers. Failed saves retain committed values. Status interval changes commit
+before the existing cancel/join/restart path; HUD intervals apply on next show.
 
 ## Workflow
 
@@ -173,9 +182,11 @@ scan result or backend error remains authoritative.
   change its priority.
 - The tray HUD is a second Vite entry (`hud.html`, `src/hud/`). It renders
   only closed-decoded `hud-status` events through `listenHudStatus` and
-  invokes one command, `presentation_settings_get`, through the i18n settings
-  bridge. The Tauri invoke gate rejects every other app command from the
-  `hud` window, and its capability grants only event listen/unlisten. The HUD
+  reads language with `presentation_settings_get` through the i18n bridge and
+  desktop preferences with `desktop_preferences_get` through the API bridge.
+  It consumes ordered `desktop-preferences-changed` snapshots. The Tauri invoke
+  gate rejects settings writes and every domain command from `hud`; its
+  capability grants only event listen/unlisten. The HUD
   does not use the operation coordinator; the backend `HudSampler` owns its
   sampling lifecycle.
 

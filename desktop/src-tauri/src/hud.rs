@@ -1,4 +1,4 @@
-//! Tray HUD sampler. It samples Status every 2 s only while the HUD window is
+//! Tray HUD sampler. It samples Status at the selected cadence while the HUD is
 //! visible. Hide and app exit cancel and join the sampler thread, so no sample
 //! is emitted after `stop` returns.
 
@@ -16,8 +16,6 @@ use serde::Serialize;
 pub(crate) const HUD_WINDOW_LABEL: &str = "hud";
 /// Event name for HUD samples. Only the HUD window receives it.
 pub(crate) const HUD_STATUS_EVENT: &str = "hud-status";
-/// HUD sample cadence.
-pub(crate) const HUD_SAMPLE_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Closed HUD event payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -36,29 +34,16 @@ struct RunningSampler {
 }
 
 /// Owns at most one HUD sampler thread.
+#[derive(Default)]
 pub(crate) struct HudSampler {
-    interval: Duration,
     running: Mutex<Option<RunningSampler>>,
 }
 
-impl Default for HudSampler {
-    fn default() -> Self {
-        Self::with_interval(HUD_SAMPLE_INTERVAL)
-    }
-}
-
 impl HudSampler {
-    pub(crate) fn with_interval(interval: Duration) -> Self {
-        Self {
-            interval,
-            running: Mutex::new(None),
-        }
-    }
-
     /// Start the sampler thread unless one is already running. `sample`
     /// returns `None` when the sample was canceled or failed; nothing is
     /// emitted for it. Returns `true` when a new thread started.
-    pub(crate) fn start<S, E>(&self, mut sample: S, mut emit: E) -> bool
+    pub(crate) fn start<S, E>(&self, interval: Duration, mut sample: S, mut emit: E) -> bool
     where
         S: FnMut(&FlagCancelObserver) -> Option<StatusSnapshotV1> + Send + 'static,
         E: FnMut(HudStatusEvent) + Send + 'static,
@@ -71,7 +56,6 @@ impl HudSampler {
         }
         let cancel = Arc::new(FlagCancelObserver::new());
         let worker = Arc::clone(&cancel);
-        let interval = self.interval;
         let spawned = thread::Builder::new()
             .name("devsweep-hud-sampler".into())
             .spawn(move || {
@@ -105,13 +89,12 @@ impl HudSampler {
 
     /// Cancel and join the sampler thread. Safe to call when stopped.
     pub(crate) fn stop(&self) {
-        let running = self
-            .running
-            .lock()
-            .map(|mut running| running.take())
-            .unwrap_or(None);
-        if let Some(running) = running {
+        if let Ok(mut state) = self.running.lock()
+            && let Some(running) = state.take()
+        {
             running.cancel.request_cancel();
+            // Keep the lifecycle lock until join completes. A concurrent
+            // show cannot start a second thread while the old one drains.
             let _ = running.join.join();
         }
     }
@@ -156,6 +139,7 @@ mod tests {
 
     fn counting_sampler(
         sampler: &HudSampler,
+        interval: Duration,
     ) -> (Arc<AtomicUsize>, Arc<Mutex<Vec<HudStatusEvent>>>) {
         let samples = Arc::new(AtomicUsize::new(0));
         let events = Arc::new(Mutex::new(Vec::new()));
@@ -163,6 +147,7 @@ mod tests {
         let emitted = Arc::clone(&events);
         let snapshot = fixture_snapshot();
         assert!(sampler.start(
+            interval,
             move |_| {
                 sample_count.fetch_add(1, Ordering::SeqCst);
                 Some(snapshot.clone())
@@ -182,8 +167,8 @@ mod tests {
 
     #[test]
     fn show_starts_sampling_and_emits_sampling_then_snapshots() {
-        let sampler = HudSampler::with_interval(Duration::from_millis(20));
-        let (samples, events) = counting_sampler(&sampler);
+        let sampler = HudSampler::default();
+        let (samples, events) = counting_sampler(&sampler, Duration::from_millis(20));
         assert!(sampler.is_running());
         wait_for(|| samples.load(Ordering::SeqCst) >= 3);
         sampler.stop();
@@ -198,8 +183,8 @@ mod tests {
 
     #[test]
     fn hide_cancels_and_joins_and_no_sample_follows() {
-        let sampler = HudSampler::with_interval(Duration::from_millis(10));
-        let (samples, events) = counting_sampler(&sampler);
+        let sampler = HudSampler::default();
+        let (samples, events) = counting_sampler(&sampler, Duration::from_millis(20));
         wait_for(|| samples.load(Ordering::SeqCst) >= 2);
         sampler.stop();
         assert!(!sampler.is_running());
@@ -212,9 +197,12 @@ mod tests {
 
     #[test]
     fn the_default_cadence_is_two_seconds_and_waits_between_samples() {
-        assert_eq!(HudSampler::default().interval, Duration::from_secs(2));
         let sampler = HudSampler::default();
-        let (samples, _events) = counting_sampler(&sampler);
+        let interval = Duration::from_secs(u64::from(
+            devsweep_core::desktop_preferences::DesktopPreferencesV1::default()
+                .hud_interval_seconds,
+        ));
+        let (samples, _events) = counting_sampler(&sampler, interval);
         wait_for(|| samples.load(Ordering::SeqCst) >= 1);
         thread::sleep(Duration::from_millis(200));
         assert_eq!(samples.load(Ordering::SeqCst), 1);
@@ -228,19 +216,19 @@ mod tests {
 
     #[test]
     fn a_second_show_does_not_start_a_second_thread() {
-        let sampler = HudSampler::with_interval(Duration::from_millis(10));
-        let (_samples, _events) = counting_sampler(&sampler);
-        assert!(!sampler.start(|_| None, |_| {}));
+        let sampler = HudSampler::default();
+        let (_samples, _events) = counting_sampler(&sampler, Duration::from_millis(20));
+        assert!(!sampler.start(Duration::from_millis(20), |_| None, |_| {}));
         sampler.stop();
         sampler.stop();
-        assert!(sampler.start(|_| None, |_| {}));
+        assert!(sampler.start(Duration::from_millis(20), |_| None, |_| {}));
         sampler.stop();
     }
 
     #[test]
     fn app_exit_joins_the_sampler_through_drop() {
-        let sampler = HudSampler::with_interval(Duration::from_millis(10));
-        let (samples, _events) = counting_sampler(&sampler);
+        let sampler = HudSampler::default();
+        let (samples, _events) = counting_sampler(&sampler, Duration::from_millis(20));
         wait_for(|| samples.load(Ordering::SeqCst) >= 1);
         drop(sampler);
         let sampled = samples.load(Ordering::SeqCst);
@@ -250,13 +238,14 @@ mod tests {
 
     #[test]
     fn a_canceled_sample_emits_nothing() {
-        let sampler = HudSampler::with_interval(Duration::from_millis(10));
+        let sampler = HudSampler::default();
         let events = Arc::new(Mutex::new(Vec::new()));
         let emitted = Arc::clone(&events);
         let entered = Arc::new(AtomicUsize::new(0));
         let entered_sample = Arc::clone(&entered);
         let snapshot = fixture_snapshot();
         assert!(sampler.start(
+            Duration::from_millis(20),
             move |cancel| {
                 entered_sample.fetch_add(1, Ordering::SeqCst);
                 while !cancel.is_cancel_requested() {

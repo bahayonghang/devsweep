@@ -1,0 +1,3 @@
+# Per-run browser and application profiles contain generated local state.
+**/localappdata/
+**/browser-profile/

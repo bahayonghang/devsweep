@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { PreferencesProvider } from "./preferences/PreferencesProvider";
+import { PreferencesNotice } from "./preferences/SettingsPage";
+import { usePreferences } from "./preferences/context";
+import { tauriDesktopPreferencesBridge, type DesktopPreferencesBridge } from "./api/bridge";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { tauriBridge, type DesktopBridge } from "./api/bridge";
 import { AppShell, shippedModeRegistrations, shippedSupportingRegistrations } from "./app-shell";
+import { WindowTitlebar } from "./app-shell/WindowTitlebar";
 import {
   message,
   resolvePresentationLanguage,
@@ -13,17 +18,21 @@ import {
   DesktopLifecycleController,
   ShellRouteCoordinatorAdapter,
   tauriDesktopLifecycleBridge,
+  tauriWindowControlBridge,
   type DesktopLifecycleBridge,
+  type WindowControlBridge,
 } from "./lifecycle";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
 
 interface AppProps {
+  desktopPreferences?: DesktopPreferencesBridge;
   bridge?: DesktopBridge;
   presentationSettings?: PresentationSettingsBridge;
   userLocales?: readonly string[];
   coordinator?: OperationCoordinator;
   lifecycle?: DesktopLifecycleBridge;
+  windowControls?: WindowControlBridge;
 }
 
 interface PresentationResourceIdentity {
@@ -65,13 +74,19 @@ function PresentationStoreGate({ state }: { readonly state: "loading" | "unavail
   </main>;
 }
 
-export function App({
+export function App(props: AppProps) {
+  return <PreferencesProvider bridge={props.desktopPreferences ?? tauriDesktopPreferencesBridge}><AppContent {...props} /></PreferencesProvider>;
+}
+
+function AppContent({
   bridge = tauriBridge,
   presentationSettings = tauriPresentationSettingsBridge,
   userLocales = globalThis.navigator?.languages ?? DEFAULT_USER_LOCALES,
   coordinator: coordinatorOverride,
   lifecycle = tauriDesktopLifecycleBridge,
+  windowControls = tauriWindowControlBridge,
 }: AppProps) {
+  const preferences = usePreferences();
   const coordinator = useMemo(
     () => coordinatorOverride ?? new OperationCoordinator(),
     [coordinatorOverride],
@@ -186,10 +201,17 @@ export function App({
     }
   };
 
+  const windowContent = (content: ReactNode, locale: PresentationLanguageTag | null = null) => <div className="desktop-window">
+    <WindowTitlebar bridge={windowControls} locale={locale} />
+    {content}
+  </div>;
+
   if (presentation.settingsBridge !== presentationSettings || presentation.userLocales !== userLocales) {
-    return <PresentationStoreGate state="loading" />;
+    return windowContent(<PresentationStoreGate state="loading" />);
   }
-  if (presentation.status !== "ready") return <PresentationStoreGate state={presentation.status} />;
+  if (presentation.status !== "ready") return windowContent(<PresentationStoreGate state={presentation.status} />);
+
+  if (preferences.loading) return windowContent(<PresentationStoreGate state="loading" />, presentation.locale);
 
   const registrationInput = {
     bridge,
@@ -198,7 +220,7 @@ export function App({
   };
   const modes = shippedModeRegistrations(registrationInput);
   const supporting = shippedSupportingRegistrations(registrationInput);
-  return <AppShell
+  return windowContent(<><PreferencesNotice locale={presentation.locale} /><AppShell
     modes={modes}
     supporting={supporting}
     locale={presentation.locale}
@@ -206,5 +228,5 @@ export function App({
     coordinator={shellCoordinator}
     persistenceError={presentation.saveError}
     localeSaving={presentation.saving}
-  />;
+  /></>, presentation.locale);
 }

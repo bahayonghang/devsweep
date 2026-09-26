@@ -13,6 +13,10 @@ const ADAPTER_SOURCES: &[(&str, &str)] = &[
     ("analyze.rs", include_str!("analyze.rs")),
     ("clean.rs", include_str!("clean.rs")),
     ("commands.rs", include_str!("commands.rs")),
+    (
+        "desktop_preferences.rs",
+        include_str!("desktop_preferences.rs"),
+    ),
     ("error.rs", include_str!("error.rs")),
     ("hud.rs", include_str!("hud.rs")),
     ("optimize.rs", include_str!("optimize.rs")),

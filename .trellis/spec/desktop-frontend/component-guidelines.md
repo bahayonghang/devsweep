@@ -3,8 +3,8 @@
 ## Product Mode
 
 This is a five-mode Operate surface for repeated Clean, Software, Optimize,
-Analyze, and Status work. Use one quiet immersive shell with native Windows
-chrome, one top-centered capsule navigation bar, a stage host below it, and a
+Analyze, and Status work. Use one quiet immersive shell with application-drawn
+main-window controls, one top-centered capsule navigation bar, a stage host below it, and a
 mode-local stage/detail slot. There is no sidebar and no page header block.
 Unavailable modes are absent from navigation and deep links; never render a
 clickable placeholder. There is no More disclosure.
@@ -17,7 +17,7 @@ order Clean, Software, Optimize, Analyze, Status. The active tab has a solid
 light fill and dark text; inactive tabs use muted light text. The brand button
 is outside the tablist and opens the brand menu: a real `role=menu` popover
 with `role=menuitem` entries for the available supporting destinations
-(Protection, Rules, History), Language (the settings route), and Help
+(Protection, Rules, History), Settings (the settings route), and Help
 (external link). Arrow/Home/End move inside the menu, Escape and Tab close it,
 and closing returns focus to the brand button. Below 800 CSS pixels the
 capsule scrolls horizontally (`overflow-x: auto`); tab names stay fully
@@ -34,6 +34,13 @@ not sixth primary modes.
 The default window is 1080x720 CSS pixels with a 900x600 minimum. The window
 title is `DevSweep`.
 
+The main titlebar owns minimize, maximize/restore, and close buttons above the
+capsule. Native window state owns the maximize indicator. Only the blank
+titlebar region starts dragging or handles double-click maximize; buttons and
+navigation do not. Close requests use the existing lifecycle drain before
+window destruction. Minimize does not cancel an operation. Keep window-control
+permissions scoped to the main window and keep the HUD read-only.
+
 ## Composition
 
 - Keep application registration composition in `App`; route, shell, and
@@ -44,7 +51,7 @@ title is `DevSweep`.
   omit unavailable registrations atomically.
 - Compose the shell as the capsule bar plus a stage host. Mode routes carry a
   visually hidden `h1` that names the mode; the active capsule tab is the
-  visible identity. Supporting and Language routes render in the stage host
+  visible identity. Supporting and Settings routes render in the stage host
   with a visible back control to the last mode, a visible `h1`, and a
   subtitle.
 - Every mode's first screen uses the shared `Stage` stack from
@@ -103,7 +110,7 @@ title is `DevSweep`.
   movement and a stable active-page announcement. ArrowRight and ArrowDown
   move to the next mode tab; ArrowLeft and ArrowUp move to the previous tab.
   Route changes restore focus (mode routes to the mode tab, supporting and
-  Language routes to the brand button); language changes do not reset
+  Settings routes to the brand button); language changes do not reset
   mode-local state.
 - Bind catalogue-owned locale accelerators only when the accelerator is unique
   in the currently visible scope. A collision removes the conflicting shortcut;
@@ -134,25 +141,29 @@ title is `DevSweep`.
 
 ## Visual System
 
-- Use Segoe UI Variable with system UI fallbacks and tabular numerals for byte
-  values. Estimated Recoverable and live metrics may use a display-size tabular
-  number. Do not scale the whole UI from viewport fonts.
+- Default to Segoe UI Variable with system UI fallbacks. Settings provides
+  closed local font presets and text scales from the desktop preference
+  contract. Apply the selected stack and scale to real controls and labels
+  in main and HUD. Preserve Chinese/English fallbacks and tabular byte values.
+  Estimated Recoverable and live metrics may use a display-size tabular number.
+  Do not scale the whole UI from viewport fonts.
 - Card surfaces may use radius 12. Controls, inputs, badges, and rows stay at
   radius 8 or below. Primary actions may use a full pill radius. State a radius
   through `--radius-card`, `--radius-control`, or `--radius-tile`, never as a
   literal pixel value. The pill (`999px`) and circle (`50%`) shapes are the two
   exceptions. `desktop/src/styles.test.ts` enforces this.
-- Use a dark-only canvas. There is no light workbench pane. State the shared
-  grammar once in the base rule; do not write a light default and darken it
-  again under `.clean-mode` or another mode selector, because the four modes
-  without that override then render the light surface.
-  `desktop/src/styles.test.ts` holds the list of removed light values.
+- Support dark, light, and system themes through shared semantic token sets
+  across all main destinations, dialogs, window controls, and HUD. Dark is the
+  default. System follows the OS media query; forced colors remain an override.
+  Do not apply a light surface to one mode while other modes retain dark-only
+  literal colors. Theme tests cover the selected palette and readable states.
   Shared tokens are
   `--canvas`, `--text`, `--muted`, `--border`, `--accent`, `--focus`,
   `--danger`, `--warning`, `--ok`, `--card`, `--card-border`, `--tile-alpha`,
   and the capsule tokens `--capsule-bg`, `--capsule-border`,
   `--capsule-active-bg`, `--capsule-active-text`, and `--stage-canvas`.
-  All modes share one near-black blue `--stage-canvas`. Mode identity comes
+  All modes share the selected theme's `--stage-canvas`; the dark default is
+  near-black blue. Mode identity comes
   only from the planet palette and the per-mode accent:
   `--accent-clean`, `--accent-software`, `--accent-optimize`,
   `--accent-analyze`, and `--accent-status`. Supporting destinations use the
@@ -167,10 +178,11 @@ title is `DevSweep`.
   rust-red, Optimize grey-silver, Analyze banded amber, Status warm
   yellow-white). It is `aria-hidden`, non-interactive, and carries no data.
   It renders at a capped source resolution (256 px diameter), rotates at no
-  more than 30 frames per second only while the mode is active and the
+  more than the selected 15/30 frames per second only while the mode is active and the
   document is visible, stops on route change, `visibilitychange` to hidden,
   and unmount, and draws exactly one still frame under
-  `prefers-reduced-motion`. Under `forced-colors: active` it renders as a
+  effective reduced motion (OS preference or app setting). Under
+  `forced-colors: active` it renders as a
   plain outlined circle. No image asset, texture file, photograph, WebGL, or
   new dependency backs it.
 - A status chip is a pill, 11px semibold, dot plus text, and semantic tint only.

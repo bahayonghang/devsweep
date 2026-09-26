@@ -1,0 +1,14 @@
+{
+  "sequence": 2,
+  "preferences": {
+    "schema_version": 1,
+    "theme": "light",
+    "font_family": "segoe_ui",
+    "text_scale_percent": 110,
+    "motion": "reduced",
+    "planet_fps": 15,
+    "status_interval_seconds": 5,
+    "status_process_limit": 30,
+    "hud_interval_seconds": 5
+  }
+}

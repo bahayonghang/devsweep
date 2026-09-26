@@ -46,7 +46,7 @@ Exactly three TypeScript files may import `@tauri-apps`:
 | --- | --- |
 | `desktop/src/api/bridge.ts` | every five-mode and supporting-domain operation |
 | `desktop/src/i18n/index.ts` | presentation settings, a non-domain exception |
-| `desktop/src/lifecycle.ts` | window close and DEV fault injection, a non-domain exception |
+| `desktop/src/lifecycle.ts` | window controls, close lifecycle, and DEV fault injection, a non-domain exception |
 
 Components and reducers never call `invoke`. `desktop/src/api/ipc-boundary.test.ts`
 enforces the list. Adding a fourth adapter needs a spec change first.

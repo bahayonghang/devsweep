@@ -334,6 +334,10 @@ export interface DesktopAnalyzeResultCompleted {
     type:         "completed";
 }
 
+export type DesktopFontFamily = "microsoft_yahei_ui" | "segoe_ui" | "system";
+
+export type DesktopMotion = "reduced" | "system";
+
 export interface DesktopOptimizeAuditResult {
     operation_id: string;
     records:      OptimizeAuditRecordV1[];
@@ -420,6 +424,75 @@ export interface MaintenanceExecutionReportV1 {
     catalogue_version: number;
     outcomes:          MaintenanceActionOutcomeV1[];
     version:           number;
+}
+
+export type Desktop = "microsoft_yahei_ui" | "segoe_ui" | "system" | "reduced" | "dark" | "light";
+
+export interface DesktopPreferencesPatchFontFamily {
+    field: "font_family";
+    value: DesktopFontFamily;
+}
+
+export interface DesktopPreferencesPatchHudIntervalSeconds {
+    field: "hud_interval_seconds";
+    value: number;
+}
+
+export interface DesktopPreferencesPatchMotion {
+    field: "motion";
+    value: DesktopMotion;
+}
+
+export interface DesktopPreferencesPatchPlanetFps {
+    field: "planet_fps";
+    value: number;
+}
+
+export interface DesktopPreferencesPatchResetAppearance {
+    field: "reset_appearance";
+}
+
+export interface DesktopPreferencesPatchResetPerformance {
+    field: "reset_performance";
+}
+
+export interface DesktopPreferencesPatchStatusIntervalSeconds {
+    field: "status_interval_seconds";
+    value: number;
+}
+
+export interface DesktopPreferencesPatchStatusProcessLimit {
+    field: "status_process_limit";
+    value: number;
+}
+
+export interface DesktopPreferencesPatchTextScalePercent {
+    field: "text_scale_percent";
+    value: number;
+}
+
+export interface DesktopPreferencesPatchTheme {
+    field: "theme";
+    value: DesktopTheme;
+}
+
+export type DesktopTheme = "dark" | "light" | "system";
+
+export interface DesktopPreferencesSnapshot {
+    preferences: DesktopPreferencesV1;
+    sequence:    number;
+}
+
+export interface DesktopPreferencesV1 {
+    font_family:             DesktopFontFamily;
+    hud_interval_seconds:    number;
+    motion:                  DesktopMotion;
+    planet_fps:              number;
+    schema_version:          number;
+    status_interval_seconds: number;
+    status_process_limit:    number;
+    text_scale_percent:      number;
+    theme:                   DesktopTheme;
 }
 
 export interface DesktopScanProgress {
@@ -1310,3 +1383,4 @@ export type StatusEventV1 = StatusEventV1Snapshot | StatusEventV1Started | Statu
 export type SoftwareUpdatesV1 = SoftwareUpdatesV1Available | SoftwareUpdatesV1Unavailable;
 export type DesktopSoftwareLeftoversPreviewResult = DesktopSoftwareLeftoversPreviewResultDiscovered | DesktopSoftwareLeftoversPreviewResultPlanned;
 export type OptimizeAuditTransition = OptimizeAuditTransitionAdapterCompleted | OptimizeAuditTransitionDispatchStarted | OptimizeAuditTransitionTerminal | OptimizeAuditTransitionValidated;
+export type DesktopPreferencesPatch = DesktopPreferencesPatchFontFamily | DesktopPreferencesPatchHudIntervalSeconds | DesktopPreferencesPatchMotion | DesktopPreferencesPatchPlanetFps | DesktopPreferencesPatchResetAppearance | DesktopPreferencesPatchResetPerformance | DesktopPreferencesPatchStatusIntervalSeconds | DesktopPreferencesPatchStatusProcessLimit | DesktopPreferencesPatchTextScalePercent | DesktopPreferencesPatchTheme;

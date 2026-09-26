@@ -10,7 +10,6 @@
   gap: 12px;
   padding: 12px 24px 24px;
   color: var(--text-primary);
-  color-scheme: dark;
 }
 .software-mode input[type="search"],
 .software-mode select {
@@ -69,7 +68,7 @@
   border-radius: 6px;
   background: var(--surface-raised);
   padding: 10px 12px;
-  box-shadow: 0 -2px 8px rgb(0 0 0 / 18%);
+  box-shadow: 0 -2px 8px var(--shadow);
 }
 .software-summary-bar p { margin: 0; font-variant-numeric: tabular-nums; }
 

@@ -17,6 +17,7 @@ const check = args.includes("--check");
 const typesPath = path.join(root, "src/api/types.gen.ts");
 
 const rootFixtures = {
+  DesktopPreferencesSnapshot: ["desktop-preferences.json", "desktop-preferences-updated.json"],
   ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json"],
   DesktopScanProgress: ["scan-progress.json", "clean/scan-progress.json"],
   DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json", "clean/dry-run-outcome.json"],
@@ -56,6 +57,11 @@ const rootFixtures = {
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,
 // variants, and primitive shapes still come exclusively from fixture values.
 const references = {
+  DesktopPreferencesSnapshot: { preferences: "DesktopPreferencesV1" },
+  DesktopPreferencesV1: { theme: "DesktopTheme", font_family: "DesktopFontFamily", motion: "DesktopMotion" },
+  DesktopPreferencesPatchTheme: { value: "DesktopTheme" },
+  DesktopPreferencesPatchFontFamily: { value: "DesktopFontFamily" },
+  DesktopPreferencesPatchMotion: { value: "DesktopMotion" },
   ScanReport: { plan: "UntrustedPlan", health: "ScanHealth" },
   UntrustedPlan: { targets: ["UntrustedTarget"] },
   UntrustedTarget: {
@@ -294,6 +300,10 @@ async function generate() {
     }
   }
   const catalog = JSON.parse(await readFile(path.join(fixtureRoot, "contract-variants.json"), "utf8"));
+  const preferencePatches = JSON.parse(await readFile(path.join(fixtureRoot, "desktop-preferences-patches.json"), "utf8"));
+  catalog.tagged_unions.DesktopPreferencesPatch = { tag: "field", variants: Object.fromEntries(
+    preferencePatches.map((patch) => ["DesktopPreferencesPatch" + patch.field.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join(""), [patch]]),
+  ) };
   for (const [name, values] of Object.entries(catalog.additional_samples)) {
     for (const value of values) addSample(samples, name, value);
   }

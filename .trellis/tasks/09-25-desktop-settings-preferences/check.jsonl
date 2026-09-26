@@ -1,0 +1,11 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop scope and relevant implementation quality gates"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Existing shell, visual, and accessibility rules; update only approved clauses"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Operation lifecycle, language V1 compatibility, HUD, and reducer boundaries"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Rust DTO ownership, exact adapter imports, closed IPC and fixture parity"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend owner and quality-guide routing; read relevant quality sections on demand because the full guide exceeds the injection limit"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Place the preference owner in the current Rust module structure"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Version, fixed paths, atomic storage, and rollback contracts"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Typed storage errors and current failure behavior"}
+{"file": ".trellis/tasks/09-25-desktop-window-settings/research/window-chrome.md", "reason": "Window authority, native adapter, exact capabilities, close ordering, and deferred Snap hover"}
+{"file": ".trellis/tasks/09-25-desktop-window-settings/research/settings-runtime.md", "reason": "Actual defaults and consumers, separate preference store, and existing-task boundaries"}
+{"file": ".trellis/spec/backend/desktop-preferences.md", "reason": "Approved concrete preference schema, patch envelope, ordering, consumers, and error contract"}

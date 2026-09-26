@@ -11,7 +11,6 @@
   gap: 12px;
   padding: 12px 24px 24px;
   color: var(--text-primary);
-  color-scheme: dark;
 }
 .status-mode .secondary-button { color: var(--text); background: var(--canvas); border-color: var(--border); }
 .status-mode .secondary-button:hover:not(:disabled) { background: var(--raised); }
@@ -37,7 +36,7 @@
 }
 
 .status-live-status { flex-basis: 100%; margin: 0; color: var(--text-muted); }
-.status-toolbar label { display: grid; gap: 4px; font-size: 13px; }
+.status-toolbar label { display: grid; gap: 4px; font-size: calc(13px * var(--text-scale)); }
 .status-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -46,7 +45,7 @@
 .status-card { min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
 .status-card > div { min-width: 0; }
 .status-card .user-data-ellipsis { white-space: normal; }
-.status-card h3, .status-charts h2, .status-processes h2 { margin: 0 0 8px; font-size: 14px; }
+.status-card h3, .status-charts h2, .status-processes h2 { margin: 0 0 8px; font-size: calc(14px * var(--text-scale)); }
 .status-card p, .status-capability p { margin: 0; overflow-wrap: anywhere; }
 .status-muted { color: var(--text-muted); }
 .status-warning { color: var(--warning); font-weight: 650; }

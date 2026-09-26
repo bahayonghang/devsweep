@@ -8,6 +8,7 @@
 
 use devsweep_core::{
     analysis::{AnalyzeSnapshotV1, AnalyzeTrashPreviewV1, AnalyzeTrashReportV1},
+    desktop_preferences::DesktopPreferencesPatch,
     execution::ExecutionReport,
     history::CleanMovedTotalsV1,
     model::ScanReport,
@@ -20,6 +21,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use crate::{
     analyze::{DesktopAnalyzeProgress, DesktopAnalyzeResult},
     clean::DryRunOutcome,
+    desktop_preferences::DesktopPreferencesSnapshot,
     error::CommandError,
     hud::HudStatusEvent,
     optimize::{
@@ -52,6 +54,22 @@ where
     assert_eq!(
         encoded, fixture,
         "{label}: Rust serialization differs from the desktop fixture"
+    );
+}
+
+#[test]
+fn desktop_preference_fixtures_match_committed_snapshots_and_closed_patches() {
+    assert_round_trip::<DesktopPreferencesSnapshot>(
+        "desktop-preferences.json",
+        include_str!("../../src/api/fixtures/desktop-preferences.json"),
+    );
+    assert_round_trip::<DesktopPreferencesSnapshot>(
+        "desktop-preferences-updated.json",
+        include_str!("../../src/api/fixtures/desktop-preferences-updated.json"),
+    );
+    assert_round_trip::<Vec<DesktopPreferencesPatch>>(
+        "desktop-preferences-patches.json",
+        include_str!("../../src/api/fixtures/desktop-preferences-patches.json"),
     );
 }
 

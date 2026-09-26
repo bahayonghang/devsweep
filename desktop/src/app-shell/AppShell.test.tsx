@@ -62,7 +62,7 @@ describe("AppShell", () => {
     render(<AppShell modes={[registrations[0]]} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
     await openBrandMenu(user);
     expect(screen.queryByRole("menuitem", { name: "Protection" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Language", "Help"]);
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Settings", "Help"]);
   });
 
   it("supports exact deep links, keyboard navigation, focus restoration, and unique accelerators", async () => {
@@ -91,7 +91,7 @@ describe("AppShell", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Clean" })).toHaveClass("sr-only");
     const menu = await openBrandMenu(user);
     expect(menu).toHaveAccessibleName("Supporting destinations");
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Protection", "Rules", "History", "Language", "Help"]);
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Protection", "Rules", "History", "Settings", "Help"]);
     expect(screen.getByRole("menuitem", { name: "Help" })).toHaveAttribute("href", "https://github.com/bahayonghang/devsweep#readme");
     expect(screen.queryByText("More")).not.toBeInTheDocument();
     expect(screen.queryByText("更多")).not.toBeInTheDocument();
@@ -204,7 +204,7 @@ describe("AppShell", () => {
       { name: "Protection", title: "Protection", subtitle: "Inspect protection policy without changing cleanup authority." },
       { name: "Rules", title: "Rules", subtitle: "Inspect the rule catalogue." },
       { name: "History", title: "History", subtitle: "Inspect past cleanup records." },
-      { name: "Language", title: "Language settings", subtitle: "Choose English or Simplified Chinese for this window." },
+      { name: "Settings", title: "Settings", subtitle: "Appearance, language, and sampling preferences." },
     ];
     for (const route of routes) {
       await openBrandMenu(user);
@@ -226,7 +226,7 @@ describe("AppShell", () => {
       { name: "保护", title: "保护", subtitle: "查看保护策略，不改变清理权限。" },
       { name: "规则", title: "规则", subtitle: "查看规则目录。" },
       { name: "历史", title: "历史", subtitle: "查看既往清理记录。" },
-      { name: "语言", title: "语言设置", subtitle: "为本窗口选择英语或简体中文。" },
+      { name: "设置", title: "设置", subtitle: "外观、语言和采样配置。" },
     ];
     for (const route of routes) {
       await openBrandMenu(user, "DevSweep 菜单");
@@ -251,10 +251,10 @@ describe("AppShell", () => {
     }
     expect(screen.getByRole("heading", { level: 1, name: "清理" })).toBeInTheDocument();
     expect(await openBrandMenu(user, "DevSweep 菜单")).toHaveAccessibleName("支持目的地");
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["保护", "规则", "历史", "语言", "帮助"]);
-    await user.click(screen.getByRole("menuitem", { name: "语言" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "语言设置" })).toBeVisible();
-    expect(screen.getByText("为本窗口选择英语或简体中文。")).toBeVisible();
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["保护", "规则", "历史", "设置", "帮助"]);
+    await user.click(screen.getByRole("menuitem", { name: "设置" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "设置" })).toBeVisible();
+    expect(screen.getByText("外观、语言和采样配置。")).toBeVisible();
     await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");
     expect(save).toHaveBeenCalledWith("en");
   });
@@ -288,7 +288,7 @@ describe("AppShell", () => {
     expect(window.location.hash).toBe("#/history");
     const settingsOpener = screen.getByRole("button", { name: "DevSweep menu" });
     await openBrandMenu(user);
-    await user.click(screen.getByRole("menuitem", { name: "Language" }));
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
     expect(await screen.findByRole("combobox", { name: "Language" })).toBeInTheDocument();
     expect(window.location.hash).toBe("#/settings");
 
@@ -455,7 +455,7 @@ describe("AppShell", () => {
 
     const language = screen.getByRole("button", { name: "DevSweep menu" });
     await openBrandMenu(user);
-    await user.click(screen.getByRole("menuitem", { name: "Language" }));
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
     await waitFor(() => expect(language).toBeDisabled());
 
     // Chromium transfers focus to BODY when the active button becomes disabled.
@@ -477,7 +477,7 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     await openBrandMenu(user);
-    await user.click(screen.getByRole("menuitem", { name: "Language" }));
+    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
     expect(await screen.findByRole("combobox", { name: "Language" })).toHaveValue("en");
     expect(window.location.hash).toBe("#/settings");
     expect(language).toHaveFocus();

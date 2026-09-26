@@ -6,10 +6,11 @@
 
 ## Overview
 
-`devsweep` currently has no database, ORM, migrations, or durable application
-state. Persisted file contracts are the serializable cleanup plan emitted as
-JSON from `crates/devsweep-core/src/model/plan.rs` and execution audit records
-emitted as JSONL from `crates/devsweep-core/src/execution/audit.rs`.
+`devsweep` uses versioned files rather than a database or ORM. Persisted
+contracts include cleanup plans, execution audit records, shared presentation
+language, and desktop preferences. The desktop-only settings contract lives in
+[Desktop Preferences](./desktop-preferences.md); keep its file separate from
+the exact shared language V1 document.
 
 Treat this file as a guardrail: do not introduce a database abstraction for
 scanner, CLI, or TUI work unless a task explicitly adds persistence.

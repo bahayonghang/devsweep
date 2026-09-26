@@ -1,6 +1,7 @@
 mod analyze;
 mod clean;
 mod commands;
+mod desktop_preferences;
 mod error;
 mod hud;
 mod optimize;
@@ -59,11 +60,13 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "history_clean_totals",
     "presentation_settings_get",
     "presentation_settings_set",
+    "desktop_preferences_get",
+    "desktop_preferences_update",
 ];
 
 /// App commands the tray HUD window may invoke. The HUD reads only the
-/// persisted presentation language; its samples arrive as `hud-status` events.
-const HUD_INVOKE_COMMANDS: &[&str] = &["presentation_settings_get"];
+/// persisted language and desktop preferences; samples arrive as events.
+const HUD_INVOKE_COMMANDS: &[&str] = &["presentation_settings_get", "desktop_preferences_get"];
 
 /// Tauri allows every local window to invoke every app command when the app
 /// has no ACL manifest. This gate keeps cleanup, uninstall, and trash commands
@@ -106,6 +109,7 @@ pub fn run() {
         .manage(optimize::OptimizeCoordinator::default())
         .manage(status::StatusCoordinator::default())
         .manage(commands::PresentationSettingsCoordinator::default())
+        .manage(desktop_preferences::DesktopPreferencesCoordinator::default())
         .manage(tray::HudState::default())
         .setup(|app| {
             tray::setup(app)?;
@@ -153,6 +157,8 @@ pub fn run() {
             support::history_clean_totals,
             commands::presentation_settings_get,
             commands::presentation_settings_set,
+            desktop_preferences::desktop_preferences_get,
+            desktop_preferences::desktop_preferences_update,
             #[cfg(debug_assertions)]
             commands::debug_native_fault_mode,
         ]))
@@ -193,11 +199,11 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 40);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 42);
     }
 
     #[test]
-    fn capability_grants_only_event_subscription_and_last_window_destroy() {
+    fn main_capability_grants_only_event_subscription_and_window_controls() {
         let capability: serde_json::Value =
             serde_json::from_str(include_str!("../capabilities/default.json"))
                 .expect("desktop capability must be valid JSON");
@@ -215,6 +221,11 @@ mod tests {
                 "core:event:allow-listen",
                 "core:event:allow-unlisten",
                 "core:window:allow-destroy",
+                "core:window:allow-minimize",
+                "core:window:allow-toggle-maximize",
+                "core:window:allow-is-maximized",
+                "core:window:allow-start-dragging",
+                "core:window:allow-close",
             ]
         );
     }
@@ -243,7 +254,10 @@ mod tests {
             assert!(window_may_invoke("main", command), "main lost {command}");
             assert_eq!(
                 window_may_invoke("hud", command),
-                *command == "presentation_settings_get",
+                matches!(
+                    *command,
+                    "presentation_settings_get" | "desktop_preferences_get"
+                ),
                 "hud access to {command}"
             );
             assert!(
@@ -253,7 +267,10 @@ mod tests {
         }
         assert!(window_may_invoke("main", "debug_native_fault_mode"));
         assert!(!window_may_invoke("hud", "debug_native_fault_mode"));
-        assert_eq!(HUD_INVOKE_COMMANDS, ["presentation_settings_get"]);
+        assert_eq!(
+            HUD_INVOKE_COMMANDS,
+            ["presentation_settings_get", "desktop_preferences_get"]
+        );
         let source = include_str!("lib.rs");
         assert!(source.contains(".invoke_handler(window_gated(tauri::generate_handler!["));
     }

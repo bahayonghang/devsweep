@@ -1,5 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { decodeDesktopPreferencesSnapshot } from "./contract";
+import type { DesktopPreferencesPatch, DesktopPreferencesSnapshot } from "./types.gen";
 import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwareLeftoversResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeHudStatusEvent, decodeSoftwareStartupList, decodeSoftwareStartupToggleReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
 import type { AnalyzeTrashPreviewV1, AnalyzeTrashReportV1, DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwareLeftoversPreviewResult, DesktopSoftwareLeftoversResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopSoftwareUpdatesResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, HudStatusEvent, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareLeftoverPlanV1, SoftwareLeftoverSelectionV1, SoftwareSelectionPlanV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1, StatusEventV1, UntrustedPlan } from "./types.gen";
 import {
@@ -57,6 +59,21 @@ export interface DesktopBridge {
   historyShow(operationId: string): Promise<HistoryDetailV1>;
   historyCleanTotals(): Promise<CleanMovedTotalsV1>;
 }
+
+export interface DesktopPreferencesBridge {
+  get(): Promise<DesktopPreferencesSnapshot>;
+  update(patch: DesktopPreferencesPatch): Promise<DesktopPreferencesSnapshot>;
+  subscribe(onSnapshot: (snapshot: DesktopPreferencesSnapshot) => void, onError: (error: unknown) => void): Promise<() => void>;
+}
+
+export const tauriDesktopPreferencesBridge: DesktopPreferencesBridge = {
+  get: () => call("desktop_preferences_get", {}, decodeDesktopPreferencesSnapshot),
+  update: (patch) => call("desktop_preferences_update", { patch }, decodeDesktopPreferencesSnapshot),
+  subscribe: (onSnapshot, onError) => listen<unknown>("desktop-preferences-changed", (event) => {
+    try { onSnapshot(decodeDesktopPreferencesSnapshot(event.payload)); }
+    catch (error) { onError(error); }
+  }),
+};
 
 function bridgeError(error: unknown) {
   try { return decodeCommandError(error); }

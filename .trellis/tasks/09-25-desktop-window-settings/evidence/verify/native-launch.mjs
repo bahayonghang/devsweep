@@ -1,0 +1,21 @@
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { resolve, join } from 'node:path';
+import { connect, pageFacts } from './cdp.mjs';
+const [exeArg, outArg, portArg='9357', reuse='false'] = process.argv.slice(2);
+if (!exeArg || !outArg) throw new Error('Usage: native-launch.mjs exe out port [reuse]');
+const exe=resolve(exeArg), out=resolve(outArg), profile=join(out,'localappdata'), port=Number(portArg);
+if (existsSync(profile) && reuse !== 'true') throw new Error('Refusing to overwrite an existing profile');
+try { await fetch(`http://127.0.0.1:${port}/json/list`); throw new Error('CDP port already responds'); } catch (error) { if (!error.cause) throw error; }
+mkdirSync(join(profile,'DevSweep','settings'),{recursive:true});
+if (reuse !== 'true') writeFileSync(join(profile,'DevSweep','settings','presentation-v1.json'),JSON.stringify({schema_version:1,language:'en'}));
+const app=spawn(exe,[],{env:{...process.env,LOCALAPPDATA:profile,WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:`--remote-debugging-port=${port} --remote-allow-origins=*`},stdio:'ignore',detached:true,windowsHide:true});
+app.unref();
+const session={exe,sha256:createHash('sha256').update(readFileSync(exe)).digest('hex'),pid:app.pid,port,profile,reuse,startedAt:new Date().toISOString()};
+writeFileSync(join(out,'session.json'),JSON.stringify(session,null,2));
+const page=await connect(port,url=>/tauri\.localhost/.test(url)&&!/hud\.html/.test(url));
+session.target=page.page; session.initial=await page.evaluate(pageFacts);
+writeFileSync(join(out,'session.json'),JSON.stringify(session,null,2));
+page.close();
+console.log(JSON.stringify(session));

@@ -21,8 +21,6 @@ export type { PinnedProcess, ProcessSort, ProcessTableRow, SortDirection } from 
 
 export const MAX_CHART_POINTS = 60;
 export const INTERVAL_STEPS_MS = [1_000, 2_000, 5_000, 10_000, 30_000, 60_000] as const;
-export const DEFAULT_INTERVAL_MS = 2_000;
-export const DEFAULT_PROCESS_LIMIT = 15;
 
 export type StatusPhase = "idle" | "snapshot" | "ready" | "live" | "canceling" | "failed";
 export type StatusOperation = "snapshot" | "live";
@@ -46,8 +44,8 @@ export interface StatusState {
   readonly processSort: ProcessSort;
   readonly processSortDirection: SortDirection;
   readonly pins: readonly PinnedProcess[];
-  readonly intervalMs: number;
-  readonly processLimit: number;
+  readonly intervalMs: number | null;
+  readonly processLimit: number | null;
   readonly lastSequence: number | null;
   readonly skippedTotal: number;
   readonly error: CommandError | string | null;
@@ -63,8 +61,8 @@ export const initialStatusState: StatusState = {
   processSort: "cpu",
   processSortDirection: defaultDirection("cpu"),
   pins: [],
-  intervalMs: DEFAULT_INTERVAL_MS,
-  processLimit: DEFAULT_PROCESS_LIMIT,
+  intervalMs: null,
+  processLimit: null,
   lastSequence: null,
   skippedTotal: 0,
   error: null,
@@ -77,7 +75,6 @@ export type StatusAction =
   | { readonly type: "live_event"; readonly operationId: string; readonly event: StatusEventV1 }
   | { readonly type: "operation_canceled"; readonly operationId: string }
   | { readonly type: "operation_failed"; readonly operationId: string; readonly error: CommandError | string }
-  | { readonly type: "interval_changed"; readonly intervalMs: number }
   | { readonly type: "sort_changed"; readonly sort: ProcessSort }
   | { readonly type: "pin_toggled"; readonly pid: number; readonly name: string }
   | { readonly type: "error_dismissed" }
@@ -150,11 +147,6 @@ function pointFromSnapshot(sequence: number, snapshot: StatusSnapshotV1): ChartP
 function pushChart(points: readonly ChartPoint[], point: ChartPoint): ChartPoint[] {
   const next = [...points, point];
   return next.length > MAX_CHART_POINTS ? next.slice(next.length - MAX_CHART_POINTS) : next;
-}
-
-function clampInterval(intervalMs: number): number {
-  const rounded = Math.floor(intervalMs / 1_000) * 1_000;
-  return Math.min(60_000, Math.max(1_000, rounded));
 }
 
 function finish(state: StatusState, status: StatusPhase): StatusState {
@@ -263,8 +255,6 @@ export function statusReducer(state: StatusState, action: StatusAction): StatusS
     case "operation_failed":
       if (state.operationId !== action.operationId) return state;
       return { ...finish(state, "failed"), error: action.error };
-    case "interval_changed":
-      return { ...state, intervalMs: clampInterval(action.intervalMs) };
     case "sort_changed": {
       const next = nextSort(state.processSort, state.processSortDirection, action.sort);
       return { ...state, processSort: next.sort, processSortDirection: next.direction };

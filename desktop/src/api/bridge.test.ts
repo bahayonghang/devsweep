@@ -14,6 +14,8 @@ import softwareStartupJson from "./fixtures/software/startup-list.json";
 import softwareStartupToggleJson from "./fixtures/software/startup-toggle.json";
 import softwareLeftoversPlanJson from "./fixtures/software/leftovers-planned.json";
 import softwareLeftoversReportJson from "./fixtures/software/leftovers-report.json";
+import preferencesJson from "./fixtures/desktop-preferences.json";
+import preferencesUpdatedJson from "./fixtures/desktop-preferences-updated.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -24,11 +26,12 @@ const mocks = vi.hoisted(() => {
       channels.push(this as { onmessage: (value: unknown) => void });
     }
   }
-  return { invoke: vi.fn(), channels, Channel };
+  return { invoke: vi.fn(), listen: vi.fn(), channels, Channel };
 });
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke, Channel: mocks.Channel }));
+vi.mock("@tauri-apps/api/event", () => ({ listen: mocks.listen }));
 
-import { tauriBridge } from "./bridge";
+import { tauriBridge, tauriDesktopPreferencesBridge } from "./bridge";
 import { decodeDesktopSoftwareLeftoversPreviewResult, decodeScanReport, decodeSoftwareInventory } from "./contract";
 
 const plan = decodeScanReport(scanJson).plan;
@@ -36,7 +39,30 @@ const plan = decodeScanReport(scanJson).plan;
 describe("tauriBridge", () => {
   beforeEach(() => {
     mocks.invoke.mockReset();
+    mocks.listen.mockReset();
     mocks.channels.length = 0;
+  });
+
+  it("uses closed desktop preference commands and the committed event envelope", async () => {
+    mocks.invoke.mockResolvedValueOnce(preferencesJson).mockResolvedValueOnce(preferencesUpdatedJson);
+    expect(await tauriDesktopPreferencesBridge.get()).toEqual(preferencesJson);
+    expect(await tauriDesktopPreferencesBridge.update({ field: "reset_appearance" })).toEqual(preferencesUpdatedJson);
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "desktop_preferences_get", {});
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "desktop_preferences_update", { patch: { field: "reset_appearance" } });
+    const remove = vi.fn();
+    mocks.listen.mockResolvedValue(remove);
+    const onSnapshot = vi.fn();
+    const onError = vi.fn();
+    const unlisten = await tauriDesktopPreferencesBridge.subscribe(onSnapshot, onError);
+    expect(mocks.listen).toHaveBeenCalledWith("desktop-preferences-changed", expect.any(Function));
+    const listener = mocks.listen.mock.calls[0][1];
+    listener({ payload: preferencesUpdatedJson });
+    expect(onSnapshot).toHaveBeenCalledWith(preferencesUpdatedJson);
+    listener({ payload: { ...preferencesUpdatedJson, preferences: { ...preferencesUpdatedJson.preferences, extra: true } } });
+    expect(onSnapshot).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledOnce();
+    unlisten();
+    expect(remove).toHaveBeenCalledOnce();
   });
 
   it("uses command-scoped channels and camelCase argument names", async () => {

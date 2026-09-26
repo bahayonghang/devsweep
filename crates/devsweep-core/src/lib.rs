@@ -8,6 +8,8 @@ pub mod analysis;
 
 /// Neutral Cargo metadata probing and diagnostics.
 pub mod cargo_metadata;
+/// Validated desktop appearance and bounded runtime preferences.
+pub mod desktop_preferences;
 /// Cleanup execution orchestration and safety enforcement.
 pub mod execution;
 /// Shared filesystem identity, containment, reparse, and sizing operations.

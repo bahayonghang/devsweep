@@ -16,7 +16,8 @@ domain model, scanner, and future execution/audit code.
 | Guide | Description | Status |
 |-------|-------------|--------|
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | Rust crate conventions |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | No database; JSON plan contract |
+| [Database Guidelines](./database-guidelines.md) | File persistence and compatibility | JSON plans, audit, and settings |
+| [Desktop Preferences](./desktop-preferences.md) | Desktop store, IPC, main/HUD consumers | Closed V1 preference contract |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | anyhow CLI/scanner conventions |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Foundation, plan validation, and scanner conventions |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | tracing to stderr |

@@ -1,5 +1,8 @@
 {
   "string_enums": {
+    "DesktopTheme": ["dark", "light", "system"],
+    "DesktopFontFamily": ["system", "segoe_ui", "microsoft_yahei_ui"],
+    "DesktopMotion": ["system", "reduced"],
     "Ecosystem": ["rust", "node", "python", "docker", "generic"],
     "RiskLevel": ["low", "medium", "high", "dangerous"],
     "ScanCompleteness": ["complete", "partial"],

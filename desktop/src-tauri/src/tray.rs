@@ -7,12 +7,14 @@
 use std::collections::BTreeMap;
 use std::sync::{
     Mutex, OnceLock,
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
 };
 use std::time::{Duration, Instant};
 
 use devsweep_core::{
+    desktop_preferences::DesktopPreferencesV1,
     presentation_settings::{PresentationLanguageTag, load_presentation_settings},
+    process::FlagCancelObserver,
     status::{AvailabilityV1, StatusSnapshotV1, capture_snapshot},
 };
 use tauri::{
@@ -22,7 +24,10 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
-use crate::hud::{HUD_STATUS_EVENT, HUD_WINDOW_LABEL, HudSampler, HudStatusEvent};
+use crate::{
+    desktop_preferences::DesktopPreferencesCoordinator,
+    hud::{HUD_STATUS_EVENT, HUD_WINDOW_LABEL, HudSampler, HudStatusEvent},
+};
 
 /// Tray icon id.
 pub(crate) const TRAY_ID: &str = "devsweep-tray";
@@ -46,12 +51,45 @@ pub(crate) struct HudState {
     sampler: HudSampler,
     hidden_at: Mutex<Option<Instant>>,
     exiting: AtomicBool,
+    show_pending: AtomicBool,
+    show_generation: AtomicU64,
 }
 
 impl HudState {
+    fn start_sampling<S, E>(&self, preferences: DesktopPreferencesV1, sample: S, emit: E) -> bool
+    where
+        S: FnMut(&FlagCancelObserver) -> Option<StatusSnapshotV1> + Send + 'static,
+        E: FnMut(HudStatusEvent) + Send + 'static,
+    {
+        self.sampler.start(
+            Duration::from_secs(u64::from(preferences.hud_interval_seconds)),
+            sample,
+            emit,
+        )
+    }
+
     /// Cancel and join the sampler. Used on hide and on app exit.
     pub(crate) fn shutdown(&self) {
+        self.show_generation.fetch_add(1, Ordering::SeqCst);
+        self.show_pending.store(false, Ordering::SeqCst);
         self.sampler.stop();
+    }
+
+    fn begin_show(&self) -> Option<u64> {
+        if self.exiting.load(Ordering::SeqCst) || self.show_pending.swap(true, Ordering::SeqCst) {
+            return None;
+        }
+        Some(self.show_generation.fetch_add(1, Ordering::SeqCst) + 1)
+    }
+
+    fn finish_show(&self, generation: u64) -> bool {
+        if self.exiting.load(Ordering::SeqCst)
+            || self.show_generation.load(Ordering::SeqCst) != generation
+        {
+            return false;
+        }
+        self.show_pending.store(false, Ordering::SeqCst);
+        true
     }
 
     fn mark_hidden(&self) {
@@ -230,6 +268,7 @@ fn toggle_hud<R: Runtime>(app: &AppHandle<R>, tray: Rect) {
     if existing
         .as_ref()
         .is_some_and(|window| window.is_visible().unwrap_or(false))
+        || app.state::<HudState>().show_pending.load(Ordering::SeqCst)
     {
         hide_hud(app);
         return;
@@ -237,19 +276,22 @@ fn toggle_hud<R: Runtime>(app: &AppHandle<R>, tray: Rect) {
     if app.state::<HudState>().hidden_recently() {
         return;
     }
-    match existing {
-        Some(window) => show_hud(app, &window, tray),
-        None => {
-            // WebView2 creation blocks on the event loop, so it must not run
-            // on the event-loop thread that delivers tray events.
-            let app = app.clone();
-            std::thread::spawn(move || {
-                if let Ok(window) = create_hud(&app) {
-                    show_hud(&app, &window, tray);
-                }
-            });
+    let Some(generation) = app.state::<HudState>().begin_show() else {
+        return;
+    };
+    // WebView2 creation and serialized preference I/O must not block the
+    // event loop. The generation prevents a late read from reviving a hidden
+    // HUD or starting work after app exit.
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let window = existing.map(Ok).unwrap_or_else(|| create_hud(&app));
+        match window {
+            Ok(window) => show_hud(&app, window, tray, generation),
+            Err(_) => {
+                app.state::<HudState>().finish_show(generation);
+            }
         }
-    }
+    });
 }
 
 fn create_hud<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>> {
@@ -264,11 +306,27 @@ fn create_hud<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>>
         .build()
 }
 
-fn show_hud<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>, tray: Rect) {
-    place_hud(app, window, tray);
-    let _ = window.show();
-    let _ = window.set_focus();
-    start_sampler(app);
+fn show_hud<R: Runtime>(app: &AppHandle<R>, window: WebviewWindow<R>, tray: Rect, generation: u64) {
+    let preferences = app
+        .state::<DesktopPreferencesCoordinator>()
+        .reload_and_publish(app)
+        .map(|snapshot| snapshot.preferences)
+        .unwrap_or_default();
+    let handle = app.clone();
+    let result = app.run_on_main_thread(move || {
+        if !handle.state::<HudState>().finish_show(generation) {
+            return;
+        }
+        place_hud(&handle, &window, tray);
+        if window.show().is_err() {
+            return;
+        }
+        let _ = window.set_focus();
+        start_sampler(&handle, preferences);
+    });
+    if result.is_err() {
+        app.state::<HudState>().finish_show(generation);
+    }
 }
 
 pub(crate) fn hide_hud<R: Runtime>(app: &AppHandle<R>) {
@@ -284,10 +342,11 @@ pub(crate) fn hide_hud<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-fn start_sampler<R: Runtime>(app: &AppHandle<R>) {
+fn start_sampler<R: Runtime>(app: &AppHandle<R>, preferences: DesktopPreferencesV1) {
     let copy = TrayCopy::for_language(tray_language());
     let emitter = app.clone();
-    app.state::<HudState>().sampler.start(
+    app.state::<HudState>().start_sampling(
+        preferences,
         |cancel| capture_snapshot(HUD_PROCESS_LIMIT, Some(cancel)).ok(),
         move |event| {
             if let HudStatusEvent::Snapshot { snapshot } = &event {
@@ -468,8 +527,74 @@ mod tests {
     #[test]
     fn shutdown_joins_a_running_sampler() {
         let state = HudState::default();
-        assert!(state.sampler.start(|_| Some(fixture_snapshot()), |_| {}));
+        assert!(
+            state
+                .sampler
+                .start(Duration::from_secs(2), |_| Some(fixture_snapshot()), |_| {})
+        );
         state.shutdown();
         assert!(!state.sampler.is_running());
+    }
+
+    #[test]
+    fn hide_or_exit_invalidates_pending_preference_reload_before_show() {
+        let state = HudState::default();
+        let first = state.begin_show().unwrap();
+        assert!(state.begin_show().is_none());
+        state.shutdown();
+        assert!(!state.finish_show(first));
+        assert!(!state.show_pending.load(Ordering::SeqCst));
+        let second = state.begin_show().unwrap();
+        assert!(!state.finish_show(first));
+        assert!(state.show_pending.load(Ordering::SeqCst));
+        assert!(state.finish_show(second));
+        let third = state.begin_show().unwrap();
+        state.exiting.store(true, Ordering::SeqCst);
+        state.shutdown();
+        assert!(!state.finish_show(third));
+        assert!(state.begin_show().is_none());
+        assert!(!state.sampler.is_running());
+    }
+
+    fn assert_hud_cadence(seconds: u8) {
+        let state = HudState::default();
+        let preferences = DesktopPreferencesV1 {
+            hud_interval_seconds: seconds,
+            ..DesktopPreferencesV1::default()
+        };
+        let (sent, received) = std::sync::mpsc::channel();
+        assert!(state.start_sampling(
+            preferences,
+            move |_| {
+                sent.send(Instant::now()).unwrap();
+                None
+            },
+            |_| {}
+        ));
+        let first = received.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert!(!state.start_sampling(DesktopPreferencesV1::default(), |_| None, |_| {}));
+        let interval = Duration::from_secs(u64::from(seconds));
+        let second = received
+            .recv_timeout(interval + Duration::from_secs(3))
+            .unwrap();
+        state.shutdown();
+        assert!(second.duration_since(first) >= interval - Duration::from_millis(1));
+        assert!(!state.sampler.is_running());
+        assert!(received.try_recv().is_err());
+    }
+
+    #[test]
+    fn hud_default_two_second_preference_reaches_the_actual_sampler() {
+        assert_hud_cadence(DesktopPreferencesV1::default().hud_interval_seconds);
+    }
+
+    #[test]
+    fn hud_five_second_preference_reaches_the_actual_sampler() {
+        assert_hud_cadence(5);
+    }
+
+    #[test]
+    fn hud_ten_second_preference_reaches_the_actual_sampler() {
+        assert_hud_cadence(10);
     }
 }

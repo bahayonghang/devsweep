@@ -1,0 +1,14 @@
+{
+  "sequence": 1,
+  "preferences": {
+    "schema_version": 1,
+    "theme": "dark",
+    "font_family": "system",
+    "text_scale_percent": 100,
+    "motion": "system",
+    "planet_fps": 30,
+    "status_interval_seconds": 2,
+    "status_process_limit": 15,
+    "hud_interval_seconds": 2
+  }
+}

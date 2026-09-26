@@ -6,13 +6,13 @@
   display: grid;
   gap: 12px;
   padding: 16px 24px 24px;
-  color: var(--shell-text, #f1f7f3);
+  color: var(--text);
   min-height: 0;
 }
 .support-page h1, .support-page h2 { margin: 0; }
 .support-page .card { display: grid; gap: 12px; }
 .support-page table { width: 100%; min-width: 0; border-collapse: collapse; }
-.support-page th, .support-page td { text-align: left; padding: 8px; border-bottom: 1px solid var(--shell-border, #385044); }
+.support-page th, .support-page td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
 .support-page label { display: grid; gap: 4px; max-width: 480px; }
 .support-page form { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 .support-page dialog { color: CanvasText; background: Canvas; border: 1px solid CanvasText; padding: 16px; }

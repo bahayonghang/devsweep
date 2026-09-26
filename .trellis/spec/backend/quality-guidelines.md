@@ -646,7 +646,7 @@ ProcessRequest {
   -> Vec<UnsupportedCapabilityV1>` (replaces the static list).
 - `GpuV1 { adapters: [{ adapter_id, utilization_basis_points }] }` and
   `ThermalV1 { zones: [{ zone_id, temperature_tenths_celsius }] }`.
-- `HudSampler::start(sample, emit)`, `HudSampler::stop()`; event
+- `HudSampler::start(interval, sample, emit)`, `HudSampler::stop()`; event
   `hud-status` with closed payload `{type: "sampling"}` or
   `{type: "snapshot", snapshot}`.
 
@@ -671,7 +671,8 @@ ProcessRequest {
   without thermal zones or GPU counters still reports `success` when the
   other groups are complete, as before the probes existed.
 - The HUD sampler owns one thread and one `FlagCancelObserver`. It samples
-  every 2 s only while the HUD window is visible. Hide, HUD destroy, main
+  at the validated desktop-preference interval (2/5/10 s, default 2 s) only
+  while the HUD window is visible. The interval is captured on show. Hide, HUD destroy, main
   window destroy, `RunEvent::ExitRequested`/`Exit`, and `Drop` cancel and
   join it. A second start while running is refused. Tray tooltip updates are
   posted to the event loop, so a join on the event loop cannot deadlock.
@@ -679,7 +680,8 @@ ProcessRequest {
   process. There is no autostart.
 - Without an app ACL manifest, Tauri lets every local window invoke every app
   command. `window_gated` wraps `generate_handler!`: `main` may invoke all
-  commands, `hud` only `presentation_settings_get`, any other label nothing.
+  commands, `hud` only `presentation_settings_get` and `desktop_preferences_get`,
+  any other label nothing.
   The `hud` capability grants only `core:event:allow-listen` and
   `core:event:allow-unlisten`.
 
@@ -704,7 +706,7 @@ ProcessRequest {
 - PDH fixture tests for grouping, clamp, idle zero versus no instance, 0 K
   drop, and reason codes; capability-list tests for each probe state.
 - HUD sampler tests for start on show, cancel and join on hide and drop, no
-  sample after stop, the 2 s cadence, and a refused second start.
+  sample after stop, the selected cadence/default 2 s, and a refused second start.
 - A window-gate test over every shipped command for `main`, `hud`, and an
   unknown label.
 

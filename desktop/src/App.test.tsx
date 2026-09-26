@@ -1,6 +1,7 @@
+import { createFixturePreferencesBridge } from "./preferences/fixture";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { StrictMode } from "react";
+import { StrictMode, useState, type ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import scanJson from "./api/fixtures/scan-report.json";
 import dryRunJson from "./api/fixtures/dry-run-outcome.json";
@@ -11,10 +12,10 @@ import { decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, 
 import type { DesktopBridge } from "./api/bridge";
 import { fixtureBridge } from "./api/fixture-bridge";
 import type { DesktopScanProgress, DesktopScanResult, ExecutionReport } from "./api/types.gen";
-import { App } from "./App";
+import { App as DesktopApp } from "./App";
 import { formatBytes } from "./components/format";
 import type { PresentationSettings, PresentationSettingsBridge } from "./i18n";
-import type { DesktopLifecycleBridge } from "./lifecycle";
+import { createFixtureWindowBridge, type DesktopLifecycleBridge } from "./lifecycle";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
 const scanReport = decodeScanReport(scanJson);
@@ -22,6 +23,12 @@ const dryRun = decodeDryRunOutcome(dryRunJson);
 const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
 const execution = decodeExecutionReport(executionJson);
 const progress = decodeDesktopScanProgress(progressJson);
+
+function App(props: ComponentProps<typeof DesktopApp>) {
+  const [windowControls] = useState(createFixtureWindowBridge);
+  const [desktopPreferences] = useState(createFixturePreferencesBridge);
+  return <DesktopApp desktopPreferences={desktopPreferences} windowControls={windowControls} {...props} />;
+}
 
 function fakeBridge(overrides: Partial<DesktopBridge> = {}): DesktopBridge {
   return {
@@ -58,7 +65,7 @@ function fakeLifecycle(overrides: Partial<DesktopLifecycleBridge> = {}): Desktop
 async function openLanguageSettings(
   user: ReturnType<typeof userEvent.setup>,
   brand = "DevSweep menu",
-  language = "Language",
+  language = "Settings",
 ) {
   await user.click(await screen.findByRole("button", { name: brand }));
   await user.click(screen.getByRole("menuitem", { name: language }));
@@ -156,9 +163,8 @@ describe("desktop workflow", () => {
       await Promise.resolve();
     });
     await user.click(screen.getByRole("tab", { name: "Status" }));
-    const startLive = await screen.findByRole("button", { name: "Start live" });
-    await waitFor(() => expect(startLive).toBeEnabled());
-    await user.click(startLive);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Start live" })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: "Start live" }));
     expect(statusLiveStart).toHaveBeenCalledOnce();
   });
 
@@ -344,7 +350,7 @@ describe("desktop workflow", () => {
     await user.click(softwareTab);
     expect(screen.getByRole("region", { name: "软件" })).toBeInTheDocument();
     expect(document.querySelector(".shell-brand-icon")).toHaveAttribute("src", "/src/assets/devsweep-icon-master.png");
-    await openLanguageSettings(user, "DevSweep 菜单", "语言");
+    await openLanguageSettings(user, "DevSweep 菜单", "设置");
     await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");
     await waitFor(() => expect(presentationSettings.save).toHaveBeenCalledWith("en"));
     expect(screen.getByRole("tab", { name: "Clean" })).toHaveAttribute("title", "Alt+C");
@@ -366,7 +372,7 @@ describe("desktop workflow", () => {
     expect(select).toBeDisabled();
     expect(select).toHaveValue("en");
     expect(screen.getByRole("tab", { name: "Clean" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Saving language preference");
+    expect(screen.getByText("Saving language preference…")).toHaveAttribute("role", "status");
 
     act(() => save.resolve({ language: "zh-CN" }));
     expect(await screen.findByRole("tab", { name: "清理" })).toBeInTheDocument();

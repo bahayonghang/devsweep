@@ -1,0 +1,11 @@
+npm notice run devsweep-desktop-ui@0.3.0 npx
+npm notice run vitest run src/styles.test.ts src/preferences/preferences.test.tsx src/modes/status/preferences.test.tsx src/api/bridge.test.ts src/api/types-generation.test.ts src/api/ipc-boundary.test.ts src/stage/Planet.test.tsx src/App.test.tsx src/app-shell/AppShell.test.tsx src/i18n/index.test.ts --reporter=dot
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+···············································································································
+
+ Test Files  10 passed (10)
+      Tests  111 passed (111)
+   Start at  23:33:32
+   Duration  9.16s (transform 1.39s, setup 1.81s, collect 4.06s, tests 16.81s, environment 5.96s, prepare 683ms)

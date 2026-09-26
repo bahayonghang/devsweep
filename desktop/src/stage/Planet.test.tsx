@@ -4,6 +4,8 @@ import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MODE_IDS } from "../app-shell/AppShell";
 import { Planet } from "./Planet";
+import { DesktopPreferencesContext } from "../preferences/context";
+import { DEFAULT_DESKTOP_PREFERENCES } from "../preferences/store";
 import { PLANET_PALETTES } from "./planet-palettes";
 import {
   MAX_SOURCE_DIAMETER,
@@ -98,6 +100,25 @@ afterEach(() => {
 });
 
 describe("Planet", () => {
+  it("uses the committed 15 FPS budget and stops the old loop when app motion changes", () => {
+    const context = {
+      preferences: { ...DEFAULT_DESKTOP_PREFERENCES, planet_fps: 15 },
+      loading: false, unavailable: false, saving: false, saveError: false,
+      update: async () => null, reload: () => undefined,
+    };
+    const view = render(<DesktopPreferencesContext.Provider value={context}><Planet mode="clean" /></DesktopPreferencesContext.Provider>);
+    frames.run(1000);
+    expect(putImageData).toHaveBeenCalledTimes(2);
+    frames.run(1040);
+    expect(putImageData).toHaveBeenCalledTimes(2);
+    frames.run(1070);
+    expect(putImageData).toHaveBeenCalledTimes(3);
+    view.rerender(<DesktopPreferencesContext.Provider value={{ ...context, preferences: { ...context.preferences, motion: "reduced" } }}><Planet mode="clean" /></DesktopPreferencesContext.Provider>);
+    expect(frames.callbacks.size).toBe(0);
+    expect(putImageData).toHaveBeenCalledTimes(4);
+    frames.run(1200);
+    expect(putImageData).toHaveBeenCalledTimes(4);
+  });
   it("is decorative and draws a first frame, then animates at no more than 30 fps", () => {
     const view = render(<Planet mode="clean" />);
     const host = view.container.querySelector(".planet");

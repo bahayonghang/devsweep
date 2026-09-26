@@ -1,10 +1,6 @@
-:root {
-  --hud-canvas: #11162a;
-  --hud-text: #eef1f7;
-  --hud-muted: #98a2b8;
-  --hud-border: #2d3552;
-  color-scheme: dark;
-}
+@import "../preferences/appearance.css";
+:root { --hud-canvas: var(--canvas); --hud-text: var(--text); --hud-muted: var(--muted); --hud-border: var(--border); }
+#root { height: 100%; overflow: auto; }
 
 html,
 body {
@@ -12,8 +8,8 @@ body {
   height: 100%;
   background: var(--hud-canvas);
   color: var(--hud-text);
-  font-family: "Segoe UI", system-ui, sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--text-scale));
 }
 
 .hud {
@@ -26,7 +22,7 @@ body {
 
 .hud-title {
   margin: 0 0 10px;
-  font-size: 14px;
+  font-size: calc(14px * var(--text-scale));
   font-weight: 600;
 }
 
@@ -65,3 +61,7 @@ body {
     color: CanvasText;
   }
 }
+
+.hud-row dt { overflow-wrap: anywhere; }
+.preferences-warning { padding: 8px; color: var(--warning-text); background: var(--warning-surface); }
+.preferences-warning button { font: inherit; }

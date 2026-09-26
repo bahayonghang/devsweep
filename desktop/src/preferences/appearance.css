@@ -1,0 +1,107 @@
+:root {
+  --font-ui: "Segoe UI Variable", system-ui, "Microsoft YaHei UI", sans-serif;
+  --text-scale: 1;
+  --on-accent: #0c1210;
+  --on-danger: #ffffff;
+  --danger-fill: #a83a32;
+  --danger-hover: #912f29;
+  --warning-text: #ffe7a5;
+  --warning-surface: #382f18;
+  --warning-border: #735f29;
+  --backdrop: rgb(10 13 26 / 62%);
+  --shadow: rgb(0 0 0 / 25%);
+  --stage-canvas: #11162a;
+  --canvas: var(--stage-canvas);
+  --accent-clean: #3dba7a;
+  --accent-software: #d08060;
+  --accent-optimize: #a3b15c;
+  --accent-analyze: #c49a62;
+  --accent-status: #c4b15a;
+  --accent: var(--accent-clean);
+  --text: #eef1f7;
+  --muted: #98a2b8;
+  --border: #2d3552;
+  --raised: #1a2035;
+  --focus: #9cc8f2;
+  --danger: #ed8a83;
+  --warning: #d4a24a;
+  --ok: #3dba7a;
+  --card: var(--shell-raised);
+  --card-border: var(--border);
+  --tile-alpha: 16%;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-tile: 6px;
+  --capsule-bg: #1b2138;
+  --capsule-border: #313a5a;
+  --capsule-active-bg: #eef1f7;
+  --capsule-active-text: #12172a;
+  --shell-surface: var(--raised);
+  --shell-raised: #242b45;
+  --shell-border: var(--border);
+  --shell-text: var(--text);
+  --shell-muted: var(--muted);
+  font-family: var(--font-ui);
+  font-size: calc(16px * var(--text-scale));
+  color: var(--text);
+  background: var(--canvas);
+  color-scheme: dark;
+  font-synthesis: none;
+}
+
+:root[data-theme="light"] {
+  --stage-canvas: #f3f5fa;
+  --text: #192238;
+  --muted: #526078;
+  --border: #bec7d7;
+  --raised: #ffffff;
+  --shell-raised: #e7ecf5;
+  --focus: #005cb9;
+  --danger: #a32926;
+  --warning: #7e5400;
+  --ok: #126b40;
+  --accent-clean: #126b40;
+  --accent-software: #974024;
+  --accent-optimize: #526500;
+  --accent-analyze: #805100;
+  --accent-status: #756000;
+  --capsule-bg: #e4e9f2;
+  --capsule-border: #b8c2d4;
+  --capsule-active-bg: #263750;
+  --capsule-active-text: #ffffff;
+  --on-accent: #ffffff;
+  --warning-text: #704800;
+  --warning-surface: #fff2cb;
+  --warning-border: #af841d;
+  --backdrop: rgb(20 30 50 / 42%);
+  --shadow: rgb(30 40 60 / 16%);
+  color-scheme: light;
+}
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+@media (forced-colors: active) {
+  :root, :root[data-theme="light"] {
+    --stage-canvas: Canvas;
+    --text: CanvasText;
+    --muted: CanvasText;
+    --border: CanvasText;
+    --raised: Canvas;
+    --shell-raised: Canvas;
+    --focus: Highlight;
+    --danger: CanvasText;
+    --warning: CanvasText;
+    --ok: CanvasText;
+    --capsule-bg: ButtonFace;
+    --capsule-border: ButtonText;
+    --capsule-active-bg: Highlight;
+    --capsule-active-text: HighlightText;
+    --warning-text: CanvasText;
+    --warning-surface: Canvas;
+    --warning-border: CanvasText;
+  }
+}

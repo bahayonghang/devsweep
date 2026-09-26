@@ -1,3 +1,4 @@
+import { SettingsPage } from "../preferences/SettingsPage";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import iconUrl from "../assets/devsweep-icon-master.png";
 import {
@@ -336,10 +337,10 @@ export function AppShell({
     ? message(locale, MODE_MESSAGE_KEYS[activeRegistration.id])
     : activeSupporting
       ? message(locale, SUPPORTING_MESSAGE_KEYS[activeSupporting.id])
-      : message(locale, "shell.v1.settings.title");
+      : message(locale, "preferences.v1.title");
   const activeSubtitle = activeSupporting
     ? message(locale, SUPPORTING_SUBTITLE_KEYS[activeSupporting.id])
-    : message(locale, "shell.v1.subtitle.settings");
+    : message(locale, "preferences.v1.subtitle");
   const headingId = "mode-heading";
   const canvasMode = activeMode ?? "shell";
   const productTitle = message(locale, "app.title");
@@ -425,7 +426,7 @@ export function AppShell({
           className="brand-menu-item"
           aria-current={activeRoute === "settings" ? "page" : undefined}
           onClick={() => openFromMenu("settings")}
-        >{message(locale, "shell.v1.settings.action")}</button>
+        >{message(locale, "preferences.v1.title")}</button>
         <a
           role="menuitem"
           tabIndex={-1}
@@ -466,21 +467,7 @@ export function AppShell({
       <section id="mode-panel" className="mode-panel" role={activeRegistration ? "tabpanel" : undefined} aria-labelledby={headingId}>
         {activeRegistration?.render()}
         {activeSupporting?.render()}
-        {activeRoute === "settings" && <div className="settings-panel">
-          <label>
-            <span>{message(locale, "shell.v1.settings.action")}</span>
-            <select
-              aria-label={message(locale, "shell.v1.settings.action")}
-              value={locale}
-              disabled={localeSaving}
-              aria-busy={localeSaving}
-              onChange={(event) => void onLocaleChange(event.target.value as PresentationLanguageTag)}
-            >
-              <option value="en">{message(locale, "shell.v1.settings.option.en")}</option>
-              <option value="zh-CN">{message(locale, "shell.v1.settings.option.zh_cn")}</option>
-            </select>
-          </label>
-        </div>}
+        {activeRoute === "settings" && <SettingsPage locale={locale} onLocaleChange={onLocaleChange} localeSaving={localeSaving ?? false} />}
       </section>
     </main>
   </div>;

@@ -1,0 +1,40 @@
+[
+  {
+    "field": "theme",
+    "value": "light"
+  },
+  {
+    "field": "font_family",
+    "value": "segoe_ui"
+  },
+  {
+    "field": "text_scale_percent",
+    "value": 110
+  },
+  {
+    "field": "motion",
+    "value": "reduced"
+  },
+  {
+    "field": "planet_fps",
+    "value": 15
+  },
+  {
+    "field": "status_interval_seconds",
+    "value": 5
+  },
+  {
+    "field": "status_process_limit",
+    "value": 30
+  },
+  {
+    "field": "hud_interval_seconds",
+    "value": 5
+  },
+  {
+    "field": "reset_appearance"
+  },
+  {
+    "field": "reset_performance"
+  }
+]

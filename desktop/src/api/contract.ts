@@ -1,4 +1,6 @@
 import type {
+  DesktopPreferencesSnapshot,
+  DesktopPreferencesV1,
   ActionKind,
   AnalyzeNodeV1,
   AnalyzeSnapshotV1,
@@ -115,6 +117,36 @@ function oneOf<T extends string>(value: unknown, values: readonly T[], name: str
 function exact(input: RecordValue, keys: readonly string[], name: string): void {
   const allowed = new Set(keys);
   if (Object.keys(input).some((key) => !allowed.has(key))) throw new Error(`Invalid ${name}: unknown field`);
+}
+
+function preferenceNumber(value: unknown, allowed: readonly number[], name: string): number {
+  const result = unsignedInteger(value, name);
+  if (!allowed.includes(result)) throw new Error("Invalid " + name);
+  return result;
+}
+
+export function decodeDesktopPreferences(value: unknown): DesktopPreferencesV1 {
+  const input = record(value, "desktop preferences");
+  exact(input, ["schema_version", "theme", "font_family", "text_scale_percent", "motion", "planet_fps", "status_interval_seconds", "status_process_limit", "hud_interval_seconds"], "desktop preferences");
+  return {
+    schema_version: preferenceNumber(input.schema_version, [1], "schema version"),
+    theme: oneOf(input.theme, ["dark", "light", "system"], "theme"),
+    font_family: oneOf(input.font_family, ["system", "segoe_ui", "microsoft_yahei_ui"], "font family"),
+    text_scale_percent: preferenceNumber(input.text_scale_percent, [100, 110, 125], "text scale"),
+    motion: oneOf(input.motion, ["system", "reduced"], "motion"),
+    planet_fps: preferenceNumber(input.planet_fps, [15, 30], "planet FPS"),
+    status_interval_seconds: preferenceNumber(input.status_interval_seconds, [1, 2, 5, 10, 30, 60], "Status interval"),
+    status_process_limit: preferenceNumber(input.status_process_limit, [5, 15, 30, 50, 100], "Status process rows"),
+    hud_interval_seconds: preferenceNumber(input.hud_interval_seconds, [2, 5, 10], "HUD interval"),
+  };
+}
+
+export function decodeDesktopPreferencesSnapshot(value: unknown): DesktopPreferencesSnapshot {
+  const input = record(value, "desktop preferences snapshot");
+  exact(input, ["sequence", "preferences"], "desktop preferences snapshot");
+  const sequence = unsignedInteger(input.sequence, "desktop preference sequence");
+  if (sequence === 0) throw new Error("Invalid desktop preference sequence");
+  return { sequence, preferences: decodeDesktopPreferences(input.preferences) };
 }
 
 const ANALYZE_WARNING_CLASSES = ["partial_budget", "access_denied", "io_error", "churn", "cycle", "reparse", "duplicate_link"] as const;

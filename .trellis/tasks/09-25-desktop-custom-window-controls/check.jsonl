@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop scope and relevant implementation quality gates"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Existing shell, visual, and accessibility rules; update only approved clauses"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Operation lifecycle, language V1 compatibility, HUD, and reducer boundaries"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Rust DTO ownership, exact adapter imports, closed IPC and fixture parity"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend owner and quality-guide routing; read relevant quality sections on demand because the full guide exceeds the injection limit"}
+{"file": ".trellis/tasks/09-25-desktop-window-settings/research/window-chrome.md", "reason": "Window authority, native adapter, exact capabilities, close ordering, and deferred Snap hover"}

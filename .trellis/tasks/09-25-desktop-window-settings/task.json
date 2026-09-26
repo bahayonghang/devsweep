@@ -1,0 +1,29 @@
+{
+  "id": "desktop-window-settings",
+  "name": "desktop-window-settings",
+  "title": "桌面自绘窗口控件与设置中心",
+  "description": "重绘桌面窗口标题栏与窗口控件，新增包含主题、字体及有实际运行效果的性能配置的设置页面，并规划配置持久化、兼容与验收。",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-25",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-25-desktop-custom-window-controls",
+    "09-25-desktop-settings-preferences"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "User requested commit and archive on 2026-09-26 after receiving the review results. Implementation is complete. just ci failed before core unit tests started because the test executable was missing; the cause is unknown. Native acceptance remains unverified. Archival does not mark these checks as passed. See evidence/integration-review-20260926.md.",
+  "meta": {}
+}

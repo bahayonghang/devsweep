@@ -1,3 +1,5 @@
+import { usePreferences } from "../preferences/context";
+import { useMediaPreference } from "../preferences/appearance";
 import { useEffect, useRef } from "react";
 import type { ModeId } from "../app-shell/AppShell";
 import { PLANET_PALETTES } from "./planet-palettes";
@@ -10,8 +12,6 @@ import {
   type PlanetTexture,
 } from "./planet-renderer";
 
-/** Frame budget: at most 30 frames per second. */
-const FRAME_INTERVAL_MS = 1000 / 30;
 /** One full rotation takes this long. */
 const TURN_DURATION_MS = 96_000;
 const FALLBACK_CSS_SIZE = 232;
@@ -27,10 +27,6 @@ function textureFor(mode: ModeId): PlanetTexture {
   return texture;
 }
 
-function mediaMatches(query: string): boolean {
-  return globalThis.matchMedia?.(query)?.matches ?? false;
-}
-
 export interface PlanetProps {
   readonly mode: ModeId;
   /** False stops the loop and leaves one still frame. */
@@ -39,11 +35,16 @@ export interface PlanetProps {
 
 /** Original procedural planet. Decorative only: it carries no data. */
 export function Planet({ mode, active = true }: PlanetProps) {
+  const { preferences } = usePreferences();
+  const systemReduced = useMediaPreference("(prefers-reduced-motion: reduce)");
+  const forcedColors = useMediaPreference("(forced-colors: active)");
+  const reduced = preferences.motion === "reduced" || systemReduced;
+  const frameIntervalMs = 1000 / preferences.planet_fps;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || mediaMatches("(forced-colors: active)")) return;
+    if (!canvas || forcedColors) return;
     const context = canvas.getContext("2d");
     if (!context) return;
     const source = document.createElement("canvas");
@@ -80,7 +81,7 @@ export function Planet({ mode, active = true }: PlanetProps) {
     };
 
     draw();
-    if (!active || mediaMatches("(prefers-reduced-motion: reduce)")) return;
+    if (!active || reduced) return;
 
     let handle: number | null = null;
     let previous: number | null = null;
@@ -92,9 +93,9 @@ export function Planet({ mode, active = true }: PlanetProps) {
       if (disposed || document.hidden) return;
       if (previous !== null)
         turn +=
-          Math.min(now - previous, FRAME_INTERVAL_MS * 2) / TURN_DURATION_MS;
+          Math.min(now - previous, frameIntervalMs * 2) / TURN_DURATION_MS;
       previous = now;
-      if (now - lastDrawn >= FRAME_INTERVAL_MS - 1) {
+      if (now - lastDrawn >= frameIntervalMs - 1) {
         lastDrawn = now;
         draw();
       }
@@ -121,7 +122,7 @@ export function Planet({ mode, active = true }: PlanetProps) {
       stop();
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [mode, active]);
+  }, [mode, active, reduced, forcedColors, frameIntervalMs]);
 
   return (
     <span className="planet" data-planet={mode} aria-hidden="true">

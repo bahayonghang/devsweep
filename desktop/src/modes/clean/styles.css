@@ -1,21 +1,21 @@
 .clean-stage .stage-eyebrow {
   margin: 0 0 8px;
   color: var(--accent);
-  font-size: 11px;
+  font-size: calc(11px * var(--text-scale));
   font-weight: 650;
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-.stage-headline { font-size: clamp(1.6rem, 3vw, 2.25rem); }
+.stage-headline { font-size: clamp(1.6rem, calc(3vw * var(--text-scale)), 2.25rem); }
 .clean-stage .stage-headline { margin: 0; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
-.stage-lede { max-width: 42rem; margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.stage-lede { max-width: 42rem; margin: 10px 0 0; color: var(--muted); font-size: calc(13px * var(--text-scale)); line-height: 1.55; }
 .clean-stage .stage-lede { margin: 0 auto; }
 .clean-stage .scope-controls { justify-content: center; flex-wrap: wrap; }
 .clean-stage .scan-status { width: 100%; text-align: left; }
-.clean-stage .ready-status, .clean-stage .plaque-phase { margin: 0; font-size: 12px; font-weight: 650; }
+.clean-stage .ready-status, .clean-stage .plaque-phase { margin: 0; font-size: calc(12px * var(--text-scale)); font-weight: 650; }
 .clean-stage + .main-content { padding-top: 0; }
-.found-so-far h2 { margin: 0 0 6px; font-size: 16px; }
-.found-so-far > p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.found-so-far h2 { margin: 0 0 6px; font-size: calc(16px * var(--text-scale)); }
+.found-so-far > p { margin: 0 0 12px; color: var(--muted); font-size: calc(13px * var(--text-scale)); }
 .found-so-far .preview-total { margin-bottom: 12px; text-align: left; }
 .review-summary { display: grid; gap: 12px; }
 .review-summary .capacity-total { text-align: left; }
@@ -24,7 +24,7 @@
 .capacity-meter svg { display: block; width: 100%; height: 8px; }
 .capacity-meter-verified { fill: var(--ok); }
 .capacity-meter-partial { fill: var(--warning); }
-.capacity-meter-text { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.capacity-meter-text { margin: 8px 0 0; color: var(--muted); font-size: calc(12px * var(--text-scale)); }
 .preview-group.card > header {
   display: flex;
   align-items: center;
@@ -33,12 +33,12 @@
   margin-bottom: 10px;
 }
 .preview-group.card > header h3 { flex: 1; min-width: 0; }
-.preview-group.card .group-subtotal { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.preview-group.card .group-subtotal { color: var(--muted); font-size: calc(12px * var(--text-scale)); font-variant-numeric: tabular-nums; }
 .clean-mode .badge { text-transform: none; }
 .clean-mode .risk-low { color: var(--ok); background: color-mix(in srgb, var(--ok) var(--tile-alpha), transparent); border-color: var(--ok); }
 .clean-mode .risk-medium { color: var(--warning); background: color-mix(in srgb, var(--warning) var(--tile-alpha), transparent); border-color: var(--warning); }
 .clean-mode .risk-high { color: var(--danger); background: color-mix(in srgb, var(--danger) var(--tile-alpha), transparent); border-color: var(--danger); }
-.clean-mode .risk-dangerous { color: var(--text); background: var(--danger); border-color: var(--danger); }
+.clean-mode .risk-dangerous { color: var(--on-danger); background: var(--danger-fill); border-color: var(--danger-fill); }
 .clean-mode dialog.card { padding: 0; }
 .clean-mode .target-primary { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
 .clean-mode .target-copy { min-width: 0; }
@@ -47,9 +47,9 @@
 }
 .clean-mode .row-actions { white-space: nowrap; }
 .clean-mode .row-actions button + button { margin-left: 6px; }
-.skipped-group > summary { cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 650; }
+.skipped-group > summary { cursor: pointer; color: var(--muted); font-size: calc(13px * var(--text-scale)); font-weight: 650; }
 .skipped-group[open] > summary { margin-bottom: 10px; }
-.rescan-hint { margin: 0; color: var(--warning); font-size: 12px; }
+.rescan-hint { margin: 0; color: var(--warning); font-size: calc(12px * var(--text-scale)); }
 .clean-stage .stage-found { display: grid; justify-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .clean-stage .clean-cumulative { color: var(--text); font-weight: 600; }
 .protect-dialog .protect-path { overflow-wrap: anywhere; font-family: var(--mono, monospace); }
