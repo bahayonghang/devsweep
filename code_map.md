@@ -142,6 +142,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop/src-tauri/src/optimize.rs` - Optimize-mode IPC.
 - `desktop/src-tauri/src/analyze.rs` - Analyze-mode IPC.
 - `desktop/src-tauri/src/status.rs` - Status-mode IPC.
+- `desktop/src-tauri/src/fonts.rs` - main-only, read-only DirectWrite family catalogue.
+- `desktop/src-tauri/src/desktop_preferences.rs` - ordered V2 preference commits and events.
 - `desktop/src-tauri/src/tray.rs` - tray icon, menu, tooltip, HUD window toggle, and app exit.
 - `desktop/src-tauri/src/hud.rs` - `HudSampler` (2 s while the HUD is visible) and the `hud-status` event type.
 - `desktop/src-tauri/src/support.rs` - History, Protection, and Rules IPC.

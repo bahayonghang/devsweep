@@ -12,7 +12,7 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 use devsweep_core::{
-    desktop_preferences::DesktopPreferencesV1,
+    desktop_preferences::DesktopPreferencesV2,
     presentation_settings::{PresentationLanguageTag, load_presentation_settings},
     process::FlagCancelObserver,
     status::{AvailabilityV1, StatusSnapshotV1, capture_snapshot},
@@ -56,7 +56,7 @@ pub(crate) struct HudState {
 }
 
 impl HudState {
-    fn start_sampling<S, E>(&self, preferences: DesktopPreferencesV1, sample: S, emit: E) -> bool
+    fn start_sampling<S, E>(&self, preferences: DesktopPreferencesV2, sample: S, emit: E) -> bool
     where
         S: FnMut(&FlagCancelObserver) -> Option<StatusSnapshotV1> + Send + 'static,
         E: FnMut(HudStatusEvent) + Send + 'static,
@@ -342,7 +342,7 @@ pub(crate) fn hide_hud<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-fn start_sampler<R: Runtime>(app: &AppHandle<R>, preferences: DesktopPreferencesV1) {
+fn start_sampler<R: Runtime>(app: &AppHandle<R>, preferences: DesktopPreferencesV2) {
     let copy = TrayCopy::for_language(tray_language());
     let emitter = app.clone();
     app.state::<HudState>().start_sampling(
@@ -558,9 +558,9 @@ mod tests {
 
     fn assert_hud_cadence(seconds: u8) {
         let state = HudState::default();
-        let preferences = DesktopPreferencesV1 {
+        let preferences = DesktopPreferencesV2 {
             hud_interval_seconds: seconds,
-            ..DesktopPreferencesV1::default()
+            ..DesktopPreferencesV2::default()
         };
         let (sent, received) = std::sync::mpsc::channel();
         assert!(state.start_sampling(
@@ -572,7 +572,7 @@ mod tests {
             |_| {}
         ));
         let first = received.recv_timeout(Duration::from_secs(2)).unwrap();
-        assert!(!state.start_sampling(DesktopPreferencesV1::default(), |_| None, |_| {}));
+        assert!(!state.start_sampling(DesktopPreferencesV2::default(), |_| None, |_| {}));
         let interval = Duration::from_secs(u64::from(seconds));
         let second = received
             .recv_timeout(interval + Duration::from_secs(3))
@@ -585,7 +585,7 @@ mod tests {
 
     #[test]
     fn hud_default_two_second_preference_reaches_the_actual_sampler() {
-        assert_hud_cadence(DesktopPreferencesV1::default().hud_interval_seconds);
+        assert_hud_cadence(DesktopPreferencesV2::default().hud_interval_seconds);
     }
 
     #[test]

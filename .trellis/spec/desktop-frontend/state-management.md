@@ -17,8 +17,10 @@ sizes, or status for capsule tabs or brand-menu items.
 
 ## Shell Routing And Mode State
 
-- Primary mode tags are the closed set Clean, Software, Optimize, Analyze, and
-  Status. Protection, Rules, History, and Settings are supporting destinations.
+- Operational mode tags are the closed set Clean, Software, Optimize, Analyze,
+  and Status. Primary navigation adds Settings after the available mode routes
+  without extending ModeId. Protection, Rules, and History are supporting
+  destinations.
 - One typed registry owns route ids, paths, localized label keys, availability,
   and render adapters. Deep-link parsing fails closed to the first available
   route and never materializes an unavailable page.
@@ -26,10 +28,14 @@ sizes, or status for capsule tabs or brand-menu items.
   state. Each registered mode keeps its own state across route and language
   changes.
 - Route transitions capture the activating navigation element and restore focus
-  after composition. Mode routes restore focus to their capsule tab. Supporting
-  destinations and Settings open from the brand menu; the menu closes before
-  navigation, so those routes restore focus to the brand button. Closing
-  settings restores its opener.
+  after composition. Mode routes and Settings restore focus to their capsule
+  tab. Supporting destinations open from the brand menu; the menu closes before
+  navigation, so those routes restore focus to the brand button. Browser
+  back/forward restores the destination control through the same route path.
+- Focus-only movement within the primary tablist does not navigate or cancel
+  work. Every route activation drains the coordinator before composition. A
+  newer transition to the still-active page also supersedes pending navigation;
+  stale completion cannot activate a different destination.
 - The supporting-route back control navigates to the last active mode route
   through the same registry and coordinator path as a capsule tab.
 - Stage/detail view choice is mode-local presentation state. It never changes
@@ -79,6 +85,15 @@ main/HUD read boundaries, and exact field/reset rules live in
 shared language contract above unchanged. Theme/font updates retain domain
 reducers. Failed saves retain committed values. Status interval changes commit
 before the existing cancel/join/restart path; HUD intervals apply on next show.
+
+`preferences/fonts.ts` owns the read-only font catalogue cache per bridge and
+renderer session. Settings mounts trigger the initial request; explicit Refresh
+coalesces in-flight requests. Query text never enumerates or persists. Disposal
+invalidates outstanding requests after same-turn effect replay, so old responses
+cannot revive a cache or replace a newer request. A refresh failure retains the
+last successful list and the saved preference. Catalogue failure does not mark
+the preference store unavailable. HUD applies the committed family without
+catalogue access. V2 snapshots retain all existing sequence/reload rules.
 
 ## Workflow
 

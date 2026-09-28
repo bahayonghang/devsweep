@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { THEME_CATALOGUE } from "./preferences/appearance";
 import { resolve } from "node:path";
 
 const appearance = readFileSync(resolve(process.cwd(), "src/preferences/appearance.css"), "utf8");
@@ -16,27 +18,77 @@ describe("responsive scan workbench styles", () => {
     expect(main).toContain("font-size: calc(14px * var(--text-scale))");
     expect(hud).toContain("font-size: calc(13px * var(--text-scale))");
     expect(hud).toContain("#root { height: 100%; overflow: auto; }");
-    const dark = appearance.slice(0, appearance.indexOf(':root[data-theme="light"]'));
-    const light = appearance.slice(appearance.indexOf(':root[data-theme="light"]'), appearance.indexOf(':root[data-motion="reduced"]'));
-    const palettes = [dark, light].map((source) => Object.fromEntries([...source.matchAll(/--([a-z-]+): (#[0-9a-f]{6});/g)].map((match) => [match[1], match[2]])));
-    const luminance = (hex: string) => {
-      const channels = [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255)
-        .map((value) => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
-      return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-    };
-    for (const palette of palettes) {
-      for (const foreground of ["text", "muted", "danger", "warning", "ok"]) {
-        for (const background of ["stage-canvas", "raised", "shell-raised"]) {
-          const levels = [luminance(palette[foreground]), luminance(palette[background])].sort((a, b) => b - a);
-          expect((levels[0] + 0.05) / (levels[1] + 0.05), foreground + " on " + background).toBeGreaterThanOrEqual(4.5);
-        }
-      }
-    }
   });
   it("contains table overflow and an explicit narrow layout", () => {
     expect(styles).toContain(".table-frame { overflow: auto;");
     expect(styles).toContain("@media (max-width: 760px)");
     expect(styles).toContain("grid-template-columns: minmax(0, 1fr) 118px");
+  });
+
+  it("measures every semantic palette and consumer contrast pair", () => {
+    const report = JSON.parse(execFileSync(process.execPath, ["scripts/check-palette-contrast.mjs"], { encoding: "utf8" })) as {
+      theme_ids: string[]; required_tokens: string[]; failures: unknown[];
+      palettes: Record<string, { direct_tokens: string[]; resolved: Record<string, string> }>;
+      measurements: { palette: string; foreground: string; background: string; minimum: number; ratio: number; pass: boolean }[];
+    };
+    expect(report.theme_ids).toEqual(Object.keys(THEME_CATALOGUE));
+    expect(Object.keys(report.palettes)).toEqual(report.theme_ids.filter((id) => id !== "system"));
+    expect(report.failures).toEqual([]);
+    for (const [id, palette] of Object.entries(report.palettes)) {
+      expect(palette.direct_tokens, id).toEqual(report.palettes.dark.direct_tokens);
+      expect(Object.keys(palette.resolved), id).toEqual(report.required_tokens);
+      const measured = report.measurements.filter((pair) => pair.palette === id);
+      expect(measured.length).toBeGreaterThan(70);
+      for (const pair of measured) expect(pair.ratio, JSON.stringify(pair)).toBeGreaterThanOrEqual(pair.minimum);
+      for (const [foreground, background, minimum] of [
+        ["text", "raised", 4.5],
+        ["control-border", "raised", 3],
+        ["control-border", "stage-canvas", 3],
+      ] as const) {
+        expect(measured, `${id} support dialog contrast`).toContainEqual(expect.objectContaining({ foreground, background, minimum, pass: true }));
+      }
+    }
+    expect(report.palettes.catppuccin_latte.resolved).toMatchObject({ "stage-canvas": "#eff1f5", raised: "#e6e9ef", "shell-raised": "#dce0e8", text: "#4c4f69", muted: "#5c5f77", "theme-accent": "#1e66f5" });
+    expect(report.palettes.catppuccin_mocha.resolved).toMatchObject({ "stage-canvas": "#1e1e2e", raised: "#181825", "shell-raised": "#313244", text: "#cdd6f4", muted: "#bac2de", "theme-accent": "#cba6f7" });
+  });
+
+  it("overrides all palette colors in forced colors after every preset", () => {
+    const forcedStart = appearance.indexOf("@media (forced-colors: active)");
+    const forced = appearance.slice(forcedStart);
+    expect(forced).toContain(':root, :root[data-theme], [data-palette-preview]');
+    const dark = appearance.match(/:root\[data-theme="dark"\][^{]*\{([^}]+)\}/)![1];
+    const tokens = [...dark.matchAll(/--([a-z-]+):/g)].map((match) => match[1]);
+    for (const token of tokens) expect(forced).toContain("--" + token + ":");
+    expect(forced).not.toMatch(/#[a-f0-9]{3,8}|rgb\(/i);
+    for (const theme of Object.values(THEME_CATALOGUE).filter((theme) => theme.id !== "system")) {
+      expect(appearance.indexOf(':root[data-theme="' + theme.id + '"]')).toBeLessThan(forcedStart);
+      expect(appearance).toContain('[data-palette-preview="' + theme.id + '"]');
+    }
+    expect(styles).toContain('background: var(--popup)');
+    expect(styles).toContain('.settings-choice-item[data-selected] { color: var(--selected-text); background: var(--selected-bg);');
+    expect(styles).not.toContain("--preview-canvas");
+    const analyze = readFileSync(resolve(process.cwd(), "src/modes/analyze/styles.css"), "utf8");
+    const analyzeForced = analyze.slice(analyze.indexOf("@media (forced-colors: active)"));
+    expect(analyzeForced).toContain('.analyze-tile, .analyze-tile.evidence-incomplete, .analyze-tile.evidence-aggregated { fill: Canvas;');
+    expect(analyzeForced).toContain('.analyze-tile.is-focused + text, .analyze-tile:focus-visible + text { fill: HighlightText; }');
+  });
+
+  it("uses palette tokens for support dialogs and system colors only in forced colors", () => {
+    const support = readFileSync(resolve(process.cwd(), "src/support/styles.css"), "utf8");
+    const forcedStart = support.indexOf("@media (forced-colors: active)");
+    expect(forcedStart).toBeGreaterThan(-1);
+    const dialog = support.slice(0, forcedStart).match(/\.support-page dialog\s*\{([^}]+)\}/)?.[1];
+    expect(dialog).toBeDefined();
+    expect(dialog).toContain("color: var(--text);");
+    expect(dialog).toContain("background: var(--raised);");
+    expect(dialog).toContain("border: 1px solid var(--control-border);");
+    expect(dialog).not.toMatch(/\bCanvas(?:Text)?\b/);
+    const forcedDialog = support.slice(forcedStart).match(/\.support-page dialog\s*\{([^}]+)\}/)?.[1];
+    expect(forcedDialog).toBeDefined();
+    expect(forcedDialog).toContain("color: CanvasText;");
+    expect(forcedDialog).toContain("background: Canvas;");
+    expect(forcedDialog).toContain("border-color: CanvasText;");
+    expect(forcedDialog).toContain("forced-color-adjust: auto;");
   });
 
   it("honors reduced motion without removing semantic progress", () => {
@@ -87,7 +139,7 @@ describe("responsive scan workbench styles", () => {
       expect(styles).not.toContain(light);
     }
     expect(styles).toMatch(/:root \{[^}]*color-scheme: dark;/);
-    expect(styles).toContain(".secondary-button { color: var(--text); background: var(--raised); border-color: var(--border); }");
+    expect(styles).toContain(".secondary-button { color: var(--text); background: var(--raised); border-color: var(--control-border); }");
     expect(styles).toContain("color: var(--danger); background: var(--raised); border-bottom: 1px solid var(--danger);");
     expect(styles).toContain("dialog { width: min(520px, calc(100vw - 32px)); padding: 0; color: var(--text); background: var(--raised); border: 1px solid var(--border); border-radius: var(--radius-card); }");
     expect(styles).toContain(".risk-dangerous { color: var(--on-danger); background: var(--danger-fill); border-color: var(--danger-fill); }");

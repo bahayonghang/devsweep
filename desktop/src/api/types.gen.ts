@@ -334,7 +334,36 @@ export interface DesktopAnalyzeResultCompleted {
     type:         "completed";
 }
 
-export type DesktopFontFamily = "microsoft_yahei_ui" | "segoe_ui" | "system";
+export interface DesktopFontInstalled {
+    family: string;
+    kind:   "installed";
+}
+
+export interface DesktopFontSystem {
+    kind: "system";
+}
+
+export interface FontFamily {
+    family: string;
+    names:  FontName[];
+}
+
+export interface FontName {
+    locale: string;
+    name:   string;
+}
+
+export type FontsUnavailableReason = "enumeration_failed" | "unsupported_platform";
+
+export interface DesktopFontsAvailable {
+    families: FontFamily[];
+    status:   "available";
+}
+
+export interface DesktopFontsUnavailable {
+    reason: FontsUnavailableReason;
+    status: "unavailable";
+}
 
 export type DesktopMotion = "reduced" | "system";
 
@@ -426,11 +455,11 @@ export interface MaintenanceExecutionReportV1 {
     version:           number;
 }
 
-export type Desktop = "microsoft_yahei_ui" | "segoe_ui" | "system" | "reduced" | "dark" | "light";
+export type Desktop = "reduced" | "system" | "catppuccin_latte" | "catppuccin_mocha" | "claude" | "codex" | "dark" | "light";
 
-export interface DesktopPreferencesPatchFontFamily {
-    field: "font_family";
-    value: DesktopFontFamily;
+export interface DesktopPreferencesPatchFont {
+    field: "font";
+    value: DesktopFont;
 }
 
 export interface DesktopPreferencesPatchHudIntervalSeconds {
@@ -476,15 +505,15 @@ export interface DesktopPreferencesPatchTheme {
     value: DesktopTheme;
 }
 
-export type DesktopTheme = "dark" | "light" | "system";
+export type DesktopTheme = "catppuccin_latte" | "catppuccin_mocha" | "claude" | "codex" | "dark" | "light" | "system";
 
 export interface DesktopPreferencesSnapshot {
-    preferences: DesktopPreferencesV1;
+    preferences: DesktopPreferencesV2;
     sequence:    number;
 }
 
-export interface DesktopPreferencesV1 {
-    font_family:             DesktopFontFamily;
+export interface DesktopPreferencesV2 {
+    font:                    DesktopFont;
     hud_interval_seconds:    number;
     motion:                  DesktopMotion;
     planet_fps:              number;
@@ -1360,6 +1389,8 @@ export type UnsupportedCapabilityState = "unsupported";
 
 export type UnsupportedCode = "fan" | "gpu_utilization" | "physical_disk_activity" | "smart" | "thermal" | "vram";
 
+export type DesktopFont = DesktopFontInstalled | DesktopFontSystem;
+export type DesktopFonts = DesktopFontsAvailable | DesktopFontsUnavailable;
 export type Scope = ScopeGlobal | ScopeProject;
 export type Evidence = EvidenceKnownCacheDir | EvidenceMarkerFile | EvidenceOfficialCommand | EvidenceRuleMatched | EvidenceUserConfigured;
 export type CleanupIntent = CleanupIntentInspectOnly | CleanupIntentRunBuiltInAction | CleanupIntentTrashProjectArtifact;
@@ -1383,4 +1414,4 @@ export type StatusEventV1 = StatusEventV1Snapshot | StatusEventV1Started | Statu
 export type SoftwareUpdatesV1 = SoftwareUpdatesV1Available | SoftwareUpdatesV1Unavailable;
 export type DesktopSoftwareLeftoversPreviewResult = DesktopSoftwareLeftoversPreviewResultDiscovered | DesktopSoftwareLeftoversPreviewResultPlanned;
 export type OptimizeAuditTransition = OptimizeAuditTransitionAdapterCompleted | OptimizeAuditTransitionDispatchStarted | OptimizeAuditTransitionTerminal | OptimizeAuditTransitionValidated;
-export type DesktopPreferencesPatch = DesktopPreferencesPatchFontFamily | DesktopPreferencesPatchHudIntervalSeconds | DesktopPreferencesPatchMotion | DesktopPreferencesPatchPlanetFps | DesktopPreferencesPatchResetAppearance | DesktopPreferencesPatchResetPerformance | DesktopPreferencesPatchStatusIntervalSeconds | DesktopPreferencesPatchStatusProcessLimit | DesktopPreferencesPatchTextScalePercent | DesktopPreferencesPatchTheme;
+export type DesktopPreferencesPatch = DesktopPreferencesPatchFont | DesktopPreferencesPatchHudIntervalSeconds | DesktopPreferencesPatchMotion | DesktopPreferencesPatchPlanetFps | DesktopPreferencesPatchResetAppearance | DesktopPreferencesPatchResetPerformance | DesktopPreferencesPatchStatusIntervalSeconds | DesktopPreferencesPatchStatusProcessLimit | DesktopPreferencesPatchTextScalePercent | DesktopPreferencesPatchTheme;

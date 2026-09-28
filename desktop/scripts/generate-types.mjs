@@ -17,6 +17,7 @@ const check = args.includes("--check");
 const typesPath = path.join(root, "src/api/types.gen.ts");
 
 const rootFixtures = {
+  DesktopFonts: ["desktop-fonts.json", "desktop-fonts-unavailable.json"],
   DesktopPreferencesSnapshot: ["desktop-preferences.json", "desktop-preferences-updated.json"],
   ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json"],
   DesktopScanProgress: ["scan-progress.json", "clean/scan-progress.json"],
@@ -57,10 +58,13 @@ const rootFixtures = {
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,
 // variants, and primitive shapes still come exclusively from fixture values.
 const references = {
-  DesktopPreferencesSnapshot: { preferences: "DesktopPreferencesV1" },
-  DesktopPreferencesV1: { theme: "DesktopTheme", font_family: "DesktopFontFamily", motion: "DesktopMotion" },
+  DesktopPreferencesSnapshot: { preferences: "DesktopPreferencesV2" },
+  DesktopPreferencesV2: { theme: "DesktopTheme", font: "DesktopFont", motion: "DesktopMotion" },
   DesktopPreferencesPatchTheme: { value: "DesktopTheme" },
-  DesktopPreferencesPatchFontFamily: { value: "DesktopFontFamily" },
+  DesktopPreferencesPatchFont: { value: "DesktopFont" },
+  DesktopFontsAvailable: { families: ["FontFamily"] },
+  FontFamily: { names: ["FontName"] },
+  DesktopFontsUnavailable: { reason: "FontsUnavailableReason" },
   DesktopPreferencesPatchMotion: { value: "DesktopMotion" },
   ScanReport: { plan: "UntrustedPlan", health: "ScanHealth" },
   UntrustedPlan: { targets: ["UntrustedTarget"] },
@@ -300,10 +304,15 @@ async function generate() {
     }
   }
   const catalog = JSON.parse(await readFile(path.join(fixtureRoot, "contract-variants.json"), "utf8"));
+  const themeSnapshots = JSON.parse(await readFile(path.join(fixtureRoot, "desktop-preferences-themes.json"), "utf8"));
+  for (const snapshot of themeSnapshots) addSample(samples, "DesktopPreferencesSnapshot", snapshot);
   const preferencePatches = JSON.parse(await readFile(path.join(fixtureRoot, "desktop-preferences-patches.json"), "utf8"));
-  catalog.tagged_unions.DesktopPreferencesPatch = { tag: "field", variants: Object.fromEntries(
-    preferencePatches.map((patch) => ["DesktopPreferencesPatch" + patch.field.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join(""), [patch]]),
-  ) };
+  const patchVariants = {};
+  for (const patch of preferencePatches) {
+    const name = "DesktopPreferencesPatch" + patch.field.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join("");
+    (patchVariants[name] ??= []).push(patch);
+  }
+  catalog.tagged_unions.DesktopPreferencesPatch = { tag: "field", variants: patchVariants };
   for (const [name, values] of Object.entries(catalog.additional_samples)) {
     for (const value of values) addSample(samples, name, value);
   }

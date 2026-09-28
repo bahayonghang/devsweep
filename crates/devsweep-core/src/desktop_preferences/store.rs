@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 
-use super::{DesktopPreferencesPatch, DesktopPreferencesV1};
+use super::{DesktopPreferencesPatch, DesktopPreferencesV2, legacy::DesktopPreferencesV1};
 
 const LOCK_RETRIES: usize = 500;
 const LOCK_RETRY_DELAY: Duration = Duration::from_millis(10);
@@ -22,7 +22,7 @@ pub enum DesktopPreferencesError {
     LocalAppDataUnavailable,
     /// The transaction lock was not acquired within its bounded wait.
     LockUnavailable(PathBuf),
-    /// Existing bytes do not contain the supported closed V1 document.
+    /// Existing bytes do not contain the supported closed document.
     UnsupportedDocument {
         /// Path of the preserved document.
         path: PathBuf,
@@ -36,6 +36,8 @@ pub enum DesktopPreferencesError {
         /// Rejected numeric value.
         value: u8,
     },
+    /// A directly constructed Rust font patch contains an invalid family.
+    InvalidFontFamily,
     /// A filesystem operation failed before commit.
     Io {
         /// Transaction stage.
@@ -66,6 +68,7 @@ impl fmt::Display for DesktopPreferencesError {
             Self::InvalidPatch { field, value } => {
                 write!(formatter, "unsupported desktop preference {field}: {value}")
             }
+            Self::InvalidFontFamily => formatter.write_str("invalid installed font family"),
             Self::Io {
                 stage,
                 path,
@@ -115,22 +118,22 @@ pub(super) fn path_from_local_app_data(
     let root = local_app_data
         .filter(|value| !value.is_empty())
         .ok_or(DesktopPreferencesError::LocalAppDataUnavailable)?;
-    Ok(PathBuf::from(root).join("DevSweep/settings/desktop-preferences-v1.json"))
+    Ok(PathBuf::from(root).join("DevSweep/settings/desktop-preferences-v2.json"))
 }
 
-/// Load validated desktop preferences. Missing storage uses V1 defaults.
-pub fn load_desktop_preferences() -> Result<DesktopPreferencesV1, DesktopPreferencesError> {
+/// Load V2, or convert valid V1 in memory. Reading never writes either file.
+pub fn load_desktop_preferences() -> Result<DesktopPreferencesV2, DesktopPreferencesError> {
     load_from_path(&desktop_preferences_path()?)
 }
 
 /// Commit one patch after rereading the current document under the OS lock.
 pub fn update_desktop_preferences(
     patch: DesktopPreferencesPatch,
-) -> Result<DesktopPreferencesV1, DesktopPreferencesError> {
+) -> Result<DesktopPreferencesV2, DesktopPreferencesError> {
     update_at_path(&desktop_preferences_path()?, patch)
 }
 
-pub(super) fn load_from_path(path: &Path) -> Result<DesktopPreferencesV1, DesktopPreferencesError> {
+pub(super) fn load_from_path(path: &Path) -> Result<DesktopPreferencesV2, DesktopPreferencesError> {
     match fs::read(path) {
         Ok(bytes) => serde_json::from_slice(&bytes).map_err(|error| {
             DesktopPreferencesError::UnsupportedDocument {
@@ -139,7 +142,19 @@ pub(super) fn load_from_path(path: &Path) -> Result<DesktopPreferencesV1, Deskto
             }
         }),
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
-            Ok(DesktopPreferencesV1::default())
+            let legacy_path = path.with_file_name("desktop-preferences-v1.json");
+            match fs::read(&legacy_path) {
+                Ok(bytes) => serde_json::from_slice::<DesktopPreferencesV1>(&bytes)
+                    .map(Into::into)
+                    .map_err(|error| DesktopPreferencesError::UnsupportedDocument {
+                        path: legacy_path,
+                        message: error.to_string(),
+                    }),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                    Ok(DesktopPreferencesV2::default())
+                }
+                Err(error) => Err(io_error("read_legacy_document", &legacy_path, error)),
+            }
         }
         Err(error) => Err(io_error("read_document", path, error)),
     }
@@ -148,7 +163,7 @@ pub(super) fn load_from_path(path: &Path) -> Result<DesktopPreferencesV1, Deskto
 pub(super) fn update_at_path(
     path: &Path,
     patch: DesktopPreferencesPatch,
-) -> Result<DesktopPreferencesV1, DesktopPreferencesError> {
+) -> Result<DesktopPreferencesV2, DesktopPreferencesError> {
     update_with_replace(path, patch, replace_file)
 }
 
@@ -156,7 +171,7 @@ pub(super) fn update_with_replace(
     path: &Path,
     patch: DesktopPreferencesPatch,
     replace: fn(&Path, &Path) -> io::Result<()>,
-) -> Result<DesktopPreferencesV1, DesktopPreferencesError> {
+) -> Result<DesktopPreferencesV2, DesktopPreferencesError> {
     let directory = path.parent().ok_or_else(|| {
         io_error(
             "resolve_settings_parent",
@@ -285,7 +300,7 @@ fn atomic_replace(
         .expect("validated preference path has a parent");
     let sequence = TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
     let temporary_path = directory.join(format!(
-        ".desktop-preferences-v1.{}.{}.tmp",
+        ".desktop-preferences-v2.{}.{}.tmp",
         std::process::id(),
         sequence
     ));

@@ -3,6 +3,7 @@ mod clean;
 mod commands;
 mod desktop_preferences;
 mod error;
+mod fonts;
 mod hud;
 mod optimize;
 mod scan;
@@ -62,6 +63,7 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "presentation_settings_set",
     "desktop_preferences_get",
     "desktop_preferences_update",
+    "desktop_fonts_list",
 ];
 
 /// App commands the tray HUD window may invoke. The HUD reads only the
@@ -159,6 +161,7 @@ pub fn run() {
             commands::presentation_settings_set,
             desktop_preferences::desktop_preferences_get,
             desktop_preferences::desktop_preferences_update,
+            fonts::desktop_fonts_list,
             #[cfg(debug_assertions)]
             commands::debug_native_fault_mode,
         ]))
@@ -199,7 +202,7 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 42);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 43);
     }
 
     #[test]

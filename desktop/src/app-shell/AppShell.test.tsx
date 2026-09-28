@@ -36,7 +36,7 @@ describe("AppShell", () => {
     expect(brand).toHaveAttribute("aria-haspopup", "menu");
     expect(brand).toHaveAttribute("aria-expanded", "false");
     expect(brand).toHaveTextContent("DevSweep");
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Clean", "Software", "Optimize", "Analyze", "Status"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Clean", "Software", "Optimize", "Analyze", "Status", "Settings"]);
     expect(screen.getByRole("tablist")).not.toContainElement(brand);
     expect(document.querySelector(".shell-sidebar")).not.toBeInTheDocument();
     expect(document.querySelector(".page-header")).not.toBeInTheDocument();
@@ -48,7 +48,8 @@ describe("AppShell", () => {
   it("keeps the frozen five-mode identity but omits unavailable registrations", () => {
     render(<AppShell modes={[registrations[0]]} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
     expect(MODE_IDS).toEqual(["clean", "software", "optimize", "analyze", "status"]);
-    expect(screen.getAllByRole("tab")).toHaveLength(1);
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.getByRole("tab", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Clean" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Software" })).not.toBeInTheDocument();
     expect(SUPPORTING_DESTINATION_IDS).toEqual(["protection", "rules", "history"]);
@@ -62,7 +63,7 @@ describe("AppShell", () => {
     render(<AppShell modes={[registrations[0]]} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
     await openBrandMenu(user);
     expect(screen.queryByRole("menuitem", { name: "Protection" })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Settings", "Help"]);
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Help"]);
   });
 
   it("supports exact deep links, keyboard navigation, focus restoration, and unique accelerators", async () => {
@@ -91,7 +92,7 @@ describe("AppShell", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Clean" })).toHaveClass("sr-only");
     const menu = await openBrandMenu(user);
     expect(menu).toHaveAccessibleName("Supporting destinations");
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Protection", "Rules", "History", "Settings", "Help"]);
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Protection", "Rules", "History", "Help"]);
     expect(screen.getByRole("menuitem", { name: "Help" })).toHaveAttribute("href", "https://github.com/bahayonghang/devsweep#readme");
     expect(screen.queryByText("More")).not.toBeInTheDocument();
     expect(screen.queryByText("更多")).not.toBeInTheDocument();
@@ -145,6 +146,8 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("menuitem", { name: "Rules" }));
     expect(await screen.findByText("rules support content")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Rules" })).not.toHaveClass("sr-only");
+    expect(screen.getAllByRole("tab").filter((tab) => tab.tabIndex === 0)).toEqual([screen.getByRole("tab", { name: "Analyze" })]);
+    expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Back to Analyze" }));
     expect(await screen.findByText("analyze content")).toBeInTheDocument();
     expect(window.location.hash).toBe("#/analyze");
@@ -193,6 +196,78 @@ describe("AppShell", () => {
     expect(clean).toHaveFocus();
   });
 
+  it.each([
+    { locale: "en" as const, labels: ["Clean", "Software", "Optimize", "Analyze", "Status", "Settings"], subtitle: "Appearance, language, and sampling preferences." },
+    { locale: "zh-CN" as const, labels: ["清理", "软件", "优化", "分析", "状态", "设置"], subtitle: "外观、语言和采样配置。" },
+  ])("makes Settings the final labelled primary tab and panel in $locale", async ({ locale, labels, subtitle }) => {
+    const user = userEvent.setup();
+    render(<AppShell modes={registrations} locale={locale} onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(labels);
+    const settings = screen.getByRole("tab", { name: labels[5] });
+    await user.click(settings);
+    const panel = await screen.findByRole("tabpanel", { name: labels[5] });
+    expect(settings).toHaveAttribute("aria-controls", panel.id);
+    expect(panel).toHaveAttribute("aria-labelledby", settings.id);
+    expect(screen.getAllByRole("tab", { selected: true })).toEqual([settings]);
+    expect(screen.getAllByRole("tab").filter((tab) => tab.tabIndex === 0)).toEqual([settings]);
+    expect(screen.getByRole("heading", { level: 1, name: labels[5] })).toBeVisible();
+    expect(screen.getByText(subtitle)).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Back to|返回/ })).not.toBeInTheDocument();
+    expect(settings).toHaveFocus();
+  });
+
+  it("moves through all primary tabs without navigating until Enter or Space and keeps focused Settings visible", async () => {
+    const coordinator = { cancelAndJoin: vi.fn().mockResolvedValue(undefined) };
+    const user = userEvent.setup();
+    render(<AppShell modes={registrations} locale="en" onLocaleChange={() => undefined} coordinator={coordinator} />);
+    const tabs = screen.getAllByRole("tab");
+    const settings = tabs[5];
+    const scrollIntoView = vi.fn();
+    settings.scrollIntoView = scrollIntoView;
+    await user.tab();
+    expect(screen.getByRole("button", { name: "DevSweep menu" })).toHaveFocus();
+    await user.tab();
+    expect(tabs[0]).toHaveFocus();
+    for (const tab of tabs.slice(1)) {
+      await user.keyboard("{ArrowRight}");
+      expect(tab).toHaveFocus();
+    }
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "nearest" });
+    expect(screen.getByText("clean content")).toBeInTheDocument();
+    expect(window.location.hash).toBe("#/clean");
+    expect(coordinator.cancelAndJoin).not.toHaveBeenCalled();
+    await user.keyboard("{ArrowDown}");
+    expect(tabs[0]).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(settings).toHaveFocus();
+    await user.keyboard("{ArrowUp}");
+    expect(tabs[4]).toHaveFocus();
+    await user.keyboard("{Home}");
+    expect(tabs[0]).toHaveFocus();
+    await user.keyboard("{End}{Enter}");
+    expect(await screen.findByRole("tabpanel", { name: "Settings" })).toBeInTheDocument();
+    expect(settings).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Reset appearance" })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(settings).toHaveFocus();
+    await user.keyboard("{Home} ");
+    expect(await screen.findByText("clean content")).toBeInTheDocument();
+    await user.keyboard("{End} ");
+    expect(await screen.findByRole("tabpanel", { name: "Settings" })).toBeInTheDocument();
+    expect(coordinator.cancelAndJoin).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps one primary tab stop when a supporting page is directly linked", async () => {
+    window.history.replaceState(null, "", "#/history");
+    const user = userEvent.setup();
+    render(<AppShell modes={registrations} supporting={supporting} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
+    expect(screen.getAllByRole("tab").filter((tab) => tab.tabIndex === 0)).toEqual([screen.getByRole("tab", { name: "Clean" })]);
+    await user.tab();
+    await user.tab();
+    expect(screen.getByRole("tab", { name: "Clean" })).toHaveFocus();
+  });
+
   it("names every mode route and shows a visible title and subtitle on every supporting route", async () => {
     const user = userEvent.setup();
     render(<AppShell modes={registrations} supporting={supporting} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
@@ -204,7 +279,6 @@ describe("AppShell", () => {
       { name: "Protection", title: "Protection", subtitle: "Inspect protection policy without changing cleanup authority." },
       { name: "Rules", title: "Rules", subtitle: "Inspect the rule catalogue." },
       { name: "History", title: "History", subtitle: "Inspect past cleanup records." },
-      { name: "Settings", title: "Settings", subtitle: "Appearance, language, and sampling preferences." },
     ];
     for (const route of routes) {
       await openBrandMenu(user);
@@ -226,7 +300,6 @@ describe("AppShell", () => {
       { name: "保护", title: "保护", subtitle: "查看保护策略，不改变清理权限。" },
       { name: "规则", title: "规则", subtitle: "查看规则目录。" },
       { name: "历史", title: "历史", subtitle: "查看既往清理记录。" },
-      { name: "设置", title: "设置", subtitle: "外观、语言和采样配置。" },
     ];
     for (const route of routes) {
       await openBrandMenu(user, "DevSweep 菜单");
@@ -251,11 +324,13 @@ describe("AppShell", () => {
     }
     expect(screen.getByRole("heading", { level: 1, name: "清理" })).toBeInTheDocument();
     expect(await openBrandMenu(user, "DevSweep 菜单")).toHaveAccessibleName("支持目的地");
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["保护", "规则", "历史", "设置", "帮助"]);
-    await user.click(screen.getByRole("menuitem", { name: "设置" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["保护", "规则", "历史", "帮助"]);
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("tab", { name: "设置" }));
     expect(await screen.findByRole("heading", { level: 1, name: "设置" })).toBeVisible();
     expect(screen.getByText("外观、语言和采样配置。")).toBeVisible();
-    await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");
+    await user.click(screen.getByRole("combobox", { name: "语言" }));
+    await user.click(screen.getByRole("option", { name: "英语" }));
     expect(save).toHaveBeenCalledWith("en");
   });
 
@@ -278,7 +353,7 @@ describe("AppShell", () => {
     expect(parseShellRoute("#/settings", ["clean"], [])).toBe("settings");
   });
 
-  it("pushes user routes and restores the Settings opener through actual Back", async () => {
+  it("restores primary and supporting destination focus through actual Back and Forward", async () => {
     const user = userEvent.setup();
     render(<AppShell modes={registrations} supporting={supporting} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
 
@@ -286,22 +361,39 @@ describe("AppShell", () => {
     await user.click(screen.getByRole("menuitem", { name: "History" }));
     expect(await screen.findByText("history support content")).toBeInTheDocument();
     expect(window.location.hash).toBe("#/history");
-    const settingsOpener = screen.getByRole("button", { name: "DevSweep menu" });
-    await openBrandMenu(user);
-    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
+    const brand = screen.getByRole("button", { name: "DevSweep menu" });
+    const settings = screen.getByRole("tab", { name: "Settings" });
+    await user.click(settings);
     expect(await screen.findByRole("combobox", { name: "Language" })).toBeInTheDocument();
     expect(window.location.hash).toBe("#/settings");
 
     act(() => window.history.back());
     await waitFor(() => expect(window.location.hash).toBe("#/history"));
     expect(await screen.findByText("history support content")).toBeInTheDocument();
-    expect(settingsOpener).toHaveFocus();
+    expect(brand).toHaveFocus();
+
+    act(() => window.history.forward());
+    await waitFor(() => expect(window.location.hash).toBe("#/settings"));
+    expect(await screen.findByRole("tabpanel", { name: "Settings" })).toBeInTheDocument();
+    expect(settings).toHaveFocus();
+    expect(settings).toHaveAttribute("aria-selected", "true");
+
+    await user.click(screen.getByRole("tab", { name: "Status" }));
+    expect(await screen.findByText("status content")).toBeInTheDocument();
+    act(() => window.history.back());
+    expect(await screen.findByRole("tabpanel", { name: "Settings" })).toBeInTheDocument();
+    expect(settings).toHaveFocus();
+    act(() => window.history.forward());
+    expect(await screen.findByText("status content")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Status" })).toHaveFocus();
   });
 
-  it("uses the destination control when a deep-linked Settings route has no opener", async () => {
+  it("selects a deep-linked Settings tab and restores a mode destination control", async () => {
     window.history.replaceState(null, "", "#/settings");
     render(<AppShell modes={registrations} locale="en" onLocaleChange={() => undefined} coordinator={new OperationCoordinator()} />);
     expect(screen.getByRole("combobox", { name: "Language" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Settings", selected: true })).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tabpanel", { name: "Settings" })).toBeInTheDocument();
 
     window.history.pushState(null, "", "#/clean");
     fireEvent.popState(window);
@@ -340,6 +432,28 @@ describe("AppShell", () => {
     expect(screen.getByText("clean content")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Clean" })).toHaveFocus();
     expect(window.history.length).toBe(historyLength + 1);
+  });
+
+  it.each(["#/status", "#/clean"])("does not commit pending Settings after a newer %s history intent", async (hash) => {
+    const settlements: Array<() => void> = [];
+    const coordinator = { cancelAndJoin: vi.fn(() => new Promise<void>((resolve) => { settlements.push(resolve); })) };
+    const user = userEvent.setup();
+    render(<AppShell modes={registrations} locale="en" onLocaleChange={() => undefined} coordinator={coordinator} />);
+    await user.click(screen.getByRole("tab", { name: "Settings" }));
+    expect(screen.getByText("clean content")).toBeInTheDocument();
+    // A later history destination can equal the page still waiting for its drain.
+    window.history.pushState(null, "", "#/settings");
+    fireEvent.popState(window);
+    window.history.replaceState(null, "", hash);
+    fireEvent.popState(window);
+    expect(settlements).toHaveLength(3);
+    await act(async () => { settlements[0](); settlements[1](); });
+    expect(screen.getByText("clean content")).toBeInTheDocument();
+    expect(screen.queryByRole("tabpanel", { name: "Settings" })).not.toBeInTheDocument();
+    expect(window.location.hash).toBe(hash);
+    await act(async () => { settlements[2](); });
+    expect(screen.getByRole("tab", { name: hash === "#/status" ? "Status" : "Clean", selected: true })).toHaveFocus();
+    expect(window.location.hash).toBe(hash);
   });
 
   it("normalizes a runtime invalid hash through cancel-and-join without growing history", async () => {
@@ -453,10 +567,9 @@ describe("AppShell", () => {
     const user = userEvent.setup();
     render(<AppShell modes={registrations} locale="en" onLocaleChange={() => undefined} coordinator={coordinator} />);
 
-    const language = screen.getByRole("button", { name: "DevSweep menu" });
-    await openBrandMenu(user);
-    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
-    await waitFor(() => expect(language).toBeDisabled());
+    const settings = screen.getByRole("tab", { name: "Settings" });
+    await user.click(settings);
+    await waitFor(() => expect(settings).toBeDisabled());
 
     // Chromium transfers focus to BODY when the active button becomes disabled.
     // Reproduce that real DOM lifecycle before the coordinator rejects.
@@ -471,16 +584,16 @@ describe("AppShell", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not change destination. The current page remains active.");
     expect(screen.getByText("clean content")).toBeInTheDocument();
     expect(window.location.hash).toBe("#/clean");
-    expect(language).toBeEnabled();
-    expect(language).toHaveFocus();
+    expect(settings).toBeEnabled();
+    expect(settings).toHaveFocus();
+    expect(screen.getByRole("tab", { name: "Clean", selected: true })).toHaveAttribute("tabindex", "0");
 
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    await openBrandMenu(user);
-    await user.click(screen.getByRole("menuitem", { name: "Settings" }));
-    expect(await screen.findByRole("combobox", { name: "Language" })).toHaveValue("en");
+    await user.click(settings);
+    expect(await screen.findByRole("combobox", { name: "Language" })).toHaveTextContent("English");
     expect(window.location.hash).toBe("#/settings");
-    expect(language).toHaveFocus();
+    expect(settings).toHaveFocus();
     expect(coordinator.cancelAndJoin).toHaveBeenCalledTimes(2);
     document.body.removeAttribute("tabindex");
   });

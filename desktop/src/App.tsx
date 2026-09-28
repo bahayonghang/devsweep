@@ -1,7 +1,7 @@
 import { PreferencesProvider } from "./preferences/PreferencesProvider";
 import { PreferencesNotice } from "./preferences/SettingsPage";
 import { usePreferences } from "./preferences/context";
-import { tauriDesktopPreferencesBridge, type DesktopPreferencesBridge } from "./api/bridge";
+import { tauriDesktopPreferencesBridge, type DesktopPreferencesBridge, type DesktopFontsBridge } from "./api/bridge";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { tauriBridge, type DesktopBridge } from "./api/bridge";
 import { AppShell, shippedModeRegistrations, shippedSupportingRegistrations } from "./app-shell";
@@ -26,6 +26,7 @@ import { OperationCoordinator } from "./state/operation-coordinator";
 
 
 interface AppProps {
+  desktopFonts?: DesktopFontsBridge;
   desktopPreferences?: DesktopPreferencesBridge;
   bridge?: DesktopBridge;
   presentationSettings?: PresentationSettingsBridge;
@@ -75,7 +76,7 @@ function PresentationStoreGate({ state }: { readonly state: "loading" | "unavail
 }
 
 export function App(props: AppProps) {
-  return <PreferencesProvider bridge={props.desktopPreferences ?? tauriDesktopPreferencesBridge}><AppContent {...props} /></PreferencesProvider>;
+  return <PreferencesProvider bridge={props.desktopPreferences ?? tauriDesktopPreferencesBridge} fonts={props.desktopFonts}><AppContent {...props} /></PreferencesProvider>;
 }
 
 function AppContent({

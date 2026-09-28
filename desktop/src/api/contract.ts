@@ -1,6 +1,8 @@
 import type {
   DesktopPreferencesSnapshot,
-  DesktopPreferencesV1,
+  DesktopPreferencesV2,
+  DesktopFont,
+  DesktopFonts,
   ActionKind,
   AnalyzeNodeV1,
   AnalyzeSnapshotV1,
@@ -125,13 +127,53 @@ function preferenceNumber(value: unknown, allowed: readonly number[], name: stri
   return result;
 }
 
-export function decodeDesktopPreferences(value: unknown): DesktopPreferencesV1 {
+function fontFamily(value: unknown): string {
+  const family = string(value, "font family");
+  // Unicode White_Space matches Rust str::trim; JavaScript trim also strips BOM.
+  if (!family || /^\p{White_Space}|\p{White_Space}$/u.test(family) || Array.from(family).length > 256 || /\p{Cc}/u.test(family) || /[\uD800-\uDFFF]/u.test(family)) throw new Error("Invalid font family");
+  return family;
+}
+
+export function decodeDesktopFont(value: unknown): DesktopFont {
+  const input = record(value, "font");
+  const kind = oneOf(input.kind, ["system", "installed"], "font kind");
+  if (kind === "system") { exact(input, ["kind"], "system font"); return { kind }; }
+  exact(input, ["kind", "family"], "installed font");
+  return { kind, family: fontFamily(input.family) };
+}
+
+export function decodeDesktopFonts(value: unknown): DesktopFonts {
+  const input = record(value, "font catalogue");
+  const status = oneOf(input.status, ["available", "unavailable"], "font catalogue status");
+  if (status === "unavailable") {
+    exact(input, ["status", "reason"], "unavailable fonts");
+    return { status, reason: oneOf(input.reason, ["unsupported_platform", "enumeration_failed"], "font catalogue reason") };
+  }
+  exact(input, ["status", "families"], "available fonts");
+  const seen = new Set<string>();
+  const families = array(input.families, "font families", (value) => {
+    const entry = record(value, "font family");
+    exact(entry, ["family", "names"], "font family");
+    const family = fontFamily(entry.family);
+    if (seen.has(family.toLowerCase())) throw new Error("Duplicate font family");
+    seen.add(family.toLowerCase());
+    const names = array(entry.names, "font names", (value) => {
+      const name = record(value, "localized font name");
+      exact(name, ["locale", "name"], "localized font name");
+      return { locale: string(name.locale, "font locale"), name: nonEmptyString(name.name, "font alias") };
+    });
+    return { family, names };
+  });
+  return { status, families };
+}
+
+export function decodeDesktopPreferences(value: unknown): DesktopPreferencesV2 {
   const input = record(value, "desktop preferences");
-  exact(input, ["schema_version", "theme", "font_family", "text_scale_percent", "motion", "planet_fps", "status_interval_seconds", "status_process_limit", "hud_interval_seconds"], "desktop preferences");
+  exact(input, ["schema_version", "theme", "font", "text_scale_percent", "motion", "planet_fps", "status_interval_seconds", "status_process_limit", "hud_interval_seconds"], "desktop preferences");
   return {
-    schema_version: preferenceNumber(input.schema_version, [1], "schema version"),
-    theme: oneOf(input.theme, ["dark", "light", "system"], "theme"),
-    font_family: oneOf(input.font_family, ["system", "segoe_ui", "microsoft_yahei_ui"], "font family"),
+    schema_version: preferenceNumber(input.schema_version, [2], "schema version"),
+    theme: oneOf(input.theme, ["dark", "light", "system", "catppuccin_latte", "catppuccin_mocha", "codex", "claude"], "theme"),
+    font: decodeDesktopFont(input.font),
     text_scale_percent: preferenceNumber(input.text_scale_percent, [100, 110, 125], "text scale"),
     motion: oneOf(input.motion, ["system", "reduced"], "motion"),
     planet_fps: preferenceNumber(input.planet_fps, [15, 30], "planet FPS"),

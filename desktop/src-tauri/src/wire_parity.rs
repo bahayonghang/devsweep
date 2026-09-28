@@ -23,6 +23,7 @@ use crate::{
     clean::DryRunOutcome,
     desktop_preferences::DesktopPreferencesSnapshot,
     error::CommandError,
+    fonts::DesktopFonts,
     hud::HudStatusEvent,
     optimize::{
         DesktopOptimizeAuditResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult,
@@ -59,6 +60,18 @@ where
 
 #[test]
 fn desktop_preference_fixtures_match_committed_snapshots_and_closed_patches() {
+    assert_round_trip::<Vec<DesktopPreferencesSnapshot>>(
+        "desktop-preferences-themes.json",
+        include_str!("../../src/api/fixtures/desktop-preferences-themes.json"),
+    );
+    assert_round_trip::<DesktopFonts>(
+        "desktop-fonts.json",
+        include_str!("../../src/api/fixtures/desktop-fonts.json"),
+    );
+    assert_round_trip::<DesktopFonts>(
+        "desktop-fonts-unavailable.json",
+        include_str!("../../src/api/fixtures/desktop-fonts-unavailable.json"),
+    );
     assert_round_trip::<DesktopPreferencesSnapshot>(
         "desktop-preferences.json",
         include_str!("../../src/api/fixtures/desktop-preferences.json"),

@@ -1,4 +1,4 @@
-import { createFixturePreferencesBridge } from "./preferences/fixture";
+import { createFixturePreferencesBridge, fixtureFontsBridge } from "./preferences/fixture";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
@@ -26,7 +26,7 @@ async function render() {
       }
     : undefined;
   ReactDOM.createRoot(document.getElementById("root")!).render(
-    <React.StrictMode><App desktopPreferences={desktopPreferences} bridge={bridge} presentationSettings={presentationSettings} userLocales={["en"]} lifecycle={fixtureWindow} windowControls={fixtureWindow} /></React.StrictMode>,
+    <React.StrictMode><App desktopPreferences={desktopPreferences} desktopFonts={fixture ? fixtureFontsBridge : undefined} bridge={bridge} presentationSettings={presentationSettings} userLocales={["en"]} lifecycle={fixtureWindow} windowControls={fixtureWindow} /></React.StrictMode>,
   );
 }
 

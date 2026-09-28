@@ -199,7 +199,7 @@ mod tests {
     fn the_default_cadence_is_two_seconds_and_waits_between_samples() {
         let sampler = HudSampler::default();
         let interval = Duration::from_secs(u64::from(
-            devsweep_core::desktop_preferences::DesktopPreferencesV1::default()
+            devsweep_core::desktop_preferences::DesktopPreferencesV2::default()
                 .hud_interval_seconds,
         ));
         let (samples, _events) = counting_sampler(&sampler, interval);

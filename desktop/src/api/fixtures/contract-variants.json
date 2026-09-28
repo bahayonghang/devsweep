@@ -1,7 +1,7 @@
 {
   "string_enums": {
-    "DesktopTheme": ["dark", "light", "system"],
-    "DesktopFontFamily": ["system", "segoe_ui", "microsoft_yahei_ui"],
+    "DesktopTheme": ["dark", "light", "system", "catppuccin_latte", "catppuccin_mocha", "codex", "claude"],
+    "FontsUnavailableReason": ["unsupported_platform", "enumeration_failed"],
     "DesktopMotion": ["system", "reduced"],
     "Ecosystem": ["rust", "node", "python", "docker", "generic"],
     "RiskLevel": ["low", "medium", "high", "dangerous"],
@@ -55,6 +55,8 @@
     "TerminalReason": ["completed", "canceled", "broken_pipe", "producer_error"]
   },
   "tagged_unions": {
+    "DesktopFont": {"tag": "kind", "variants": {"DesktopFontSystem": [{"kind": "system"}], "DesktopFontInstalled": [{"kind": "installed", "family": "Segoe UI"}]}},
+    "DesktopFonts": {"tag": "status", "variants": {"DesktopFontsAvailable": [{"status": "available", "families": [{"family": "Segoe UI", "names": [{"locale": "en-US", "name": "Segoe UI"}]}]}], "DesktopFontsUnavailable": [{"status": "unavailable", "reason": "enumeration_failed"}]}},
     "Scope": { "variants": {
       "ScopeGlobal": [{ "type": "global" }],
       "ScopeProject": [{ "type": "project", "root": "C:/fixture/project" }]

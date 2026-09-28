@@ -1,11 +1,20 @@
 [
+  { "field": "theme", "value": "dark" },
+  { "field": "theme", "value": "system" },
+  { "field": "theme", "value": "catppuccin_latte" },
+  { "field": "theme", "value": "catppuccin_mocha" },
+  { "field": "theme", "value": "codex" },
+  { "field": "theme", "value": "claude" },
   {
     "field": "theme",
     "value": "light"
   },
   {
-    "field": "font_family",
-    "value": "segoe_ui"
+    "field": "font",
+    "value": {
+      "kind": "installed",
+      "family": "Segoe UI"
+    }
   },
   {
     "field": "text_scale_percent",

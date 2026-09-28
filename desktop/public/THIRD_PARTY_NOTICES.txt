@@ -1,0 +1,39 @@
+DevSweep desktop palette notices
+
+Catppuccin Latte and Catppuccin Mocha use color values from:
+https://github.com/catppuccin/palette
+Revision: 07d02aa110ef9eb7e7427afca5c73ba9cf7f8ebd
+Imported: 2026-09-26
+
+appearance.css retains the pinned base, mantle, surface/crust, text, subtext,
+and blue/mauve preview accents. DevSweep defines semantic roles and accessible
+control, warning, success, and danger adaptations locally. Some Latte semantic
+foregrounds are darker than the original accents to meet text contrast.
+
+Codex and Claude are DevSweep-authored inspired palettes. Their names do not
+claim official product colors, assets, fonts, or endorsement. No palette runtime
+package is included.
+
+Catppuccin license follows verbatim.
+
+MIT License
+
+Copyright (c) 2021 Catppuccin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

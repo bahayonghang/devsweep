@@ -99,7 +99,7 @@
   padding: 0 28px;
   color: var(--accent);
   background: var(--capsule-bg);
-  border: 1px solid var(--capsule-border);
+  border: 1px solid var(--control-border);
   border-radius: 999px;
   font-size: calc(14px * var(--text-scale));
   font-weight: 600;
@@ -147,7 +147,7 @@
   padding: 0 12px;
   color: var(--text);
   background: transparent;
-  border: 1px solid var(--capsule-border);
+  border: 1px solid var(--control-border);
   border-radius: 999px;
   font-size: calc(13px * var(--text-scale));
   font-weight: 600;

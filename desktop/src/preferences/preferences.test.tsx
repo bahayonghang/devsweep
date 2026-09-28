@@ -6,8 +6,8 @@ import { decodeDesktopPreferencesSnapshot } from "../api/contract";
 import defaultsJson from "../api/fixtures/desktop-preferences.json";
 import updatedJson from "../api/fixtures/desktop-preferences-updated.json";
 import type { DesktopPreferencesSnapshot } from "../api/types.gen";
-import { applyAppearance, FONT_STACKS } from "./appearance";
-import { createFixturePreferencesBridge } from "./fixture";
+import { applyAppearance, fontStack } from "./appearance";
+import { createFixturePreferencesBridge, fixtureFontsBridge } from "./fixture";
 import { PreferencesProvider } from "./PreferencesProvider";
 import { SettingsPage } from "./SettingsPage";
 import { useDesktopPreferences } from "./store";
@@ -26,7 +26,7 @@ describe("desktop preference boundary", () => {
   it("decodes snapshots and rejects unknown fields, all unsupported values and unsafe order", () => {
     expect(decodeDesktopPreferencesSnapshot(defaultsJson)).toEqual(defaultsJson);
     expect(decodeDesktopPreferencesSnapshot(updatedJson)).toEqual(updatedJson);
-    for (const patch of [{ schema_version: 2 }, { theme: "auto" }, { font_family: "url(remote)" }, { text_scale_percent: 101 }, { motion: "off" }, { planet_fps: 60 }, { status_interval_seconds: 3 }, { status_process_limit: 16 }, { hud_interval_seconds: 1 }, { extra: true }]) {
+    for (const patch of [{ schema_version: 3 }, { theme: "auto" }, { font_family: "url(remote)" }, { text_scale_percent: 101 }, { motion: "off" }, { planet_fps: 60 }, { status_interval_seconds: 3 }, { status_process_limit: 16 }, { hud_interval_seconds: 1 }, { extra: true }]) {
       expect(() => decodeDesktopPreferencesSnapshot({ ...defaults, preferences: { ...defaults.preferences, ...patch } })).toThrow();
     }
     for (const sequence of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, "1"]) expect(() => decodeDesktopPreferencesSnapshot({ ...defaults, sequence })).toThrow();
@@ -158,16 +158,91 @@ describe("committed desktop preference owner", () => {
     await bridge.update({ field: "status_process_limit", value: 50 });
     const writes = vi.spyOn(bridge, "update");
     const language = vi.fn();
-    render(<PreferencesProvider bridge={bridge}><SettingsPage locale="en" localeSaving={false} onLocaleChange={language} /></PreferencesProvider>);
-    await waitFor(() => expect(screen.getByLabelText("Theme")).toHaveValue("light"));
+    render(<PreferencesProvider bridge={bridge} fonts={fixtureFontsBridge}><SettingsPage locale="en" localeSaving={false} onLocaleChange={language} /></PreferencesProvider>);
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Light" })).toBeChecked());
     await user.click(screen.getByRole("button", { name: "Reset appearance" }));
     expect(writes).toHaveBeenLastCalledWith({ field: "reset_appearance" });
-    expect(screen.getByLabelText("Theme")).toHaveValue("dark");
-    expect(screen.getByLabelText(/^Status process rows/)).toHaveValue("50");
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    expect(screen.getByRole("combobox", { name: "Status process rows" })).toHaveTextContent("50 rows");
     await user.click(screen.getByRole("button", { name: "Reset performance" }));
     expect(writes).toHaveBeenLastCalledWith({ field: "reset_performance" });
-    expect(screen.getByLabelText(/^Status process rows/)).toHaveValue("15");
+    expect(screen.getByRole("combobox", { name: "Status process rows" })).toHaveTextContent("15 rows");
     expect(language).not.toHaveBeenCalled();
+  });
+});
+
+describe("Settings committed controls", () => {
+  it("retains the selected radio during save and failure, then permits retry", async () => {
+    const user = userEvent.setup();
+    const saving = deferred<DesktopPreferencesSnapshot>();
+    const bridge = createFixturePreferencesBridge();
+    bridge.update = vi.fn().mockReturnValueOnce(saving.promise).mockResolvedValueOnce(updated);
+    render(<PreferencesProvider bridge={bridge} fonts={fixtureFontsBridge}><SettingsPage locale="en" localeSaving={false} onLocaleChange={vi.fn()} /></PreferencesProvider>);
+    const light = screen.getByRole("radio", { name: "Light" });
+    await waitFor(() => expect(light).toBeEnabled());
+    await user.hover(light.parentElement!);
+    light.focus();
+    expect(bridge.update).not.toHaveBeenCalled();
+    await user.click(light);
+    expect(bridge.update).toHaveBeenCalledExactlyOnceWith({ field: "theme", value: "light" });
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    expect(light).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Language" })).toBeEnabled();
+    await act(async () => saving.reject(new Error("failed")));
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not save");
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    await user.click(light);
+    await waitFor(() => expect(light).toBeChecked());
+    await user.click(light);
+    expect(bridge.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the saved font visible during a failed save", async () => {
+    const user = userEvent.setup();
+    const saving = deferred<DesktopPreferencesSnapshot>();
+    const bridge = createFixturePreferencesBridge();
+    bridge.update = vi.fn(() => saving.promise);
+    render(<PreferencesProvider bridge={bridge} fonts={fixtureFontsBridge}><SettingsPage locale="en" localeSaving={false} onLocaleChange={vi.fn()} /></PreferencesProvider>);
+    const input = screen.getByRole("combobox", { name: "Font family" });
+    await waitFor(() => expect(input).toBeEnabled());
+    await user.click(input);
+    await user.click(screen.getByRole("option", { name: "Segoe UI" }));
+    expect(bridge.update).toHaveBeenCalledExactlyOnceWith({ field: "font", value: { kind: "installed", family: "Segoe UI" } });
+    expect(input).toHaveValue("System UI");
+    expect(input).toBeDisabled();
+    await act(async () => saving.reject(new Error("failed")));
+    expect(input).toHaveValue("System UI");
+    expect(input).toBeEnabled();
+  });
+
+  it("disables desktop persistence during load or unavailability while language stays independent", async () => {
+    const user = userEvent.setup();
+    const initial = deferred<DesktopPreferencesSnapshot>();
+    const bridge = createFixturePreferencesBridge();
+    bridge.get = () => initial.promise;
+    const language = vi.fn();
+    render(<PreferencesProvider bridge={bridge} fonts={fixtureFontsBridge}><SettingsPage locale="en" localeSaving={false} onLocaleChange={language} /></PreferencesProvider>);
+    expect(screen.getByRole("combobox", { name: "Text size" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Language" })).toBeEnabled();
+    await act(async () => initial.reject(new Error("unavailable")));
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Reset performance" })).toBeDisabled();
+    await user.click(screen.getByRole("combobox", { name: "Language" }));
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
+    expect(language).toHaveBeenCalledExactlyOnceWith("zh-CN");
+  });
+
+  it("disables the frame limit for reduced motion and exposes the reason", async () => {
+    const bridge = createFixturePreferencesBridge();
+    await bridge.update({ field: "motion", value: "reduced" });
+    const view = render(<PreferencesProvider bridge={bridge} fonts={fixtureFontsBridge}><SettingsPage locale="en" localeSaving={true} onLocaleChange={vi.fn()} /></PreferencesProvider>);
+    const fps = screen.getByRole("combobox", { name: "Planet frame limit" });
+    await waitFor(() => expect(fps).toHaveAccessibleDescription("Animation is off while reduced motion is active."));
+    expect(fps).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Language" })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: "Text size" })).toBeEnabled();
+    expect(view.container.querySelector("select")).toBeNull();
+    expect(screen.getAllByRole("group", { name: "Theme" })).toHaveLength(1);
   });
 });
 
@@ -175,13 +250,13 @@ describe("shared main and HUD appearance", () => {
   it("applies every local font and real scale token to either document root", () => {
     const main = document.createElement("div");
     const hud = document.createElement("div");
-    for (const font_family of ["system", "segoe_ui", "microsoft_yahei_ui"] as const) {
+    for (const font of [{ kind: "system" }, { kind: "installed", family: "Segoe UI" }, { kind: "installed", family: "中文字体" }] as const) {
       for (const text_scale_percent of [100, 110, 125]) {
         for (const root of [main, hud]) {
-          applyAppearance(root, { ...defaults.preferences, theme: "system", font_family, text_scale_percent }, true, true);
+          applyAppearance(root, { ...defaults.preferences, theme: "system", font, text_scale_percent }, true, true);
           expect(root.dataset.theme).toBe("light");
           expect(root.dataset.motion).toBe("reduced");
-          expect(root.style.getPropertyValue("--font-ui")).toBe(FONT_STACKS[font_family]);
+          expect(root.style.getPropertyValue("--font-ui")).toBe(fontStack(font));
           expect(root.style.getPropertyValue("--text-scale")).toBe(String(text_scale_percent / 100));
         }
       }
@@ -198,7 +273,7 @@ describe("shared main and HUD appearance", () => {
     });
     const bridge = createFixturePreferencesBridge();
     await bridge.update({ field: "theme", value: "system" });
-    const view = render(<PreferencesProvider bridge={bridge}><span>Content</span></PreferencesProvider>);
+    const view = render(<PreferencesProvider bridge={bridge} fonts={fixtureFontsBridge}><span>Content</span></PreferencesProvider>);
     await waitFor(() => expect(listeners.get("(prefers-color-scheme: light)")?.size).toBe(1));
     expect(document.documentElement.dataset.theme).toBe("dark");
     act(() => { light = true; listeners.get("(prefers-color-scheme: light)")?.forEach((listener) => listener()); });

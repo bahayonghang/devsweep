@@ -3,7 +3,7 @@
 use std::sync::{Arc, Mutex};
 
 use devsweep_core::desktop_preferences::{
-    DesktopPreferencesPatch, DesktopPreferencesV1, load_desktop_preferences,
+    DesktopPreferencesPatch, DesktopPreferencesV2, load_desktop_preferences,
     update_desktop_preferences,
 };
 use serde::Serialize;
@@ -15,11 +15,11 @@ pub(crate) const PREFERENCES_CHANGED_EVENT: &str = "desktop-preferences-changed"
 const MAX_SAFE_SEQUENCE: u64 = 9_007_199_254_740_991;
 
 /// Runtime ordering metadata; the sequence is never persisted to disk.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(test, derive(serde::Deserialize), serde(deny_unknown_fields))]
 pub(crate) struct DesktopPreferencesSnapshot {
     pub(crate) sequence: u64,
-    pub(crate) preferences: DesktopPreferencesV1,
+    pub(crate) preferences: DesktopPreferencesV2,
 }
 
 /// One lock orders reads, successful commits, and their event publication.
@@ -29,7 +29,7 @@ pub(crate) struct DesktopPreferencesCoordinator(Arc<Mutex<u64>>);
 impl DesktopPreferencesCoordinator {
     fn transact(
         &self,
-        operation: impl FnOnce() -> Result<DesktopPreferencesV1, CommandError>,
+        operation: impl FnOnce() -> Result<DesktopPreferencesV2, CommandError>,
         publish: impl FnOnce(&DesktopPreferencesSnapshot) -> Result<(), CommandError>,
     ) -> Result<DesktopPreferencesSnapshot, CommandError> {
         let mut sequence = self
@@ -123,24 +123,28 @@ mod tests {
     #[test]
     fn reads_commits_and_notifications_share_one_positive_sequence() {
         let coordinator = DesktopPreferencesCoordinator::default();
-        let mut committed = DesktopPreferencesV1::default();
+        let mut committed = DesktopPreferencesV2::default();
         let mut events = Vec::new();
-        let initial = coordinator.transact(|| Ok(committed), |_| Ok(())).unwrap();
+        let initial = coordinator
+            .transact(|| Ok(committed.clone()), |_| Ok(()))
+            .unwrap();
         assert_eq!(initial.sequence, 1);
         let updated = coordinator
             .transact(
                 || {
                     committed.theme = DesktopTheme::Light;
-                    Ok(committed)
+                    Ok(committed.clone())
                 },
                 |snapshot| {
-                    events.push(*snapshot);
+                    events.push(snapshot.clone());
                     Ok(())
                 },
             )
             .unwrap();
-        let reloaded = coordinator.transact(|| Ok(committed), |_| Ok(())).unwrap();
-        assert_eq!(events, [updated]);
+        let reloaded = coordinator
+            .transact(|| Ok(committed.clone()), |_| Ok(()))
+            .unwrap();
+        assert_eq!(events.as_slice(), std::slice::from_ref(&updated));
         assert_eq!(updated.sequence, 2);
         assert_eq!(reloaded.sequence, 3);
         assert_eq!(reloaded.preferences, updated.preferences);
@@ -149,8 +153,10 @@ mod tests {
     #[test]
     fn failed_commit_publishes_nothing_and_preserves_ordered_view() {
         let coordinator = DesktopPreferencesCoordinator::default();
-        let committed = DesktopPreferencesV1::default();
-        coordinator.transact(|| Ok(committed), |_| Ok(())).unwrap();
+        let committed = DesktopPreferencesV2::default();
+        coordinator
+            .transact(|| Ok(committed.clone()), |_| Ok(()))
+            .unwrap();
         assert!(
             coordinator
                 .transact(
@@ -159,7 +165,9 @@ mod tests {
                 )
                 .is_err()
         );
-        let next = coordinator.transact(|| Ok(committed), |_| Ok(())).unwrap();
+        let next = coordinator
+            .transact(|| Ok(committed.clone()), |_| Ok(()))
+            .unwrap();
         assert_eq!(next.sequence, 2);
         assert_eq!(next.preferences, committed);
     }
@@ -167,17 +175,19 @@ mod tests {
     #[test]
     fn event_delivery_failure_does_not_report_a_committed_write_as_failed() {
         let coordinator = DesktopPreferencesCoordinator::default();
-        let committed = DesktopPreferencesV1 {
+        let committed = DesktopPreferencesV2 {
             theme: DesktopTheme::Light,
-            ..DesktopPreferencesV1::default()
+            ..DesktopPreferencesV2::default()
         };
         let updated = coordinator
             .transact(
-                || Ok(committed),
+                || Ok(committed.clone()),
                 |_| Err(CommandError::io("webview was destroyed")),
             )
             .unwrap();
-        let read = coordinator.transact(|| Ok(committed), |_| Ok(())).unwrap();
+        let read = coordinator
+            .transact(|| Ok(committed.clone()), |_| Ok(()))
+            .unwrap();
         assert_eq!(updated.sequence, 1);
         assert_eq!(read.sequence, 2);
         assert_eq!(read.preferences, committed);
@@ -197,7 +207,7 @@ mod tests {
                     barrier.wait();
                     coordinator
                         .transact(
-                            || Ok(DesktopPreferencesV1::default()),
+                            || Ok(DesktopPreferencesV2::default()),
                             |snapshot| {
                                 published.lock().unwrap().push(snapshot.sequence);
                                 Ok(())

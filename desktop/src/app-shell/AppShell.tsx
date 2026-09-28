@@ -13,7 +13,8 @@ export const MODE_IDS = ["clean", "software", "optimize", "analyze", "status"] a
 export type ModeId = typeof MODE_IDS[number];
 export const SUPPORTING_DESTINATION_IDS = ["protection", "rules", "history"] as const;
 export type SupportingDestinationId = typeof SUPPORTING_DESTINATION_IDS[number];
-export type ShellRoute = `mode:${ModeId}` | `support:${SupportingDestinationId}` | "settings";
+type PrimaryRoute = `mode:${ModeId}` | "settings";
+export type ShellRoute = PrimaryRoute | `support:${SupportingDestinationId}`;
 
 const MODE_MESSAGE_KEYS: Readonly<Record<ModeId, MessageKey>> = {
   clean: "command.clean",
@@ -116,6 +117,10 @@ function routeHash(route: ShellRoute): string {
   return `#/${route === "settings" ? "settings" : route.slice(route.indexOf(":") + 1)}`;
 }
 
+function isPrimaryRoute(route: ShellRoute): route is PrimaryRoute {
+  return !route.startsWith("support:");
+}
+
 export function AppShell({
   modes,
   supporting = [],
@@ -128,10 +133,15 @@ export function AppShell({
   if (modes.length === 0) throw new Error("the app shell requires at least one available mode");
   const availableIds = modes.map((mode) => mode.id);
   const availableSupporting = supporting.map((destination) => destination.id);
+  const primaryNavigation = useMemo(() => [
+    ...modes.map((mode): { route: PrimaryRoute; messageKey: MessageKey; tabId: string } => ({
+      route: `mode:${mode.id}`, messageKey: MODE_MESSAGE_KEYS[mode.id], tabId: `primary-tab-${mode.id}`,
+    })),
+    { route: "settings" as const, messageKey: "preferences.v1.title" as const, tabId: "primary-tab-settings" },
+  ], [modes]);
   const availableRoutes: readonly ShellRoute[] = [
-    ...availableIds.map((id): ShellRoute => `mode:${id}`),
+    ...primaryNavigation.map(({ route }) => route),
     ...availableSupporting.map((id): ShellRoute => `support:${id}`),
-    "settings",
   ];
   const requestedInitialRoute = parseShellRoute(globalThis.location?.hash ?? "", availableIds, availableSupporting);
   const initial = requestedInitialRoute ?? `mode:${availableIds[0]}`;
@@ -142,10 +152,9 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [lastMode, setLastMode] = useState<ModeId>(initial.startsWith("mode:") ? initial.slice(5) as ModeId : availableIds[0]);
   const contentHeading = useRef<HTMLHeadingElement>(null);
-  const navButtons = useRef(new Map<ModeId, HTMLButtonElement>());
+  const navButtons = useRef(new Map<PrimaryRoute, HTMLButtonElement>());
   const brandButton = useRef<HTMLButtonElement>(null);
   const brandMenu = useRef<HTMLDivElement>(null);
-  const settingsOpener = useRef<HTMLElement | null>(null);
   const pendingFocusRestore = useRef<PendingFocusRestore | null>(null);
   const failedFocusRestore = useRef<FailedFocusRestore | null>(null);
   const requestSequence = useRef(0);
@@ -157,104 +166,10 @@ export function AppShell({
   const activeRegistration = activeMode ? modes.find((mode) => mode.id === activeMode) : null;
   const activeSupportingId = activeRoute.startsWith("support:") ? activeRoute.slice(8) as SupportingDestinationId : null;
   const activeSupporting = activeSupportingId ? supporting.find((destination) => destination.id === activeSupportingId) : null;
-  const messageKeys = useMemo(() => modes.map((mode) => MODE_MESSAGE_KEYS[mode.id]), [modes]);
+  const activePrimary = primaryNavigation.find(({ route }) => route === activeRoute);
+  const tabStopRoute = activePrimary?.route ?? `mode:${availableIds.includes(lastMode) ? lastMode : availableIds[0]}`;
+  const messageKeys = useMemo(() => primaryNavigation.map(({ messageKey }) => messageKey), [primaryNavigation]);
   const accelerators = uniqueAccelerators(locale, messageKeys);
-
-  useEffect(() => {
-    const handleHistoryNavigation = () => {
-      if (window.location.hash === observedHash.current) return;
-      observedHash.current = window.location.hash;
-      const routed = parseShellRoute(window.location.hash, availableIds, availableSupporting);
-      const route = routed ?? `mode:${availableIds[0]}`;
-      const intent: FocusRestoreIntent = routed && activeRoute === "settings" && settingsOpener.current
-        ? { kind: "activator", element: settingsOpener.current }
-        : { kind: "route-control", route };
-      void navigate(route, routed ? "none" : "replace", intent);
-    };
-    window.addEventListener("popstate", handleHistoryNavigation);
-    window.addEventListener("hashchange", handleHistoryNavigation);
-    return () => {
-      window.removeEventListener("popstate", handleHistoryNavigation);
-      window.removeEventListener("hashchange", handleHistoryNavigation);
-    };
-  });
-
-  useEffect(() => () => { requestSequence.current += 1; }, []);
-
-  useEffect(() => {
-    if (initialHashWasRegistered.current) return;
-    const hash = initialFallbackHash.current;
-    observedHash.current = hash;
-    window.history.replaceState({ route: initialFallbackRoute.current }, "", hash);
-  }, []);
-
-  useLayoutEffect(() => {
-    const pending = pendingFocusRestore.current;
-    if (!pending || pending.route !== activeRoute || pending.request !== requestSequence.current) return;
-    pendingFocusRestore.current = null;
-    let target: HTMLElement | null = null;
-    if (pending.intent.kind === "activator") target = pending.intent.element;
-    else if (pending.intent.route.startsWith("mode:")) {
-      target = navButtons.current.get(pending.intent.route.slice(5) as ModeId) ?? null;
-    } else target = brandButton.current;
-    target = revealFocusTarget(target);
-    if (canRestoreFocus(target)) target.focus();
-    else contentHeading.current?.focus();
-  }, [activeRoute, focusCommitRequest]);
-
-  useEffect(() => {
-    // At narrow widths the capsule scrolls; keep the active tab visible.
-    if (!activeRoute.startsWith("mode:")) return;
-    navButtons.current.get(activeRoute.slice(5) as ModeId)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
-  }, [activeRoute]);
-
-  useLayoutEffect(() => {
-    const failed = failedFocusRestore.current;
-    if (transitioning || !routeError || !failed || failed.request !== requestSequence.current) return;
-    failedFocusRestore.current = null;
-    const target = revealFocusTarget(failed.intent.kind === "activator"
-      ? failed.intent.element
-      : failed.intent.route.startsWith("mode:")
-        ? navButtons.current.get(failed.intent.route.slice(5) as ModeId) ?? null
-        : brandButton.current);
-    if (canRestoreFocus(target)) target.focus();
-    else contentHeading.current?.focus();
-  }, [routeError, transitioning]);
-
-  useEffect(() => {
-    if (!availableRoutes.includes(activeRoute)) {
-      const route: ShellRoute = `mode:${availableIds[0]}`;
-      void navigate(route, "replace", { kind: "route-control", route });
-    }
-  });
-
-  useEffect(() => {
-    const handleAccelerator = (event: globalThis.KeyboardEvent) => {
-      if (!event.altKey || event.ctrlKey || event.metaKey) return;
-      const target = modes.find((mode) => accelerators.get(MODE_MESSAGE_KEYS[mode.id]) === event.key.toLowerCase());
-      if (!target) return;
-      event.preventDefault();
-      const route: ShellRoute = `mode:${target.id}`;
-      const element = navButtons.current.get(target.id);
-      void navigate(route, "push", element
-        ? { kind: "activator", element }
-        : { kind: "route-control", route });
-    };
-    window.addEventListener("keydown", handleAccelerator);
-    return () => window.removeEventListener("keydown", handleAccelerator);
-  });
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    brandMenu.current?.querySelector<HTMLElement>("[role='menuitem']")?.focus();
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (target && (brandMenu.current?.contains(target) || brandButton.current?.contains(target))) return;
-      setMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", closeOnOutsidePointer);
-    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
-  }, [menuOpen]);
 
   async function navigate(
     route: ShellRoute,
@@ -262,7 +177,7 @@ export function AppShell({
     focus: FocusRestoreIntent,
   ) {
     const canonicalReplace = history === "replace" && window.location.hash !== routeHash(route);
-    if ((route === activeRoute && !canonicalReplace) || !availableRoutes.includes(route)) return;
+    if ((route === activeRoute && !canonicalReplace && !transitioning) || !availableRoutes.includes(route)) return;
     const request = ++requestSequence.current;
     failedFocusRestore.current = null;
     setMenuOpen(false);
@@ -271,7 +186,6 @@ export function AppShell({
       await coordinator.cancelAndJoin();
       if (request !== requestSequence.current) return;
       setRouteError(false);
-      if (route === "settings" && focus.kind === "activator") settingsOpener.current = focus.element;
       pendingFocusRestore.current = { request, route, intent: focus };
       setActiveRoute(route);
       if (route.startsWith("mode:")) setLastMode(route.slice(5) as ModeId);
@@ -296,16 +210,113 @@ export function AppShell({
     }
   }
 
-  function moveFocus(event: KeyboardEvent<HTMLElement>, current: ModeId) {
-    const index = availableIds.indexOf(current);
+  useEffect(() => {
+    const handleHistoryNavigation = () => {
+      if (window.location.hash === observedHash.current) return;
+      observedHash.current = window.location.hash;
+      const routed = parseShellRoute(window.location.hash, availableIds, availableSupporting);
+      const route = routed ?? `mode:${availableIds[0]}`;
+      void navigate(route, routed ? "none" : "replace", { kind: "route-control", route });
+    };
+    window.addEventListener("popstate", handleHistoryNavigation);
+    window.addEventListener("hashchange", handleHistoryNavigation);
+    return () => {
+      window.removeEventListener("popstate", handleHistoryNavigation);
+      window.removeEventListener("hashchange", handleHistoryNavigation);
+    };
+  });
+
+  useEffect(() => () => { requestSequence.current += 1; }, []);
+
+  useEffect(() => {
+    if (initialHashWasRegistered.current) return;
+    const hash = initialFallbackHash.current;
+    observedHash.current = hash;
+    window.history.replaceState({ route: initialFallbackRoute.current }, "", hash);
+  }, []);
+
+  useLayoutEffect(() => {
+    const pending = pendingFocusRestore.current;
+    if (!pending || pending.route !== activeRoute || pending.request !== requestSequence.current) return;
+    pendingFocusRestore.current = null;
+    let target: HTMLElement | null = null;
+    if (pending.intent.kind === "activator") target = pending.intent.element;
+    else if (isPrimaryRoute(pending.intent.route)) {
+      target = navButtons.current.get(pending.intent.route) ?? null;
+    } else target = brandButton.current;
+    target = revealFocusTarget(target);
+    if (canRestoreFocus(target)) target.focus();
+    else contentHeading.current?.focus();
+  }, [activeRoute, focusCommitRequest]);
+
+  useEffect(() => {
+    // At narrow widths the capsule scrolls; keep the active tab visible.
+    if (!isPrimaryRoute(activeRoute)) return;
+    navButtons.current.get(activeRoute)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [activeRoute]);
+
+  useLayoutEffect(() => {
+    const failed = failedFocusRestore.current;
+    if (transitioning || !routeError || !failed || failed.request !== requestSequence.current) return;
+    failedFocusRestore.current = null;
+    const target = revealFocusTarget(failed.intent.kind === "activator"
+      ? failed.intent.element
+      : isPrimaryRoute(failed.intent.route)
+        ? navButtons.current.get(failed.intent.route) ?? null
+        : brandButton.current);
+    if (canRestoreFocus(target)) target.focus();
+    else contentHeading.current?.focus();
+  }, [routeError, transitioning]);
+
+  useEffect(() => {
+    if (!availableRoutes.includes(activeRoute)) {
+      const route: ShellRoute = `mode:${availableIds[0]}`;
+      let current = true;
+      queueMicrotask(() => {
+        if (current) void navigate(route, "replace", { kind: "route-control", route });
+      });
+      return () => { current = false; };
+    }
+  });
+
+  useEffect(() => {
+    const handleAccelerator = (event: globalThis.KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = primaryNavigation.find(({ messageKey }) => accelerators.get(messageKey) === event.key.toLowerCase());
+      if (!target) return;
+      event.preventDefault();
+      const route = target.route;
+      const element = navButtons.current.get(route);
+      void navigate(route, "push", element
+        ? { kind: "activator", element }
+        : { kind: "route-control", route });
+    };
+    window.addEventListener("keydown", handleAccelerator);
+    return () => window.removeEventListener("keydown", handleAccelerator);
+  });
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    brandMenu.current?.querySelector<HTMLElement>("[role='menuitem']")?.focus();
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && (brandMenu.current?.contains(target) || brandButton.current?.contains(target))) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [menuOpen]);
+
+  function moveFocus(event: KeyboardEvent<HTMLElement>, current: PrimaryRoute) {
+    const index = primaryNavigation.findIndex(({ route }) => route === current);
     let next = index;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % availableIds.length;
-    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + availableIds.length) % availableIds.length;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % primaryNavigation.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + primaryNavigation.length) % primaryNavigation.length;
     else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = availableIds.length - 1;
+    else if (event.key === "End") next = primaryNavigation.length - 1;
     else return;
     event.preventDefault();
-    navButtons.current.get(availableIds[next])?.focus();
+    navButtons.current.get(primaryNavigation[next].route)?.focus();
   }
 
   function moveMenuFocus(event: KeyboardEvent<HTMLDivElement>) {
@@ -376,27 +387,30 @@ export function AppShell({
           aria-orientation="horizontal"
           aria-label={message(locale, "shell.v1.section.modes")}
         >
-          {modes.map((mode) => {
-            const key = MODE_MESSAGE_KEYS[mode.id];
-            const accelerator = accelerators.get(key);
-            const label = message(locale, key);
+          {primaryNavigation.map(({ route, messageKey, tabId }) => {
+            const accelerator = accelerators.get(messageKey);
+            const label = message(locale, messageKey);
             return <button
-              key={mode.id}
-              ref={(element) => { if (element) navButtons.current.set(mode.id, element); else navButtons.current.delete(mode.id); }}
+              key={route}
+              id={tabId}
+              ref={(element) => { if (element) navButtons.current.set(route, element); else navButtons.current.delete(route); }}
               type="button"
               className="mode-tab"
               role="tab"
-              aria-selected={activeRoute === `mode:${mode.id}`}
+              aria-selected={activeRoute === route}
               aria-controls="mode-panel"
-              tabIndex={activeRoute === `mode:${mode.id}` ? 0 : -1}
+              tabIndex={tabStopRoute === route ? 0 : -1}
               disabled={transitioning}
               title={accelerator ? `Alt+${accelerator.toUpperCase()}` : undefined}
               onClick={(event) => void navigate(
-                `mode:${mode.id}`,
+                route,
                 "push",
                 { kind: "activator", element: event.currentTarget },
               )}
-              onKeyDown={(event) => moveFocus(event, mode.id)}
+              onFocus={(event) => {
+                event.currentTarget.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+              }}
+              onKeyDown={(event) => moveFocus(event, route)}
             >{label}</button>;
           })}
         </div>
@@ -419,14 +433,6 @@ export function AppShell({
           onClick={() => openFromMenu(`support:${destination.id}`)}
         >{message(locale, SUPPORTING_MESSAGE_KEYS[destination.id])}</button>)}
         {supporting.length > 0 && <div role="separator" className="brand-menu-separator" />}
-        <button
-          type="button"
-          role="menuitem"
-          tabIndex={-1}
-          className="brand-menu-item"
-          aria-current={activeRoute === "settings" ? "page" : undefined}
-          onClick={() => openFromMenu("settings")}
-        >{message(locale, "preferences.v1.title")}</button>
         <a
           role="menuitem"
           tabIndex={-1}
@@ -452,7 +458,7 @@ export function AppShell({
       {activeRegistration
         ? <h1 id={headingId} tabIndex={-1} ref={contentHeading} className="sr-only">{activeLabel}</h1>
         : <header className="support-header">
-          <button
+          {activeSupporting && <button
             type="button"
             className="detail-back"
             disabled={transitioning}
@@ -460,11 +466,11 @@ export function AppShell({
           >
             <span aria-hidden="true">‹</span>
             <span>{message(locale, "stage.v1.support.back", { mode: message(locale, MODE_MESSAGE_KEYS[backMode]) })}</span>
-          </button>
+          </button>}
           <h1 id={headingId} tabIndex={-1} ref={contentHeading}>{activeLabel}</h1>
           <p className="page-subtitle">{activeSubtitle}</p>
         </header>}
-      <section id="mode-panel" className="mode-panel" role={activeRegistration ? "tabpanel" : undefined} aria-labelledby={headingId}>
+      <section id="mode-panel" className="mode-panel" role={activePrimary ? "tabpanel" : undefined} aria-labelledby={activePrimary?.tabId ?? headingId}>
         {activeRegistration?.render()}
         {activeSupporting?.render()}
         {activeRoute === "settings" && <SettingsPage locale={locale} onLocaleChange={onLocaleChange} localeSaving={localeSaving ?? false} />}

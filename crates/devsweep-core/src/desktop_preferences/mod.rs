@@ -1,5 +1,6 @@
 //! Desktop-only preferences. The shared presentation language has its own store.
 
+mod legacy;
 mod store;
 #[cfg(test)]
 mod tests;
@@ -28,19 +29,50 @@ pub enum DesktopTheme {
     Light,
     /// Follow the operating-system palette.
     System,
+    /// Catppuccin Latte light palette.
+    CatppuccinLatte,
+    /// Catppuccin Mocha dark palette.
+    CatppuccinMocha,
+    /// DevSweep-authored Codex-inspired dark palette.
+    Codex,
+    /// DevSweep-authored Claude-inspired light palette.
+    Claude,
 }
 
-/// Local font presets; no file paths or arbitrary CSS enter storage.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DesktopFontFamily {
+/// One local family name, never a CSS stack or a font-file path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum DesktopFont {
     /// Current system UI stack with Chinese and English fallbacks.
-    #[default]
-    System,
-    /// Segoe UI with local fallbacks.
-    SegoeUi,
-    /// Microsoft YaHei UI with local fallbacks.
-    MicrosoftYaheiUi,
+    System {},
+    /// A canonical installed family, with system fallbacks at rendering time.
+    Installed {
+        /// Trimmed, nonempty family of at most 256 Unicode scalar values.
+        #[serde(deserialize_with = "font_family")]
+        family: String,
+    },
+}
+
+impl Default for DesktopFont {
+    fn default() -> Self {
+        Self::System {}
+    }
+}
+
+fn valid_font_family(family: &str) -> bool {
+    !family.is_empty()
+        && family.trim() == family
+        && family.chars().count() <= 256
+        && !family.chars().any(char::is_control)
+}
+
+fn font_family<'de, D: Deserializer<'de>>(decoder: D) -> Result<String, D::Error> {
+    let family = String::deserialize(decoder)?;
+    if valid_font_family(&family) {
+        Ok(family)
+    } else {
+        Err(de::Error::custom("invalid installed font family"))
+    }
 }
 
 /// Application motion preference. OS reduced motion always takes precedence.
@@ -54,17 +86,17 @@ pub enum DesktopMotion {
     Reduced,
 }
 
-/// Exact V1 desktop preference document and committed preference value.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// Exact V2 desktop preference document and committed preference value.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct DesktopPreferencesV1 {
-    /// Only schema version 1 is supported.
+pub struct DesktopPreferencesV2 {
+    /// Only schema version 2 is supported.
     #[serde(deserialize_with = "schema_version")]
     pub schema_version: u8,
     /// Theme applied in the main window and HUD after commit.
     pub theme: DesktopTheme,
-    /// Local UI font preset.
-    pub font_family: DesktopFontFamily,
+    /// Local UI font family or the system stack.
+    pub font: DesktopFont,
     /// UI text scale: 100, 110, or 125 percent.
     #[serde(deserialize_with = "text_scale")]
     pub text_scale_percent: u8,
@@ -84,12 +116,12 @@ pub struct DesktopPreferencesV1 {
     pub hud_interval_seconds: u8,
 }
 
-impl Default for DesktopPreferencesV1 {
+impl Default for DesktopPreferencesV2 {
     fn default() -> Self {
         Self {
-            schema_version: 1,
+            schema_version: 2,
             theme: DesktopTheme::Dark,
-            font_family: DesktopFontFamily::System,
+            font: DesktopFont::System {},
             text_scale_percent: 100,
             motion: DesktopMotion::System,
             planet_fps: 30,
@@ -101,13 +133,13 @@ impl Default for DesktopPreferencesV1 {
 }
 
 /// One field update or one reset transaction. A reset has no value field.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "field", rename_all = "snake_case", deny_unknown_fields)]
 pub enum DesktopPreferencesPatch {
     /// Set the semantic palette.
     Theme { value: DesktopTheme },
-    /// Set the local font preset.
-    FontFamily { value: DesktopFontFamily },
+    /// Set the local font family or system stack.
+    Font { value: DesktopFont },
     /// Set the bounded text scale.
     TextScalePercent {
         #[serde(deserialize_with = "text_scale")]
@@ -141,11 +173,11 @@ pub enum DesktopPreferencesPatch {
     ResetPerformance {},
 }
 
-impl DesktopPreferencesV1 {
+impl DesktopPreferencesV2 {
     fn patched(mut self, patch: DesktopPreferencesPatch) -> Result<Self, DesktopPreferencesError> {
         match patch {
             DesktopPreferencesPatch::Theme { value } => self.theme = value,
-            DesktopPreferencesPatch::FontFamily { value } => self.font_family = value,
+            DesktopPreferencesPatch::Font { value } => self.font = value,
             DesktopPreferencesPatch::TextScalePercent { value } => self.text_scale_percent = value,
             DesktopPreferencesPatch::Motion { value } => self.motion = value,
             DesktopPreferencesPatch::PlanetFps { value } => self.planet_fps = value,
@@ -161,7 +193,7 @@ impl DesktopPreferencesV1 {
             DesktopPreferencesPatch::ResetAppearance {} => {
                 let defaults = Self::default();
                 self.theme = defaults.theme;
-                self.font_family = defaults.font_family;
+                self.font = defaults.font;
                 self.text_scale_percent = defaults.text_scale_percent;
             }
             DesktopPreferencesPatch::ResetPerformance {} => {
@@ -198,6 +230,11 @@ impl DesktopPreferencesV1 {
                 return Err(DesktopPreferencesError::InvalidPatch { field, value });
             }
         }
+        if let DesktopFont::Installed { family } = &self.font
+            && !valid_font_family(family)
+        {
+            return Err(DesktopPreferencesError::InvalidFontFamily);
+        }
         Ok(self)
     }
 }
@@ -216,7 +253,7 @@ fn choice<'de, D: Deserializer<'de>>(
 }
 
 fn schema_version<'de, D: Deserializer<'de>>(decoder: D) -> Result<u8, D::Error> {
-    choice(decoder, "schema_version", &[1])
+    choice(decoder, "schema_version", &[2])
 }
 
 fn text_scale<'de, D: Deserializer<'de>>(decoder: D) -> Result<u8, D::Error> {

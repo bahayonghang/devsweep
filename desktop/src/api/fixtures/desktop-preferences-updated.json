@@ -1,9 +1,9 @@
 {
   "sequence": 2,
   "preferences": {
-    "schema_version": 1,
+    "schema_version": 2,
     "theme": "light",
-    "font_family": "segoe_ui",
+    "font": {"kind": "installed", "family": "Segoe UI"},
     "text_scale_percent": 110,
     "motion": "reduced",
     "planet_fps": 15,

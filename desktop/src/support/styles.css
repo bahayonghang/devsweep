@@ -15,7 +15,7 @@
 .support-page th, .support-page td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
 .support-page label { display: grid; gap: 4px; max-width: 480px; }
 .support-page form { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
-.support-page dialog { color: CanvasText; background: Canvas; border: 1px solid CanvasText; padding: 16px; }
+.support-page dialog { color: var(--text); background: var(--raised); border: 1px solid var(--control-border); padding: 16px; }
 @media (max-width: 800px) {
   .support-page { padding: 12px; }
   .support-page table { display: block; overflow-x: auto; }

@@ -64,11 +64,9 @@ function fakeLifecycle(overrides: Partial<DesktopLifecycleBridge> = {}): Desktop
 
 async function openLanguageSettings(
   user: ReturnType<typeof userEvent.setup>,
-  brand = "DevSweep menu",
   language = "Settings",
 ) {
-  await user.click(await screen.findByRole("button", { name: brand }));
-  await user.click(screen.getByRole("menuitem", { name: language }));
+  await user.click(await screen.findByRole("tab", { name: language }));
 }
 
 function deferred<T>() {
@@ -183,6 +181,16 @@ describe("desktop workflow", () => {
     expect(document.querySelector(".clean-stage .card")).not.toBeInTheDocument();
   });
 
+  it("opens Settings without starting Status sampling", async () => {
+    window.history.replaceState(null, "", "#/settings");
+    const statusSnapshot = vi.fn(fixtureBridge.statusSnapshot);
+    const statusLiveStart = vi.fn(fixtureBridge.statusLiveStart);
+    render(<App bridge={fakeBridge({ statusSnapshot, statusLiveStart })} presentationSettings={fakePresentationSettings()} />);
+    expect(await screen.findByRole("tabpanel", { name: "Settings" })).toBeInTheDocument();
+    expect(statusSnapshot).not.toHaveBeenCalled();
+    expect(statusLiveStart).not.toHaveBeenCalled();
+  });
+
   it("keeps the shell absent while presentation settings are loading", () => {
     const load = deferred<PresentationSettings>();
     const presentationSettings: PresentationSettingsBridge = {
@@ -289,7 +297,8 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     const view = render(<App bridge={fakeBridge()} presentationSettings={oldSettings} userLocales={userLocales} />);
     await openLanguageSettings(user);
-    await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
+    await user.click(screen.getByRole("combobox", { name: "Language" }));
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
     expect(oldSettings.save).toHaveBeenCalledWith("zh-CN");
 
     view.rerender(<App bridge={fakeBridge()} presentationSettings={newSettings} userLocales={userLocales} />);
@@ -350,8 +359,9 @@ describe("desktop workflow", () => {
     await user.click(softwareTab);
     expect(screen.getByRole("region", { name: "软件" })).toBeInTheDocument();
     expect(document.querySelector(".shell-brand-icon")).toHaveAttribute("src", "/src/assets/devsweep-icon-master.png");
-    await openLanguageSettings(user, "DevSweep 菜单", "设置");
-    await user.selectOptions(screen.getByRole("combobox", { name: "语言" }), "en");
+    await openLanguageSettings(user, "设置");
+    await user.click(screen.getByRole("combobox", { name: "语言" }));
+    await user.click(screen.getByRole("option", { name: "英语" }));
     await waitFor(() => expect(presentationSettings.save).toHaveBeenCalledWith("en"));
     expect(screen.getByRole("tab", { name: "Clean" })).toHaveAttribute("title", "Alt+C");
   });
@@ -367,16 +377,17 @@ describe("desktop workflow", () => {
 
     await openLanguageSettings(user);
     const select = screen.getByRole("combobox", { name: "Language" });
-    await user.selectOptions(select, "zh-CN");
+    await user.click(select);
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
     expect(presentationSettings.save).toHaveBeenCalledWith("zh-CN");
     expect(select).toBeDisabled();
-    expect(select).toHaveValue("en");
+    expect(select).toHaveTextContent("English");
     expect(screen.getByRole("tab", { name: "Clean" })).toBeInTheDocument();
     expect(screen.getByText("Saving language preference…")).toHaveAttribute("role", "status");
 
     act(() => save.resolve({ language: "zh-CN" }));
     expect(await screen.findByRole("tab", { name: "清理" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "语言" })).toHaveValue("zh-CN");
+    expect(screen.getByRole("combobox", { name: "语言" })).toHaveTextContent("简体中文");
   });
 
   it("preserves the prior locale and selection when save rejects", async () => {
@@ -388,10 +399,11 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge()} presentationSettings={presentationSettings} />);
 
     await openLanguageSettings(user);
-    await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
+    await user.click(screen.getByRole("combobox", { name: "Language" }));
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Language preference was not changed");
-    expect(screen.getByRole("combobox", { name: "Language" })).toHaveValue("en");
+    expect(screen.getByRole("combobox", { name: "Language" })).toHaveTextContent("English");
     expect(screen.getByRole("tab", { name: "Clean" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "清理" })).not.toBeInTheDocument();
   });
@@ -405,10 +417,11 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge()} presentationSettings={presentationSettings} />);
 
     await openLanguageSettings(user);
-    await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
+    await user.click(screen.getByRole("combobox", { name: "Language" }));
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Language preference was not changed");
-    expect(screen.getByRole("combobox", { name: "Language" })).toHaveValue("en");
+    expect(screen.getByRole("combobox", { name: "Language" })).toHaveTextContent("English");
     expect(screen.getByRole("tab", { name: "Clean" })).toBeInTheDocument();
   });
 
@@ -434,7 +447,8 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     const readyView = render(<App bridge={fakeBridge()} presentationSettings={saveSettings} />);
     await openLanguageSettings(user);
-    await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
+    await user.click(screen.getByRole("combobox", { name: "Language" }));
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
     readyView.unmount();
     await act(async () => {
       pendingSave.reject(new Error("late save failure"));
@@ -452,7 +466,8 @@ describe("desktop workflow", () => {
     await user.click(await screen.findByRole("button", { name: "Scan" }));
     await screen.findByText("Scan complete. 3 targets.");
     await openLanguageSettings(user);
-    await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
+    await user.click(screen.getByRole("combobox", { name: "Language" }));
+    await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
     await user.click(screen.getByRole("tab", { name: "清理" }));
     await user.click(screen.getByRole("button", { name: "扫描" }));
     await waitFor(() => expect(scanStart).toHaveBeenCalledTimes(2));
@@ -887,7 +902,7 @@ describe("desktop workflow", () => {
       presentationSettings={fakePresentationSettings()}
       lifecycle={lifecycle}
     />);
-    const brand = await screen.findByRole("button", { name: "DevSweep menu" });
+    const settings = await screen.findByRole("tab", { name: "Settings" });
     await waitFor(() => expect(lifecycle.nativeFaultMode).toHaveBeenCalledOnce());
     await act(async () => { await Promise.resolve(); });
 
@@ -897,12 +912,12 @@ describe("desktop workflow", () => {
       "Could not change destination. The current page remains active.",
     );
     expect(window.location.hash).toBe("#/clean");
-    expect(brand).toHaveFocus();
+    expect(settings).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: "Dismiss" }));
     expect(screen.queryByText("Could not change destination. The current page remains active.")).not.toBeInTheDocument();
     await openLanguageSettings(user);
-    expect(await screen.findByRole("combobox", { name: "Language" })).toHaveValue("en");
+    expect(await screen.findByRole("combobox", { name: "Language" })).toHaveTextContent("English");
     expect(window.location.hash).toBe("#/settings");
   });
 });

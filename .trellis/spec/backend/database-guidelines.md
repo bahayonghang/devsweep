@@ -69,8 +69,12 @@ it cannot reconstruct or redispatch a removal strategy from the journal.
 
 ## Migrations
 
-There are no migrations. If future tasks add persistent config, audit storage,
-or a database, they must also add:
+Desktop preferences convert strict V1 to V2 in memory when the fixed V2 file is
+absent. The first successful explicit save creates V2 under the existing
+cross-process transaction lock. Reads never write. Preserve V1 as the downgrade
+record; later V1 edits are not synchronized after V2 exists. Invalid/future V2
+never falls back to V1. See the Desktop Preferences contract for the exact
+mapping and failure tests. Future persistent formats must also add:
 
 - a versioned schema or file format owner
 - migration or compatibility tests

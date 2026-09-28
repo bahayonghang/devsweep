@@ -12,12 +12,13 @@ clickable placeholder. There is no More disclosure.
 The capsule is one pill-shaped bar, horizontally centered near the top of the
 window. Its left end is the brand-mark button (original DevSweep icon plus the
 visible product name). After the brand button comes a `role=tablist` with
-`aria-orientation="horizontal"` and one tab per available primary mode in the
-order Clean, Software, Optimize, Analyze, Status. The active tab has a solid
+`aria-orientation="horizontal"` and one tab per available primary destination in
+the order Clean, Software, Optimize, Analyze, Status, Settings. Settings remains
+available with any nonempty operational-mode registration set. The active tab has a solid
 light fill and dark text; inactive tabs use muted light text. The brand button
 is outside the tablist and opens the brand menu: a real `role=menu` popover
 with `role=menuitem` entries for the available supporting destinations
-(Protection, Rules, History), Settings (the settings route), and Help
+(Protection, Rules, History) and Help
 (external link). Arrow/Home/End move inside the menu, Escape and Tab close it,
 and closing returns focus to the brand button. Below 800 CSS pixels the
 capsule scrolls horizontally (`overflow-x: auto`); tab names stay fully
@@ -28,8 +29,9 @@ responsive layout.
 The shell is presentation and lifecycle infrastructure only. It never invents
 targets, plans, digests, command arguments, authorization, mode results,
 counts, sizes, or status. Mode children own their typed pages and reducers.
-Protection, Rules, History, Settings, and language are supporting destinations,
-not sixth primary modes.
+Protection, Rules, and History are supporting destinations. Settings is a primary
+navigation destination with no operational ModeId or domain authority. Language
+selection remains in Settings.
 
 The default window is 1080x720 CSS pixels with a 900x600 minimum. The window
 title is `DevSweep`.
@@ -51,8 +53,9 @@ permissions scoped to the main window and keep the HUD read-only.
   omit unavailable registrations atomically.
 - Compose the shell as the capsule bar plus a stage host. Mode routes carry a
   visually hidden `h1` that names the mode; the active capsule tab is the
-  visible identity. Supporting and Settings routes render in the stage host
-  with a visible back control to the last mode, a visible `h1`, and a
+  visible identity. Settings has a visible `h1`, subtitle, and a tabpanel named
+  by its tab. Every primary panel is associated with the active tab. Supporting
+  routes retain a visible back control to the last mode, a visible `h1`, and a
   subtitle.
 - Every mode's first screen uses the shared `Stage` stack from
   `desktop/src/stage/`: planet hero, one primary number or state title, one
@@ -108,10 +111,13 @@ permissions scoped to the main window and keep the HUD read-only.
   status, or selection.
 - Capsule and brand-menu navigation implement arrow/Home/End keyboard
   movement and a stable active-page announcement. ArrowRight and ArrowDown
-  move to the next mode tab; ArrowLeft and ArrowUp move to the previous tab.
-  Route changes restore focus (mode routes to the mode tab, supporting and
-  Settings routes to the brand button); language changes do not reset
-  mode-local state.
+  move to the next primary tab; ArrowLeft and ArrowUp move to the previous tab.
+  Arrow/Home/End movement scrolls the focused tab into view without navigating.
+  Enter or Space activates the focused destination. The selected tab owns the
+  tab stop; supporting pages keep the last available mode as the primary tab
+  stop. Route changes restore focus to the destination tab for modes and
+  Settings, or the brand button for supporting pages. Language changes do not
+  reset mode-local state.
 - Bind catalogue-owned locale accelerators only when the accelerator is unique
   in the currently visible scope. A collision removes the conflicting shortcut;
   it never makes two controls fire or silently chooses one.
@@ -121,6 +127,54 @@ permissions scoped to the main window and keep the HUD read-only.
 - Loading buttons preserve width and state their active operation.
 - Honor `prefers-reduced-motion`; the scan indicator remains meaningful without
   animation.
+
+### Settings choices
+
+Settings uses the local typed `SettingsSelect` and `SettingsCombobox` wrappers
+over scoped `@base-ui/react/select` and `@base-ui/react/combobox` imports. The
+user approved the production dependency on 2026-09-26; version 1.8.0 is pinned
+with MIT licensing and React 19 peer support. Do not replace controls outside
+Settings as part of this contract.
+
+Use native radios for theme preview tiles. Use Select for fixed choices and
+Combobox for searchable font choices. Query, hover, and keyboard highlight do
+not save. Explicit selection sends one typed field patch when the value changes.
+When typing opens the font popup, preserve the input-change query, including
+an empty query after clearing the committed text with the keyboard.
+Escape and outside dismissal retain the committed value; Tab continues to the
+next control. Keep the saved value during a save and after failure. Language
+uses its independent persistence and saving state.
+
+During IME composition, call `preventBaseUIHandler()` from the Combobox input
+key handler when `event.nativeEvent.isComposing` is true or the native key code
+is 229. This prevents composing Enter from saving the highlighted font. Keep
+the browser default action and event propagation; do not call `preventDefault`
+or `stopPropagation`. Filtering can wait until `compositionend`. Regression
+tests must retain the committed value for composing keys and cover normal Enter
+after composition, an already highlighted option, and explicit pointer choice.
+
+Popups use the library portal and root appearance tokens. Set Select
+`alignItemWithTrigger=false`, a 6px side offset, and viewport collision padding.
+Bound popup width and scroll height with the library available-space variables.
+Use a check for selection and a separate focus/highlight outline. Keep the
+`--control-border`, `--selection-bg`, `--selection-text`, and `--disabled-text`
+tokens in the shared root palette, including forced-color overrides.
+
+Align Settings headings and sections in a 1040px maximum container. Rows have
+two columns at 800px and above; narrower rows stack. Theme tiles use one column
+below 480px. Controls have a 40px minimum height and grow with text. Font labels
+and options use the current UI family; the sample uses the committed family.
+The font picker accepts loading/unavailable status text without disabling
+unrelated settings. Native font enumeration and catalogue ownership remain
+outside the shared picker.
+
+`preferences/FontPicker.tsx` composes the installed catalogue, explicit Refresh,
+localized aliases, and missing-saved-family notice. System and installed option
+values have distinct prefixes. Use `valueLabel` to show a missing saved family
+without exposing the internal option key or offering that absent font as a new
+choice. Search is never a free-form CSS stack. Retain every catalogue result;
+the 2000-family fixture covers first/middle/last reachability. All option rows
+use the current UI font; only the committed family drives the sample and root.
 
 ## Copy And Formatting
 
@@ -142,9 +196,10 @@ permissions scoped to the main window and keep the HUD read-only.
 ## Visual System
 
 - Default to Segoe UI Variable with system UI fallbacks. Settings provides
-  closed local font presets and text scales from the desktop preference
-  contract. Apply the selected stack and scale to real controls and labels
-  in main and HUD. Preserve Chinese/English fallbacks and tabular byte values.
+  the system font and installed families from the host catalogue, with closed
+  text scales from the V2 desktop preference contract. Apply the selected stack
+  and scale to real controls and labels in main and HUD. Preserve Chinese/English
+  fallbacks and tabular byte values.
   Estimated Recoverable and live metrics may use a display-size tabular number.
   Do not scale the whole UI from viewport fonts.
 - Card surfaces may use radius 12. Controls, inputs, badges, and rows stay at
@@ -152,9 +207,22 @@ permissions scoped to the main window and keep the HUD read-only.
   through `--radius-card`, `--radius-control`, or `--radius-tile`, never as a
   literal pixel value. The pill (`999px`) and circle (`50%`) shapes are the two
   exceptions. `desktop/src/styles.test.ts` enforces this.
-- Support dark, light, and system themes through shared semantic token sets
-  across all main destinations, dialogs, window controls, and HUD. Dark is the
-  default. System follows the OS media query; forced colors remain an override.
+- Support dark, light, system, catppuccin_latte, catppuccin_mocha, codex, and
+  claude through shared semantic token sets across all main destinations,
+  dialogs, window controls, and HUD. Dark remains the default. System follows
+  the OS media query using the original dark/light palettes. Named palette IDs
+  belong in data-theme; color-scheme accepts only light/dark.
+  appearance.css owns all six resolved palettes and an explicit shared alias
+  base, including popup, selection, disabled text, control border, status
+  surfaces, titlebar, and HUD tokens. Preview tiles reuse those declarations
+  with data-palette-preview. Do not maintain separate preview color constants.
+  Forced-color rules follow all presets and match :root[data-theme] specificity.
+  Catppuccin source revision and MIT license ship in
+  desktop/public/THIRD_PARTY_NOTICES.txt. Codex/Claude are DevSweep-authored
+  inspired designs. Contrast adaptations to semantic colors are local.
+  scripts/check-palette-contrast.mjs measures every palette's text and adjacent
+  control/focus pairs (4.5:1 text, 3:1 essential boundaries). Native rendering
+  remains a separate acceptance check.
   Do not apply a light surface to one mode while other modes retain dark-only
   literal colors. Theme tests cover the selected palette and readable states.
   Shared tokens are
@@ -167,7 +235,8 @@ permissions scoped to the main window and keep the HUD read-only.
   only from the planet palette and the per-mode accent:
   `--accent-clean`, `--accent-software`, `--accent-optimize`,
   `--accent-analyze`, and `--accent-status`. Supporting destinations use the
-  Clean accent. Semantic amber/red/green remain reserved for risk, error, and
+  Clean accent. Settings labels use neutral text; previews represent each
+  palette. Semantic amber/red/green remain reserved for risk, error, and
   safe actions.
 - The original product icon may appear in native chrome and the brand button.
   When adjacent DevSweep text supplies the accessible product name, the image

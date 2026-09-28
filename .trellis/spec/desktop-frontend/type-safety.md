@@ -81,3 +81,25 @@ When backend models change:
 Generated files carry a header naming the generator and must not be edited by
 hand. Presentation-only types such as reducer state and view filters live
 outside `types.gen.ts`.
+
+Settings choice wrappers preserve their generic string/number value type from
+`SettingsOption<Value>` through `onValueChange`. Do not cast DOM text to a
+preference enum. The wrappers accept only explicit item selection events and
+ignore selection of the committed value. Font aliases are search-only strings;
+query/highlight state must never become a persisted font value. SettingsPage
+constructs the existing typed field patch and leaves commit ordering to the
+preference store.
+
+DesktopPreferencesV2 replaces the preset font enum with closed DesktopFont
+system/installed shapes. Decode scalar-count bounds, trimming, and control
+characters before consumers. DesktopFonts is a closed available/unavailable
+union; entries carry canonical family plus localized names, never paths or bytes.
+Both font responses and V2 patches participate in generator and Rust wire parity.
+The Windows font command remains in the existing bridge.ts adapter and is not
+part of the operational-mode bridge or the HUD allowlist.
+
+The V2 theme enum is closed to dark/light/system/catppuccin_latte/
+catppuccin_mocha/codex/claude. The typed appearance catalogue must exhaust that
+union. All seven response snapshots and patches feed the type generator and
+Rust wire parity. A palette ID never becomes a CSS color-scheme value: resolve
+System to legacy dark/light, then read the catalogue's light/dark scheme.

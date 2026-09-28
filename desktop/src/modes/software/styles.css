@@ -3,7 +3,7 @@
   --text-muted: var(--muted);
   --surface: var(--canvas);
   --surface-raised: var(--raised);
-  --border-strong: var(--border);
+  --border-strong: var(--control-border);
   --success: var(--ok);
   display: grid;
   min-height: 0;
@@ -17,10 +17,10 @@
   padding: 0 10px;
   color: var(--text);
   background: var(--canvas);
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 5px;
 }
-.software-mode .secondary-button { color: var(--text); background: var(--canvas); border-color: var(--border); }
+.software-mode .secondary-button { color: var(--text); background: var(--canvas); border-color: var(--control-border); }
 .software-mode .secondary-button:hover:not(:disabled) { background: var(--raised); }
 .software-mode .error-banner { color: var(--danger); background: var(--raised); border-bottom-color: var(--danger); }
 

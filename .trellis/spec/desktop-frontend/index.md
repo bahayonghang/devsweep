@@ -84,8 +84,9 @@ screenshots.
 
 ## Completion Checklist
 
-- [ ] All five available primary modes and supporting destinations use one typed
-      registry; unavailable features are absent.
+- [ ] All five available operational modes and supporting destinations use one
+      typed registry; unavailable features are absent. Primary navigation adds
+      Settings after the mode tabs without extending operational ModeId.
 - [ ] Route/deep-link/back, focus restore, keyboard navigation, locale changes,
       and mode-local state retention pass.
 - [ ] Heavy work is cancel-requested and joined before replacement; stale events,
@@ -93,12 +94,12 @@ screenshots.
 - [ ] Desktop/TUI use the same closed locale store and CLI-owned catalogue
       metadata; corrupt/unknown bytes are preserved and machine output is
       unaffected.
-- [ ] Complete dark/light/system palettes (near-black blue dark default), original brand, per-mode accent and
+- [ ] Complete dark/light/system/Latte/Mocha/Codex/Claude choices (near-black blue dark default), original brand, per-mode accent and
       planet palette, top-centered capsule navigation with brand menu, stage
       first screens, detail views with a back control, original procedural
       planet (one still frame under reduced motion, outlined circle under
       forced colors), high contrast, and 390/800/1024/1440 layouts pass in
-      both locales. Font presets and scale apply across main and HUD. No sidebar,
+      both locales. Committed local font families and scale apply across main and HUD. No sidebar,
       page header block, planet photograph, or Mole asset.
 - [ ] Accelerators are collision-free; binary units remain canonical; user data
       truncation preserves complete accessible/copyable text; authority/action

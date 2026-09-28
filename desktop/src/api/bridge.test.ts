@@ -16,6 +16,7 @@ import softwareLeftoversPlanJson from "./fixtures/software/leftovers-planned.jso
 import softwareLeftoversReportJson from "./fixtures/software/leftovers-report.json";
 import preferencesJson from "./fixtures/desktop-preferences.json";
 import preferencesUpdatedJson from "./fixtures/desktop-preferences-updated.json";
+import fontsJson from "./fixtures/desktop-fonts.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -31,8 +32,14 @@ const mocks = vi.hoisted(() => {
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocks.invoke, Channel: mocks.Channel }));
 vi.mock("@tauri-apps/api/event", () => ({ listen: mocks.listen }));
 
-import { tauriBridge, tauriDesktopPreferencesBridge } from "./bridge";
+import { tauriBridge, tauriDesktopPreferencesBridge, tauriDesktopFontsBridge } from "./bridge";
 import { decodeDesktopSoftwareLeftoversPreviewResult, decodeScanReport, decodeSoftwareInventory } from "./contract";
+
+it("reads fonts with no paths, filters, or sampling commands", async () => {
+  mocks.invoke.mockResolvedValueOnce(fontsJson);
+  expect(await tauriDesktopFontsBridge.list()).toEqual(fontsJson);
+  expect(mocks.invoke).toHaveBeenCalledExactlyOnceWith("desktop_fonts_list", {});
+});
 
 const plan = decodeScanReport(scanJson).plan;
 

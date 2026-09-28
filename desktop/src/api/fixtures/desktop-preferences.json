@@ -1,9 +1,9 @@
 {
   "sequence": 1,
   "preferences": {
-    "schema_version": 1,
+    "schema_version": 2,
     "theme": "dark",
-    "font_family": "system",
+    "font": {"kind": "system"},
     "text_scale_percent": 100,
     "motion": "system",
     "planet_fps": 30,

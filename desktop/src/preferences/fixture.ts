@@ -1,7 +1,10 @@
-import type { DesktopPreferencesBridge } from "../api/bridge";
-import { decodeDesktopPreferences } from "../api/contract";
+import type { DesktopPreferencesBridge, DesktopFontsBridge } from "../api/bridge";
+import { decodeDesktopPreferences, decodeDesktopFonts } from "../api/contract";
+import fontCatalogue from "../api/fixtures/desktop-fonts.json";
 import type { DesktopPreferencesSnapshot } from "../api/types.gen";
 import { DEFAULT_DESKTOP_PREFERENCES } from "./store";
+
+export const fixtureFontsBridge: DesktopFontsBridge = { list: async () => decodeDesktopFonts(fontCatalogue) };
 
 /** In-memory preview store. No native command or user settings file is used. */
 export function createFixturePreferencesBridge(): DesktopPreferencesBridge {
@@ -11,7 +14,7 @@ export function createFixturePreferencesBridge(): DesktopPreferencesBridge {
     get: async () => snapshot,
     update: async (patch) => {
       const changes = patch.field === "reset_appearance"
-        ? { theme: DEFAULT_DESKTOP_PREFERENCES.theme, font_family: DEFAULT_DESKTOP_PREFERENCES.font_family, text_scale_percent: DEFAULT_DESKTOP_PREFERENCES.text_scale_percent }
+        ? { theme: DEFAULT_DESKTOP_PREFERENCES.theme, font: DEFAULT_DESKTOP_PREFERENCES.font, text_scale_percent: DEFAULT_DESKTOP_PREFERENCES.text_scale_percent }
         : patch.field === "reset_performance"
           ? { motion: DEFAULT_DESKTOP_PREFERENCES.motion, planet_fps: DEFAULT_DESKTOP_PREFERENCES.planet_fps, status_interval_seconds: DEFAULT_DESKTOP_PREFERENCES.status_interval_seconds, status_process_limit: DEFAULT_DESKTOP_PREFERENCES.status_process_limit, hud_interval_seconds: DEFAULT_DESKTOP_PREFERENCES.hud_interval_seconds }
           : { [patch.field]: patch.value };

@@ -1,5 +1,4 @@
 @import "../preferences/appearance.css";
-:root { --hud-canvas: var(--canvas); --hud-text: var(--text); --hud-muted: var(--muted); --hud-border: var(--border); }
 #root { height: 100%; overflow: auto; }
 
 html,

@@ -10,7 +10,7 @@ The shared `presentation-v1.json` language contract remains unchanged.
 ## 2. Signatures
 
 The core owner is `desktop_preferences`. Its public types are
-`DesktopPreferencesV1` and `DesktopPreferencesPatch`. The Tauri adapter returns
+`DesktopPreferencesV2`, `DesktopFont`, and `DesktopPreferencesPatch`. The Tauri adapter returns
 `DesktopPreferencesSnapshot` from `desktop_preferences_get` and
 `desktop_preferences_update`; update receives one `patch` argument.
 
@@ -18,9 +18,9 @@ The core owner is `desktop_preferences`. Its public types are
 {
   "sequence": 1,
   "preferences": {
-    "schema_version": 1,
+    "schema_version": 2,
     "theme": "dark",
-    "font_family": "system",
+    "font": {"kind": "system"},
     "text_scale_percent": 100,
     "motion": "system",
     "planet_fps": 30,
@@ -35,6 +35,7 @@ Patch payloads use a closed tagged shape:
 
 ```json
 {"patch":{"field":"theme","value":"light"}}
+{"patch":{"field":"font","value":{"kind":"installed","family":"Segoe UI"}}}
 {"patch":{"field":"reset_appearance"}}
 {"patch":{"field":"reset_performance"}}
 ```
@@ -47,14 +48,14 @@ and Rust wire-parity test.
 ## 3. Contracts
 
 The fixed disk path is
-`%LOCALAPPDATA%/DevSweep/settings/desktop-preferences-v1.json`.
+`%LOCALAPPDATA%/DevSweep/settings/desktop-preferences-v2.json`.
 The disk document is the exact `preferences` object above. The snapshot
 sequence belongs to one running app process and is not persisted.
 
 | Field | Closed values | Default |
 | --- | --- | --- |
-| theme | dark, light, system | dark |
-| font_family | system, segoe_ui, microsoft_yahei_ui | system |
+| theme | dark, light, system, catppuccin_latte, catppuccin_mocha, codex, claude | dark |
+| font | {kind: system}, {kind: installed, family: string} | {kind: system} |
 | text_scale_percent | 100, 110, 125 | 100 |
 | motion | system, reduced | system |
 | planet_fps | 15, 30 | 30 |
@@ -62,7 +63,24 @@ sequence belongs to one running app process and is not persisted.
 | status_process_limit | 5, 15, 30, 50, 100 | 15 |
 | hud_interval_seconds | 2, 5, 10 | 2 |
 
-Missing storage returns defaults. Unknown fields/tags, unsupported versions,
+Installed families are trimmed, nonempty, at most 256 Unicode scalar values,
+and contain no control characters. Quotes, backslashes, and non-Latin names
+remain valid. Both tagged shapes reject unknown fields, including system.
+
+Read V2 first. A present invalid, future, or unreadable V2 fails closed without
+V1 fallback. Only absent V2 permits strict read-only conversion of the sibling
+V1 file. V1 system maps to system; segoe_ui maps to installed Segoe UI;
+microsoft_yahei_ui maps to installed Microsoft YaHei UI. Every unrelated field
+is preserved. V1 has its own closed theme decoder so future V2 palettes cannot
+enter V1. Reading creates no files. When both versions are absent, use V2 defaults.
+
+The first explicit update/reset rereads both versions under the existing
+desktop directory transaction lock, then atomically creates V2. Concurrent
+first patches retain both changes. Keep V1 and language bytes unchanged, even
+after write failure. An older build reads the last V1 state. New builds use V2
+once present and do not resynchronize later V1 edits. No reverse migration runs.
+
+Unknown fields/tags, unsupported versions,
 invalid UTF-8/JSON, and invalid values fail closed. Missing LOCALAPPDATA reports
 unavailable. Save rereads and validates existing bytes under a cross-process
 transaction lock, applies one typed field/group patch, and uses a flushed
@@ -89,10 +107,35 @@ on HUD show so an existing hidden HUD also receives current persisted settings.
 An event delivery failure cannot roll back committed disk bytes; the next get
 returns authoritative settings. Cross-process live notifications are out of scope.
 
-Apply theme/font/motion in main and HUD after commit. System theme listens for
-OS media-query changes only in system mode. Reduced motion and forced colors
+Apply theme/font/motion in main and HUD after commit. The typed theme catalogue
+owns IDs, label keys, schemes, and preview IDs. System resolves only to the
+legacy dark/light palettes and listens for OS media-query changes only while
+selected. Write the resolved palette ID to data-theme and only light or dark
+to color-scheme. Reset appearance retains the dark default. The independent V1
+decoder still accepts only dark/light/system; unknown V2 themes fail closed
+without overwriting bytes or falling back to V1. Response and patch fixtures
+cover all seven values and participate in generation and Rust wire parity.
+Reduced motion and forced colors
 remain accessibility overrides. Preserve main/HUD base sizes and local font
 fallbacks. Do not download fonts or change OS display settings.
+
+The desktop-owned `fonts.rs` exposes main-only `desktop_fonts_list`. The HUD
+allowlist remains language/preference reads only. On Windows, the approved
+target-specific windows 0.61.3 dependency enables Win32_Graphics_DirectWrite.
+IDWriteFactory3 runs in a blocking worker with downloadable fonts disabled and
+check-for-updates enabled. Native objects remain on that worker; only owned
+family/locale/name strings cross the boundary. Families prefer en-US, otherwise
+the first nonempty native name. Deduplicate family keys case-insensitively and
+retain localized aliases. Never return paths/bytes, scan font folders, invoke
+shells, download fonts, or start Status/HUD sampling.
+
+The closed catalogue response is available with a families array (including
+empty) or unavailable with unsupported_platform/enumeration_failed. Renderer
+catalogues cache by bridge/session, load only with Settings, coalesce refresh,
+ignore stale/disposed completions, and retain prior choices after refresh
+failure. System stays selectable. Missing saved names remain committed and
+receive a notice. Main/HUD share one CSS string serializer and set only the
+font custom property plus existing system fallbacks.
 
 Status snapshot and live requests both consume the selected row limit. Convert
 the stored interval from seconds to milliseconds at the command boundary. An

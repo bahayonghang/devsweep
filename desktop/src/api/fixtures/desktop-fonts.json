@@ -1,0 +1,36 @@
+{
+  "status": "available",
+  "families": [
+    {
+      "family": "Microsoft YaHei UI",
+      "names": [
+        {
+          "locale": "en-US",
+          "name": "Microsoft YaHei UI"
+        },
+        {
+          "locale": "zh-CN",
+          "name": "微软雅黑"
+        }
+      ]
+    },
+    {
+      "family": "Segoe UI",
+      "names": [
+        {
+          "locale": "en-US",
+          "name": "Segoe UI"
+        }
+      ]
+    },
+    {
+      "family": "Fixture Serif",
+      "names": [
+        {
+          "locale": "en-US",
+          "name": "Fixture Serif"
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,7 @@ const ADAPTER_SOURCES: &[(&str, &str)] = &[
         include_str!("desktop_preferences.rs"),
     ),
     ("error.rs", include_str!("error.rs")),
+    ("fonts.rs", include_str!("fonts.rs")),
     ("hud.rs", include_str!("hud.rs")),
     ("optimize.rs", include_str!("optimize.rs")),
     ("scan.rs", include_str!("scan.rs")),
