@@ -1599,3 +1599,40 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - 后续验收需保留核心测试启动失败和原生行为待验收记录，不将任务归档视为检查通过。
+
+
+## Session 55: 设置导航、字体和主题改造归档
+<!-- trellis-session: v=2 fp=0106c91570267d10 -->
+
+**Date**: 2026-09-27
+**Task**: 设置导航、字体和主题改造归档
+**Branch**: `dev`
+
+### Summary
+
+按用户明确要求提交并归档设置体验父任务和四个子任务；保留核心 CI 阻塞和真实 Windows 输入法候选窗口未验收的记录。
+
+### Main Changes
+
+- 设置独立 Tab、统一选择控件、主机字体目录与四种新增配色已实现，补充 V2 偏好迁移和中文组合输入回归。
+- 使用两个本地工作提交保存功能和验收证据；五个任务均已归档，meta.closure 保留验证限制。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5e73a4fb2e329c305d400efbb7670684f998d709` | feat(desktop): ✨ 优化设置导航、字体和主题 |
+| `154566a77d3131b8ed950a08a645cac62e6bf048` | docs(task): 📝 保存设置改造验收记录 |
+
+### Testing
+
+- [OK] 前端 387 项、Node 5 项、桌面 Rust 83 项、Clippy、Windows release/NSIS 构建及原生矩阵通过；桌面 Rust 有 2 个设计性忽略项。
+- [OK] canonical just ci 仍受核心测试可执行文件缺失阻断，原因未查明；真实 Windows 输入法候选窗口未获得人工验收结果。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 如继续诊断核心测试程序，从归档 evidence/core-gate-diagnostic.md 开始；不得把归档视为完整 CI 或发布验证通过。
