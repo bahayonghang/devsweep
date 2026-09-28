@@ -1,0 +1,32 @@
+cargo clippy --workspace --locked --all-targets -- -D warnings
+    Checking devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+   Compiling devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+mbx[warning]: prediction was not restored: absolute path has no stable cache mapping: C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\atlmfc\lib\x64
+mbx[warning]: result was not stored: rustc search path kind is not cacheable yet: native
+error: this `if` statement can be collapsed
+   --> crates\devsweep-core\src\desktop_preferences\mod.rs:233:9
+    |
+233 | /         if let DesktopFont::Installed { family } = &self.font {
+234 | |             if !valid_font_family(family) {
+235 | |                 return Err(DesktopPreferencesError::InvalidFontFamily);
+236 | |             }
+237 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+233 ~         if let DesktopFont::Installed { family } = &self.font
+234 ~             && !valid_font_family(family) {
+235 |                 return Err(DesktopPreferencesError::InvalidFontFamily);
+236 ~             }
+    |
+
+error: could not compile `devsweep-core` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `devsweep-core` (lib test) due to 1 previous error
+mbx[cache]: 0 hits, 2 misses, 2 incremental; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: 725 compilations served. ask rustc how many it remembers doing.
+error: recipe `clippy` failed on line 21 with exit code 1

@@ -1,0 +1,56 @@
+{
+  "id": "desktop-settings-experience",
+  "name": "desktop-settings-experience",
+  "title": "Improve desktop settings navigation, controls, fonts, and themes",
+  "description": "Plan a Settings tab after Status, accessible selection controls, installed host fonts, and Catppuccin Latte/Mocha plus Codex/Claude color presets.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": "desktop-settings",
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-26",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "5e73a4fb2e329c305d400efbb7670684f998d709",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-26-desktop-settings-navigation",
+    "09-26-desktop-settings-controls",
+    "09-26-desktop-settings-host-fonts",
+    "09-26-desktop-settings-palettes"
+  ],
+  "parent": null,
+  "relatedFiles": [
+    "desktop/src/app-shell/AppShell.tsx",
+    "desktop/src/preferences/SettingsPage.tsx",
+    "desktop/src/preferences/appearance.ts",
+    "desktop/src/preferences/appearance.css",
+    "crates/devsweep-core/src/desktop_preferences/mod.rs"
+  ],
+  "notes": "Approved 2026-09-26: @base-ui/react and Windows-only windows crate DirectWrite binding; implement navigation, controls, host fonts, then palettes in order.",
+  "meta": {
+    "planning": {
+      "authorization": "sequential_implementation_approved",
+      "blocking_decisions": [],
+      "proposal_status": "approved",
+      "baseline": "fea6368",
+      "request_date": "2026-09-26",
+      "approved_at": "2026-09-26"
+    },
+    "closure": {
+      "authorization": "user_requested_commit_and_archive",
+      "request": "请提交改动和归档任务",
+      "recorded_at": "2026-09-27T23:27:01.365098-05:00",
+      "basis": "archive_with_disclosed_validation_limits",
+      "canonical_ci": "blocked",
+      "manual_windows_ime": "unverified",
+      "all_acceptance_checks_passed": false,
+      "record": "09-26-desktop-settings-experience/evidence/closure-decision.md"
+    }
+  }
+}

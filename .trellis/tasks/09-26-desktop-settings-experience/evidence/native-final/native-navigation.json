@@ -1,0 +1,978 @@
+{
+  "method": "Owned WebView2 native renderer and CDP keyboard input; no operation started",
+  "cases": [
+    {
+      "locale": "en",
+      "width": 390,
+      "sequence": [
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "Clean",
+            "Software",
+            "Optimize",
+            "Analyze",
+            "Status",
+            "Settings"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-software",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "Clean",
+            "Software",
+            "Optimize",
+            "Analyze",
+            "Status",
+            "Settings"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-optimize",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "Clean",
+            "Software",
+            "Optimize",
+            "Analyze",
+            "Status",
+            "Settings"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-analyze",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "Clean",
+            "Software",
+            "Optimize",
+            "Analyze",
+            "Status",
+            "Settings"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-status",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "Clean",
+            "Software",
+            "Optimize",
+            "Analyze",
+            "Status",
+            "Settings"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-settings",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "Clean",
+            "Software",
+            "Optimize",
+            "Analyze",
+            "Status",
+            "Settings"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-clean",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        }
+      ],
+      "state": {
+        "hash": "#/settings",
+        "ids": [
+          "primary-tab-clean",
+          "primary-tab-software",
+          "primary-tab-optimize",
+          "primary-tab-analyze",
+          "primary-tab-status",
+          "primary-tab-settings"
+        ],
+        "labels": [
+          "Clean",
+          "Software",
+          "Optimize",
+          "Analyze",
+          "Status",
+          "Settings"
+        ],
+        "selected": [
+          "primary-tab-settings"
+        ],
+        "focused": "primary-tab-settings",
+        "focusVisible": true,
+        "panelRole": "tabpanel",
+        "panelLabel": "primary-tab-settings"
+      },
+      "history": {
+        "hash": "#/settings",
+        "ids": [
+          "primary-tab-clean",
+          "primary-tab-software",
+          "primary-tab-optimize",
+          "primary-tab-analyze",
+          "primary-tab-status",
+          "primary-tab-settings"
+        ],
+        "labels": [
+          "Clean",
+          "Software",
+          "Optimize",
+          "Analyze",
+          "Status",
+          "Settings"
+        ],
+        "selected": [
+          "primary-tab-settings"
+        ],
+        "focused": "primary-tab-settings",
+        "focusVisible": true,
+        "panelRole": "tabpanel",
+        "panelLabel": "primary-tab-settings"
+      }
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "sequence": [
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "清理",
+            "软件",
+            "优化",
+            "分析",
+            "状态",
+            "设置"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-software",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "清理",
+            "软件",
+            "优化",
+            "分析",
+            "状态",
+            "设置"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-optimize",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "清理",
+            "软件",
+            "优化",
+            "分析",
+            "状态",
+            "设置"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-analyze",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "清理",
+            "软件",
+            "优化",
+            "分析",
+            "状态",
+            "设置"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-status",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "清理",
+            "软件",
+            "优化",
+            "分析",
+            "状态",
+            "设置"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-settings",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        },
+        {
+          "hash": "#/clean",
+          "ids": [
+            "primary-tab-clean",
+            "primary-tab-software",
+            "primary-tab-optimize",
+            "primary-tab-analyze",
+            "primary-tab-status",
+            "primary-tab-settings"
+          ],
+          "labels": [
+            "清理",
+            "软件",
+            "优化",
+            "分析",
+            "状态",
+            "设置"
+          ],
+          "selected": [
+            "primary-tab-clean"
+          ],
+          "focused": "primary-tab-clean",
+          "focusVisible": true,
+          "panelRole": "tabpanel",
+          "panelLabel": "primary-tab-clean"
+        }
+      ],
+      "state": {
+        "hash": "#/settings",
+        "ids": [
+          "primary-tab-clean",
+          "primary-tab-software",
+          "primary-tab-optimize",
+          "primary-tab-analyze",
+          "primary-tab-status",
+          "primary-tab-settings"
+        ],
+        "labels": [
+          "清理",
+          "软件",
+          "优化",
+          "分析",
+          "状态",
+          "设置"
+        ],
+        "selected": [
+          "primary-tab-settings"
+        ],
+        "focused": "primary-tab-settings",
+        "focusVisible": true,
+        "panelRole": "tabpanel",
+        "panelLabel": "primary-tab-settings"
+      },
+      "history": {
+        "hash": "#/settings",
+        "ids": [
+          "primary-tab-clean",
+          "primary-tab-software",
+          "primary-tab-optimize",
+          "primary-tab-analyze",
+          "primary-tab-status",
+          "primary-tab-settings"
+        ],
+        "labels": [
+          "清理",
+          "软件",
+          "优化",
+          "分析",
+          "状态",
+          "设置"
+        ],
+        "selected": [
+          "primary-tab-settings"
+        ],
+        "focused": "primary-tab-settings",
+        "focusVisible": true,
+        "panelRole": "tabpanel",
+        "panelLabel": "primary-tab-settings"
+      }
+    }
+  ],
+  "result": "PASS",
+  "events": [
+    {
+      "method": "Log.entryAdded",
+      "params": {
+        "entry": {
+          "source": "security",
+          "level": "error",
+          "text": "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-kLmvWqfziFavKtqHqRsb90f006UAK2Dmd0It5Iz2KFA='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+          "timestamp": 1790565954376.898,
+          "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+          "lineNumber": 8,
+          "stackTrace": {
+            "callFrames": [
+              {
+                "functionName": "as",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 8,
+                "columnNumber": 22961
+              },
+              {
+                "functionName": "Gv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 8,
+                "columnNumber": 21878
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103036
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 104024
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103840
+              },
+              {
+                "functionName": "fv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 119080
+              },
+              {
+                "functionName": "iv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 118914
+              },
+              {
+                "functionName": "nv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 113906
+              },
+              {
+                "functionName": "tv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 113397
+              },
+              {
+                "functionName": "wv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 124776
+              },
+              {
+                "functionName": "xu",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 123327
+              },
+              {
+                "functionName": "yv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 123606
+              },
+              {
+                "functionName": "",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 124836
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

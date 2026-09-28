@@ -1,0 +1,10 @@
+   Compiling devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.74s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_core-2ca6c9bc5b0fca68.exe)
+error: test failed, to rerun pass `-p devsweep-core --lib`
+
+Caused by:
+  could not execute process `D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_core-2ca6c9bc5b0fca68.exe --test-threads=1 --nocapture` (never executed)
+
+Caused by:
+  The system cannot find the file specified. (os error 2)

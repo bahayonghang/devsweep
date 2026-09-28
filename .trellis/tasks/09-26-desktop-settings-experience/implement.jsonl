@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop platform, dependency approval, and quality boundaries"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/repository-findings.md", "reason": "Current source owners, evidence anchors, and explicit scope changes"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/design-proposal.md", "reason": "Settings layout, accessible control design, and palette proposal"}
+{"file": ".trellis/spec/backend/desktop-preferences.md", "reason": "Cross-window committed state and persistence invariants"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Route drain and stale-result boundaries"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/external-references.md", "reason": "Primary sources and dependency assumptions"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/approval.md", "reason": "User approval for sequential implementation and the two production dependencies"}

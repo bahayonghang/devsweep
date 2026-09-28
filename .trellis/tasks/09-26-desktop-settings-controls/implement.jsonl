@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Desktop platform, dependency approval, and quality boundaries"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/repository-findings.md", "reason": "Current source owners, evidence anchors, and explicit scope changes"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/design-proposal.md", "reason": "Settings layout, accessible control design, and palette proposal"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Accessible controls, root tokens, viewport and text rules"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Typed field updates and generated catalogue ownership"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/external-references.md", "reason": "Base UI and WAI-ARIA reference contracts"}
+{"file": ".trellis/tasks/09-26-desktop-settings-experience/research/approval.md", "reason": "User approval for sequential implementation and the two production dependencies"}

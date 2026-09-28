@@ -1,0 +1,5 @@
+cargo clippy --workspace --locked --all-targets -- -D warnings
+    Checking devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.30s
+mbx[cache]: 0 hits, 2 misses, 4 incremental; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: 843 compilations served. the monocle stays on.

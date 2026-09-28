@@ -1,0 +1,10 @@
+{
+  "startedAt": "2026-09-28T03:04:29.8613737Z",
+  "cargo": "C:\\Users\\lyh\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+  "target": "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-settings-core-3034c70d",
+  "result": "BLOCKED",
+  "buildExit": 0,
+  "executable": "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-settings-core-3034c70d\\debug\\deps\\devsweep_core-2ca6c9bc5b0fca68.exe",
+  "existsBefore": false,
+  "finishedAt": "2026-09-28T03:04:58.0351674Z"
+}

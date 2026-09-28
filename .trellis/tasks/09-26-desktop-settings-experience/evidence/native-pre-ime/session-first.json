@@ -1,0 +1,37 @@
+{
+  "exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+  "sha256": "695b2f06686f6582a86866477d18724a476667e24104165511ed2deffa5621a8",
+  "pid": 61980,
+  "port": 9357,
+  "profile": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\settings-native-20260928\\localappdata",
+  "reuse": "false",
+  "seed": "v1",
+  "startedAt": "2026-09-28T02:52:33.767Z",
+  "target": {
+    "description": "",
+    "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@cf31d6623d8718e7a3c3e181e55e59c1aae57a73/inspector.html?ws=127.0.0.1:9357/devtools/page/DA2911757520FDC3D3564BEDE7A0C926",
+    "id": "DA2911757520FDC3D3564BEDE7A0C926",
+    "title": "about:blank",
+    "type": "page",
+    "url": "http://tauri.localhost/",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:9357/devtools/page/DA2911757520FDC3D3564BEDE7A0C926"
+  },
+  "initial": {
+    "url": "http://tauri.localhost/",
+    "title": "devsweep",
+    "dpr": 1.25,
+    "width": 1080,
+    "height": 720,
+    "scheme": "dark",
+    "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+    "bodyFont": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+    "fontSize": "16px",
+    "horizontalOverflow": false,
+    "controls": [],
+    "themes": [],
+    "active": "",
+    "errors": [],
+    "rawKeys": [],
+    "badText": false
+  }
+}

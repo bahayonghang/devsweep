@@ -1,0 +1,103 @@
+{
+  "method": "CDP native WebView2 renderer composition; Windows IME candidate-window interaction is not exercised",
+  "startedAt": "2026-09-28T03:25:53.893Z",
+  "binarySha256": "03c5b34fa650696f026b1ec982fc70ab8d93e2a8f9665b5b4df4b36f2d2b567d",
+  "pid": 66040,
+  "before": "cdcf19e2861e9284ce755ae40aeab288f45f2f27255458f6dfd858367346402e",
+  "preferencesBefore": {
+    "schema_version": 2,
+    "theme": "codex",
+    "font": {
+      "kind": "installed",
+      "family": "Segoe UI"
+    },
+    "text_scale_percent": 110,
+    "motion": "system",
+    "planet_fps": 30,
+    "status_interval_seconds": 2,
+    "status_process_limit": 15,
+    "hud_interval_seconds": 2
+  },
+  "candidateCountDuringComposition": 249,
+  "firstCandidateDuringComposition": "System UI",
+  "during": "cdcf19e2861e9284ce755ae40aeab288f45f2f27255458f6dfd858367346402e",
+  "events": [
+    {
+      "type": "compositionstart",
+      "data": "",
+      "value": ""
+    },
+    {
+      "type": "compositionupdate",
+      "data": "宋",
+      "value": ""
+    },
+    {
+      "type": "input",
+      "isComposing": true,
+      "data": "宋",
+      "value": "宋"
+    },
+    {
+      "type": "keydown",
+      "key": "ArrowDown",
+      "isComposing": true,
+      "value": "宋"
+    },
+    {
+      "type": "keydown",
+      "key": "Enter",
+      "isComposing": true,
+      "value": "宋"
+    },
+    {
+      "type": "compositionupdate",
+      "data": "宋",
+      "value": "宋"
+    },
+    {
+      "type": "input",
+      "isComposing": true,
+      "data": "宋",
+      "value": "宋"
+    },
+    {
+      "type": "compositionend",
+      "data": "宋",
+      "value": "宋"
+    }
+  ],
+  "nativeComposingEnter": true,
+  "preferencesDuring": {
+    "schema_version": 2,
+    "theme": "codex",
+    "font": {
+      "kind": "installed",
+      "family": "Segoe UI"
+    },
+    "text_scale_percent": 110,
+    "motion": "system",
+    "planet_fps": 30,
+    "status_interval_seconds": 2,
+    "status_process_limit": 15,
+    "hud_interval_seconds": 2
+  },
+  "commitMethod": "CDP Input.insertText after the composing-Enter assertion",
+  "matchesAfterComposition": [
+    "Dream Han Serif CN",
+    "FangSong",
+    "NSimSun",
+    "SimSun",
+    "Source Han Serif SC",
+    "STFangsong",
+    "STSong",
+    "STZhongsong",
+    "WenJin Mincho Plane 0",
+    "WenJin Mincho Plane 2",
+    "WenJin Mincho Plane 3",
+    "Zhuque Fangsong (technical preview)"
+  ],
+  "after": "cdcf19e2861e9284ce755ae40aeab288f45f2f27255458f6dfd858367346402e",
+  "result": "PASS",
+  "finishedAt": "2026-09-28T03:25:54.144Z"
+}

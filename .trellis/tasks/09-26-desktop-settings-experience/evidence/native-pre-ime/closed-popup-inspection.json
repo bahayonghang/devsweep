@@ -1,0 +1,79 @@
+{
+  "active": "<button type=\"button\" tabindex=\"0\" id=\"settings-language\" role=\"combobox\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-labelledby=\"settings-language-label\" aria-busy=\"false\" class=\"settings-choice\"><span class=\"settings-choice-value\">English</span><span aria-hidden=\"true\" class=\"settings-choice-icon\">⌄</span></button>",
+  "focus": true,
+  "visibility": "visible",
+  "rows": [
+    {
+      "html": "<div data-side=\"bottom\" data-align=\"start\" tabindex=\"-1\" data-base-ui-focusable=\"\" role=\"presentation\" class=\"settings-choice-popup\" style=\"\" data-closed=\"\"><div id=\"base-ui-_r_7_-list\" role=\"listbox\" class=\"settings-choice-list\" aria-labelledby=\"settings-language-label\"><div data-selected=\"\" role=\"option\" aria-selected=\"true\" tabindex=\"-1\" class=\"",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "animations": []
+    },
+    {
+      "html": "<div data-side=\"bottom\" data-align=\"start\" role=\"presentation\" class=\"settings-choice-positioner\" data-closed=\"\" hidden=\"\" style=\"position: fixed; top: 0px; left: 0px; --available-width: 1048.800048828125px; --available-height: 325.9749870300293px; --anchor-width: 476px; --anchor-height: 40.8px; --transform-origin: 0% -6px; pointer-events: none; op",
+      "display": "none",
+      "visibility": "visible",
+      "opacity": "0",
+      "pointerEvents": "none",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      },
+      "animations": []
+    },
+    {
+      "html": "<div id=\"_r_p_\" data-base-ui-portal=\"\"><div data-side=\"bottom\" data-align=\"start\" role=\"presentation\" class=\"settings-choice-positioner\" data-closed=\"\" hidden=\"\" style=\"position: fixed; top: 0px; left: 0px; --available-width: 1048.800048828125px; --available-height: 325.9749870300293px; --anchor-width: 476px; --anchor-height: 40.8px; --transform-or",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": 805.125,
+        "width": 1064.800048828125,
+        "height": 0,
+        "top": 805.125,
+        "right": 1064.800048828125,
+        "bottom": 805.125,
+        "left": 0
+      },
+      "animations": []
+    },
+    {
+      "html": "<body>\n    <div id=\"root\"><div class=\"desktop-window\"><div class=\"window-chrome\"><div class=\"window-titlebar\"><div class=\"window-drag-region\">DevSweep</div><div class=\"window-controls\" role=\"group\" aria-label=\"Window controls\" aria-busy=\"false\"><button type=\"button\" class=\"window-control\" aria-label=\"Minimize\" title=\"Minimize\"><svg width=\"16\" heigh",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "pointerEvents": "auto",
+      "rect": {
+        "x": 0,
+        "y": -872,
+        "width": 1064.800048828125,
+        "height": 1677.125,
+        "top": -872,
+        "right": 1064.800048828125,
+        "bottom": 805.125,
+        "left": 0
+      },
+      "animations": []
+    }
+  ]
+}

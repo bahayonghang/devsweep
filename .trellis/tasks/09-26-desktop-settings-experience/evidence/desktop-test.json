@@ -1,0 +1,8 @@
+{
+  "command": "just desktop-test",
+  "startedAt": "2026-09-28T02:52:38.6889495Z",
+  "runnerPid": 36904,
+  "result": "PASS",
+  "exitCode": 0,
+  "finishedAt": "2026-09-28T02:53:13.7086638Z"
+}

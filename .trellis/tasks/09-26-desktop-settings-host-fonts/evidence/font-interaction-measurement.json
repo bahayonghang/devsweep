@@ -1,0 +1,15 @@
+{
+  "method": "Vitest/jsdom; rendering and accessible queries; diagnostic only, not native latency",
+  "host": {
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v22.23.2"
+  },
+  "families": 2000,
+  "openMs": 2089.1032000000005,
+  "queryMs": [
+    92.44880000000012,
+    28.20600000000013,
+    16.9411999999993
+  ]
+}

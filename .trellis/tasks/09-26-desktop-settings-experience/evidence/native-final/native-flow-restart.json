@@ -1,0 +1,262 @@
+{
+  "phase": "restart",
+  "startedAt": "2026-09-28T03:24:11.588Z",
+  "session": {
+    "exe": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\release\\devsweep-desktop.exe",
+    "sha256": "03c5b34fa650696f026b1ec982fc70ab8d93e2a8f9665b5b4df4b36f2d2b567d",
+    "pid": 66040,
+    "port": 9357,
+    "profile": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\target\\settings-native-final-20260928\\localappdata",
+    "reuse": "true",
+    "seed": "v1",
+    "startedAt": "2026-09-28T03:24:10.897Z",
+    "target": {
+      "description": "",
+      "devtoolsFrontendUrl": "https://aka.ms/docs-landing-page/serve_rev/@cf31d6623d8718e7a3c3e181e55e59c1aae57a73/inspector.html?ws=127.0.0.1:9357/devtools/page/A20DC849813EBCB70014AE53F918A123",
+      "id": "A20DC849813EBCB70014AE53F918A123",
+      "title": "devsweep",
+      "type": "page",
+      "url": "http://tauri.localhost/",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:9357/devtools/page/A20DC849813EBCB70014AE53F918A123"
+    },
+    "initial": {
+      "url": "http://tauri.localhost/#/clean",
+      "title": "devsweep",
+      "dpr": 1.25,
+      "width": 1080,
+      "height": 720,
+      "theme": "codex",
+      "scheme": "dark",
+      "motion": "reduced",
+      "font": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "bodyFont": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "fontSize": "17.6px",
+      "horizontalOverflow": false,
+      "controls": [],
+      "themes": [],
+      "active": "",
+      "errors": [],
+      "rawKeys": [],
+      "badText": false
+    }
+  },
+  "checks": [
+    {
+      "name": "initial",
+      "url": "http://tauri.localhost/#/settings",
+      "title": "devsweep",
+      "dpr": 1.25,
+      "width": 1080,
+      "height": 720,
+      "theme": "codex",
+      "scheme": "dark",
+      "motion": "reduced",
+      "font": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "bodyFont": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "fontSize": "17.6px",
+      "horizontalOverflow": false,
+      "controls": [
+        {
+          "id": "settings-font",
+          "value": "Zhuque Fangsong (technical preview)",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-text-scale",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-language",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-motion",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-planet-fps",
+          "value": "",
+          "disabled": true,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-status-interval",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-status-rows",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-hud-interval",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        }
+      ],
+      "themes": [
+        {
+          "value": "dark",
+          "checked": false
+        },
+        {
+          "value": "light",
+          "checked": false
+        },
+        {
+          "value": "system",
+          "checked": false
+        },
+        {
+          "value": "catppuccin_latte",
+          "checked": false
+        },
+        {
+          "value": "catppuccin_mocha",
+          "checked": false
+        },
+        {
+          "value": "codex",
+          "checked": true
+        },
+        {
+          "value": "claude",
+          "checked": false
+        }
+      ],
+      "active": "primary-tab-settings",
+      "errors": [],
+      "rawKeys": [],
+      "badText": false
+    },
+    {
+      "name": "restart-applies-committed-theme-font",
+      "preferences": {
+        "schema_version": 2,
+        "theme": "codex",
+        "font": {
+          "kind": "installed",
+          "family": "Zhuque Fangsong (technical preview)"
+        },
+        "text_scale_percent": 110,
+        "motion": "system",
+        "planet_fps": 30,
+        "status_interval_seconds": 2,
+        "status_process_limit": 15,
+        "hud_interval_seconds": 2
+      },
+      "facts": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.25,
+        "width": 1080,
+        "height": 720,
+        "theme": "codex",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Zhuque Fangsong (technical preview)",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": true
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "primary-tab-settings",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      }
+    }
+  ],
+  "result": "PASS",
+  "events": [],
+  "finishedAt": "2026-09-28T03:24:11.786Z"
+}

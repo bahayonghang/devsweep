@@ -1,0 +1,1054 @@
+{
+  "method": "Final isolated release WebView2 renderer captures; emulated CSS viewport",
+  "binarySha256": "03c5b34fa650696f026b1ec982fc70ab8d93e2a8f9665b5b4df4b36f2d2b567d",
+  "pid": 66040,
+  "startedAt": "2026-09-28T03:28:11.148Z",
+  "screenshots": [
+    {
+      "theme": "catppuccin_latte",
+      "file": "settings-catppuccin_latte.png",
+      "sha256": "9b0a76cfdfaa703aa59846b79949a6052a4c5db1b9b91ed7d4525cae9eac26cc",
+      "facts": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "true"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": true
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "popup": {
+        "width": 1024,
+        "height": 1050,
+        "rect": {
+          "x": 524,
+          "y": 779,
+          "width": 461,
+          "height": 126.9000015258789,
+          "right": 985,
+          "bottom": 905.9000015258789
+        },
+        "within": true,
+        "options": 3,
+        "scrollHeight": 117,
+        "clientHeight": 117,
+        "background": "rgb(230, 233, 239)",
+        "color": "rgb(76, 79, 105)",
+        "border": "rgb(108, 111, 133)",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "portal": true
+      }
+    },
+    {
+      "theme": "catppuccin_mocha",
+      "file": "settings-catppuccin_mocha.png",
+      "sha256": "fc0cb1eb0106f5900c12577c10dabc0a1ad9ac6d21d1aeb29cb4e7370821f405",
+      "facts": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "true"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": true
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "popup": {
+        "width": 1024,
+        "height": 1050,
+        "rect": {
+          "x": 524,
+          "y": 779,
+          "width": 461,
+          "height": 126.9000015258789,
+          "right": 985,
+          "bottom": 905.9000015258789
+        },
+        "within": true,
+        "options": 3,
+        "scrollHeight": 117,
+        "clientHeight": 117,
+        "background": "rgb(24, 24, 37)",
+        "color": "rgb(205, 214, 244)",
+        "border": "rgb(147, 153, 178)",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "portal": true
+      }
+    },
+    {
+      "theme": "codex",
+      "file": "settings-codex.png",
+      "sha256": "e00ead1536fd1407ae303e77e46781ad772e74e49a750549f8eef65bd4bec6b1",
+      "facts": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "codex",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "true"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": true
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "popup": {
+        "width": 1024,
+        "height": 1050,
+        "rect": {
+          "x": 524,
+          "y": 779,
+          "width": 461,
+          "height": 126.9000015258789,
+          "right": 985,
+          "bottom": 905.9000015258789
+        },
+        "within": true,
+        "options": 3,
+        "scrollHeight": 117,
+        "clientHeight": 117,
+        "background": "rgb(33, 33, 33)",
+        "color": "rgb(242, 242, 242)",
+        "border": "rgb(138, 138, 138)",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "portal": true
+      }
+    },
+    {
+      "theme": "claude",
+      "file": "settings-claude.png",
+      "sha256": "9c92d6e8125a4b64e28950d040857968d288d5ea4a82a9656a656c5a615d361e",
+      "facts": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "claude",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "true"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": true
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "popup": {
+        "width": 1024,
+        "height": 1050,
+        "rect": {
+          "x": 524,
+          "y": 779,
+          "width": 461,
+          "height": 126.9000015258789,
+          "right": 985,
+          "bottom": 905.9000015258789
+        },
+        "within": true,
+        "options": 3,
+        "scrollHeight": 117,
+        "clientHeight": 117,
+        "background": "rgb(240, 238, 230)",
+        "color": "rgb(48, 48, 46)",
+        "border": "rgb(119, 116, 108)",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "portal": true
+      }
+    }
+  ],
+  "result": "PASS",
+  "events": [
+    {
+      "method": "Log.entryAdded",
+      "params": {
+        "entry": {
+          "source": "security",
+          "level": "error",
+          "text": "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-kLmvWqfziFavKtqHqRsb90f006UAK2Dmd0It5Iz2KFA='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+          "timestamp": 1790565954376.898,
+          "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+          "lineNumber": 8,
+          "stackTrace": {
+            "callFrames": [
+              {
+                "functionName": "as",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 8,
+                "columnNumber": 22961
+              },
+              {
+                "functionName": "Gv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 8,
+                "columnNumber": 21878
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103036
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 104024
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103417
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101233
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 105698
+              },
+              {
+                "functionName": "Vn",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 101111
+              },
+              {
+                "functionName": "Xm",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 103840
+              },
+              {
+                "functionName": "fv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 119080
+              },
+              {
+                "functionName": "iv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 118914
+              },
+              {
+                "functionName": "nv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 113906
+              },
+              {
+                "functionName": "tv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 113397
+              },
+              {
+                "functionName": "wv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 124776
+              },
+              {
+                "functionName": "xu",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 123327
+              },
+              {
+                "functionName": "yv",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 123606
+              },
+              {
+                "functionName": "",
+                "scriptId": "13",
+                "url": "http://tauri.localhost/assets/state-D6NB0CRH.js",
+                "lineNumber": 7,
+                "columnNumber": 124836
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "finishedAt": "2026-09-28T03:28:13.053Z"
+}

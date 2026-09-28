@@ -1,0 +1,206 @@
+{
+  "host": {
+    "devicePixelRatio": 1.0000000149011612,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "method": "Tabbit Chromium, Vite fixture mode; native keyboard and DOM geometry",
+  "results": [
+    {
+      "layout": {
+        "capsuleLeft": 10,
+        "capsuleRight": 380.3999938964844,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 299.875,
+        "right": 375.7000045776367,
+        "scrollLeft": 204.8000030517578
+      },
+      "locale": "en",
+      "selected": [
+        "Settings"
+      ],
+      "tabLabels": [
+        "Clean",
+        "Software",
+        "Optimize",
+        "Analyze",
+        "Status",
+        "Settings"
+      ],
+      "width": 390
+    },
+    {
+      "layout": {
+        "capsuleLeft": 112.3499984741211,
+        "capsuleRight": 687.6499862670898,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 607.0250244140625,
+        "right": 682.8500289916992,
+        "scrollLeft": 0
+      },
+      "locale": "en",
+      "selected": [
+        "Settings"
+      ],
+      "tabLabels": [
+        "Clean",
+        "Software",
+        "Optimize",
+        "Analyze",
+        "Status",
+        "Settings"
+      ],
+      "width": 800
+    },
+    {
+      "layout": {
+        "capsuleLeft": 224.35000610351562,
+        "capsuleRight": 799.6499938964844,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 719.0250244140625,
+        "right": 794.8500289916992,
+        "scrollLeft": 0
+      },
+      "locale": "en",
+      "selected": [
+        "Settings"
+      ],
+      "tabLabels": [
+        "Clean",
+        "Software",
+        "Optimize",
+        "Analyze",
+        "Status",
+        "Settings"
+      ],
+      "width": 1024
+    },
+    {
+      "layout": {
+        "capsuleLeft": 432.3500061035156,
+        "capsuleRight": 1007.6499938964844,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 927.0250244140625,
+        "right": 1002.8500289916992,
+        "scrollLeft": 0
+      },
+      "locale": "en",
+      "selected": [
+        "Settings"
+      ],
+      "tabLabels": [
+        "Clean",
+        "Software",
+        "Optimize",
+        "Analyze",
+        "Status",
+        "Settings"
+      ],
+      "width": 1440
+    },
+    {
+      "layout": {
+        "capsuleLeft": 10,
+        "capsuleRight": 380.3999938964844,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 317.32501220703125,
+        "right": 375.32501220703125,
+        "scrollLeft": 113.5999984741211
+      },
+      "locale": "zh-CN",
+      "selected": [
+        "设置"
+      ],
+      "tabLabels": [
+        "清理",
+        "软件",
+        "优化",
+        "分析",
+        "状态",
+        "设置"
+      ],
+      "width": 390
+    },
+    {
+      "layout": {
+        "capsuleLeft": 158.1374969482422,
+        "capsuleRight": 641.8625030517578,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 579.0625,
+        "right": 637.0625,
+        "scrollLeft": 0
+      },
+      "locale": "zh-CN",
+      "selected": [
+        "设置"
+      ],
+      "tabLabels": [
+        "清理",
+        "软件",
+        "优化",
+        "分析",
+        "状态",
+        "设置"
+      ],
+      "width": 800
+    },
+    {
+      "layout": {
+        "capsuleLeft": 270.13751220703125,
+        "capsuleRight": 753.8625183105469,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 691.0625,
+        "right": 749.0625,
+        "scrollLeft": 0
+      },
+      "locale": "zh-CN",
+      "selected": [
+        "设置"
+      ],
+      "tabLabels": [
+        "清理",
+        "软件",
+        "优化",
+        "分析",
+        "状态",
+        "设置"
+      ],
+      "width": 1024
+    },
+    {
+      "layout": {
+        "capsuleLeft": 478.13751220703125,
+        "capsuleRight": 961.8625183105469,
+        "documentOverflow": false,
+        "labelClipped": false,
+        "left": 899.0625,
+        "right": 957.0625,
+        "scrollLeft": 0
+      },
+      "locale": "zh-CN",
+      "selected": [
+        "设置"
+      ],
+      "tabLabels": [
+        "清理",
+        "软件",
+        "优化",
+        "分析",
+        "状态",
+        "设置"
+      ],
+      "width": 1440
+    }
+  ],
+  "screenshot": "Capture timed out after 30000 ms; no screenshot evidence collected"
+}

@@ -1,0 +1,630 @@
+Command: mise exec node@22 -- npx vitest run src/preferences/preferences.test.tsx src/preferences/palettes.test.tsx src/styles.test.ts src/api/types-generation.test.ts src/components/settings-choices.test.tsx src/App.test.tsx --maxWorkers=1 --reporter=dot
+Exit: 1
+·············································································
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/App.test.tsx > desktop workflow > keeps scan IPC arguments locale-neutral across presentation changes
+TestingLibraryElementError: Unable to find an accessible element with the role "option" and name "Simplified Chinese"
+
+Here are the accessible roles:
+
+  group:
+
+  Name "Window controls":
+  [36m<div[39m
+    [33maria-busy[39m=[32m"false"[39m
+    [33maria-label[39m=[32m"Window controls"[39m
+    [33mclass[39m=[32m"window-controls"[39m
+    [33mrole[39m=[32m"group"[39m
+  [36m/>[39m
+
+  Name "Theme":
+  [36m<fieldset[39m
+    [33mclass[39m=[32m"settings-themes"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Minimize":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Minimize"[39m
+    [33mclass[39m=[32m"window-control"[39m
+    [33mtitle[39m=[32m"Minimize"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Maximize":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Maximize"[39m
+    [33mclass[39m=[32m"window-control"[39m
+    [33mtitle[39m=[32m"Maximize"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Close":
+  [36m<button[39m
+    [33maria-label[39m=[32m"Close"[39m
+    [33mclass[39m=[32m"window-control window-control-close"[39m
+    [33mtitle[39m=[32m"Close"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "DevSweep menu":
+  [36m<button[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"menu"[39m
+    [33maria-label[39m=[32m"DevSweep menu"[39m
+    [33mclass[39m=[32m"capsule-brand"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Reset appearance":
+  [36m<button[39m
+    [33mclass[39m=[32m"secondary-button"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Font family":
+  [36m<button[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-label[39m=[32m"Font family"[39m
+    [33mclass[39m=[32m"settings-combobox-trigger"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Refresh fonts":
+  [36m<button[39m
+    [33mclass[39m=[32m"secondary-button"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Reset performance":
+  [36m<button[39m
+    [33mclass[39m=[32m"secondary-button"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  banner:
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"capsule-bar"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"support-header"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tablist:
+
+  Name "Modes":
+  [36m<div[39m
+    [33maria-label[39m=[32m"Modes"[39m
+    [33maria-orientation[39m=[32m"horizontal"[39m
+    [33mclass[39m=[32m"capsule-tabs"[39m
+    [33mrole[39m=[32m"tablist"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  tab:
+
+  Name "Clean":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"mode-panel"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"mode-tab"[39m
+    [33mid[39m=[32m"primary-tab-clean"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtitle[39m=[32m"Alt+C"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Software":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"mode-panel"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"mode-tab"[39m
+    [33mid[39m=[32m"primary-tab-software"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtitle[39m=[32m"Alt+S"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Optimize":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"mode-panel"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"mode-tab"[39m
+    [33mid[39m=[32m"primary-tab-optimize"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtitle[39m=[32m"Alt+P"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Analyze":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"mode-panel"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"mode-tab"[39m
+    [33mid[39m=[32m"primary-tab-analyze"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtitle[39m=[32m"Alt+A"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Status":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"mode-panel"[39m
+    [33maria-selected[39m=[32m"false"[39m
+    [33mclass[39m=[32m"mode-tab"[39m
+    [33mid[39m=[32m"primary-tab-status"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+    [33mtitle[39m=[32m"Alt+T"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Settings":
+  [36m<button[39m
+    [33maria-controls[39m=[32m"mode-panel"[39m
+    [33maria-selected[39m=[32m"true"[39m
+    [33mclass[39m=[32m"mode-tab"[39m
+    [33mid[39m=[32m"primary-tab-settings"[39m
+    [33mrole[39m=[32m"tab"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  main:
+
+  Name "":
+  [36m<main[39m
+    [33mclass[39m=[32m"stage-host"[39m
+    [33mid[39m=[32m"mode-workbench"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Settings":
+  [36m<h1[39m
+    [33mid[39m=[32m"mode-heading"[39m
+    [33mtabindex[39m=[32m"-1"[39m
+  [36m/>[39m
+
+  Name "Appearance":
+  [36m<h2[39m
+    [33mid[39m=[32m"settings-appearance"[39m
+  [36m/>[39m
+
+  Name "Language":
+  [36m<h2[39m
+    [33mid[39m=[32m"settings-language-heading"[39m
+  [36m/>[39m
+
+  Name "Performance":
+  [36m<h2[39m
+    [33mid[39m=[32m"settings-performance"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"page-subtitle"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p />[39m
+
+  --------------------------------------------------
+  tabpanel:
+
+  Name "Settings":
+  [36m<section[39m
+    [33maria-labelledby[39m=[32m"primary-tab-settings"[39m
+    [33mclass[39m=[32m"mode-panel"[39m
+    [33mid[39m=[32m"mode-panel"[39m
+    [33mrole[39m=[32m"tabpanel"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  status:
+
+  Name "":
+  [36m<p[39m
+    [33maria-live[39m=[32m"polite"[39m
+    [33mclass[39m=[32m"settings-save-state"[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<small[39m
+    [33mid[39m=[32m"settings-font-status"[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  region:
+
+  Name "Appearance":
+  [36m<section[39m
+    [33maria-labelledby[39m=[32m"settings-appearance"[39m
+    [33mclass[39m=[32m"settings-group"[39m
+  [36m/>[39m
+
+  Name "Language":
+  [36m<section[39m
+    [33maria-labelledby[39m=[32m"settings-language-heading"[39m
+    [33mclass[39m=[32m"settings-group"[39m
+  [36m/>[39m
+
+  Name "Performance":
+  [36m<section[39m
+    [33maria-labelledby[39m=[32m"settings-performance"[39m
+    [33mclass[39m=[32m"settings-group"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  radio:
+
+  Name "Dark":
+  [36m<input[39m
+    [33mchecked[39m=[32m""[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"dark"[39m
+  [36m/>[39m
+
+  Name "Light":
+  [36m<input[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"light"[39m
+  [36m/>[39m
+
+  Name "Follow system":
+  [36m<input[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"system"[39m
+  [36m/>[39m
+
+  Name "Catppuccin Latte":
+  [36m<input[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"catppuccin_latte"[39m
+  [36m/>[39m
+
+  Name "Catppuccin Mocha":
+  [36m<input[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"catppuccin_mocha"[39m
+  [36m/>[39m
+
+  Name "Codex":
+  [36m<input[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"codex"[39m
+  [36m/>[39m
+
+  Name "Claude":
+  [36m<input[39m
+    [33mname[39m=[32m"settings-theme"[39m
+    [33mtype[39m=[32m"radio"[39m
+    [33mvalue[39m=[32m"claude"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  combobox:
+
+  Name "Font family":
+  [36m<input[39m
+    [33maria-autocomplete[39m=[32m"list"[39m
+    [33maria-busy[39m=[32m"false"[39m
+    [33maria-describedby[39m=[32m"settings-font-status"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-font-label"[39m
+    [33mautocapitalize[39m=[32m"none"[39m
+    [33mautocomplete[39m=[32m"off"[39m
+    [33mautocorrect[39m=[32m"off"[39m
+    [33mid[39m=[32m"settings-font"[39m
+    [33mplaceholder[39m=[32m"Search fonts"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mspellcheck[39m=[32m"false"[39m
+    [33mvalue[39m=[32m"System UI"[39m
+  [36m/>[39m
+
+  Name "Text size":
+  [36m<button[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-text-scale-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-text-scale"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Language":
+  [36m<button[39m
+    [33maria-busy[39m=[32m"false"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-language-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-language"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Motion":
+  [36m<button[39m
+    [33maria-describedby[39m=[32m"settings-motion-description"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-motion-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-motion"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Planet frame limit":
+  [36m<button[39m
+    [33maria-describedby[39m=[32m"settings-planet-fps-description"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-planet-fps-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-planet-fps"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Status live interval":
+  [36m<button[39m
+    [33maria-describedby[39m=[32m"settings-status-interval-description"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-status-interval-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-status-interval"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "Status process rows":
+  [36m<button[39m
+    [33maria-describedby[39m=[32m"settings-status-rows-description"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-status-rows-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-status-rows"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  Name "HUD refresh interval":
+  [36m<button[39m
+    [33maria-describedby[39m=[32m"settings-hud-interval-description"[39m
+    [33maria-expanded[39m=[32m"false"[39m
+    [33maria-haspopup[39m=[32m"listbox"[39m
+    [33maria-labelledby[39m=[32m"settings-hud-interval-label"[39m
+    [33mclass[39m=[32m"settings-choice"[39m
+    [33mid[39m=[32m"settings-hud-interval"[39m
+    [33mrole[39m=[32m"combobox"[39m
+    [33mtabindex[39m=[32m"0"[39m
+    [33mtype[39m=[32m"button"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"desktop-window"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"window-chrome"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"window-titlebar"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"window-drag-region"[39m
+          [36m>[39m
+            [0mDevSweep[0m
+          [36m</div>[39m
+          [36m<div[39m
+            [33maria-busy[39m=[32m"false"[39m
+            [33maria-label[39m=[32m"Window controls"[39m
+            [33mclass[39m=[32m"window-controls"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"Minimize"[39m
+              [33mclass[39m=[32m"window-control"[39m
+              [33mtitle[39m=[32m"Minimize"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mheight[39m=[32m"16"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-width[39m=[32m"1.25"[39m
+                [33mviewBox[39m=[32m"0 0 16 16"[39m
+                [33mwidth[39m=[32m"16"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M3 8.5h10"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"Maximize"[39m
+              [33mclass[39m=[32m"window-control"[39m
+              [33mtitle[39m=[32m"Maximize"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mheight[39m=[32m"16"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-width[39m=[32m"1.25"[39m
+                [33mviewBox[39m=[32m"0 0 16 16"[39m
+                [33mwidth[39m=[32m"16"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M3.5 3.5h9v9h-9z"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-label[39m=[32m"Close"[39m
+              [33mclass[39m=[32m"window-control window-control-close"[39m
+              [33mtitle[39m=[32m"Close"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mfocusable[39m=[32m"false"[39m
+                [33mheight[39m=[32m"16"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-width[39m=[32m"1.25"[39m
+                [33mviewBox[39m=[32m"0 0 16 16"[39m
+                [33mwidth[39m=[32m"16"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m3.5 3.5 9 9m0-9-9 9"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"app-shell"[39m
+        [33mdata-locale[39m=[32m"en"[39m
+        [33mdata-mode[39m=[32m"shell"[39m
+      [36m>[39m
+        [36m<header[39m
+          [33mclass[39m=[32m"capsule-bar"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"capsule-anchor"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"capsule"[39m
+            [36m>[39m
+              [36m<button[39m
+                [33maria-expanded[39m=[32m"false"[39m
+                [33maria-haspopup[39m=[32m"menu"[39m
+                [33maria-label[39m=[32m"DevSweep menu"[39m
+                [33mclass[39m=[32m"capsule-brand"[39m
+                [33mtype[39m=[32m"button"[39m
+              [36m>[39m
+                [36m<img[39m
+                  [33malt[39m=[32m""[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"shell-brand-icon"[39m
+                  [33msrc[39m=[32m"/src/assets/devsweep-icon-master.png"[39m
+                [36m/>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"capsule-brand-name"[39m
+                [36m>[39m
+                  [0mDevSweep[0m
+                [36m</span>[39m
+              [36m</button>[39m
+              [36m<div[39m
+                [33maria-label[39m=[32m"Modes"[39m
+                [33maria-orientation[39m=[32m"horizontal"[39m
+                [33mclass[39m=[32m"capsule-tabs"[39m
+                [33mrole[39m=[32m"tablist"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-controls[39m=[32m"mode-panel"[39m
+                  [33maria-selected[39m=[32m"false"[39m
+                  [33mclass[39m=[32m"mode-tab"[39m
+                  [33mid[39m=[32m"primary-tab-clean"[39m
+                  [33mrole[39m=[32m"tab"[39m
+                  [33mtabindex[39m=[32m"-1"[39m
+                  [33mtitle[39m=[32m"Alt+C"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mClean[0m
+                [36m</button>[39m
+                [36m<button[39m
+                  [33maria-controls[39m=[32m"mode-panel"[39m
+                  [33maria-selected[39m=[32m"false"[39m
+                  [33mclass[39m=[32m"mode-tab"[39m
+                  [33mid[39m=[32m"primary-tab-software"[39m
+                  [33mrole[39m=[32m"tab"[39m
+                  [33mtabindex[39m=[32m"-1"[39m
+                  [33mtitle[39m=[32m"Alt+S"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mSoftware[0m
+                [36m</button>[39m
+                [36m<button[39m
+                  [33maria-controls[39m=[32m"mode-panel"[39m
+                  [33maria-selected[39m=[32m"false"[39m
+                  [33mclass[39m=[32m"mode-tab"[39m
+                  [33mid[39m=[32m"primary-tab-optimize"[39m
+                  [33mrole[39m=[32m"tab"[39m
+                  [33mtabindex[39m=[32m"-1"[39m
+                  [33mtitle[39m=[32m"Alt+P"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mOptimize[0m
+                [36m</button>[39m
+                [36m<button[39...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/App.test.tsx:470:29
+    468|     await openLanguageSettings(user);
+    469|     await user.click(screen.getByRole("combobox", { name: "Language" }…
+    470|     await user.click(screen.getByRole("option", { name: "Simplified Ch…
+       |                             ^
+    471|     await user.click(screen.getByRole("tab", { name: "清理" }));
+    472|     await user.click(screen.getByRole("button", { name: "扫描" }));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  1 failed | 95 passed (96)
+   Start at  05:26:52
+   Duration  41.93s (transform 846ms, setup 1.40s, collect 3.09s, tests 29.05s, environment 6.26s, prepare 627ms)

@@ -1,0 +1,53 @@
+{
+  "id": "desktop-settings-host-fonts",
+  "name": "desktop-settings-host-fonts",
+  "title": "Add installed host fonts and migrate desktop preferences",
+  "description": "Enumerate installed Windows font families, add searchable selection and fallback, and migrate the desktop preference contract.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "desktop-settings",
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-09-26",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "5e73a4fb2e329c305d400efbb7670684f998d709",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "09-26-desktop-settings-experience",
+  "relatedFiles": [
+    "crates/devsweep-core/src/desktop_preferences/mod.rs",
+    "crates/devsweep-core/src/desktop_preferences/store.rs",
+    "desktop/src-tauri/src/desktop_preferences.rs",
+    "desktop/src-tauri/src/lib.rs",
+    "desktop/src/api/contract.ts",
+    "desktop/src/api/bridge.ts",
+    "desktop/src/preferences/appearance.ts"
+  ],
+  "notes": "Approved 2026-09-26: @base-ui/react and Windows-only windows crate DirectWrite binding; implement navigation, controls, host fonts, then palettes in order.",
+  "meta": {
+    "planning": {
+      "authorization": "sequential_implementation_approved",
+      "blocking_decisions": [],
+      "proposal_status": "approved",
+      "baseline": "fea6368",
+      "request_date": "2026-09-26",
+      "approved_at": "2026-09-26"
+    },
+    "closure": {
+      "authorization": "user_requested_commit_and_archive",
+      "request": "请提交改动和归档任务",
+      "recorded_at": "2026-09-27T23:27:01.365098-05:00",
+      "basis": "archive_with_disclosed_validation_limits",
+      "canonical_ci": "blocked",
+      "manual_windows_ime": "unverified",
+      "all_acceptance_checks_passed": false,
+      "record": "09-26-desktop-settings-experience/evidence/closure-decision.md"
+    }
+  }
+}

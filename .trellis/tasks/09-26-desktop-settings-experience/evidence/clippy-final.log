@@ -1,0 +1,20 @@
+cargo clippy --workspace --locked --all-targets -- -D warnings
+    Checking devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Checking devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Checking devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+mbx[warning]: result was not stored: compiler input was modified during compilation: D:\Documents\Code\Rust\Exp\devsweep\target\debug\build\devsweep-desktop-62b1f7e49bc02781\out\371cd08d95d0bf0f81b9ceee7f137091af578525b3ee889d34e5c6276f39c8a3
+error: unnecessary use of `clone` to create a slice from a reference
+   --> desktop\src-tauri\src\desktop_preferences.rs:147:9
+    |
+147 |         assert_eq!(events, [updated.clone()]);
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#cloned_ref_to_slice_refs
+    = note: `-D clippy::cloned-ref-to-slice-refs` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::cloned_ref_to_slice_refs)]`
+
+error: could not compile `devsweep-desktop` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+mbx[cache]: 0 hits, 9 misses, 4 not looked up, 11 incremental; 0 B downloaded, 0 B uploaded, 12.0 KiB stored locally
+mbx[savings]: 725 compilations retrieved with a straight face.
+error: recipe `clippy` failed on line 21 with exit code 1

@@ -1,0 +1,49 @@
+cd desktop; npm run tauri -- build
+npm notice run devsweep-desktop-ui@0.3.0 tauri
+npm notice run node scripts/tauri-dev.mjs build
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `npm run build`
+npm notice run devsweep-desktop-ui@0.3.0 build
+npm notice run tsc --noEmit && vite build
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 407 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.47 kB │ gzip:   0.29 kB
+dist/hud.html                                    0.47 kB │ gzip:   0.30 kB
+dist/assets/devsweep-icon-master-Bn2Ejx_Y.png  956.58 kB
+dist/assets/hud--4IwXFR3.css                     8.27 kB │ gzip:   2.35 kB
+dist/assets/main-T32n3GxJ.css                   59.57 kB │ gzip:  11.32 kB
+dist/assets/hud-DujqMy1W.js                      2.69 kB │ gzip:   1.18 kB
+dist/assets/main-BnVLnDU4.js                   173.98 kB │ gzip:  43.02 kB
+dist/assets/state-D6NB0CRH.js                  655.16 kB │ gzip: 167.68 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.43s
+   Compiling devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+mbx[progress]: 15s elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+mbx[progress]: 30s elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+mbx[progress]: 45s elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+mbx[progress]: 1m elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+mbx[progress]: 1m 15s elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+mbx[progress]: 1m 30s elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+warning: linker stdout: 正在创建库 D:\Documents\Code\Rust\Exp\devsweep\target\release\deps\devsweep_desktop_lib.dll.lib 和对象 D:\Documents\Code\Rust\Exp\devsweep\target\release\deps\devsweep_desktop_lib.dll.exp
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `devsweep-desktop` (lib) generated 1 warning
+mbx[progress]: 1m 45s elapsed; 0 hits, 0 misses, 2 bypassed, 0 not looked up; ~0s compiler work saved
+mbx[progress]: 2m elapsed; 0 hits, 0 misses, 2 bypassed, 0 not looked up; ~0s compiler work saved
+    Finished `release` profile [optimized] target(s) in 2m 52s
+mbx[cache]: 0 hits, 0 misses, 2 bypassed; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: 843 compilations, each compiled once and served warm ever since
+       Built application at: D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe
+        Info Patching D:\Documents\Code\Rust\Exp\devsweep\target\release\devsweep-desktop.exe with bundle type information: nsis
+        Info Target: x64
+     Running makensis to produce D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.3.0_x64-setup.exe
+    Finished 1 bundle at:
+        D:\Documents\Code\Rust\Exp\devsweep\target\release\bundle\nsis\devsweep_0.3.0_x64-setup.exe

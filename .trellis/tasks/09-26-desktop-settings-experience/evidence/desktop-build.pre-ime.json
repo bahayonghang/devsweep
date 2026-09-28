@@ -1,0 +1,8 @@
+{
+  "command": "mise exec node@22 -- just desktop-build",
+  "startedAt": "2026-09-28T02:47:20.5542336Z",
+  "runnerPid": 35380,
+  "result": "PASS",
+  "exitCode": 0,
+  "finishedAt": "2026-09-28T02:51:49.5704671Z"
+}

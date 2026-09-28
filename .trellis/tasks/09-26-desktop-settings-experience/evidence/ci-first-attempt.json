@@ -1,0 +1,8 @@
+{
+  "command": "just ci",
+  "startedAt": "2026-09-28T02:30:55.6276827Z",
+  "runnerPid": 48860,
+  "result": "FAIL",
+  "exitCode": 1,
+  "finishedAt": "2026-09-28T02:31:55.1222235Z"
+}

@@ -1,0 +1,8 @@
+{
+  "command": "mise exec node@22 -- just desktop-web-check",
+  "startedAt": "2026-09-28T03:19:53.6630396Z",
+  "runnerPid": 72836,
+  "result": "PASS",
+  "exitCode": 0,
+  "finishedAt": "2026-09-28T03:20:25.3287890Z"
+}

@@ -1,0 +1,78 @@
+{
+  "method": "CDP native WebView2 renderer composition; Windows IME candidate-window interaction is not exercised",
+  "startedAt": "2026-09-28T03:19:46.962Z",
+  "binarySha256": "695b2f06686f6582a86866477d18724a476667e24104165511ed2deffa5621a8",
+  "pid": 61396,
+  "before": "71e8ce10892c421bb1639f477948b3b677af9f0cf0ee0fa5daa63aedb0bf4470",
+  "preferencesBefore": {
+    "schema_version": 2,
+    "theme": "system",
+    "font": {
+      "kind": "installed",
+      "family": "Segoe UI"
+    },
+    "text_scale_percent": 110,
+    "motion": "system",
+    "planet_fps": 30,
+    "status_interval_seconds": 2,
+    "status_process_limit": 15,
+    "hud_interval_seconds": 2
+  },
+  "candidateCountDuringComposition": 249,
+  "firstCandidateDuringComposition": "系统界面字体",
+  "during": "15057b1ec98371a20bbb24b4718a3c98f52fbccb25a5665b101a3d197689990a",
+  "events": [
+    {
+      "type": "compositionstart",
+      "data": "",
+      "value": ""
+    },
+    {
+      "type": "compositionupdate",
+      "data": "宋",
+      "value": ""
+    },
+    {
+      "type": "input",
+      "isComposing": true,
+      "data": "宋",
+      "value": "宋"
+    },
+    {
+      "type": "keydown",
+      "key": "ArrowDown",
+      "isComposing": true,
+      "value": "宋"
+    },
+    {
+      "type": "keydown",
+      "key": "Enter",
+      "isComposing": true,
+      "value": "宋"
+    },
+    {
+      "type": "compositionend",
+      "data": "宋",
+      "value": "宋"
+    }
+  ],
+  "nativeComposingEnter": true,
+  "preferencesDuring": {
+    "schema_version": 2,
+    "theme": "system",
+    "font": {
+      "kind": "system"
+    },
+    "text_scale_percent": 110,
+    "motion": "system",
+    "planet_fps": 30,
+    "status_interval_seconds": 2,
+    "status_process_limit": 15,
+    "hud_interval_seconds": 2
+  },
+  "result": "FAIL",
+  "error": "Error: Composing Enter persisted a font choice\n    at file:///D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/09-26-desktop-settings-experience/evidence/verify/native-composition.mjs:33:42",
+  "cleanupError": "Error: UI condition timed out: popup closed",
+  "after": "15057b1ec98371a20bbb24b4718a3c98f52fbccb25a5665b101a3d197689990a",
+  "finishedAt": "2026-09-28T03:19:53.519Z"
+}

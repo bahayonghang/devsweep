@@ -1,0 +1,116 @@
+cargo test --locked -p devsweep-desktop
+   Compiling devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+   Compiling devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+mbx[progress]: 15s elapsed; 0 hits, 0 misses, 1 bypassed, 0 not looked up; ~0s compiler work saved
+warning: linker stdout: 正在创建库 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.lib 和对象 D:\Documents\Code\Rust\Exp\devsweep\target\debug\deps\devsweep_desktop_lib.dll.exp
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `devsweep-desktop` (lib) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 23.60s
+     Running unittests src\lib.rs (target\debug\deps\devsweep_desktop_lib-731d8edb26c2f031.exe)
+
+running 85 tests
+test commands::tests::job_object_fixture_child ... ignored, process fixture entrypoint
+test commands::tests::job_object_fixture_grandchild ... ignored, process fixture entrypoint
+test analyze::tests::analyze_result_serializes_without_cleanup_intent ... ok
+test commands::tests::presentation_setting_ipc_payload_is_locale_only_and_closed ... ok
+test commands::tests::empty_plan_dry_run_accepts_matching_digest ... ok
+test analyze::tests::stale_progress_sequences_are_discarded ... ok
+test analyze::tests::reveal_and_trash_resolve_only_the_retained_operation ... ok
+test commands::tests::debug_native_fault_mode_is_exact_and_closed ... ok
+test clean::tests::empty_plan_dry_run_does_not_require_audit ... ok
+test clean::tests::stale_digest_is_structured ... ok
+test clean::tests::unknown_target_is_structured ... ok
+test commands::tests::invalid_plan_is_structured ... ok
+test analyze::tests::concurrent_analyze_is_rejected ... ok
+test commands::tests::protection_list_set_cannot_bypass_confirm_lock_or_audit ... ok
+test analyze::tests::cancel_joins_before_terminal_result ... ok
+test commands::tests::inspect_only_target_is_structured ... ok
+test commands::tests::stale_digest_is_structured ... ok
+test commands::tests::changed_selection_rejects_previous_digest ... ok
+test desktop_preferences::tests::event_delivery_failure_does_not_report_a_committed_write_as_failed ... ok
+test desktop_preferences::tests::exhausted_safe_integer_sequence_refuses_before_persistence ... ok
+test commands::tests::unknown_target_is_structured ... ok
+test error::tests::analyze_action_errors_keep_stale_confirmation_and_stale_operation_codes ... ok
+test error::tests::command_errors_serialize_as_stable_tagged_payloads ... ok
+test commands::tests::protection_store_round_trips_paths ... ok
+test desktop_preferences::tests::reads_commits_and_notifications_share_one_positive_sequence ... ok
+test desktop_preferences::tests::failed_commit_publishes_nothing_and_preserves_ordered_view ... ok
+test error::tests::execution_errors_keep_typed_target_identity ... ok
+test fonts::tests::payloads_are_closed_and_contain_names_only ... ok
+test optimize::tests::list_wire_is_the_closed_eight_and_omits_executable_facts ... ok
+test optimize::tests::concurrent_optimize_operations_and_stale_cancel_are_bounded ... ok
+test optimize::tests::run_wire_keeps_launched_distinct_from_completion ... ok
+test scan::tests::concurrent_scan_is_rejected_immediately ... ok
+test scan::tests::preview_delivery_coalesces_bursts_and_flushes_the_latest_snapshot ... ok
+test scan::tests::preview_projection_failure_stops_delivery_and_fails_closed ... ok
+test scan::tests::scan_failure_flushes_the_latest_pending_preview ... ok
+test scan::tests::scan_job_forwards_every_progress_event ... ok
+test scan::tests::worker_owned_coordinator_releases_shared_slot ... ok
+test service_boundary::adapter_sources_cover_every_module_of_the_crate ... ok
+test service_boundary::the_desktop_manifest_depends_on_core_only ... ok
+test scan::tests::ipc_progress_projects_display_facts_without_cleanup_authority ... ok
+test software::tests::concurrent_software_operations_and_stale_cancel_are_bounded ... ok
+test desktop_preferences::tests::concurrent_updates_publish_in_commit_order ... ok
+test status::tests::concurrent_status_is_rejected ... ok
+test software::tests::software_execution_wire_rejects_partial_and_keeps_five_terminals ... ok
+test hud::tests::a_second_show_does_not_start_a_second_thread ... ok
+test support::tests::history_show_payload_has_no_replay_fields ... ok
+test service_boundary::production_adapter_sources_never_reach_the_cli_or_a_shell ... ok
+test support::tests::protection_mutation_requires_confirm ... ok
+test tests::hud_capability_grants_only_event_subscription_to_the_hud_window ... ok
+test tests::only_the_main_window_reaches_mutating_commands ... ok
+test tests::invoke_handler_registers_every_accepted_mode_and_no_alias ... ok
+test tests::main_capability_grants_only_event_subscription_and_window_controls ... ok
+test tests::tray_icon_feature_is_the_only_added_tauri_feature ... ok
+test support::tests::rules_list_is_inspect_only_and_cannot_execute ... ok
+test tray::tests::hide_or_exit_invalidates_pending_preference_reload_before_show ... ok
+test tray::tests::hud_opens_above_a_bottom_tray_and_below_a_top_tray ... ok
+test fonts::tests::canonical_names_aliases_deduplication_and_no_result_cap ... ok
+test tray::tests::the_blur_click_window_ignores_only_an_immediate_click ... ok
+test wire_parity::history_clean_totals_fixture_matches_the_core_wire_type ... ok
+test tray::tests::shutdown_joins_a_running_sampler ... ok
+test wire_parity::optimize_catalogue_fixture_matches_the_shipped_closed_catalogue ... ok
+test wire_parity::hud_fixtures_match_the_hud_event_wire_type ... ok
+test wire_parity::analyze_fixtures_match_the_analyze_command_wire_types ... ok
+test wire_parity::status_unknown_event_fixture_stays_outside_the_closed_event_union ... ok
+test wire_parity::desktop_preference_fixtures_match_committed_snapshots_and_closed_patches ... ok
+test wire_parity::shared_error_fixture_covers_every_command_error_variant ... ok
+test wire_parity::optimize_fixtures_match_the_optimize_command_wire_types ... ok
+test wire_parity::clean_fixtures_match_the_clean_command_wire_types ... ok
+test wire_parity::software_support_fixtures_match_the_support_command_wire_types ... ok
+test wire_parity::status_fixtures_match_the_status_command_wire_types ... ok
+test hud::tests::a_canceled_sample_emits_nothing ... ok
+test wire_parity::software_fixtures_match_the_software_command_wire_types ... ok
+test tray::tests::sample_tooltip_never_shows_zero_for_a_missing_metric ... ok
+test tray::tests::tray_copy_comes_from_both_canonical_catalogues ... ok
+test tray::tests::sample_tooltip_shows_cpu_and_memory_percentages ... ok
+test scan::tests::cancellation_is_idempotent_and_stops_fixture_within_five_seconds ... ok
+test hud::tests::show_starts_sampling_and_emits_sampling_then_snapshots ... ok
+test hud::tests::app_exit_joins_the_sampler_through_drop ... ok
+test hud::tests::hide_cancels_and_joins_and_no_sample_follows ... ok
+test commands::tests::process_command_runner_terminates_tree_inside_desktop_process ... ok
+test hud::tests::the_default_cadence_is_two_seconds_and_waits_between_samples ... ok
+test status::tests::run_live_returns_only_after_the_producer_thread_is_joined ... ok
+test tray::tests::hud_default_two_second_preference_reaches_the_actual_sampler ... ok
+test tray::tests::hud_five_second_preference_reaches_the_actual_sampler ... ok
+mbx[progress]: 30s elapsed; 0 hits, 0 misses, 2 bypassed, 0 not looked up; ~0s compiler work saved
+test tray::tests::hud_ten_second_preference_reaches_the_actual_sampler ... ok
+
+test result: ok. 83 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 10.02s
+
+     Running unittests src\main.rs (target\debug\deps\devsweep_desktop-6ab5d6510b339698.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests devsweep_desktop_lib
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+mbx[cache]: 0 hits, 0 misses, 2 incremental, 3 bypassed; 0 B downloaded, 0 B uploaded, 0 B stored locally
+mbx[savings]: 843 compilations, and the box has forgotten none of them.

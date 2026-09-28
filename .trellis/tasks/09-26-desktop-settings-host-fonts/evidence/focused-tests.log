@@ -1,0 +1,39 @@
+npm notice run devsweep-desktop-ui@0.3.0 npx
+npm notice run vitest run src/preferences/fonts.test.tsx src/preferences/preferences.test.tsx src/components/settings-choices.test.tsx src/api src/i18n src/styles.test.ts --reporter=default --reporter=json --outputFile.json=../.trellis/tasks/09-26-desktop-settings-host-fonts/evidence/focused-tests.json
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/api/ipc-boundary.test.ts (2 tests) 46ms
+ ✓ src/styles.test.ts (12 tests) 11ms
+ ✓ src/api/software-support-contract.test.ts (4 tests) 8ms
+ ✓ src/i18n/index.test.ts (5 tests) 19ms
+ ✓ src/api/bridge.test.ts (9 tests) 21ms
+ ✓ src/api/contract.test.ts (41 tests) 19ms
+ ✓ src/api/fixture-bridge.test.ts (3 tests) 12ms
+ ✓ src/preferences/preferences.test.tsx (15 tests) 2463ms
+   ✓ committed desktop preference owner > resets each group in one patch without changing the other group or language  544ms
+   ✓ Settings committed controls > retains the selected radio during save and failure, then permits retry  402ms
+   ✓ Settings committed controls > disables desktop persistence during load or unavailability while language stays independent  378ms
+ ✓ src/api/types-generation.test.ts (2 tests) 3560ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  1809ms
+   ✓ IPC type generation > changes when a named fixture changes  1751ms
+ ✓ src/components/settings-choices.test.tsx (12 tests) 3429ms
+   ✓ Settings Select > labels its committed value and description and commits one pointer choice  475ms
+   ✓ Settings Select > keeps keyboard highlight separate from selection and restores focus on Escape  431ms
+   ✓ Settings Select > supports typeahead without saving and ignores the current option  342ms
+   ✓ Settings Combobox > filters aliases and full long labels without committing query or highlight  305ms
+   ✓ Settings Combobox > commits one explicit choice and displays only the committed value  470ms
+   ✓ Settings Combobox > announces empty and catalogue states without disabling available choices  337ms
+stdout | src/preferences/fonts.test.tsx > installed font picker > reaches all 2000 families and aliases without per-key enumeration
+{"method":"Vitest/jsdom; rendering and accessible queries; diagnostic only, not native latency","host":{"platform":"win32","arch":"x64","node":"v22.23.2"},"families":2000,"openMs":2089.1032000000005,"queryMs":[92.44880000000012,28.20600000000013,16.9411999999993]}
+
+ ✓ src/preferences/fonts.test.tsx (11 tests) 3690ms
+   ✓ installed font picker > keeps system usable during loading and distinguishes empty success  407ms
+   ✓ installed font picker > reaches all 2000 families and aliases without per-key enumeration  2857ms
+
+ Test Files  11 passed (11)
+      Tests  116 passed (116)
+   Start at  04:19:36
+   Duration  8.25s (transform 1.77s, setup 4.69s, collect 6.26s, tests 13.28s, environment 19.79s, prepare 2.42s)
+
+JSON report written to D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/09-26-desktop-settings-host-fonts/evidence/focused-tests.json

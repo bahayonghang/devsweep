@@ -1,0 +1,266 @@
+{
+  "capturedAt": "2026-09-28T03:27:27.439575+00:00",
+  "baseline": "fea63686e1c97acf46bc01d374753826535aab14",
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "5f55d96f9eab3187382b28d040b7a262093069e4c69c22e2aa02e90b29e2ee01"
+    },
+    {
+      "path": "crates/devsweep-core/src/desktop_preferences/legacy.rs",
+      "sha256": "a744091363840d51f2d15ee191d314deca17415d0994910d8f7742c84ce3f919"
+    },
+    {
+      "path": "crates/devsweep-core/src/desktop_preferences/mod.rs",
+      "sha256": "4c8527fc56ddfa8daf8ed8d0ed041306cb1538109840d25c3d8e7273fac7bb15"
+    },
+    {
+      "path": "crates/devsweep-core/src/desktop_preferences/store.rs",
+      "sha256": "866a5cb8a02fa615ef6071dd019f41caa24292cee1be3d2967806c6f44de8c7d"
+    },
+    {
+      "path": "crates/devsweep-core/src/desktop_preferences/tests.rs",
+      "sha256": "2a52e5dd8ef0d500003aad20f2fbeba1f274facfc876182cf62b99e9faa6aea9"
+    },
+    {
+      "path": "desktop/package-lock.json",
+      "sha256": "6799845b1f45877fa64857eb45b48d6246b056149d4098de4c0206cd684e91d8"
+    },
+    {
+      "path": "desktop/package.json",
+      "sha256": "bbe2e6718987f7f4e9723d0019bb47fe7d6d85121bdccae5512547a7dd46a9eb"
+    },
+    {
+      "path": "desktop/public/THIRD_PARTY_NOTICES.txt",
+      "sha256": "140512f8e1e7dfb47d9cc205b8a028c117bb87821faf039780126a4ee118a5bc"
+    },
+    {
+      "path": "desktop/scripts/check-palette-contrast.mjs",
+      "sha256": "00faad87aa352b4d3b952158fc679006644cb27259e6354ff3dcd717b24535be"
+    },
+    {
+      "path": "desktop/scripts/generate-types.mjs",
+      "sha256": "7c9784181a493ff81127d1fed1b912d2f3ff604757e0545ebfbe5e8ce6e88001"
+    },
+    {
+      "path": "desktop/src-tauri/Cargo.toml",
+      "sha256": "1fa2f78593f458a887a9b666478dcb6b27562af595a13d3b1e228a17ff86c822"
+    },
+    {
+      "path": "desktop/src-tauri/src/desktop_preferences.rs",
+      "sha256": "c4c57540bf8f54ee5c39df54b54b9bf496e995219a2bdb7968a758049012e742"
+    },
+    {
+      "path": "desktop/src-tauri/src/fonts.rs",
+      "sha256": "e03c048314a819bcc1d29c3ce894364ddccd641add28e24d1cdbb5b8d3cd0095"
+    },
+    {
+      "path": "desktop/src-tauri/src/hud.rs",
+      "sha256": "c62d236f386bf799d6be43cfe152af230d02265a1ed9232d50a89b67c0c312c0"
+    },
+    {
+      "path": "desktop/src-tauri/src/lib.rs",
+      "sha256": "7b444369a76b41ac1edbd6762b3625ce74b2bab03bdc9f361dc3f94cda8218ad"
+    },
+    {
+      "path": "desktop/src-tauri/src/service_boundary.rs",
+      "sha256": "e28b9c0d3a00ba039570403c52a5287a0ebf92ed5d7d6785bf4f7ac72c4b6ba7"
+    },
+    {
+      "path": "desktop/src-tauri/src/tray.rs",
+      "sha256": "57a6f9869bfa38682a61f3c8bd2c9114f37a481512da576197b365b424fe34a4"
+    },
+    {
+      "path": "desktop/src-tauri/src/wire_parity.rs",
+      "sha256": "e5b54a860ee6e3672bf9614ffec83bb567778d60759bfa26383ed64f160418b5"
+    },
+    {
+      "path": "desktop/src/App.test.tsx",
+      "sha256": "ca3c8ee49d3ac4d5251b02bea7c25d85e294ed387d187cb3bd63f031c4aaa678"
+    },
+    {
+      "path": "desktop/src/App.tsx",
+      "sha256": "20ff07310fc07924dc54deef0a6a4581a86cb8fe58e3a7d5c6eeb1e4f8427ad8"
+    },
+    {
+      "path": "desktop/src/api/bridge.test.ts",
+      "sha256": "7b6c03e37b0e854684c65fd34a9b9ee0674a9c9cb67526edee651823448d596d"
+    },
+    {
+      "path": "desktop/src/api/bridge.ts",
+      "sha256": "b86904a423d212c46fb64e4d78cdf48bac9833fe195f127580009437e44b75bd"
+    },
+    {
+      "path": "desktop/src/api/contract.ts",
+      "sha256": "74feff17fff31f14e9ab327c103f0ad1da16d18c35b2521f792f59925233ef93"
+    },
+    {
+      "path": "desktop/src/api/fixtures/contract-variants.json",
+      "sha256": "f03ce7fac591484f6a9c615f060a2456f99b725f874054afdfb69b2c3d86fe8a"
+    },
+    {
+      "path": "desktop/src/api/fixtures/desktop-fonts-unavailable.json",
+      "sha256": "6b2d2c88b86ad9e6662fb5ad71c12f7e97d4d588f15e126c58b153f3583e5980"
+    },
+    {
+      "path": "desktop/src/api/fixtures/desktop-fonts.json",
+      "sha256": "935c4d8cd1401203f6d5ff092faadc3bfc45659fca73f415182d88abcb04cd2c"
+    },
+    {
+      "path": "desktop/src/api/fixtures/desktop-preferences-patches.json",
+      "sha256": "607b5c1cbefe91d190235c86572aa7b2362cf0b18fea4fa63c7a80df31342974"
+    },
+    {
+      "path": "desktop/src/api/fixtures/desktop-preferences-themes.json",
+      "sha256": "f90cc8618347c4f2061b73e338576f40e2c6e7dcf00dfd2dd88ef08a959d8833"
+    },
+    {
+      "path": "desktop/src/api/fixtures/desktop-preferences-updated.json",
+      "sha256": "c08186a79d392b7890459e1309a52685cecdb70f889d8bf5dc0e9ee576a9bc7b"
+    },
+    {
+      "path": "desktop/src/api/fixtures/desktop-preferences.json",
+      "sha256": "1b0a15d69a0e624dcbe48ecd1feea4919ca8066a146e580b4a991f4322523051"
+    },
+    {
+      "path": "desktop/src/api/types.gen.ts",
+      "sha256": "35a129b6b9b3bae23a1601cf3d37242b43f0ab59a0734073d06fabd7ca3b38c6"
+    },
+    {
+      "path": "desktop/src/app-shell/AppShell.test.tsx",
+      "sha256": "e838d8feec0e0d1c7fbb71855715f39c06bc91d0b53e0ffa42a44c8201d15214"
+    },
+    {
+      "path": "desktop/src/app-shell/AppShell.tsx",
+      "sha256": "bb53524d54394b03fbfb47b105f8a46cc2c169a07020258159031a61b3727a0e"
+    },
+    {
+      "path": "desktop/src/components/SettingsCombobox.tsx",
+      "sha256": "060c994390351faec055472cea68dde7a2f33a975c3edb1f047aa23fd6260a72"
+    },
+    {
+      "path": "desktop/src/components/SettingsSelect.tsx",
+      "sha256": "e418f82fcfb3f3ff61d87b2c66bbb0b4385ac3d5f09f7b82b1b48350122a2b28"
+    },
+    {
+      "path": "desktop/src/components/settings-choices.test.tsx",
+      "sha256": "436f026b90dfb5c2fdf32ff367cec3305d69de13c8269b86fb9af267b720f746"
+    },
+    {
+      "path": "desktop/src/hud/hud.css",
+      "sha256": "f87d029ea96171446ce4ff19d4e1b9d102baeaeb80743308a222d94431dc3c95"
+    },
+    {
+      "path": "desktop/src/main.tsx",
+      "sha256": "b6067efcf646641f7e0ec56b4dac9209a83839c70ead4c690c6295a13446d1ec"
+    },
+    {
+      "path": "desktop/src/modes/analyze/styles.css",
+      "sha256": "4016e9aea29a4dc2279c3dfa3eb9bf02b930e598602e80481959358e686f12e5"
+    },
+    {
+      "path": "desktop/src/modes/clean/styles.css",
+      "sha256": "5f9587b57858585abe614a23db6d02be32d481fd4f365ca475c127c447f2d201"
+    },
+    {
+      "path": "desktop/src/modes/optimize/styles.css",
+      "sha256": "7fefe8fac57f7d4fbf49197af949d0ddec06ef15a752ca8480ce8037f6796d6b"
+    },
+    {
+      "path": "desktop/src/modes/software/styles.css",
+      "sha256": "0844934c10622523b525f10a3516074e873bf4f5846635f2d1819157a93a2c5d"
+    },
+    {
+      "path": "desktop/src/modes/status/styles.css",
+      "sha256": "bfab6d3d1eefcdc24ddab38bb00ada25fcdd223e3ff3cba06f68b07b1e8d7b4c"
+    },
+    {
+      "path": "desktop/src/preferences/FontPicker.tsx",
+      "sha256": "cc2e487f0f6e0ccebd9fb9579b459aa047817bca35c45d80b703ec3a7583c65a"
+    },
+    {
+      "path": "desktop/src/preferences/PreferencesProvider.tsx",
+      "sha256": "062d44a21df3d33f0e02c949c1a78a5219f289379361fd11bef26686a3d3cc2b"
+    },
+    {
+      "path": "desktop/src/preferences/SettingsPage.tsx",
+      "sha256": "35552a5896e6d328a3216c35391f935dfa10da85e8920bf908a116da52c10a07"
+    },
+    {
+      "path": "desktop/src/preferences/appearance.css",
+      "sha256": "7207f02fe6bc209e1e2e19acf29e5c9aeb738f5150cc89256e0e84a2de3fc2e3"
+    },
+    {
+      "path": "desktop/src/preferences/appearance.ts",
+      "sha256": "452092587f2bde09c89a3a369ab4d2f0c8ed1c8a3552c281ab7b9218f9b4215e"
+    },
+    {
+      "path": "desktop/src/preferences/fixture.ts",
+      "sha256": "71635faa5f81fc5cb76c52a762fee970fed3c1447900b26fb8947cf4e56922c4"
+    },
+    {
+      "path": "desktop/src/preferences/fonts.test.tsx",
+      "sha256": "6cba8cef86b683991d0052ec5f02865499260a0505460f385ed6d979b316a9e2"
+    },
+    {
+      "path": "desktop/src/preferences/fonts.ts",
+      "sha256": "49d423f4bf687b6186bf02933efdea8ab35ecbf55e8d5b8178591f441c95540b"
+    },
+    {
+      "path": "desktop/src/preferences/palettes.test.tsx",
+      "sha256": "7bee1bb72fe3204fcc7cedc7462ed49635dc110e75509efa7017782b64f3d85b"
+    },
+    {
+      "path": "desktop/src/preferences/preferences.test.tsx",
+      "sha256": "6b50920d51e5eb474aa0b6c3030ab349c52bb1bd3bc60471d746384e31893bd5"
+    },
+    {
+      "path": "desktop/src/stage/styles.css",
+      "sha256": "a7a6f54bd8c3afe2f0f7ca4ad04b06e54af37243808b3b607c3175e3e342e490"
+    },
+    {
+      "path": "desktop/src/styles.css",
+      "sha256": "41c883e52d58dc11923579d9e3b1304004eeb6219c448f2ac0c7c8a93dededa2"
+    },
+    {
+      "path": "desktop/src/styles.test.ts",
+      "sha256": "7e6b32467e640baa619280ee346bdeebfb4059afdc526c43b0e1e04c7b3e2641"
+    },
+    {
+      "path": "desktop/src/support/styles.css",
+      "sha256": "43936f3e38cec3e1c9e1640bd1b7b0326f7b0f0650ce1753197cf7a46c8a0cae"
+    },
+    {
+      "path": "resources/i18n/en.json",
+      "sha256": "1b376cee322aa3971d8b711d88c1512af639ada456e79ee8f7c889cba3f091d2"
+    },
+    {
+      "path": "resources/i18n/zh-CN.json",
+      "sha256": "fe5d6fe6fd0f108f6ca087c0d92e78f7ddda2e9af5b18b7b50267bf5130a5a3e"
+    }
+  ],
+  "changesFromPreIme": [
+    {
+      "path": "desktop/src/components/SettingsCombobox.tsx",
+      "before": "a0dd85288b7963c77d3c98e0b0889b36938fe241b7e6582afced3fe4cfab51e0",
+      "after": "060c994390351faec055472cea68dde7a2f33a975c3edb1f047aa23fd6260a72"
+    },
+    {
+      "path": "desktop/src/components/settings-choices.test.tsx",
+      "before": "cf4cbf7938664c26c84aa5636cc3347666386df5db725957f6617e0c96fb1c8d",
+      "after": "436f026b90dfb5c2fdf32ff367cec3305d69de13c8269b86fb9af267b720f746"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "target/release/devsweep-desktop.exe",
+      "size": 13552128,
+      "sha256": "03c5b34fa650696f026b1ec982fc70ab8d93e2a8f9665b5b4df4b36f2d2b567d"
+    },
+    {
+      "path": "target/release/bundle/nsis/devsweep_0.3.0_x64-setup.exe",
+      "size": 4064534,
+      "sha256": "a21784f549c83d8a22ff735dfde980b7bd2e8c237cef2d262ecf75303943cb1c"
+    }
+  ]
+}

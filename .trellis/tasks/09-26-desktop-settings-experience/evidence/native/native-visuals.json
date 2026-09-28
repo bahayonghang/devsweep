@@ -1,0 +1,2853 @@
+{
+  "startedAt": "2026-09-28T03:08:57.610Z",
+  "method": "Actual isolated release app; HUD opened manually; CDP renderer captures record visibility separately",
+  "initial": {
+    "label": "saved custom font and palette",
+    "main": {
+      "url": "http://tauri.localhost/#/settings",
+      "title": "devsweep",
+      "dpr": 1.25,
+      "width": 1080,
+      "height": 720,
+      "theme": "claude",
+      "scheme": "light",
+      "motion": "reduced",
+      "font": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "bodyFont": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "fontSize": "20px",
+      "horizontalOverflow": false,
+      "controls": [
+        {
+          "id": "settings-font",
+          "value": "朱雀仿宋（预览测试版） (Zhuque Fangsong (technical preview))",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-text-scale",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-language",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-motion",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-planet-fps",
+          "value": "",
+          "disabled": true,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-status-interval",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-status-rows",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        },
+        {
+          "id": "settings-hud-interval",
+          "value": "",
+          "disabled": false,
+          "expanded": "false"
+        }
+      ],
+      "themes": [
+        {
+          "value": "dark",
+          "checked": false
+        },
+        {
+          "value": "light",
+          "checked": false
+        },
+        {
+          "value": "system",
+          "checked": false
+        },
+        {
+          "value": "catppuccin_latte",
+          "checked": false
+        },
+        {
+          "value": "catppuccin_mocha",
+          "checked": false
+        },
+        {
+          "value": "codex",
+          "checked": false
+        },
+        {
+          "value": "claude",
+          "checked": true
+        }
+      ],
+      "active": "settings-text-scale",
+      "errors": [],
+      "rawKeys": [],
+      "badText": false
+    },
+    "hud": {
+      "theme": "claude",
+      "scheme": "light",
+      "font": "\"Zhuque Fangsong (technical preview)\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "width": 280,
+      "height": 360,
+      "dpr": 1.25,
+      "visibility": "visible",
+      "focused": false,
+      "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+      "overflow": false
+    }
+  },
+  "themes": [
+    {
+      "label": "catppuccin_latte",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": true
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "label": "catppuccin_mocha",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": true
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "label": "codex",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "codex",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": true
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "codex",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "label": "claude",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "claude",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": true
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "claude",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "hud-custom-font.png",
+      "bytes": 41234,
+      "sha256": "38b0fea6d864fd86924efbc93cdc41f2621d8f5e7895a74a3f6fa4efc6952c12"
+    },
+    {
+      "file": "settings-catppuccin_latte.png",
+      "bytes": 52198,
+      "sha256": "9b0a76cfdfaa703aa59846b79949a6052a4c5db1b9b91ed7d4525cae9eac26cc"
+    },
+    {
+      "file": "hud-catppuccin_latte.png",
+      "bytes": 21655,
+      "sha256": "a359c1bdb16a05c37a5c55b7c03dbd7df7cd144df7c8da80d692c6a3261dc313"
+    },
+    {
+      "file": "dialog-catppuccin_latte.png",
+      "bytes": 45902,
+      "sha256": "e0dbb55679108d50c795fcbaea3aae569309bf9166821595f70367701006e5b0"
+    },
+    {
+      "file": "settings-catppuccin_mocha.png",
+      "bytes": 51712,
+      "sha256": "fc0cb1eb0106f5900c12577c10dabc0a1ad9ac6d21d1aeb29cb4e7370821f405"
+    },
+    {
+      "file": "hud-catppuccin_mocha.png",
+      "bytes": 21904,
+      "sha256": "ad583a9e80c7b6e038a4d8770c8b38ecff0e9d69089f6736748b14213cf464f5"
+    },
+    {
+      "file": "dialog-catppuccin_mocha.png",
+      "bytes": 46003,
+      "sha256": "0529b290130225452707b7e331eff150de38cec3d8297a3c3d121d96642159f8"
+    },
+    {
+      "file": "settings-codex.png",
+      "bytes": 48560,
+      "sha256": "e00ead1536fd1407ae303e77e46781ad772e74e49a750549f8eef65bd4bec6b1"
+    },
+    {
+      "file": "hud-codex.png",
+      "bytes": 21169,
+      "sha256": "7b8df9a8b89347734930d1677c291369f04bc4f0778fc8db7d5e9f95f3bb0a60"
+    },
+    {
+      "file": "dialog-codex.png",
+      "bytes": 45084,
+      "sha256": "9f2aa3e2cbf5430c46254fb38e064795bb81584a824c0a7822ad468aa537e40d"
+    },
+    {
+      "file": "settings-claude.png",
+      "bytes": 51859,
+      "sha256": "9c92d6e8125a4b64e28950d040857968d288d5ea4a82a9656a656c5a615d361e"
+    },
+    {
+      "file": "hud-claude.png",
+      "bytes": 21786,
+      "sha256": "2e829d943b464f5a1a4cc63986ac151015f935833c4c29f7fc18041a9115842b"
+    },
+    {
+      "file": "dialog-claude.png",
+      "bytes": 46327,
+      "sha256": "945483efeb9ac785d2b92473ad5892fa8ddacaef31cd5b631e9ecd73dacf0288"
+    }
+  ],
+  "dialogs": [
+    {
+      "theme": "catppuccin_latte",
+      "color": "rgb(76, 79, 105)",
+      "background": "rgb(230, 233, 239)",
+      "border": "rgb(108, 111, 133)",
+      "expectedText": "rgb(76, 79, 105)",
+      "expectedBackground": "rgb(230, 233, 239)",
+      "expectedBorder": "rgb(108, 111, 133)",
+      "buttons": [
+        "取消",
+        "添加路径"
+      ]
+    },
+    {
+      "theme": "catppuccin_mocha",
+      "color": "rgb(205, 214, 244)",
+      "background": "rgb(24, 24, 37)",
+      "border": "rgb(147, 153, 178)",
+      "expectedText": "rgb(205, 214, 244)",
+      "expectedBackground": "rgb(24, 24, 37)",
+      "expectedBorder": "rgb(147, 153, 178)",
+      "buttons": [
+        "取消",
+        "添加路径"
+      ]
+    },
+    {
+      "theme": "codex",
+      "color": "rgb(242, 242, 242)",
+      "background": "rgb(33, 33, 33)",
+      "border": "rgb(138, 138, 138)",
+      "expectedText": "rgb(242, 242, 242)",
+      "expectedBackground": "rgb(33, 33, 33)",
+      "expectedBorder": "rgb(138, 138, 138)",
+      "buttons": [
+        "取消",
+        "添加路径"
+      ]
+    },
+    {
+      "theme": "claude",
+      "color": "rgb(48, 48, 46)",
+      "background": "rgb(240, 238, 230)",
+      "border": "rgb(119, 116, 108)",
+      "expectedText": "rgb(48, 48, 46)",
+      "expectedBackground": "rgb(240, 238, 230)",
+      "expectedBorder": "rgb(119, 116, 108)",
+      "buttons": [
+        "取消",
+        "添加路径"
+      ]
+    }
+  ],
+  "schemeChecks": [
+    {
+      "chosen": "dark",
+      "emulated": "light",
+      "label": "dark/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "dark",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": true
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "dark",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "dark",
+      "emulated": "dark",
+      "label": "dark/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "dark",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": true
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "dark",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "light",
+      "emulated": "light",
+      "label": "light/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "light",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": true
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "light",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "light",
+      "emulated": "dark",
+      "label": "light/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "light",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": true
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "light",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "system",
+      "emulated": "light",
+      "label": "system/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "light",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": true
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "light",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "system",
+      "emulated": "dark",
+      "label": "system/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "dark",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": true
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "dark",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "catppuccin_latte",
+      "emulated": "light",
+      "label": "catppuccin_latte/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": true
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "catppuccin_latte",
+      "emulated": "dark",
+      "label": "catppuccin_latte/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": true
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "catppuccin_latte",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "catppuccin_mocha",
+      "emulated": "light",
+      "label": "catppuccin_mocha/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": true
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "catppuccin_mocha",
+      "emulated": "dark",
+      "label": "catppuccin_mocha/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": true
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "catppuccin_mocha",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "codex",
+      "emulated": "light",
+      "label": "codex/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "codex",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": true
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "codex",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "codex",
+      "emulated": "dark",
+      "label": "codex/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "codex",
+        "scheme": "dark",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": true
+          },
+          {
+            "value": "claude",
+            "checked": false
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "codex",
+        "scheme": "dark",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "claude",
+      "emulated": "light",
+      "label": "claude/light",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "claude",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": true
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "claude",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    },
+    {
+      "chosen": "claude",
+      "emulated": "dark",
+      "label": "claude/dark",
+      "main": {
+        "url": "http://tauri.localhost/#/settings",
+        "title": "devsweep",
+        "dpr": 1.0000000149011612,
+        "width": 1024,
+        "height": 1050,
+        "theme": "claude",
+        "scheme": "light",
+        "motion": "reduced",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "bodyFont": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "fontSize": "17.6px",
+        "horizontalOverflow": false,
+        "controls": [
+          {
+            "id": "settings-font",
+            "value": "Segoe UI",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-text-scale",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-language",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-motion",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-planet-fps",
+            "value": "",
+            "disabled": true,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-status-rows",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          },
+          {
+            "id": "settings-hud-interval",
+            "value": "",
+            "disabled": false,
+            "expanded": "false"
+          }
+        ],
+        "themes": [
+          {
+            "value": "dark",
+            "checked": false
+          },
+          {
+            "value": "light",
+            "checked": false
+          },
+          {
+            "value": "system",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_latte",
+            "checked": false
+          },
+          {
+            "value": "catppuccin_mocha",
+            "checked": false
+          },
+          {
+            "value": "codex",
+            "checked": false
+          },
+          {
+            "value": "claude",
+            "checked": true
+          }
+        ],
+        "active": "",
+        "errors": [],
+        "rawKeys": [],
+        "badText": false
+      },
+      "hud": {
+        "theme": "claude",
+        "scheme": "light",
+        "font": "\"Segoe UI\", \"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+        "width": 280,
+        "height": 360,
+        "dpr": 1.25,
+        "visibility": "visible",
+        "focused": false,
+        "text": "DevSweep 状态\nCPU\n25.99%\n内存\n46.95%\nGPU\n14.21%\n温度\n82.9 °C\n磁盘\nC:\\：可用 550.4 GiB / 总计 1.9 TiB\n磁盘\nD:\\：可用 1.1 TiB / 总计 1.9 TiB\n网络\n接收 1.6 MiB/s，发送 771.4 KiB/s\n电池\n100.00% · 电源：交流电 在线",
+        "overflow": false
+      }
+    }
+  ],
+  "result": "PASS",
+  "events": {
+    "main": [
+      {
+        "method": "Log.entryAdded",
+        "params": {
+          "entry": {
+            "source": "security",
+            "level": "error",
+            "text": "Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-kLmvWqfziFavKtqHqRsb90f006UAK2Dmd0It5Iz2KFA='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+            "timestamp": 1790564022562.036,
+            "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+            "lineNumber": 8,
+            "stackTrace": {
+              "callFrames": [
+                {
+                  "functionName": "as",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 8,
+                  "columnNumber": 22961
+                },
+                {
+                  "functionName": "Gv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 8,
+                  "columnNumber": 21878
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103036
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 104024
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103417
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101233
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 105698
+                },
+                {
+                  "functionName": "Vn",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 101111
+                },
+                {
+                  "functionName": "Xm",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 103840
+                },
+                {
+                  "functionName": "fv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 119080
+                },
+                {
+                  "functionName": "iv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 118914
+                },
+                {
+                  "functionName": "nv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 113906
+                },
+                {
+                  "functionName": "tv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 113397
+                },
+                {
+                  "functionName": "wv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 124776
+                },
+                {
+                  "functionName": "xu",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 123327
+                },
+                {
+                  "functionName": "yv",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 123606
+                },
+                {
+                  "functionName": "",
+                  "scriptId": "13",
+                  "url": "http://tauri.localhost/assets/state-CTAxlz6G.js",
+                  "lineNumber": 7,
+                  "columnNumber": 124836
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "hud": []
+  },
+  "finishedAt": "2026-09-28T03:09:02.595Z"
+}

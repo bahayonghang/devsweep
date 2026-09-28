@@ -1,0 +1,1541 @@
+{
+  "method": "CDP native WebView2 renderer composition; Windows IME candidate-window interaction is not exercised",
+  "startedAt": "2026-09-28T03:10:51.960Z",
+  "before": "854b6fd10b9003c21e28f74ef35dc0401ae339395ecd816b85cbf528403e6537",
+  "matches": [
+    {
+      "id": "base-ui-_r_7v_-0",
+      "text": "系统界面字体",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-1",
+      "text": "Agency FB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-2",
+      "text": "Algerian",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-3",
+      "text": "Arial",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-4",
+      "text": "Arial Rounded MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-5",
+      "text": "Bahnschrift",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-6",
+      "text": "Baskerville Old Face",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-7",
+      "text": "Bauhaus 93",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-8",
+      "text": "Bell MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-9",
+      "text": "Berlin Sans FB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-10",
+      "text": "Bernard MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-11",
+      "text": "Blackadder ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-12",
+      "text": "Bodoni MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-13",
+      "text": "Bodoni MT Poster",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-14",
+      "text": "Book Antiqua",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-15",
+      "text": "Bookman Old Style",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-16",
+      "text": "Bookshelf Symbol 7",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-17",
+      "text": "Bradley Hand ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-18",
+      "text": "Britannic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-19",
+      "text": "Broadway",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-20",
+      "text": "Brush Script MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-21",
+      "text": "Calibri",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-22",
+      "text": "Californian FB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-23",
+      "text": "Calisto MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-24",
+      "text": "Cambria",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-25",
+      "text": "Cambria Math",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-26",
+      "text": "Candara",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-27",
+      "text": "Cascadia Code",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-28",
+      "text": "Cascadia Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-29",
+      "text": "Castellar",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-30",
+      "text": "Centaur",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-31",
+      "text": "Century",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-32",
+      "text": "Century Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-33",
+      "text": "Century Schoolbook",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-34",
+      "text": "游趣体 (Child Fun Sans)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-35",
+      "text": "Chiller",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-36",
+      "text": "Code New Roman",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-37",
+      "text": "Colonna MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-38",
+      "text": "Comic Code",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-39",
+      "text": "Comic Code Ligatures",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-40",
+      "text": "Comic Sans MS",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-41",
+      "text": "Consolas",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-42",
+      "text": "Constantia",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-43",
+      "text": "Cooper",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-44",
+      "text": "Copperplate Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-45",
+      "text": "Corbel",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-46",
+      "text": "Courier New",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-47",
+      "text": "Curlz MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-48",
+      "text": "DejaVu Sans Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-49",
+      "text": "等线 (DengXian)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-50",
+      "text": "梦源黑体 CN (Dream Han Sans CN)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-51",
+      "text": "梦源宋体 CN (Dream Han Serif CN)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-52",
+      "text": "Dubai",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-53",
+      "text": "Ebrima",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-54",
+      "text": "Edwardian Script ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-55",
+      "text": "Elephant",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-56",
+      "text": "Engravers MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-57",
+      "text": "Eras ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-58",
+      "text": "仿宋 (FangSong)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-59",
+      "text": "Felix Titling",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-60",
+      "text": "Footlight MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-61",
+      "text": "Forte",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-62",
+      "text": "Franklin Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-63",
+      "text": "Franklin Gothic Book",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-64",
+      "text": "Freestyle Script",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-65",
+      "text": "French Script MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-66",
+      "text": "方正舒体 (FZShuTi)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-67",
+      "text": "方正姚体 (FZYaoTi)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-68",
+      "text": "Gabriola",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-69",
+      "text": "Gadugi",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-70",
+      "text": "Garamond",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-71",
+      "text": "Georgia",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-72",
+      "text": "Gigi",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-73",
+      "text": "Gill Sans",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-74",
+      "text": "Gill Sans MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-75",
+      "text": "Gloucester MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-76",
+      "text": "Google Sans Code",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-77",
+      "text": "Goudy Old Style",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-78",
+      "text": "Goudy Stout",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-79",
+      "text": "Haettenschweiler",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-80",
+      "text": "Harlow Solid",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-81",
+      "text": "Harrington",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-82",
+      "text": "High Tower Text",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-83",
+      "text": "Impact",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-84",
+      "text": "Imprint MT Shadow",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-85",
+      "text": "Informal Roman",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-86",
+      "text": "Ink Free",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-87",
+      "text": "Javanese Text",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-88",
+      "text": "JetBrainsMono Nerd Font",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-89",
+      "text": "JetBrainsMono Nerd Font Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-90",
+      "text": "JetBrainsMono Nerd Font Propo",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-91",
+      "text": "JetBrainsMonoNL Nerd Font",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-92",
+      "text": "JetBrainsMonoNL Nerd Font Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-93",
+      "text": "JetBrainsMonoNL Nerd Font Propo",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-94",
+      "text": "Jokerman",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-95",
+      "text": "Juice ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-96",
+      "text": "楷体 (KaiTi)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-97",
+      "text": "Kristen ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-98",
+      "text": "Kunstler Script",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-99",
+      "text": "Leelawadee",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-100",
+      "text": "Leelawadee UI",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-101",
+      "text": "隶书 (LiSu)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-102",
+      "text": "Lucida Bright",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-103",
+      "text": "Lucida Calligraphy",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-104",
+      "text": "Lucida Console",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-105",
+      "text": "Lucida Fax",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-106",
+      "text": "Lucida Handwriting",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-107",
+      "text": "Lucida Sans",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-108",
+      "text": "Lucida Sans Typewriter",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-109",
+      "text": "Lucida Sans Unicode",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-110",
+      "text": "LXGW Bright",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-111",
+      "text": "LXGW Bright Code",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-112",
+      "text": "霞鹜文楷 (LXGW WenKai)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-113",
+      "text": "霞鹜文楷等宽 (LXGW WenKai Mono)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-114",
+      "text": "Magneto",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-115",
+      "text": "Maiandra GD",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-116",
+      "text": "Malgun Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-117",
+      "text": "Maple Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-118",
+      "text": "Maple Mono NF",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-119",
+      "text": "Maple Mono NF CN",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-120",
+      "text": "Maple Mono Normal NF CN",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-121",
+      "text": "MapleBright",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-122",
+      "text": "Marlett",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-123",
+      "text": "Matura MT Script Capitals",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-124",
+      "text": "Microsoft Himalaya",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-125",
+      "text": "Microsoft JhengHei",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-126",
+      "text": "Microsoft JhengHei UI",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-127",
+      "text": "Microsoft New Tai Lue",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-128",
+      "text": "Microsoft PhagsPa",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-129",
+      "text": "Microsoft Sans Serif",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-130",
+      "text": "Microsoft Tai Le",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-131",
+      "text": "Microsoft Uighur",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-132",
+      "text": "微软雅黑 (Microsoft YaHei)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-133",
+      "text": "Microsoft YaHei UI",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-134",
+      "text": "Microsoft Yi Baiti",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-135",
+      "text": "MingLiU-ExtB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-136",
+      "text": "MingLiU_HKSCS-ExtB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-137",
+      "text": "MingLiU_MSCS-ExtB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-138",
+      "text": "Mistral",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-139",
+      "text": "Modern No. 20",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-140",
+      "text": "Mongolian Baiti",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-141",
+      "text": "Monotype Corsiva",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-142",
+      "text": "MS Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-143",
+      "text": "MS Outlook",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-144",
+      "text": "MS PGothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-145",
+      "text": "MS Reference Sans Serif",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-146",
+      "text": "MS Reference Specialty",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-147",
+      "text": "MS UI Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-148",
+      "text": "MT Extra",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-149",
+      "text": "MV Boli",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-150",
+      "text": "Myanmar Text",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-151",
+      "text": "Niagara Engraved",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-152",
+      "text": "Niagara Solid",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-153",
+      "text": "Nirmala Text",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-154",
+      "text": "Nirmala UI",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-155",
+      "text": "Noto Sans SC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-156",
+      "text": "Noto Serif SC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-157",
+      "text": "新宋体 (NSimSun)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-158",
+      "text": "OCR A",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-159",
+      "text": "Old English Text MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-160",
+      "text": "Onyx",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-161",
+      "text": "Palace Script MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-162",
+      "text": "Palatino Linotype",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-163",
+      "text": "Papyrus",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-164",
+      "text": "Parchment",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-165",
+      "text": "Perpetua",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-166",
+      "text": "Perpetua Titling MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-167",
+      "text": "Playbill",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-168",
+      "text": "PMingLiU-ExtB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-169",
+      "text": "Poor Richard",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-170",
+      "text": "Pristina",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-171",
+      "text": "Rage",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-172",
+      "text": "Ravie",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-173",
+      "text": "Roboto",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-174",
+      "text": "Rockwell",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-175",
+      "text": "Sans Serif Collection",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-176",
+      "text": "更纱终端书呆黑体-简 (Sarasa Term SC Nerd)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-177",
+      "text": "Script MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-178",
+      "text": "Segoe Fluent Icons",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-179",
+      "text": "Segoe MDL2 Assets",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-180",
+      "text": "Segoe Print",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-181",
+      "text": "Segoe Script",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-182",
+      "text": "Segoe UI",
+      "selected": "true",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-183",
+      "text": "Segoe UI Emoji",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-184",
+      "text": "Segoe UI Historic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-185",
+      "text": "Segoe UI Symbol",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-186",
+      "text": "Segoe UI Variable Display",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-187",
+      "text": "Segoe UI Variable Small",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-188",
+      "text": "Segoe UI Variable Text",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-189",
+      "text": "SF Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-190",
+      "text": "Showcard Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-191",
+      "text": "黑体 (SimHei)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-192",
+      "text": "宋体 (SimSun)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-193",
+      "text": "SimSun-ExtB",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-194",
+      "text": "SimSun-ExtG",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-195",
+      "text": "Sitka Banner",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-196",
+      "text": "Sitka Display",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-197",
+      "text": "Sitka Heading",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-198",
+      "text": "Sitka Small",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-199",
+      "text": "Sitka Subheading",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-200",
+      "text": "Sitka Text",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-201",
+      "text": "Snap ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-202",
+      "text": "思源黑体 CN (Source Han Sans CN)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-203",
+      "text": "Source Han Serif HC VF",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-204",
+      "text": "Source Han Serif K VF",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-205",
+      "text": "思源宋体 (Source Han Serif SC)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-206",
+      "text": "Source Han Serif SC VF",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-207",
+      "text": "Source Han Serif TC VF",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-208",
+      "text": "Source Han Serif VF",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-209",
+      "text": "华文彩云 (STCaiyun)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-210",
+      "text": "Stencil",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-211",
+      "text": "华文仿宋 (STFangsong)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-212",
+      "text": "华文琥珀 (STHupo)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-213",
+      "text": "华文楷体 (STKaiti)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-214",
+      "text": "华文隶书 (STLiti)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-215",
+      "text": "华文宋体 (STSong)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-216",
+      "text": "华文细黑 (STXihei)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-217",
+      "text": "华文行楷 (STXingkai)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-218",
+      "text": "华文新魏 (STXinwei)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-219",
+      "text": "华文中宋 (STZhongsong)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-220",
+      "text": "Sylfaen",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-221",
+      "text": "Symbol",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-222",
+      "text": "Tahoma",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-223",
+      "text": "Tempus Sans ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-224",
+      "text": "Times New Roman",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-225",
+      "text": "Trebuchet MS",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-226",
+      "text": "Tw Cen MT",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-227",
+      "text": "Unispace",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-228",
+      "text": "Verdana",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-229",
+      "text": "Victor Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-230",
+      "text": "VictorMono Nerd Font",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-231",
+      "text": "VictorMono Nerd Font Mono",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-232",
+      "text": "VictorMono Nerd Font Propo",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-233",
+      "text": "Viner Hand ITC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-234",
+      "text": "Vivaldi",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-235",
+      "text": "Vladimir Script",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-236",
+      "text": "Webdings",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-237",
+      "text": "文津宋体 第0平面 (WenJin Mincho Plane 0)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-238",
+      "text": "文津宋体 第2平面 (WenJin Mincho Plane 2)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-239",
+      "text": "文津宋体 第3平面 (WenJin Mincho Plane 3)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-240",
+      "text": "WenYuan Serif SC",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-241",
+      "text": "Wide Latin",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-242",
+      "text": "Wingdings",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-243",
+      "text": "Wingdings 2",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-244",
+      "text": "Wingdings 3",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-245",
+      "text": "幼圆 (YouYuan)",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-246",
+      "text": "Yu Gothic",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-247",
+      "text": "Yu Gothic UI",
+      "selected": "false",
+      "disabled": null
+    },
+    {
+      "id": "base-ui-_r_7v_-248",
+      "text": "朱雀仿宋（预览测试版） (Zhuque Fangsong (technical preview))",
+      "selected": "false",
+      "disabled": null
+    }
+  ],
+  "during": "cd688a44654bbdd0307cfd556ad8536b5d2187a6f34dc86741b2767f5175578d",
+  "events": [
+    {
+      "type": "compositionstart",
+      "data": "",
+      "value": ""
+    },
+    {
+      "type": "compositionupdate",
+      "data": "宋",
+      "value": ""
+    },
+    {
+      "type": "input",
+      "isComposing": true,
+      "data": "宋",
+      "value": "宋"
+    },
+    {
+      "type": "keydown",
+      "key": "ArrowDown",
+      "isComposing": true,
+      "value": "宋"
+    },
+    {
+      "type": "keydown",
+      "key": "Enter",
+      "isComposing": true,
+      "value": "宋"
+    },
+    {
+      "type": "compositionend",
+      "data": "宋",
+      "value": "宋"
+    }
+  ],
+  "nativeComposingEnter": true,
+  "result": "FAIL",
+  "error": "Error: UI condition timed out: popup closed\n    at Object.waitFor (file:///D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/09-26-desktop-settings-experience/evidence/verify/cdp.mjs:50:11)\n    at async closePopup (file:///D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/09-26-desktop-settings-experience/evidence/verify/settings-ui.mjs:14:5)\n    at async file:///D:/Documents/Code/Rust/Exp/devsweep/.trellis/tasks/09-26-desktop-settings-experience/evidence/verify/native-composition.mjs:24:3",
+  "finishedAt": "2026-09-28T03:10:58.309Z"
+}
