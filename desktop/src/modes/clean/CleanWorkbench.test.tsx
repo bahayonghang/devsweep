@@ -220,6 +220,13 @@ describe("Clean found stage", () => {
     expect(
       screen.getByRole("button", { name: "Review dry run" }),
     ).toBeInTheDocument();
+    const trashRow = screen.getByText("C:/work/app/target").closest("tr");
+    const commandRow = screen.getByText("npm.cache.clean:global").closest("tr");
+    expect(trashRow && within(trashRow).getByText("Move to Recycle Bin")).toBeInTheDocument();
+    expect(commandRow && within(commandRow).getByText("Execute")).toBeInTheDocument();
+    for (const table of screen.getAllByRole("table")) {
+      expect(table.textContent).not.toMatch(/Moved to trash/);
+    }
   });
 
   it("runs the dry run for the default selection from the Clean action, then confirms and executes with its digest", async () => {

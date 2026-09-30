@@ -87,7 +87,7 @@ export function TargetTable(props: PreviewProps | ReviewProps) {
           </td>
           <td className="capacity">{capacity(target, locale)}</td>
           <td><span className={`badge risk-${target.risk}`}>{riskLabel(locale, target.risk)}</span></td>
-          <td>{isProtected ? <span className="badge neutral">{message(locale, "clean.v1.target.protected")}</span> : inspectOnly ? <span className="badge neutral">{message(locale, "clean.v1.target.inspect_only")}</span> : previewTarget ? <span className="badge neutral">{message(locale, "clean.v1.status.ready")}</span> : message(locale, "clean.v1.trash.moved")}</td>
+          <td>{isProtected ? <span className="badge neutral">{message(locale, "clean.v1.target.protected")}</span> : inspectOnly ? <span className="badge neutral">{message(locale, "clean.v1.target.inspect_only")}</span> : previewTarget ? <span className="badge neutral">{message(locale, "clean.v1.status.ready")}</span> : message(locale, target.intent.type === "run_built_in_action" ? "clean.v1.action.execute" : "clean.v1.action.move_to_trash")}</td>
           <td><details><summary>{target.evidence.length}</summary><ul>{target.evidence.map((item, index) => <li key={`${item.type}-${index}`}>{formatEvidence(item)}</li>)}</ul>{target.sizing_warnings?.map((warning) => <p className="warning-text" key={warning.kind}>{warning.detail}</p>)}</details></td>
           {props.mode === "review" && !previewTarget && <RowActions locale={locale} props={props} target={target} inspectOnly={inspectOnly} />}
         </tr>;
