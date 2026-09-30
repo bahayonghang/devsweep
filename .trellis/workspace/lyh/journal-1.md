@@ -1659,3 +1659,25 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 57: 修正演练预览状态文案并归档 09-20 任务
+<!-- trellis-session: v=2 fp=bd3c6b52b55ad464 -->
+
+**Date**: 2026-09-30
+**Task**: 修正演练预览状态文案并归档 09-20 任务
+**Branch**: `dev`
+
+### Summary
+
+演练预览中非失败行状态列改为「未执行（试运行）」，动作列改为「移到回收站」；新增 clean.v1.action.move_to_trash。前端 391 项测试、lint、build 与 CLI 文案测试通过。三个 09-20 桌面任务补记分支 dev 后归档（父任务原为 7/9，两个子任务为 in_progress）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b1556fa` | fix(desktop): 🐛 修正演练预览状态列的误导文案 |
+
+### Status
+
+[OK] **Completed**
