@@ -523,6 +523,7 @@
     "clean.v1.result.cumulative_at_least": { "forms": { "other": "DevSweep 累计移到回收站：至少 {bytes}" }, "placeholders": ["bytes"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.action.clean_selected": { "forms": { "other": "清理 {bytes}" }, "placeholders": ["bytes"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.action.back_review": { "forms": { "other": "返回复核" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "clean.v1.action.move_to_trash": { "forms": { "other": "移到回收站" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.stage.found_meta": { "forms": { "other": "共发现 {count} 个目标" }, "placeholders": ["count"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.stage.none_selected": { "forms": { "other": "没有默认选中的目标。请复核目标后选择。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "error.bare_requires_tty": { "forms": { "other": "直接运行 devsweep 需要交互式标准输入和标准输出；重定向时请指定明确命令。" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },

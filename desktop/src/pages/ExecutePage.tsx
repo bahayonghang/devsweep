@@ -6,16 +6,17 @@ import { kindLabel } from "../modes/clean/labels";
 function actionLabel(locale: PresentationLanguageTag, outcome: TargetOutcome): string {
   switch (outcome.action.type) {
     case "command": return message(locale, "clean.v1.action.execute");
-    case "move_to_trash": return message(locale, "clean.v1.trash.moved");
+    case "move_to_trash": return message(locale, "clean.v1.action.move_to_trash");
     case "inspect_only": return message(locale, "clean.v1.target.inspect_only");
     case "permanent_delete": return message(locale, "clean.v1.error.inspect_only");
   }
 }
 function statusLabel(locale: PresentationLanguageTag, outcome: TargetOutcome, final: boolean): string {
+  if (!final && outcome.status.type !== "failed") return message(locale, "clean.v1.outcome.dry_run");
   switch (outcome.status.type) {
     case "succeeded": return outcome.action.type === "move_to_trash" ? message(locale, "clean.v1.trash.moved") : message(locale, "clean.v1.execute.completed");
     case "failed": return message(locale, "clean.v1.execute.failed");
-    case "skipped": return final ? message(locale, "clean.v1.outcome.skipped", { reason: outcome.status.reason }) : message(locale, "clean.v1.outcome.dry_run");
+    case "skipped": return message(locale, "clean.v1.outcome.skipped", { reason: outcome.status.reason });
   }
 }
 function OutcomeTable({ locale, report, targets, final }: { locale: PresentationLanguageTag; report: ExecutionReport; targets: readonly UntrustedTarget[]; final: boolean }) {

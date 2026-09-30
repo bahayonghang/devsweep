@@ -235,6 +235,9 @@ describe("Clean found stage", () => {
     expect(planDryRun.mock.calls[0][1]).toEqual([cargoTargetId]);
     expect(screen.getByText("C:/work/app/target")).toBeInTheDocument();
     expect(screen.getByTitle(cargoTargetId)).toBeInTheDocument();
+    expect(screen.getByText("Not executed (dry run)")).toBeInTheDocument();
+    const previewPanel = screen.getByText("Dry-run preview").closest("section");
+    expect(previewPanel?.textContent).not.toMatch(/Moved to trash/);
     await user.click(screen.getByRole("button", { name: "Confirm cleanup" }));
     await user.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Execute" }),

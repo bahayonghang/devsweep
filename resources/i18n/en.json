@@ -523,6 +523,7 @@
     "clean.v1.result.cumulative_at_least": { "forms": { "other": "Total moved to Recycle Bin by DevSweep: at least {bytes}" }, "placeholders": ["bytes"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.action.clean_selected": { "forms": { "other": "Clean {bytes}" }, "placeholders": ["bytes"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.action.back_review": { "forms": { "other": "Back to review" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
+    "clean.v1.action.move_to_trash": { "forms": { "other": "Move to Recycle Bin" }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.stage.found_meta": { "forms": { "other": "Found {count} targets" }, "placeholders": ["count"], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "clean.v1.stage.none_selected": { "forms": { "other": "No target is selected by default. Review targets to choose." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
     "error.bare_requires_tty": { "forms": { "other": "Bare devsweep requires interactive stdin and stdout. Use an explicit command when redirecting output." }, "placeholders": [], "count": "none", "accelerator": null, "group": null, "truncation": "never" },
