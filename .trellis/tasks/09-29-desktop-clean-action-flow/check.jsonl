@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "desktop frontend checklist and quality commands"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Stage stack, DetailView, copy and action-bar rules"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Clean dry-run, digest, confirmation invariants"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "typed IPC and catalogue consumption"}
