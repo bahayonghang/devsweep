@@ -1636,3 +1636,26 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - 如继续诊断核心测试程序，从归档 evidence/core-gate-diagnostic.md 开始；不得把归档视为完整 CI 或发布验证通过。
+
+
+## Session 56: Desktop Clean 首屏清理入口
+<!-- trellis-session: v=2 fp=9b866f3e48c792fc -->
+
+**Date**: 2026-09-30
+**Task**: Desktop Clean 首屏清理入口
+**Branch**: `dev`
+
+### Summary
+
+分析 Clean 首屏只有扫描入口的原因：清理位于第 3 步。首屏改为「清理 {已选容量}」直接运行演练并进入预览；首屏数字改为已选预计可回收容量；修正重复标点；演练预览与结果显示路径和类别；返回按钮文案修正；审阅汇总栏固定。前端 391 项测试、lint、typecheck、build 通过；Rust fmt/check/clippy 与除 core 外测试通过；devsweep-core 测试程序缺失，原因未查明。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5143df6` | feat(desktop): ✨ 在清理首屏提供直接清理入口 |
+| `1fab4a0` | docs(task): 📝 保存清理入口任务规划与验收记录 |
+
+### Status
+
+[OK] **Completed**
