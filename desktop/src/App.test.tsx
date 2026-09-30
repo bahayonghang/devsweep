@@ -464,7 +464,7 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={presentationSettings} />);
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
-    await screen.findByText("Scan complete. 3 targets.");
+    await screen.findByText("Found 3 targets");
     await openLanguageSettings(user);
     await user.click(screen.getByRole("combobox", { name: "Language" }));
     await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
@@ -504,7 +504,7 @@ describe("desktop workflow", () => {
     await user.click(screen.getByRole("button", { name: "Show details" }));
     expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Scan" }));
-    expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
+    expect(await screen.findByText("Found 3 targets")).toBeInTheDocument();
     expect(scanStart).toHaveBeenCalledTimes(2);
   });
 
@@ -536,7 +536,7 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings()} />);
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
-    await screen.findByText("Scan complete. 3 targets.");
+    await screen.findByText("Found 3 targets");
     await user.click(screen.getByRole("button", { name: "Scan" }));
     const rescanId = scanStart.mock.calls[1][0] as string;
     act(() => finishRescan({ type: "canceled", scan_id: rescanId }));
@@ -616,8 +616,8 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge({ planDryRun, planExecute })} presentationSettings={fakePresentationSettings()} />);
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
-    expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Found in this scan 628.0 MiB");
+    expect(await screen.findByText("Found 3 targets")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Estimated recoverable in the current selection 500.0 MiB");
     await user.click(screen.getByRole("button", { name: "Review targets" }));
     expect(screen.getByText("Build artifacts")).toBeInTheDocument();
     expect(screen.getByText("Package caches")).toBeInTheDocument();
@@ -630,7 +630,7 @@ describe("desktop workflow", () => {
     expect(screen.getByText("Selected 1")).toBeInTheDocument();
     expect(screen.getAllByText("500.0 MiB").length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByRole("button", { name: "Back to review" }));
     await user.click(screen.getByRole("checkbox", { name: /npm.cache.clean/ }));
     expect(screen.queryByText("Dry-run preview")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
@@ -668,7 +668,7 @@ describe("desktop workflow", () => {
     render(<App bridge={fakeBridge({ planDryRun, planExecute })} presentationSettings={fakePresentationSettings()} />);
 
     await user.click(await screen.findByRole("button", { name: "Scan" }));
-    await screen.findByText("Scan complete. 3 targets.");
+    await screen.findByText("Found 3 targets");
     await user.click(screen.getByRole("button", { name: "Review targets" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(screen.getByRole("button", { name: "Scan" })).toBeDisabled();
@@ -721,7 +721,7 @@ describe("desktop workflow", () => {
       coordinator={coordinator}
     />);
     await user.click(await screen.findByRole("button", { name: "Scan" }));
-    expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
+    expect(await screen.findByText("Found 3 targets")).toBeInTheDocument();
     expect(events).toEqual(["scan-old.cancel", "scan-old.join", "scan.start"]);
     await waitFor(() => expect(coordinator.activeIdentity()).toBeNull());
 

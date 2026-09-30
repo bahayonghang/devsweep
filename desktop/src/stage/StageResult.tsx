@@ -14,6 +14,7 @@ export interface StageResultProps {
   readonly meta?: ReactNode;
   readonly action: ReactNode;
   readonly secondary?: ReactNode;
+  readonly busy?: boolean;
 }
 
 /** One large number with unit, one line of facts, and one action. */
@@ -27,6 +28,7 @@ export function StageResult({
   meta,
   action,
   secondary,
+  busy,
 }: StageResultProps) {
   return (
     <Stage
@@ -46,6 +48,7 @@ export function StageResult({
       meta={meta}
       primary={action}
       secondary={secondary}
+      busy={busy}
     />
   );
 }

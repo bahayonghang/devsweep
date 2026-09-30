@@ -11,7 +11,7 @@ import { ScanPage } from "../../pages/ScanPage";
 import { ScanPreviewPage } from "../../pages/ScanPreviewPage";
 import { message, type PresentationLanguageTag } from "../../i18n";
 import { DetailView, Stage, StageResult } from "../../stage";
-import { hasIrreversibleSelection } from "../../state/selectors";
+import { hasIrreversibleSelection, selectedTotals } from "../../state/selectors";
 import { OperationCoordinator } from "../../state/operation-coordinator";
 import { movedTotals } from "./result";
 import { ProtectDialog } from "./ProtectDialog";
@@ -142,7 +142,10 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
       }
       try {
         const outcome = await lease.result;
-        if (mounted.current) dispatch({ type: "dry_run_succeeded", outcome });
+        if (mounted.current) {
+          dispatch({ type: "dry_run_succeeded", outcome });
+          setView("detail");
+        }
       } finally { await lease.complete().catch(() => false); }
     } catch (error) {
       if (started && mounted.current) dispatch({ type: "command_failed", error: commandError(error) });
@@ -234,8 +237,8 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
   const busy = state.phase === "executing" || state.pending !== null;
   const errorBanner = state.error && <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} />;
   const mainContent = showMain ? <div className="main-content">
-    {reported && state.execution ? <ExecutePage locale={locale} report={state.execution} final onConfirm={() => undefined} onReturn={() => dispatch({ type: "review_requested" })} />
-      : showDryRun && state.dryRun ? <ExecutePage locale={locale} report={state.dryRun.report} final={false} onConfirm={() => dispatch({ type: "confirmation_opened" })} onReturn={() => dispatch({ type: "review_requested" })} />
+    {reported && state.execution ? <ExecutePage locale={locale} report={state.execution} targets={state.scan?.plan.targets} final onConfirm={() => undefined} onReturn={() => dispatch({ type: "review_requested" })} />
+      : showDryRun && state.dryRun ? <ExecutePage locale={locale} report={state.dryRun.report} targets={state.scan?.plan.targets} final={false} onConfirm={() => dispatch({ type: "confirmation_opened" })} onReturn={() => dispatch({ type: "review_requested" })} />
       : preview ? <ScanPreviewPage locale={locale} status={preview.status} progress={preview.progress} preview={preview.preview} canReturnToReport={state.scan !== null} onReturnToReport={() => dispatch({ type: "stopped_preview_dismissed" })} />
       : <ReviewPage
           locale={locale}
@@ -276,24 +279,34 @@ export function CleanWorkbench({ bridge, coordinator, locale }: { bridge: Deskto
       label={message(locale, "command.clean")}
       className="clean-stage clean-stopped"
       title={message(locale, preview.status === "failed" ? "clean.v1.stage.stopped_failed" : "clean.v1.scan.canceled")}
-      meta={totals ? <MetaLine parts={[message(locale, "clean.v1.scan.complete", { count: String(totals.target_count) }), ...capacityParts(locale, totals)]} /> : undefined}
+      meta={totals ? <MetaLine parts={[message(locale, "clean.v1.stage.found_meta", { count: String(totals.target_count) }), ...capacityParts(locale, totals)]} /> : undefined}
       primary={detailsAction}
       secondary={rescanLink}
     />;
   } else if (stageVisible && state.scan) {
     const totals = state.scan.health.totals;
+    const selected = selectedTotals(state);
+    const selectedBytes = formatBytes(selected.verified_bytes + selected.partial_lower_bound_bytes);
+    const hasSelection = state.selectedIds.size > 0;
+    const reviewAction = <button type="button" className={hasSelection ? "stage-link" : "stage-action"} onClick={() => setView("detail")}>{message(locale, "clean.v1.action.review")}</button>;
     stage = <StageResult
       mode="clean"
       label={message(locale, "command.clean")}
       className="clean-stage clean-found"
-      caption={message(locale, "clean.v1.stage.found_caption")}
-      value={formatBytes(totals.verified_bytes + totals.partial_lower_bound_bytes)}
+      caption={message(locale, "stage.v1.caption.estimated")}
+      value={selectedBytes}
+      busy={state.pending === "dry_run"}
       meta={<>
-        <MetaLine parts={[message(locale, "clean.v1.scan.complete", { count: String(state.scan.plan.targets.length) }), ...capacityParts(locale, totals)]} />
+        <MetaLine parts={[message(locale, "clean.v1.stage.found_meta", { count: String(state.scan.plan.targets.length) }), ...capacityParts(locale, totals)]} />
+        {hasSelection
+          ? <p>{message(locale, "clean.v1.preview.selected", { count: String(state.selectedIds.size) })}</p>
+          : <p role="status">{message(locale, "clean.v1.stage.none_selected")}</p>}
         {state.protectedIds.size > 0 && <p role="status">{message(locale, "clean.v1.review.rescan_hint")}</p>}
       </>}
-      action={<button type="button" className="stage-action" onClick={() => setView("detail")}>{message(locale, "clean.v1.action.review")}</button>}
-      secondary={rescanLink}
+      action={hasSelection
+        ? <button type="button" className="stage-action" disabled={busy} onClick={() => void dryRun()}>{message(locale, "clean.v1.action.clean_selected", { bytes: selectedBytes })}</button>
+        : reviewAction}
+      secondary={hasSelection ? <>{reviewAction}{rescanLink}</> : rescanLink}
     />;
   }
   return <div className="clean-mode">

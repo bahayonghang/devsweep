@@ -91,7 +91,7 @@ const STAGES: readonly StageCase[] = [
     name: "found",
     bridge: () => bridge(),
     heading: (locale) =>
-      new RegExp(message(locale, "clean.v1.stage.found_caption")),
+      new RegExp(message(locale, "stage.v1.caption.estimated")),
   },
   {
     name: "empty",
@@ -185,33 +185,138 @@ describe.each(LOCALES)("Clean stage states in %s", (locale) => {
   );
 });
 
+const cargoTargetId = "cargo.target:C:/work/app/target";
+
+function renderFound(overrides: Partial<DesktopBridge> = {}) {
+  const user = userEvent.setup();
+  const current = bridge(overrides);
+  render(
+    <CleanWorkbench
+      bridge={current}
+      coordinator={new OperationCoordinator()}
+      locale="en"
+    />,
+  );
+  return { user, bridge: current };
+}
+
 describe("Clean found stage", () => {
-  it("shows the found total and opens review from the Review action", async () => {
-    const user = userEvent.setup();
-    render(
-      <CleanWorkbench
-        bridge={bridge()}
-        coordinator={new OperationCoordinator()}
-        locale="en"
-      />,
-    );
+  it("shows the selected estimate, the found facts, and opens review from the secondary action", async () => {
+    const { user } = renderFound();
     await user.click(screen.getByRole("button", { name: "Scan" }));
     const stage = await screen.findByRole("region", { name: "Clean" });
     expect(within(stage).getByRole("heading", { level: 2 })).toHaveTextContent(
-      "Found in this scan 628.0 MiB",
+      "Estimated recoverable in the current selection 500.0 MiB",
     );
-    expect(
-      within(stage).getByText("Scan complete. 3 targets."),
-    ).toBeInTheDocument();
+    expect(within(stage).getByText("Found 3 targets")).toBeInTheDocument();
     expect(
       within(stage).getByText("At least 128.0 MiB (partial)"),
     ).toBeInTheDocument();
+    expect(within(stage).getByText("Selected 1")).toBeInTheDocument();
+    expect(stage.textContent).not.toMatch(/\. ·/);
     await user.click(
       within(stage).getByRole("button", { name: "Review targets" }),
     );
     expect(
       screen.getByRole("button", { name: "Review dry run" }),
     ).toBeInTheDocument();
+  });
+
+  it("runs the dry run for the default selection from the Clean action, then confirms and executes with its digest", async () => {
+    const planDryRun = vi.fn(fixtureBridge.planDryRun);
+    const planExecute = vi.fn(fixtureBridge.planExecute);
+    const { user } = renderFound({ planDryRun, planExecute });
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Clean 500.0 MiB" }),
+    );
+    expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
+    expect(planDryRun).toHaveBeenCalledOnce();
+    expect(planDryRun.mock.calls[0][1]).toEqual([cargoTargetId]);
+    expect(screen.getByText("C:/work/app/target")).toBeInTheDocument();
+    expect(screen.getByTitle(cargoTargetId)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Confirm cleanup" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Execute" }),
+    );
+    const digest = (await fixtureBridge.planDryRun(report.plan, [cargoTargetId])).digest;
+    expect(planExecute).toHaveBeenCalledWith(report.plan, [cargoTargetId], digest);
+    const result = await screen.findByRole("region", { name: "Clean" });
+    await user.click(within(result).getByRole("button", { name: "Show details" }));
+    await user.click(screen.getByRole("button", { name: "Back to overview" }));
+    expect(
+      screen.getByRole("button", { name: "Show details" }),
+    ).toBeInTheDocument();
+  });
+
+  it("returns from the dry-run preview to review", async () => {
+    const { user } = renderFound();
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Clean 500.0 MiB" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Back to review" }),
+    );
+    expect(screen.queryByText("Dry-run preview")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Review dry run" }),
+    ).toBeEnabled();
+  });
+
+  it("keeps the stage and shows the error when the dry run fails", async () => {
+    const planDryRun = vi
+      .fn()
+      .mockRejectedValue({ code: "io", message: "controlled dry-run failure" });
+    const { user } = renderFound({ planDryRun });
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Clean 500.0 MiB" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "controlled dry-run failure",
+    );
+    expect(screen.queryByText("Dry-run preview")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Clean 500.0 MiB" }),
+    ).toBeEnabled();
+  });
+
+  it("falls back to Review when nothing is selected by default", async () => {
+    const unselected = {
+      ...report,
+      plan: {
+        ...report.plan,
+        targets: report.plan.targets.map((target) => ({
+          ...target,
+          selected_by_default: false,
+        })),
+      },
+    };
+    const { user } = renderFound({
+      scanStart: vi.fn().mockImplementation(async (scanId: string) => ({
+        type: "completed",
+        scan_id: scanId,
+        report: unselected,
+      })),
+    });
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    const stage = await screen.findByRole("region", { name: "Clean" });
+    expect(
+      await within(stage).findByText(
+        "No target is selected by default. Review targets to choose.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(stage).queryByRole("button", { name: /^Clean / }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      within(stage).getByRole("button", { name: "Review targets" }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Review dry run" }),
+    ).toBeDisabled();
   });
 });
 

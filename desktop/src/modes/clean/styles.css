@@ -21,6 +21,8 @@
 .review-summary .capacity-total { text-align: left; }
 .review-summary .select-all-control { justify-self: start; }
 .review-summary .wide-action { justify-self: start; }
+/* Keep the summary and dry-run action visible while the list scrolls; 41px clears .window-chrome. */
+@media (min-height: 800px) { .review-summary { position: sticky; top: 41px; z-index: 4; box-shadow: 0 8px 16px var(--shadow); } }
 .capacity-meter svg { display: block; width: 100%; height: 8px; }
 .capacity-meter-verified { fill: var(--ok); }
 .capacity-meter-partial { fill: var(--warning); }

@@ -69,6 +69,18 @@ permissions scoped to the main window and keep the HUD read-only.
   capsule that replaces the stage and has a "Back to overview" control. A
   mode may show a detail region below the stage while its first action runs
   (for example, the Clean scan preview); that region has no back control.
+- The Clean found stage shows the Estimated recoverable of the current
+  selection as its number, not the total of all found targets. The found
+  count and capacity facts go in the secondary line. When the default
+  selection is not empty, the primary action is `Clean {bytes}`: it runs the
+  same `plan_dry_run` as Review and opens the dry-run preview in `DetailView`.
+  `Review targets` and `Scan` are secondary links. When the selection is
+  empty, `Review targets` is the primary action and a status line gives the
+  reason. The stage action never skips the dry run or the confirmation dialog.
+- The dry-run preview footer returns with `Back to review`. The final result
+  detail has no footer return; the `DetailView` "Back to overview" control
+  returns to the result stage. Outcome rows show the target path (or kind
+  label) and keep the target id in `title`.
 - Status chips render in the stage secondary line or the detail header. There
   is no page-header portal.
 - Card surfaces use the raised card token, a 1px hairline border, radius 12,
@@ -178,7 +190,8 @@ use the current UI font; only the committed family drives the sample and root.
 
 ## Copy And Formatting
 
-- Commands use direct labels: `Scan`, `Cancel scan`, `Review dry run`, `Execute`.
+- Commands use direct labels: `Scan`, `Cancel scan`, `Clean {bytes}`,
+  `Review dry run`, `Back to review`, `Execute`.
 - Progress uses a labelled native indeterminate `<progress>`, requested phase
   states, the exact backend message, and discovered-so-far count. Never show a
   percentage because the contract has no total. Announce only a coalesced
