@@ -3,7 +3,9 @@
 // The page itself runs 5 warm-ups + 30 measured commits.
 // Usage: node run-analyze-react-commit.mjs <pageUrl> <outJson> <outConsoleLog>
 import { spawn } from "node:child_process";
-import { existsSync, writeFileSync, appendFileSync, rmSync } from "node:fs";
+import { existsSync, writeFileSync, appendFileSync, mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { createServer } from "node:net";
 
 const [pageUrl, outJson, outConsole] = process.argv.slice(2);
@@ -48,7 +50,7 @@ function sleep(ms) {
 async function collectOnce(attempt) {
   const port = await freePort();
   if (!port || port === 9223) throw new Error("refusing pinned or missing debug port");
-  const profile = `${process.env.TEMP}\\devsweep-react-commit-${Date.now()}-${attempt}`;
+  const profile = mkdtempSync(join(tmpdir(), "devsweep-react-commit-"));
   log("launch", { attempt, port, binary, profile });
   const chrome = spawn(binary, [
     "--headless=new",
@@ -60,9 +62,13 @@ async function collectOnce(attempt) {
     "--disable-sync",
     "--window-size=1440,900",
     "about:blank",
-  ], { stdio: ["ignore", "pipe", "pipe"] });
+  ], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+  log("owned_process", { pid: chrome.pid, profile });
+  let exited = false;
+  chrome.once("exit", () => { exited = true; });
 
   let browserWs = null;
+  let ws;
   try {
     browserWs = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error("browser did not report DevTools port")), 20000);
@@ -81,6 +87,8 @@ async function collectOnce(attempt) {
       chrome.on("exit", (code) => reject(new Error("browser exited early: " + code)));
     });
     log("browser_ws", { attempt, value: browserWs });
+    const browserEndpoint = new URL(browserWs);
+    if (browserEndpoint.hostname !== "127.0.0.1" || browserEndpoint.port !== String(port)) throw new Error("unexpected browser endpoint");
 
     const httpPort = new URL(browserWs).port;
     const newTab = await fetch(`http://127.0.0.1:${httpPort}/json/new?${encodeURIComponent(pageUrl)}`, { method: "PUT" })
@@ -90,10 +98,11 @@ async function collectOnce(attempt) {
       });
     log("tab_created", { attempt, target: newTab.id, debuggerUrl: newTab.webSocketDebuggerUrl });
 
-    const ws = new WebSocket(newTab.webSocketDebuggerUrl);
+    ws = new WebSocket(newTab.webSocketDebuggerUrl);
     await new Promise((resolve, reject) => {
-      ws.onopen = resolve;
-      ws.onerror = () => reject(new Error("ws error"));
+      const timer = setTimeout(() => reject(new Error("page ws timeout")), 10000);
+      ws.onopen = () => { clearTimeout(timer); resolve(); };
+      ws.onerror = () => { clearTimeout(timer); reject(new Error("ws error")); };
     });
 
     let seq = 0;
@@ -102,19 +111,20 @@ async function collectOnce(attempt) {
       const id = ++seq;
       ws.send(JSON.stringify({ id, method, params }));
       return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           if (pending.has(id)) {
             pending.delete(id);
             reject(new Error("cdp timeout: " + method));
           }
         }, 30000);
+        pending.set(id, { resolve, reject, timer });
       });
     }
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.id && pending.has(message.id)) {
-        const { resolve, reject } = pending.get(message.id);
+        const { resolve, reject, timer } = pending.get(message.id);
+        clearTimeout(timer);
         pending.delete(message.id);
         if (message.error) reject(new Error(message.error.message));
         else resolve(message.result);
@@ -147,12 +157,25 @@ async function collectOnce(attempt) {
     if (!result) throw new Error("benchmark did not finish within 180s");
     return result;
   } finally {
-    try { chrome.kill(); } catch {}
-    try { rmSync(profile, { recursive: true, force: true }); } catch {}
+    ws?.close();
+    if (!exited && browserWs) {
+      const closer = new WebSocket(browserWs);
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("owned browser close connection timeout")), 10000);
+        closer.onopen = () => { clearTimeout(timer); resolve(); };
+        closer.onerror = () => { clearTimeout(timer); reject(new Error("owned browser close connection failed")); };
+      });
+      closer.send(JSON.stringify({ id: 1, method: "Browser.close" }));
+      const deadline = Date.now() + 10000;
+      while (!exited && Date.now() < deadline) await sleep(100);
+      closer.close();
+    }
+    log("owned_close", { pid: chrome.pid, exited, exit_code: chrome.exitCode, forced: false, retained_profile: profile });
+    if (!exited || chrome.exitCode !== 0) throw new Error("owned browser did not exit normally; profile retained and no force-kill attempted");
   }
 }
 
-const attempts = 3;
+const attempts = 1;
 let lastError = null;
 for (let attempt = 1; attempt <= attempts; attempt++) {
   try {
@@ -165,7 +188,7 @@ for (let attempt = 1; attempt <= attempts; attempt++) {
       process.exit(1);
     }
     console.log("status:", result.status, "p95:", result.react_commit_p95_ms);
-    process.exit(0);
+    process.exit(result.status === "pass" ? 0 : 1);
   } catch (error) {
     lastError = error;
     log("attempt_failed", { attempt, error: String(error && error.message ? error.message : error) });
