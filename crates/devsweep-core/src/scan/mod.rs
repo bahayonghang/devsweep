@@ -1,4 +1,9 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashSet,
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
@@ -90,6 +95,18 @@ pub trait GlobalScan {
     /// Scans global providers while observing cooperative cancellation.
     fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan;
 
+    /// Returns provider coverage and failures alongside observations.
+    fn scan_with_health_and_progress(
+        &self,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> ProjectScanOutcome {
+        ProjectScanOutcome {
+            plan: self.scan_with_progress(cancel, on_target),
+            health: ScanHealth::complete(),
+        }
+    }
+
     /// Scans global providers while reporting fully constructed targets.
     fn scan_with_progress(
         &self,
@@ -122,7 +139,11 @@ impl ProjectScan for ProjectScanner {
 
         Ok(ProjectScanOutcome {
             plan: outcome.plan,
-            health: ScanHealth::new(outcome.completeness, outcome.diagnostics),
+            health: health_with_coverage(
+                outcome.completeness,
+                outcome.diagnostics,
+                outcome.coverage,
+            ),
         })
     }
 
@@ -137,12 +158,35 @@ impl ProjectScan for ProjectScanner {
         )?;
         Ok(ProjectScanOutcome {
             plan: outcome.plan,
-            health: ScanHealth::new(outcome.completeness, outcome.diagnostics),
+            health: health_with_coverage(
+                outcome.completeness,
+                outcome.diagnostics,
+                outcome.coverage,
+            ),
         })
     }
 }
 
+fn health_with_coverage(
+    completeness: crate::model::ScanCompleteness,
+    diagnostics: Vec<crate::model::ScanDiagnostic>,
+    coverage: Vec<crate::model::ScanCoverage>,
+) -> ScanHealth {
+    let mut health = ScanHealth::new(completeness, diagnostics);
+    for entry in coverage {
+        health.record_coverage(entry);
+    }
+    health
+}
+
 impl GlobalScan for GlobalProviderScanner {
+    fn scan_with_health_and_progress(
+        &self,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> ProjectScanOutcome {
+        GlobalProviderScanner::scan_with_health_and_progress(self, cancel, on_target)
+    }
     fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
         GlobalProviderScanner::scan_with_cancel(self, cancel)
     }
@@ -195,22 +239,89 @@ pub struct ScanProgress {
 /// Projection rejects malformed identities and duplicate target ids instead of
 /// sending an ambiguous snapshot across an untrusted presentation boundary.
 pub fn scan_preview_from_plan(plan: &CleanupPlan) -> Result<ScanPreviewSnapshot> {
+    validate_scan_preview_plan(plan)?;
+    Ok(ScanPreviewSnapshot::from_cleanup_plan(plan))
+}
+
+/// Validates every raw preview before an adapter may coalesce its projection.
+/// This checks presentation identities without constructing a second target set.
+pub fn validate_scan_preview_plan(plan: &CleanupPlan) -> Result<()> {
     let mut ids = HashSet::with_capacity(plan.targets.len());
     for target in &plan.targets {
         if target.id.as_str().trim().is_empty() {
             bail!("scan preview target id must not be empty");
         }
-        if !ids.insert(target.id.clone()) {
+        if !ids.insert(&target.id) {
             bail!("duplicate scan preview target id {}", target.id.as_str());
         }
     }
-    Ok(ScanPreviewSnapshot::from_cleanup_plan(plan))
+    Ok(())
+}
+
+/// Controls observation work without changing discovery or the final report.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ScanProgressPolicy {
+    /// Do not rank or clone intermediate plans for a terminal-only consumer.
+    TerminalOnly,
+    /// Publish the first target and at most once per 100 ms, plus phase boundaries.
+    #[default]
+    Interactive,
+}
+
+const SCAN_PUBLICATION_INTERVAL: Duration = Duration::from_millis(100);
+
+struct ScanPublisher<'a> {
+    policy: ScanProgressPolicy,
+    observer: &'a mut dyn FnMut(ScanProgress),
+    last_discovery: Option<Instant>,
+}
+
+impl ScanPublisher<'_> {
+    fn enabled(&self) -> bool {
+        self.policy == ScanProgressPolicy::Interactive
+    }
+
+    fn publish(&mut self, phase: ScanPhase, message: String, plan: Option<&CleanupPlan>) {
+        if self.enabled() {
+            (self.observer)(ScanProgress {
+                phase,
+                message,
+                partial: plan.cloned(),
+            });
+        }
+    }
+
+    fn discovered(&mut self, phase: ScanPhase, plan: &CleanupPlan, now: Instant) {
+        if !self.enabled()
+            || self
+                .last_discovery
+                .is_some_and(|last| now.saturating_duration_since(last) < SCAN_PUBLICATION_INTERVAL)
+        {
+            return;
+        }
+        // Observation ranking must not latch freshness/selection changes into
+        // the accumulator before the shared final boundary.
+        let mut snapshot = plan.clone();
+        merge_and_rank_targets(&mut snapshot, []);
+        let count = snapshot.targets.len();
+        let message = match phase {
+            ScanPhase::Projects => format!("Discovered {count} project {}", target_noun(count)),
+            ScanPhase::Global => format!("Discovered {count} {} so far", target_noun(count)),
+        };
+        (self.observer)(ScanProgress {
+            phase,
+            message,
+            partial: Some(snapshot),
+        });
+        self.last_discovery = Some(now);
+    }
 }
 
 /// Orchestrates project and global scanning, merging, and ranking.
 pub struct Sweeper<P = ProjectScanner, G = GlobalProviderScanner> {
     projects: P,
     global: G,
+    progress_policy: ScanProgressPolicy,
 }
 
 impl Default for Sweeper<ProjectScanner, GlobalProviderScanner> {
@@ -222,7 +333,17 @@ impl Default for Sweeper<ProjectScanner, GlobalProviderScanner> {
 impl<P, G> Sweeper<P, G> {
     /// Creates a sweeper from injectable project and global scanners.
     pub(crate) fn new(projects: P, global: G) -> Self {
-        Self { projects, global }
+        Self {
+            projects,
+            global,
+            progress_policy: ScanProgressPolicy::Interactive,
+        }
+    }
+
+    /// Selects how much progress to materialize for this consumer.
+    pub fn with_progress_policy(mut self, policy: ScanProgressPolicy) -> Self {
+        self.progress_policy = policy;
+        self
     }
 }
 
@@ -325,37 +446,36 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
     ) -> Result<ScanPipelineOutcome> {
         let mut plan = CleanupPlan::empty();
         let mut health = ScanHealth::complete();
+        let mut publisher = ScanPublisher {
+            policy: self.progress_policy,
+            observer: progress,
+            last_discovery: None,
+        };
 
         if options.include_projects {
-            progress(ScanProgress {
-                phase: ScanPhase::Projects,
-                message: "Scanning current directory".to_string(),
-                partial: None,
-            });
+            publisher.publish(
+                ScanPhase::Projects,
+                "Scanning current directory".into(),
+                None,
+            );
             let project_outcome = self.projects.scan_roots_with_health_and_progress(
                 &options.roots,
                 cancel,
                 &mut |target| {
-                    merge_and_rank_targets(&mut plan, [target]);
-                    progress(ScanProgress {
-                        phase: ScanPhase::Projects,
-                        message: format!(
-                            "Discovered {} project {}",
-                            plan.targets.len(),
-                            target_noun(plan.targets.len())
-                        ),
-                        partial: Some(plan.clone()),
-                    });
+                    if publisher.enabled() {
+                        plan.targets.push(target);
+                        publisher.discovered(ScanPhase::Projects, &plan, Instant::now());
+                    }
                 },
             )?;
             let count = project_outcome.plan.targets.len();
             merge_and_rank_targets(&mut plan, project_outcome.plan.targets);
             health.merge(project_outcome.health);
-            progress(ScanProgress {
-                phase: ScanPhase::Projects,
-                message: format!("Project scan finished: {count} {}", target_noun(count)),
-                partial: Some(plan.clone()),
-            });
+            publisher.publish(
+                ScanPhase::Projects,
+                format!("Project scan finished: {count} {}", target_noun(count)),
+                Some(&plan),
+            );
         }
 
         if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
@@ -368,11 +488,11 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
             } else {
                 (ScanPhase::Global, "Global scan canceled at a safe boundary")
             };
-            progress(ScanProgress {
+            publisher.publish(
                 phase,
-                message: message.to_string(),
-                partial: (!plan.targets.is_empty()).then(|| plan.clone()),
-            });
+                message.into(),
+                (!plan.targets.is_empty()).then_some(&plan),
+            );
             return Ok(ScanPipelineOutcome {
                 plan,
                 health,
@@ -381,38 +501,32 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
         }
 
         if options.include_global {
-            progress(ScanProgress {
-                phase: ScanPhase::Global,
-                message: "Scanning global providers".to_string(),
-                partial: None,
-            });
-            progress(ScanProgress {
-                phase: ScanPhase::Global,
-                message: "Estimating global cache sizes".to_string(),
-                partial: None,
-            });
-            let global_plan = self.global.scan_with_progress(cancel, &mut |target| {
-                merge_and_rank_targets(&mut plan, [target]);
-                progress(ScanProgress {
-                    phase: ScanPhase::Global,
-                    message: format!(
-                        "Discovered {} {} so far",
-                        plan.targets.len(),
-                        target_noun(plan.targets.len())
-                    ),
-                    partial: Some(plan.clone()),
+            publisher.last_discovery = None;
+            publisher.publish(ScanPhase::Global, "Scanning global providers".into(), None);
+            publisher.publish(
+                ScanPhase::Global,
+                "Estimating global cache sizes".into(),
+                None,
+            );
+            let global_outcome = self
+                .global
+                .scan_with_health_and_progress(cancel, &mut |target| {
+                    if publisher.enabled() {
+                        plan.targets.push(target);
+                        publisher.discovered(ScanPhase::Global, &plan, Instant::now());
+                    }
                 });
-            });
-            let count = global_plan.targets.len();
-            merge_and_rank_targets(&mut plan, global_plan.targets);
+            let count = global_outcome.plan.targets.len();
+            merge_and_rank_targets(&mut plan, global_outcome.plan.targets);
+            health.merge(global_outcome.health);
 
             if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
                 health.mark_partial();
-                progress(ScanProgress {
-                    phase: ScanPhase::Global,
-                    message: "Global scan canceled at a safe boundary".to_string(),
-                    partial: (!plan.targets.is_empty()).then(|| plan.clone()),
-                });
+                publisher.publish(
+                    ScanPhase::Global,
+                    "Global scan canceled at a safe boundary".into(),
+                    (!plan.targets.is_empty()).then_some(&plan),
+                );
                 return Ok(ScanPipelineOutcome {
                     plan,
                     health,
@@ -420,11 +534,11 @@ impl<P: ProjectScan, G: GlobalScan> Sweeper<P, G> {
                 });
             }
 
-            progress(ScanProgress {
-                phase: ScanPhase::Global,
-                message: format!("Global scan finished: {count} {}", target_noun(count)),
-                partial: Some(plan.clone()),
-            });
+            publisher.publish(
+                ScanPhase::Global,
+                format!("Global scan finished: {count} {}", target_noun(count)),
+                Some(&plan),
+            );
         }
 
         Ok(ScanPipelineOutcome {
@@ -514,6 +628,86 @@ mod tests {
     }
 
     #[test]
+    fn terminal_policy_eliminates_snapshots_without_changing_final_plan_or_health() {
+        let make_sweeper = || {
+            Sweeper::new(
+                FakeProjects(
+                    (0..150)
+                        .map(|i| target(&format!("project-{i}"), i, None, true))
+                        .collect(),
+                ),
+                FakeGlobal(vec![target("global", 500, None, true)]),
+            )
+        };
+        let mut interactive_events = 0;
+        let interactive = make_sweeper()
+            .full_scan_outcome(&scan_all(), &mut |_| interactive_events += 1, None)
+            .unwrap();
+        let mut terminal_events = 0;
+        let terminal = make_sweeper()
+            .with_progress_policy(ScanProgressPolicy::TerminalOnly)
+            .full_scan_outcome(&scan_all(), &mut |_| terminal_events += 1, None)
+            .unwrap();
+        assert!(interactive_events >= 7);
+        assert_eq!(terminal_events, 0);
+        assert_eq!(terminal, interactive);
+    }
+
+    #[test]
+    fn discovery_publication_does_not_latch_freshness_before_final_ranking() {
+        let now = SystemTime::now();
+        let mut interactive = CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets: vec![target("ages-during-scan", 100, Some(now), true)],
+        };
+        let mut terminal = interactive.clone();
+        let mut events = Vec::new();
+        ScanPublisher {
+            policy: ScanProgressPolicy::Interactive,
+            observer: &mut |event| events.push(event),
+            last_discovery: None,
+        }
+        .discovered(ScanPhase::Projects, &interactive, Instant::now());
+        assert!(!events[0].partial.as_ref().unwrap().targets[0].selected_by_default);
+
+        // The two policies must rank the same original candidate at the final
+        // boundary, even if it has crossed the freshness floor since discovery.
+        let final_time = now + Duration::from_secs(8 * 86_400);
+        for plan in [&mut interactive, &mut terminal] {
+            ranking::rank_cleanup_plan_at(plan, final_time, ranking::DEFAULT_FRESHNESS_FLOOR);
+        }
+        assert!(terminal.targets[0].selected_by_default);
+        assert_eq!(interactive, terminal);
+    }
+
+    #[test]
+    fn publication_clock_bounds_materialization_and_keeps_pending_targets() {
+        let mut events = Vec::new();
+        let mut observer = |event| events.push(event);
+        let mut publisher = ScanPublisher {
+            policy: ScanProgressPolicy::Interactive,
+            observer: &mut observer,
+            last_discovery: None,
+        };
+        let now = Instant::now();
+        let mut plan = CleanupPlan::empty();
+        for i in 0..100 {
+            plan.targets
+                .push(target(&format!("target-{i}"), i, None, true));
+            publisher.discovered(ScanPhase::Projects, &plan, now);
+        }
+        publisher.discovered(ScanPhase::Projects, &plan, now + Duration::from_millis(99));
+        publisher.discovered(ScanPhase::Projects, &plan, now + Duration::from_millis(100));
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].partial.as_ref().unwrap().targets.len(), 1);
+        assert_eq!(events[1].partial.as_ref().unwrap().targets.len(), 100);
+        assert_eq!(target_ids(&plan)[0], "target-0");
+        merge_and_rank_targets(&mut plan, []);
+        assert_eq!(events[1].partial.as_ref().unwrap(), &plan);
+        assert_eq!(target_ids(&plan)[0], "target-99");
+    }
+
+    #[test]
     fn full_scan_applies_freshness_guard_exactly_once() {
         let now = SystemTime::now();
         let sweeper = Sweeper::new(
@@ -553,10 +747,7 @@ mod tests {
     fn progress_events_follow_staged_sequence() {
         let sweeper = Sweeper::new(
             FakeProjects(vec![target("project", 100, None, false)]),
-            FakeGlobal(vec![
-                target("global-a", 500, None, false),
-                target("global-b", 900, None, false),
-            ]),
+            FakeGlobal(vec![target("global-a", 500, None, false)]),
         );
         let mut events = Vec::new();
 
@@ -571,8 +762,7 @@ mod tests {
             (ScanPhase::Global, "Scanning global providers", false),
             (ScanPhase::Global, "Estimating global cache sizes", false),
             (ScanPhase::Global, "Discovered 2 targets so far", true),
-            (ScanPhase::Global, "Discovered 3 targets so far", true),
-            (ScanPhase::Global, "Global scan finished: 2 targets", true),
+            (ScanPhase::Global, "Global scan finished: 1 target", true),
         ];
         assert_eq!(events.len(), expected.len());
         for (event, (phase, message, has_partial)) in events.iter().zip(expected) {

@@ -197,7 +197,7 @@ pub(super) fn update_with_replace(
 
 // Use the same OS-owned transaction pattern as the language store, with a
 // separate Windows mutex name. No lock-path cleanup follows the commit point.
-struct TransactionLock {
+pub(crate) struct TransactionLock {
     #[cfg(windows)]
     handle: windows_sys::Win32::Foundation::HANDLE,
     #[cfg(not(windows))]
@@ -206,7 +206,7 @@ struct TransactionLock {
 
 impl TransactionLock {
     #[cfg(windows)]
-    fn acquire(directory: &Path) -> Result<Self, DesktopPreferencesError> {
+    pub(crate) fn acquire(directory: &Path) -> Result<Self, DesktopPreferencesError> {
         use windows_sys::Win32::{
             Foundation::{CloseHandle, WAIT_ABANDONED, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT},
             System::Threading::{CreateMutexW, WaitForSingleObject},
@@ -255,7 +255,7 @@ impl TransactionLock {
     }
 
     #[cfg(not(windows))]
-    fn acquire(directory: &Path) -> Result<Self, DesktopPreferencesError> {
+    pub(crate) fn acquire(directory: &Path) -> Result<Self, DesktopPreferencesError> {
         use std::os::fd::AsRawFd;
         let file = io_result("open_lock_directory", directory, fs::File::open(directory))?;
         for attempt in 0..LOCK_RETRIES {
@@ -290,7 +290,7 @@ impl Drop for TransactionLock {
     }
 }
 
-fn atomic_replace(
+pub(crate) fn atomic_replace(
     path: &Path,
     bytes: &[u8],
     replace: fn(&Path, &Path) -> io::Result<()>,
@@ -340,7 +340,7 @@ fn atomic_replace(
 }
 
 #[cfg(windows)]
-fn replace_file(source: &Path, destination: &Path) -> io::Result<()> {
+pub(crate) fn replace_file(source: &Path, destination: &Path) -> io::Result<()> {
     use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::Storage::FileSystem::{
         MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
@@ -371,7 +371,7 @@ fn replace_file(source: &Path, destination: &Path) -> io::Result<()> {
 }
 
 #[cfg(not(windows))]
-fn replace_file(source: &Path, destination: &Path) -> io::Result<()> {
+pub(crate) fn replace_file(source: &Path, destination: &Path) -> io::Result<()> {
     let directory = fs::File::open(destination.parent().expect("validated preference parent"))?;
     fs::rename(source, destination)?;
     // Rename is the commit point. A later directory-sync failure must not

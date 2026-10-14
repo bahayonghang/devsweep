@@ -44,7 +44,7 @@ impl ScanReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, try_from = "ScanHealthWire")]
 /// Completeness, diagnostics, and capacity totals for a scan.
 pub struct ScanHealth {
     /// Overall scan completeness.
@@ -53,6 +53,43 @@ pub struct ScanHealth {
     pub diagnostics: Vec<ScanDiagnostic>,
     /// Capacity totals derived from discovered targets.
     pub totals: ScanTotals,
+    /// Per-root/provider accounting. Missing legacy coverage is not evidence of evaluation.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub coverage: Vec<ScanCoverage>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ScanHealthWire {
+    completeness: ScanCompleteness,
+    diagnostics: Vec<ScanDiagnostic>,
+    totals: ScanTotals,
+    #[serde(default)]
+    coverage: Vec<ScanCoverage>,
+}
+
+impl TryFrom<ScanHealthWire> for ScanHealth {
+    type Error = String;
+    fn try_from(wire: ScanHealthWire) -> Result<Self, Self::Error> {
+        for (index, entry) in wire.coverage.iter().enumerate() {
+            if entry.id.trim().is_empty()
+                || wire.coverage[..index]
+                    .iter()
+                    .any(|prior| prior.scope == entry.scope && prior.id == entry.id)
+            {
+                return Err("coverage requires unique nonempty (scope,id) identities".to_string());
+            }
+            if entry.status.is_incomplete() && wire.completeness.is_complete() {
+                return Err("incomplete coverage cannot claim complete scan health".to_string());
+            }
+        }
+        Ok(Self {
+            completeness: wire.completeness,
+            diagnostics: wire.diagnostics,
+            totals: wire.totals,
+            coverage: wire.coverage,
+        })
+    }
 }
 
 impl ScanHealth {
@@ -71,6 +108,7 @@ impl ScanHealth {
             },
             diagnostics,
             totals: ScanTotals::default(),
+            coverage: Vec::new(),
         }
     }
 
@@ -85,11 +123,85 @@ impl ScanHealth {
             self.completeness = ScanCompleteness::Partial;
         }
         self.diagnostics.extend(other.diagnostics);
+        for entry in other.coverage {
+            self.record_coverage(entry);
+        }
     }
 
     /// Marks the scan as partial.
     pub fn mark_partial(&mut self) {
         self.completeness = ScanCompleteness::Partial;
+    }
+
+    /// Records one requested unit without treating optional absence as failure.
+    pub(crate) fn record_coverage(&mut self, entry: ScanCoverage) {
+        if entry.status.is_incomplete() {
+            self.mark_partial();
+        }
+        if let Some(existing) = self
+            .coverage
+            .iter_mut()
+            .find(|existing| existing.scope == entry.scope && existing.id == entry.id)
+        {
+            *existing = entry;
+            return;
+        }
+        self.coverage.push(entry);
+    }
+}
+
+/// Read-only accounting for one selected root or built-in provider.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScanCoverage {
+    /// Stable provider id, or normalized selected root identity.
+    pub id: String,
+    /// Kind of evaluated scope.
+    pub scope: ScanCoverageScope,
+    /// Effective absolute path when resolved.
+    pub path: Option<PathBuf>,
+    /// Why this scope did or did not produce observations.
+    pub status: ScanCoverageStatus,
+    /// Number of observations from this scope.
+    pub target_count: usize,
+    /// Sanitized explanation; never execution authority.
+    pub detail: String,
+}
+
+/// Kind of coverage unit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScanCoverageScope {
+    Project,
+    Provider,
+}
+
+/// Closed set of discovery outcomes, separate from cleanup execution outcomes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScanCoverageStatus {
+    Complete,
+    Empty,
+    Absent,
+    Unsupported,
+    Skipped,
+    Failed,
+    Canceled,
+    Timeout,
+    OutputTruncated,
+    BudgetLimited,
+    Protected,
+    Busy,
+    OwnershipUnknown,
+}
+
+impl ScanCoverageStatus {
+    /// Whether this outcome leaves requested discovery incomplete.
+    pub fn is_incomplete(self) -> bool {
+        !matches!(
+            self,
+            Self::Complete | Self::Empty | Self::Absent | Self::Unsupported
+        )
     }
 }
 
@@ -413,6 +525,50 @@ mod tests {
         CLEANUP_PLAN_VERSION, CleanupIntent, Ecosystem, Evidence, RiskLevel, Scope, TargetId,
         TargetKind, UntrustedTarget,
     };
+
+    #[test]
+    fn coverage_maps_every_status_and_rejects_duplicate_external_units() {
+        for status in [
+            ScanCoverageStatus::Complete,
+            ScanCoverageStatus::Empty,
+            ScanCoverageStatus::Absent,
+            ScanCoverageStatus::Unsupported,
+            ScanCoverageStatus::Skipped,
+            ScanCoverageStatus::Failed,
+            ScanCoverageStatus::Canceled,
+            ScanCoverageStatus::Timeout,
+            ScanCoverageStatus::OutputTruncated,
+            ScanCoverageStatus::BudgetLimited,
+            ScanCoverageStatus::Protected,
+            ScanCoverageStatus::Busy,
+            ScanCoverageStatus::OwnershipUnknown,
+        ] {
+            let mut health = ScanHealth::complete();
+            let unit = ScanCoverage {
+                id: "npm".to_string(),
+                scope: ScanCoverageScope::Provider,
+                path: None,
+                status,
+                target_count: 0,
+                detail: "fixture".to_string(),
+            };
+            health.record_coverage(unit.clone());
+            assert_eq!(!health.is_complete(), status.is_incomplete());
+            let value = serde_json::to_value(&health).expect("health");
+            assert!(serde_json::from_value::<ScanHealth>(value.clone()).is_ok());
+            let mut duplicate = value;
+            duplicate["coverage"] = serde_json::json!([unit, unit]);
+            assert!(serde_json::from_value::<ScanHealth>(duplicate).is_err());
+        }
+        let legacy = serde_json::to_value(ScanHealth::complete()).expect("legacy health");
+        assert!(legacy.get("coverage").is_none());
+        assert!(
+            serde_json::from_value::<ScanHealth>(legacy)
+                .expect("legacy compatibility")
+                .coverage
+                .is_empty()
+        );
+    }
 
     #[test]
     fn scan_report_round_trips_with_structured_health() {

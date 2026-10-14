@@ -95,7 +95,7 @@ fn shipped_modes_are_reachable_and_removed_roots_stay_unknown() {
 
 #[test]
 fn locale_switch_localizes_human_copy_and_leaves_machine_documents_invariant() {
-    let english = devsweep(&["optimize", "list"]);
+    let english = devsweep(&["--language", "en", "optimize", "list"]);
     let chinese = devsweep(&["--language", "zh-CN", "optimize", "list"]);
     assert_eq!(english.status.code(), Some(0));
     assert_eq!(chinese.status.code(), Some(0));

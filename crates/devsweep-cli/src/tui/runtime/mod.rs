@@ -3,7 +3,6 @@ use std::{
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
-        mpsc::{self, Receiver, Sender},
     },
     thread,
     time::Duration,
@@ -21,7 +20,9 @@ use super::{
     terminal::Tui,
 };
 
+mod mailbox;
 mod workers;
+use mailbox::{WorkerReceiver, WorkerSender};
 
 use devsweep_core::services::{CleanService, InventoryService, ScanService};
 pub(super) use devsweep_core::services::{
@@ -38,6 +39,7 @@ use workers::{
 struct WorkerRegistration {
     cancel: Arc<FlagCancelObserver>,
     join: thread::JoinHandle<()>,
+    cancel_on_shutdown: bool,
 }
 
 type WorkerRegistry = Arc<Mutex<HashMap<JobId, WorkerRegistration>>>;
@@ -50,24 +52,14 @@ pub(super) fn run_event_loop<S: ScanService, I: InventoryService, C: CleanServic
     shell: ShellComposition,
 ) -> Result<()> {
     let mut app = App::with_shell(shell);
-    let (worker_tx, worker_rx) = mpsc::channel();
+    let (worker_tx, worker_rx) = mailbox::channel();
     let clean_dispatch_in_flight = Arc::new(AtomicBool::new(false));
     let worker_registry: WorkerRegistry = Arc::new(Mutex::new(HashMap::new()));
-    let startup_effects = app.startup_effects();
-    dispatch_effects(
-        startup_effects,
-        &worker_tx,
-        &scan,
-        &inventory,
-        &clean,
-        &clean_dispatch_in_flight,
-        &worker_registry,
-    )?;
-
-    while !app.should_quit {
-        drain_worker_events(
+    let outcome = (|| {
+        let startup_effects = app.startup_effects();
+        dispatch_ui_effects(
             &mut app,
-            &worker_rx,
+            startup_effects,
             &worker_tx,
             &scan,
             &inventory,
@@ -75,42 +67,103 @@ pub(super) fn run_event_loop<S: ScanService, I: InventoryService, C: CleanServic
             &clean_dispatch_in_flight,
             &worker_registry,
         )?;
-        terminal.draw(|frame| render_app(frame, &app))?;
 
-        if event::poll(Duration::from_millis(100))?
-            && let CrosstermEvent::Key(key) = event::read()?
-        {
-            let effects = app.update(UiEvent::Key(key));
-            dispatch_effects(
-                effects,
+        let mut dirty = true;
+        while !app.should_quit {
+            dirty |= drain_worker_events(
+                &mut app,
+                &worker_rx,
                 &worker_tx,
                 &scan,
                 &inventory,
                 &clean,
                 &clean_dispatch_in_flight,
                 &worker_registry,
-            )?;
+            )? > 0;
+            draw_if_dirty(terminal, &app, &mut dirty)?;
+
+            if event::poll(Duration::from_millis(100))? {
+                match event::read()? {
+                    CrosstermEvent::Key(key) => {
+                        let effects = app.update(UiEvent::Key(key));
+                        dirty = true;
+                        dispatch_ui_effects(
+                            &mut app,
+                            effects,
+                            &worker_tx,
+                            &scan,
+                            &inventory,
+                            &clean,
+                            &clean_dispatch_in_flight,
+                            &worker_registry,
+                        )?;
+                    }
+                    CrosstermEvent::Resize(_, _) => dirty = true,
+                    _ => {}
+                }
+            }
+        }
+
+        Ok(())
+    })();
+    // Close delivery before joining: a worker may be waiting for FIFO space.
+    drop(worker_rx);
+    join_shutdown_workers(&worker_registry)?;
+    outcome
+}
+
+fn join_shutdown_workers(worker_registry: &WorkerRegistry) -> Result<()> {
+    let workers: Vec<_> = worker_registry
+        .lock()
+        .map_err(|_| anyhow::anyhow!("worker registry lock poisoned on shutdown"))?
+        .drain()
+        .map(|(_, worker)| worker)
+        .collect();
+    for worker in &workers {
+        if worker.cancel_on_shutdown {
+            worker.cancel.request_cancel();
         }
     }
-
+    for worker in workers {
+        let _ = worker.join.join();
+    }
     Ok(())
+}
+
+fn draw_if_dirty<B: ratatui::backend::Backend>(
+    terminal: &mut ratatui::Terminal<B>,
+    app: &App,
+    dirty: &mut bool,
+) -> std::result::Result<bool, B::Error> {
+    if !*dirty {
+        return Ok(false);
+    }
+    terminal.draw(|frame| render_app(frame, app))?;
+    *dirty = false;
+    Ok(true)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn drain_worker_events<S: ScanService, I: InventoryService, C: CleanService>(
     app: &mut App,
-    worker_rx: &Receiver<WorkerEvent>,
-    worker_tx: &Sender<WorkerEvent>,
+    worker_rx: &WorkerReceiver,
+    worker_tx: &WorkerSender,
     scan: &S,
     inventory: &I,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
     worker_registry: &WorkerRegistry,
-) -> Result<()> {
-    while let Ok(event) = worker_rx.try_recv() {
+) -> Result<usize> {
+    let mut drained = 0;
+    while drained < 32 {
+        let Ok(event) = worker_rx.try_recv() else {
+            break;
+        };
+        drained += 1;
         join_terminal_worker(&event, worker_registry)?;
         let effects = app.update(UiEvent::Worker(event));
-        dispatch_effects(
+        dispatch_ui_effects(
+            app,
             effects,
             worker_tx,
             scan,
@@ -120,20 +173,50 @@ fn drain_worker_events<S: ScanService, I: InventoryService, C: CleanService>(
             worker_registry,
         )?;
     }
-    Ok(())
+    Ok(drained)
 }
 
-fn dispatch_effects<S: ScanService, I: InventoryService, C: CleanService>(
-    effects: Vec<Effect>,
-    worker_tx: &Sender<WorkerEvent>,
+#[allow(clippy::too_many_arguments)]
+fn dispatch_ui_effects<S: ScanService, I: InventoryService, C: CleanService>(
+    app: &mut App,
+    mut effects: Vec<Effect>,
+    worker_tx: &WorkerSender,
     scan: &S,
     inventory: &I,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
     worker_registry: &WorkerRegistry,
 ) -> Result<()> {
+    while !effects.is_empty() {
+        let immediate = dispatch_effects(
+            effects,
+            worker_tx,
+            scan,
+            inventory,
+            clean,
+            clean_dispatch_in_flight,
+            worker_registry,
+        )?;
+        effects = immediate
+            .into_iter()
+            .flat_map(|event| app.update(UiEvent::Worker(event)))
+            .collect();
+    }
+    Ok(())
+}
+
+fn dispatch_effects<S: ScanService, I: InventoryService, C: CleanService>(
+    effects: Vec<Effect>,
+    worker_tx: &WorkerSender,
+    scan: &S,
+    inventory: &I,
+    clean: &C,
+    clean_dispatch_in_flight: &Arc<AtomicBool>,
+    worker_registry: &WorkerRegistry,
+) -> Result<Vec<WorkerEvent>> {
+    let mut immediate = Vec::new();
     for effect in effects {
-        dispatch_effect(
+        if let Some(event) = dispatch_effect(
             effect,
             worker_tx.clone(),
             scan,
@@ -141,20 +224,29 @@ fn dispatch_effects<S: ScanService, I: InventoryService, C: CleanService>(
             clean,
             clean_dispatch_in_flight,
             worker_registry,
-        )?;
+        )? {
+            immediate.push(event);
+        }
     }
-    Ok(())
+    Ok(immediate)
 }
 
 fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
     effect: Effect,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: WorkerSender,
     scan: &S,
     inventory: &I,
     clean: &C,
     clean_dispatch_in_flight: &Arc<AtomicBool>,
     worker_registry: &WorkerRegistry,
-) -> Result<()> {
+) -> Result<Option<WorkerEvent>> {
+    // Unexpected presentation failure must not cancel an in-flight mutation.
+    let cancel_on_shutdown = !matches!(
+        &effect,
+        Effect::StartClean { .. }
+            | Effect::StartSoftwareUninstall { .. }
+            | Effect::StartOptimizeRun { .. }
+    );
     match effect {
         Effect::StartAnalyze { job_id } => {
             if !worker_registry
@@ -162,12 +254,11 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| anyhow::anyhow!("worker registry lock poisoned before Analyze start"))?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Analyze dispatch rejected: prior heavy work has not joined"
                         .to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -175,7 +266,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
             worker_registry
                 .lock()
                 .map_err(|_| anyhow::anyhow!("worker registry lock poisoned after Analyze start"))?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartScan { job_id } => {
             if !worker_registry
@@ -183,11 +281,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| anyhow::anyhow!("worker registry lock poisoned before scan start"))?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Scan dispatch rejected: prior heavy work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let scan = scan.clone();
@@ -197,7 +294,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
             worker_registry
                 .lock()
                 .map_err(|_| anyhow::anyhow!("worker registry lock poisoned after scan start"))?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartInventory { job_id } => {
             let cancel = Arc::new(FlagCancelObserver::new());
@@ -211,7 +315,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after inventory start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartSoftwareInventory { job_id } => {
             if !worker_registry
@@ -221,11 +332,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Software inventory rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -237,7 +347,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Software inventory start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartSoftwarePreview {
             job_id,
@@ -251,11 +368,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Software preview rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -273,7 +389,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Software preview start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartSoftwareUninstall {
             job_id,
@@ -287,11 +410,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Software uninstall rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -309,7 +431,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Software uninstall start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartSoftwareAudit { job_id } => {
             if !worker_registry
@@ -319,11 +448,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Software audit rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -334,7 +462,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Software audit start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartOptimizeList { job_id } => {
             if !worker_registry
@@ -344,11 +479,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Optimize list rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -359,7 +493,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Optimize list start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartOptimizePreview {
             job_id,
@@ -372,11 +513,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Optimize preview rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -388,7 +528,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Optimize preview start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartOptimizeRun {
             job_id,
@@ -402,11 +549,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Optimize run rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -418,7 +564,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Optimize run start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartOptimizeAudit { job_id } => {
             if !worker_registry
@@ -428,11 +581,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Optimize audit rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -443,7 +595,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Optimize audit start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartStatusSnapshot { job_id } => {
             if !worker_registry
@@ -453,11 +612,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Status snapshot rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -468,7 +626,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Status snapshot start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartStatusLive {
             job_id,
@@ -482,11 +647,10 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 })?
                 .is_empty()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Status live rejected: prior work has not joined".to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let worker_cancel = Arc::clone(&cancel);
@@ -498,7 +662,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .map_err(|_| {
                     anyhow::anyhow!("worker registry lock poisoned after Status live start")
                 })?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::StartClean {
             job_id,
@@ -510,12 +681,11 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
                 .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
                 .is_err()
             {
-                let _ = worker_tx.send(WorkerEvent::JobFailed {
+                return Ok(Some(WorkerEvent::JobFailed {
                     job_id,
                     message: "Cleanup dispatch rejected: another cleanup job is already running"
                         .to_string(),
-                });
-                return Ok(());
+                }));
             }
             let cancel = Arc::new(FlagCancelObserver::new());
             let clean = clean.clone();
@@ -536,7 +706,14 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
             worker_registry
                 .lock()
                 .map_err(|_| anyhow::anyhow!("worker registry lock poisoned after clean start"))?
-                .insert(job_id, WorkerRegistration { cancel, join });
+                .insert(
+                    job_id,
+                    WorkerRegistration {
+                        cancel,
+                        join,
+                        cancel_on_shutdown,
+                    },
+                );
         }
         Effect::CancelJob { job_id } => {
             if let Some(worker) = worker_registry
@@ -548,12 +725,16 @@ fn dispatch_effect<S: ScanService, I: InventoryService, C: CleanService>(
             }
         }
         Effect::SavePresentationLanguage { request_id, locale } => {
-            dispatch_presentation_language(request_id, locale, &worker_tx, persist_language);
+            return Ok(Some(dispatch_presentation_language(
+                request_id,
+                locale,
+                persist_language,
+            )));
         }
         Effect::Quit => {}
     }
 
-    Ok(())
+    Ok(None)
 }
 
 fn join_terminal_worker(event: &WorkerEvent, worker_registry: &WorkerRegistry) -> Result<()> {
@@ -593,16 +774,15 @@ fn join_terminal_worker(event: &WorkerEvent, worker_registry: &WorkerRegistry) -
 fn dispatch_presentation_language<F>(
     request_id: u64,
     locale: crate::i18n::Locale,
-    worker_tx: &Sender<WorkerEvent>,
     persist: F,
-) where
+) -> WorkerEvent
+where
     F: FnOnce(crate::i18n::Locale) -> Result<()>,
 {
-    let event = match persist(locale) {
+    match persist(locale) {
         Ok(()) => WorkerEvent::PresentationLanguageSaved { request_id, locale },
         Err(_error) => WorkerEvent::PresentationLanguageSaveFailed { request_id },
-    };
-    let _ = worker_tx.send(event);
+    }
 }
 
 #[cfg(test)]

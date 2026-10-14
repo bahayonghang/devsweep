@@ -6,7 +6,7 @@ use devsweep_core::{
     execution::{ConfirmationDigest, ExecutionError, ExecutionReport, ExecutionRequest, Executor},
     model::{CleanupIntent, ScanReport, TargetId, UntrustedPlan},
     plan::validate_plan,
-    scan::{ScanOptions, Sweeper},
+    scan::{ScanOptions, ScanProgressPolicy, Sweeper},
 };
 
 use super::super::{
@@ -51,8 +51,9 @@ fn run_scan(command: &CleanScanCommand, locale: Locale, cli: &Cli) -> Result<(),
         roots: command.roots.clone(),
     };
     let mut progress = |_event| {};
+    let sweeper = Sweeper::default().with_progress_policy(ScanProgressPolicy::TerminalOnly);
     let report = if let Some(target_id) = &command.rescan_target {
-        Sweeper::default()
+        sweeper
             .full_scan_report_rescanning_target(
                 &options,
                 &TargetId::new(target_id.clone()),
@@ -60,11 +61,19 @@ fn run_scan(command: &CleanScanCommand, locale: Locale, cli: &Cli) -> Result<(),
             )
             .map_err(|error| map_anyhow("scan_failed", error))?
     } else {
-        Sweeper::default()
+        sweeper
             .full_scan_report(&options, &mut progress)
             .map_err(|error| map_anyhow("scan_failed", error))?
     };
-    emit_scan(cli, locale, &report)
+    emit_scan(cli, locale, &report)?;
+    if !report.health.is_complete() {
+        return Err(ApplicationError::after_output(
+            ExitClass::Partial,
+            "partial_scan",
+            human_message(locale, "clean.v1.scan.partial"),
+        ));
+    }
+    Ok(())
 }
 
 fn run_plan(command: &CleanPlanCommand, locale: Locale) -> Result<(), ApplicationError> {
@@ -107,7 +116,7 @@ fn run_preview(
     locale: Locale,
     cli: &Cli,
 ) -> Result<(), ApplicationError> {
-    let (validated, selected) = load_validated_selection(&command.plan)?;
+    let (validated, selected, plan) = load_validated_selection(&command.plan)?;
     let report = Executor::default()
         .run_plan(
             &validated,
@@ -121,7 +130,7 @@ fn run_preview(
         )
         .map_err(|error| map_anyhow("preview_failed", error))?;
     let digest = prefixed_digest(&report);
-    emit_preview(cli, locale, &report, &digest)
+    emit_preview(cli, locale, &report, &digest, &plan)
 }
 
 fn run_execute(
@@ -129,7 +138,7 @@ fn run_execute(
     locale: Locale,
     cli: &Cli,
 ) -> Result<(), ApplicationError> {
-    let (validated, selected) = load_validated_selection(&command.plan)?;
+    let (validated, selected, _) = load_validated_selection(&command.plan)?;
     let digest = command
         .preview_digest
         .strip_prefix("sha256:")
@@ -160,8 +169,8 @@ fn run_execute(
         }
     };
     emit_execution(cli, locale, &report)?;
-    if report.failed > 0 && report.succeeded > 0 {
-        return Err(ApplicationError::new(
+    if (report.failed > 0 || report.skipped > 0) && report.succeeded > 0 {
+        return Err(ApplicationError::after_output(
             ExitClass::Partial,
             "partial_execution",
             catalogue(locale)
@@ -170,11 +179,19 @@ fn run_execute(
         ));
     }
     if report.failed > 0 {
-        return Err(ApplicationError::failed(
+        return Err(ApplicationError::after_output(
+            ExitClass::Failed,
             "execution_failed",
             catalogue(locale)
                 .render("clean.v1.execute.failed", &[], None)
                 .unwrap_or_else(|_| "failed".to_string()),
+        ));
+    }
+    if report.skipped > 0 {
+        return Err(ApplicationError::after_output(
+            ExitClass::Partial,
+            "execution_skipped",
+            human_message(locale, "clean.v1.detail.skipped"),
         ));
     }
     Ok(())
@@ -208,7 +225,14 @@ fn load_scan_report(path: &Path) -> Result<ScanReport, ApplicationError> {
 
 fn load_validated_selection(
     path: &Path,
-) -> Result<(devsweep_core::plan::ValidatedPlan, Vec<TargetId>), ApplicationError> {
+) -> Result<
+    (
+        devsweep_core::plan::ValidatedPlan,
+        Vec<TargetId>,
+        UntrustedPlan,
+    ),
+    ApplicationError,
+> {
     let bytes = fs::read(path).map_err(|error| {
         ApplicationError::failed(
             "plan_read_failed",
@@ -223,7 +247,7 @@ fn load_validated_selection(
     })?;
     let validated = validate_plan(&plan).map_err(|error| map_anyhow("invalid_plan", error))?;
     let selected = validated.default_selected_ids();
-    Ok((validated, selected))
+    Ok((validated, selected, plan))
 }
 
 fn prefixed_digest(report: &ExecutionReport) -> String {
@@ -232,7 +256,9 @@ fn prefixed_digest(report: &ExecutionReport) -> String {
 fn emit_scan(cli: &Cli, locale: Locale, report: &ScanReport) -> Result<(), ApplicationError> {
     match cli.result_format() {
         ResultFormat::Human => {
-            let key = if report.plan.targets.is_empty() {
+            let key = if !report.health.is_complete() {
+                "clean.v1.scan.partial"
+            } else if report.plan.targets.is_empty() {
                 "clean.v1.scan.empty"
             } else {
                 "clean.v1.scan.complete"
@@ -242,12 +268,49 @@ fn emit_scan(cli: &Cli, locale: Locale, report: &ScanReport) -> Result<(), Appli
                 presentation::render(locale, key, &[("count", &count)], None).map_err(|error| {
                     ApplicationError::failed("catalogue_render_failed", error.to_string())
                 })?;
+            let mut text = text;
+            if report.health.coverage.is_empty() {
+                text.push_str(&format!(
+                    "\n{}",
+                    human_message(locale, "clean.v1.detail.coverage_missing")
+                ));
+            }
+            for unit in &report.health.coverage {
+                let status = serde_json::to_value(unit.status).unwrap();
+                text.push_str(&format!(
+                    "\n{}: {} | {} | {}",
+                    human_message(locale, "clean.v1.detail.coverage"),
+                    unit.id,
+                    human_message(
+                        locale,
+                        &format!("clean.v1.coverage.{}", status.as_str().unwrap())
+                    ),
+                    unit.detail
+                ));
+            }
+            for diagnostic in &report.health.diagnostics {
+                text.push_str(&format!(
+                    "\n{:?}: {} — {}",
+                    diagnostic.outcome,
+                    diagnostic.path.display(),
+                    diagnostic.detail
+                ));
+            }
+            text.push_str(&render_targets(locale, &report.plan));
+            text.push_str(&format!(
+                "\n{}",
+                human_message(locale, "clean.v1.detail.next")
+            ));
             write_human(cli, &text)
         }
         _ => write_envelope(
             cli,
             "clean.scan",
-            "succeeded",
+            if report.health.is_complete() {
+                "succeeded"
+            } else {
+                "partial"
+            },
             serde_json::to_value(report).unwrap(),
         ),
     }
@@ -258,6 +321,7 @@ fn emit_preview(
     locale: Locale,
     report: &ExecutionReport,
     digest: &str,
+    plan: &UntrustedPlan,
 ) -> Result<(), ApplicationError> {
     match cli.result_format() {
         ResultFormat::Human => {
@@ -279,7 +343,14 @@ fn emit_preview(
             .map_err(|error| {
                 ApplicationError::failed("catalogue_render_failed", error.to_string())
             })?;
-            write_human(cli, &text)
+            write_human(
+                cli,
+                &format!(
+                    "{text}{}\n{}",
+                    render_targets(locale, plan),
+                    human_message(locale, "clean.v1.detail.preview_note")
+                ),
+            )
         }
         _ => write_envelope(
             cli,
@@ -295,10 +366,12 @@ fn emit_execution(
     locale: Locale,
     report: &ExecutionReport,
 ) -> Result<(), ApplicationError> {
-    let outcome = if report.failed > 0 && report.succeeded > 0 {
+    let outcome = if (report.failed > 0 || report.skipped > 0) && report.succeeded > 0 {
         "partial"
     } else if report.failed > 0 {
         "failed"
+    } else if report.skipped > 0 {
+        "skipped"
     } else {
         "succeeded"
     };
@@ -307,11 +380,55 @@ fn emit_execution(
             let key = match outcome {
                 "partial" => "clean.v1.execute.partial",
                 "failed" => "clean.v1.execute.failed",
+                "skipped" => "clean.v1.detail.skipped",
                 _ => "clean.v1.execute.completed",
             };
             let text = presentation::render(locale, key, &[], None).map_err(|error| {
                 ApplicationError::failed("catalogue_render_failed", error.to_string())
             })?;
+            let mut text = text;
+            for target in &report.outcomes {
+                let action = match target.action {
+                    devsweep_core::execution::ActionKind::Command { .. } => {
+                        "clean.v1.detail.command"
+                    }
+                    devsweep_core::execution::ActionKind::MoveToTrash => "clean.v1.detail.trash",
+                    _ => "clean.v1.detail.inspect",
+                };
+                let status = match &target.status {
+                    devsweep_core::execution::OutcomeStatus::Succeeded => {
+                        human_message(locale, "clean.v1.execute.completed")
+                    }
+                    devsweep_core::execution::OutcomeStatus::Failed { message } => {
+                        presentation::render(
+                            locale,
+                            "clean.v1.result.failed_detail",
+                            &[("detail", message)],
+                            None,
+                        )
+                        .unwrap_or_else(|_| message.clone())
+                    }
+                    devsweep_core::execution::OutcomeStatus::Skipped { reason } => {
+                        presentation::render(
+                            locale,
+                            "clean.v1.outcome.skipped",
+                            &[("reason", reason)],
+                            None,
+                        )
+                        .unwrap_or_else(|_| reason.clone())
+                    }
+                };
+                text.push_str(&format!(
+                    "\n{} | {} | {}",
+                    target.target_id.as_str(),
+                    human_message(locale, action),
+                    status
+                ));
+            }
+            text.push_str(&format!(
+                "\n{}",
+                human_message(locale, "clean.v1.detail.result_note")
+            ));
             write_human(cli, &text)
         }
         _ => write_envelope(
@@ -321,6 +438,46 @@ fn emit_execution(
             serde_json::to_value(report).unwrap(),
         ),
     }
+}
+
+fn human_message(locale: Locale, key: &str) -> String {
+    presentation::render(locale, key, &[], None).unwrap_or_else(|_| key.to_string())
+}
+
+fn render_targets(locale: Locale, plan: &UntrustedPlan) -> String {
+    let mut result = format!("\n{}", human_message(locale, "clean.v1.detail.columns"));
+    for target in &plan.targets {
+        let action = match target.intent {
+            CleanupIntent::InspectOnly { .. } => "clean.v1.detail.inspect",
+            CleanupIntent::RunBuiltInAction { .. } => "clean.v1.detail.command",
+            _ => "clean.v1.detail.trash",
+        };
+        let size = if target.size_complete {
+            crate::i18n::format_binary_bytes(target.estimated_bytes)
+        } else if target.estimated_bytes > 0 {
+            format!(
+                "≥ {}",
+                crate::i18n::format_binary_bytes(target.estimated_bytes)
+            )
+        } else {
+            human_message(locale, "clean.v1.detail.unknown")
+        };
+        let risk = serde_json::to_value(&target.risk).unwrap();
+        result.push_str(&format!(
+            "\n{}\n  {} | {} | {} | {}\n  {}",
+            target.id.as_str(),
+            target.rule_id,
+            size,
+            human_message(locale, &format!("clean.v1.risk.{}", risk.as_str().unwrap())),
+            human_message(locale, action),
+            target
+                .path
+                .as_ref()
+                .map(|path| path.display().to_string())
+                .unwrap_or_else(|| human_message(locale, "clean.v1.detail.unknown"))
+        ));
+    }
+    result
 }
 
 fn write_human(cli: &Cli, text: &str) -> Result<(), ApplicationError> {
@@ -345,7 +502,7 @@ fn write_envelope(
             "command": command,
             "outcome": outcome,
             "data": data,
-            "warnings": [],
+            "warnings": if outcome == "partial" || outcome == "skipped" { vec![outcome] } else { Vec::<&str>::new() },
             "error": null
         }),
     )

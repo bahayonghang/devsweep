@@ -291,11 +291,15 @@ fn inventory_tab_renders_read_only_observations_health_and_inspection() {
 }
 
 #[test]
-fn rules_tab_lists_catalogue_entries() {
+fn rules_tab_renders_catalogue_in_content_sized_fixture() {
     let mut app = App::with_plan(representative_plan());
     app.active_tab = ActiveTab::Rules;
 
-    let rendered = render_text_with_size(&app, 120, 50);
+    // This fixture verifies catalogue rendering, independently of viewport size.
+    // Two lines per declaration leave room for wrapped descriptions and chrome.
+    let height =
+        u16::try_from(crate::rules::rule_catalogue().len() * 2 + 20).expect("fixture height");
+    let rendered = render_text_with_size(&app, 120, height);
 
     assert!(rendered.contains("Project rules"), "project section header");
     assert!(rendered.contains("rust.target"), "project rule listed");

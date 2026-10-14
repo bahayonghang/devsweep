@@ -30,7 +30,10 @@ use crate::rules::{
     project_dir_rules,
 };
 
-use crate::model::{ScanCompleteness, ScanDiagnostic, ScanDiagnosticStage};
+use crate::model::{
+    ScanCompleteness, ScanCoverage, ScanCoverageScope, ScanCoverageStatus, ScanDiagnostic,
+    ScanDiagnosticStage,
+};
 
 type TargetObserver<'a> = &'a mut dyn FnMut(CleanTarget);
 
@@ -38,6 +41,7 @@ struct ProjectScanState<'a> {
     targets: &'a mut Vec<CleanTarget>,
     diagnostics: &'a mut Vec<ScanDiagnostic>,
     cargo_cache: &'a mut CargoWorkspaceCache,
+    incomplete_status: &'a mut Option<ScanCoverageStatus>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,6 +49,7 @@ pub(crate) struct ScanOutcome {
     pub plan: CleanupPlan,
     pub diagnostics: Vec<ScanDiagnostic>,
     pub completeness: ScanCompleteness,
+    pub coverage: Vec<ScanCoverage>,
 }
 
 /// Production marker-first project artifact scanner.
@@ -107,8 +112,17 @@ impl ProjectScanner {
         let mut targets = Vec::new();
         let mut diagnostics = Vec::new();
         let mut cargo_cache = CargoWorkspaceCache::default();
+        let mut coverage = Vec::new();
+        if roots.is_empty() {
+            bail!("project scanning requires at least one explicit root");
+        }
 
-        for root in normalize_scan_roots(roots, self.reparse_probe.as_ref(), &mut diagnostics)? {
+        for root in normalize_scan_roots(
+            roots,
+            self.reparse_probe.as_ref(),
+            &mut diagnostics,
+            &mut coverage,
+        )? {
             if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
                 diagnostics.push(scan_diagnostic(
                     ScanDiagnosticStage::Discovery,
@@ -116,11 +130,33 @@ impl ProjectScanner {
                     ScanDiagnosticOutcome::Canceled,
                     "scan canceled",
                 ));
-                break;
+                coverage.push(root_coverage(
+                    &root,
+                    ScanCoverageStatus::Canceled,
+                    0,
+                    "scan canceled",
+                ));
+                continue;
             }
-            // Root open failures remain hard errors.
-            let metadata = fs::symlink_metadata(&root)
-                .with_context(|| format!("failed to inspect scan root {}", root.display()))?;
+            // Record failed roots while continuing the remaining healthy roots.
+            let metadata = match fs::symlink_metadata(&root) {
+                Ok(metadata) => metadata,
+                Err(error) => {
+                    diagnostics.push(scan_diagnostic(
+                        ScanDiagnosticStage::Discovery,
+                        root.clone(),
+                        ScanDiagnosticOutcome::Failed,
+                        format!("failed to inspect root: {error}"),
+                    ));
+                    coverage.push(root_coverage(
+                        &root,
+                        ScanCoverageStatus::Failed,
+                        0,
+                        "root is unavailable; select an accessible directory",
+                    ));
+                    continue;
+                }
+            };
             if !metadata.is_dir() {
                 continue;
             }
@@ -134,8 +170,24 @@ impl ProjectScanner {
                 ));
                 continue;
             }
-            fs::read_dir(&root)
-                .with_context(|| format!("failed to read scan root {}", root.display()))?;
+            if let Err(error) = fs::read_dir(&root) {
+                diagnostics.push(scan_diagnostic(
+                    ScanDiagnosticStage::Discovery,
+                    root.clone(),
+                    ScanDiagnosticOutcome::Failed,
+                    format!("failed to read root: {error}"),
+                ));
+                coverage.push(root_coverage(
+                    &root,
+                    ScanCoverageStatus::Failed,
+                    0,
+                    "root cannot be read; check access",
+                ));
+                continue;
+            }
+            let count_before = targets.len();
+            let diagnostics_before = diagnostics.len();
+            let mut incomplete_status = None;
             self.scan_dir(
                 &root,
                 None,
@@ -143,10 +195,31 @@ impl ProjectScanner {
                     targets: &mut targets,
                     diagnostics: &mut diagnostics,
                     cargo_cache: &mut cargo_cache,
+                    incomplete_status: &mut incomplete_status,
                 },
                 cancel,
                 on_target,
             );
+            let count = targets.len() - count_before;
+            let status = if let Some(status) = incomplete_status {
+                status
+            } else if diagnostics.len() > diagnostics_before {
+                ScanCoverageStatus::Skipped
+            } else if count == 0 {
+                ScanCoverageStatus::Empty
+            } else {
+                ScanCoverageStatus::Complete
+            };
+            coverage.push(root_coverage(
+                &root,
+                status,
+                count,
+                if status.is_incomplete() {
+                    "some entries were not evaluated; review diagnostics"
+                } else {
+                    "selected root evaluated"
+                },
+            ));
         }
 
         targets = dedupe_targets(targets);
@@ -163,6 +236,7 @@ impl ProjectScanner {
             },
             diagnostics,
             completeness,
+            coverage,
         })
     }
 
@@ -175,6 +249,7 @@ impl ProjectScanner {
         on_target: TargetObserver<'_>,
     ) {
         if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+            *state.incomplete_status = Some(ScanCoverageStatus::Canceled);
             state.diagnostics.push(scan_diagnostic(
                 ScanDiagnosticStage::Discovery,
                 dir.to_path_buf(),
@@ -248,13 +323,21 @@ impl ProjectScanner {
             on_target,
         );
         self.scan_node_project(dir, state.targets, cancel, on_target);
+        let generated_paths = self.scan_generated_project(dir, state, cancel, on_target);
 
         let local_python_context =
             find_python_marker(dir, self.reparse_probe.as_ref()).map(|marker| PythonContext {
                 project_root: dir.to_path_buf(),
                 marker,
             });
-        let active_python_context = local_python_context.as_ref().or(python_context);
+        let inherited_python = python_context.filter(|context| {
+            context.project_root == dir
+                || (!["package.json", "Cargo.toml", "pom.xml"]
+                    .iter()
+                    .any(|marker| is_real_file(&dir.join(marker), self.reparse_probe.as_ref()))
+                    && !dir.join(".git").exists())
+        });
+        let active_python_context = local_python_context.as_ref().or(inherited_python);
         if let Some(context) = active_python_context {
             self.scan_python_project_dir(dir, context, state.targets, cancel, on_target);
         }
@@ -273,6 +356,16 @@ impl ProjectScanner {
         };
 
         for entry in entries {
+            if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                *state.incomplete_status = Some(ScanCoverageStatus::Canceled);
+                state.diagnostics.push(scan_diagnostic(
+                    ScanDiagnosticStage::Discovery,
+                    dir.to_path_buf(),
+                    ScanDiagnosticOutcome::Canceled,
+                    "scan canceled during directory enumeration",
+                ));
+                return;
+            }
             let entry = match entry {
                 Ok(entry) => entry,
                 Err(error) => {
@@ -298,7 +391,7 @@ impl ProjectScanner {
                     continue;
                 }
             };
-            if metadata.is_dir() {
+            if metadata.is_dir() && !generated_paths.iter().any(|candidate| candidate == &path) {
                 self.scan_dir(&path, active_python_context, state, cancel, on_target);
             }
         }
@@ -513,18 +606,122 @@ impl ProjectScanner {
             }
         }
     }
+
+    fn scan_generated_project(
+        &self,
+        dir: &Path,
+        state: &mut ProjectScanState<'_>,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: TargetObserver<'_>,
+    ) -> Vec<PathBuf> {
+        let mut proven_paths = Vec::new();
+        for rule in crate::rules::GENERATED_PROJECT_RULES {
+            if cancel.is_some_and(|flag| flag.is_cancel_requested()) {
+                break;
+            }
+            let path = dir.join(rule.relative);
+            if !is_real_dir(&path, self.reparse_probe.as_ref()) {
+                continue;
+            }
+            let marker = match crate::rules::generated_marker(dir, rule, cancel) {
+                Ok(Some(marker)) => marker,
+                Ok(None) => continue,
+                Err((status, detail)) => {
+                    *state.incomplete_status = Some(status);
+                    state.diagnostics.push(scan_diagnostic(
+                        ScanDiagnosticStage::Discovery,
+                        dir.to_path_buf(),
+                        match status {
+                            ScanCoverageStatus::Canceled => ScanDiagnosticOutcome::Canceled,
+                            ScanCoverageStatus::Failed => ScanDiagnosticOutcome::Failed,
+                            _ => ScanDiagnosticOutcome::Skipped,
+                        },
+                        format!("{}: {detail}", rule.id),
+                    ));
+                    continue;
+                }
+            };
+            let proof = crate::rules::validate_generated_artifact_with_cancel(dir, rule, cancel);
+            let mut target = build_path_target_with_probe(
+                PathTargetInput {
+                    rule_id: rule.id,
+                    ecosystem: rule.ecosystem.clone(),
+                    kind: TargetKind::BuildArtifacts,
+                    project_root: dir.to_path_buf(),
+                    path: path.clone(),
+                    risk: RiskLevel::Medium,
+                    selected_by_default: false,
+                    evidence: vec![
+                        Evidence::MarkerFile { path: marker },
+                        Evidence::RuleMatched {
+                            rule_id: rule.id.to_string(),
+                        },
+                    ],
+                },
+                cancel,
+                self.reparse_probe.as_ref(),
+            );
+            match proof {
+                Ok(()) => proven_paths.push(path),
+                Err(error) => {
+                    target.action = CleanAction::NoopInspectOnly;
+                    target.sizing_warnings.push(crate::model::SizingWarning {
+                        kind: crate::model::SizingWarningKind::PathUnresolved,
+                        detail: format!("cleanup unavailable: {error}"),
+                    });
+                }
+            }
+            push_observed_target(state.targets, target, on_target);
+        }
+        proven_paths
+    }
 }
 
 fn normalize_scan_roots(
     roots: &[PathBuf],
     reparse_probe: &dyn PathReparseProbe,
     diagnostics: &mut Vec<ScanDiagnostic>,
+    coverage: &mut Vec<ScanCoverage>,
 ) -> Result<Vec<PathBuf>> {
     let mut normalized_roots = Vec::with_capacity(roots.len());
     for root in roots {
-        let metadata = fs::symlink_metadata(root)
-            .with_context(|| format!("failed to inspect scan root {}", root.display()))?;
+        let absolute = if root.is_absolute() {
+            root.clone()
+        } else {
+            std::env::current_dir()?.join(root)
+        };
+        let root = &absolute;
+        let metadata = match fs::symlink_metadata(root) {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                diagnostics.push(scan_diagnostic(
+                    ScanDiagnosticStage::Discovery,
+                    root.clone(),
+                    ScanDiagnosticOutcome::Failed,
+                    format!("failed to inspect root: {error}"),
+                ));
+                coverage.push(root_coverage(
+                    root,
+                    ScanCoverageStatus::Failed,
+                    0,
+                    "selected root is unavailable",
+                ));
+                continue;
+            }
+        };
         if !metadata.is_dir() {
+            diagnostics.push(scan_diagnostic(
+                ScanDiagnosticStage::Discovery,
+                root.clone(),
+                ScanDiagnosticOutcome::Failed,
+                "selected root is not a directory",
+            ));
+            coverage.push(root_coverage(
+                root,
+                ScanCoverageStatus::Failed,
+                0,
+                "choose a directory",
+            ));
             continue;
         }
         let path_safety = inspect_path_no_follow(root, &metadata, reparse_probe);
@@ -535,12 +732,31 @@ fn normalize_scan_roots(
                 ScanDiagnosticOutcome::Skipped,
                 skipped_path_detail(&path_safety),
             ));
+            coverage.push(root_coverage(
+                root,
+                ScanCoverageStatus::Skipped,
+                0,
+                "root is a link or cannot be verified",
+            ));
             continue;
         }
-        normalized_roots.push(
-            root.canonicalize()
-                .with_context(|| format!("failed to access scan root {}", root.display()))?,
-        );
+        match root.canonicalize() {
+            Ok(path) => normalized_roots.push(path),
+            Err(error) => {
+                diagnostics.push(scan_diagnostic(
+                    ScanDiagnosticStage::Discovery,
+                    root.clone(),
+                    ScanDiagnosticOutcome::Failed,
+                    format!("failed to access root: {error}"),
+                ));
+                coverage.push(root_coverage(
+                    root,
+                    ScanCoverageStatus::Failed,
+                    0,
+                    "selected root cannot be resolved",
+                ));
+            }
+        }
     }
     let mut roots = normalized_roots;
     roots.sort_by(|left, right| {
@@ -560,6 +776,25 @@ fn normalize_scan_roots(
         }
     }
     Ok(covered)
+}
+
+fn root_coverage(
+    root: &Path,
+    status: ScanCoverageStatus,
+    target_count: usize,
+    detail: &str,
+) -> ScanCoverage {
+    let path = crate::filesystem::normalize_absolute_path(root)
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| root.to_path_buf());
+    ScanCoverage {
+        id: path.display().to_string(),
+        scope: ScanCoverageScope::Project,
+        path: Some(path),
+        status,
+        target_count,
+        detail: detail.to_string(),
+    }
 }
 
 impl Default for ProjectScanner {
@@ -728,6 +963,41 @@ pub(crate) fn rescan_target_size_with_probe(
     target.estimated_bytes = estimate.display_bytes();
     target.size_complete = estimate.complete;
     target.sizing_warnings = estimate.warnings;
+    if matches!(target.action, CleanAction::NoopInspectOnly) {
+        let rule_id = target
+            .evidence
+            .iter()
+            .find_map(|evidence| match evidence {
+                Evidence::RuleMatched { rule_id } => Some(rule_id.as_str()),
+                _ => None,
+            })
+            .unwrap_or_default();
+        let eligibility = if let Some(family) = crate::rules::windows_cache_family(rule_id) {
+            Some(crate::rules::windows_caches::validate_windows_cache(
+                family, &path,
+            ))
+        } else if let (Some(rule), Scope::Project { root }) = (
+            crate::rules::GENERATED_PROJECT_RULES
+                .iter()
+                .find(|rule| rule.id == rule_id),
+            &target.scope,
+        ) {
+            Some(crate::rules::validate_generated_artifact_with_cancel(
+                root, rule, cancel,
+            ))
+        } else {
+            None
+        };
+        if let Some(eligibility) = eligibility {
+            target.sizing_warnings.push(crate::model::SizingWarning {
+                kind: crate::model::SizingWarningKind::PathUnresolved,
+                detail: match eligibility {
+                    Err(error) => format!("cleanup unavailable: {error}"),
+                    Ok(()) => "inspection-only observation retained; run a fresh scan to reevaluate cleanup eligibility".to_string(),
+                },
+            });
+        }
+    }
     target.last_modified = estimate.last_modified;
     if !target.size_complete {
         target.selected_by_default = false;
@@ -748,16 +1018,10 @@ fn find_node_marker(dir: &Path, reparse_probe: &dyn PathReparseProbe) -> Option<
 }
 
 fn find_python_marker(dir: &Path, reparse_probe: &dyn PathReparseProbe) -> Option<PathBuf> {
-    [
-        "pyproject.toml",
-        "requirements.txt",
-        "setup.py",
-        "setup.cfg",
-        "tox.ini",
-    ]
-    .into_iter()
-    .map(|name| dir.join(name))
-    .find(|path| is_real_file(path, reparse_probe))
+    crate::rules::PYTHON_PROJECT_MARKERS
+        .iter()
+        .map(|name| dir.join(name))
+        .find(|path| is_real_file(path, reparse_probe))
 }
 
 fn is_real_file(path: &Path, reparse_probe: &dyn PathReparseProbe) -> bool {
@@ -816,6 +1080,87 @@ fn should_stop_descent(dir: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn wide_dotnet_marker_search_reports_budget_coverage_and_keeps_healthy_sibling() {
+        let fixture = tempfile::TempDir::new().unwrap();
+        let root = fixture.path();
+        std::fs::create_dir(root.join("bin")).unwrap();
+        for index in 0..1001 {
+            std::fs::write(root.join(format!("entry-{index}.txt")), "retained").unwrap();
+        }
+        std::fs::create_dir_all(root.join("healthy/node_modules")).unwrap();
+        std::fs::write(root.join("healthy/package.json"), "{}").unwrap();
+        let outcome = super::ProjectScanner::new()
+            .scan_roots_with_diagnostics(&[root.to_path_buf()])
+            .unwrap();
+        assert_eq!(
+            outcome.completeness,
+            crate::model::ScanCompleteness::Partial
+        );
+        assert_eq!(
+            outcome.coverage[0].status,
+            crate::model::ScanCoverageStatus::BudgetLimited
+        );
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|entry| entry.detail.contains("marker discovery budget exhausted"))
+        );
+        assert!(outcome.plan.targets.iter().any(|target| {
+            target
+                .path
+                .as_ref()
+                .is_some_and(|path| path.ends_with("healthy/node_modules"))
+        }));
+    }
+
+    #[test]
+    fn reviewed_generated_rescan_rechecks_refusal_without_promoting_intent() {
+        use crate::rules::windows_caches::{OwnerState, with_owner_state_for_test};
+        let rule = &crate::rules::GENERATED_PROJECT_RULES[0];
+        let (fixture, _, _) = crate::rules::generated_fixture(rule);
+        with_owner_state_for_test(OwnerState::Busy, || {
+            let mut plan = super::ProjectScanner::new()
+                .scan_roots(&[fixture.path().to_path_buf()])
+                .unwrap();
+            let target = plan
+                .targets
+                .iter()
+                .find(|target| target.id.as_str().starts_with(rule.id))
+                .unwrap();
+            let id = target.id.clone();
+            assert!(matches!(
+                target.action,
+                crate::model::CleanAction::NoopInspectOnly
+            ));
+            super::rescan_target_size(&mut plan, &id, None).unwrap();
+            let target = plan.targets.iter().find(|target| target.id == id).unwrap();
+            assert!(
+                target
+                    .sizing_warnings
+                    .iter()
+                    .any(|warning| warning.detail.contains("owner is running"))
+            );
+            with_owner_state_for_test(OwnerState::Idle, || {
+                super::rescan_target_size(&mut plan, &id, None)
+            })
+            .unwrap();
+            let target = plan.targets.iter().find(|target| target.id == id).unwrap();
+            assert!(matches!(
+                target.action,
+                crate::model::CleanAction::NoopInspectOnly
+            ));
+            assert!(!target.selected_by_default);
+            assert!(
+                target
+                    .sizing_warnings
+                    .iter()
+                    .any(|warning| warning.detail.contains("fresh scan"))
+            );
+        });
+    }
+
     use std::{
         collections::{HashMap, HashSet},
         fs,
@@ -829,6 +1174,45 @@ mod tests {
     use crate::{cargo_metadata::CargoMetadataScope, filesystem::ReparseProbeResult};
 
     const CLOUD_FILES_REPARSE_TAG: u32 = 0x9000_701A;
+
+    #[test]
+    fn file_only_directory_observes_cancel_before_inspecting_entries() {
+        struct CancelOnDirectoryProbe(Arc<FlagCancelObserver>);
+        impl PathReparseProbe for CancelOnDirectoryProbe {
+            fn probe(&self, _: &Path) -> ReparseProbeResult {
+                self.0.request_cancel();
+                ReparseProbeResult::NotReparsePoint
+            }
+        }
+        let fixture = TempDir::new().unwrap();
+        for i in 0..100 {
+            fs::write(fixture.path().join(format!("file-{i}.txt")), "data").unwrap();
+        }
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let scanner =
+            ProjectScanner::with_reparse_probe(Arc::new(CancelOnDirectoryProbe(cancel.clone())));
+        let mut targets = Vec::new();
+        let mut diagnostics = Vec::new();
+        let mut cargo_cache = CargoWorkspaceCache::default();
+        let mut incomplete_status = None;
+        scanner.scan_dir(
+            fixture.path(),
+            None,
+            &mut ProjectScanState {
+                targets: &mut targets,
+                diagnostics: &mut diagnostics,
+                cargo_cache: &mut cargo_cache,
+                incomplete_status: &mut incomplete_status,
+            },
+            Some(&cancel),
+            &mut |_| {},
+        );
+        assert!(targets.is_empty());
+        assert_eq!(incomplete_status, Some(ScanCoverageStatus::Canceled));
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].outcome, ScanDiagnosticOutcome::Canceled);
+        assert!(diagnostics[0].detail.contains("directory enumeration"));
+    }
 
     struct FixtureReparseProbe {
         results: HashMap<PathBuf, ReparseProbeResult>,
@@ -929,6 +1313,30 @@ mod tests {
 
     #[test]
     fn scanner_finds_marker_backed_project_targets() {
+        if std::env::var_os("CARGO_TARGET_DIR").is_some() {
+            assert!(
+                std::env::var_os("DEVSWEEP_MARKER_CARGO_TARGET_FIXTURE").is_none(),
+                "fixture child must not inherit target override"
+            );
+            let output =
+                std::process::Command::new(std::env::current_exe().expect("test executable"))
+                    .args([
+                        "--exact",
+                        "scan::project::tests::scanner_finds_marker_backed_project_targets",
+                        "--nocapture",
+                    ])
+                    .env_remove("CARGO_TARGET_DIR")
+                    .env("DEVSWEEP_MARKER_CARGO_TARGET_FIXTURE", "1")
+                    .output()
+                    .expect("isolated marker Cargo target fixture");
+            assert!(
+                output.status.success(),
+                "{} {}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
         let fixture = Fixture::new();
         fixture.file(
             "rust-app/Cargo.toml",
@@ -972,6 +1380,24 @@ mod tests {
         ] {
             assert!(ids.iter().any(|id| id.starts_with(rule)), "missing {rule}");
         }
+        let rust_target = plan
+            .targets
+            .iter()
+            .find(|target| target.id.as_str().starts_with("rust.target"))
+            .expect("rust target discovered");
+        assert_eq!(
+            rust_target
+                .path
+                .as_ref()
+                .expect("rust target has a path")
+                .canonicalize()
+                .expect("rust target canonicalizes"),
+            fixture
+                .path()
+                .join("rust-app/target")
+                .canonicalize()
+                .expect("fixture target canonicalizes")
+        );
     }
 
     #[test]
@@ -1212,6 +1638,30 @@ mod tests {
 
     #[test]
     fn rust_target_uses_cargo_clean_with_manifest_path() {
+        if std::env::var_os("CARGO_TARGET_DIR").is_some() {
+            assert!(
+                std::env::var_os("DEVSWEEP_DEFAULT_CARGO_TARGET_FIXTURE").is_none(),
+                "fixture child must not inherit target override"
+            );
+            let output =
+                std::process::Command::new(std::env::current_exe().expect("test executable"))
+                    .args([
+                        "--exact",
+                        "scan::project::tests::rust_target_uses_cargo_clean_with_manifest_path",
+                        "--nocapture",
+                    ])
+                    .env_remove("CARGO_TARGET_DIR")
+                    .env("DEVSWEEP_DEFAULT_CARGO_TARGET_FIXTURE", "1")
+                    .output()
+                    .expect("isolated default Cargo target fixture");
+            assert!(
+                output.status.success(),
+                "{} {}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
         let fixture = Fixture::new();
         fixture.file(
             "rust-app/Cargo.toml",
@@ -1641,9 +2091,14 @@ mod tests {
         let denied = fixture.path().join("app/secret");
         fs::create_dir_all(&denied).expect("denied dir");
         fs::write(denied.join("hidden.bin"), "x").expect("hidden file");
-        if deny_directory_read(&denied).is_err() {
-            return;
+        deny_directory_read(&denied).expect("install precise fixture directory-list deny");
+        struct RestoreDirectory(PathBuf);
+        impl Drop for RestoreDirectory {
+            fn drop(&mut self) {
+                let _ = restore_directory_read(&self.0);
+            }
         }
+        let restore = RestoreDirectory(denied.clone());
         assert!(
             fs::read_dir(&denied).is_err(),
             "fixture must deny read_dir before asserting partial scan"
@@ -1652,7 +2107,11 @@ mod tests {
         let outcome = ProjectScanner::new()
             .scan_roots_with_diagnostics(&[fixture.path().to_path_buf()])
             .expect("partial scan succeeds");
-        let _ = restore_directory_read(&denied);
+        drop(restore);
+        assert!(
+            fs::read_dir(&denied).is_ok(),
+            "fixture deny must be removed"
+        );
 
         assert_eq!(outcome.completeness, ScanCompleteness::Partial);
         assert!(
@@ -1755,19 +2214,44 @@ mod tests {
     }
 
     #[test]
-    fn unreadable_root_remains_a_hard_error() {
+    fn unavailable_root_is_accounted_without_erasing_valid_root() {
         let fixture = Fixture::new();
+        fixture.file("healthy/package.json", "{}");
+        fixture.file("healthy/node_modules/generated.js", "fixture");
         let missing = fixture.path().join("does-not-exist");
-        let error = ProjectScanner::new()
-            .scan_roots(&[missing])
-            .expect_err("missing root is hard error");
+        let outcome = ProjectScanner::new()
+            .scan_roots_with_diagnostics(&[missing, fixture.path().join("healthy")])
+            .expect("independent roots continue");
+        assert_eq!(outcome.plan.targets.len(), 1);
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
         assert!(
-            error.to_string().contains("failed to")
-                || error
-                    .chain()
-                    .any(|cause| cause.to_string().contains("failed to")),
-            "root failure keeps context: {error:#}"
+            outcome
+                .coverage
+                .iter()
+                .any(|entry| entry.status == ScanCoverageStatus::Failed)
         );
+        assert!(
+            outcome
+                .coverage
+                .iter()
+                .any(|entry| entry.status == ScanCoverageStatus::Complete)
+        );
+    }
+
+    #[test]
+    fn nested_python_cache_roundtrips_with_its_marker_scope() {
+        let fixture = Fixture::new();
+        fixture.file("python/pyproject.toml", "[project]\nname='fixture'\n");
+        fixture.file("python/src/.pytest_cache/entry", "generated");
+        let plan = ProjectScanner::new()
+            .scan_roots(&[fixture.path().join("python")])
+            .expect("scan");
+        assert_eq!(plan.targets.len(), 1);
+        let persisted = crate::plan::untrusted_plan_from_scan(&plan).expect("real conversion");
+        crate::plan::validate_plan(&persisted).expect("real registry accepts nested artifact");
+        let mut tampered = persisted;
+        tampered.targets[0].path = Some(fixture.path().join("python/src/source"));
+        assert!(crate::plan::validate_plan(&tampered).is_err());
     }
 
     #[test]
@@ -1959,7 +2443,7 @@ mod tests {
         let output = Command::new("icacls")
             .arg(path)
             .arg("/deny")
-            .arg(format!("{}:(OI)(CI)(R,X)", current_user()?))
+            .arg("*S-1-1-0:(RD)")
             .output()?;
         if output.status.success() {
             Ok(())
@@ -1973,16 +2457,17 @@ mod tests {
     #[cfg(windows)]
     fn restore_directory_read(path: &Path) -> std::io::Result<()> {
         use std::process::Command;
-        let _ = Command::new("icacls")
+        let output = Command::new("icacls")
             .arg(path)
             .arg("/remove:d")
-            .arg(current_user()?)
-            .status();
-        Ok(())
-    }
-
-    #[cfg(windows)]
-    fn current_user() -> std::io::Result<String> {
-        std::env::var("USERNAME").map_err(|_| std::io::Error::other("USERNAME missing"))
+            .arg("*S-1-1-0")
+            .output()?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other(String::from_utf8_lossy(
+                &output.stderr,
+            )))
+        }
     }
 }

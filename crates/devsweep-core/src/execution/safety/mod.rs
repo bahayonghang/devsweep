@@ -82,6 +82,14 @@ impl AuthorizedAction {
         &self.action
     }
 
+    /// Uses the executable resolved by the live core provider binding, never IPC.
+    pub(super) fn bind_provider_program(&mut self, path: &Path, prefix_args: &[String]) {
+        if let CleanAction::Command { program, args, .. } = &mut self.action {
+            *program = path.display().to_string();
+            args.splice(0..0, prefix_args.iter().cloned());
+        }
+    }
+
     /// Reconstruct the trash path only after authorization.
     pub(super) fn trash_path(&self) -> Option<&Path> {
         match &self.action {
@@ -321,6 +329,27 @@ impl SafetyPolicy {
     ) -> Result<(), Denial> {
         match &target.scope {
             Scope::Project { root } => {
+                if let Some(rule) = crate::rules::GENERATED_PROJECT_RULES
+                    .iter()
+                    .find(|rule| rule.id == rule_id)
+                {
+                    if !paths_equal(path, &root.join(rule.relative)) {
+                        return Err(denial(
+                            ProtectionCategory::AuthorizedFootprint,
+                            path,
+                            "generated artifact path changed; rescan required",
+                        ));
+                    }
+                    return crate::rules::validate_generated_artifact(root, rule).map_err(
+                        |error| {
+                            denial(
+                                ProtectionCategory::AuthorizedFootprint,
+                                path,
+                                format!("generated artifact proof failed: {error}"),
+                            )
+                        },
+                    );
+                }
                 // Cargo target directories may live outside the project root when
                 // redirected; those still require the project marker and rule id.
                 if rule_id == RUST_TARGET_RULE_DOC.id {
@@ -335,6 +364,16 @@ impl SafetyPolicy {
                         path,
                         format!("project target escapes authorized root {}", root.display()),
                     ));
+                }
+
+                if rule_id.starts_with("python.") {
+                    crate::rules::validate_python_scope(root, path).map_err(|error| {
+                        denial(
+                            ProtectionCategory::AuthorizedFootprint,
+                            path,
+                            error.to_string(),
+                        )
+                    })?;
                 }
 
                 if !is_known_project_rule_path(rule_id, root, path)
@@ -363,6 +402,37 @@ impl SafetyPolicy {
                 Ok(())
             }
             Scope::Global => {
+                if let Some(family) = crate::rules::windows_cache_family(rule_id) {
+                    return crate::rules::windows_caches::validate_windows_cache(family, path)
+                        .map_err(|error| {
+                            denial(
+                                ProtectionCategory::AuthorizedFootprint,
+                                path,
+                                format!("Windows cache proof failed: {error}"),
+                            )
+                        });
+                }
+                if let Some(rule) =
+                    crate::rules::global_cache_rules().find(|rule| rule.id == rule_id)
+                {
+                    let Some(home) = self.home.as_deref() else {
+                        return Err(denial(
+                            ProtectionCategory::AuthorizedFootprint,
+                            path,
+                            "home is unavailable; rescan required",
+                        ));
+                    };
+                    let expected = crate::rules::configured_cache_path(rule, home, |key| {
+                        env::var_os(key).map(PathBuf::from)
+                    });
+                    if !paths_equal(path, &expected) {
+                        return Err(denial(
+                            ProtectionCategory::AuthorizedFootprint,
+                            path,
+                            "provider configuration changed; rescan required",
+                        ));
+                    }
+                }
                 let known = is_known_global_cache_path(rule_id, path, self.home.as_deref())
                     || is_known_global_command_rule(rule_id)
                     || (self
@@ -788,7 +858,9 @@ fn is_known_global_cache_path(rule_id: &str, path: &Path, home: Option<&Path>) -
             rule.id == rule_id
                 && paths_equal(
                     path,
-                    &home.join(rule.relative.replace('/', std::path::MAIN_SEPARATOR_STR)),
+                    &crate::rules::configured_cache_path(rule, home, |key| {
+                        env::var_os(key).map(PathBuf::from)
+                    }),
                 )
         })
 }

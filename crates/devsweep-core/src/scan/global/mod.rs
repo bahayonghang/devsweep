@@ -4,17 +4,21 @@ use std::{
     time::SystemTime,
 };
 
+use super::ProjectScanOutcome;
 use crate::filesystem::SizeEstimate;
 use crate::model::{
     CLEANUP_PLAN_VERSION, CleanAction, CleanTarget, CleanupPlan, Ecosystem, Evidence, RiskLevel,
     Scope, SizingWarning, SizingWarningKind, TargetId, TargetKind,
 };
+use crate::model::{
+    ScanCoverage, ScanCoverageScope, ScanCoverageStatus, ScanDiagnostic, ScanDiagnosticOutcome,
+    ScanDiagnosticStage, ScanHealth,
+};
 use crate::process::CancelObserver;
 use crate::process::FlagCancelObserver;
 use crate::rules::{
-    CARGO_HOME_RULE_DOC, GO_MODCACHE_DIRECTORY_RULE_ID, GO_MODCACHE_RULE_DOC,
-    GRADLE_CACHES_RULE_ID, GRADLE_WRAPPER_DISTS_RULE_ID, KnownCacheAction, NPM_CACHE_RULE_DOC,
-    NUGET_PACKAGES_RULE_ID, PIP_CACHE_RULE_DOC, PNPM_STORE_RULE_DOC, YARN_CACHE_CLASSIC_RULE_DOC,
+    CARGO_HOME_RULE_DOC, GO_MODCACHE_DIRECTORY_RULE_ID, GO_MODCACHE_RULE_DOC, KnownCacheAction,
+    NPM_CACHE_RULE_DOC, PIP_CACHE_RULE_DOC, PNPM_STORE_RULE_DOC, YARN_CACHE_CLASSIC_RULE_DOC,
     YARN_CACHE_MODERN_RULE_DOC, global_cache_rules,
 };
 
@@ -33,7 +37,7 @@ impl GlobalProviderScanner {
     }
 
     pub(crate) fn scan_with_cancel(&self, cancel: Option<&Arc<FlagCancelObserver>>) -> CleanupPlan {
-        scan_with_probe(&SystemProviderProbe::with_cancel(cancel.cloned()))
+        self.scan_with_health_and_progress(cancel, &mut |_| {}).plan
     }
 
     pub(crate) fn scan_with_cancel_and_progress(
@@ -41,11 +45,21 @@ impl GlobalProviderScanner {
         cancel: Option<&Arc<FlagCancelObserver>>,
         on_target: &mut dyn FnMut(CleanTarget),
     ) -> CleanupPlan {
-        scan_with_probe_and_progress(
+        self.scan_with_health_and_progress(cancel, on_target).plan
+    }
+
+    pub(crate) fn scan_with_health_and_progress(
+        &self,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        on_target: &mut dyn FnMut(CleanTarget),
+    ) -> ProjectScanOutcome {
+        let mut outcome = scan_outcome_with_probe(
             &SystemProviderProbe::with_cancel(cancel.cloned()),
             cancel,
             on_target,
-        )
+        );
+        add_windows_cache_targets(&mut outcome, cancel, on_target);
+        outcome
     }
 }
 
@@ -55,51 +69,325 @@ impl Default for GlobalProviderScanner {
     }
 }
 
+#[cfg(test)]
 fn scan_with_probe(probe: &impl ProviderProbe) -> CleanupPlan {
     scan_with_probe_and_progress(probe, None, &mut |_| {})
 }
 
+#[cfg(test)]
 fn scan_with_probe_and_progress(
     probe: &impl ProviderProbe,
     cancel: Option<&Arc<FlagCancelObserver>>,
     on_target: &mut dyn FnMut(CleanTarget),
 ) -> CleanupPlan {
+    scan_outcome_with_probe(probe, cancel, on_target).plan
+}
+
+fn add_windows_cache_targets(
+    outcome: &mut ProjectScanOutcome,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    on_target: &mut dyn FnMut(CleanTarget),
+) {
+    for &(id, family) in crate::rules::WINDOWS_CACHE_RULES {
+        if cancel_requested(cancel) {
+            record_provider_coverage(
+                &mut outcome.health,
+                id,
+                None,
+                ScanCoverageStatus::Canceled,
+                0,
+            );
+            continue;
+        }
+        let found = crate::rules::windows_caches::discover_windows_caches(family);
+        let status = found
+            .unavailable
+            .iter()
+            .find(|issue| issue.status.is_incomplete())
+            .or_else(|| found.unavailable.first())
+            .map(|issue| issue.status)
+            .unwrap_or(if found.candidates.is_empty() {
+                ScanCoverageStatus::Absent
+            } else {
+                ScanCoverageStatus::Complete
+            });
+        let count = found.candidates.len();
+        record_provider_coverage(
+            &mut outcome.health,
+            id,
+            found
+                .candidates
+                .first()
+                .cloned()
+                .or_else(|| found.unavailable.first().map(|issue| issue.path.clone())),
+            status,
+            count,
+        );
+        if !found.unavailable.is_empty()
+            && let Some(unit) = outcome
+                .health
+                .coverage
+                .iter_mut()
+                .find(|unit| unit.id == id)
+        {
+            unit.detail = found
+                .unavailable
+                .iter()
+                .take(8)
+                .map(|issue| format!("{}: {}", issue.path.display(), issue.detail))
+                .collect::<Vec<_>>()
+                .join("; ");
+            if found.unavailable.len() > 8 {
+                unit.detail.push_str(&format!(
+                    "; {} further unavailable entries",
+                    found.unavailable.len() - 8
+                ));
+            }
+        }
+        for issue in found
+            .unavailable
+            .iter()
+            .filter(|issue| issue.status.is_incomplete())
+        {
+            outcome.health.diagnostics.push(ScanDiagnostic {
+                stage: ScanDiagnosticStage::Provider,
+                path: issue.path.clone(),
+                outcome: if issue.status == ScanCoverageStatus::Canceled {
+                    ScanDiagnosticOutcome::Canceled
+                } else {
+                    ScanDiagnosticOutcome::Skipped
+                },
+                detail: format!("{id}: {}", issue.detail),
+                process: None,
+            });
+        }
+        for path in found.candidates {
+            let refusal = found
+                .unavailable
+                .iter()
+                .find(|issue| crate::filesystem::paths_equal(&issue.path, &path));
+            let estimate = crate::filesystem::estimate_tree_with_budget_and_cancel(
+                &path,
+                crate::filesystem::DEFAULT_SIZE_ENTRY_BUDGET,
+                cancel,
+            );
+            let estimated_bytes = estimate.display_bytes();
+            let mut warnings = estimate.warnings;
+            if let Some(issue) = refusal {
+                warnings.push(SizingWarning {
+                    kind: SizingWarningKind::PathUnresolved,
+                    detail: issue.detail.clone(),
+                });
+            }
+            let target = CleanTarget {
+                id: TargetId::new(format!("{id}:{}", path.display())),
+                scope: Scope::Global,
+                ecosystem: Ecosystem::Generic,
+                kind: TargetKind::ToolCache,
+                path: Some(path.clone()),
+                estimated_bytes,
+                size_complete: estimate.complete,
+                sizing_warnings: warnings,
+                last_modified: estimate.last_modified,
+                risk: RiskLevel::Medium,
+                reversible: true,
+                selected_by_default: false,
+                evidence: vec![
+                    Evidence::KnownCacheDir {
+                        source: "verified current-user application layout".to_string(),
+                        path: path.clone(),
+                    },
+                    Evidence::RuleMatched {
+                        rule_id: id.to_string(),
+                    },
+                ],
+                action: if refusal.is_some() {
+                    CleanAction::NoopInspectOnly
+                } else {
+                    CleanAction::MoveToTrash { path }
+                },
+            };
+            outcome.plan.targets.push(target.clone());
+            on_target(target);
+        }
+    }
+}
+
+fn scan_outcome_with_probe(
+    probe: &impl ProviderProbe,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    on_target: &mut dyn FnMut(CleanTarget),
+) -> ProjectScanOutcome {
     let mut targets = Vec::new();
-    observe_new_targets(&mut targets, on_target, |targets| {
-        add_npm_targets(probe, targets)
-    });
+    let mut health = ScanHealth::complete();
     if !cancel_requested(cancel) {
-        observe_new_targets(&mut targets, on_target, |targets| {
-            add_pip_target(probe, targets)
-        });
+        observe_provider(
+            probe,
+            "npm",
+            &mut health,
+            &mut targets,
+            on_target,
+            |targets| add_npm_targets(probe, targets),
+        );
     }
     if !cancel_requested(cancel) {
-        observe_new_targets(&mut targets, on_target, |targets| {
-            add_pnpm_target(probe, targets)
-        });
+        observe_provider(
+            probe,
+            "pip",
+            &mut health,
+            &mut targets,
+            on_target,
+            |targets| add_pip_target(probe, targets),
+        );
     }
     if !cancel_requested(cancel) {
-        observe_new_targets(&mut targets, on_target, |targets| {
-            add_yarn_target(probe, targets)
-        });
+        observe_provider(
+            probe,
+            "pnpm",
+            &mut health,
+            &mut targets,
+            on_target,
+            |targets| add_pnpm_target(probe, targets),
+        );
     }
     if !cancel_requested(cancel) {
-        observe_new_targets(&mut targets, on_target, |targets| {
-            add_cargo_home_target(probe, targets)
-        });
+        observe_provider(
+            probe,
+            "yarn",
+            &mut health,
+            &mut targets,
+            on_target,
+            |targets| add_yarn_target(probe, targets),
+        );
     }
     if !cancel_requested(cancel) {
-        observe_new_targets(&mut targets, on_target, |targets| {
-            add_go_modcache_target(probe, targets)
-        });
+        observe_provider(
+            probe,
+            "cargo.home",
+            &mut health,
+            &mut targets,
+            on_target,
+            |targets| add_cargo_home_target(probe, targets),
+        );
     }
     if !cancel_requested(cancel) {
-        add_known_cache_targets_with_progress(probe, &mut targets, cancel, on_target);
+        observe_provider(
+            probe,
+            "go",
+            &mut health,
+            &mut targets,
+            on_target,
+            |targets| add_go_modcache_target(probe, targets),
+        );
+    }
+    if !cancel_requested(cancel) {
+        for (doc, program, query, clean) in [
+            (
+                crate::rules::UV_CACHE_RULE_DOC,
+                "uv",
+                vec!["cache", "dir"],
+                vec!["cache", "clean"],
+            ),
+            (
+                crate::rules::BUN_CACHE_RULE_DOC,
+                "bun",
+                vec!["pm", "cache"],
+                vec!["pm", "cache", "rm"],
+            ),
+            (
+                crate::rules::GO_BUILD_CACHE_RULE_DOC,
+                "go",
+                vec!["env", "GOCACHE"],
+                vec!["clean", "-cache"],
+            ),
+        ] {
+            if cancel_requested(cancel) {
+                break;
+            }
+            observe_provider(
+                probe,
+                doc.id,
+                &mut health,
+                &mut targets,
+                on_target,
+                |targets| {
+                    let Some(executable) = probe.resolve_executable(program) else {
+                        return;
+                    };
+                    let path = output_path(probe.command_output(&executable, &query));
+                    let Some(path) = path else {
+                        if probe.failure().is_none() {
+                            probe.set_failure(ScanCoverageStatus::Failed);
+                        }
+                        return;
+                    };
+                    if !probe.is_dir(&path) {
+                        return;
+                    }
+                    let estimate = probe.estimate_path_size(&path);
+                    targets.push(command_target(CommandTargetInput {
+                        rule_id: doc.id,
+                        ecosystem: doc.ecosystem.clone(),
+                        path: Some(path.clone()),
+                        estimated_bytes: estimate.display_bytes(),
+                        size_complete: estimate.complete,
+                        sizing_warnings: estimate.warnings,
+                        last_modified: estimate.last_modified,
+                        risk: doc.risk.clone(),
+                        selected_by_default: false,
+                        program: executable,
+                        args: clean.clone(),
+                        evidence: command_evidence(
+                            doc.id,
+                            Some(path),
+                            &format!("{program} {}", query.join(" ")),
+                            &[&format!("{program} {}", clean.join(" "))],
+                        ),
+                    }));
+                },
+            );
+        }
+    }
+    if !cancel_requested(cancel) {
+        add_known_cache_targets_with_progress(probe, &mut targets, cancel, on_target, &mut health);
     }
 
-    CleanupPlan {
-        version: CLEANUP_PLAN_VERSION,
-        targets,
+    if cancel_requested(cancel) {
+        for id in [
+            "npm",
+            "pip",
+            "pnpm",
+            "yarn",
+            "cargo.home",
+            "go",
+            "uv.cache.clean",
+            "bun.cache.clean",
+            "go.build_cache.clean",
+        ]
+        .into_iter()
+        .chain(global_cache_rules().map(|rule| {
+            if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID {
+                "go"
+            } else {
+                rule.id
+            }
+        })) {
+            if !health
+                .coverage
+                .iter()
+                .any(|unit| unit.scope == ScanCoverageScope::Provider && unit.id == id)
+            {
+                record_provider_coverage(&mut health, id, None, ScanCoverageStatus::Canceled, 0);
+            }
+        }
+    }
+
+    ProjectScanOutcome {
+        plan: CleanupPlan {
+            version: CLEANUP_PLAN_VERSION,
+            targets,
+        },
+        health,
     }
 }
 
@@ -107,16 +395,116 @@ fn cancel_requested(cancel: Option<&Arc<FlagCancelObserver>>) -> bool {
     cancel.is_some_and(|flag| flag.is_cancel_requested())
 }
 
-fn observe_new_targets(
+fn observe_provider(
+    probe: &impl ProviderProbe,
+    id: &str,
+    health: &mut ScanHealth,
     targets: &mut Vec<CleanTarget>,
     on_target: &mut dyn FnMut(CleanTarget),
     add: impl FnOnce(&mut Vec<CleanTarget>),
 ) {
+    probe.begin_provider();
     let start = targets.len();
     add(targets);
+    let path_missing = targets[start..].iter().any(|target| target.path.is_none());
+    if !path_missing {
+        for target in &targets[start..] {
+            if let CleanAction::Command { program, .. } = &target.action {
+                let rule = target
+                    .evidence
+                    .iter()
+                    .find_map(|evidence| match evidence {
+                        Evidence::RuleMatched { rule_id } => Some(rule_id.as_str()),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                let args: &[&str] = if rule == "pip.cache.purge" {
+                    &["-m", "pip", "--version"]
+                } else if rule.starts_with("go.") {
+                    &["version"]
+                } else {
+                    &["--version"]
+                };
+                if let Some(version) = probe.command_output(Path::new(program), args)
+                    && crate::rules::validate_provider_version(rule, version.trim()).is_err()
+                {
+                    probe.set_failure(ScanCoverageStatus::Unsupported);
+                }
+            }
+        }
+    }
+    let failure = probe.failure();
+    if path_missing || failure.is_some() {
+        targets.truncate(start);
+    }
+    let discovered = &targets[start..];
+    let status = if let Some(status) = failure {
+        status
+    } else if path_missing {
+        ScanCoverageStatus::Failed
+    } else if !discovered.is_empty() {
+        ScanCoverageStatus::Complete
+    } else {
+        probe.failure().unwrap_or(ScanCoverageStatus::Absent)
+    };
+    let path = discovered.first().and_then(|target| target.path.clone());
+    record_provider_coverage(health, id, path, status, discovered.len());
+    if status == ScanCoverageStatus::Unsupported
+        && let Some(detail) = probe.failure_detail()
+    {
+        if let Some(unit) = health.coverage.last_mut() {
+            unit.detail = detail.clone();
+        }
+        if let Some(diagnostic) = health.diagnostics.last_mut() {
+            diagnostic.detail = detail;
+        }
+    }
     for target in targets[start..].iter().cloned() {
         on_target(target);
     }
+}
+
+fn record_provider_coverage(
+    health: &mut ScanHealth,
+    id: &str,
+    path: Option<PathBuf>,
+    status: ScanCoverageStatus,
+    target_count: usize,
+) {
+    let detail = match status {
+        ScanCoverageStatus::Complete => "provider evaluated",
+        ScanCoverageStatus::Absent => "optional tool or cache is absent",
+        ScanCoverageStatus::Timeout => "read-only provider query timed out; retry scan",
+        ScanCoverageStatus::OutputTruncated => {
+            "provider output exceeded the bounded capture; no path accepted"
+        }
+        ScanCoverageStatus::BudgetLimited => "provider phase deadline reached; retry scan",
+        ScanCoverageStatus::Canceled => "provider query canceled",
+        ScanCoverageStatus::Unsupported => "provider version or platform is unsupported",
+        _ => "provider scope could not be verified; review configuration and rescan",
+    }
+    .to_string();
+    if status.is_incomplete() {
+        health.diagnostics.push(ScanDiagnostic {
+            stage: ScanDiagnosticStage::Provider,
+            path: path.clone().unwrap_or_else(|| PathBuf::from(id)),
+            outcome: match status {
+                ScanCoverageStatus::Canceled => ScanDiagnosticOutcome::Canceled,
+                ScanCoverageStatus::OutputTruncated => ScanDiagnosticOutcome::OutputTruncated,
+                _ => ScanDiagnosticOutcome::Failed,
+            },
+            detail: detail.clone(),
+            process: None,
+        });
+    }
+    health.record_coverage(ScanCoverage {
+        id: id.to_string(),
+        scope: ScanCoverageScope::Provider,
+        path,
+        status,
+        target_count,
+        detail,
+    });
 }
 
 fn add_npm_targets(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
@@ -153,14 +541,15 @@ fn add_pip_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     } else {
         ["python3", "python", "py"]
     };
-    let Some((pip_program_name, pip_program)) = candidates
-        .into_iter()
-        .find_map(|name| probe.resolve_executable(name).map(|path| (name, path)))
+    let Some((pip_program_name, pip_program, cache_path)) =
+        candidates.into_iter().find_map(|name| {
+            let program = probe.resolve_executable(name)?;
+            let path = output_path(probe.command_output(&program, &["-m", "pip", "cache", "dir"]))?;
+            Some((name, program, Some(path)))
+        })
     else {
         return;
     };
-    let cache_path =
-        output_path(probe.command_output(&pip_program, &["-m", "pip", "cache", "dir"]));
     let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let purge_command = format!("{pip_program_name} -m pip cache purge");
     let dir_command = format!("{pip_program_name} -m pip cache dir");
@@ -221,9 +610,16 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     };
     let version = probe.command_output(&yarn, &["--version"]);
     let Some(major_version) = version.as_deref().and_then(parse_major_version) else {
+        if probe.failure().is_none() {
+            probe.set_failure(ScanCoverageStatus::Failed);
+        }
         return;
     };
-    let (rule_doc, path_command, clean_args, clean_command) = if major_version <= 1 {
+    if !(1..=4).contains(&major_version) {
+        probe.set_failure(ScanCoverageStatus::Unsupported);
+        return;
+    }
+    let (rule_doc, path_command, clean_args, clean_command) = if major_version == 1 {
         (
             YARN_CACHE_CLASSIC_RULE_DOC,
             vec!["cache", "dir"],
@@ -233,18 +629,24 @@ fn add_yarn_target(probe: &impl ProviderProbe, targets: &mut Vec<CleanTarget>) {
     } else {
         (
             YARN_CACHE_MODERN_RULE_DOC,
-            vec!["config", "get", "cacheFolder"],
+            vec!["config", "get", "globalFolder"],
             vec!["cache", "clean", "--mirror"],
             "yarn cache clean --mirror",
         )
     };
     let rule_id = rule_doc.id;
-    let cache_path = output_path(probe.command_output(&yarn, &path_command));
+    let cache_path = output_path(probe.command_output(&yarn, &path_command)).map(|path| {
+        if major_version > 1 {
+            path.join("cache")
+        } else {
+            path
+        }
+    });
     let cache_estimate = estimate_path(probe, cache_path.as_deref());
     let path_command_display = if major_version <= 1 {
         "yarn cache dir"
     } else {
-        "yarn config get cacheFolder"
+        "yarn config get globalFolder (cache child)"
     };
 
     targets.push(command_target(CommandTargetInput {
@@ -353,8 +755,18 @@ fn add_known_cache_targets_with_progress(
     targets: &mut Vec<CleanTarget>,
     cancel: Option<&Arc<FlagCancelObserver>>,
     on_target: &mut dyn FnMut(CleanTarget),
+    health: &mut ScanHealth,
 ) {
     let Some(home) = probe.home_dir() else {
+        for rule in global_cache_rules() {
+            record_provider_coverage(
+                health,
+                rule.id,
+                None,
+                ScanCoverageStatus::OwnershipUnknown,
+                0,
+            );
+        }
         return;
     };
     for rule in global_cache_rules() {
@@ -363,11 +775,26 @@ fn add_known_cache_targets_with_progress(
         }
         // Official go clean provider owns the executable action; skip the
         // inspect-only home-relative duplicate when go is available.
-        if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID && probe.resolve_executable("go").is_some() {
+        if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID
+            && targets
+                .iter()
+                .any(|target| target.id.as_str().starts_with(GO_MODCACHE_RULE_DOC.id))
+        {
             continue;
         }
         let path = resolve_known_cache_path(probe, &home, rule);
         if !probe.is_dir(&path) {
+            record_provider_coverage(
+                health,
+                if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID {
+                    "go"
+                } else {
+                    rule.id
+                },
+                Some(path),
+                ScanCoverageStatus::Absent,
+                0,
+            );
             continue;
         }
         let estimate = probe.estimate_path_size(&path);
@@ -400,6 +827,17 @@ fn add_known_cache_targets_with_progress(
             action,
         };
         targets.push(target.clone());
+        record_provider_coverage(
+            health,
+            if rule.id == GO_MODCACHE_DIRECTORY_RULE_ID {
+                "go"
+            } else {
+                rule.id
+            },
+            target.path.clone(),
+            ScanCoverageStatus::Complete,
+            1,
+        );
         on_target(target);
     }
 }
@@ -501,19 +939,16 @@ fn cargo_home(probe: &impl ProviderProbe) -> (&'static str, Option<PathBuf>) {
 
 fn output_path(output: Option<String>) -> Option<PathBuf> {
     output.and_then(|output| {
-        output
+        let mut lines = output
             .lines()
             .map(str::trim)
-            .find(|line| {
-                !line.is_empty()
-                    && *line != "undefined"
-                    && *line != "null"
-                    && !line.contains(' ')
-                    && !line.to_ascii_lowercase().contains("warning")
-                    && !line.to_ascii_lowercase().contains("error")
-            })
-            .map(PathBuf::from)
-            .filter(|path| is_usable_tool_path(path))
+            .filter(|line| !line.is_empty());
+        let line = lines.next()?;
+        if lines.next().is_some() || line.chars().any(char::is_control) {
+            return None;
+        }
+        let path = PathBuf::from(line);
+        is_usable_tool_path(&path).then_some(path)
     })
 }
 
@@ -534,26 +969,7 @@ fn resolve_known_cache_path(
     home: &Path,
     rule: &crate::rules::GlobalCacheRule,
 ) -> PathBuf {
-    match rule.id {
-        GRADLE_CACHES_RULE_ID | GRADLE_WRAPPER_DISTS_RULE_ID => {
-            if let Some(gradle_home) = probe.env_path("GRADLE_USER_HOME") {
-                let rest = rule.relative.trim_start_matches(".gradle/");
-                return gradle_home.join(rest);
-            }
-        }
-        NUGET_PACKAGES_RULE_ID => {
-            if let Some(nuget) = probe.env_path("NUGET_PACKAGES") {
-                return nuget;
-            }
-        }
-        GO_MODCACHE_DIRECTORY_RULE_ID => {
-            if let Some(gomod) = probe.env_path("GOMODCACHE") {
-                return gomod;
-            }
-        }
-        _ => {}
-    }
-    home.join(rule.relative)
+    crate::rules::configured_cache_path(rule, home, |key| probe.env_path(key))
 }
 
 fn estimate_path(probe: &impl ProviderProbe, path: Option<&Path>) -> SizeEstimate {
@@ -602,6 +1018,46 @@ mod tests {
     }
 
     #[test]
+    fn go_and_unrelated_targets_roundtrip_through_production_registry() {
+        let fixture = tempfile::TempDir::new().expect("fixture");
+        let cache = fixture.path().join("Go cache 警告");
+        let npm_cache = fixture.path().join("npm error cache");
+        let mut probe = FakeProbe::default();
+        let go = probe.tool("go", "/tools/go");
+        let npm = probe.tool("npm", "/tools/npm");
+        probe.output(&go, &["env", "GOMODCACHE"], &cache.display().to_string());
+        probe.output(
+            &npm,
+            &["config", "get", "cache"],
+            &npm_cache.display().to_string(),
+        );
+        probe.path_size(&cache.display().to_string(), 10);
+        probe.path_size(&npm_cache.display().to_string(), 20);
+        probe.dirs.insert(cache);
+        let scanned = scan_with_probe(&probe);
+        assert_eq!(scanned.targets.len(), 2);
+        assert!(scanned.targets.iter().all(|target| target.path.is_some()));
+        let persisted =
+            crate::plan::untrusted_plan_from_scan(&scanned).expect("real v2 conversion");
+        crate::plan::validate_plan(&persisted).expect("registered targets validate together");
+    }
+
+    #[test]
+    fn single_path_parser_preserves_spaces_and_rejects_ambiguous_output() {
+        let fixture = tempfile::TempDir::new().expect("fixture");
+        let path = fixture.path().join("warning error 缓存 path");
+        assert_eq!(
+            output_path(Some(format!("{}\r\n", path.display()))),
+            Some(path.clone())
+        );
+        assert_eq!(
+            output_path(Some(format!("{}\n{}\n", path.display(), path.display()))),
+            None
+        );
+        assert_eq!(output_path(Some("relative/path".to_string())), None);
+    }
+
+    #[test]
     fn command_providers_emit_official_actions_when_tools_are_available() {
         let mut probe = FakeProbe::default();
         let npm = probe.tool("npm", "/tools/npm");
@@ -612,11 +1068,11 @@ mod tests {
         probe.output(&py, &["-m", "pip", "cache", "dir"], "/cache/pip\n");
         probe.output(&pnpm, &["store", "path"], "/cache/pnpm\n");
         probe.output(&yarn, &["--version"], "4.12.0\n");
-        probe.output(&yarn, &["config", "get", "cacheFolder"], "/cache/yarn\n");
+        probe.output(&yarn, &["config", "get", "globalFolder"], "/cache/yarn\n");
         probe.path_size("/cache/npm", 100);
         probe.path_size("/cache/pip", 200);
         probe.path_size("/cache/pnpm", 300);
-        probe.path_size("/cache/yarn", 400);
+        probe.path_size("/cache/yarn/cache", 400);
 
         let plan = scan_with_probe(&probe);
 
@@ -663,6 +1119,80 @@ mod tests {
                 "global providers must not delete cache internals directly"
             );
         }
+    }
+
+    #[test]
+    fn new_owner_providers_roundtrip_and_unsupported_versions_remain_visible() {
+        let fixture = tempfile::TempDir::new().expect("fixture");
+        for (name, args, rule) in [
+            ("uv", vec!["cache", "dir"], "uv.cache.clean"),
+            ("bun", vec!["pm", "cache"], "bun.cache.clean"),
+            ("go", vec!["env", "GOCACHE"], "go.build_cache.clean"),
+        ] {
+            let cache = fixture.path().join(format!("{name} 空格"));
+            std::fs::create_dir_all(&cache).expect("cache");
+            let mut probe = FakeProbe::default();
+            let executable = probe.tool(name, &format!("/tools/{name}"));
+            probe.output(&executable, &args, &cache.display().to_string());
+            probe.dirs.insert(cache);
+            let plan = scan_with_probe(&probe);
+            assert!(
+                plan.targets
+                    .iter()
+                    .any(|target| target.id.as_str().starts_with(rule)),
+                "{rule}"
+            );
+            crate::plan::validate_plan(
+                &crate::plan::untrusted_plan_from_scan(&plan).expect("conversion"),
+            )
+            .expect("production registry");
+        }
+        let mut probe = FakeProbe::default();
+        let npm = probe.tool("npm", "/tools/npm");
+        probe.output(
+            &npm,
+            &["config", "get", "cache"],
+            &fixture.path().display().to_string(),
+        );
+        probe.output(&npm, &["--version"], "99.0.0");
+        let outcome = scan_outcome_with_probe(&probe, None, &mut |_| {});
+        assert!(outcome.plan.targets.is_empty());
+        assert_eq!(
+            outcome
+                .health
+                .coverage
+                .iter()
+                .find(|unit| unit.id == "npm")
+                .expect("coverage")
+                .status,
+            ScanCoverageStatus::Unsupported
+        );
+    }
+
+    #[test]
+    fn pip_fallback_success_records_one_complete_unit() {
+        let mut probe = FakeProbe::default();
+        let py = probe.tool("py", "/tools/py");
+        let python = probe.tool("python", "/tools/python");
+        probe.output(&python, &["-m", "pip", "cache", "dir"], "/cache/pip");
+        // The first launcher exists but cannot query pip; the next interpreter recovers.
+        let _ = py;
+        let outcome = scan_outcome_with_probe(&probe, None, &mut |_| {});
+        let units: Vec<_> = outcome
+            .health
+            .coverage
+            .iter()
+            .filter(|unit| unit.id == "pip")
+            .collect();
+        assert_eq!(units.len(), 1);
+        assert_eq!(units[0].status, ScanCoverageStatus::Complete);
+        assert!(
+            !outcome
+                .health
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.path == Path::new("pip"))
+        );
     }
 
     #[test]
@@ -930,24 +1460,59 @@ mod tests {
                 .map(|target| target.id.as_str())
                 .collect::<Vec<_>>()
         );
-        // npm still emits a command target with unresolved path when the probe
-        // returns None — discovery failure is non-fatal.
+        // An unresolved footprint is a coverage failure, not executable authority.
         assert!(
-            plan.targets
+            !plan
+                .targets
                 .iter()
                 .any(|target| target.id.as_str().starts_with("npm.cache.clean")),
-            "npm target remains discoverable without cache path"
+            "unresolved npm path must not become a command target"
         );
     }
 
     #[derive(Default)]
     struct FakeProbe {
+        failure: Cell<Option<ScanCoverageStatus>>,
+        query_failure: Option<ScanCoverageStatus>,
         tools: HashMap<String, PathBuf>,
         outputs: HashMap<(PathBuf, Vec<String>), String>,
         env: HashMap<String, PathBuf>,
         home: Option<PathBuf>,
         dirs: HashSet<PathBuf>,
         sizes: HashMap<PathBuf, u64>,
+    }
+
+    #[test]
+    fn new_provider_path_failures_preserve_typed_coverage() {
+        for status in [
+            ScanCoverageStatus::Timeout,
+            ScanCoverageStatus::Canceled,
+            ScanCoverageStatus::OutputTruncated,
+            ScanCoverageStatus::Unsupported,
+        ] {
+            let mut probe = FakeProbe {
+                query_failure: Some(status),
+                ..Default::default()
+            };
+            for name in ["uv", "bun", "go"] {
+                probe.tool(name, name);
+            }
+            let outcome = scan_outcome_with_probe(&probe, None, &mut |_| {});
+            for id in ["uv.cache.clean", "bun.cache.clean", "go.build_cache.clean"] {
+                assert_eq!(
+                    outcome
+                        .health
+                        .coverage
+                        .iter()
+                        .find(|unit| unit.id == id)
+                        .unwrap()
+                        .status,
+                    status,
+                    "{id}"
+                );
+            }
+            assert!(!outcome.health.is_complete());
+        }
     }
 
     impl FakeProbe {
@@ -973,17 +1538,42 @@ mod tests {
     }
 
     impl ProviderProbe for FakeProbe {
+        fn begin_provider(&self) {
+            self.failure.set(None);
+        }
+        fn failure(&self) -> Option<ScanCoverageStatus> {
+            self.failure.get()
+        }
+        fn set_failure(&self, status: ScanCoverageStatus) {
+            self.failure.set(Some(status));
+        }
         fn resolve_executable(&self, program: &str) -> Option<PathBuf> {
-            self.tools.get(program).cloned()
+            let value = self.tools.get(program).cloned();
+            if value.is_none() && self.failure.get().is_none() {
+                self.failure.set(Some(ScanCoverageStatus::Absent));
+            }
+            value
         }
 
         fn command_output(&self, program: &Path, args: &[&str]) -> Option<String> {
-            self.outputs
+            if let Some(status) = self.query_failure {
+                self.failure.set(Some(status));
+                return None;
+            }
+            let value = self
+                .outputs
                 .get(&(
                     program.to_path_buf(),
                     args.iter().map(|arg| (*arg).to_string()).collect(),
                 ))
                 .cloned()
+                .or_else(|| fixture_version(program, args));
+            self.failure.set(if value.is_some() {
+                None
+            } else {
+                Some(ScanCoverageStatus::Failed)
+            });
+            value
         }
 
         fn env_path(&self, key: &str) -> Option<PathBuf> {
@@ -1063,7 +1653,10 @@ mod tests {
                 assert_eq!(result.status, ProcessStatus::Timeout);
                 return None;
             }
-            self.outputs.get(&key).cloned()
+            self.outputs
+                .get(&key)
+                .cloned()
+                .or_else(|| fixture_version(program, args))
         }
 
         fn env_path(&self, key: &str) -> Option<PathBuf> {
@@ -1081,6 +1674,33 @@ mod tests {
         fn estimate_path_size(&self, path: &Path) -> SizeEstimate {
             SizeEstimate::trusted(self.sizes.get(path).copied().unwrap_or_default(), None)
         }
+    }
+
+    fn fixture_version(program: &Path, args: &[&str]) -> Option<String> {
+        if args == ["version"] {
+            return Some("go version go1.26.0 windows/amd64".to_string());
+        }
+        if args == ["-m", "pip", "--version"] {
+            return Some("pip 25.0 from fixture".to_string());
+        }
+        if args != ["--version"] {
+            return None;
+        }
+        Some(
+            match program
+                .file_stem()
+                .and_then(|name| name.to_str())
+                .unwrap_or_default()
+            {
+                "npm" => "11.0.0",
+                "pnpm" => "10.0.0",
+                "yarn" => "4.0.0",
+                "uv" => "uv 0.9.0",
+                "bun" => "1.3.0",
+                _ => return None,
+            }
+            .to_string(),
+        )
     }
 
     fn assert_command(

@@ -1,4 +1,5 @@
 use std::{
+    cell::RefCell,
     env,
     ffi::OsString,
     path::{Path, PathBuf},
@@ -10,6 +11,7 @@ use tracing::warn;
 
 use crate::{
     filesystem::{SizeEstimate, estimate_tree_with_budget_and_cancel},
+    model::ScanCoverageStatus,
     process::{
         CancelObserver, CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, DEFAULT_PROVIDER_PROBE_TIMEOUT,
         FlagCancelObserver, NoopCancelObserver, ProcessRequest, ProcessRunner, ProcessStatus,
@@ -17,6 +19,14 @@ use crate::{
 };
 
 pub(super) trait ProviderProbe {
+    fn begin_provider(&self) {}
+    fn failure(&self) -> Option<ScanCoverageStatus> {
+        None
+    }
+    fn failure_detail(&self) -> Option<String> {
+        None
+    }
+    fn set_failure(&self, _status: ScanCoverageStatus) {}
     fn resolve_executable(&self, program: &str) -> Option<PathBuf>;
     fn command_output(&self, program: &Path, args: &[&str]) -> Option<String>;
     fn env_path(&self, key: &str) -> Option<PathBuf>;
@@ -29,6 +39,8 @@ pub(super) struct SystemProviderProbe {
     runner: ProcessRunner,
     phase_deadline: Instant,
     cancel: Option<Arc<FlagCancelObserver>>,
+    failure: RefCell<Option<ScanCoverageStatus>>,
+    failure_detail: RefCell<Option<String>>,
 }
 
 impl SystemProviderProbe {
@@ -37,18 +49,38 @@ impl SystemProviderProbe {
             runner: ProcessRunner::default(),
             phase_deadline: Instant::now() + DEFAULT_PROVIDER_PHASE_DEADLINE,
             cancel,
+            failure: RefCell::new(None),
+            failure_detail: RefCell::new(None),
         }
     }
 }
 
 impl ProviderProbe for SystemProviderProbe {
+    fn begin_provider(&self) {
+        *self.failure.borrow_mut() = None;
+        *self.failure_detail.borrow_mut() = None;
+    }
+    fn failure(&self) -> Option<ScanCoverageStatus> {
+        *self.failure.borrow()
+    }
+    fn failure_detail(&self) -> Option<String> {
+        self.failure_detail.borrow().clone()
+    }
+    fn set_failure(&self, status: ScanCoverageStatus) {
+        *self.failure.borrow_mut() = Some(status);
+    }
     fn resolve_executable(&self, program: &str) -> Option<PathBuf> {
-        resolve_executable(program)
+        let resolved = resolve_executable(program);
+        if resolved.is_none() && self.failure.borrow().is_none() {
+            *self.failure.borrow_mut() = Some(ScanCoverageStatus::Absent);
+        }
+        resolved
     }
 
     fn command_output(&self, program: &Path, args: &[&str]) -> Option<String> {
         let now = Instant::now();
         if now >= self.phase_deadline {
+            *self.failure.borrow_mut() = Some(ScanCoverageStatus::BudgetLimited);
             warn!(
                 program = %program.display(),
                 args = ?args,
@@ -62,6 +94,7 @@ impl ProviderProbe for SystemProviderProbe {
             .as_ref()
             .is_some_and(|flag| flag.is_cancel_requested())
         {
+            *self.failure.borrow_mut() = Some(ScanCoverageStatus::Canceled);
             warn!(
                 program = %program.display(),
                 "provider probe skipped: cancel requested"
@@ -76,9 +109,33 @@ impl ProviderProbe for SystemProviderProbe {
             Some(flag) => flag.as_ref(),
             None => &noop,
         };
+        let name = program
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+        let rule = match name.as_str() {
+            "npm" => "npm.cache.clean",
+            "pnpm" => "pnpm.store.prune",
+            "yarn" => "yarn.cache.clean.classic",
+            _ => "native",
+        };
+        let (program, prefix_args, _) =
+            match crate::process::resolve_provider_dispatch(program, rule) {
+                Ok(dispatch) => dispatch,
+                Err(error) => {
+                    *self.failure.borrow_mut() = Some(ScanCoverageStatus::Unsupported);
+                    *self.failure_detail.borrow_mut() = Some(error.to_string());
+                    return None;
+                }
+            };
         let request = ProcessRequest {
             program: OsString::from(program.as_os_str()),
-            args: args.iter().map(|arg| OsString::from(*arg)).collect(),
+            args: prefix_args
+                .iter()
+                .map(OsString::from)
+                .chain(args.iter().map(|arg| OsString::from(*arg)))
+                .collect(),
             cwd: CwdPolicy::Neutral,
             timeout: Some(timeout),
             job_deadline: Some(self.phase_deadline),
@@ -86,11 +143,28 @@ impl ProviderProbe for SystemProviderProbe {
         };
 
         let result = self.runner.run(&request);
+        if result.output.stdout_truncated || result.output.stderr_truncated {
+            *self.failure.borrow_mut() = Some(ScanCoverageStatus::OutputTruncated);
+            return None;
+        }
         match result.status {
-            ProcessStatus::Success => {
-                Some(String::from_utf8_lossy(&result.output.stdout).into_owned())
-            }
+            ProcessStatus::Success => match String::from_utf8(result.output.stdout) {
+                Ok(output) => {
+                    *self.failure.borrow_mut() = None;
+                    Some(output)
+                }
+                Err(_) => {
+                    *self.failure.borrow_mut() = Some(ScanCoverageStatus::Failed);
+                    None
+                }
+            },
             status => {
+                *self.failure.borrow_mut() = Some(match status {
+                    ProcessStatus::Timeout => ScanCoverageStatus::Timeout,
+                    ProcessStatus::Canceled => ScanCoverageStatus::Canceled,
+                    ProcessStatus::NotFound => ScanCoverageStatus::Absent,
+                    _ => ScanCoverageStatus::Failed,
+                });
                 warn!(
                     program = %program.display(),
                     args = ?args,
@@ -136,51 +210,4 @@ impl ProviderProbe for SystemProviderProbe {
     }
 }
 
-pub(crate) fn resolve_executable(program: &str) -> Option<PathBuf> {
-    let program_path = Path::new(program);
-    if program_path.components().count() > 1 && program_path.is_file() {
-        return Some(program_path.to_path_buf());
-    }
-
-    let path_var = env::var_os("PATH")?;
-    for dir in env::split_paths(&path_var) {
-        #[cfg(windows)]
-        {
-            if program_path.extension().is_none() {
-                for extension in windows_path_extensions() {
-                    let candidate = dir.join(format!("{program}{extension}"));
-                    if candidate.is_file() {
-                        return Some(candidate);
-                    }
-                }
-            }
-        }
-
-        let candidate = dir.join(program);
-        if candidate.is_file() {
-            return Some(candidate);
-        }
-    }
-    None
-}
-
-#[cfg(windows)]
-fn windows_path_extensions() -> Vec<String> {
-    env::var_os("PATHEXT")
-        .map(|value| {
-            value
-                .to_string_lossy()
-                .split(';')
-                .filter(|extension| !extension.is_empty())
-                .map(str::to_string)
-                .collect()
-        })
-        .unwrap_or_else(|| {
-            vec![
-                ".COM".to_string(),
-                ".EXE".to_string(),
-                ".BAT".to_string(),
-                ".CMD".to_string(),
-            ]
-        })
-}
+pub(crate) use crate::process::resolve_executable;

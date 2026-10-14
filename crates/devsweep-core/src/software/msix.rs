@@ -32,21 +32,33 @@ fn windows_inventory(
     observed_at_unix_ms: u64,
     cancel: Option<Arc<FlagCancelObserver>>,
 ) -> SourceInventory {
-    let source = SoftwareSourceId::MsixCurrentUser;
     let sizing_cancel = cancel.clone();
-    let result =
-        run_joined_mta(move || enumerate_on_mta(cancel.as_ref())).unwrap_or_else(MtaResult::failed);
+    let (result, measured) = run_joined_mta(move || {
+        crate::filesystem::estimate_streamed_trees(
+            crate::filesystem::DEFAULT_SIZE_ENTRY_BUDGET,
+            cancel.as_ref(),
+            |submit| enumerate_on_mta(cancel.as_ref(), submit),
+        )
+    })
+    .unwrap_or_else(|reason| (MtaResult::failed(reason), Default::default()));
+    let sizes = finish_streamed_sizes(
+        &result.packages,
+        measured,
+        observed_at_unix_ms,
+        sizing_cancel.as_ref(),
+    );
+    inventory_from_msix(result, sizes)
+}
+
+#[cfg(windows)]
+fn inventory_from_msix(result: MtaResult, sizes: Vec<SoftwareSizeEvidence>) -> SourceInventory {
+    let source = SoftwareSourceId::MsixCurrentUser;
     let complete = result.state == SoftwareSourceState::Available;
     let evidence = if complete {
         SoftwareSourceEvidence::available(source.clone())
     } else {
         SoftwareSourceEvidence::unavailable(source.clone(), result.state, result.reason_code)
     };
-    let sizes = measure_msix_installed_paths(
-        &result.packages,
-        observed_at_unix_ms,
-        sizing_cancel.as_ref(),
-    );
     let observations = result
         .packages
         .into_iter()
@@ -159,6 +171,31 @@ struct EnumeratedMsixPackage {
 }
 
 #[cfg(windows)]
+fn finish_streamed_sizes(
+    packages: &[EnumeratedMsixPackage],
+    measured: crate::filesystem::StreamedSizeEstimates,
+    observed_at_unix_ms: u64,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Vec<SoftwareSizeEvidence> {
+    let mut sizes = vec![
+        SoftwareSizeEvidence::Unknown {
+            reason_code: "installed_path_unavailable".to_string(),
+        };
+        packages.len()
+    ];
+    for (index, estimate) in measured.estimates {
+        let estimate = estimate.unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+        sizes[index] = size_from_installed_estimate(estimate, observed_at_unix_ms);
+    }
+    if measured.canceled_after_produce {
+        // Previously every root first saw cancellation after enumeration. The
+        // unchanged cancel-aware walker returns Unknown without inspecting paths.
+        return measure_msix_installed_paths(packages, observed_at_unix_ms, cancel);
+    }
+    sizes
+}
+
+#[cfg(windows)]
 fn measure_msix_installed_paths(
     packages: &[EnumeratedMsixPackage],
     observed_at_unix_ms: u64,
@@ -216,9 +253,27 @@ fn size_from_installed_estimate(
 }
 
 #[cfg(windows)]
-fn enumerate_on_mta(cancel: Option<&Arc<FlagCancelObserver>>) -> MtaResult {
-    use std::collections::BTreeSet;
+struct RawPackage {
+    full_name: String,
+    display_name: Option<String>,
+    publisher: Option<String>,
+    version: String,
+    installed_path: Option<String>,
+    framework: bool,
+    resource: bool,
+    optional: bool,
+    stub: bool,
+    healthy: bool,
+    system: bool,
+    dependency_names: Vec<String>,
+    dependency_graph_partial: bool,
+}
 
+#[cfg(windows)]
+fn enumerate_on_mta(
+    cancel: Option<&Arc<FlagCancelObserver>>,
+    submit_path: &mut dyn FnMut(usize, &std::path::Path),
+) -> MtaResult {
     use windows::{
         ApplicationModel::PackageSignatureKind, Management::Deployment::PackageManager,
         core::HSTRING,
@@ -241,22 +296,6 @@ fn enumerate_on_mta(cancel: Option<&Arc<FlagCancelObserver>>) -> MtaResult {
         Ok(packages) => packages,
         Err(_) => return MtaResult::failed("current_user_msix_query_failed"),
     };
-
-    struct RawPackage {
-        full_name: String,
-        display_name: Option<String>,
-        publisher: Option<String>,
-        version: String,
-        installed_path: Option<String>,
-        framework: bool,
-        resource: bool,
-        optional: bool,
-        stub: bool,
-        healthy: bool,
-        system: bool,
-        dependency_names: Vec<String>,
-        dependency_graph_partial: bool,
-    }
 
     let (packages, mut partial) = collect_iterable(&iterable, cancel);
     let mut raw = Vec::new();
@@ -306,11 +345,21 @@ fn enumerate_on_mta(cancel: Option<&Arc<FlagCancelObserver>>) -> MtaResult {
         match extracted {
             Ok(package) => {
                 partial |= package.dependency_graph_partial;
+                if let Some(path) = package.installed_path.as_deref() {
+                    submit_path(raw.len(), std::path::Path::new(path));
+                }
                 raw.push(package);
             }
             Err(_) => partial = true,
         }
     }
+
+    finish_enumeration(raw, partial)
+}
+
+#[cfg(windows)]
+fn finish_enumeration(raw: Vec<RawPackage>, partial: bool) -> MtaResult {
+    use std::collections::BTreeSet;
 
     let dependency_names = raw
         .iter()
@@ -519,4 +568,302 @@ pub(crate) fn active_mta_workers() -> usize {
     use std::sync::atomic::Ordering;
 
     ACTIVE_MTA_WORKERS.load(Ordering::SeqCst)
+}
+
+#[cfg(all(test, windows))]
+mod phase_benchmark {
+    use super::*;
+    use std::{
+        collections::HashSet,
+        path::{Path, PathBuf},
+        sync::{
+            Mutex,
+            atomic::{AtomicU64, AtomicUsize, Ordering},
+        },
+        time::{Instant, SystemTime},
+    };
+
+    use crate::filesystem::{
+        InspectedEntry, PathReparseProbe, ReparseProbeResult, SystemPathReparseProbe,
+    };
+
+    #[derive(Default)]
+    struct CountingProbe {
+        inspections: AtomicUsize,
+        fallbacks: AtomicUsize,
+        extra_probes: AtomicUsize,
+        native_ns: AtomicU64,
+        paths: Mutex<HashSet<PathBuf>>,
+    }
+
+    impl PathReparseProbe for CountingProbe {
+        fn inspect_entry(&self, path: &Path) -> Option<InspectedEntry> {
+            self.inspections.fetch_add(1, Ordering::Relaxed);
+            self.paths
+                .lock()
+                .expect("diagnostic path set")
+                .insert(path.to_owned());
+            let started = Instant::now();
+            let result = SystemPathReparseProbe.inspect_entry(path);
+            self.native_ns.fetch_add(
+                u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX),
+                Ordering::Relaxed,
+            );
+            if result.is_none() {
+                self.fallbacks.fetch_add(1, Ordering::Relaxed);
+            }
+            result
+        }
+
+        fn probe(&self, path: &Path) -> ReparseProbeResult {
+            self.extra_probes.fetch_add(1, Ordering::Relaxed);
+            let started = Instant::now();
+            let result = SystemPathReparseProbe.probe(path);
+            self.native_ns.fetch_add(
+                u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX),
+                Ordering::Relaxed,
+            );
+            result
+        }
+    }
+
+    /// Opt-in diagnostic only: reads the current user's package inventory and
+    /// installed-location metadata. Never install/remove packages or alter data.
+    #[test]
+    #[ignore = "read-only native host benchmark; run explicitly in a quiet measurement slot"]
+    fn profile_msix_inventory_phases() {
+        let started = Instant::now();
+        let packages = run_joined_mta(|| enumerate_on_mta(None, &mut |_, _| {}))
+            .expect("joined MTA inventory");
+        let enumeration_ms = started.elapsed().as_secs_f64() * 1000.0;
+        let installed_paths: Vec<_> = packages
+            .packages
+            .iter()
+            .filter_map(|package| package.installed_path.as_deref())
+            .collect();
+        let unique_paths: std::collections::BTreeSet<_> = installed_paths.iter().copied().collect();
+        let observed = crate::software::unix_ms(SystemTime::now());
+        let sizing_started = Instant::now();
+        let sizes = measure_msix_installed_paths(&packages.packages, observed, None);
+        let sizing_ms = sizing_started.elapsed().as_secs_f64() * 1000.0;
+        let available = sizes
+            .iter()
+            .filter(|size| matches!(size, SoftwareSizeEvidence::Available { .. }))
+            .count();
+        let partial = sizes
+            .iter()
+            .filter(|size| matches!(size, SoftwareSizeEvidence::Partial { .. }))
+            .count();
+        println!(
+            "{}",
+            serde_json::json!({
+                "method": "production MSIX enumeration followed by unchanged installed-path sizing; opt-in native diagnostic",
+                "enumeration_ms": enumeration_ms, "sizing_ms": sizing_ms,
+                "total_ms": started.elapsed().as_secs_f64() * 1000.0,
+                "packages": packages.packages.len(), "source_state": packages.state,
+            "installed_paths": installed_paths.len(), "unique_installed_paths": unique_paths.len(),
+                "available_sizes": available, "partial_sizes": partial,
+                "unknown_sizes": sizes.len() - available - partial,
+                "remaining_mta_workers": active_mta_workers(),
+            })
+        );
+        assert_eq!(sizes.len(), packages.packages.len());
+        assert_eq!(active_mta_workers(), 0);
+    }
+
+    #[test]
+    #[ignore = "read-only native metadata-count diagnostic; not a release timing benchmark"]
+    fn profile_msix_metadata_calls() {
+        let packages = run_joined_mta(|| enumerate_on_mta(None, &mut |_, _| {}))
+            .expect("joined MTA inventory");
+        let probe = CountingProbe::default();
+        let mut measured = 0;
+        let mut complete = 0;
+        // Serial package order makes this a call-count diagnostic only. Each
+        // tree retains production fan-out, native checks and per-child budgets.
+        for package in &packages.packages {
+            if let Some(path) = package.installed_path.as_deref() {
+                let estimate = crate::filesystem::estimate_tree_with_budget_and_cancel_and_probe(
+                    Path::new(path),
+                    crate::filesystem::DEFAULT_SIZE_ENTRY_BUDGET,
+                    None,
+                    &probe,
+                );
+                measured += 1;
+                complete += usize::from(estimate.complete);
+            }
+        }
+        let calls = probe.inspections.load(Ordering::Relaxed);
+        let unique = probe.paths.lock().expect("diagnostic path set").len();
+        println!(
+            "{}",
+            serde_json::json!({
+                "method": "test-only probe counts, serial package order; not production latency",
+                "packages": packages.packages.len(), "measured_paths": measured,
+                "complete_sizes": complete, "source_state": packages.state,
+                "inspection_calls": calls, "unique_inspection_paths": unique,
+                "repeat_inspections": calls - unique,
+                "combined_inspection_fallbacks": probe.fallbacks.load(Ordering::Relaxed),
+                "extra_reparse_probes": probe.extra_probes.load(Ordering::Relaxed),
+                "summed_native_inspection_ms": probe.native_ns.load(Ordering::Relaxed) as f64 / 1_000_000.0,
+                "remaining_mta_workers": active_mta_workers(),
+            })
+        );
+        assert_eq!(active_mta_workers(), 0);
+    }
+}
+
+#[cfg(all(test, windows))]
+mod overlap_tests {
+    use super::*;
+    use crate::filesystem::{
+        DEFAULT_SIZE_ENTRY_BUDGET, SizeEstimate, StreamedSizeEstimates, estimate_streamed_trees,
+    };
+    use std::{
+        path::Path,
+        sync::atomic::{AtomicBool, Ordering},
+    };
+
+    fn raw(name: &str, path: Option<String>, dependencies: &[&str]) -> RawPackage {
+        RawPackage {
+            full_name: name.to_string(),
+            display_name: Some(name.to_string()),
+            publisher: Some("fixture".to_string()),
+            version: "1.0.0.0".to_string(),
+            installed_path: path,
+            framework: false,
+            resource: false,
+            optional: false,
+            stub: false,
+            healthy: true,
+            system: false,
+            dependency_names: dependencies
+                .iter()
+                .map(|name| (*name).to_string())
+                .collect(),
+            dependency_graph_partial: false,
+        }
+    }
+
+    #[test]
+    fn late_dependency_and_partial_source_are_finalized_after_streamed_measurement() {
+        let fixture = tempfile::tempdir().expect("MSIX path fixture");
+        let installed = fixture.path().join("installed");
+        std::fs::write(&installed, b"sized fixture").expect("installed fixture");
+        let path = installed.to_string_lossy().into_owned();
+        let (result, measured) = run_joined_mta(move || {
+            estimate_streamed_trees(DEFAULT_SIZE_ENTRY_BUDGET, None, |submit| {
+                submit(0, Path::new(&path));
+                // The later package makes the first a dependency. The incomplete
+                // source must apply to it even if its size has already finished.
+                finish_enumeration(
+                    vec![raw("base", Some(path), &[]), raw("app", None, &["base"])],
+                    true,
+                )
+            })
+        })
+        .expect("MTA joined");
+        assert_eq!(active_mta_workers(), 0);
+        let expected = measure_msix_installed_paths(&result.packages, 123, None);
+        let sizes = finish_streamed_sizes(&result.packages, measured, 123, None);
+        assert_eq!(sizes, expected);
+        let inventory = inventory_from_msix(result, sizes);
+        assert_eq!(inventory.evidence[0].state, SoftwareSourceState::Partial);
+        assert_eq!(inventory.observations.len(), 2);
+        assert!(inventory.observations[0].flags.dependency);
+        assert!(!inventory.observations[1].flags.dependency);
+        assert!(
+            inventory
+                .observations
+                .iter()
+                .all(|row| row.flags.source_incomplete)
+        );
+    }
+
+    #[test]
+    fn cancellation_at_enum_end_discards_completed_sizes_but_tail_cancel_does_not() {
+        let packages = finish_enumeration(
+            vec![
+                raw("installed", Some("not inspected".to_string()), &[]),
+                raw("missing", None, &[]),
+            ],
+            true,
+        )
+        .packages;
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+        for canceled_after_produce in [true, false] {
+            let measured = StreamedSizeEstimates {
+                canceled_after_produce,
+                estimates: vec![(0, Ok(SizeEstimate::trusted(123, None)))],
+            };
+            let sizes = finish_streamed_sizes(&packages, measured, 123, Some(&cancel));
+            if canceled_after_produce {
+                assert_eq!(
+                    sizes,
+                    measure_msix_installed_paths(&packages, 123, Some(&cancel))
+                );
+                assert!(
+                    matches!(&sizes[0], SoftwareSizeEvidence::Unknown { reason_code } if reason_code == "installed_path_measurement_unavailable")
+                );
+            } else {
+                assert!(matches!(
+                    sizes[0],
+                    SoftwareSizeEvidence::Available {
+                        value_bytes: 123,
+                        ..
+                    }
+                ));
+            }
+            assert!(
+                matches!(&sizes[1], SoftwareSizeEvidence::Unknown { reason_code } if reason_code == "installed_path_unavailable")
+            );
+        }
+    }
+
+    #[test]
+    fn streamed_panic_is_resumed_after_join_even_when_canceled() {
+        let cancel = Arc::new(FlagCancelObserver::new());
+        cancel.request_cancel();
+        let joined = Arc::new(AtomicBool::new(false));
+        let caller_joined = Arc::clone(&joined);
+        let outcome = std::panic::catch_unwind(move || {
+            let measured = run_joined_mta(|| StreamedSizeEstimates {
+                canceled_after_produce: true,
+                estimates: vec![(0, Err(Box::new("controlled size panic")))],
+            })
+            .expect("MTA joined");
+            caller_joined.store(true, Ordering::SeqCst);
+            let packages = finish_enumeration(
+                vec![raw("installed", Some("not inspected".to_string()), &[])],
+                true,
+            )
+            .packages;
+            finish_streamed_sizes(&packages, measured, 123, Some(&cancel));
+        });
+        assert!(joined.load(Ordering::SeqCst));
+        assert_eq!(active_mta_workers(), 0);
+        assert_eq!(
+            outcome
+                .expect_err("size panic preserved")
+                .downcast_ref::<&str>(),
+            Some(&"controlled size panic")
+        );
+    }
+
+    #[test]
+    fn enumeration_panic_keeps_the_existing_joined_mta_failure() {
+        let fixture = tempfile::tempdir().expect("MSIX path fixture");
+        let path = fixture.path().join("installed");
+        std::fs::write(&path, b"fixture").expect("installed fixture");
+        let outcome = run_joined_mta(move || {
+            estimate_streamed_trees(DEFAULT_SIZE_ENTRY_BUDGET, None, |submit| {
+                submit(0, &path);
+                submit(1, &path);
+                panic!("controlled enumeration panic");
+            });
+        });
+        assert_eq!(outcome, Err("mta_worker_panicked"));
+        assert_eq!(active_mta_workers(), 0);
+    }
 }

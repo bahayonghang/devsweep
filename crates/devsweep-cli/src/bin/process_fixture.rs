@@ -11,8 +11,11 @@ use std::{
 };
 
 fn main() {
-    let mut args = env::args().skip(1);
+    let mut args = env::args().skip(1).collect::<Vec<_>>().into_iter();
     let mode = args.next().unwrap_or_default();
+    if provider_fixture(&mode, args.clone().collect()) {
+        return;
+    }
     match mode.as_str() {
         "hang" => loop {
             thread::sleep(Duration::from_secs(1));
@@ -84,4 +87,75 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+/// Disposable native provider simulation. The fixture never removes cache files.
+fn provider_fixture(first: &str, rest: Vec<String>) -> bool {
+    let exe = env::current_exe().expect("fixture path");
+    let config = exe
+        .parent()
+        .expect("fixture directory")
+        .join("provider.json");
+    if !config.is_file() {
+        return false;
+    }
+    let fixture: serde_json::Value =
+        serde_json::from_slice(&fs::read(config).expect("provider fixture")).expect("fixture JSON");
+    let mut args = vec![first.to_string()];
+    args.extend(rest);
+    if args
+        .first()
+        .is_some_and(|arg| arg.ends_with(".js") || arg.ends_with(".cjs"))
+    {
+        args.remove(0);
+    }
+    let mut calls = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(
+            exe.parent()
+                .expect("fixture directory")
+                .join("provider-calls.jsonl"),
+        )
+        .expect("fixture call log");
+    writeln!(
+        calls,
+        "{}",
+        serde_json::to_string(&args).expect("arguments")
+    )
+    .expect("record provider call");
+    let refs: Vec<_> = args.iter().map(String::as_str).collect();
+    match refs.as_slice() {
+        ["--version"] | ["version"] | ["-m", "pip", "--version"] => {
+            println!("{}", fixture["version"].as_str().expect("version"))
+        }
+        ["-c", "import sys; print(sys.executable)"] => println!("{}", exe.display()),
+        ["env", "GOCACHE"] => println!("{}", fixture["build_cache"].as_str().expect("build cache")),
+        ["config", "get", "cache" | "globalFolder"]
+        | ["store", "path"]
+        | ["cache", "dir"]
+        | ["-m", "pip", "cache", "dir"]
+        | ["env", "GOMODCACHE"]
+        | ["pm", "cache"] => println!("{}", fixture["cache"].as_str().expect("cache")),
+        ["cache", "clean"]
+        | ["cache", "clean", "--force" | "--mirror"]
+        | ["store", "prune"]
+        | ["-m", "pip", "cache", "purge"]
+        | ["clean", "-modcache" | "-cache"]
+        | ["pm", "cache", "rm"]
+        | ["/flushdns"] => {
+            fs::write(
+                exe.parent()
+                    .expect("fixture directory")
+                    .join("invoked.json"),
+                serde_json::to_vec(&args).expect("arguments"),
+            )
+            .expect("record simulated command");
+        }
+        _ => {
+            eprintln!("unsupported fixture query");
+            std::process::exit(2);
+        }
+    }
+    true
 }

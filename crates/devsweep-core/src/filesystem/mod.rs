@@ -15,7 +15,7 @@ pub(crate) use reparse::ReparseProbeResult;
 #[cfg(all(test, windows))]
 pub(crate) use reparse::is_unsafe_link;
 pub(crate) use reparse::{
-    PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_entry_no_follow,
+    InspectedEntry, PathReparseProbe, PathSafety, SystemPathReparseProbe, inspect_entry_no_follow,
     inspect_path_no_follow,
 };
 pub(crate) use sizing::estimate_tree_with_budget_and_cancel_and_probe;
@@ -23,3 +23,5 @@ pub(crate) use sizing::{
     DEFAULT_SIZE_ENTRY_BUDGET, SizeEstimate, estimate_tree_with_budget_and_cancel,
     estimate_trees_with_budget_and_cancel,
 };
+#[cfg(windows)]
+pub(crate) use sizing::{StreamedSizeEstimates, estimate_streamed_trees};

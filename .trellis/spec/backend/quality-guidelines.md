@@ -853,8 +853,11 @@ Executor::default().run_plan(&validated, request)?;
 - `clean scan --scope global|all` must never execute cleanup commands. It
   produces typed in-memory scan facts; `--format json` serializes the
   observation without creating execution authority.
-- npm, pip, pnpm, and Yarn cleanup argv are reconstructed by the trusted
+- npm, pip, pnpm, Yarn, Go, uv and Bun cleanup argv are reconstructed by the trusted
   registry from provider/action IDs. JSON must not carry program, args, or cwd.
+- Live footprint, tool/interpreter/support-file identity, reviewed version and
+  relevant configuration are bound into the preview digest and rechecked at
+  dispatch. See [Provider Authority](./provider-authority.md).
 - A provider must not emit multiple user-facing cleanup targets for the same
   cache path just because the tool has alternative commands. Keep one cleanup
   target per physical cache footprint and record related official commands in
@@ -867,16 +870,16 @@ Executor::default().run_plan(&validated, request)?;
   delete/trash target.
 - Docker builder cache is not part of the MVP global provider set.
 - The "never trash cache internals" rule here applies to command-backed
-  providers (npm/pip/pnpm/yarn), which own official cleanup commands. Known
-  cache directories with NO official command (gradle/maven/go/...) are handled
+  providers, which own official cleanup commands. Known
+  cache directories with no enabled owner command are handled
   by the declarative rule catalogue and MAY trash the whole directory or be
   inspect-only. See "Scenario: Declarative rule catalogue".
 
 #### 4. Validation & Error Matrix
 
-- Tool missing -> no target for that provider, scan still succeeds.
-- Cache path command fails -> command-backed target may still be emitted with
-  no `path`, as long as official command evidence is present.
+- Tool missing -> explicit absent coverage and no target for that provider.
+- Cache path command fails -> explicit failed coverage; no pathless cleanup
+  authority. Loading a legacy pathless observation requires a fresh scan.
 - Yarn version unknown -> skip Yarn provider rather than guessing classic vs
   modern cleanup behavior.
 - Cargo home missing or not a directory -> no Cargo home target.
@@ -1253,9 +1256,12 @@ cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
 - Continuous progress snapshots must be cumulative, deduplicated, and ordered by
   `Sweeper`, not merged by TUI or desktop consumers. Ordinary target sizing must
   observe cooperative cancellation as well as traversal and provider probes.
-  Provider helpers that can construct more than one target must publish and
-  re-check cancellation after each completed target rather than batching the
-  helper's entire loop behind one callback.
+  Provider helpers that can construct more than one target must call the
+  discovery observer and re-check cancellation after each completed target.
+  `Sweeper` applies the explicit terminal-only or 100 ms interactive publication
+  policy before cumulative ranking/cloning, with phase-boundary flushes. See
+  [Runtime Publication](./runtime-publication.md); callback cadence is distinct
+  from expensive snapshot publication.
 - Webview progress uses the core-owned `ScanPreviewSnapshot` projection. It is an
   observation DTO and must omit `CleanAction`, cleanup intent,
   `selected_by_default`, and the versioned plan envelope.
@@ -1322,7 +1328,8 @@ let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
 
 #### 4. Validation & Error Matrix
 
-- Missing scan root -> return an error to the CLI.
+- Missing selected scan root -> retain a failed root coverage entry, continue
+  healthy roots/providers, and return a partial report (CLI partial exit class).
 - Markerless `target`, `build`, `dist`, or `node_modules` -> no target emitted.
 - Inaccessible nested entry -> skip that entry, continue scanning the rest of
   the root, and mark report health partial.

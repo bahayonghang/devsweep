@@ -35,6 +35,11 @@ start inventory, start clean, cancel job, and quit. It alone owns channels,
 threads, cancellation tokens, and cleanup single-flight; `runtime/workers.rs`
 translates service results into explicit `WorkerEvent` values.
 
+Worker delivery uses one latest scan-observation slot and a bounded lifecycle
+FIFO. Status records remain lossless. Read the shared
+[Bounded Delivery](../backend/bounded-delivery.md) contract before changing
+mailbox capacity, cancellation/join, finite event draining or dirty redraw.
+
 ---
 
 ### Scenario: Staged scan worker progress

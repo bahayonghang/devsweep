@@ -3,7 +3,6 @@
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicU64, Ordering},
-    mpsc::{self, Receiver, Sender},
 };
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
@@ -28,6 +27,8 @@ use super::{
 };
 
 const _: (u32, u32) = (DEFAULT_LIVE_INTERVAL_MS, DEFAULT_PROCESS_LIMIT);
+
+use super::channel::{self, StatusEventReceiver, StatusEventSender};
 
 static LIVE_PERMIT: AtomicBool = AtomicBool::new(false);
 static SNAPSHOT_SEQ: AtomicU64 = AtomicU64::new(1);
@@ -123,7 +124,7 @@ impl StatusSampler {
 /// Spawn the live producer. The caller writes events and must join on stop.
 pub fn spawn_live(
     request: LiveRequest<'_>,
-) -> Result<(Receiver<StatusEventV1>, LiveControl), StatusError> {
+) -> Result<(StatusEventReceiver, LiveControl), StatusError> {
     let permit = acquire_live()?;
     let interval_ms = clamp_interval_ms(request.interval_ms);
     let process_limit = clamp_process_limit(request.process_limit);
@@ -136,7 +137,7 @@ pub fn spawn_live(
         .cancel
         .cloned()
         .unwrap_or_else(|| Arc::new(FlagCancelObserver::new()));
-    let (tx, rx) = mpsc::channel();
+    let (tx, rx) = channel::channel(cancel.clone());
     let worker_cancel = Arc::clone(&cancel);
     let worker_id = operation_id.clone();
     let join = thread::Builder::new()
@@ -186,7 +187,7 @@ impl Drop for LiveControl {
 }
 
 fn run_live_loop(
-    tx: Sender<StatusEventV1>,
+    tx: StatusEventSender,
     operation_id: String,
     interval_ms: u32,
     process_limit: u32,
@@ -291,7 +292,7 @@ fn run_live_loop(
         }
 
         next += Duration::from_millis(u64::from(interval_ms));
-        while next <= Instant::now() {
+        while next <= Instant::now() && !cancel.is_cancel_requested() {
             skipped_total += 1;
             if emit(
                 &tx,
@@ -316,8 +317,8 @@ fn run_live_loop(
     }
 }
 
-fn emit(tx: &Sender<StatusEventV1>, event: StatusEventV1) -> Result<(), StatusError> {
-    tx.send(event).map_err(|_| StatusError::ChannelClosed)
+fn emit(tx: &StatusEventSender, event: StatusEventV1) -> Result<(), StatusError> {
+    tx.send(event)
 }
 
 fn terminal(
@@ -768,6 +769,52 @@ mod tests {
     use std::sync::Mutex;
 
     static TEST_LIVE: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn live_control_join_cancels_full_delivery_with_receiver_still_alive() {
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let (tx, rx) = channel::channel(cancel.clone());
+        let record = |sequence| StatusEventV1::TickSkipped {
+            schema_version: 1,
+            operation_id: "op-full".into(),
+            sequence,
+            emitted_at_unix_ms: 1,
+            data: TickSkippedV1 {
+                reason: TickSkipReason::SampleInFlight,
+                skipped_total: sequence,
+            },
+        };
+        for sequence in 0..16 {
+            tx.send(record(sequence)).unwrap();
+        }
+        let join = thread::spawn(move || {
+            tx.send(record(16)).unwrap();
+            tx.send(terminal(
+                "op-full",
+                17,
+                super::super::TerminalReason::Canceled,
+                None,
+            ))
+            .unwrap();
+        });
+        let mut control = LiveControl {
+            cancel,
+            join: Some(join),
+        };
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let joining = thread::spawn(move || {
+            control.join();
+            done_tx.send(control.join.is_none()).unwrap();
+        });
+        assert!(done_rx.recv_timeout(Duration::from_secs(1)).unwrap());
+        joining.join().unwrap();
+        // No read occurred before join, including the final blocked tick.
+        for sequence in 0..18 {
+            let event = rx.recv_timeout(Duration::ZERO).unwrap();
+            assert_eq!(event.sequence(), sequence);
+            assert_eq!(event.is_terminal(), sequence == 17);
+        }
+    }
 
     #[test]
     fn snapshot_window_and_interval_clamps() {

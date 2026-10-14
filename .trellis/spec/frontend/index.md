@@ -18,6 +18,7 @@ This directory contains guidelines for the Rust terminal UI built with
 | [Directory Structure](./directory-structure.md)   | Module organization and file layout     | ratatui module conventions   |
 | [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition  | render-function conventions  |
 | [Hook Guidelines](./hook-guidelines.md)           | Custom hooks, data fetching patterns    | TUI event/update conventions |
+| [Bounded Delivery](../backend/bounded-delivery.md) | Status records and worker mailbox | Ordered lifecycle, join and redraw |
 | [State Management](./state-management.md)         | Local state, global state, server state | app-state boundaries         |
 | [Quality Guidelines](./quality-guidelines.md)     | Code standards, forbidden patterns      | TestBackend and purity rules |
 | [Type Safety](./type-safety.md)                   | Type patterns, validation               | Rust model sharing           |

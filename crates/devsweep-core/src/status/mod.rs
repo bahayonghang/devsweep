@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::process::{CancelObserver, FlagCancelObserver};
 
+mod channel;
 mod network;
 mod pdh;
 mod process;
@@ -17,6 +18,7 @@ mod system;
 #[cfg(test)]
 mod tests;
 
+pub use channel::StatusEventReceiver;
 pub use sampler::{LiveControl, StatusError, StatusSampler, spawn_live};
 pub use system::{cpu_utilization_basis_points, memory_from_physical};
 

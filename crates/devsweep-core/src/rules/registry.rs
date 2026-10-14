@@ -11,8 +11,8 @@ use crate::{
 };
 
 use super::{
-    CARGO_HOME_RULE_DOC, KnownCacheAction, NPM_CACHE_RULE_DOC, PIP_CACHE_RULE_DOC,
-    PNPM_STORE_RULE_DOC, PYCACHE_RULE_DOC, ProjectMarker, RUST_TARGET_RULE_DOC,
+    CARGO_HOME_RULE_DOC, GO_MODCACHE_RULE_DOC, KnownCacheAction, NPM_CACHE_RULE_DOC,
+    PIP_CACHE_RULE_DOC, PNPM_STORE_RULE_DOC, PYCACHE_RULE_DOC, ProjectMarker, RUST_TARGET_RULE_DOC,
     YARN_CACHE_CLASSIC_RULE_DOC, YARN_CACHE_MODERN_RULE_DOC, global_cache_rules, project_dir_rules,
 };
 
@@ -64,6 +64,14 @@ pub(crate) fn intent_from_scan_action(rule_id: &str, program: &str) -> Result<Cl
         ("yarn".to_string(), "cache_clean_classic".to_string())
     } else if rule_id == YARN_CACHE_MODERN_RULE_DOC.id {
         ("yarn".to_string(), "cache_clean_modern".to_string())
+    } else if rule_id == GO_MODCACHE_RULE_DOC.id {
+        ("go".to_string(), "modcache_clean".to_string())
+    } else if rule_id == super::UV_CACHE_RULE_DOC.id {
+        ("uv".to_string(), "cache_clean".to_string())
+    } else if rule_id == super::BUN_CACHE_RULE_DOC.id {
+        ("bun".to_string(), "cache_clean".to_string())
+    } else if rule_id == super::GO_BUILD_CACHE_RULE_DOC.id {
+        ("go".to_string(), "buildcache_clean".to_string())
     } else {
         bail!("scan target uses an unregistered command rule: {rule_id}")
     };
@@ -109,6 +117,33 @@ impl RuleRegistry {
     }
 
     fn resolve_trash(&self, target: &UntrustedTarget) -> Result<ActionSpec> {
+        if let Some(family) = super::windows_cache_family(&target.rule_id) {
+            let path = global_target_path(target)?;
+            super::windows_caches::validate_windows_cache_location(family, &path)?;
+            require_target_facts(
+                target,
+                &Ecosystem::Generic,
+                &TargetKind::ToolCache,
+                &RiskLevel::Medium,
+                true,
+            )?;
+            return Ok(trash_spec(path, &target.rule_id, &RiskLevel::Medium));
+        }
+        if let Some(rule) = super::GENERATED_PROJECT_RULES
+            .iter()
+            .find(|rule| rule.id == target.rule_id)
+        {
+            let (root, path) = project_target_path(target)?;
+            require_same_path(&path, &root.join(rule.relative), "generated artifact path")?;
+            require_target_facts(
+                target,
+                &rule.ecosystem,
+                &TargetKind::BuildArtifacts,
+                &RiskLevel::Medium,
+                true,
+            )?;
+            return Ok(trash_spec(path, rule.id, &RiskLevel::Medium));
+        }
         if target.rule_id == RUST_TARGET_RULE_DOC.id {
             // Metadata-failure fallback only: local `<project>/target` trash.
             let (root, path) = project_target_path(target)?;
@@ -130,7 +165,14 @@ impl RuleRegistry {
         for marker in [ProjectMarker::Node, ProjectMarker::Python] {
             if let Some(rule) = project_dir_rules(marker).find(|rule| rule.id == target.rule_id) {
                 let (root, path) = project_target_path(target)?;
-                require_same_path(&path, &root.join(rule.relative), "target path")?;
+                if marker == ProjectMarker::Python {
+                    require_path_within(&path, &root, "target path")?;
+                    if path.file_name() != Path::new(rule.relative).file_name() {
+                        bail!("Python artifact does not match its registered directory name")
+                    }
+                } else {
+                    require_same_path(&path, &root.join(rule.relative), "target path")?;
+                }
                 require_target_facts(target, &rule.ecosystem, &rule.kind, &rule.risk, true)?;
                 return Ok(trash_spec(path, rule.id, &rule.risk));
             }
@@ -163,7 +205,9 @@ impl RuleRegistry {
             let path = global_target_path(target)?;
             require_same_path(
                 &path,
-                &current_home_dir()?.join(rule.relative),
+                &super::configured_cache_path(rule, &current_home_dir()?, |key| {
+                    env::var_os(key).map(PathBuf::from)
+                }),
                 "target path",
             )?;
             require_target_facts(target, &rule.ecosystem, &rule.kind, &rule.risk, true)?;
@@ -227,6 +271,45 @@ impl RuleRegistry {
         }
 
         match (target.rule_id.as_str(), provider_id, action_id) {
+            ("uv.cache.clean", "uv", "cache_clean")
+            | ("bun.cache.clean", "bun", "cache_clean")
+            | ("go.build_cache.clean", "go", "buildcache_clean") => {
+                let (doc, args) = match provider_id {
+                    "uv" => (super::UV_CACHE_RULE_DOC, vec!["cache", "clean"]),
+                    "bun" => (super::BUN_CACHE_RULE_DOC, vec!["pm", "cache", "rm"]),
+                    _ => (super::GO_BUILD_CACHE_RULE_DOC, vec!["clean", "-cache"]),
+                };
+                require_target_facts(
+                    target,
+                    &doc.ecosystem,
+                    &TargetKind::PackageCache,
+                    &doc.risk,
+                    false,
+                )?;
+                Ok(command_spec(
+                    provider_id,
+                    args.into_iter().map(str::to_string).collect(),
+                    doc.id,
+                    &doc.risk,
+                    ActionFootprint::Logical(doc.id.to_string()),
+                ))
+            }
+            (rule_id, "go", "modcache_clean") if rule_id == GO_MODCACHE_RULE_DOC.id => {
+                require_target_facts(
+                    target,
+                    &GO_MODCACHE_RULE_DOC.ecosystem,
+                    &TargetKind::PackageCache,
+                    &GO_MODCACHE_RULE_DOC.risk,
+                    false,
+                )?;
+                Ok(command_spec(
+                    "go",
+                    vec!["clean".to_string(), "-modcache".to_string()],
+                    "go.mod_cache.clean:modcache_clean",
+                    &GO_MODCACHE_RULE_DOC.risk,
+                    ActionFootprint::Logical(GO_MODCACHE_RULE_DOC.id.to_string()),
+                ))
+            }
             (rule_id, "npm", "cache_clean") if rule_id == NPM_CACHE_RULE_DOC.id => {
                 require_target_facts(
                     target,
@@ -333,6 +416,33 @@ impl RuleRegistry {
     }
 
     fn resolve_inspect_only(&self, target: &UntrustedTarget) -> Result<ActionSpec> {
+        if let Some(family) = super::windows_cache_family(&target.rule_id) {
+            let path = global_target_path(target)?;
+            super::windows_caches::validate_windows_cache_location(family, &path)?;
+            require_target_facts(
+                target,
+                &Ecosystem::Generic,
+                &TargetKind::ToolCache,
+                &RiskLevel::Medium,
+                true,
+            )?;
+            return Ok(inspect_path_spec(path, &target.rule_id, &RiskLevel::Medium));
+        }
+        if let Some(rule) = super::GENERATED_PROJECT_RULES
+            .iter()
+            .find(|rule| rule.id == target.rule_id)
+        {
+            let (root, path) = project_target_path(target)?;
+            require_same_path(&path, &root.join(rule.relative), "generated artifact path")?;
+            require_target_facts(
+                target,
+                &rule.ecosystem,
+                &TargetKind::BuildArtifacts,
+                &RiskLevel::Medium,
+                true,
+            )?;
+            return Ok(inspect_path_spec(path, rule.id, &RiskLevel::Medium));
+        }
         require_global_scope(target)?;
         if target.rule_id == CARGO_HOME_RULE_DOC.id {
             let path = global_target_path(target)?;
@@ -357,7 +467,9 @@ impl RuleRegistry {
             let path = global_target_path(target)?;
             require_same_path(
                 &path,
-                &current_home_dir()?.join(rule.relative),
+                &super::configured_cache_path(rule, &current_home_dir()?, |key| {
+                    env::var_os(key).map(PathBuf::from)
+                }),
                 "target path",
             )?;
             require_target_facts(target, &rule.ecosystem, &rule.kind, &rule.risk, true)?;
@@ -386,6 +498,12 @@ fn inspect_spec(rule_id: &str, risk: &RiskLevel) -> ActionSpec {
         identity: format!("inspect:{rule_id}"),
         footprint: ActionFootprint::Logical(format!("inspect:{rule_id}")),
     }
+}
+
+fn inspect_path_spec(path: PathBuf, rule_id: &str, risk: &RiskLevel) -> ActionSpec {
+    let mut spec = inspect_spec(rule_id, risk);
+    spec.footprint = ActionFootprint::Path(path);
+    spec
 }
 
 fn command_spec(

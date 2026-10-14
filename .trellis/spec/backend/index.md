@@ -17,6 +17,12 @@ domain model, scanner, and future execution/audit code.
 |-------|-------------|--------|
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | Rust crate conventions |
 | [Database Guidelines](./database-guidelines.md) | File persistence and compatibility | JSON plans, audit, and settings |
+| [Scan Coverage](./scan-coverage.md) | Root/provider accounting and legacy report compatibility | Shared CLI/Tauri observation contract |
+| [Scan Preferences](./scan-preferences.md) | Explicit desktop scan roots, persistence and session scope | Closed V1 store and native IPC |
+| [Provider Authority](./provider-authority.md) | Live global tool, footprint, version and configuration binding | Shared preview and execution digest |
+| [Runtime Publication](./runtime-publication.md) | Scan observer cadence, raw preview validation and bounded sizing | Equal-coverage performance contract |
+| [Bounded Delivery](./bounded-delivery.md) | Lossless Status backpressure and ordered TUI worker delivery | Cancellation, join and dirty redraw |
+| [Desktop Runtime](./desktop-runtime.md) | Bounded async dispatch and native decorative visibility | Minimize preserves requested domain work |
 | [Desktop Preferences](./desktop-preferences.md) | Desktop store, IPC, main/HUD consumers | Closed V2 and read-only V1 migration |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | anyhow CLI/scanner conventions |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Foundation, plan validation, and scanner conventions |

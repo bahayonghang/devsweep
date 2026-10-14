@@ -4,7 +4,6 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
-        mpsc::Sender,
     },
     time::SystemTime,
 };
@@ -40,7 +39,7 @@ use devsweep_core::{
 
 pub(super) fn run_analyze_worker(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let _ = worker_tx.send(WorkerEvent::AnalyzeStarted { job_id });
@@ -74,7 +73,7 @@ pub(super) fn run_analyze_worker(
 
 pub(super) fn run_software_inventory_worker(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let result = inventory_software(SoftwareInventorySource::All, Some(&cancel));
@@ -101,7 +100,7 @@ pub(super) fn run_software_preview_worker(
     job_id: JobId,
     inventory: SoftwareInventoryV1,
     selected_ids: Vec<String>,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let result = (|| {
@@ -143,7 +142,7 @@ pub(super) fn run_software_uninstall_worker(
     job_id: JobId,
     plan: SoftwareSelectionPlanV1,
     preview_digest: String,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let result = SoftwareExecutor::default().execute(SoftwareExecutionRequest {
@@ -170,7 +169,7 @@ pub(super) fn run_software_uninstall_worker(
 
 pub(super) fn run_software_audit_worker(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     if cancel.is_cancel_requested() {
@@ -202,7 +201,7 @@ pub(super) fn run_software_audit_worker(
 
 pub(super) fn run_optimize_list_worker(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     if cancel.is_cancel_requested() {
@@ -218,7 +217,7 @@ pub(super) fn run_optimize_list_worker(
 pub(super) fn run_optimize_preview_worker(
     job_id: JobId,
     catalogue_id: String,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let result = (|| {
@@ -256,7 +255,7 @@ pub(super) fn run_optimize_run_worker(
     job_id: JobId,
     plan: MaintenancePlanV1,
     preview_digest: String,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let result = MaintenanceExecutor::default().execute(MaintenanceExecutionRequest {
@@ -283,7 +282,7 @@ pub(super) fn run_optimize_run_worker(
 
 pub(super) fn run_optimize_audit_worker(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     if cancel.is_cancel_requested() {
@@ -349,7 +348,7 @@ fn unix_ms_now() -> u64 {
 
 pub(super) fn run_scan_worker<S: ScanService>(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     scan: S,
     cancel: Arc<FlagCancelObserver>,
 ) {
@@ -401,7 +400,7 @@ pub(super) fn run_scan_worker<S: ScanService>(
 
 pub(super) fn run_inventory_worker<I: InventoryService>(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     inventory: I,
     cancel: Arc<FlagCancelObserver>,
 ) {
@@ -411,12 +410,8 @@ pub(super) fn run_inventory_worker<I: InventoryService>(
         .context("failed to get current directory")
         .and_then(|current_dir| inventory.inventory_root_with_cancel(&current_dir, Some(&cancel)));
     match result {
-        Ok(report) if cancel.is_cancel_requested() => {
+        Ok(_report) if cancel.is_cancel_requested() => {
             let _ = worker_tx.send(WorkerEvent::JobCanceled { job_id });
-            let _ = worker_tx.send(WorkerEvent::InventoryFinished {
-                job_id,
-                report: Box::new(report),
-            });
         }
         Ok(report) => {
             let _ = worker_tx.send(WorkerEvent::InventoryFinished {
@@ -442,7 +437,7 @@ pub(super) fn run_clean_worker<C: CleanService>(
     plan: CleanupPlan,
     selected: Vec<TargetId>,
     plan_digest: String,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     clean: C,
     clean_dispatch_in_flight: Arc<AtomicBool>,
     cancel: Arc<FlagCancelObserver>,
@@ -500,7 +495,7 @@ pub(super) fn run_clean_worker<C: CleanService>(
 
 pub(super) fn run_status_snapshot_worker(
     job_id: JobId,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     match capture_snapshot(
@@ -529,7 +524,7 @@ pub(super) fn run_status_live_worker(
     job_id: JobId,
     interval_ms: u32,
     process_limit: u32,
-    worker_tx: Sender<WorkerEvent>,
+    worker_tx: super::WorkerSender,
     cancel: Arc<FlagCancelObserver>,
 ) {
     let (rx, mut control) = match spawn_live(LiveRequest {

@@ -32,6 +32,7 @@ pub mod process;
 pub mod rules;
 /// Project and global cleanup target discovery.
 pub mod scan;
+pub mod scan_preferences;
 /// Frontend-neutral scan, inventory, and cleanup service boundaries.
 pub mod services;
 /// Read-only installed-software inventory and immutable preview planning.

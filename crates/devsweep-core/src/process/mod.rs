@@ -13,7 +13,12 @@ use std::{
 
 mod cancel;
 mod capture;
+mod executable;
+mod provider_dispatch;
 mod tree;
+
+pub(crate) use executable::resolve_executable;
+pub(crate) use provider_dispatch::{provider_file_digest, resolve_provider_dispatch};
 
 pub(crate) use cancel::NoopCancelObserver;
 pub use cancel::{CancelObserver, FlagCancelObserver};
@@ -292,10 +297,7 @@ fn resolve_cwd(policy: &CwdPolicy) -> std::io::Result<(PathBuf, Option<PathBuf>)
 fn neutral_nonce() -> u64 {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NONCE: AtomicU64 = AtomicU64::new(1);
-    Instant::now()
-        .elapsed()
-        .as_nanos()
-        .wrapping_add(NONCE.fetch_add(1, Ordering::Relaxed) as u128) as u64
+    NONCE.fetch_add(1, Ordering::Relaxed)
 }
 
 fn cleanup_neutral_dir(dir: Option<&PathBuf>) {

@@ -762,8 +762,20 @@ mod windows {
 
     #[test]
     #[cfg(windows)]
-    fn native_ipconfig_flushdns_dispatch_succeeds() {
+    fn native_ipconfig_identity_and_fixture_dispatch_succeed_without_system_mutation() {
         let program = super::super::windows::resolve_ipconfig().expect("resolver");
+        super::super::windows::verify_ipconfig_identity(&program).expect("real system identity");
+        let fixture = TempDir::new().expect("disposable native fixture");
+        let program = fixture.path().join("ipconfig.exe");
+        std::fs::copy(
+            crate::process::test_support::process_fixture_exe(),
+            &program,
+        )
+        .expect("native fixture");
+        std::fs::write(fixture.path().join("provider.json"), "{}")
+            .expect("opt-in recording fixture");
+        super::super::windows::verify_ipconfig_identity(&program)
+            .expect("absolute fixture identity");
         let evidence =
             super::super::windows::dispatch_dns_flush(&program, None, DispatchTiming::default());
         assert_eq!(
@@ -772,6 +784,11 @@ mod windows {
             "ipconfig /flushdns"
         );
         assert_eq!(evidence.error_code, None);
+        let args: Vec<String> = serde_json::from_slice(
+            &std::fs::read(fixture.path().join("invoked.json")).expect("recorded arguments"),
+        )
+        .expect("JSON argv");
+        assert_eq!(args, ["/flushdns"]);
     }
 
     /// Native Settings probe: run explicitly with `--ignored --nocapture`.

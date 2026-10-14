@@ -8,8 +8,11 @@ use std::{
 use tempfile::TempDir;
 
 fn devsweep(args: &[&str]) -> Output {
+    let settings = TempDir::new().expect("private CLI settings");
     Command::new(env!("CARGO_BIN_EXE_devsweep"))
         .args(args)
+        .env("APPDATA", settings.path())
+        .env("XDG_CONFIG_HOME", settings.path())
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -178,7 +181,9 @@ fn bare_redirected_invocation_and_human_live_name_the_tty_contract() {
     let bare = devsweep(&[]);
     assert_eq!(bare.status.code(), Some(2));
     assert!(stderr(&bare).contains("tty_required"));
-    assert!(stderr(&bare).contains("explicit command"));
+    let english = devsweep(&["--language", "en"]);
+    assert_eq!(english.status.code(), Some(2));
+    assert!(stderr(&english).contains("explicit command"));
 
     let live = devsweep(&["status", "live"]);
     assert_eq!(live.status.code(), Some(2));

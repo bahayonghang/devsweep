@@ -51,10 +51,10 @@ let root = root
 - Saved plan/report decoding in `crates/devsweep-cli/src/application/commands.rs` adds file and
   JSON context, rejects inventory documents, and preserves version-specific
   rescan guidance before validation.
-- Project scan root access failures are hard errors. Inaccessible nested entries are
-  recorded as discovery diagnostics and skipped so one unreadable child does not
-  abort the whole scan; the outcome is marked partial while sibling candidates
-  remain.
+- Unavailable selected project roots and inaccessible nested entries are recorded
+  as discovery diagnostics and coverage outcomes. Continue healthy roots and
+  providers, mark the report partial, and retain sibling candidates. An empty
+  project scope remains an invalid request; see [Scan Coverage](./scan-coverage.md).
 - Bounded walks under `crates/devsweep-core/src/filesystem/sizing.rs` never convert I/O failure into
   a trusted `0 B`. They return a `SizeEstimate` that is either a complete total,
   a partial lower bound, or unknown. Incomplete and unknown estimates are not

@@ -2,6 +2,135 @@ use crate::model::{Ecosystem, RiskLevel, TargetKind};
 
 use super::{GlobalCacheRule, KnownCacheAction, ProjectDirRule, ProjectMarker, RuleDoc, RuleScope};
 
+pub(crate) const WINDOWS_CACHE_RULES: &[(&str, super::windows_caches::WindowsCacheFamily)] = &[
+    (
+        "windows.chrome.cache",
+        super::windows_caches::WindowsCacheFamily::Chrome,
+    ),
+    (
+        "windows.edge.cache",
+        super::windows_caches::WindowsCacheFamily::Edge,
+    ),
+    (
+        "windows.firefox.cache",
+        super::windows_caches::WindowsCacheFamily::Firefox,
+    ),
+    (
+        "windows.vscode.cache",
+        super::windows_caches::WindowsCacheFamily::VsCode,
+    ),
+    (
+        "windows.cursor.cache",
+        super::windows_caches::WindowsCacheFamily::Cursor,
+    ),
+    (
+        "windows.user_temp.stale",
+        super::windows_caches::WindowsCacheFamily::UserTemp,
+    ),
+];
+
+/// Additional generated artifacts require stronger evidence than a directory name.
+pub(crate) const GENERATED_PROJECT_RULES: &[super::GeneratedProjectRule] = &[
+    super::GeneratedProjectRule {
+        id: "node.nuxt",
+        relative: ".nuxt",
+        owner: "nuxt",
+        evidence_file: "tsconfig.json",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.nuxt_output",
+        relative: ".output",
+        owner: "nuxt",
+        evidence_file: "nitro.json",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.svelte_kit",
+        relative: ".svelte-kit",
+        owner: "@sveltejs/kit",
+        evidence_file: "tsconfig.json",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.angular_cache",
+        relative: ".angular/cache",
+        owner: "@angular/cli",
+        evidence_file: "",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.astro",
+        relative: ".astro",
+        owner: "astro",
+        evidence_file: "types.d.ts",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.dist",
+        relative: "dist",
+        owner: "node_build",
+        evidence_file: ".vite/manifest.json",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.build",
+        relative: "build",
+        owner: "node_build",
+        evidence_file: "asset-manifest.json",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "node.coverage",
+        relative: "coverage",
+        owner: "node_test",
+        evidence_file: "coverage-final.json",
+        ecosystem: Ecosystem::Node,
+    },
+    super::GeneratedProjectRule {
+        id: "maven.target",
+        relative: "target",
+        owner: "maven",
+        evidence_file: "maven-status",
+        ecosystem: Ecosystem::Generic,
+    },
+    super::GeneratedProjectRule {
+        id: "gradle.build",
+        relative: "build",
+        owner: "gradle",
+        evidence_file: "classes",
+        ecosystem: Ecosystem::Generic,
+    },
+    super::GeneratedProjectRule {
+        id: "gradle.project_cache",
+        relative: ".gradle",
+        owner: "gradle",
+        evidence_file: "buildOutputCleanup/cache.properties",
+        ecosystem: Ecosystem::Generic,
+    },
+    super::GeneratedProjectRule {
+        id: "dotnet.bin",
+        relative: "bin",
+        owner: "dotnet",
+        evidence_file: "",
+        ecosystem: Ecosystem::Generic,
+    },
+    super::GeneratedProjectRule {
+        id: "dotnet.obj",
+        relative: "obj",
+        owner: "dotnet",
+        evidence_file: "project.assets.json",
+        ecosystem: Ecosystem::Generic,
+    },
+    super::GeneratedProjectRule {
+        id: "python.nox",
+        relative: ".nox",
+        owner: "nox",
+        evidence_file: "",
+        ecosystem: Ecosystem::Python,
+    },
+];
+
 pub(crate) const GRADLE_CACHES_RULE_ID: &str = "gradle.caches";
 pub(crate) const GRADLE_WRAPPER_DISTS_RULE_ID: &str = "gradle.wrapper_dists";
 pub(crate) const GO_MODCACHE_DIRECTORY_RULE_ID: &str = "go.mod_cache";
@@ -110,11 +239,39 @@ pub(crate) const DOCKER_RULE_DOC: RuleDoc = RuleDoc {
     summary: "Docker prune — planned, not yet scanned",
 };
 
+pub(crate) const UV_CACHE_RULE_DOC: RuleDoc = RuleDoc {
+    id: "uv.cache.clean",
+    ecosystem: Ecosystem::Python,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "uv cache via uv cache clean; never delete cache internals directly",
+};
+pub(crate) const BUN_CACHE_RULE_DOC: RuleDoc = RuleDoc {
+    id: "bun.cache.clean",
+    ecosystem: Ecosystem::Node,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "Bun package cache via bun pm cache rm",
+};
+pub(crate) const GO_BUILD_CACHE_RULE_DOC: RuleDoc = RuleDoc {
+    id: "go.build_cache.clean",
+    ecosystem: Ecosystem::Generic,
+    scope: RuleScope::Global,
+    risk: RiskLevel::Medium,
+    action: "official command",
+    summary: "Go build cache via go clean -cache; separate from module cache",
+};
+
 #[cfg(test)]
 pub(crate) const PROJECT_PROCEDURAL_RULE_DOCS: &[RuleDoc] =
     &[RUST_TARGET_RULE_DOC, PYCACHE_RULE_DOC];
 
 pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
+    UV_CACHE_RULE_DOC,
+    BUN_CACHE_RULE_DOC,
+    GO_BUILD_CACHE_RULE_DOC,
     NPM_CACHE_RULE_DOC,
     PIP_CACHE_RULE_DOC,
     PNPM_STORE_RULE_DOC,
@@ -126,6 +283,10 @@ pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
 ];
 
 pub(crate) const AUTHORIZED_GLOBAL_COMMAND_RULE_DOCS: &[RuleDoc] = &[
+    UV_CACHE_RULE_DOC,
+    BUN_CACHE_RULE_DOC,
+    GO_BUILD_CACHE_RULE_DOC,
+    GO_MODCACHE_RULE_DOC,
     NPM_CACHE_RULE_DOC,
     PIP_CACHE_RULE_DOC,
     PNPM_STORE_RULE_DOC,
@@ -358,4 +519,12 @@ pub(crate) const GLOBAL_CACHE_RULES_OS: &[GlobalCacheRule] = &[
         risk: RiskLevel::High,
         action: KnownCacheAction::InspectOnly,
     },
+];
+/// Shared discovery/live-validation boundary for the existing Python rules.
+pub(crate) const PYTHON_PROJECT_MARKERS: &[&str] = &[
+    "pyproject.toml",
+    "requirements.txt",
+    "setup.py",
+    "setup.cfg",
+    "tox.ini",
 ];

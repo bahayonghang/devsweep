@@ -2,6 +2,7 @@
 
 mod legacy;
 mod store;
+pub(crate) use store::{TransactionLock, atomic_replace, replace_file};
 #[cfg(test)]
 mod tests;
 

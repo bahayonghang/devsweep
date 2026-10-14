@@ -5,8 +5,39 @@
 //! persisted intents into trusted actions for plan validation; this module
 //! never imports scanner or provider implementations.
 
+mod configuration;
 mod definitions;
+mod generated;
 mod registry;
+pub(crate) mod windows_caches;
+
+pub(crate) use configuration::{
+    configured_cache_path, validate_provider_version, yarn_configuration,
+};
+pub(crate) use definitions::{
+    GENERATED_PROJECT_RULES, PYTHON_PROJECT_MARKERS, WINDOWS_CACHE_RULES,
+};
+#[cfg(test)]
+pub(crate) use generated::tests::fixture as generated_fixture;
+pub(crate) use generated::{
+    generated_marker, validate_generated_artifact, validate_generated_artifact_with_cancel,
+    validate_python_scope,
+};
+
+pub(crate) struct GeneratedProjectRule {
+    pub id: &'static str,
+    pub relative: &'static str,
+    pub owner: &'static str,
+    pub evidence_file: &'static str,
+    pub ecosystem: Ecosystem,
+}
+
+pub(crate) fn windows_cache_family(id: &str) -> Option<windows_caches::WindowsCacheFamily> {
+    WINDOWS_CACHE_RULES
+        .iter()
+        .find(|(rule, _)| *rule == id)
+        .map(|(_, family)| *family)
+}
 
 use serde::{Deserialize, Serialize};
 
@@ -14,11 +45,12 @@ use crate::model::{Ecosystem, RiskLevel, TargetKind};
 
 pub use definitions::PYCACHE_RULE_DOC;
 pub(crate) use definitions::{
-    CARGO_HOME_RULE_DOC, GLOBAL_CACHE_RULES, GLOBAL_CACHE_RULES_OS, GO_MODCACHE_DIRECTORY_RULE_ID,
-    GO_MODCACHE_RULE_DOC, GRADLE_CACHES_RULE_ID, GRADLE_WRAPPER_DISTS_RULE_ID, NPM_CACHE_RULE_DOC,
+    BUN_CACHE_RULE_DOC, CARGO_HOME_RULE_DOC, GLOBAL_CACHE_RULES, GLOBAL_CACHE_RULES_OS,
+    GO_BUILD_CACHE_RULE_DOC, GO_MODCACHE_DIRECTORY_RULE_ID, GO_MODCACHE_RULE_DOC,
+    GRADLE_CACHES_RULE_ID, GRADLE_WRAPPER_DISTS_RULE_ID, NPM_CACHE_RULE_DOC,
     NUGET_PACKAGES_RULE_ID, PIP_CACHE_RULE_DOC, PNPM_STORE_RULE_DOC, PROJECT_DIR_RULES,
-    RUST_TARGET_METADATA_FALLBACK_RULE_ID, RUST_TARGET_RULE_DOC, YARN_CACHE_CLASSIC_RULE_DOC,
-    YARN_CACHE_MODERN_RULE_DOC,
+    RUST_TARGET_METADATA_FALLBACK_RULE_ID, RUST_TARGET_RULE_DOC, UV_CACHE_RULE_DOC,
+    YARN_CACHE_CLASSIC_RULE_DOC, YARN_CACHE_MODERN_RULE_DOC,
 };
 pub(crate) use registry::{ActionSpec, intent_from_scan_action, resolve_action};
 
@@ -128,6 +160,7 @@ fn project_rule(doc: RuleDoc) -> RuleProjectionV1 {
     };
     let inspect_only = matches!(safety_class, "inspect_only" | "deferred");
     let platform_applicability = match doc.id {
+        id if id.starts_with("windows.") => "windows",
         "jetbrains.caches" | "huggingface.hub" => "os_native",
         _ => "all",
     };
@@ -189,6 +222,14 @@ pub fn rule_catalogue() -> Vec<RuleDoc> {
     }
 
     docs.push(PYCACHE_RULE_DOC);
+    for (id, _) in WINDOWS_CACHE_RULES {
+        docs.push(RuleDoc { id, ecosystem: Ecosystem::Generic, scope: RuleScope::Global, risk: RiskLevel::Medium,
+            action: "trash", summary: "Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access" });
+    }
+    for rule in GENERATED_PROJECT_RULES {
+        docs.push(RuleDoc { id: rule.id, ecosystem: rule.ecosystem.clone(), scope: RuleScope::Project,
+            risk: RiskLevel::Medium, action: "trash", summary: "Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly" });
+    }
     docs.extend(definitions::PROVIDER_RULE_DOCS.iter().cloned());
 
     for rule in global_cache_rules() {

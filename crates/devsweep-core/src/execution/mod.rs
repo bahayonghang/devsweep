@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 mod audit;
 mod command;
+mod provider;
 mod safety;
 
 use audit::default_audit_log_path;
@@ -372,8 +373,39 @@ fn confirmation_digest_for_targets(
         .iter()
         .map(|target| target.target().id.clone())
         .collect::<Vec<_>>();
-    plan.confirmation_digest(&selected)
-        .map(ConfirmationDigest::from_canonical)
+    let bindings = provider_bindings(selected_targets)?;
+    let base = plan.confirmation_digest(&selected)?;
+    provider::digest(&base, &bindings).map(ConfirmationDigest::from_canonical)
+}
+
+fn provider_bindings(
+    targets: &[&ValidatedTarget],
+) -> Result<Vec<(String, provider::ProviderBinding)>> {
+    for target in targets {
+        if let Some(family) = crate::rules::windows_cache_family(target.rule_id()) {
+            let path = target
+                .target()
+                .path
+                .as_deref()
+                .ok_or_else(|| anyhow!("Windows cache path is missing"))?;
+            crate::rules::windows_caches::validate_windows_cache(family, path)?;
+        }
+        if let crate::model::Scope::Project { root } = &target.target().scope
+            && let Some(rule) = crate::rules::GENERATED_PROJECT_RULES
+                .iter()
+                .find(|rule| rule.id == target.rule_id())
+        {
+            crate::rules::validate_generated_artifact(root, rule)?;
+        }
+    }
+    targets
+        .iter()
+        .filter_map(|target| match provider::resolve(target) {
+            Ok(Some(binding)) => Some(Ok((target.target().id.as_str().to_string(), binding))),
+            Ok(None) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .collect()
 }
 
 fn prepare_selection<'a>(
@@ -552,7 +584,16 @@ where
         F: FnMut(ExecutionProgress),
     {
         let prepared = prepare_selection(plan, &request.selected)?;
-        let confirmation_digest = confirmation_digest_for_targets(plan, &prepared.targets)?;
+        let bindings = provider_bindings(&prepared.targets)?;
+        let ids = prepared
+            .targets
+            .iter()
+            .map(|target| target.target().id.clone())
+            .collect::<Vec<_>>();
+        let confirmation_digest = ConfirmationDigest::from_canonical(provider::digest(
+            &plan.confirmation_digest(&ids)?,
+            &bindings,
+        )?);
         if request.execute
             && let Some(expected_digest) = request.expected_digest.as_ref()
             && expected_digest != &confirmation_digest
@@ -663,7 +704,16 @@ where
                 continue;
             }
 
-            let authorized = match self.authorize_target(validated_target, &auth_context) {
+            let authorization = self.authorize_target(validated_target, &auth_context).and_then(|prepared| {
+                let ActionPrep::Ready(mut authorized) = prepared else { return Ok(prepared); };
+                if let Some((_, binding)) = bindings.iter().find(|(id, _)| id == target.id.as_str()) {
+                    let live = provider::resolve(validated_target)?;
+                    if live.as_ref() != Some(binding) { bail!("provider identity changed immediately before dispatch; preview again") }
+                    authorized.bind_provider_program(&binding.program, &binding.prefix_args);
+                }
+                Ok(ActionPrep::Ready(authorized))
+            });
+            let authorized = match authorization {
                 Ok(ActionPrep::Skipped { message }) => {
                     let transition = journal.next_transition();
                     let duration_ms = u64::try_from(started_at.elapsed().as_millis()).ok();
@@ -1010,6 +1060,85 @@ mod tests {
 
     fn test_validated_plan(plan: &CleanupPlan) -> ValidatedPlan {
         ValidatedPlan::from_cleanup_plan_for_test(plan.clone())
+    }
+
+    include!("windows_cache_tests.rs");
+    include!("existing_rule_tests.rs");
+
+    #[test]
+    fn generated_rules_roundtrip_real_scan_plan_preview_and_fake_trash() {
+        use crate::rules::windows_caches::{OwnerState, with_owner_state_for_test};
+        with_owner_state_for_test(OwnerState::Idle, || {
+            for rule in crate::rules::GENERATED_PROJECT_RULES {
+                let (fixture, _, evidence) = crate::rules::generated_fixture(rule);
+                let plan = crate::scan::ProjectScanner::new()
+                    .scan_roots(&[fixture.path().to_path_buf()])
+                    .expect("real scan");
+                let observation =
+                    crate::plan::untrusted_plan_from_scan(&plan).expect("real v2 conversion");
+                let selected = observation
+                    .targets
+                    .iter()
+                    .find(|target| target.rule_id == rule.id)
+                    .unwrap_or_else(|| panic!("{} missing", rule.id));
+                assert!(!selected.selected_by_default);
+                assert!(
+                    matches!(
+                        selected.intent,
+                        crate::model::CleanupIntent::TrashProjectArtifact { .. }
+                    ),
+                    "{}: {:?}",
+                    rule.id,
+                    selected.sizing_warnings
+                );
+                let selected_id = selected.id.clone();
+                let validated =
+                    crate::plan::validate_plan(&observation).expect("production registry");
+                let trash = RecordingTrashRunner::default();
+                let executor = test_executor(RecordingCommandRunner::default(), trash.clone());
+                let preview = executor
+                    .run_plan(
+                        &validated,
+                        ExecutionRequest {
+                            selected: vec![selected_id.clone()],
+                            execute: false,
+                            audit_log: None,
+                            expected_digest: None,
+                            cancel: None,
+                        },
+                    )
+                    .expect("live preview");
+                let request = ExecutionRequest {
+                    selected: vec![selected_id],
+                    execute: true,
+                    audit_log: Some(fixture.path().join("audit.jsonl")),
+                    expected_digest: Some(preview.confirmation_digest),
+                    cancel: None,
+                };
+                let report = executor
+                    .run_plan(&validated, request.clone())
+                    .expect("fake execution");
+                assert_eq!(report.succeeded, 1, "{}: {:?}", rule.id, report.failures);
+                assert_eq!(trash.paths().len(), 1);
+                assert!(evidence.exists(), "fake runner keeps fixture output");
+                let secret = fixture.path().join(rule.relative).join(if cfg!(windows) {
+                    ".ENV.local"
+                } else {
+                    ".env.local"
+                });
+                fs::write(&secret, "retained secret").expect("live drift sentinel");
+                assert!(
+                    executor.run_plan(&validated, request).is_err(),
+                    "{} live secret drift",
+                    rule.id
+                );
+                assert_eq!(trash.paths().len(), 1);
+                assert_eq!(
+                    fs::read_to_string(secret).expect("retained secret"),
+                    "retained secret"
+                );
+            }
+        });
     }
 
     #[test]
@@ -2583,7 +2712,11 @@ mod tests {
             });
         // Ensure the project root exists so live revalidation can open markers.
         let _ = fs::create_dir_all(&root);
-        let marker = root.join("package.json");
+        let marker = root.join(if rule_id.starts_with("python.") {
+            "pyproject.toml"
+        } else {
+            "package.json"
+        });
         if !marker.exists() {
             let _ = fs::write(&marker, "{}");
         }
