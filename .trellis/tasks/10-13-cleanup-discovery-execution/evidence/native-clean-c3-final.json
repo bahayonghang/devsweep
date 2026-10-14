@@ -1,0 +1,149 @@
+{
+  "result": {
+    "pass": true,
+    "owner": {
+      "root_pid": 102680,
+      "created": "134363896679398885",
+      "listener_pid": 71992
+    },
+    "native_sha256": "7426037283a60829ee1d124bbd5433c6c0a6005cea307a9df425d1c98cfa85b6",
+    "cli_sha256": "3c44b362b2d0a6b8440a41e66cca36f2613395f695bbeb6b7c68ebd9ecc9a67a",
+    "argv": [
+      "clean",
+      "scan",
+      "--root",
+      "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-smoke-root",
+      "--root",
+      "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 Unicode \u6d4b\u8bd5",
+      "--scope",
+      "projects",
+      "--format",
+      "json"
+    ],
+    "roots": [
+      "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-smoke-root",
+      "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 Unicode \u6d4b\u8bd5"
+    ],
+    "offline": true,
+    "native_asset_failure_fallback": true,
+    "duplicate_root_deduped": true,
+    "missing_root_add_rejected": true,
+    "cleared_scope_disabled_then_recovered": true,
+    "nested_selection_removed_without_excluding_parent": true,
+    "roots_persist_after_reload": true,
+    "keyboard_scan": true,
+    "targets": 2,
+    "full_report_parity": true,
+    "scope_cases": [
+      {
+        "case": "mixed-missing",
+        "targets": 2,
+        "completeness": "partial",
+        "coverage_statuses": [
+          "complete",
+          "complete",
+          "failed"
+        ],
+        "cli_exit": 5,
+        "full_report_parity": true
+      },
+      {
+        "case": "zero-failed",
+        "targets": 0,
+        "completeness": "partial",
+        "coverage_statuses": [
+          "failed"
+        ],
+        "cli_exit": 5,
+        "full_report_parity": true
+      },
+      {
+        "case": "empty",
+        "targets": 0,
+        "completeness": "complete",
+        "coverage_statuses": [
+          "empty"
+        ],
+        "cli_exit": 0,
+        "full_report_parity": true
+      }
+    ],
+    "acl_denied_native_test": "not exercised; missing path is not permission denial",
+    "cleanup_executed": false
+  },
+  "lifecycle": {
+    "pid": 102680,
+    "exit_code": 0,
+    "timed_out": false,
+    "forced_teardown": [],
+    "owned_after_exit": [],
+    "lifecycle_pass": true
+  },
+  "close": {
+    "pid": 102680,
+    "created": "134363896679398885",
+    "windows": [
+      {
+        "handle": 80677984,
+        "visible": false,
+        "minimized": false,
+        "class": "tray_icon_app",
+        "title": ""
+      },
+      {
+        "handle": 11149074,
+        "visible": true,
+        "minimized": false,
+        "class": "Tauri Window",
+        "title": "DevSweep"
+      }
+    ],
+    "normal_wm_close_count": 1
+  },
+  "post_exit_settle_ms": 254.0119000041159,
+  "effective_environment": {
+    "cargo_target_dir_present": false,
+    "effective_popen_environment": {
+      "USERPROFILE": "C:\\Users\\lyh",
+      "HOME": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-c3-final-01\\profile\\Home",
+      "LOCALAPPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-c3-final-01\\profile\\Local",
+      "APPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-c3-final-01\\profile\\Roaming",
+      "TEMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-c3-final-01\\profile\\Temp",
+      "TMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-c3-final-01\\profile\\Temp",
+      "WEBVIEW2_USER_DATA_FOLDER": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-c3-final-01\\profile\\WebView",
+      "WEBVIEW2_BROWSER_EXECUTABLE_FOLDER": null,
+      "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=52811"
+    },
+    "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\C3-final\\devsweep-desktop.exe"
+  },
+  "raw_sha256": {
+    "dist/native-clean-c3-final-01-smoke/accessibility.json": "bd581a8c8cb907a9c9abae1ed72a553756b120e938b519cf3d374c6c5bf0a49c",
+    "dist/native-clean-c3-final-01-smoke/after-keyboard-scan.json": "fc9ce408768caa571e2aa4b2b3e3383528124d327cf0bfa5c6c05ae42b3a1a17",
+    "dist/native-clean-c3-final-01-smoke/cli-envelope.json": "ebdefb4bdb1b67f15bed1d4783da6e61c67ee7a7d51e6fc304fd21a89d1cb4b1",
+    "dist/native-clean-c3-final-01-smoke/debug-targets.json": "064f6bc741d212416005b10248cc2b0160c7d9c2a88ba8e2959e303174a89a4d",
+    "dist/native-clean-c3-final-01-smoke/empty-cli.json": "49d8e6208e1934d49e891d40fede2082295e81e11c57f0f3d0ad2fbc3ea6c9cd",
+    "dist/native-clean-c3-final-01-smoke/empty-scope-preflight.json": "0739b426af2cce369f68ed60ada142bdf2cf59d215e71a2c7fdf93a823f97147",
+    "dist/native-clean-c3-final-01-smoke/empty-tauri.json": "1fadafd0fdb95290d945d713b7a5f8b014493ef3e81bd1d3f9e5e3bbaa568a57",
+    "dist/native-clean-c3-final-01-smoke/empty-ui.json": "b430ddbec3fede65ce6e9067add2f9517251446edae81b8aedcb783f83c6812c",
+    "dist/native-clean-c3-final-01-smoke/healthy-saved-preferences.json": "fef2db42fafab906c1fe9065c23884d8b4c711716d3b97bc922e5497a126b0f2",
+    "dist/native-clean-c3-final-01-smoke/healthy-scope-preflight.json": "8d285c0f5ba29a2dc0ba669dc72d244d358db0ebc2060620f7b3688c6aa9ac26",
+    "dist/native-clean-c3-final-01-smoke/missing-root-validation.json": "61aa5af95916c89e38c880a59cd706db1c4d3f67d643d889e4e1f3e68b6f75eb",
+    "dist/native-clean-c3-final-01-smoke/mixed-missing-cli.json": "b6ec57f82f265b9d0042b1fa5d75cc470b9ef4cb5e4a1366c456081a44dcf878",
+    "dist/native-clean-c3-final-01-smoke/mixed-missing-scope-preflight.json": "f24b97397d25e1f9e961dc5e42eb75f069d6dfa1fff08b82221e8b525161b11e",
+    "dist/native-clean-c3-final-01-smoke/mixed-missing-tauri.json": "ad38f18ef00cf9963bb6bfc0d59fd71a547b2588f07b716a72187e2cd67d512f",
+    "dist/native-clean-c3-final-01-smoke/mixed-missing-ui.json": "8f6b33138852343309aecb19e739a0ce5788d48d983d7a293c82e2681c4c6782",
+    "dist/native-clean-c3-final-01-smoke/offline.json": "fe7cd62e8a984fa86abea5c34eb6d6b22169da0ed7a4a3bb71b89d6bdb1bd368",
+    "dist/native-clean-c3-final-01-smoke/result.json": "b0f3e7c02301b3eac31c95d8140a850876609c853d26a05b1959f7057953d2fb",
+    "dist/native-clean-c3-final-01-smoke/tauri-observation.json": "32fa8c4dd06804aa61697c15598e8ab41d3a2d228ca5ab8e75cf3d8cbe19aa81",
+    "dist/native-clean-c3-final-01-smoke/tauri-report.json": "32fa8c4dd06804aa61697c15598e8ab41d3a2d228ca5ab8e75cf3d8cbe19aa81",
+    "dist/native-clean-c3-final-01-smoke/zero-failed-cli.json": "d9fab9035abe98d0cf83ed34b177e894f82cc7f54a9e506d5fcee002d86199bc",
+    "dist/native-clean-c3-final-01-smoke/zero-failed-scope-preflight.json": "c858457e04e1f5846e97f290c6ed94d85162459a8f945c34c5919466e493d405",
+    "dist/native-clean-c3-final-01-smoke/zero-failed-tauri.json": "cac531cca04c0680d76d57f0f356148a37f8974ed996664cf9e5295ea7e87a81",
+    "dist/native-clean-c3-final-01-smoke/zero-failed-ui.json": "4405bc423fcc4b26229e87078cdf56a351255c28d7c65c6fa2d7aa1a9666b9e4",
+    "dist/native-clean-c3-final-01/launch.json": "1a0bf7defd9bad1fd079f8947a58d41ddf2b548bec8d99fc5482910699b6d438",
+    "dist/native-clean-c3-final-01/summary.json": "eb688a05e246036b293ca5b6d06fc66661432345ae67a4df71701945ef448c75",
+    "dist/native-clean-c3-final-01/explicit-close.json": "80da9496cce2980572467629bfc382683c9e83b9260fbed753ce6043f8c8485b",
+    "dist/native-clean-c3-final-01/effective-environment.json": "bd41a69bb4a96b33d37837eed56a7dcc9289f4824023fc4d179da57742accc60",
+    "tools/native-clean-smoke.mjs": "0e4f6ecea25a465a794b0931aedab408fa132c25a31daba10f09b0ece2ca074e"
+  }
+}

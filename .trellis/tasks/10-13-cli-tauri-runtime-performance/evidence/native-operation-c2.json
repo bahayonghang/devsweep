@@ -1,0 +1,688 @@
+{
+  "status": "failed_software_absolute_gate",
+  "method": "One fresh-profile first-use row, one discarded warmup, five alternating B3/C pairs. Non-sampled owned window minimized. Actual IPC timestamps; nearest-rank p95, five samples means worst. OS file cache uncontrolled.",
+  "gates": [
+    {
+      "label": "B3",
+      "operation": "software",
+      "samples_ms": [
+        6083.550000003015,
+        6525.158000004012,
+        4741.300999994564,
+        5528.817999998864,
+        4593.848999997135
+      ],
+      "p95_ms": 6525.158000004012,
+      "limit_ms": 5000,
+      "pass": false,
+      "joined_samples_ms": null
+    },
+    {
+      "label": "B3",
+      "operation": "optimize",
+      "samples_ms": [
+        1.825999999709893,
+        9.140000001934823,
+        1.7410000000381842,
+        2.1220000053290278,
+        1.8950000012409873
+      ],
+      "p95_ms": 9.140000001934823,
+      "limit_ms": 1000,
+      "pass": true,
+      "joined_samples_ms": null
+    },
+    {
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "samples_ms": [
+        1.7799999986891635,
+        2.9349999967962503,
+        1.9709999978658743,
+        3.169000003254041,
+        1.759999999194406
+      ],
+      "p95_ms": 3.169000003254041,
+      "limit_ms": 500,
+      "pass": true,
+      "joined_samples_ms": [
+        2.7079999999841675,
+        3.3540000003995374,
+        2.895999998145271,
+        4.071000003023073,
+        2.436000002489891
+      ]
+    },
+    {
+      "label": "C",
+      "operation": "software",
+      "samples_ms": [
+        6265.961999997671,
+        5205.1789999968605,
+        5221.151999998256,
+        5467.66000000207,
+        5569.316000000981
+      ],
+      "p95_ms": 6265.961999997671,
+      "limit_ms": 5000,
+      "pass": false,
+      "joined_samples_ms": null
+    },
+    {
+      "label": "C",
+      "operation": "optimize",
+      "samples_ms": [
+        2.246999996714294,
+        1.90199999633478,
+        2.143999998224899,
+        2.038999999058433,
+        1.8889999992097728
+      ],
+      "p95_ms": 2.246999996714294,
+      "limit_ms": 1000,
+      "pass": true,
+      "joined_samples_ms": null
+    },
+    {
+      "label": "C",
+      "operation": "analyze-cancel",
+      "samples_ms": [
+        1.6890000042621978,
+        1.8369999961578287,
+        1.7660000012256205,
+        1.507000000856351,
+        1.9529999990481883
+      ],
+      "p95_ms": 1.9529999990481883,
+      "limit_ms": 500,
+      "pass": true,
+      "joined_samples_ms": [
+        2.6710000020102598,
+        3.3339999936288223,
+        2.785999997286126,
+        2.8520000050775707,
+        2.82800000422867
+      ]
+    }
+  ],
+  "records": [
+    {
+      "phase": "cold",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 6807.152000001224,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 7094.936000000001
+    },
+    {
+      "phase": "cold",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 1.7169999991892837,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 29.197899999999663
+    },
+    {
+      "phase": "cold",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 27.950000003329478,
+      "cancel_ack_ms": 1.9350000002305023,
+      "cancel_request_to_joined_result_ms": 4.032000004372094,
+      "click_to_terminal_ui_ms": 56.60570000000007
+    },
+    {
+      "phase": "cold",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 7254.745999998704,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 7667.620400000001
+    },
+    {
+      "phase": "cold",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 1.8890000064857304,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 114.43209999999999
+    },
+    {
+      "phase": "cold",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 33.76399999979185,
+      "cancel_ack_ms": 1.9739999988814816,
+      "cancel_request_to_joined_result_ms": 2.5580000001355074,
+      "click_to_terminal_ui_ms": 57.185199999999895
+    },
+    {
+      "phase": "warmup",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 6655.957999995735,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 6945.115699999999
+    },
+    {
+      "phase": "warmup",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 1.8610000042826869,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 34.1561999999999
+    },
+    {
+      "phase": "warmup",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 28.229000003193505,
+      "cancel_ack_ms": 1.9529999990481883,
+      "cancel_request_to_joined_result_ms": 2.948000001197215,
+      "click_to_terminal_ui_ms": 58.7183
+    },
+    {
+      "phase": "warmup",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 4832.569999998668,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 5135.156800000001
+    },
+    {
+      "phase": "warmup",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 1.9079999983659945,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 57.76359999999977
+    },
+    {
+      "phase": "warmup",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 40.4629999975441,
+      "cancel_ack_ms": 1.8989999953191727,
+      "cancel_request_to_joined_result_ms": 3.1939999971655197,
+      "click_to_terminal_ui_ms": 67.75739999999996
+    },
+    {
+      "phase": "sample-1",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 6083.550000003015,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 6376.883599999999
+    },
+    {
+      "phase": "sample-1",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 1.825999999709893,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 35.676800000000185
+    },
+    {
+      "phase": "sample-1",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 40.472000000590924,
+      "cancel_ack_ms": 1.7799999986891635,
+      "cancel_request_to_joined_result_ms": 2.7079999999841675,
+      "click_to_terminal_ui_ms": 68.84360000000015
+    },
+    {
+      "phase": "sample-1",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 6265.961999997671,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 6560.1134
+    },
+    {
+      "phase": "sample-1",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 2.246999996714294,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 57.071500000000015
+    },
+    {
+      "phase": "sample-1",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 41.846000000077765,
+      "cancel_ack_ms": 1.6890000042621978,
+      "cancel_request_to_joined_result_ms": 2.6710000020102598,
+      "click_to_terminal_ui_ms": 70.83370000000014
+    },
+    {
+      "phase": "sample-2",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 6525.158000004012,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 6830.525299999999
+    },
+    {
+      "phase": "sample-2",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 9.140000001934823,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 38.09939999999915
+    },
+    {
+      "phase": "sample-2",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 28.103000004193746,
+      "cancel_ack_ms": 2.9349999967962503,
+      "cancel_request_to_joined_result_ms": 3.3540000003995374,
+      "click_to_terminal_ui_ms": 56.77049999999963
+    },
+    {
+      "phase": "sample-2",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 5205.1789999968605,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 5501.1159
+    },
+    {
+      "phase": "sample-2",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 1.90199999633478,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 45.40719999999965
+    },
+    {
+      "phase": "sample-2",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 40.56099999434082,
+      "cancel_ack_ms": 1.8369999961578287,
+      "cancel_request_to_joined_result_ms": 3.3339999936288223,
+      "click_to_terminal_ui_ms": 69.99240000000009
+    },
+    {
+      "phase": "sample-3",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 4741.300999994564,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 4997.654100000001
+    },
+    {
+      "phase": "sample-3",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 1.7410000000381842,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 39.204899999999725
+    },
+    {
+      "phase": "sample-3",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 27.944000001298264,
+      "cancel_ack_ms": 1.9709999978658743,
+      "cancel_request_to_joined_result_ms": 2.895999998145271,
+      "click_to_terminal_ui_ms": 57.608600000000024
+    },
+    {
+      "phase": "sample-3",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 5221.151999998256,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 5494.745400000001
+    },
+    {
+      "phase": "sample-3",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 2.143999998224899,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 49.11000000000013
+    },
+    {
+      "phase": "sample-3",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 40.39899999770569,
+      "cancel_ack_ms": 1.7660000012256205,
+      "cancel_request_to_joined_result_ms": 2.785999997286126,
+      "click_to_terminal_ui_ms": 70.10570000000007
+    },
+    {
+      "phase": "sample-4",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 5528.817999998864,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 5801.9967
+    },
+    {
+      "phase": "sample-4",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 2.1220000053290278,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 36.61740000000009
+    },
+    {
+      "phase": "sample-4",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 41.96000000229105,
+      "cancel_ack_ms": 3.169000003254041,
+      "cancel_request_to_joined_result_ms": 4.071000003023073,
+      "click_to_terminal_ui_ms": 69.36389999999938
+    },
+    {
+      "phase": "sample-4",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 5467.66000000207,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 5743.447300000001
+    },
+    {
+      "phase": "sample-4",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 2.038999999058433,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 41.73120000000017
+    },
+    {
+      "phase": "sample-4",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 41.54900000139605,
+      "cancel_ack_ms": 1.507000000856351,
+      "cancel_request_to_joined_result_ms": 2.8520000050775707,
+      "click_to_terminal_ui_ms": 70.25889999999981
+    },
+    {
+      "phase": "sample-5",
+      "label": "B3",
+      "operation": "software",
+      "request_to_response_ms": 4593.848999997135,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 4853.359100000001
+    },
+    {
+      "phase": "sample-5",
+      "label": "B3",
+      "operation": "optimize",
+      "request_to_response_ms": 1.8950000012409873,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 28.333399999999983
+    },
+    {
+      "phase": "sample-5",
+      "label": "B3",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 27.266000004601665,
+      "cancel_ack_ms": 1.759999999194406,
+      "cancel_request_to_joined_result_ms": 2.436000002489891,
+      "click_to_terminal_ui_ms": 56.757100000000264
+    },
+    {
+      "phase": "sample-5",
+      "label": "C",
+      "operation": "software",
+      "request_to_response_ms": 5569.316000000981,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 5831.1582
+    },
+    {
+      "phase": "sample-5",
+      "label": "C",
+      "operation": "optimize",
+      "request_to_response_ms": 1.8889999992097728,
+      "cancel_ack_ms": null,
+      "cancel_request_to_joined_result_ms": null,
+      "click_to_terminal_ui_ms": 47.766299999999774
+    },
+    {
+      "phase": "sample-5",
+      "label": "C",
+      "operation": "analyze-cancel",
+      "request_to_response_ms": 41.71499999938533,
+      "cancel_ack_ms": 1.9529999990481883,
+      "cancel_request_to_joined_result_ms": 2.82800000422867,
+      "click_to_terminal_ui_ms": 69.53340000000026
+    }
+  ],
+  "semantic_parity": {
+    "pass": true,
+    "software_observations": 14,
+    "software_entries_each": 1100,
+    "software_normalization": "Exclude only inventory observed_at_unix_ms, each size observation timestamp, and the inventory fingerprint derived from those timestamps. Compare every other field across all 14 results.",
+    "optimize_observations": 14,
+    "optimize_entries_each": 8,
+    "optimize_normalization": "Exclude only per-request operation_id; compare full completed catalogue across all 14 results.",
+    "analyze_observations": 14,
+    "analyze_boundary": "Every attempt uses the identical task fixture, returns canceled, acknowledges the same operation and joins. Partial snapshot node counts/bytes vary with cancellation scheduling and are reported, not required byte-identical.",
+    "analyze_node_count_range": [
+      145,
+      413
+    ]
+  },
+  "launches": {
+    "B3": {
+      "launch": {
+        "pid": 110828,
+        "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\B3\\devsweep-desktop.exe",
+        "created": "134363874336786742",
+        "started_unix_ns": "1791913833719926400",
+        "workload": "desktop-idle",
+        "debug_port": 52711,
+        "deadline_seconds": 630,
+        "window_state_requested": "visible"
+      },
+      "close": {
+        "pid": 110828,
+        "created": "134363874336786742",
+        "windows": [
+          {
+            "handle": 37359408,
+            "visible": true,
+            "minimized": true,
+            "class": "Tauri Window",
+            "title": "DevSweep"
+          },
+          {
+            "handle": 64298092,
+            "visible": false,
+            "minimized": false,
+            "class": "tray_icon_app",
+            "title": ""
+          }
+        ],
+        "normal_wm_close_count": 1
+      },
+      "exit": {
+        "sha256": "667145cb762a73d0ed8ee900bd8a52620e3262b953aae865e411eed34dfa7c78",
+        "exit_code": 0,
+        "timed_out": false,
+        "forced_teardown": [],
+        "owned_after_exit": [],
+        "lifecycle_pass": true
+      },
+      "post_exit_settle_ms": 1262.6529999979539
+    },
+    "C2": {
+      "launch": {
+        "pid": 18608,
+        "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\C2-runtime\\devsweep-desktop.exe",
+        "created": "134363874463087772",
+        "started_unix_ns": "1791913846347029300",
+        "workload": "desktop-idle",
+        "debug_port": 52721,
+        "deadline_seconds": 630,
+        "window_state_requested": "visible"
+      },
+      "close": {
+        "pid": 18608,
+        "created": "134363874463087772",
+        "windows": [
+          {
+            "handle": 12260772,
+            "visible": true,
+            "minimized": false,
+            "class": "Tauri Window",
+            "title": "DevSweep"
+          },
+          {
+            "handle": 15015088,
+            "visible": false,
+            "minimized": false,
+            "class": "tray_icon_app",
+            "title": ""
+          }
+        ],
+        "normal_wm_close_count": 1
+      },
+      "exit": {
+        "sha256": "5ffaefe242808e9a2074880667209a0ece6facef1b15ab5f782adf36cc2f2a59",
+        "exit_code": 0,
+        "timed_out": false,
+        "forced_teardown": [],
+        "owned_after_exit": [],
+        "lifecycle_pass": true
+      },
+      "post_exit_settle_ms": 1261.1376999993809
+    }
+  },
+  "raw_sha256": {
+    "dist/native-operation-pairs-01/summary.json": "0d11fc7102d6274f3de93b436b812023a9ab78e16a194645e5022c3729bc58ef",
+    "dist/native-operation-pairs-01/semantic-parity.json": "36bc2abe8d2568a0046dcc9b7deff720117935dc939eb3ec6a21380e56c2fa4e",
+    "dist/native-operation-pairs-01/progress.json": "389419bace495229e559730ae26cfbdf40d74c967fd7bbd0d7bf8e5f5a8c78af",
+    "dist/native-operation-pairs-01/cold-B3-software/result.json": "11911288d02a900c419e6d8c903536388efcd701a767e17a498cd1689c3b85c3",
+    "dist/native-operation-pairs-01/cold-B3-software/ipc.json": "b4c2dd7ade43fe077f587e364b24678318408b44de85051a28d18cc2d88adaf7",
+    "dist/native-operation-pairs-01/cold-B3-optimize/result.json": "7b6dcf5c9b739999ba52f7d909cc15c0cb163801c18bc8282267d28d6af00b8d",
+    "dist/native-operation-pairs-01/cold-B3-optimize/ipc.json": "aff20a79ad1973d0f204c0579561d378392dd4fc9ff92ba31f90faeb5742a3bc",
+    "dist/native-operation-pairs-01/cold-B3-analyze-cancel/result.json": "3e9fe1c9c97f701e731f81f933611ce8dcfa662a99b15854403bf2ab7a59b464",
+    "dist/native-operation-pairs-01/cold-B3-analyze-cancel/ipc.json": "c5b3881f2cd53548901663917b808427f941413740c58aa3a4d798f307b5b872",
+    "dist/native-operation-pairs-01/cold-C-software/result.json": "929ff846324a07147da11dbb57f3606fc10ffbfcb3c997afd6a76b624cb9c581",
+    "dist/native-operation-pairs-01/cold-C-software/ipc.json": "1a48ce96908af130d84bd862cf0fc7df26aaaff3aa9a244510aa05ecdfcb1ca4",
+    "dist/native-operation-pairs-01/cold-C-optimize/result.json": "4b22cc114951b280c439d07808512d42b73962126e69fec0fbc94fdd01c51fde",
+    "dist/native-operation-pairs-01/cold-C-optimize/ipc.json": "adf346400b5278106e18c168ceb150b0647a41b9e242c6a3e5e468ddda9db8fe",
+    "dist/native-operation-pairs-01/cold-C-analyze-cancel/result.json": "3e8cd66640068b44d6abc65862ee5bc861a23d29fe853fb1369df2680c2f237e",
+    "dist/native-operation-pairs-01/cold-C-analyze-cancel/ipc.json": "75e2796daa50c6f29a9aeab7ac9e03ce50c539b6a291d8b2dc2bdbd60afad49a",
+    "dist/native-operation-pairs-01/warmup-B3-software/result.json": "0b7a109a651a03331201da5416e90544f8fe7772a12744f338dd7b3fbbfe5a55",
+    "dist/native-operation-pairs-01/warmup-B3-software/ipc.json": "7781f751d06a908300a993ad80aa998ee25dd18e55c432c70cf9db49d6bec171",
+    "dist/native-operation-pairs-01/warmup-B3-optimize/result.json": "ac4e302048dce4f5f9c615771b9a1bf955706009af00d1ca937ec6d3530d076a",
+    "dist/native-operation-pairs-01/warmup-B3-optimize/ipc.json": "04fe3f927933a7b22f56abe31b8155cda7983955249fce6b23ecf086da6150a8",
+    "dist/native-operation-pairs-01/warmup-B3-analyze-cancel/result.json": "cba003eaee8307a95293e5a9162b304730a9d40183bcc8423e8a1a95d15cb928",
+    "dist/native-operation-pairs-01/warmup-B3-analyze-cancel/ipc.json": "8eda4250d89819c0e49fa4a96d6e5860a247358b0c7e53406f193812dea71d5c",
+    "dist/native-operation-pairs-01/warmup-C-software/result.json": "1a029481adc75481cb32598ae5ad3dee7f34e54b0bec094249864126114efaf4",
+    "dist/native-operation-pairs-01/warmup-C-software/ipc.json": "783aeabf3c91cb671b964d31caa8a240e006b9bb2a4bad8ad3f8e6921357a3f4",
+    "dist/native-operation-pairs-01/warmup-C-optimize/result.json": "b5d6287124d1915dff3b97823798174aef62dd39626be991bd39a853c43a44bf",
+    "dist/native-operation-pairs-01/warmup-C-optimize/ipc.json": "dbc746a7eb75ed3858cdc49a53f8f08d2f091f29ded51ebea1ceebdddbbb7bf8",
+    "dist/native-operation-pairs-01/warmup-C-analyze-cancel/result.json": "8c00c8adc47a31f27df274cdd5561a7d6568fbe94e0983492846dfbfee1da6c0",
+    "dist/native-operation-pairs-01/warmup-C-analyze-cancel/ipc.json": "eec7a3f080831e45afe3065dc8c65349398180fa5d4ffa980d999773d5583b3f",
+    "dist/native-operation-pairs-01/sample-1-B3-software/result.json": "2b9ad253b05d8287f9b826bfcaffed58d87c41d02b5243f0a5826e8f96876a6f",
+    "dist/native-operation-pairs-01/sample-1-B3-software/ipc.json": "b6fcfccab65e0be2a6825202c0b666cc72faf33d81e8961343744deb5ed19203",
+    "dist/native-operation-pairs-01/sample-1-B3-optimize/result.json": "9bb33bf7374fb62a67bb08b2aa191a61857ffb43b104e368980e79dc61613855",
+    "dist/native-operation-pairs-01/sample-1-B3-optimize/ipc.json": "0333e8dd902aad28e1a1182a65b78207df9e1c9b90ba60a2fe0f101ed27b3344",
+    "dist/native-operation-pairs-01/sample-1-B3-analyze-cancel/result.json": "de0fa32024b0d1af140a716b48cb1e91091521d69c2bbb59b7507ce44c1b9ed8",
+    "dist/native-operation-pairs-01/sample-1-B3-analyze-cancel/ipc.json": "0ecec66d98322b540f027662a3489b9032ebd335f20529f3cda1782e22298499",
+    "dist/native-operation-pairs-01/sample-1-C-software/result.json": "99476c4591dd0c16e6b910b892f7bfce81afc4fd268ce6ee120e256ba29d13c8",
+    "dist/native-operation-pairs-01/sample-1-C-software/ipc.json": "3eef7f54b0e7a73f4f8e60962c8287fea29bb1f1e86480f2f2275f9ae71ee617",
+    "dist/native-operation-pairs-01/sample-1-C-optimize/result.json": "bdc2628cbacd0871d418648592bb5260510c62749f91853edf6f13aa2965a915",
+    "dist/native-operation-pairs-01/sample-1-C-optimize/ipc.json": "f5a25ed6a699aa8c15f8a5899999dce84d4808cf73dc6db235455152e6664506",
+    "dist/native-operation-pairs-01/sample-1-C-analyze-cancel/result.json": "867879538aa3a6503d63c52be019188f2ae65c3cd66bad2e2e4e625eba09c85c",
+    "dist/native-operation-pairs-01/sample-1-C-analyze-cancel/ipc.json": "b528efcbb38012150be490496bb0d9bb77be3eef47d96e548d6454b0f53f1474",
+    "dist/native-operation-pairs-01/sample-2-B3-software/result.json": "3a18856b2c09102e0e93cd77dde64fa06f9caf0bd891f12ed5bdaf4c4e3efb78",
+    "dist/native-operation-pairs-01/sample-2-B3-software/ipc.json": "e0090a718933c29b7c376cc5380bfbadcb9a5660671585fd3797c0b13a4fd58d",
+    "dist/native-operation-pairs-01/sample-2-B3-optimize/result.json": "8918a4c3d59c9f846a209f1a750569d722e7a077588e487ee97afb45b5124ee7",
+    "dist/native-operation-pairs-01/sample-2-B3-optimize/ipc.json": "162129692e0cfe476a5f1d0167be5a23f3746d667d36dd84e0dba80c16314f3d",
+    "dist/native-operation-pairs-01/sample-2-B3-analyze-cancel/result.json": "f568c081b916ca44b88e960c9e083d957c40e5cb398a578007b75af0ba6a13e9",
+    "dist/native-operation-pairs-01/sample-2-B3-analyze-cancel/ipc.json": "6841efa69be17013e2df2c6fd90d67c1b89d670d42a9f21d793c007b7b882d36",
+    "dist/native-operation-pairs-01/sample-2-C-software/result.json": "027dc574cf189563517f3ba1813c2c33327eae079382773338ddcd66e89d918b",
+    "dist/native-operation-pairs-01/sample-2-C-software/ipc.json": "d886886b84c28aed1167f691563c062cafa672afb92e6a3d8f1a5f0eac47c13f",
+    "dist/native-operation-pairs-01/sample-2-C-optimize/result.json": "8d6b0e5428d8ad4be5165a8bc68ffd04151f18125815b8d98591316b289272c6",
+    "dist/native-operation-pairs-01/sample-2-C-optimize/ipc.json": "117f2d532fa2a93c85693b7212c1c9a47bca4bac76c5dde8d2073f5ad97be3db",
+    "dist/native-operation-pairs-01/sample-2-C-analyze-cancel/result.json": "8a1ba12d8149e605a949d1b1f0b2b1fdc457132c8111671ba1053b9a5fe41ba6",
+    "dist/native-operation-pairs-01/sample-2-C-analyze-cancel/ipc.json": "2563ecc22e361bd9d1f0584f33765aa6d7420454cb20f8b4c7790b86e960203e",
+    "dist/native-operation-pairs-01/sample-3-B3-software/result.json": "4645c83244e7a99c6787fbe11aa3c6f57f14c7bd421da7cd1abadff862ee9e0d",
+    "dist/native-operation-pairs-01/sample-3-B3-software/ipc.json": "9128efa150ff770d8729ecabd0f98cc9bfc665fdffd21ee35f21cc6e0f41c478",
+    "dist/native-operation-pairs-01/sample-3-B3-optimize/result.json": "f3f9a9d8942add3d7dbcc5caa5d461374e6bd64820b346c8ef82aff07935d358",
+    "dist/native-operation-pairs-01/sample-3-B3-optimize/ipc.json": "39ce2b3f6e8ce3ed9d04bd4d0785f0a206ffcc7ae14857eff72239448b84ab9a",
+    "dist/native-operation-pairs-01/sample-3-B3-analyze-cancel/result.json": "bccd5c38427b328dc143e289bf7481ade3a9617fe2e06fa5582e3837e0f0188b",
+    "dist/native-operation-pairs-01/sample-3-B3-analyze-cancel/ipc.json": "91e458e4f3154f6d1701976716acca5de440c28d8f8844a3f855e27221b962fd",
+    "dist/native-operation-pairs-01/sample-3-C-software/result.json": "f496adac75893229faf94431a0047d99d504b3582789448ed1a8fabeeac96e69",
+    "dist/native-operation-pairs-01/sample-3-C-software/ipc.json": "4813e81d252d5451fb0497638c33ba650c62188dc08de1ee39b0f7c970084c30",
+    "dist/native-operation-pairs-01/sample-3-C-optimize/result.json": "6565fd1c985996ffca4ff8eaff5f6c1aa8e3a9ce28559cdfec9256117d916cd5",
+    "dist/native-operation-pairs-01/sample-3-C-optimize/ipc.json": "b95de3706aaf57e043526e51594aad6c81ecc17b5d204db24e2416e5d5440488",
+    "dist/native-operation-pairs-01/sample-3-C-analyze-cancel/result.json": "2bb1e85b99fefcad640637577d2310716db1b2cd66dd296a171888196704515b",
+    "dist/native-operation-pairs-01/sample-3-C-analyze-cancel/ipc.json": "98be180bd78b4ccd5d5308f0b9e44499a9b2c85d1d1aca74c1a077d19a3dd663",
+    "dist/native-operation-pairs-01/sample-4-B3-software/result.json": "1de5e119ef7cf064715d2feb12148d5e590b11bcbeaf3fe1faa663c35f73510a",
+    "dist/native-operation-pairs-01/sample-4-B3-software/ipc.json": "8faaa2262cdb9c6447a11ff4304df133d99b3f4b7957699cf224ea092af99afb",
+    "dist/native-operation-pairs-01/sample-4-B3-optimize/result.json": "da6b752c64eb411160a86aa0d32be5059578e77988695d23d9854971d9647bfa",
+    "dist/native-operation-pairs-01/sample-4-B3-optimize/ipc.json": "13f6785a9ca0aba51f38fc83e92b988b82fabeeffe78f096a756f1cdc875aade",
+    "dist/native-operation-pairs-01/sample-4-B3-analyze-cancel/result.json": "e8b6bf89ed8e7ca032a8fffc96c4b82a6f4c8a1216236c90acaef04780d4eb82",
+    "dist/native-operation-pairs-01/sample-4-B3-analyze-cancel/ipc.json": "0e5251c205c4cfe29625a46591de6aea5c40295ec81c108b81415710ba93026e",
+    "dist/native-operation-pairs-01/sample-4-C-software/result.json": "b27f931e8d9a45d3705f8c051617fd332b318d981e1ba5fdc7fd429ee865b94b",
+    "dist/native-operation-pairs-01/sample-4-C-software/ipc.json": "3e49f63ed53d0c1f7681f306e5c3937d7f2fe5464f19ac1b14128bd7e1086e39",
+    "dist/native-operation-pairs-01/sample-4-C-optimize/result.json": "87ab40402521b5dda3d1f996710738217c307881e894e9d1507ae64fcc915d8c",
+    "dist/native-operation-pairs-01/sample-4-C-optimize/ipc.json": "43921e81dd6eb4c42298ecca21acfc47d4c772101a9517c6048677644df2bb15",
+    "dist/native-operation-pairs-01/sample-4-C-analyze-cancel/result.json": "339997f39768e1ce21a4f7928a3dd70020353742a7499799744d50d8b0588b38",
+    "dist/native-operation-pairs-01/sample-4-C-analyze-cancel/ipc.json": "103993cfd344b552996af550ab10b028467f5436a59c9bf5e8a209807df05bc4",
+    "dist/native-operation-pairs-01/sample-5-B3-software/result.json": "388ea91b220cf999351b09d41c03dea426bb6bcd9283ebc12225405e2f784a96",
+    "dist/native-operation-pairs-01/sample-5-B3-software/ipc.json": "d986e30b8be3992584502c95231930aa7cf7b7685b9e4037451b3adf0c83255d",
+    "dist/native-operation-pairs-01/sample-5-B3-optimize/result.json": "227ba4f92c1fa280da1b33909bd9b116a120a4684ca05a29d09e0914b5b5d124",
+    "dist/native-operation-pairs-01/sample-5-B3-optimize/ipc.json": "52455d5df212b0f065e675e84d2306c3ace2aeb6499f590e2ef2e6859b1c83ea",
+    "dist/native-operation-pairs-01/sample-5-B3-analyze-cancel/result.json": "6c6a1cd4e059836de12d1f8da8ba243400b37103908eac197f6a7495e81dcda5",
+    "dist/native-operation-pairs-01/sample-5-B3-analyze-cancel/ipc.json": "992774efbbfdd3bafa53045bd16c0722563d3542973f758d31e732e1a6f24834",
+    "dist/native-operation-pairs-01/sample-5-C-software/result.json": "c993b20ba55debf8689818913e34cfc75e8ca96212c7dc96930085a89e38608d",
+    "dist/native-operation-pairs-01/sample-5-C-software/ipc.json": "ba8627aed9fdcd5314be25b6055c6cddf1d07681ba17e251556e06a9e59d00cd",
+    "dist/native-operation-pairs-01/sample-5-C-optimize/result.json": "d810aadedb1b649ebca2f641eb1dc946c150f75236d29c5d2b4cdd6323a17274",
+    "dist/native-operation-pairs-01/sample-5-C-optimize/ipc.json": "7adb5f2deeb5d9b19cb15e82abad3816b5f6123ed2fefdc03e63258afd8959a9",
+    "dist/native-operation-pairs-01/sample-5-C-analyze-cancel/result.json": "64dcd65977767e165ce80749ba619533fb6ce63ad4c13306d5a973fe7d43793b",
+    "dist/native-operation-pairs-01/sample-5-C-analyze-cancel/ipc.json": "4763ff305cef754d838d711cae00e3becd5125eca3d941ad846183ca70e9df8e",
+    "dist/native-operation-pairs-01-B3-launch/launch.json": "2584839f4fc2bed3fddfe73b630976d56f2b71631f4c1ece1f34e5351fe337bf",
+    "dist/native-operation-pairs-01-B3-launch/summary.json": "d6ce6365b1b29a13ec33e13d5520ed6ebbff88484f3e276d73998237fc60686a",
+    "dist/native-operation-pairs-01-B3-launch/explicit-close.json": "a6787ec1bc335c61532cdbaa1f29b574ff90018de219da31df6e42318c54b874",
+    "dist/native-operation-pairs-01-C2-launch/launch.json": "caab56ab283698f9f25879f74329c5a1c3c87abdcf6a6f5e313001f16c25be18",
+    "dist/native-operation-pairs-01-C2-launch/summary.json": "35beb05491880d3ff248d3cdb05528874407e808560b89783e9930d963952c62",
+    "dist/native-operation-pairs-01-C2-launch/explicit-close.json": "d55ecb806aac77e8ffcb99e7925344b9da671152aa47b0b64813c6f57d18c38d",
+    "tools/native-operation-smoke.mjs": "a3cdb534f3194b71b18967ce360ee076aeba853d9b0f8e5973a503192361570c",
+    "dist/performance/cleanup-earth/run-native-operation-launch.py": "c99716e1d5e52362f843ca933a9b8b7f6106872510f46b0cbc9da3304a4d9d38",
+    "dist/performance/cleanup-earth/run-native-operation-pairs.mjs": "e607b8e859220a07c347cfdbafae4b8e937366f4e38e885db471705cf3f1702f",
+    "dist/performance/cleanup-earth/check-native-operation-pairs.py": "c569ec4d078dad367717cb0ecad3872b7407c8aca5a2a1da802535a0991bf437"
+  }
+}

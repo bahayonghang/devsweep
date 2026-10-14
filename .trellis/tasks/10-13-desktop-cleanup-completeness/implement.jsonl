@@ -1,0 +1,19 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/spec/backend/scan-coverage.md", "reason": "Shared root/provider coverage DTO, completeness mapping, legacy compatibility and cross-layer verification"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/backend-cleanup-contracts.md", "reason": "Complete relevant canonical backend contract excerpts; read current linked source before implementation"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/backend-cli-scan-contracts.md", "reason": "Complete relevant canonical backend contract excerpts; read current linked source before implementation"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/backend-runtime-contracts.md", "reason": "Complete relevant canonical backend contract excerpts; read current linked source before implementation"}
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Implementation conventions and shared contract boundaries"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/current-cleanup-gaps.md", "reason": "Source-backed findings, boundaries and acceptance evidence for this task"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/cleanup-failures-and-tests.md", "reason": "Companion evidence and validation requirements, split to avoid context truncation"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/planet-rendering.md", "reason": "Source-backed findings, boundaries and acceptance evidence for this task"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/cli-tauri-performance.md", "reason": "Source-backed findings, boundaries and acceptance evidence for this task"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/runtime-measurement-protocol.md", "reason": "Companion evidence and validation requirements, split to avoid context truncation"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/mole-reference-and-assets.md", "reason": "Source-backed findings, boundaries and acceptance evidence for this task"}
+{"file": ".trellis/spec/backend/scan-preferences.md", "reason": "Explicit desktop root selection, closed persistence, session scope and stale response contracts"}
+{"file": ".trellis/spec/backend/provider-authority.md", "reason": "Live provider identity, footprint, configuration and confirmation contract"}

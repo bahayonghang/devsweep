@@ -1,0 +1,152 @@
+{
+  "method": "Fresh child/profile first call separate; one discarded warmup; five warm runs in alternating source order; OS cache uncontrolled; nearest-rank p95; same A release and sampler as original run. Source wall time is not internal per-function telemetry.",
+  "binary_sha256": "b7280f91304ec965c025e9d110967896d8b4f1d068603fff792d2ed2eb0c8fd6",
+  "summary": [
+    {
+      "source": "software-arp",
+      "median_ms": 85.82610000303248,
+      "p95_ms": 102.93280000041705,
+      "samples_ms": [
+        85.82610000303248,
+        84.05630000197561,
+        82.57020000019111,
+        89.07190000172704,
+        102.93280000041705
+      ],
+      "counts": [
+        620,
+        620,
+        620,
+        620,
+        620
+      ]
+    },
+    {
+      "source": "software-msi",
+      "median_ms": 125.24240000493592,
+      "p95_ms": 126.28690000565257,
+      "samples_ms": [
+        126.28690000565257,
+        103.99759999563685,
+        125.24240000493592,
+        125.81689999933587,
+        123.76580000272952
+      ],
+      "counts": [
+        293,
+        293,
+        293,
+        293,
+        293
+      ]
+    },
+    {
+      "source": "software-msix",
+      "median_ms": 5321.609700004046,
+      "p95_ms": 8642.60920000379,
+      "samples_ms": [
+        4628.30959999701,
+        4058.1601000012597,
+        6469.0539999937755,
+        5321.609700004046,
+        8642.60920000379
+      ],
+      "counts": [
+        187,
+        187,
+        187,
+        187,
+        187
+      ]
+    },
+    {
+      "source": "software",
+      "median_ms": 7266.5627999958815,
+      "p95_ms": 11523.426599997038,
+      "samples_ms": [
+        4166.615399997681,
+        4984.850799999549,
+        9623.29630000022,
+        11523.426599997038,
+        7266.5627999958815
+      ],
+      "counts": [
+        1100,
+        1100,
+        1100,
+        1100,
+        1100
+      ]
+    }
+  ],
+  "cold": [
+    {
+      "source": "software-arp",
+      "elapsed_ms": 97.2371000025305,
+      "entries": 620
+    },
+    {
+      "source": "software-msi",
+      "elapsed_ms": 118.58990000473568,
+      "entries": 293
+    },
+    {
+      "source": "software-msix",
+      "elapsed_ms": 5879.393700000946,
+      "entries": 187
+    },
+    {
+      "source": "software",
+      "elapsed_ms": 5426.010700000916,
+      "entries": 1100
+    }
+  ],
+  "all_28_runs_exit_zero_no_owned_leftovers": true,
+  "normalized_parity": {
+    "excluded_keys": [
+      "observed_at_unix_ms",
+      "fingerprint"
+    ],
+    "sources": {
+      "software-arp": {
+        "all_five_equal": true,
+        "normalized_sha256": [
+          "b8bdeb5cd8e61892f48f2b68efc563b2f6f887f3f319a68790a8bb314d5e78e0"
+        ]
+      },
+      "software-msi": {
+        "all_five_equal": true,
+        "normalized_sha256": [
+          "e6f20a471816d4f128d50a566072d571887a2c2660a1b33b9dc92dd1719af764"
+        ]
+      },
+      "software-msix": {
+        "all_five_equal": true,
+        "normalized_sha256": [
+          "7185f225eb18172a3eac5604d89ddaa0a767605288c9dee20213af670a383dcf"
+        ]
+      },
+      "software": {
+        "all_five_equal": true,
+        "normalized_sha256": [
+          "9edc9d8ab9f0a1d613c2147f959f82daa6cd7ac0217f4ec026e25f78a0a3d419"
+        ]
+      }
+    }
+  },
+  "qualification": "Diagnostic source split; final B build timestamps do not overlap, but earlier 1.8s frontend build start/end was not retained. Not final isolated release acceptance.",
+  "debug_phase_diagnostic": {
+    "binary_sha256": "3e170670b4a264e5255df3b493ef888463a701c233d6b625bb8bfc142fcdabaa",
+    "enumeration_ms": 1086.8884,
+    "sizing_ms": 8859.673,
+    "total_ms": 9946.6933,
+    "packages": 187,
+    "available_sizes": 187,
+    "partial_sizes": 0,
+    "unknown_sizes": 0,
+    "source_state": "available",
+    "remaining_mta_workers": 0,
+    "test_passed": true,
+    "release_acceptance": false
+  }
+}

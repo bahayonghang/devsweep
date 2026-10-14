@@ -1,0 +1,36 @@
+{
+  "id": "cleanup-discovery-execution",
+  "name": "cleanup-discovery-execution",
+  "title": "Cleanup discovery coverage and executable outcomes",
+  "description": "Repair shared rule roundtrips, expand explicit roots and bounded provider coverage, and deliver actionable CLI/Tauri review and truthful cleanup outcomes.",
+  "status": "in_progress",
+  "dev_type": "fullstack",
+  "scope": "clean-cli-core-desktop",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-13",
+  "completedAt": null,
+  "branch": "codex/cleanup-earth-performance",
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-13-desktop-cleanup-completeness",
+  "relatedFiles": [],
+  "notes": "Capture runtime baseline before changes. Freeze coverage DTOs before shared runtime edits; preserve task-local provider matrix and execution trust boundaries.",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "analysis_source_commit": "e75a29d675987429473ed37e80a253c356b3fc4d",
+    "analysis_source_branch": "dev",
+    "implementation_approval": {
+      "date": "2026-10-13",
+      "user_message": "继续按照trellis规划顺序实施",
+      "basis": "Explicit subsequent approval of the final parent and three-child planning summary."
+    }
+  }
+}

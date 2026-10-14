@@ -1,0 +1,56 @@
+# Research: Runtime measurement protocol, budgets, and source references
+
+Companion to [cli-tauri-performance.md](cli-tauri-performance.md); same 2026-10-13 source investigation and evidence classification. Split for complete context injection; findings have not been remeasured. The child PRD/design is authoritative where later planning review refined the proposal.
+
+### Proposed staged measurement protocol
+
+1. **Freeze comparable inputs.** Record source revision plus dirty-source identity, executable and asset hashes, lockfile/toolchain versions, Windows/WebView2, CPU/cores/RAM, storage, power mode, scale/viewport, locale, configured rules/root list, security-software state (observe only), fixture generation seed/hash and entry/target counts. Current desktop package requires Node >=22 <23; do not copy historical Node 26 as an approved toolchain. Build CLI locked release; build desktop through `npm run tauri -- build --no-bundle` with embedded assets, and prove app content loads without the development server.
+2. **Keep coverage equal.** Use small/medium/wide/deep fixtures, many tiny targets, few large targets, overlapping roots, multiple ecosystems, absent/slow providers, inaccessible entries and reparse/cloud boundaries. Separate shared old-coverage A/B from new-coverage workload; a quicker run that skipped roots or exhausted more budgets is not an improvement. No benchmark requires scanning the entire user machine. Mutating execute/lifecycle scenarios use owned disposable fixtures or test adapters, never arbitrary user cleanup or maintenance.
+3. **Split cold and warm.** Capture fresh-process first-use with a fresh app profile separately from same-process warm operations. Fresh process is not guaranteed cold OS file cache: record cache state as uncontrolled unless an approved controlled environment exists. Do one discarded warm-up plus at least five alternating A/B pairs for compatibility with historical gates. Use >=20 measured repetitions for new p95-focused micro/interaction scenarios where practical; never pool cold and warm samples. Publish all samples and percentile method; five-run nearest-rank p95 is effectively the worst sample.
+4. **Measure backend and full app separately.** Collect every 200 ms: user/kernel/total CPU time, private bytes, working set, thread/handle count, I/O bytes and operation counts, subprocess starts/peak/live-after-join, time to first discovery, total elapsed, phase duration, output bytes and target coverage. CPU should explicitly state `100% = one logical core`. Native Tauri must report the root Rust process and the complete owned WebView2 process tree (browser, renderer, GPU, utility), not only the host PID. Retain historical host-PID gates separately; do not apply their 192 MiB bound to a newly defined process-tree metric without an accepted baseline.
+5. **Measure transport and responsiveness.** Record operation ID/sequence, discovery-to-send count, constructed/projected snapshots, emitted bytes, oldest undelivered age, outstanding/retained progress, JS receive/decode duration, accepted/rejected reducer events, commits, DOM/row count, long tasks and key/click-to-paint p50/p95. Use an instrumented/React-profiling production harness when measuring React commits, and uninstrumented release for resource acceptance. Keep CDP-attached baselines matched with CDP-attached candidates; capture a separate no-debug idle case.
+6. **Exercise lifecycle and sinks.** CLI human/JSON stdout/JSON file, Status NDJSON fast/slow/broken pipe and file, TUI idle/navigation/bursts/cancel/quit; native startup/idle/scan/preview/review/rescan/cancel/route/close, hidden/minimized state, Status/HUD visibility combinations and 20 show/hide cycles. Keep scan/execute intent separate from decorative animation. Record cancellation request, acknowledgment, terminal result and actual join timestamps. Verify producer/process counts and event publication after settlement, not just a changed label.
+7. **Report honestly.** Every required row has pass/fail/unavailable with reason and owner; a measured failure remains fail. Store raw JSONL/CSV, command arguments, host manifest, hashes, coverage comparison and concise cause/fix/effect in the child evidence directory. New measurements must not overwrite archived evidence.
+
+### Budgets: inherited versus proposed
+
+| Scope | Budget | Status |
+| --- | --- | --- |
+| Clean comparable release CLI scan | Candidate median/baseline <=1.20; max private <=baseline +64 MiB; max threads <=baseline +2 | **Inherited** regression guard, not a promised improvement. Requires fresh same-host baseline and comparable coverage. |
+| Desktop idle, host PID | Median CPU <=1%, private <=192 MiB, max threads <=40 | **Inherited** historical definition; current process-tree/graphics cost must also be recorded separately. |
+| Analyze | Layout p95 <=50 ms, React commit p95 <=100 ms, ack p95 <=500 ms, existing accounted/private/CPU limits | **Inherited**, unchanged scenario. |
+| Software / Optimize list | p95 <=5 s / <=1 s | **Inherited**, last historical run failed; requires remeasurement. |
+| Desktop preview | 100 ms periodic emission interval, latest pending flush before phase/terminal | **Inherited**. Flush exceptions mean a strict sliding-window "never >10 total events" claim is inaccurate. |
+| Large preview/review input and TUI keys | Key/click-to-next-visible-update p95 <=100 ms on frozen 1k/10k target fixtures; record max stalls | **Proposed** interaction budget, freeze before implementation. Does not create a scan-to-completion or cancel-to-join timeout. |
+| Replaceable progress backlog | O(1) retained pending snapshots per active producer, bounded lifecycle queue; record maximum bytes and age | **Proposed** structural target. Capacity depends on payload/terminal semantics; not a mandate to drop NDJSON records or alter schemas. |
+| Idle TUI | No steady 10 Hz redraw when state/size/animation deadline is unchanged | **Proposed** behavior gate; resource improvement must be measured. |
+| Hidden HUD / settled operation | Zero owned sampler after join, zero subsequent sample publications; no growth across 20 lifecycle cycles | **Inherited semantics + proposed stress count**. Main minimized live operation is intentionally separate. |
+| New whole-app memory/I/O/startup metrics | Baseline required; diagnose regression by phase and process tree; set measured budgets before code edits | **Proposed protocol**, no invented portable absolute limit. |
+
+### Related specs and tests to curate into implementation/check context
+
+- `.trellis/spec/backend/quality-guidelines.md`: typed machine output and broken-pipe join (`:77-83`); HUD lifecycle (`:635-708`); cumulative progress/ranking/cancellation (`:1243-1264`); shared sizing, live authority and exact-ID rescan (`:1410-1438`).
+- `.trellis/spec/backend/logging-guidelines.md`: preserve stderr-only diagnostics for machine output; read before adding phase telemetry.
+- `.trellis/spec/frontend/hook-guidelines.md`: worker channels, staged progress and cancellation-request versus terminal distinction.
+- `.trellis/spec/frontend/quality-guidelines.md`: pure rendering and meaningful runtime/TestBackend checks.
+- `.trellis/spec/desktop-frontend/state-management.md:169-185,237-280`: stale rejection, join-before-replacement, cumulative authority-free preview, decode failure settlement and coalescing/flush.
+- `.trellis/spec/desktop-frontend/component-guidelines.md:43`: minimizing does not cancel an operation.
+- `.trellis/spec/desktop-frontend/index.md`: real production component benchmark/native evidence protocol and Node 22 frontend checks.
+- Preserve existing sizing parity/worker ceiling/cancellation/reparse tests; scan projection/coalescing/flush tests; frontend malformed/stale/duplicate event tests; coordinator replacement/close tests; Status joined-producer test; HUD hide/drop/no-late-publication tests. Add targeted burst/wide-directory/slow-sink and responsiveness checks rather than tests that only mirror new implementation details.
+- Final gates when implemented: `just ci`; desktop `types:generate`, lint, typecheck, test, build under required Node; relevant production benchmarks and native lifecycle evidence. No tests were run for this research-only report.
+
+### External references and versions
+
+- [Rust std::sync::mpsc::channel](https://doc.rust-lang.org/std/sync/mpsc/fn.channel.html), accessed 2026-10-13, documentation reports std 1.99.0: this is an asynchronous channel whose sender does not wait for receiver consumption, with an unbounded buffer. This confirms the source-based slow-consumer risk; it does not prove a current measured leak.
+- [Tauri 2 calling the frontend](https://v2.tauri.app/develop/calling-frontend/), accessed 2026-10-13: channels are the appropriate streaming path; the current scan already uses them. Tauri's generic event bus is intended for smaller traffic, so replacing scan channels with app-wide events is not the optimization. Local declared versions: Tauri Rust 2.11.3, CLI 2.11.4, API ^2.8.0; record actual locked versions when measuring.
+- [React Profiler](https://react.dev/reference/react/Profiler), accessed 2026-10-13: programmatic render measurements require profiling support and add overhead; do not present development or profiling-build timing as uninstrumented release CPU evidence. Local React declaration is ^19.1.1; current `desktop/package.json` requires Node >=22 <23.
+
+## Caveats / Not Found
+
+- No new baseline, native timing, frame/render timing, disk trace or resource measurements were performed. All proposed numerical budgets must be reviewed/frozen before implementation; only the explicitly labeled inherited ones were previously accepted.
+- Fresh root-child sizing budgets are intentional and tested. Changing them changes coverage/confidence and must be coordinated with the cleanup child. Total entry budgets must not be used to hide incomplete discovery.
+- Current specs require per-target cumulative snapshots. Coalescing before expensive construction may need a spec/API decision; transport-only throttling does not solve upstream allocation by itself.
+- `tools/measure-resources.ps1` is not safe to run wholesale as a read-only benchmark for this plan: it force-stops matching executables at `:1192-1197`, executes `optimize run` for DNS at `:1213`, and launches Settings scenarios at `:1291-1299`. First add/select an owned-process, isolated, read-only fixture mode; do not operate on the user's existing app process or run maintenance simply to obtain timing. Its current per-PID samples (`:343-381`) omit I/O counters and do not constitute full WebView2 process-tree resource sampling, although it can enumerate a tree (`:384`).
+- The historical record is useful prior evidence, not current verification. Some short-lived historical resource samples were zero; new harnesses must distinguish missing samples from true zero use.
+- Hidden/minimized main-window monitoring intent and HUD rendering are separate. Preserve the existing rule that minimizing does not cancel work; any new pause/resume policy needs an explicit contract and stale-age behavior.
+- No new production dependencies, persistent performance cache, blanket parallel rewrite, arbitrary whole-machine root expansion or maintenance action is recommended by this report.

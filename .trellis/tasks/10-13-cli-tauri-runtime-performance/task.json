@@ -1,0 +1,36 @@
+{
+  "id": "cli-tauri-runtime-performance",
+  "name": "cli-tauri-runtime-performance",
+  "title": "CLI and Tauri foreground and background performance",
+  "description": "Profile and optimize shared scan/sizing/probe work, CLI/TUI output, Tauri IPC/React responsiveness, and idle/hidden lifecycle without reducing reported coverage.",
+  "status": "in_progress",
+  "dev_type": "fullstack",
+  "scope": "cli-tauri-runtime",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-13",
+  "completedAt": null,
+  "branch": "codex/cleanup-earth-performance",
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-13-desktop-cleanup-completeness",
+  "relatedFiles": [],
+  "notes": "Baseline work precedes product edits. Shared scan/event optimization follows functional contract freeze; final measurements wait for all children. Preserve coverage and operation-specific lifecycle.",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "analysis_source_commit": "e75a29d675987429473ed37e80a253c356b3fc4d",
+    "analysis_source_branch": "dev",
+    "implementation_approval": {
+      "date": "2026-10-13",
+      "user_message": "继续按照trellis规划顺序实施",
+      "basis": "Explicit subsequent approval of the final parent and three-child planning summary."
+    }
+  }
+}

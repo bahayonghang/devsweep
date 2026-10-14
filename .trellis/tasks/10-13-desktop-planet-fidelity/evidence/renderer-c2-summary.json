@@ -1,0 +1,1723 @@
+{
+  "scope": "Production-browser component only; synchronous painted callback/submission, not GPU completion or whole-app CPU",
+  "percentile": "nearest rank",
+  "full": {
+    "path": "dist\\performance\\cleanup-earth\\planet-C2-full-02\\record.json",
+    "sha256": "73bdc7f019901b2f6e0418da86efc7278d15e023b9b35b38968f5a8255d7ae46",
+    "teardown": {
+      "pid": 142932,
+      "forced": false,
+      "exit_code": 0,
+      "signal": null,
+      "lifecycle_pass": true
+    }
+  },
+  "cancel": {
+    "path": "dist\\performance\\cleanup-earth\\planet-C2-interaction-01\\record.json",
+    "sha256": "ee24380de446bdef8dffdc10e7242884873af9b2aba387d1af1b02aa2f0e00f4",
+    "teardown": {
+      "pid": 143880,
+      "forced": false,
+      "exit_code": 0,
+      "signal": null,
+      "lifecycle_pass": true
+    }
+  },
+  "navigation": {
+    "path": "dist\\performance\\cleanup-earth\\planet-C2-navigation-01\\record.json",
+    "sha256": "c44847f641e87446728dc594453ec0905f1cf910d675514ed42331f8bd4f95de",
+    "teardown": {
+      "pid": 138652,
+      "forced": false,
+      "exit_code": 0,
+      "signal": null,
+      "lifecycle_pass": true
+    }
+  },
+  "original_host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logical_processors": 24
+  },
+  "painted_work_reduction_percent": 93.61353710707844,
+  "results": [
+    {
+      "mode": "baseline",
+      "build": {
+        "mode": "baseline",
+        "baseline": "e75a29d",
+        "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+      },
+      "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "gpu": null,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dpr": 2,
+      "cold_samples_ms": [
+        109.69999999552965,
+        59.600000001490116,
+        57.70000000298023,
+        57.899999998509884,
+        57.100000001490116,
+        56.80000000447035,
+        57.30000000447035,
+        60.20000000298023,
+        57.79999999701977,
+        57.399999998509884,
+        58.100000001490116,
+        63.900000005960464,
+        66.60000000149012,
+        62.79999999701977,
+        59.399999998509884,
+        64.5,
+        64.69999999552965,
+        69.30000000447035,
+        63.70000000298023,
+        61.100000001490116
+      ],
+      "cold_p95_ms": 69.30000000447035,
+      "cold_long_tasks": [
+        [
+          {
+            "start": 78.10000000149012,
+            "duration": 93
+          }
+        ],
+        [
+          {
+            "start": 17.899999998509884,
+            "duration": 57
+          }
+        ],
+        [
+          {
+            "start": 16.899999998509884,
+            "duration": 55
+          }
+        ],
+        [
+          {
+            "start": 18.899999998509884,
+            "duration": 55
+          }
+        ],
+        [
+          {
+            "start": 16.399999998509884,
+            "duration": 55
+          }
+        ],
+        [
+          {
+            "start": 16.200000002980232,
+            "duration": 54
+          }
+        ],
+        [
+          {
+            "start": 18.700000002980232,
+            "duration": 54
+          }
+        ],
+        [
+          {
+            "start": 18.700000002980232,
+            "duration": 56
+          }
+        ],
+        [
+          {
+            "start": 18.899999998509884,
+            "duration": 54
+          }
+        ],
+        [
+          {
+            "start": 19.899999998509884,
+            "duration": 54
+          }
+        ],
+        [
+          {
+            "start": 19.600000001490116,
+            "duration": 55
+          }
+        ],
+        [
+          {
+            "start": 20.5,
+            "duration": 61
+          }
+        ],
+        [
+          {
+            "start": 19.5,
+            "duration": 62
+          }
+        ],
+        [
+          {
+            "start": 23,
+            "duration": 57
+          }
+        ],
+        [
+          {
+            "start": 19,
+            "duration": 56
+          }
+        ],
+        [
+          {
+            "start": 23,
+            "duration": 61
+          }
+        ],
+        [
+          {
+            "start": 21.600000001490116,
+            "duration": 60
+          }
+        ],
+        [
+          {
+            "start": 21.5,
+            "duration": 64
+          }
+        ],
+        [
+          {
+            "start": 17.400000005960464,
+            "duration": 61
+          }
+        ],
+        [
+          {
+            "start": 19.600000001490116,
+            "duration": 58
+          }
+        ]
+      ],
+      "windows": [
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 1,
+          "painted_total_ms": 737.5999999940395,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 1,
+          "painted_total_ms": 734.4999999850988,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 1,
+          "painted_total_ms": 732.7999998778105,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 1,
+          "painted_total_ms": 731.9999999403954,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 0.9000000059604645,
+          "painted_total_ms": 726.3999999165535,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        }
+      ],
+      "median_painted_total_ms": 732.7999998778105,
+      "short_cancel_p95_ms": 7.700000002980232,
+      "cancel_samples_ms": [
+        5.399999998509884,
+        6.799999997019768,
+        6.799999997019768,
+        7.600000001490116,
+        5.5,
+        7,
+        6.799999997019768,
+        7.600000001490116,
+        5.800000004470348,
+        6.799999997019768,
+        6.899999998509884,
+        7.600000001490116,
+        6.100000001490116,
+        6.799999997019768,
+        6.899999998509884,
+        7.600000001490116,
+        7,
+        6.899999998509884,
+        6.800000004470348,
+        5.0999999940395355,
+        6.9000000059604645,
+        7,
+        6.699999995529652,
+        5.399999998509884,
+        6.700000002980232,
+        6.799999997019768,
+        7.600000001490116,
+        5.5,
+        6.800000004470348,
+        6.799999997019768,
+        7,
+        6,
+        6.9000000059604645,
+        6.899999998509884,
+        7.700000002980232,
+        6.100000001490116,
+        6.9000000059604645,
+        6.799999997019768,
+        7.700000002980232,
+        6,
+        6.9000000059604645,
+        6.799999997019768,
+        5.300000004470348,
+        6,
+        6.899999998509884,
+        6.799999997019768,
+        6.799999997019768,
+        6,
+        6.899999998509884,
+        6.9000000059604645,
+        6.899999998509884,
+        6.100000001490116,
+        6.799999997019768,
+        6.9000000059604645,
+        7.699999995529652,
+        6,
+        6.899999998509884,
+        6.700000002980232,
+        6.799999997019768,
+        7.700000002980232,
+        6.200000002980232,
+        6.800000004470348,
+        6.899999998509884,
+        7.700000002980232,
+        5.899999998509884,
+        6.899999998509884,
+        6.800000004470348,
+        6.199999995529652,
+        6.200000002980232,
+        6.699999995529652,
+        7,
+        6.299999997019768,
+        6.799999997019768,
+        6.9000000059604645,
+        7.799999997019768,
+        6,
+        6.799999997019768,
+        6.600000001490116,
+        7.5999999940395355,
+        6.199999995529652,
+        6.5,
+        7,
+        6.800000004470348,
+        7.799999997019768,
+        7,
+        6.699999995529652,
+        6.800000004470348,
+        7.5999999940395355,
+        6.199999995529652,
+        6.799999997019768,
+        6.800000004470348,
+        7.600000001490116,
+        6.100000001490116,
+        6.699999995529652,
+        6.799999997019768,
+        7.5999999940395355,
+        4.899999998509884,
+        6.899999998509884,
+        6.800000004470348,
+        7.799999997019768
+      ],
+      "cancel_p95_ms": 7.700000002980232,
+      "navigation_samples": [
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.699999995529652,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.200000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.0999999940395355,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.700000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 5.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.700000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 5.300000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.299999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.700000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 5.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.600000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        }
+      ],
+      "navigation_p95_ms": 7,
+      "unmount_cycles": [
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 18802977,
+            "total": 21322581,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19001519,
+            "total": 24301075,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 22292852,
+            "total": 32153120,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 20156475,
+            "total": 29638871,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 27406332,
+            "total": 34237984,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 23592312,
+            "total": 35696868,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 21324415,
+            "total": 33928091,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 27420320,
+            "total": 36560416,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 23514164,
+            "total": 35959012,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 21342283,
+            "total": 33403803,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 27440440,
+            "total": 36036128,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 23506180,
+            "total": 35434724,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 21355131,
+            "total": 33403803,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 27446348,
+            "total": 36036128,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 23575376,
+            "total": 35434724,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 21377675,
+            "total": 33665947,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 27477244,
+            "total": 36298272,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 23562532,
+            "total": 35696868,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 21392339,
+            "total": 33928091,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 27481256,
+            "total": 36560416,
+            "limit": 4395630592
+          }
+        }
+      ]
+    },
+    {
+      "mode": "production",
+      "build": {
+        "mode": "production",
+        "baseline": null,
+        "source_sha256": "f2731234a6fd3b12d53806c550c2e6cf4bcaa5d30f2538b8af732e6e3833efcf"
+      },
+      "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "gpu": {
+        "vendor": "Google Inc. (NVIDIA)",
+        "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5090 Laptop GPU (0x00002C18) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "dpr": 2,
+      "cold_samples_ms": [
+        35.70000000298023,
+        20.600000001490116,
+        20.80000000447035,
+        19.5,
+        21.5,
+        20.5,
+        19.299999997019768,
+        20.5,
+        21.100000001490116,
+        19,
+        20.80000000447035,
+        20.5,
+        18.299999997019768,
+        20.700000002980232,
+        21,
+        19.30000000447035,
+        24.5,
+        19.399999998509884,
+        21.799999997019768,
+        24.899999998509884
+      ],
+      "cold_p95_ms": 24.899999998509884,
+      "cold_long_tasks": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "windows": [
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 0.19999999552965164,
+          "painted_total_ms": 56.700000047683716,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 0.10000000149011612,
+          "painted_total_ms": 53.90000004321337,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 865,
+          "painted_p95_ms": 0.10000000149011612,
+          "painted_total_ms": 46.800000071525574,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 864
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 0.10000000149011612,
+          "painted_total_ms": 45.79999989271164,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        },
+        {
+          "painted_samples": 864,
+          "painted_p95_ms": 0.10000000149011612,
+          "painted_total_ms": 44.8999999910593,
+          "gaps_over_twice_interval": 0,
+          "gaps_count": 863
+        }
+      ],
+      "median_painted_total_ms": 46.800000071525574,
+      "short_cancel_p95_ms": 7,
+      "cancel_samples_ms": [
+        6.399999998509884,
+        6.899999998509884,
+        6.800000004470348,
+        6.799999997019768,
+        6.799999997019768,
+        6.799999997019768,
+        6.9000000059604645,
+        6.899999998509884,
+        6.799999997019768,
+        6.799999997019768,
+        6.700000002980232,
+        6.799999997019768,
+        6.800000004470348,
+        6.799999997019768,
+        6.800000004470348,
+        6.799999997019768,
+        7,
+        6.899999998509884,
+        6.899999998509884,
+        6.899999998509884,
+        7,
+        6.899999998509884,
+        6.899999998509884,
+        7,
+        6.799999997019768,
+        6.700000002980232,
+        6.799999997019768,
+        6.899999998509884,
+        6.899999998509884,
+        6.800000004470348,
+        6.799999997019768,
+        6.800000004470348,
+        6.899999998509884,
+        6.800000004470348,
+        6.899999998509884,
+        6.899999998509884,
+        6.899999998509884,
+        6.899999998509884,
+        6.800000004470348,
+        6.899999998509884,
+        6.899999998509884,
+        6.799999997019768,
+        6.799999997019768,
+        6.899999998509884,
+        7,
+        6.799999997019768,
+        6.899999998509884,
+        6.899999998509884,
+        7.100000001490116,
+        6.299999997019768,
+        7,
+        6.799999997019768,
+        6.899999998509884,
+        6.899999998509884,
+        6.799999997019768,
+        6.899999998509884,
+        6.899999998509884,
+        6.799999997019768,
+        6.899999998509884,
+        6.800000004470348,
+        7,
+        6.899999998509884,
+        6.899999998509884,
+        6.799999997019768,
+        6.800000004470348,
+        6.699999995529652,
+        6.799999997019768,
+        6.899999998509884,
+        6.899999998509884,
+        7,
+        7,
+        6.800000004470348,
+        6.799999997019768,
+        6.899999998509884,
+        6.699999995529652,
+        6.700000002980232,
+        6.699999995529652,
+        6.899999998509884,
+        6.899999998509884,
+        6.800000004470348,
+        6.9000000059604645,
+        6.699999995529652,
+        7,
+        6.799999997019768,
+        6.600000001490116,
+        6.799999997019768,
+        6.699999995529652,
+        6.700000002980232,
+        6.899999998509884,
+        7,
+        6.899999998509884,
+        6.899999998509884,
+        7,
+        6.800000004470348,
+        6.899999998509884,
+        6.800000004470348,
+        6.899999998509884,
+        6.700000002980232,
+        6.800000004470348,
+        6.799999997019768
+      ],
+      "cancel_p95_ms": 7,
+      "navigation_samples": [
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.5,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.699999995529652,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.199999995529652,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.699999995529652,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.600000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.700000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.699999995529652,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.700000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.700000002980232,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7.0999999940395355,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7.0999999940395355,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 5.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.9000000059604645,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7.100000001490116,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.800000004470348,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.799999997019768,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 7,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        },
+        {
+          "duration_ms": 6.899999998509884,
+          "destination_committed": true
+        }
+      ],
+      "navigation_p95_ms": 7,
+      "unmount_cycles": [
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 20169543,
+            "total": 22280563,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19743728,
+            "total": 21494168,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19886412,
+            "total": 21756336,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 20012448,
+            "total": 21756360,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 20150004,
+            "total": 22018528,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19262852,
+            "total": 21232096,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19397257,
+            "total": 21232013,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19526029,
+            "total": 21494181,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19683753,
+            "total": 21494205,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19816305,
+            "total": 21756373,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19944685,
+            "total": 21756397,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 20091313,
+            "total": 22018565,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19455077,
+            "total": 22280733,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19586293,
+            "total": 22542901,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19331320,
+            "total": 22018624,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19463621,
+            "total": 22018445,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19608293,
+            "total": 22018469,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19741457,
+            "total": 22018493,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19869673,
+            "total": 22018517,
+            "limit": 4395630592
+          }
+        },
+        {
+          "handles": 0,
+          "unexpected_draws": 0,
+          "memory": {
+            "used": 19999581,
+            "total": 22018541,
+            "limit": 4395630592
+          }
+        }
+      ]
+    }
+  ]
+}

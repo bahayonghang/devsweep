@@ -1,0 +1,238 @@
+{
+  "summary": {
+    "launched": true,
+    "pid": 151452,
+    "exit_code": 0,
+    "error": null,
+    "packaged_main_cdp_seen": false,
+    "diagnostics_complete": true,
+    "lifecycle_pass": true,
+    "normal_close": {
+      "pid": 151452,
+      "created": "134363921936044403",
+      "normal_wm_close_count": 1
+    },
+    "owned_identities": {
+      "151452": "134363921936044403",
+      "145912": "134363921936996205",
+      "59484": "134363921937406164",
+      "149680": "134363921937812651",
+      "139888": "134363921939687656",
+      "152296": "134363921939732355",
+      "33744": "134363921940053937",
+      "17516": "134363921940769152"
+    },
+    "owned_after_exit": [],
+    "forced_app_teardown": false,
+    "scan_started": false,
+    "boundary": "Bootstrap observation only; no rendering, scan, ACL, global provider or F-AC3 pass claimed."
+  },
+  "effective_launch": {
+    "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\C3-final\\devsweep-desktop.exe",
+    "sha256": "7426037283a60829ee1d124bbd5433c6c0a6005cea307a9df425d1c98cfa85b6",
+    "argv": [
+      "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\C3-final\\devsweep-desktop.exe"
+    ],
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-cwd",
+    "environment_whitelist": {
+      "APPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Roaming",
+      "CARGO_HOME": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Home\\.cargo",
+      "GOMODCACHE": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Home\\go\\pkg\\mod",
+      "GRADLE_USER_HOME": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Home\\.gradle",
+      "HOME": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Home",
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "\\Users\\lyh",
+      "LOCALAPPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Local",
+      "NUGET_PACKAGES": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Home\\.nuget\\packages",
+      "PATH": "C:\\WINDOWS\\System32",
+      "PROGRAMDATA": "C:\\ProgramData",
+      "ProgramFiles": "C:\\Program Files",
+      "ProgramFiles(x86)": "C:\\Program Files (x86)",
+      "SystemDrive": "C:",
+      "SystemRoot": "C:\\WINDOWS",
+      "TEMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Temp",
+      "TMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Temp",
+      "USERPROFILE": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\Home",
+      "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=52713 --enable-logging --log-file=\"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\webview.log\"",
+      "WEBVIEW2_BROWSER_EXECUTABLE_FOLDER": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\155.0.4283.45",
+      "WEBVIEW2_USER_DATA_FOLDER": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-isolated-bootstrap-c3-03\\profile\\WebView",
+      "WINDIR": "C:\\WINDOWS"
+    },
+    "runtime_sha256": "46b3c6ac9169416cc2ee76b23ee3d9db0eb8daefb914b1d9cc0f5d2387b033ac",
+    "script_sha256": "691a1b19993458fbcf5c0c5e87ac1da9fbd0eaea4e752fc179c9b223c499772a",
+    "host_token": {
+      "pid": 13576,
+      "created": "134363921934400651",
+      "available": true,
+      "token_type": 1,
+      "elevation_type": 3,
+      "elevated": 0,
+      "elevation_type_name": "limited"
+    },
+    "bootstrap_deadline_seconds": 30,
+    "normal_exit_wait_seconds": 15,
+    "webview_settle_seconds": 5,
+    "scan_started": false
+  },
+  "observation": {
+    "sample_count": 122,
+    "first_unix_ns": "1791918593730038700",
+    "last_unix_ns": "1791918623652853700",
+    "elapsed_seconds": 29.922815,
+    "listener_entries": 0,
+    "families": [
+      "ipv4",
+      "ipv6"
+    ],
+    "method": "Filtered sampled listener tables, no continuous trace; no GET attempted."
+  },
+  "tokens": {
+    "host": {
+      "pid": 13576,
+      "created": "134363921934400651",
+      "available": true,
+      "token_type": 1,
+      "elevation_type": 3,
+      "elevated": 0,
+      "elevation_type_name": "limited"
+    },
+    "app_and_webview": [
+      {
+        "pid": 151452,
+        "created": "134363921936044403",
+        "token": {
+          "pid": 151452,
+          "created": "134363921936044403",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 145912,
+        "created": "134363921936996205",
+        "token": {
+          "pid": 145912,
+          "created": "134363921936996205",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 59484,
+        "created": "134363921937406164",
+        "token": {
+          "pid": 59484,
+          "created": "134363921937406164",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 149680,
+        "created": "134363921937812651",
+        "token": {
+          "pid": 149680,
+          "created": "134363921937812651",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 139888,
+        "created": "134363921939687656",
+        "token": {
+          "pid": 139888,
+          "created": "134363921939687656",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 152296,
+        "created": "134363921939732355",
+        "token": {
+          "pid": 152296,
+          "created": "134363921939732355",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 33744,
+        "created": "134363921940053937",
+        "token": {
+          "pid": 33744,
+          "created": "134363921940053937",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      },
+      {
+        "pid": 17516,
+        "created": "134363921940769152",
+        "token": {
+          "pid": 17516,
+          "created": "134363921940769152",
+          "available": true,
+          "token_type": 1,
+          "elevation_type": 3,
+          "elevated": 0,
+          "elevation_type_name": "limited"
+        }
+      }
+    ]
+  },
+  "visible_window_observation": {
+    "any_visible_main": true,
+    "page_content_verified": false,
+    "boundary": "Visible native HWND is not proof of a rendered or blank WebView."
+  },
+  "log": {
+    "line_count": 3,
+    "dpi_awareness_errors": 2,
+    "unsupported_llm_errors": 1,
+    "lines": [
+      "[145912:78772:1013/150953.888:ERROR:base\\win\\edge_dpi_util.cc:218] failed to set WebView dpi awareness of 2",
+      "[145912:78772:1013/150953.972:ERROR:components\\optimization_guide\\core\\model_execution\\performance_class.cc:105] Edge LLM: Not supported on WebView2",
+      "[139888:153352:1013/150954.070:ERROR:base\\win\\edge_dpi_util.cc:218] failed to set WebView dpi awareness of 2"
+    ],
+    "listener_failure_reason_established": false
+  },
+  "raw_sha256": {
+    "dist/native-isolated-bootstrap-c3-03/app-token.json": "cb49d432047f63ed5e682ac97acc0fb8d48176872906faf6a19ec57658441427",
+    "dist/native-isolated-bootstrap-c3-03/cdp-observation.json": "08137916af5d2d8788b087c4e18c931640105d09de68dd79b943377ca9853dbc",
+    "dist/native-isolated-bootstrap-c3-03/effective-launch.json": "c731f1b32b1d3bdae4b502d1876d9967ec170b5405c50a45c25524eaa84ac8ab",
+    "dist/native-isolated-bootstrap-c3-03/host-token.json": "196b0aef95d4499778d103d29915b2280110b18b3d04bff3e821f4ee4a63684a",
+    "dist/native-isolated-bootstrap-c3-03/launch.json": "50c87c79234d15cf14ee07dfb284c7d16739baccfee4d8ccb50033fbb61020c9",
+    "dist/native-isolated-bootstrap-c3-03/normal-close.json": "beb27fc0d8cf3f6cdfe3f7de225b78e699f31af030d5f5af09372f48467b38e9",
+    "dist/native-isolated-bootstrap-c3-03/process-details.json": "7e7c558538db198927ec5f67f53453d42ad0ea529d6b1878014a4499cc29def1",
+    "dist/native-isolated-bootstrap-c3-03/process-snapshots.json": "cbcd9d2f9b11a133303c48f0a2e3106f5050f9cb9c34bfc943edd7c39a0c43ce",
+    "dist/native-isolated-bootstrap-c3-03/stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/native-isolated-bootstrap-c3-03/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/native-isolated-bootstrap-c3-03/summary.json": "8dab884fcb934a393ff2a288388cb4904da646d2caee1af3074e73ff0dc4451c",
+    "dist/native-isolated-bootstrap-c3-03/webview.log": "2bc8af00829e58a62f55e78f78ac1ae09ab1a9ac33d6c0eed577d745832b8683",
+    "dist/performance/cleanup-earth/diagnose-isolated-bootstrap-v3.py": "691a1b19993458fbcf5c0c5e87ac1da9fbd0eaea4e752fc179c9b223c499772a"
+  },
+  "interpretation": "No sampled dual-stack CDP listener. Standard-user tokens exclude the elevated-host explanation for this run. The three ERROR messages do not establish listener or rendering failure cause. No Scan or F-AC3 claim."
+}

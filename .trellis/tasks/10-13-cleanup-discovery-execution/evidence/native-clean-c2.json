@@ -1,0 +1,103 @@
+{
+  "candidate": "C2-runtime",
+  "result": {
+    "pass": true,
+    "owner": {
+      "root_pid": 115364,
+      "created": "134363836577642399",
+      "listener_pid": 112380
+    },
+    "native_sha256": "5ffaefe242808e9a2074880667209a0ece6facef1b15ab5f782adf36cc2f2a59",
+    "cli_sha256": "a5881ebf98eed803581619db2cf0cb967093cf0151887c67b274511047701277",
+    "argv": [
+      "clean",
+      "scan",
+      "--root",
+      "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-smoke-root",
+      "--root",
+      "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 Unicode 测试",
+      "--scope",
+      "projects",
+      "--format",
+      "json"
+    ],
+    "roots": [
+      "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-smoke-root",
+      "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 Unicode 测试"
+    ],
+    "offline": true,
+    "native_asset_failure_fallback": true,
+    "duplicate_root_deduped": true,
+    "missing_root_add_rejected": true,
+    "cleared_scope_disabled_then_recovered": true,
+    "nested_selection_removed_without_excluding_parent": true,
+    "roots_persist_after_reload": true,
+    "keyboard_scan": true,
+    "targets": 2,
+    "full_report_parity": true,
+    "scope_cases": [
+      {
+        "case": "mixed-missing",
+        "targets": 2,
+        "completeness": "partial",
+        "coverage_statuses": [
+          "complete",
+          "complete",
+          "failed"
+        ],
+        "cli_exit": 5,
+        "full_report_parity": true
+      },
+      {
+        "case": "zero-failed",
+        "targets": 0,
+        "completeness": "partial",
+        "coverage_statuses": [
+          "failed"
+        ],
+        "cli_exit": 5,
+        "full_report_parity": true
+      },
+      {
+        "case": "empty",
+        "targets": 0,
+        "completeness": "complete",
+        "coverage_statuses": [
+          "empty"
+        ],
+        "cli_exit": 0,
+        "full_report_parity": true
+      }
+    ],
+    "acl_denied_native_test": "not exercised; missing path is not permission denial",
+    "cleanup_executed": false
+  },
+  "normal_close": {
+    "pid": 115364,
+    "exit_code": 0,
+    "elapsed_ms": 476517.00540000456,
+    "timed_out": false,
+    "forced_teardown": [],
+    "lifecycle_pass": true,
+    "owned_after_exit": [],
+    "helper_settle_ms": 1688.6959999974351
+  },
+  "artifacts": [
+    {
+      "path": "dist/native-clean-c2-final-01/launch.json",
+      "sha256": "36b0243f004fdf7e47261d820b54ae30c0f4e36751e79f2d51c84601da76ef72"
+    },
+    {
+      "path": "dist/native-clean-c2-final-01/summary.json",
+      "sha256": "fb45e8546e85389bc9acc73b99ff6774995595f138cb6f7bcb1d19f42728adfd"
+    },
+    {
+      "path": "dist/native-clean-c2-final-01/explicit-close.json",
+      "sha256": "c2bc414980660c7a081968bb72c714fd0c844bd45e08857a1b13bfba25f4f2d0"
+    },
+    {
+      "path": "dist/native-clean-c2-final-01-smoke/result.json",
+      "sha256": "4973b072ff4d0fdef628b6267ccc944bc9f3281e434d926ca98b9d180a0b3556"
+    }
+  ]
+}

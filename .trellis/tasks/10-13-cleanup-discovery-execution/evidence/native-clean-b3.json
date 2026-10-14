@@ -1,0 +1,110 @@
+{
+  "pass": true,
+  "owner": {
+    "root_pid": 137872,
+    "created": "134363791588414956",
+    "listener_pid": 133008
+  },
+  "native_sha256": "667145cb762a73d0ed8ee900bd8a52620e3262b953aae865e411eed34dfa7c78",
+  "cli_sha256": "1cf858d35b1be1cddaaae6284b605e89b6055024d7162121c09531b5fdc91266",
+  "argv": [
+    "clean",
+    "scan",
+    "--root",
+    "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-smoke-root",
+    "--root",
+    "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 Unicode 测试",
+    "--scope",
+    "projects",
+    "--format",
+    "json"
+  ],
+  "roots": [
+    "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-clean-smoke-root",
+    "C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 Unicode 测试"
+  ],
+  "offline": true,
+  "native_asset_failure_fallback": true,
+  "duplicate_root_deduped": true,
+  "nested_selection_removed_without_excluding_parent": true,
+  "roots_persist_after_reload": true,
+  "keyboard_scan": true,
+  "targets": 2,
+  "full_report_parity": true,
+  "cleanup_executed": false,
+  "health": {
+    "completeness": "complete",
+    "diagnostics": [],
+    "totals": {
+      "verified_bytes": 50,
+      "partial_lower_bound_bytes": 0,
+      "unknown_target_count": 0
+    },
+    "coverage": [
+      {
+        "id": "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试",
+        "scope": "project",
+        "path": "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试",
+        "status": "complete",
+        "target_count": 1,
+        "detail": "selected root evaluated"
+      },
+      {
+        "id": "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "scope": "project",
+        "path": "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "status": "complete",
+        "target_count": 1,
+        "detail": "selected root evaluated"
+      }
+    ]
+  },
+  "lifecycle": {
+    "exit_code": 0,
+    "timed_out": false,
+    "forced_teardown": [],
+    "lifecycle_pass": true,
+    "owned_after_exit": [],
+    "post_exit_settle_ms": 1014.8076999976183
+  },
+  "raw_directory": "dist\\native-clean-b3-01-smoke",
+  "launch_directory": "dist\\native-clean-b3-01",
+  "artifacts": [
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\result.json",
+      "sha256": "40bf9b4a23a574f1d33a5780fedfbd3fd6a48aa719909fbda0c0fb18b68ead7b"
+    },
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\tauri-report.json",
+      "sha256": "8d96504812b46f34cd8eff6f52b39d6eedecaf657fcba5773afc69283907824f"
+    },
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\cli-envelope.json",
+      "sha256": "ebdefb4bdb1b67f15bed1d4783da6e61c67ee7a7d51e6fc304fd21a89d1cb4b1"
+    },
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\offline-empty.png",
+      "sha256": "a0e1892aa52513588d1d2ca0d31cc6775ff7e2d0c98f01e47e63d15489a6c436"
+    },
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\offline-static-fallback.png",
+      "sha256": "79d15cdb9964ad607744f3206824630c9129655e20711cc42744f76539796595"
+    },
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\explicit-two-roots.png",
+      "sha256": "c6d0b57a114ac9e1f62412271987fbb93a5a778e63baab619e20aa7d57889c27"
+    },
+    {
+      "path": "dist\\native-clean-b3-01-smoke\\native-review.png",
+      "sha256": "cbf31922427ea20f7920f6ff0be8e6cd064e2361430abfc1b9ddb03798d48695"
+    },
+    {
+      "path": "dist\\native-clean-b3-01\\summary.json",
+      "sha256": "8febb9a368621e2ccdf3e30e202139d90784dc635c9956d38f358f1920c77118"
+    },
+    {
+      "path": "tools\\native-clean-smoke.mjs",
+      "sha256": "cace95b3bc4f7e9c57242bd1a8e0f0ea5930730d673384433b39e06dc05fd674"
+    }
+  ]
+}

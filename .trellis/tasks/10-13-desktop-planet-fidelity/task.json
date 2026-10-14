@@ -1,0 +1,36 @@
+{
+  "id": "desktop-planet-fidelity",
+  "name": "desktop-planet-fidelity",
+  "title": "Planet visual fidelity and render performance",
+  "description": "Improve the desktop Earth appearance and bound rendering cost, with visual and native performance acceptance.",
+  "status": "in_progress",
+  "dev_type": "frontend",
+  "scope": "desktop-stage",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-13",
+  "completedAt": null,
+  "branch": "codex/cleanup-earth-performance",
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-13-desktop-cleanup-completeness",
+  "relatedFiles": [],
+  "notes": "User approved real geography and a local texture. Canvas2D-first measured approach, no new production dependency; independent of functional DTO work after baseline preservation.",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "analysis_source_commit": "e75a29d675987429473ed37e80a253c356b3fc4d",
+    "analysis_source_branch": "dev",
+    "implementation_approval": {
+      "date": "2026-10-13",
+      "user_message": "继续按照trellis规划顺序实施",
+      "basis": "Explicit subsequent approval of the final parent and three-child planning summary."
+    }
+  }
+}

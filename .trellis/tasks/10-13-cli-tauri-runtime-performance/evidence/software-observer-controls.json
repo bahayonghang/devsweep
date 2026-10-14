@@ -1,0 +1,1261 @@
+{
+  "diagnostic": true,
+  "formal_gate": false,
+  "blocks": [
+    {
+      "block": 1,
+      "condition": "S",
+      "warmup_ipc_ms": 4349.452999995265,
+      "retained_ipc_ms": [
+        4465.576000002329,
+        4591.398999997182
+      ],
+      "median_ipc_ms": 4528.4874999997555,
+      "core_ms": [
+        4459.470600000001,
+        4584.9365
+      ],
+      "msix_enumeration_ms": [
+        856.4347,
+        989.1796
+      ],
+      "msix_sizing_ms": [
+        3600.4287,
+        3593.5924999999997
+      ],
+      "observer_cpu_ms": {
+        "candidate": [
+          1062.5,
+          1046.875
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      },
+      "observer_counts": {
+        "candidate": [
+          22,
+          22
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "block": 2,
+      "condition": "I",
+      "warmup_ipc_ms": 4161.192999999912,
+      "retained_ipc_ms": [
+        4324.95299999573,
+        4290.227999998024
+      ],
+      "median_ipc_ms": 4307.590499996877,
+      "core_ms": [
+        4318.4904,
+        4283.6118
+      ],
+      "msix_enumeration_ms": [
+        1003.5671,
+        975.4618
+      ],
+      "msix_sizing_ms": [
+        3312.4737,
+        3305.6277999999998
+      ],
+      "observer_cpu_ms": {
+        "candidate": [
+          1000.0,
+          1078.125
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      },
+      "observer_counts": {
+        "candidate": [
+          21,
+          22
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "block": 3,
+      "condition": "D",
+      "warmup_ipc_ms": 4717.478999999003,
+      "retained_ipc_ms": [
+        4683.001000004879,
+        4185.961999995925
+      ],
+      "median_ipc_ms": 4434.481500000402,
+      "core_ms": [
+        4675.7798,
+        4179.081499999999
+      ],
+      "msix_enumeration_ms": [
+        936.4871999999999,
+        923.8359
+      ],
+      "msix_sizing_ms": [
+        3736.7769,
+        3253.2354
+      ],
+      "observer_cpu_ms": {
+        "candidate": [
+          1234.375,
+          921.875
+        ],
+        "B3": [
+          1203.125,
+          859.375
+        ]
+      },
+      "observer_counts": {
+        "candidate": [
+          23,
+          21
+        ],
+        "B3": [
+          23,
+          21
+        ]
+      }
+    },
+    {
+      "block": 4,
+      "condition": "D",
+      "warmup_ipc_ms": 4396.638999998686,
+      "retained_ipc_ms": [
+        4399.112999999488,
+        5120.794000002206
+      ],
+      "median_ipc_ms": 4759.953500000847,
+      "core_ms": [
+        4392.6634,
+        5114.2021
+      ],
+      "msix_enumeration_ms": [
+        994.6682,
+        1019.5539
+      ],
+      "msix_sizing_ms": [
+        3395.6428,
+        4092.2515
+      ],
+      "observer_cpu_ms": {
+        "candidate": [
+          953.125,
+          1328.125
+        ],
+        "B3": [
+          1062.5,
+          1375.0
+        ]
+      },
+      "observer_counts": {
+        "candidate": [
+          21,
+          25
+        ],
+        "B3": [
+          22,
+          26
+        ]
+      }
+    },
+    {
+      "block": 5,
+      "condition": "I",
+      "warmup_ipc_ms": 4465.257999996538,
+      "retained_ipc_ms": [
+        4260.698000005505,
+        4250.1069999998435
+      ],
+      "median_ipc_ms": 4255.402500002674,
+      "core_ms": [
+        4254.6533,
+        4242.7456
+      ],
+      "msix_enumeration_ms": [
+        972.022,
+        906.3773000000001
+      ],
+      "msix_sizing_ms": [
+        3280.3651,
+        3334.2918
+      ],
+      "observer_cpu_ms": {
+        "candidate": [
+          968.75,
+          1015.625
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      },
+      "observer_counts": {
+        "candidate": [
+          21,
+          22
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "block": 6,
+      "condition": "S",
+      "warmup_ipc_ms": 4405.918999997084,
+      "retained_ipc_ms": [
+        4451.325000001816,
+        5216.881000000285
+      ],
+      "median_ipc_ms": 4834.1030000010505,
+      "core_ms": [
+        4445.1993999999995,
+        5209.2663
+      ],
+      "msix_enumeration_ms": [
+        986.8466,
+        1116.182
+      ],
+      "msix_sizing_ms": [
+        3456.0243,
+        4090.5566999999996
+      ],
+      "observer_cpu_ms": {
+        "candidate": [
+          1015.625,
+          1359.375
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      },
+      "observer_counts": {
+        "candidate": [
+          23,
+          26
+        ],
+        "B3": [
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "condition_retained_ms": {
+    "S": [
+      4465.576000002329,
+      4591.398999997182,
+      4451.325000001816,
+      5216.881000000285
+    ],
+    "I": [
+      4324.95299999573,
+      4290.227999998024,
+      4260.698000005505,
+      4250.1069999998435
+    ],
+    "D": [
+      4683.001000004879,
+      4185.961999995925,
+      4399.112999999488,
+      5120.794000002206
+    ]
+  },
+  "within_condition_range_ms": {
+    "S": 765.5559999984689,
+    "I": 74.84599999588681,
+    "D": 934.8320000062813
+  },
+  "mirrored_effects": {
+    "I_minus_S_forward_ms": -220.89700000287849,
+    "I_minus_S_reverse_ms": -578.7004999983765,
+    "D_minus_I_forward_ms": 126.89100000352482,
+    "D_minus_I_reverse_ms": 504.5509999981732
+  },
+  "lifecycle": {
+    "candidate": {
+      "pid": 149060,
+      "created": "134363919822884165",
+      "exit_code": 0,
+      "lifecycle_pass": true,
+      "forced_teardown": [],
+      "owned_after_exit": [],
+      "settle_ms": 247.15219999779947
+    },
+    "B3": {
+      "pid": 147856,
+      "created": "134363920111532703",
+      "exit_code": 0,
+      "lifecycle_pass": true,
+      "forced_teardown": [],
+      "owned_after_exit": [],
+      "settle_ms": 1221.929999999702
+    }
+  },
+  "control_calls": 18,
+  "setup_calls": 2,
+  "candidate_pid_count": 1,
+  "resource_summary": {
+    "S": {
+      "candidate_host_cpu_delta_ms": [
+        7328.125,
+        7234.375,
+        6968.75,
+        8140.625
+      ],
+      "B3_host_cpu_delta_ms": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "controller_cpu_delta_ms": [
+        1125.0,
+        1156.25,
+        1109.375,
+        1453.125
+      ],
+      "candidate_host_private_after_range_bytes": [
+        9609216,
+        10809344
+      ]
+    },
+    "I": {
+      "candidate_host_cpu_delta_ms": [
+        6937.5,
+        6937.5,
+        6812.5,
+        6937.5
+      ],
+      "B3_host_cpu_delta_ms": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "controller_cpu_delta_ms": [
+        1250.0,
+        1203.125,
+        1109.375,
+        1125.0
+      ],
+      "candidate_host_private_after_range_bytes": [
+        10899456,
+        12001280
+      ]
+    },
+    "D": {
+      "candidate_host_cpu_delta_ms": [
+        7781.25,
+        6656.25,
+        7218.75,
+        8031.25
+      ],
+      "B3_host_cpu_delta_ms": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "controller_cpu_delta_ms": [
+        2765.625,
+        1937.5,
+        2296.875,
+        2953.125
+      ],
+      "candidate_host_private_after_range_bytes": [
+        10260480,
+        11124736
+      ]
+    }
+  },
+  "interpretation": {
+    "co_residency_explanation": "unsupported: I-S was negative in both halves",
+    "duplicate_observer_explanation": "inconclusive/unsupported for correction: D-I positive but smaller than D within-condition variation, and controller topology differs from original independent Python processes",
+    "formal_failure_unchanged": true,
+    "topology_limit": "Candidate and idle observer are threads in one Python process and share its GIL; original formal run used independent controller processes. This limits transfer of any measured observer effect. I-S also includes the extra idle controller lifecycle polling."
+  },
+  "resource_boundary": "Common before/after counters include boundary observation work. Python controller CPU/IO includes both sampler threads and orchestration; per-thread periodic CPU traces isolate collection sections but per-thread IO is not available. Matched-tree deltas exclude unmatched/new identities; all raw counters remain retained.",
+  "protocol": {
+    "diagnostic": true,
+    "formal_gate": false,
+    "order": [
+      "S",
+      "I",
+      "D",
+      "D",
+      "I",
+      "S"
+    ],
+    "per_block": {
+      "settle_seconds": 5,
+      "discarded_warmups": 1,
+      "retained_calls": 2
+    },
+    "control_calls": 18,
+    "setup_calls": "One candidate first-use and one idle B3 first-use, separately labeled and excluded from 18.",
+    "conditions": {
+      "S": "Candidate only; B3 root and descendants absent",
+      "I": "B3 ready/minimized, only its periodic sampler gate cleared",
+      "D": "Same B3 ready/minimized, periodic sampler enabled at 200ms"
+    },
+    "constants": "One candidate PID, persistent CDP connection, ready Software route/presentation, own 200ms sampler and identical instrumented binary throughout.",
+    "resources": "Common before/after candidate, idle, Python observer/controller and persistent Node driver counters; periodic per-thread observer CPU/wall traces. Controller process IO includes both sampler threads and orchestration, not exclusive per-thread IO.",
+    "stop_rule": "Any prerequisite/identity/semantic/phase/lifecycle failure stops the declared run. No extra rounds or replacement samples.",
+    "interpretation": "Compare I-S and D-I in both mirrored halves. Direction reversal or effect no larger than within-condition variation does not support interference. No sub-5000 result is an acceptance pass.",
+    "scope": "Software inventory only; no cleanup/maintenance/uninstall. No product threads are paused.",
+    "binary_sha256": {
+      "candidate": "b4d5f997df799392d252a5f99c7c4b582cdced5b23c3f751c57711a2ff59936c",
+      "B3": "667145cb762a73d0ed8ee900bd8a52620e3262b953aae865e411eed34dfa7c78"
+    },
+    "artifacts_sha256": {
+      "run-observer-controls.py": "97545a1f94621288b2432edc6946a063a8c29e4d9bb8c05f49afa36672b53e40",
+      "controlled-candidate-driver.mjs": "b4d1f0cf633ce4195991ae9d7acc30d57d78ad063917a518a132e4965b269190",
+      "controlled-sampler.py": "ef610a3bf6b2c69e25f914a7640556e59b641075c1c3415affd71f3e5e58dc7e",
+      "instrumentation.json": "73d4e6edac1826812887dd390df1c72ca3320950460539cd8649b32448a9e28d",
+      "native-operation-profile.mjs": "4a263fce1fd22feb5827130870a817595f163ebf2f9bce1b67a66347fee9f825"
+    },
+    "frozen_before_launch_unix_ns": "1791918382242304100"
+  },
+  "ready_presentation": {
+    "url": "http://tauri.localhost/#/software",
+    "status": "ready",
+    "visibility": "visible",
+    "dpr": 1.25,
+    "width": 1080,
+    "height": 720,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+    "language": "en",
+    "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+    "theme": {},
+    "reduced_motion": true,
+    "forced_colors": false
+  },
+  "setup_ipc_ms": {
+    "candidate": 4541.314000001876,
+    "B3": 4769.357999997737
+  },
+  "semantic_comparison": {
+    "reports": 20,
+    "entries_each": 1100,
+    "complete_match": true,
+    "excluded_fields": [
+      "inventory.observed_at_unix_ms",
+      "entries[].size.observed_at_unix_ms",
+      "inventory.fingerprint"
+    ]
+  },
+  "correlated_records": [
+    {
+      "name": "setup-candidate",
+      "condition": "setup",
+      "block": null,
+      "kind": "setup",
+      "ipc_ms": 4541.314000001876,
+      "operation_id": "software-inventory-07366474-7583-4267-a523-3cd089465839",
+      "observed_at_unix_ms": 1791918387217,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0034000000000000002,
+        "worker_queue_wait": 0.0166,
+        "arp_source": 57.6867,
+        "msi_source": 108.0289,
+        "msix_enumeration_mta_join": 1123.259,
+        "msix_installed_path_sizing": 3408.0277,
+        "msix_source": 4531.5969000000005,
+        "fingerprint": 0.9689,
+        "assemble_including_fingerprint": 2.0084,
+        "core_total": 4533.9059,
+        "core_result": 4533.9948,
+        "worker_done": 4534.089800000001,
+        "command_return_ready": 4534.907999999999
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 24,
+          "observer_thread_cpu_ms": 1187.5,
+          "observer_wall_ms": 1225.8903
+        }
+      }
+    },
+    {
+      "name": "block-1-S-discarded-warmup",
+      "condition": "S",
+      "block": 1,
+      "kind": "discarded-warmup",
+      "ipc_ms": 4349.452999995265,
+      "operation_id": "software-inventory-ab911de6-6018-482b-8e78-d8c6d1100412",
+      "observed_at_unix_ms": 1791918397188,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0023,
+        "worker_queue_wait": 0.0158,
+        "arp_source": 59.935500000000005,
+        "msi_source": 98.918,
+        "msix_enumeration_mta_join": 888.5923,
+        "msix_installed_path_sizing": 3450.8811,
+        "msix_source": 4339.6675,
+        "fingerprint": 0.9272,
+        "assemble_including_fingerprint": 1.7235,
+        "core_total": 4341.6318,
+        "core_result": 4341.6767,
+        "worker_done": 4341.7229,
+        "command_return_ready": 4341.9554
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 968.75,
+          "observer_wall_ms": 984.1778
+        }
+      }
+    },
+    {
+      "name": "block-1-S-retained-1",
+      "condition": "S",
+      "block": 1,
+      "kind": "retained-1",
+      "ipc_ms": 4465.576000002329,
+      "operation_id": "software-inventory-4c3c8960-f383-498a-9a6e-8bf7475e7402",
+      "observed_at_unix_ms": 1791918401738,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0026,
+        "worker_queue_wait": 0.013900000000000001,
+        "arp_source": 52.0266,
+        "msi_source": 91.0558,
+        "msix_enumeration_mta_join": 856.4347,
+        "msix_installed_path_sizing": 3600.4287,
+        "msix_source": 4457.208299999999,
+        "fingerprint": 0.9037000000000001,
+        "assemble_including_fingerprint": 1.9341,
+        "core_total": 4459.470600000001,
+        "core_result": 4459.6071,
+        "worker_done": 4459.7257,
+        "command_return_ready": 4459.9836000000005
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1062.5,
+          "observer_wall_ms": 1071.4542
+        }
+      }
+    },
+    {
+      "name": "block-1-S-retained-2",
+      "condition": "S",
+      "block": 1,
+      "kind": "retained-2",
+      "ipc_ms": 4591.398999997182,
+      "operation_id": "software-inventory-59091858-032f-4962-8659-7e6d72bc7f2d",
+      "observed_at_unix_ms": 1791918406391,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0027,
+        "worker_queue_wait": 0.022600000000000002,
+        "arp_source": 57.8907,
+        "msi_source": 99.7746,
+        "msix_enumeration_mta_join": 989.1796,
+        "msix_installed_path_sizing": 3593.5924999999997,
+        "msix_source": 4583.013099999999,
+        "fingerprint": 0.9164000000000001,
+        "assemble_including_fingerprint": 1.7083000000000002,
+        "core_total": 4584.9365,
+        "core_result": 4584.981,
+        "worker_done": 4585.027099999999,
+        "command_return_ready": 4585.297500000001
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1046.875,
+          "observer_wall_ms": 1089.0253
+        }
+      }
+    },
+    {
+      "name": "block-2-I-discarded-warmup",
+      "condition": "I",
+      "block": 2,
+      "kind": "discarded-warmup",
+      "ipc_ms": 4161.192999999912,
+      "operation_id": "software-inventory-ef44bac0-96f4-4a10-a661-2f785c2a8c16",
+      "observed_at_unix_ms": 1791918425962,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0031,
+        "worker_queue_wait": 0.1563,
+        "arp_source": 52.703100000000006,
+        "msi_source": 103.8784,
+        "msix_enumeration_mta_join": 1004.9046999999999,
+        "msix_installed_path_sizing": 3146.9381,
+        "msix_source": 4152.1337,
+        "fingerprint": 0.7504000000000001,
+        "assemble_including_fingerprint": 1.6482999999999999,
+        "core_total": 4154.0564,
+        "core_result": 4154.1448,
+        "worker_done": 4154.2363,
+        "command_return_ready": 4154.7937
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 1000.0,
+          "observer_wall_ms": 1041.2185
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-2-I-retained-1",
+      "condition": "I",
+      "block": 2,
+      "kind": "retained-1",
+      "ipc_ms": 4324.95299999573,
+      "operation_id": "software-inventory-e1ddb0a3-d8c3-4d9a-98eb-ad334fc05edd",
+      "observed_at_unix_ms": 1791918430439,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0025,
+        "worker_queue_wait": 0.0165,
+        "arp_source": 53.4523,
+        "msi_source": 96.9409,
+        "msix_enumeration_mta_join": 1003.5671,
+        "msix_installed_path_sizing": 3312.4737,
+        "msix_source": 4316.3519,
+        "fingerprint": 0.9045000000000001,
+        "assemble_including_fingerprint": 1.8358,
+        "core_total": 4318.4904,
+        "core_result": 4318.5772,
+        "worker_done": 4318.6692,
+        "command_return_ready": 4319.0118
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 1000.0,
+          "observer_wall_ms": 981.1936000000001
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-2-I-retained-2",
+      "condition": "I",
+      "block": 2,
+      "kind": "retained-2",
+      "ipc_ms": 4290.227999998024,
+      "operation_id": "software-inventory-3cd2bad0-00b3-4738-9ebe-8098279566ea",
+      "observed_at_unix_ms": 1791918435075,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0047,
+        "worker_queue_wait": 0.014,
+        "arp_source": 48.6894,
+        "msi_source": 102.0899,
+        "msix_enumeration_mta_join": 975.4618,
+        "msix_installed_path_sizing": 3305.6277999999998,
+        "msix_source": 4281.4276,
+        "fingerprint": 0.7912,
+        "assemble_including_fingerprint": 1.8827,
+        "core_total": 4283.6118,
+        "core_result": 4283.6999000000005,
+        "worker_done": 4283.7917,
+        "command_return_ready": 4284.141
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1078.125,
+          "observer_wall_ms": 1053.6721
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-3-D-discarded-warmup",
+      "condition": "D",
+      "block": 3,
+      "kind": "discarded-warmup",
+      "ipc_ms": 4717.478999999003,
+      "operation_id": "software-inventory-bd31f402-110b-4986-b997-3f9bdf906c08",
+      "observed_at_unix_ms": 1791918444689,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0035,
+        "worker_queue_wait": 0.012,
+        "arp_source": 57.2759,
+        "msi_source": 111.7693,
+        "msix_enumeration_mta_join": 1073.3515,
+        "msix_installed_path_sizing": 3634.991,
+        "msix_source": 4708.7655,
+        "fingerprint": 0.7716999999999999,
+        "assemble_including_fingerprint": 1.6907999999999999,
+        "core_total": 4710.7232,
+        "core_result": 4710.812599999999,
+        "worker_done": 4710.905000000001,
+        "command_return_ready": 4711.164400000001
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 24,
+          "observer_thread_cpu_ms": 1312.5,
+          "observer_wall_ms": 1325.1972
+        },
+        "B3": {
+          "periodic_samples": 23,
+          "observer_thread_cpu_ms": 1281.25,
+          "observer_wall_ms": 1261.8265
+        }
+      }
+    },
+    {
+      "name": "block-3-D-retained-1",
+      "condition": "D",
+      "block": 3,
+      "kind": "retained-1",
+      "ipc_ms": 4683.001000004879,
+      "operation_id": "software-inventory-ecf7f8ce-3255-43fd-a63c-e2e776db8902",
+      "observed_at_unix_ms": 1791918449752,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0031,
+        "worker_queue_wait": 0.0146,
+        "arp_source": 57.2442,
+        "msi_source": 101.5509,
+        "msix_enumeration_mta_join": 936.4871999999999,
+        "msix_installed_path_sizing": 3736.7769,
+        "msix_source": 4673.5891,
+        "fingerprint": 0.8172,
+        "assemble_including_fingerprint": 1.8912,
+        "core_total": 4675.7798,
+        "core_result": 4675.869000000001,
+        "worker_done": 4675.96,
+        "command_return_ready": 4676.2669
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 23,
+          "observer_thread_cpu_ms": 1234.375,
+          "observer_wall_ms": 1238.2878
+        },
+        "B3": {
+          "periodic_samples": 23,
+          "observer_thread_cpu_ms": 1203.125,
+          "observer_wall_ms": 1180.0361
+        }
+      }
+    },
+    {
+      "name": "block-3-D-retained-2",
+      "condition": "D",
+      "block": 3,
+      "kind": "retained-2",
+      "ipc_ms": 4185.961999995925,
+      "operation_id": "software-inventory-f5b89054-1fa4-4bd2-87c5-77df0ad1b3ea",
+      "observed_at_unix_ms": 1791918454750,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0034000000000000002,
+        "worker_queue_wait": 0.0163,
+        "arp_source": 49.3415,
+        "msi_source": 98.083,
+        "msix_enumeration_mta_join": 923.8359,
+        "msix_installed_path_sizing": 3253.2354,
+        "msix_source": 4177.2994,
+        "fingerprint": 0.7561,
+        "assemble_including_fingerprint": 1.5363,
+        "core_total": 4179.081499999999,
+        "core_result": 4179.1261,
+        "worker_done": 4179.175899999999,
+        "command_return_ready": 4179.4781
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 921.875,
+          "observer_wall_ms": 960.598
+        },
+        "B3": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 859.375,
+          "observer_wall_ms": 909.3356
+        }
+      }
+    },
+    {
+      "name": "block-4-D-discarded-warmup",
+      "condition": "D",
+      "block": 4,
+      "kind": "discarded-warmup",
+      "ipc_ms": 4396.638999998686,
+      "operation_id": "software-inventory-ff79192b-a58f-4cac-992c-19c6ba96c842",
+      "observed_at_unix_ms": 1791918464230,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.004,
+        "worker_queue_wait": 0.0174,
+        "arp_source": 64.24539999999999,
+        "msi_source": 117.672,
+        "msix_enumeration_mta_join": 952.6497,
+        "msix_installed_path_sizing": 3434.602,
+        "msix_source": 4387.5659000000005,
+        "fingerprint": 0.7261000000000001,
+        "assemble_including_fingerprint": 1.6139999999999999,
+        "core_total": 4389.476000000001,
+        "core_result": 4389.5632,
+        "worker_done": 4389.6534,
+        "command_return_ready": 4390.0243
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 984.375,
+          "observer_wall_ms": 999.6602
+        },
+        "B3": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1109.375,
+          "observer_wall_ms": 1034.6702
+        }
+      }
+    },
+    {
+      "name": "block-4-D-retained-1",
+      "condition": "D",
+      "block": 4,
+      "kind": "retained-1",
+      "ipc_ms": 4399.112999999488,
+      "operation_id": "software-inventory-d177c13a-95be-4bdd-83b2-d5451d1170c3",
+      "observed_at_unix_ms": 1791918468973,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0029000000000000002,
+        "worker_queue_wait": 0.0143,
+        "arp_source": 53.700199999999995,
+        "msi_source": 106.8459,
+        "msix_enumeration_mta_join": 994.6682,
+        "msix_installed_path_sizing": 3395.6428,
+        "msix_source": 4390.6359,
+        "fingerprint": 0.7898999999999999,
+        "assemble_including_fingerprint": 1.7138,
+        "core_total": 4392.6634,
+        "core_result": 4392.7519,
+        "worker_done": 4392.8445,
+        "command_return_ready": 4393.1884
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 953.125,
+          "observer_wall_ms": 1025.5032
+        },
+        "B3": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1062.5,
+          "observer_wall_ms": 1075.9144
+        }
+      }
+    },
+    {
+      "name": "block-4-D-retained-2",
+      "condition": "D",
+      "block": 4,
+      "kind": "retained-2",
+      "ipc_ms": 5120.794000002206,
+      "operation_id": "software-inventory-b94795f4-5623-452d-acf8-198f369235c7",
+      "observed_at_unix_ms": 1791918473690,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0026,
+        "worker_queue_wait": 0.012700000000000001,
+        "arp_source": 53.383,
+        "msi_source": 94.1909,
+        "msix_enumeration_mta_join": 1019.5539,
+        "msix_installed_path_sizing": 4092.2515,
+        "msix_source": 5112.155,
+        "fingerprint": 0.8219,
+        "assemble_including_fingerprint": 1.7529,
+        "core_total": 5114.2021,
+        "core_result": 5114.2979000000005,
+        "worker_done": 5114.3988,
+        "command_return_ready": 5114.7042
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 25,
+          "observer_thread_cpu_ms": 1328.125,
+          "observer_wall_ms": 1387.036
+        },
+        "B3": {
+          "periodic_samples": 26,
+          "observer_thread_cpu_ms": 1375.0,
+          "observer_wall_ms": 1474.0876
+        }
+      }
+    },
+    {
+      "name": "block-5-I-discarded-warmup",
+      "condition": "I",
+      "block": 5,
+      "kind": "discarded-warmup",
+      "ipc_ms": 4465.257999996538,
+      "operation_id": "software-inventory-041c8dcc-4e34-4b62-ab28-d2ac139daa80",
+      "observed_at_unix_ms": 1791918484149,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0022,
+        "worker_queue_wait": 0.013600000000000001,
+        "arp_source": 54.899,
+        "msi_source": 98.18929999999999,
+        "msix_enumeration_mta_join": 1020.4461,
+        "msix_installed_path_sizing": 3435.6223,
+        "msix_source": 4456.3751,
+        "fingerprint": 0.7591,
+        "assemble_including_fingerprint": 1.7001,
+        "core_total": 4458.3669,
+        "core_result": 4458.4561,
+        "worker_done": 4458.5484,
+        "command_return_ready": 4458.9541
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1031.25,
+          "observer_wall_ms": 1055.4721
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-5-I-retained-1",
+      "condition": "I",
+      "block": 5,
+      "kind": "retained-1",
+      "ipc_ms": 4260.698000005505,
+      "operation_id": "software-inventory-4b5b441a-8655-4057-865b-eaec5f1e3d1a",
+      "observed_at_unix_ms": 1791918488949,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.003,
+        "worker_queue_wait": 0.017499999999999998,
+        "arp_source": 56.8978,
+        "msi_source": 108.0004,
+        "msix_enumeration_mta_join": 972.022,
+        "msix_installed_path_sizing": 3280.3651,
+        "msix_source": 4252.6915,
+        "fingerprint": 0.7779,
+        "assemble_including_fingerprint": 1.6788,
+        "core_total": 4254.6533,
+        "core_result": 4254.7474,
+        "worker_done": 4254.8387999999995,
+        "command_return_ready": 4255.1512999999995
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 21,
+          "observer_thread_cpu_ms": 968.75,
+          "observer_wall_ms": 989.2117000000001
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-5-I-retained-2",
+      "condition": "I",
+      "block": 5,
+      "kind": "retained-2",
+      "ipc_ms": 4250.1069999998435,
+      "operation_id": "software-inventory-8afa28a9-9e90-46ba-b7b8-82df4d62da20",
+      "observed_at_unix_ms": 1791918493524,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0021,
+        "worker_queue_wait": 0.0152,
+        "arp_source": 54.5634,
+        "msi_source": 92.1686,
+        "msix_enumeration_mta_join": 906.3773000000001,
+        "msix_installed_path_sizing": 3334.2918,
+        "msix_source": 4240.8942,
+        "fingerprint": 0.8811,
+        "assemble_including_fingerprint": 1.6192,
+        "core_total": 4242.7456,
+        "core_result": 4242.7899,
+        "worker_done": 4242.8358,
+        "command_return_ready": 4243.1376
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1015.625,
+          "observer_wall_ms": 1080.3339
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-6-S-discarded-warmup",
+      "condition": "S",
+      "block": 6,
+      "kind": "discarded-warmup",
+      "ipc_ms": 4405.918999997084,
+      "operation_id": "software-inventory-bc63ecf7-5701-4e63-9dd9-1be11d420626",
+      "observed_at_unix_ms": 1791918504484,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0027,
+        "worker_queue_wait": 0.0158,
+        "arp_source": 59.7373,
+        "msi_source": 107.67219999999999,
+        "msix_enumeration_mta_join": 1040.0535,
+        "msix_installed_path_sizing": 3356.5146,
+        "msix_source": 4396.8707,
+        "fingerprint": 0.8339000000000001,
+        "assemble_including_fingerprint": 1.7532999999999999,
+        "core_total": 4398.8854,
+        "core_result": 4398.974499999999,
+        "worker_done": 4399.0666,
+        "command_return_ready": 4399.3844
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 22,
+          "observer_thread_cpu_ms": 1046.875,
+          "observer_wall_ms": 1024.7446
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-6-S-retained-1",
+      "condition": "S",
+      "block": 6,
+      "kind": "retained-1",
+      "ipc_ms": 4451.325000001816,
+      "operation_id": "software-inventory-d2be75be-5ab5-41ed-8efd-afe4205ba874",
+      "observed_at_unix_ms": 1791918509099,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0031999999999999997,
+        "worker_queue_wait": 0.0178,
+        "arp_source": 55.9726,
+        "msi_source": 94.4737,
+        "msix_enumeration_mta_join": 986.8466,
+        "msix_installed_path_sizing": 3456.0243,
+        "msix_source": 4443.183300000001,
+        "fingerprint": 0.7912,
+        "assemble_including_fingerprint": 1.6988999999999999,
+        "core_total": 4445.1993999999995,
+        "core_result": 4445.288299999999,
+        "worker_done": 4445.3806,
+        "command_return_ready": 4445.732999999999
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 23,
+          "observer_thread_cpu_ms": 1015.625,
+          "observer_wall_ms": 1093.4922
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    },
+    {
+      "name": "block-6-S-retained-2",
+      "condition": "S",
+      "block": 6,
+      "kind": "retained-2",
+      "ipc_ms": 5216.881000000285,
+      "operation_id": "software-inventory-2f57a0fc-4e0b-42b9-9b32-f528d27ffc24",
+      "observed_at_unix_ms": 1791918513746,
+      "entry_count": 1100,
+      "semantic_parity": true,
+      "phases_ms": {
+        "command_entry": 0.0029000000000000002,
+        "worker_queue_wait": 0.0138,
+        "arp_source": 65.3921,
+        "msi_source": 121.47420000000001,
+        "msix_enumeration_mta_join": 1116.182,
+        "msix_installed_path_sizing": 4090.5566999999996,
+        "msix_source": 5207.1875,
+        "fingerprint": 0.8957999999999999,
+        "assemble_including_fingerprint": 1.8074000000000001,
+        "core_total": 5209.2663,
+        "core_result": 5209.3553,
+        "worker_done": 5209.4712,
+        "command_return_ready": 5209.7767
+      },
+      "observers": {
+        "candidate": {
+          "periodic_samples": 26,
+          "observer_thread_cpu_ms": 1359.375,
+          "observer_wall_ms": 1439.8644
+        },
+        "B3": {
+          "periodic_samples": 0,
+          "observer_thread_cpu_ms": 0,
+          "observer_wall_ms": 0
+        }
+      }
+    }
+  ],
+  "raw_sha256": {
+    "dist/performance/cleanup-earth/C3-native-profile/controlled-candidate-driver.mjs": "b4d1f0cf633ce4195991ae9d7acc30d57d78ad063917a518a132e4965b269190",
+    "dist/performance/cleanup-earth/C3-native-profile/controlled-sampler-manifest.json": "8513755e29dd9256b0161d59a538c416efa324185ce042746c9285b5fd023daf",
+    "dist/performance/cleanup-earth/C3-native-profile/controlled-sampler.diff": "46707eb7506c544faf65d38572d0ea26a6999fff401e60c6e01a5c21cd92ebe4",
+    "dist/performance/cleanup-earth/C3-native-profile/controlled-sampler.py": "ef610a3bf6b2c69e25f914a7640556e59b641075c1c3415affd71f3e5e58dc7e",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/analysis.json": "df0b7494d9e0340c90bf024476daf890552dd0d76c2bba47236eb6b2fe3014f0",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/effective-environment.json": "9f4b88dfdffe9627b9e45cde8ed4561a42ae02a330979f0222b5e3ba6e6afeab",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/explicit-close.json": "3a9947b5a22369ea5cc9d6f55fe4945d640243bcb247d2933cb0a2aba6df0802",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/launch.json": "c05a49ec41f37bc03e1bdf1ab6ae9f0a87b70a0579ee7b576c98649c3fb31953",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/observer-trace.json": "9eae50b1a2ebe554942f1244fa19663e306407e355e5a12545e71ba390bdc03b",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/samples.jsonl": "905fd03b07d800a0076bfd8d355b64a996fdb4a94f7ac7e8ae63b427b9c8ff86",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-launch/summary.json": "5532c6442c1a3a322e3d8b554248ccd296ebfac8c9bb57e0ddbe3f29a0cd6c2f",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/B3-setup-driver-stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-driver-stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/effective-environment.json": "b236e9376638003efcd60ffd7c145083435a8065d014e01238914b6b7ce13d02",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/explicit-close.json": "e52acfdee4180faa10259d5fb2ed3e88de1987b04888e1841d78bb66e44ba57a",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/launch.json": "ab815ab2e03d46cd8323ba26ecf22288d1dfd5b4401117efa0b06cd89f3a59d6",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/observer-trace.json": "0738548202c7e63e38b4dcd3e43fd9cb5a3830e79d5cec5c443e6dac6c818633",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/samples.jsonl": "f62436d9499082de82bfef23aa5a7e40c0893d6d9f46daf0e6e84b90535c6953",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/stderr.txt": "db739519418fa4e5e63a73c2b09afc49f86d292b4517228f26b69e9d5be3d523",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-launch/summary.json": "ccecff28a4bfd18da6b93b39a36aed6c234ff3090fc1c7ee888d592dfdf02767",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-discarded-warmup/correlated.json": "92d7ee62b4363e6f71fec851e99629a7f8a4e0bba6fa0a3896e85b20551362b2",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-discarded-warmup/ipc.json": "ddce36c4b27a8c7c1154ac6afc31378b82a6ca4477ec90cf506ae4d8fd484fce",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-discarded-warmup/result.json": "28a2de82b0786193dcf0b7bbb709279da55f6bc4051ce096b00663d857718d18",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-retained-1/correlated.json": "bb9fcf61bdba0ed9f61182ad4690c902302d6b6d3bd2c28c6c1e6c8ed49f99d3",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-retained-1/ipc.json": "0c8597c0d3bdfe9e30479a3af79e33a6df25311f1d0706072594f37e690774da",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-retained-1/result.json": "d5ae70e8a409a8189712ccc924b6e7431c8cd2b2cdcb1d59cc71de81701353d0",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-retained-2/correlated.json": "49d8f0094c3e16565690d74152894d4cf703136982f0f2e60c24dc91c4443b73",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-retained-2/ipc.json": "76b531e25f604fbdcceb95e997077437af9083fc7f979985b4b94c8a544fb3ae",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-1-S-retained-2/result.json": "b5344b6fe151ebfa8244d97abc9bb5dc1d1554c51117462b6eea79a49baf19b3",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-discarded-warmup/correlated.json": "3af9c522c14f415aba9414e3b3996deb5ae20f8cd5cb42709c2336288d985373",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-discarded-warmup/ipc.json": "06ad1d994a7cfde54b848d7aa27e1baa656d3646ac39550d5202f0f07d224e80",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-discarded-warmup/result.json": "583edc69578c18d027de5a50e08a716fbc5c232a604b3f7128ed7ddcfd2f6cc9",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-retained-1/correlated.json": "5a1a6c561708dc0a28d0a9ce2e76f923ded223ee5aeb8887b65fe7b0ec35a42c",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-retained-1/ipc.json": "57af80842447fb57e0e6753e9c340b891b2bce572611139a38c8693ab495ad08",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-retained-1/result.json": "75c1e496126120cc443edf8102b5f8f5e20fef8dd79cb5da177fc74abc7c0499",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-retained-2/correlated.json": "3163acffc4a3fa2c850e1f82ddbf3825873b47f6edaef2379de0e53141761903",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-retained-2/ipc.json": "f14edf8f914084e8d7a37550831054188e39fb58cd9fd72a4f7c7d29a82834d9",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-2-I-retained-2/result.json": "389087704e9adbe39f47205b50a5d3ce3b640d62dd6634bcdf8de846f02355e1",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-discarded-warmup/correlated.json": "03c8f206911d0fa4587675fb9a5a32066e12bd4eb8835346e20c3fe585604603",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-discarded-warmup/ipc.json": "1071a5b70c52bc208c63d582dbba9ae9de41eff4137129de7bf6a8f7cd99084e",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-discarded-warmup/result.json": "17be433ef89216a5b20bb1e382c989403d3aff863b4b6c03b53b5e6a8d26b209",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-retained-1/correlated.json": "3358d1155cdf6183c1d490998feb2c8c9499f61b13321757799d84aaa61032c0",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-retained-1/ipc.json": "e6d751bb33bcb4cdacab5d8d885ef66c6f8f600a21df62f5f00ce59d3d364255",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-retained-1/result.json": "253920da3c2ef281c7b842d6dc90a82508d5c25613df7d10328be5afed76b5c8",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-retained-2/correlated.json": "31e2f368953f5a44319562b6c22e1dc4f8557f8ac5ee1472a27f461ed93b5836",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-retained-2/ipc.json": "6be0d418a2df7cf4243f1d2da847cb7a4626d7cb93abba81fd59824940c775b1",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-3-D-retained-2/result.json": "bcbb74d147c9d1e46f59be1ac89ea1366f5900ace54563efbf24df0cde0e4e90",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-discarded-warmup/correlated.json": "4bb7d3d3ae98e8a4ca1333c9e2327e698040e078dfcb07fd87812ea644342cda",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-discarded-warmup/ipc.json": "0790eda2f4b7d2fa2bb627820a2bf158062adece5973a87030f377a126fa6a61",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-discarded-warmup/result.json": "f3d6e10e6c9c3aea457290b96b0af5c482c891ab4597f76f9c3a52229241a9d1",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-retained-1/correlated.json": "aa9597866152b4e5fe345911faf25c109223d97739e78d33f9d824642e8e13f5",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-retained-1/ipc.json": "86b6d91017222cccd1d3e0134f3b36095ef3f9f14bb51adc005414e88bacbd3f",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-retained-1/result.json": "27caa4398e76a771d65444171e64d95088dd3975f258c6d508031174da316ce9",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-retained-2/correlated.json": "22b5137ba6bcd2d52450c94295af2fcb6560260d2ca821a8c36a916455ad4f47",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-retained-2/ipc.json": "85950d9ab03d39ee7f446028ca939bcff1a7d438aa3b903c9fed27c4552fde4b",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-4-D-retained-2/result.json": "357b62ba0046ea9557a03167f2ea09188ed198526a76a12f6077e4e012b6ec19",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-discarded-warmup/correlated.json": "386fb1bc33dda9a1be52ed0d8dedbd63ba80a996b3b9ae2eba359c0adc887cd9",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-discarded-warmup/ipc.json": "224ad5258290e582daf9ee3bdd8194dff8b1c18d494807252fdfbb9011639e54",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-discarded-warmup/result.json": "5128ba196edc69a9ac33ad203476d731b07e00bd09d15bc9b735f5abccef5968",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-retained-1/correlated.json": "43b1dba3e226597923a65ea8e3ef8dcbcd739706558fdebac1d6d4b206f0e70a",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-retained-1/ipc.json": "7c4ac1e10ed75d2af753eb6d248548e4882a0c996724182783a1f4536283ac9a",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-retained-1/result.json": "204882f65fa96c9f90ccec6882d44ead08aec406220fa477543a25295f9bf92c",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-retained-2/correlated.json": "6de091c76600a7668a5fc29a3526341ce9e37708ccc8b3ecee11ea79bd2384de",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-retained-2/ipc.json": "d1343ef04ed8f45885fba48d42d237fa32bc2832b9599ff391a2b614bf43bf3d",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-5-I-retained-2/result.json": "9cf563baa7b8c92d6752e1b4c28cc300773c7206acc239ccb57636cf9a8283f1",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-discarded-warmup/correlated.json": "758e10c6e241db6f4b71817193e8c6ca10c311326e7bab109686cb17062315ce",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-discarded-warmup/ipc.json": "468607a48b0e2b418ddb777e4613409005ae2cfe153b7720f79d45f37c678248",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-discarded-warmup/result.json": "b84bff7f33acf30e2a0f717146d0455a4a9a4f0c21366409a26dcee76ad4049d",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-retained-1/correlated.json": "246728e5a68d8db3e2d81682ce94d5df0e4bda0a839b14825bc344b03b111fd5",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-retained-1/ipc.json": "a4772393786d8a1dc4c4a39795777c0ed33bb70a1c81f1e949612a8aacd7315f",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-retained-1/result.json": "86ac2884e3500ecc1bf225d99bf7b9df45e965503696bef7ee28134080c1584c",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-retained-2/correlated.json": "ccfc78464e9194459cee24d989cae701d9611c359abc107340a96b6fe3fe9fbd",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-retained-2/ipc.json": "da4a9af9d09cca5e290412a44ce493a7dc2dce142edca3b2645f3a193ba8bb3f",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/block-6-S-retained-2/result.json": "283715f4087255c8be52973cc0e3ba461b2c8df9f3fbdf271a2d3a8baa478c96",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/connection.json": "50321c7202e43bc93d51933290886d9bfacf2e8a5599a34172e728797cbe66a0",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/setup-candidate/correlated.json": "012e5e36d033a80c705f763acdac85353ae2f016e394e0e4828938982f4edb20",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/setup-candidate/ipc.json": "145dff8f9ac84443618beb8c7daa49060e29baf94d02d71af98cfafb10c034cb",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/candidate-ui/setup-candidate/result.json": "06baa21411b377f9c20c1daf0b1ce86c6d3a480e0da21cd01c87ef5ade8c458e",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/completed-controls.json": "d05b0cc3d442fdbd6133396e8070f247ea7f2cf1befd30d955fb3ed696ad7601",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/lifecycle.json": "c96621e730e8c2ff1da14bec4da5b1bcacecc19870496d3c1aa93be527eb0ab7",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/progress.json": "ed1b8a3fb3d619ed3d5e1d7ecae36b0b14705620e0fc4702141ade2d0d116ed3",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/protocol.json": "791125a260c5ba8a27e460424ea0ba1ce6d552b2d2a71b8233c98d137ddc2b1e",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/ready-presentation.json": "9f788d9fc7ed3210a27a7998cfde979237e4d4400be6105e408de80616b459c9",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/setup-B3/ipc.json": "bb9945fbc1758aefffea96f94a0e38912ff881b0b178ba59debb34428e0c5832",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/setup-B3/result.json": "8ab417a71f047c736ce9094d81891257e360443b5089e88298a2e505ce8779c0",
+    "dist/performance/cleanup-earth/C3-native-profile/controls-01/transitions.json": "138fc95255781e3a064fdc44e80988b9fff1357e7a8cb858a25e01a720ce0803",
+    "dist/performance/cleanup-earth/C3-native-profile/instrumentation.diff": "93947a9fde96561a1e53233168cb6e7032af3a07ded555e341ea732e68827d34",
+    "dist/performance/cleanup-earth/C3-native-profile/instrumentation.json": "73d4e6edac1826812887dd390df1c72ca3320950460539cd8649b32448a9e28d",
+    "dist/performance/cleanup-earth/C3-native-profile/native-operation-profile.mjs": "4a263fce1fd22feb5827130870a817595f163ebf2f9bce1b67a66347fee9f825",
+    "dist/performance/cleanup-earth/C3-native-profile/run-observer-controls.py": "97545a1f94621288b2432edc6946a063a8c29e4d9bb8c05f49afa36672b53e40"
+  }
+}

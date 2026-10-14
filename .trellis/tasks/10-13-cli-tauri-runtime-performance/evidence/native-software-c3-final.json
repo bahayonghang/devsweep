@@ -1,0 +1,305 @@
+{
+  "status": "failed_software_absolute_gate",
+  "candidate": "C3-final",
+  "method": "Software only. One fresh-profile first-use row, one discarded warmup, five alternating B3/C pairs. Non-sampled owned window minimized. Actual IPC timestamps; nearest-rank p95, five samples means worst. OS file cache uncontrolled.",
+  "gates": [
+    {
+      "label": "B3",
+      "operation": "software",
+      "samples_ms": [
+        5030.6800000034855,
+        4695.405999998911,
+        6570.115000002261,
+        6001.531000001705,
+        5098.19399999833
+      ],
+      "p95_ms": 6570.115000002261,
+      "limit_ms": 5000,
+      "pass": false,
+      "joined_samples_ms": null
+    },
+    {
+      "label": "C",
+      "operation": "software",
+      "samples_ms": [
+        4636.34699999966,
+        5207.056999999622,
+        5211.467000000994,
+        5012.951999997313,
+        4671.259000002465
+      ],
+      "p95_ms": 5211.467000000994,
+      "limit_ms": 5000,
+      "pass": false,
+      "joined_samples_ms": null
+    }
+  ],
+  "records": [
+    {
+      "phase": "cold",
+      "label": "B3",
+      "request_to_response_ms": 5680.413000001863,
+      "click_to_terminal_ui_ms": 5968.317,
+      "entries": 1100
+    },
+    {
+      "phase": "cold",
+      "label": "C",
+      "request_to_response_ms": 5153.403999996954,
+      "click_to_terminal_ui_ms": 5550.3024,
+      "entries": 1100
+    },
+    {
+      "phase": "warmup",
+      "label": "B3",
+      "request_to_response_ms": 5110.175000001618,
+      "click_to_terminal_ui_ms": 5198.746799999999,
+      "entries": 1100
+    },
+    {
+      "phase": "warmup",
+      "label": "C",
+      "request_to_response_ms": 5209.815000001981,
+      "click_to_terminal_ui_ms": 5305.923600000001,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-1",
+      "label": "B3",
+      "request_to_response_ms": 5030.6800000034855,
+      "click_to_terminal_ui_ms": 5108.199600000001,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-1",
+      "label": "C",
+      "request_to_response_ms": 4636.34699999966,
+      "click_to_terminal_ui_ms": 4712.325099999999,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-2",
+      "label": "B3",
+      "request_to_response_ms": 4695.405999998911,
+      "click_to_terminal_ui_ms": 4780.5155,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-2",
+      "label": "C",
+      "request_to_response_ms": 5207.056999999622,
+      "click_to_terminal_ui_ms": 5289.925799999999,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-3",
+      "label": "B3",
+      "request_to_response_ms": 6570.115000002261,
+      "click_to_terminal_ui_ms": 6659.8596,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-3",
+      "label": "C",
+      "request_to_response_ms": 5211.467000000994,
+      "click_to_terminal_ui_ms": 5293.1143999999995,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-4",
+      "label": "B3",
+      "request_to_response_ms": 6001.531000001705,
+      "click_to_terminal_ui_ms": 6081.458799999999,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-4",
+      "label": "C",
+      "request_to_response_ms": 5012.951999997313,
+      "click_to_terminal_ui_ms": 5097.201000000001,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-5",
+      "label": "B3",
+      "request_to_response_ms": 5098.19399999833,
+      "click_to_terminal_ui_ms": 5185.203999999999,
+      "entries": 1100
+    },
+    {
+      "phase": "sample-5",
+      "label": "C",
+      "request_to_response_ms": 4671.259000002465,
+      "click_to_terminal_ui_ms": 4743.0303,
+      "entries": 1100
+    }
+  ],
+  "semantic_parity": {
+    "pass": true,
+    "record_count": 14,
+    "candidate": "C3-final",
+    "normalization": "Exclude only inventory observed_at_unix_ms, each size observation timestamp, and the inventory fingerprint derived from those timestamps. Compare every other field across all 14 complete reports."
+  },
+  "entries_each": 1100,
+  "launches": {
+    "B3": {
+      "launch": {
+        "pid": 148856,
+        "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\B3\\devsweep-desktop.exe",
+        "created": "134363897703622758",
+        "started_unix_ns": "1791916170400971900",
+        "workload": "desktop-idle",
+        "debug_port": 52821,
+        "deadline_seconds": 450,
+        "window_state_requested": "visible"
+      },
+      "close": {
+        "pid": 148856,
+        "created": "134363897703622758",
+        "windows": [
+          {
+            "handle": 51121238,
+            "visible": true,
+            "minimized": true,
+            "class": "Tauri Window",
+            "title": "DevSweep"
+          },
+          {
+            "handle": 11733146,
+            "visible": false,
+            "minimized": false,
+            "class": "tray_icon_app",
+            "title": ""
+          }
+        ],
+        "normal_wm_close_count": 1
+      },
+      "effective_environment": {
+        "cargo_target_dir_present": false,
+        "effective_popen_environment": {
+          "USERPROFILE": "C:\\Users\\lyh",
+          "HOME": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-B3-launch\\profile\\Home",
+          "LOCALAPPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-B3-launch\\profile\\Local",
+          "APPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-B3-launch\\profile\\Roaming",
+          "TEMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-B3-launch\\profile\\Temp",
+          "TMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-B3-launch\\profile\\Temp",
+          "WEBVIEW2_USER_DATA_FOLDER": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-B3-launch\\profile\\WebView",
+          "WEBVIEW2_BROWSER_EXECUTABLE_FOLDER": null,
+          "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=52821"
+        },
+        "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\B3\\devsweep-desktop.exe"
+      },
+      "exit": {
+        "sha256": "667145cb762a73d0ed8ee900bd8a52620e3262b953aae865e411eed34dfa7c78",
+        "exit_code": 0,
+        "timed_out": false,
+        "forced_teardown": [],
+        "owned_after_exit": [],
+        "lifecycle_pass": true
+      },
+      "post_exit_settle_ms": 261.1700000052224
+    },
+    "C3": {
+      "launch": {
+        "pid": 149624,
+        "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\C3-final\\devsweep-desktop.exe",
+        "created": "134363897827719449",
+        "started_unix_ns": "1791916182811800800",
+        "workload": "desktop-idle",
+        "debug_port": 52831,
+        "deadline_seconds": 450,
+        "window_state_requested": "visible"
+      },
+      "close": {
+        "pid": 149624,
+        "created": "134363897827719449",
+        "windows": [
+          {
+            "handle": 20842692,
+            "visible": true,
+            "minimized": false,
+            "class": "Tauri Window",
+            "title": "DevSweep"
+          },
+          {
+            "handle": 24255200,
+            "visible": false,
+            "minimized": false,
+            "class": "tray_icon_app",
+            "title": ""
+          }
+        ],
+        "normal_wm_close_count": 1
+      },
+      "effective_environment": {
+        "cargo_target_dir_present": false,
+        "effective_popen_environment": {
+          "USERPROFILE": "C:\\Users\\lyh",
+          "HOME": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-C3-launch\\profile\\Home",
+          "LOCALAPPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-C3-launch\\profile\\Local",
+          "APPDATA": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-C3-launch\\profile\\Roaming",
+          "TEMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-C3-launch\\profile\\Temp",
+          "TMP": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-C3-launch\\profile\\Temp",
+          "WEBVIEW2_USER_DATA_FOLDER": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-software-c3-final-01-C3-launch\\profile\\WebView",
+          "WEBVIEW2_BROWSER_EXECUTABLE_FOLDER": null,
+          "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS": "--remote-debugging-port=52831"
+        },
+        "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\performance\\cleanup-earth\\C3-final\\devsweep-desktop.exe"
+      },
+      "exit": {
+        "sha256": "7426037283a60829ee1d124bbd5433c6c0a6005cea307a9df425d1c98cfa85b6",
+        "exit_code": 0,
+        "timed_out": false,
+        "forced_teardown": [],
+        "owned_after_exit": [],
+        "lifecycle_pass": true
+      },
+      "post_exit_settle_ms": 0.005799993232358247
+    }
+  },
+  "raw_sha256": {
+    "dist/native-software-c3-final-01/summary.json": "fea47971a470cd03d1d0c6e75b4e7b6225983b578f1f81019a22771231ef6365",
+    "dist/native-software-c3-final-01/semantic-parity.json": "9533288b3016e6373e5573120568bcec82be94c7a79519f62b0f679d980bf996",
+    "dist/native-software-c3-final-01/progress.json": "00935d5ea567a8c6990846e3a92d3d6737c3eeff343ac0449d90ad612da6e01e",
+    "dist/native-software-c3-final-01/cold-B3-software/result.json": "4366317faa5acb48a5312dc75ea89d4d56d0f32b3e247b8c3f72a4e812cd3d5e",
+    "dist/native-software-c3-final-01/cold-B3-software/ipc.json": "38de14d3c5b1fd1a362de08b7749a26ebf91e4865761e0895511ba13d3023733",
+    "dist/native-software-c3-final-01/cold-C-software/result.json": "c30d0184d6e4cceca28d8d45d01b8360fd7d0b46ee02796f316285dd9d43f694",
+    "dist/native-software-c3-final-01/cold-C-software/ipc.json": "0f60ae45e8a738c6a5f79fdc4eaa3e03ddc46a7aab69cba2152d2a0d7284f2b2",
+    "dist/native-software-c3-final-01/warmup-B3-software/result.json": "50e3efdfdd43453ac260c3056f9d8e072d3374f7a9169aa3922cc649aac73792",
+    "dist/native-software-c3-final-01/warmup-B3-software/ipc.json": "b7f9b2ff5f901aa95fd3bec5ece8825a76cfd43387952df40f98c5e8cd411dd2",
+    "dist/native-software-c3-final-01/warmup-C-software/result.json": "27c94bbc171491cc9a726a5ad4e39df07f98cb96aee63234f32ee0c03df21ffb",
+    "dist/native-software-c3-final-01/warmup-C-software/ipc.json": "499a16508e31f50ab090bcbc46afca13c707c69b80050becfd2152dc5f93add4",
+    "dist/native-software-c3-final-01/sample-1-B3-software/result.json": "4006c308a0ef853da5dd1d727f39d4b953fe2ceae52ac1ab82813e268095ca9f",
+    "dist/native-software-c3-final-01/sample-1-B3-software/ipc.json": "1eb1bade9efbcc728d66ba9049690d6b64143a8afcde3c9a71af9df134536ba7",
+    "dist/native-software-c3-final-01/sample-1-C-software/result.json": "8af103307fbf5a90a7d9e7f20dca8d25511bc7faf4b58521d1b8f8341a68422c",
+    "dist/native-software-c3-final-01/sample-1-C-software/ipc.json": "6416a62389eeb98c694ffe0f2ea7fb5debcbc8c7d7644e0a421601b199c4c00e",
+    "dist/native-software-c3-final-01/sample-2-B3-software/result.json": "2e5cbd50c8d6dfb7a0aa768f45dc9417365762ca518350454d50af6a605182a7",
+    "dist/native-software-c3-final-01/sample-2-B3-software/ipc.json": "9d92cbe82c3ad021961fb84e4609cf606cb17cdf8d9e028af6796354e55b430b",
+    "dist/native-software-c3-final-01/sample-2-C-software/result.json": "110ebf5a6d2f0f3a74b0c93b5458c9810363a0f1757a97c0a377460d41aa6071",
+    "dist/native-software-c3-final-01/sample-2-C-software/ipc.json": "055f6544dee26a3a9faf8790e95d9f29618ed337f51e79b64bf53519f03bb89a",
+    "dist/native-software-c3-final-01/sample-3-B3-software/result.json": "1545ba45b987bdbfa847482bced1b7f3c4af47f3b65c5ae92500d97dc85db907",
+    "dist/native-software-c3-final-01/sample-3-B3-software/ipc.json": "6936b79cb90d976491ed38fa57f963c9a0e1f486d03cc091c832371c36de5150",
+    "dist/native-software-c3-final-01/sample-3-C-software/result.json": "615e52882b1d92cc7736235adfe7ca4e9b7844e776054dba144653223a1bb015",
+    "dist/native-software-c3-final-01/sample-3-C-software/ipc.json": "9484d96101a1a5d9e650349b48b00625ebc1fd0e82e99a18fae17ad3f83e04f5",
+    "dist/native-software-c3-final-01/sample-4-B3-software/result.json": "99d3ebfca0b6728c82af2b49510cc7862c11c4e6b110d294f2402ff21dfdaf79",
+    "dist/native-software-c3-final-01/sample-4-B3-software/ipc.json": "8afeda411de7eeead2c6d1680eca85e70ec811ea87fabc9963260e3fcff7aa88",
+    "dist/native-software-c3-final-01/sample-4-C-software/result.json": "77ec209480d14c308032e0ee519b1ff20c8642a5272613987b8f929a0089b30f",
+    "dist/native-software-c3-final-01/sample-4-C-software/ipc.json": "f9a1c158a729430f1a05daac63fae41e6f28e8c0854050ad66134679f8090626",
+    "dist/native-software-c3-final-01/sample-5-B3-software/result.json": "5d315175df20580c4e844737ea612d3fc18ae73cb750ce7112c16d1f44fc7b15",
+    "dist/native-software-c3-final-01/sample-5-B3-software/ipc.json": "10059ff92441517b7a6f73bfb6a9dd6ce219f24358688cf4d281b52638928f9a",
+    "dist/native-software-c3-final-01/sample-5-C-software/result.json": "a53dbf478a1107bea7ecfdc9da53079fda773362eccf7941170e97fe1df1e33d",
+    "dist/native-software-c3-final-01/sample-5-C-software/ipc.json": "0c6c7af8195850cd433d932f4663456cfc18612bf27e3d0dae8e2e04922cd5b2",
+    "dist/native-software-c3-final-01-B3-launch/launch.json": "17ddd6bc035103cc87e847b57323ca2290e5e318afab5bbf104a39cb3acf8c0b",
+    "dist/native-software-c3-final-01-B3-launch/summary.json": "e6ff9cb8c63a8f7943de17155cc6ee5bf9ad5216b7d861bfa5956743d162be76",
+    "dist/native-software-c3-final-01-B3-launch/explicit-close.json": "eb0857b56c2ed174e7214009e3bd471ec6af7cb4a0e408cde760ca2e17c4445b",
+    "dist/native-software-c3-final-01-B3-launch/effective-environment.json": "fbdca3ca414ecb9efa4e419947462b16efcd42205bf14d44249294b608d11d59",
+    "dist/native-software-c3-final-01-C3-launch/launch.json": "3c6e1adb9f97ed5be9e49ab30452032e69529bd191196e3a3f9fde2980694969",
+    "dist/native-software-c3-final-01-C3-launch/summary.json": "44f09a95adaf7754d2fd3819577dda45a19d8fe2d5e92cc20047ee314a154ae9",
+    "dist/native-software-c3-final-01-C3-launch/explicit-close.json": "e6e080795229125ab59c0932fea092d7e87871e3a8574b879cb75a3763c716f6",
+    "dist/native-software-c3-final-01-C3-launch/effective-environment.json": "2594c142940696d57bf6fced6654248d204df470e6d7b9dba13a96d3ad379801",
+    "tools/native-operation-smoke.mjs": "a3cdb534f3194b71b18967ce360ee076aeba853d9b0f8e5973a503192361570c",
+    "dist/performance/cleanup-earth/run-native-c3-final-launch.py": "b6a59e74fa859f4cc3f871f732403be2a48e9fba247c1b54dd4a3b0e4a90a893",
+    "dist/performance/cleanup-earth/run-native-software-c3-final-pairs.mjs": "e0d145f4b04d1e136ca490de2fbe5420f34d0a134044cc79d494d85059745e7b",
+    "dist/performance/cleanup-earth/check-native-software-c3-final-pairs.py": "9712e30317aaa09b39c315efd9ffeed3f7bb54bf4dbe208b8adb6758bd19a0ff"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "kind": "bootstrap diagnostic, not F-AC3 acceptance",
+  "native_sha256": "7426037283a60829ee1d124bbd5433c6c0a6005cea307a9df425d1c98cfa85b6",
+  "runtime_sha256": "46b3c6ac9169416cc2ee76b23ee3d9db0eb8daefb914b1d9cc0f5d2387b033ac",
+  "runtime_version": "155.0.4283.45",
+  "app_identity": {
+    "pid": 88504,
+    "created": "134363910480372705"
+  },
+  "tokens": {
+    "host_and_app_and_webview_processes": 8,
+    "all_elevated_zero_and_type_limited": true,
+    "all_primary_type_one": true
+  },
+  "observations": {
+    "dual_stack_snapshots": 120,
+    "first_unix_ns": "1791917448170625400",
+    "last_unix_ns": "1791917478086319900",
+    "snapshot_span_ms": 29915.6945,
+    "requested_port": 52713,
+    "observed_ipv4_listeners": 0,
+    "observed_ipv6_listeners": 0,
+    "table_method": "Each hash-verified v2 listeners() call queries AF_INET and AF_INET6 OWNER_PID_LISTENER tables successfully before appending the combined matching-port list. No table exception was recorded. Empty lists do not retain unrelated ports or complete raw OS tables.",
+    "all_snapshot_identities_match_summary": true,
+    "filetime_unix_epoch_order_verified": true,
+    "host_created_utc": "2026-10-13T18:50:47.904465+00:00",
+    "app_created_utc": "2026-10-13T18:50:48.037271+00:00",
+    "first_sample_utc": "2026-10-13T18:50:48.170625+00:00",
+    "last_sample_utc": "2026-10-13T18:51:18.086320+00:00",
+    "actual_browser_and_renderer_debug_flags": true,
+    "actual_webview_user_data_folder_isolated": true,
+    "cdp_http_requests_sent": 0,
+    "page_contents_verified": false
+  },
+  "excluded_explanations_for_this_launch": [
+    "elevated host ignoring WEBVIEW2 environment overrides",
+    "remote-debugging flag missing from the browser command line",
+    "WebView using an unexpected user-data-folder command-line value"
+  ],
+  "still_unknown": "Why neither address-family table showed this port during the observation window. Browser bind/startup logs were not collected. No USERPROFILE-specific cause is established; samples do not rule out a transient listener between queries.",
+  "environment_recording_boundary": "Immediately before direct Popen; normalized case for whitelist lookup only. Effective HOME/USERPROFILE/provider/cache/temp/WebView paths are under this task-owned profile. SystemRoot/SystemDrive/ProgramFiles values are now present. Original environment dictionary passed unchanged.",
+  "lifecycle": {
+    "normal_wm_close_count": 1,
+    "exit_code": 0,
+    "owned_after_exit": [],
+    "forced_app_teardown": false,
+    "scan_started": false
+  },
+  "script_sha256": "adfbb9a497826522cd5c801c5aeb9dfa76a095778c674aeb121d82e0e2838c84",
+  "raw_sha256": {
+    "dist/native-isolated-bootstrap-c3-02/app-token.json": "d44204b35a242a4866ab4825dd80054b0bbe2c05706db2e8b3be2ccab32b6ce6",
+    "dist/native-isolated-bootstrap-c3-02/cdp-observation.json": "08137916af5d2d8788b087c4e18c931640105d09de68dd79b943377ca9853dbc",
+    "dist/native-isolated-bootstrap-c3-02/effective-launch.json": "3b13804a44cc1e82a265b2f996ce55fc3df6a21448483e91e68dfc38938010f6",
+    "dist/native-isolated-bootstrap-c3-02/host-token.json": "8f6eea56ae7b5e1d60037a4b20be5bedc3634dafdeafdac543898ed395dfc8a5",
+    "dist/native-isolated-bootstrap-c3-02/launch.json": "c87a3a7a507d68c1780eafec001c76cf395b20e4a974081c228720bcf2827a31",
+    "dist/native-isolated-bootstrap-c3-02/normal-close.json": "bcf339b1186fd9d395391765002654df37b999095e950850772ee51d7b5953f3",
+    "dist/native-isolated-bootstrap-c3-02/process-details.json": "303fdc84989fc7d05c1a2cb6ca1f10ebf98132a07c453eca97f3b3c24c6f6846",
+    "dist/native-isolated-bootstrap-c3-02/process-snapshots.json": "6eda4afa3ecee3b1f41a961a2ff4c165f25bc0a53a6f02b1eb417731b36f7847",
+    "dist/native-isolated-bootstrap-c3-02/stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/native-isolated-bootstrap-c3-02/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dist/native-isolated-bootstrap-c3-02/summary.json": "b046e3759e4cd72d8a7bca5b14f628b0c04154d64450b1e437eb2821535f304e"
+  },
+  "proposed_next_diagnostic": {
+    "executed": false,
+    "script": "dist/performance/cleanup-earth/diagnose-isolated-bootstrap-v3.py",
+    "sha256": "691a1b19993458fbcf5c0c5e87ac1da9fbd0eaea4e752fc179c9b223c499772a",
+    "only_change": "Append --enable-logging and an absolute --log-file pointing to fresh output/webview.log. No verbosity, security, registry, environment-isolation or lifecycle change.",
+    "same_port": 52713,
+    "output": "dist/native-isolated-bootstrap-c3-03",
+    "diff": "dist/performance/cleanup-earth/bootstrap-v3-review.diff",
+    "static_check_log": "dist/performance/cleanup-earth/bootstrap-v3-static-check.json",
+    "static_check_log_sha256": "01d29a9fc55a1e7ff81d72e70b3c18120cfdda2ca582d4a720e65383c6e07c48",
+    "boundary": "Documented WebView2 enable-logging plus Chromium filename-switch implementation support a diagnostic attempt, not a guarantee that Edge 155 will emit a decisive bind failure. A historic WebView2 issue reports logging may open a console; the harness will close only its exact owned main window normally."
+  }
+}

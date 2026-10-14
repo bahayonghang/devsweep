@@ -1,0 +1,761 @@
+{
+  "candidate": "C2-runtime",
+  "native_lifecycle_cycles_passed": 20,
+  "corrected_fresh_mount_visual_cases_passed": 32,
+  "dpr_only_boundary": "Native CDP changed DPR/query state but emitted no media or resize events; real OS scale transition was not exercised. Original sequential matrix remains superseded.",
+  "known_unrelated_limitation": "Selected tab hover foreground equals background; documented separately, source unchanged.",
+  "launches": [
+    {
+      "path": "dist/native-clean-c2-final-01",
+      "pid": 115364,
+      "created": "134363836577642399",
+      "native_sha256": "5ffaefe242808e9a2074880667209a0ece6facef1b15ab5f782adf36cc2f2a59",
+      "exit_code": 0,
+      "timed_out": false,
+      "forced_teardown": [],
+      "owned_after_exit": [],
+      "helper_settle_ms": 1688.6959999974351
+    },
+    {
+      "path": "dist/native-earth-c2-dpr-01",
+      "pid": 128400,
+      "created": "134363847810008726",
+      "native_sha256": "5ffaefe242808e9a2074880667209a0ece6facef1b15ab5f782adf36cc2f2a59",
+      "exit_code": 0,
+      "timed_out": false,
+      "forced_teardown": [],
+      "owned_after_exit": [],
+      "helper_settle_ms": 1437.5771999984863
+    }
+  ],
+  "matrix": [
+    {
+      "locale": "en",
+      "width": 390,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 136,
+      "css_canvas": 136,
+      "expected_canvas": 136,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w390-dpr1.png"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 170,
+      "css_canvas": 136,
+      "expected_canvas": 170,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w390-dpr1.25.png"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 204,
+      "css_canvas": 136,
+      "expected_canvas": 204,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w390-dpr1.5.png"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 272,
+      "css_canvas": 136,
+      "expected_canvas": 272,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w390-dpr2.png"
+    },
+    {
+      "locale": "en",
+      "width": 800,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 168,
+      "css_canvas": 168,
+      "expected_canvas": 168,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w800-dpr1.png"
+    },
+    {
+      "locale": "en",
+      "width": 800,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 210,
+      "css_canvas": 168,
+      "expected_canvas": 210,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w800-dpr1.25.png"
+    },
+    {
+      "locale": "en",
+      "width": 800,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 252,
+      "css_canvas": 168,
+      "expected_canvas": 252,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w800-dpr1.5.png"
+    },
+    {
+      "locale": "en",
+      "width": 800,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 336,
+      "css_canvas": 168,
+      "expected_canvas": 336,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w800-dpr2.png"
+    },
+    {
+      "locale": "en",
+      "width": 1024,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 232,
+      "css_canvas": 232,
+      "expected_canvas": 232,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1024-dpr1.png"
+    },
+    {
+      "locale": "en",
+      "width": 1024,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 290,
+      "css_canvas": 232,
+      "expected_canvas": 290,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1024-dpr1.25.png"
+    },
+    {
+      "locale": "en",
+      "width": 1024,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 348,
+      "css_canvas": 232,
+      "expected_canvas": 348,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1024-dpr1.5.png"
+    },
+    {
+      "locale": "en",
+      "width": 1024,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 464,
+      "css_canvas": 232,
+      "expected_canvas": 464,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1024-dpr2.png"
+    },
+    {
+      "locale": "en",
+      "width": 1440,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 232,
+      "css_canvas": 232,
+      "expected_canvas": 232,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1440-dpr1.png"
+    },
+    {
+      "locale": "en",
+      "width": 1440,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 290,
+      "css_canvas": 232,
+      "expected_canvas": 290,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1440-dpr1.25.png"
+    },
+    {
+      "locale": "en",
+      "width": 1440,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 348,
+      "css_canvas": 232,
+      "expected_canvas": 348,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1440-dpr1.5.png"
+    },
+    {
+      "locale": "en",
+      "width": 1440,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 464,
+      "css_canvas": 232,
+      "expected_canvas": 464,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "en-w1440-dpr2.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 136,
+      "css_canvas": 136,
+      "expected_canvas": 136,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w390-dpr1.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 170,
+      "css_canvas": 136,
+      "expected_canvas": 170,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w390-dpr1.25.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 204,
+      "css_canvas": 136,
+      "expected_canvas": 204,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w390-dpr1.5.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 272,
+      "css_canvas": 136,
+      "expected_canvas": 272,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w390-dpr2.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 800,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 168,
+      "css_canvas": 168,
+      "expected_canvas": 168,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w800-dpr1.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 800,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 210,
+      "css_canvas": 168,
+      "expected_canvas": 210,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w800-dpr1.25.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 800,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 252,
+      "css_canvas": 168,
+      "expected_canvas": 252,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w800-dpr1.5.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 800,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 336,
+      "css_canvas": 168,
+      "expected_canvas": 336,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w800-dpr2.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1024,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 232,
+      "css_canvas": 232,
+      "expected_canvas": 232,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1024-dpr1.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1024,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 290,
+      "css_canvas": 232,
+      "expected_canvas": 290,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1024-dpr1.25.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1024,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 348,
+      "css_canvas": 232,
+      "expected_canvas": 348,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1024-dpr1.5.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1024,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 464,
+      "css_canvas": 232,
+      "expected_canvas": 464,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1024-dpr2.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1440,
+      "dpr": 1.0000000149011612,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 232,
+      "css_canvas": 232,
+      "expected_canvas": 232,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1440-dpr1.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1440,
+      "dpr": 1.25,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 290,
+      "css_canvas": 232,
+      "expected_canvas": 290,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1440-dpr1.25.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1440,
+      "dpr": 1.5000000596046448,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 348,
+      "css_canvas": 232,
+      "expected_canvas": 348,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1440-dpr1.5.png"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1440,
+      "dpr": 2.0000000298023224,
+      "overflow": false,
+      "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+      "render": "ready",
+      "canvas": 464,
+      "css_canvas": 232,
+      "expected_canvas": 464,
+      "roots": [
+        "d:/documents/code/rust/exp/devsweep/dist/native-clean-smoke-root",
+        "c:/users/lyh/appdata/local/temp/devsweep-native-clean-2f415e0444bc4bc98f33bd88beadb0b5 unicode 测试"
+      ],
+      "pendingRaf": 0,
+      "screenshot": "zh-CN-w1440-dpr2.png"
+    }
+  ],
+  "memory_windows": [
+    {
+      "cycles": [
+        1,
+        5
+      ],
+      "metrics": {
+        "private_bytes": {
+          "min": 280080384,
+          "max": 296579072,
+          "median": 288428032
+        },
+        "working_bytes": {
+          "min": 539996160,
+          "max": 544309248,
+          "median": 542314496
+        },
+        "handles": {
+          "min": 3733,
+          "max": 3750,
+          "median": 3738
+        },
+        "threads": {
+          "min": 255,
+          "max": 259,
+          "median": 255
+        },
+        "heap_used_bytes": {
+          "min": 7749926,
+          "max": 11301305,
+          "median": 8951602
+        }
+      }
+    },
+    {
+      "cycles": [
+        6,
+        10
+      ],
+      "metrics": {
+        "private_bytes": {
+          "min": 277635072,
+          "max": 279298048,
+          "median": 278433792
+        },
+        "working_bytes": {
+          "min": 543391744,
+          "max": 544751616,
+          "median": 544067584
+        },
+        "handles": {
+          "min": 3715,
+          "max": 3733,
+          "median": 3715
+        },
+        "threads": {
+          "min": 249,
+          "max": 255,
+          "median": 249
+        },
+        "heap_used_bytes": {
+          "min": 7854992,
+          "max": 11069986,
+          "median": 9388124
+        }
+      }
+    },
+    {
+      "cycles": [
+        11,
+        15
+      ],
+      "metrics": {
+        "private_bytes": {
+          "min": 269942784,
+          "max": 278953984,
+          "median": 278056960
+        },
+        "working_bytes": {
+          "min": 536227840,
+          "max": 542478336,
+          "median": 541614080
+        },
+        "handles": {
+          "min": 3715,
+          "max": 3721,
+          "median": 3720
+        },
+        "threads": {
+          "min": 249,
+          "max": 249,
+          "median": 249
+        },
+        "heap_used_bytes": {
+          "min": 7986754,
+          "max": 10116879,
+          "median": 9314946
+        }
+      }
+    },
+    {
+      "cycles": [
+        16,
+        20
+      ],
+      "metrics": {
+        "private_bytes": {
+          "min": 277815296,
+          "max": 288673792,
+          "median": 282329088
+        },
+        "working_bytes": {
+          "min": 541974528,
+          "max": 549720064,
+          "median": 545124352
+        },
+        "handles": {
+          "min": 3713,
+          "max": 3717,
+          "median": 3717
+        },
+        "threads": {
+          "min": 247,
+          "max": 248,
+          "median": 248
+        },
+        "heap_used_bytes": {
+          "min": 8153408,
+          "max": 10097635,
+          "median": 9368786
+        }
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "dist/native-earth-c2-final-01/cycles.json",
+      "sha256": "fa469e28bd9427d67a4931a557ab1947e4d245d3e3889bedc3855df136e288f3"
+    },
+    {
+      "path": "dist/native-earth-c2-final-01/memory-windows.json",
+      "sha256": "758f2295cc0896e767338bdb5a87408090e80fd9c4db09b0cd0eef4e54ae8749"
+    },
+    {
+      "path": "dist/native-earth-c2-final-01/failure.json",
+      "sha256": "9bf1d74a3a630b9c0c62c603113838e7c440c77ce41b8877ec6ef4be88f905c4"
+    },
+    {
+      "path": "dist/native-earth-c2-final-01/active-tab-hover-diagnostic.json",
+      "sha256": "8358ee859521f8336b6536588554cf206f60f3f455ed835d62f44bb060eee58b"
+    },
+    {
+      "path": "dist/native-earth-c2-final-02/reused-cycles.json",
+      "sha256": "36a85e7ed1e03f4eb3513163b0f92a506a9c4bc58fd8d6ce4cb8fa011ee48082"
+    },
+    {
+      "path": "dist/native-earth-c2-final-02/visual-matrix.json",
+      "sha256": "15a5a56d9cc537d44e6925c40a11572f0dfdbf3c11d78cc32fd6ac73adc92903"
+    },
+    {
+      "path": "dist/native-earth-c2-dpr-01-probe/dpr-only-probe.json",
+      "sha256": "e4c8113e75382bdba2b89759e925751617c79c85f0aad9d3a8192b2caf9a52c7"
+    },
+    {
+      "path": "dist/native-earth-c2-final-matrix-03/initial.json",
+      "sha256": "f411424e5d923696f88c80065fb0a38cc860f83ad8c561d8f23205790fbec1df"
+    },
+    {
+      "path": "dist/native-earth-c2-final-matrix-03/result.json",
+      "sha256": "ca669833694e31cf34179a12b1200e3fff6641d57e5d9b4f353815f39bb67609"
+    },
+    {
+      "path": "dist/native-earth-c2-final-matrix-03/visual-matrix.json",
+      "sha256": "34210b2af64610065bb13c1a51c80ec5251269a8123e0e07bde32287c49bcaa5"
+    },
+    {
+      "path": "dist/native-earth-c2-final-matrix-03/reduced-motion.json",
+      "sha256": "b9d32d39bac93ae0bf289967922761137a45a59d3d5163ff00d3db38cc9700bf"
+    },
+    {
+      "path": "dist/native-earth-c2-final-matrix-03/forced-colors.json",
+      "sha256": "9c960ac9e103b66ac08a983fe91637a27b2d0780ee63886bc12a36d122b8d9eb"
+    }
+  ]
+}

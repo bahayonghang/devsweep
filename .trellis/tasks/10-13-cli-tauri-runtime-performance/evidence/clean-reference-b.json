@@ -1,0 +1,163 @@
+{
+  "label": "B-corrected",
+  "timestamp": "2026-10-13T13:57:11.579Z",
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logical_processors": 24
+  },
+  "teardown": {
+    "pid": 81592,
+    "forced": false,
+    "exit_code": 0,
+    "signal": null,
+    "lifecycle_pass": true
+  },
+  "cases": [
+    {
+      "count": 100,
+      "mode": "review",
+      "build": {
+        "label": "B-corrected",
+        "source_sha256": "1b2b66ed7b475cc47aa1e15c643510630cb696652173cd31cf36705a17d17aed"
+      },
+      "fixture_sha256": "dd529385368b6dea23ba77820a7ae79edc91c60afa694e0320ce87ca6c5e0fed",
+      "warmups": 5,
+      "measured_samples": 30,
+      "p95_ms": {
+        "parse": 0.29999999701976776,
+        "decode": 0.4000000059604645,
+        "report_reducer": 0,
+        "row_visible": 14.099999994039536,
+        "select_all_visible": 14.100000001490116,
+        "preview_visible": null
+      },
+      "dom_elements": 2453,
+      "rendered_rows": 100,
+      "retained_targets": 100,
+      "executable_count": 95,
+      "method": "Production ReviewPage/TargetTable, closed decoders and reducer; real checkbox click to layout commit plus two RAF paint boundaries. Synthetic clicks measure handler-to-visible, not OS input scheduling. No native cleanup bridge."
+    },
+    {
+      "count": 100,
+      "mode": "preview",
+      "build": {
+        "label": "B-corrected",
+        "source_sha256": "1b2b66ed7b475cc47aa1e15c643510630cb696652173cd31cf36705a17d17aed"
+      },
+      "fixture_sha256": "dd529385368b6dea23ba77820a7ae79edc91c60afa694e0320ce87ca6c5e0fed",
+      "warmups": 5,
+      "measured_samples": 30,
+      "p95_ms": {
+        "parse": 0.20000000298023224,
+        "decode": 0.20000000298023224,
+        "report_reducer": 0,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 14
+      },
+      "dom_elements": 2221,
+      "rendered_rows": 100,
+      "retained_targets": 100,
+      "executable_count": 95,
+      "method": "Production ReviewPage/TargetTable, closed decoders and reducer; real checkbox click to layout commit plus two RAF paint boundaries. Synthetic clicks measure handler-to-visible, not OS input scheduling. No native cleanup bridge."
+    },
+    {
+      "count": 1000,
+      "mode": "review",
+      "build": {
+        "label": "B-corrected",
+        "source_sha256": "1b2b66ed7b475cc47aa1e15c643510630cb696652173cd31cf36705a17d17aed"
+      },
+      "fixture_sha256": "5dcabf8066bea802b6b999d74e8906186a79989a7937f4769a6ea486ac3b095a",
+      "warmups": 5,
+      "measured_samples": 30,
+      "p95_ms": {
+        "parse": 2.2000000029802322,
+        "decode": 3,
+        "report_reducer": 0.10000000149011612,
+        "row_visible": 48.899999998509884,
+        "select_all_visible": 48.80000000447035,
+        "preview_visible": null
+      },
+      "dom_elements": 24106,
+      "rendered_rows": 1000,
+      "retained_targets": 1000,
+      "executable_count": 942,
+      "method": "Production ReviewPage/TargetTable, closed decoders and reducer; real checkbox click to layout commit plus two RAF paint boundaries. Synthetic clicks measure handler-to-visible, not OS input scheduling. No native cleanup bridge."
+    },
+    {
+      "count": 1000,
+      "mode": "preview",
+      "build": {
+        "label": "B-corrected",
+        "source_sha256": "1b2b66ed7b475cc47aa1e15c643510630cb696652173cd31cf36705a17d17aed"
+      },
+      "fixture_sha256": "5dcabf8066bea802b6b999d74e8906186a79989a7937f4769a6ea486ac3b095a",
+      "warmups": 5,
+      "measured_samples": 30,
+      "p95_ms": {
+        "parse": 1.2000000029802322,
+        "decode": 1.7000000029802322,
+        "report_reducer": 0,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 15.300000004470348
+      },
+      "dom_elements": 22021,
+      "rendered_rows": 1000,
+      "retained_targets": 1000,
+      "executable_count": 942,
+      "method": "Production ReviewPage/TargetTable, closed decoders and reducer; real checkbox click to layout commit plus two RAF paint boundaries. Synthetic clicks measure handler-to-visible, not OS input scheduling. No native cleanup bridge."
+    },
+    {
+      "count": 10000,
+      "mode": "review",
+      "build": {
+        "label": "B-corrected",
+        "source_sha256": "1b2b66ed7b475cc47aa1e15c643510630cb696652173cd31cf36705a17d17aed"
+      },
+      "fixture_sha256": "220aca202a98ea0a198b3c6fd55c40470fe0cc04e838535b473977fa92d3014c",
+      "warmups": 5,
+      "measured_samples": 30,
+      "p95_ms": {
+        "parse": 11.899999998509884,
+        "decode": 11.5,
+        "report_reducer": 0.30000000447034836,
+        "row_visible": 497.80000000447035,
+        "select_all_visible": 459.59999999403954,
+        "preview_visible": null
+      },
+      "dom_elements": 240636,
+      "rendered_rows": 10000,
+      "retained_targets": 10000,
+      "executable_count": 9412,
+      "method": "Production ReviewPage/TargetTable, closed decoders and reducer; real checkbox click to layout commit plus two RAF paint boundaries. Synthetic clicks measure handler-to-visible, not OS input scheduling. No native cleanup bridge."
+    },
+    {
+      "count": 10000,
+      "mode": "preview",
+      "build": {
+        "label": "B-corrected",
+        "source_sha256": "1b2b66ed7b475cc47aa1e15c643510630cb696652173cd31cf36705a17d17aed"
+      },
+      "fixture_sha256": "220aca202a98ea0a198b3c6fd55c40470fe0cc04e838535b473977fa92d3014c",
+      "warmups": 5,
+      "measured_samples": 30,
+      "p95_ms": {
+        "parse": 11.799999997019768,
+        "decode": 13.399999998509884,
+        "report_reducer": 0,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 128.5
+      },
+      "dom_elements": 220021,
+      "rendered_rows": 10000,
+      "retained_targets": 10000,
+      "executable_count": 9412,
+      "method": "Production ReviewPage/TargetTable, closed decoders and reducer; real checkbox click to layout commit plus two RAF paint boundaries. Synthetic clicks measure handler-to-visible, not OS input scheduling. No native cleanup bridge."
+    }
+  ]
+}

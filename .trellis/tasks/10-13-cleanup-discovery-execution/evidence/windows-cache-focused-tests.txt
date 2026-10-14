@@ -1,0 +1,14 @@
+
+running 9 tests
+test rules::windows_caches::tests::busy_and_unknown_are_visible_and_profile_failure_does_not_hide_healthy_profile ... ok
+test rules::windows_caches::tests::editors_require_matching_installation_and_keep_user_agent_state ... ok
+test rules::windows_caches::tests::firefox_registration_and_local_roaming_separation_are_required ... ok
+test rules::windows_caches::tests::native_owner_detects_current_process_and_invalid_queries_fail_closed ... ok
+test rules::windows_caches::tests::profile_path_traversal_foreign_names_and_oversized_metadata_fail_closed ... ok
+test rules::windows_caches::tests::registered_chromium_profiles_only_and_persistent_sentinels_survive ... ok
+test rules::windows_caches::tests::reparse_and_unverified_children_are_never_traversed ... ok
+test rules::windows_caches::tests::stale_owned_temp_is_individual_and_recent_nested_or_locked_files_are_unavailable ... ok
+test rules::windows_caches::tests::tree_preserves_secrets_and_reports_budget_exhaustion ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 402 filtered out; finished in 0.53s
+

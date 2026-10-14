@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/desktop-frontend/index.md", "reason": "Verify relevant safety, quality, lifecycle and contract requirements"}
+{"file": ".trellis/spec/desktop-frontend/component-guidelines.md", "reason": "Verify relevant safety, quality, lifecycle and contract requirements"}
+{"file": ".trellis/spec/desktop-frontend/state-management.md", "reason": "Verify relevant safety, quality, lifecycle and contract requirements"}
+{"file": ".trellis/spec/desktop-frontend/type-safety.md", "reason": "Verify relevant safety, quality, lifecycle and contract requirements"}
+{"file": ".trellis/spec/backend/desktop-preferences.md", "reason": "Verify relevant safety, quality, lifecycle and contract requirements"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/planet-rendering.md", "reason": "Source-backed findings, boundaries and acceptance evidence for this task"}
+{"file": ".trellis/tasks/10-13-desktop-cleanup-completeness/research/mole-reference-and-assets.md", "reason": "Source-backed findings, boundaries and acceptance evidence for this task"}

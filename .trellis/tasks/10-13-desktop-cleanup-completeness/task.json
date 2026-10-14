@@ -1,0 +1,42 @@
+{
+  "id": "desktop-cleanup-completeness",
+  "name": "desktop-cleanup-completeness",
+  "title": "CLI and Tauri cleanup completeness, Earth quality, and performance",
+  "description": "Plan source-backed CLI/Tauri cleanup repairs and coverage expansion, real-Earth UI rendering, and foreground/background performance optimization using local Mole and official Mac/Windows references.",
+  "status": "in_progress",
+  "dev_type": "fullstack",
+  "scope": "cli-core-desktop",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-13",
+  "completedAt": null,
+  "branch": "codex/cleanup-earth-performance",
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-13-desktop-planet-fidelity",
+    "10-13-cleanup-discovery-execution",
+    "10-13-cli-tauri-runtime-performance"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Approved by user on 2026-10-13. Parent tracks coordination/integration only; runtime baseline A precedes product edits. Implementation is assigned to the three reviewed child tasks.",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "accepted_earth_direction": "real geography with a locally bundled redistributable texture",
+    "research_date": "2026-10-13",
+    "analysis_source_commit": "e75a29d675987429473ed37e80a253c356b3fc4d",
+    "analysis_source_branch": "dev",
+    "implementation_approval": {
+      "date": "2026-10-13",
+      "user_message": "继续按照trellis规划顺序实施",
+      "basis": "Explicit subsequent approval of the final parent and three-child planning summary."
+    }
+  }
+}

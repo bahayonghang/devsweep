@@ -1,0 +1,92 @@
+{
+  "candidate": "C1-runtime",
+  "pass": false,
+  "native_sha256": "8f917025fefc66e40bb7a04591cce1b092b4901ae4597c161778fe07381efc72",
+  "failure": "Error: Native condition timed out: document.visibilityState==='hidden'",
+  "owned_window": {
+    "before": [
+      {
+        "handle": 19208558,
+        "visible": true,
+        "minimized": false,
+        "class": "Tauri Window",
+        "title": "DevSweep"
+      },
+      {
+        "handle": 9969628,
+        "visible": false,
+        "minimized": false,
+        "class": "tray_icon_app",
+        "title": ""
+      }
+    ],
+    "after": [
+      {
+        "handle": 19208558,
+        "visible": true,
+        "minimized": true,
+        "class": "Tauri Window",
+        "title": "DevSweep"
+      },
+      {
+        "handle": 9969628,
+        "visible": false,
+        "minimized": false,
+        "class": "tray_icon_app",
+        "title": ""
+      }
+    ],
+    "pid": 96876,
+    "created": "134363822986252072"
+  },
+  "draw_evidence": {
+    "a": {
+      "at": 1791909037916,
+      "hidden": false,
+      "visibility": "visible",
+      "draws": 910,
+      "raf": 4541,
+      "pending": 0
+    },
+    "b": {
+      "at": 1791909039422,
+      "hidden": false,
+      "visibility": "visible",
+      "draws": 954,
+      "raf": 4758,
+      "pending": 1
+    }
+  },
+  "normal_close": {
+    "pid": 96876,
+    "exit_code": 0,
+    "elapsed_ms": 375900.6750999979,
+    "timed_out": false,
+    "forced_teardown": [],
+    "lifecycle_pass": true,
+    "owned_after_exit": [],
+    "helper_settle_ms": 1261.5661999952863
+  },
+  "artifacts": [
+    {
+      "path": "dist/native-earth-c1-final-02/initial.json",
+      "sha256": "1d5645e3b319fa3a08ab1d2022ecabc9128c7697a9513f41f8296ee2fe19e106"
+    },
+    {
+      "path": "dist/native-earth-c1-final-02/failure.json",
+      "sha256": "490c69399deaa94762c022db154d6c19baf17024e953d7f2197cc334817d0c21"
+    },
+    {
+      "path": "dist/native-earth-c1-final-02/failure-page.json",
+      "sha256": "f4ca5943a20cadae2d4844654bbfb1462485d7d95114cc7abc86dff547753e01"
+    },
+    {
+      "path": "dist/native-clean-c1-final-01/minimize-diagnostic.json",
+      "sha256": "f919616493d9427fdb5483c8a4fc5ebfa270e4ddedb774aa2689491325fab1ac"
+    },
+    {
+      "path": "dist/native-clean-c1-final-01/minimize-page-diagnostic.json",
+      "sha256": "3b58ec31bd1af531e9f08ff17009881786bf101fabd2103b566a4f0215758b2b"
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "native_project_only": {
+    "pass": true,
+    "owner": {
+      "root_pid": 116816,
+      "created": "134363866264658022",
+      "listener_pid": 137760
+    },
+    "native_sha256": "5ffaefe242808e9a2074880667209a0ece6facef1b15ab5f782adf36cc2f2a59",
+    "cli_sha256": "a5881ebf98eed803581619db2cf0cb967093cf0151887c67b274511047701277",
+    "actual_acl_denial": true,
+    "denied": {
+      "id": "d:/documents/code/rust/exp/devsweep/dist/native-acl-fixture-02/denied",
+      "scope": "project",
+      "path": "d:/documents/code/rust/exp/devsweep/dist/native-acl-fixture-02/denied",
+      "status": "failed",
+      "target_count": 0,
+      "detail": "root cannot be read; check access"
+    },
+    "healthy": {
+      "id": "d:/documents/code/rust/exp/devsweep/dist/native-acl-fixture-02/healthy",
+      "scope": "project",
+      "path": "d:/documents/code/rust/exp/devsweep/dist/native-acl-fixture-02/healthy",
+      "status": "complete",
+      "target_count": 1,
+      "detail": "selected root evaluated"
+    },
+    "targets": 1,
+    "native_scope": "projects",
+    "native_combined_global_case_verified": false,
+    "full_report_parity": true,
+    "cleanup_executed": false
+  },
+  "separate_isolated_cli_all_scope": {
+    "targets": 2,
+    "native_gui_verified": false,
+    "global_survivor": {
+      "detail": "provider evaluated",
+      "id": "maven.repository",
+      "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-acl-c2-04\\profile\\Home\\.m2/repository",
+      "scope": "provider",
+      "status": "complete",
+      "target_count": 1
+    }
+  },
+  "boundary": "Native ACL + healthy root, exact project-only CLI parity. Separate fully isolated all-scope CLI adds Maven global survivor. Combined native global case not verified.",
+  "environment_evidence_boundary": {
+    "fixture_manifest": "Pre-launch fixture configuration, not a capture of the GUI effective environment.",
+    "native_launch_04": "measure-readonly.py restores parent HOME/USERPROFILE after writing the fixture manifest; launcher 04 retains the parent real home. Native request was project-only.",
+    "separate_cli": "Explicitly uses the saved isolated fixture configuration for the all-scope request.",
+    "final_child_environment_independently_captured": false,
+    "historical_launches_01_02": "Both preserved scripts set WEBVIEW2_BROWSER_EXECUTABLE_FOLDER to the installed runtime. Launch 02 omits that key from its manifest; it is not a normal-discovery control.",
+    "missing_debug_endpoint_cause": "Unknown: stdout/stderr are empty, and browser command lines, token elevation and startup error logs were not retained. Real USERPROFILE is not established as a runtime-discovery requirement."
+  },
+  "fixture_acl": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\native-acl-fixture-02\\denied",
+    "enumeration_denied": true,
+    "restored": true,
+    "sentinels_unchanged": true,
+    "driver_exit": 0,
+    "original_sddl": "O:S-1-5-21-2143440361-2401194771-2834292696-1001G:S-1-5-21-2143440361-2401194771-2834292696-513D:AI(A;OICIID;0x1301bf;;;S-1-5-21-2933390137-2761418519-4238240170-3440152423)(A;OICIID;0x1301bf;;;S-1-5-21-2143440361-2401194771-2834292696-1007)(A;OICIID;0x1301bf;;;S-1-5-21-508907303-650468681-657930608-2592853934)(A;OICIID;0x1301bf;;;S-1-5-21-4035059943-477547970-1429634018-2988928154)(A;OICIID;0x1301bf;;;S-1-5-21-2518217512-924403484-3126150020-4068977738)(A;OICIID;0x1201bf;;;S-1-5-21-3196987755-645262271-1812859691-161968540)(A;OICIID;0x1201bf;;;S-1-5-21-4076592078-2436558002-3879035924-2471277131)(A;OICIID;0x1201bf;;;S-1-5-21-3904839700-1168295041-1664799433-2907349765)(A;OICIID;0x1301ff;;;S-1-5-21-2902223353-1517542153-2306965683-878116148)(A;OICIID;0x1301ff;;;S-1-5-21-2143440361-2401194771-2834292696-1004)(A;OICIID;0x1301ff;;;S-1-5-21-4250679582-4070590271-176867373-4277401356)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;0x1301bf;;;AU)(A;OICIIOID;SDGXGWGR;;;AU)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;BU)",
+    "restored_sddl": "O:S-1-5-21-2143440361-2401194771-2834292696-1001G:S-1-5-21-2143440361-2401194771-2834292696-513D:AI(A;OICIID;0x1301bf;;;S-1-5-21-2933390137-2761418519-4238240170-3440152423)(A;OICIID;0x1301bf;;;S-1-5-21-2143440361-2401194771-2834292696-1007)(A;OICIID;0x1301bf;;;S-1-5-21-508907303-650468681-657930608-2592853934)(A;OICIID;0x1301bf;;;S-1-5-21-4035059943-477547970-1429634018-2988928154)(A;OICIID;0x1301bf;;;S-1-5-21-2518217512-924403484-3126150020-4068977738)(A;OICIID;0x1201bf;;;S-1-5-21-3196987755-645262271-1812859691-161968540)(A;OICIID;0x1201bf;;;S-1-5-21-4076592078-2436558002-3879035924-2471277131)(A;OICIID;0x1201bf;;;S-1-5-21-3904839700-1168295041-1664799433-2907349765)(A;OICIID;0x1301ff;;;S-1-5-21-2902223353-1517542153-2306965683-878116148)(A;OICIID;0x1301ff;;;S-1-5-21-2143440361-2401194771-2834292696-1004)(A;OICIID;0x1301ff;;;S-1-5-21-4250679582-4070590271-176867373-4277401356)(A;ID;FA;;;BA)(A;OICIIOID;GA;;;BA)(A;ID;FA;;;SY)(A;OICIIOID;GA;;;SY)(A;ID;0x1301bf;;;AU)(A;OICIIOID;SDGXGWGR;;;AU)(A;ID;0x1200a9;;;BU)(A;OICIIOID;GXGR;;;BU)",
+    "before_hashes": {
+      "denied/nested/package.json": "ADCF03784D4A1D8E2D50E0E5C6375A7065A127C17519715F22E891EC24A5A4F0",
+      "denied/nested/node_modules/cache.bin": "63E3CA8A8F01EF2161A919D1E53B55988A2FBDB58A54C77B8270B90DBB6A7652",
+      "healthy/package.json": "ADCF03784D4A1D8E2D50E0E5C6375A7065A127C17519715F22E891EC24A5A4F0",
+      "healthy/node_modules/cache.bin": "27E03D980406E91C265600E06889A827752284A4D4C30EB6FD26384E235C11A3"
+    },
+    "after_hashes": {
+      "denied/nested/package.json": "ADCF03784D4A1D8E2D50E0E5C6375A7065A127C17519715F22E891EC24A5A4F0",
+      "denied/nested/node_modules/cache.bin": "63E3CA8A8F01EF2161A919D1E53B55988A2FBDB58A54C77B8270B90DBB6A7652",
+      "healthy/package.json": "ADCF03784D4A1D8E2D50E0E5C6375A7065A127C17519715F22E891EC24A5A4F0",
+      "healthy/node_modules/cache.bin": "27E03D980406E91C265600E06889A827752284A4D4C30EB6FD26384E235C11A3"
+    }
+  },
+  "lifecycle": {
+    "pid": 116816,
+    "exit_code": 0,
+    "elapsed_ms": 48230.46080000495,
+    "timed_out": false,
+    "forced_teardown": [],
+    "owned_after_exit": [],
+    "lifecycle_pass": true
+  },
+  "normal_close": {
+    "pid": 116816,
+    "created": "134363866264658022",
+    "windows": [
+      {
+        "handle": 48242408,
+        "visible": false,
+        "minimized": false,
+        "class": "tray_icon_app",
+        "title": ""
+      },
+      {
+        "handle": 18948010,
+        "visible": true,
+        "minimized": false,
+        "class": "Tauri Window",
+        "title": "DevSweep"
+      }
+    ],
+    "normal_wm_close_count": 1
+  },
+  "post_exit_settle_ms": 239.74579999776324,
+  "raw_sha256": {
+    "dist/native-acl-c2-04-smoke/result.json": "7eb3d98dd8acdc4f1291dafde879052cc8304df03b2e409a9805a526022afbc6",
+    "dist/native-acl-c2-04-smoke/scope-preflight.json": "62d4ed7164d53f8b17ae4407401eb66ba3e008a8786c08341d79a1cba8b5fb0e",
+    "dist/native-acl-c2-04-smoke/tauri-report.json": "fc3950434c7e2b39387bbf01590dbde5d4c7af50e03b5f8366d2ecd16b03e2f1",
+    "dist/native-acl-c2-04-smoke/cli-envelope.json": "2fab69a9fec2d5b7d97e65274f0b3dcc96bfa26216c376d167393434f6a14b9b",
+    "dist/native-acl-c2-04-smoke/cli-isolated-global-envelope.json": "523b54cd35f6fa4060eca628736a4ec284291c95e511df5ffd1e82ce42ed251e",
+    "dist/native-acl-c2-04-smoke/partial-ui.json": "dc2533ffb37a81f2d6408e7ef3268bf918ed027a9234408b9e9bbabf69163523",
+    "dist/native-acl-c2-04-smoke/review-ui.json": "c983438ae01ee4222334ae57dad6d9b6bc7b2549e9c69ee1729f9b9cb4d14652",
+    "dist/native-acl-c2-04/launch.json": "e9c4303e1c63f5136eb8254140c650db887de7fe80a4d24bcce466c738803dc0",
+    "dist/native-acl-c2-04/summary.json": "171023e621b5d6ab115d60a9aaf8ff4586bf7e6eabddde92abb734849318789b",
+    "dist/native-acl-c2-04/explicit-close.json": "0693fc8c28a7918374e45fabca288429ce01d75695a39365848cb43f315b5098",
+    "dist/native-acl-c2-04/fixture-environment.json": "95b4aafcde75f5faeb6919e4341855f6f99900e7955421c2d4d4e4b11bbe62db",
+    "dist/native-acl-fixture-02/acl-evidence-reviewed.json": "8f8d9b27a7649d8be9a7fb8cd962a2b97c58c0a4f78181fbe47c0ea2e3ecba16",
+    "dist/performance/cleanup-earth/run-native-acl-launch-04.py": "1e4c4e8c166f2446e2643f9629d3560a866841147e869b3fefb3e118e073c03a",
+    "dist/performance/cleanup-earth/run-native-acl-case-04.ps1": "e9af52398a3191fabd0297bc01559079f974cbded59104137c90aac515059166",
+    "dist/performance/cleanup-earth/run-native-acl-smoke-projects-reviewed.mjs": "93c842926464cdc7fefc04d12e0330a91e48754fab5960f6eb2dd141662a27e3"
+  },
+  "historical_failed_attempts": [
+    "dist/native-acl-c2-01",
+    "dist/native-acl-c2-02",
+    "dist/native-acl-c2-03-smoke"
+  ],
+  "unintended_read_only_global_scan": "Historical launch03 positional scope bug, completed; no preview/cleanup/execute. Preserved, not acceptance."
+}

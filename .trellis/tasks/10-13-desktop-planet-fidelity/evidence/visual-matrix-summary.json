@@ -1,0 +1,1771 @@
+{
+  "method": "Production component visual matrix; desktop window and native lifecycle remain separate",
+  "raw_directory": ".trellis/tasks/10-13-desktop-planet-fidelity/evidence/dist/visual-matrix-20261013-native",
+  "modes": [
+    {
+      "mode": "baseline",
+      "captures": [
+        {
+          "name": "en-390-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 136,
+          "output_diameter": 136,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "4ff5bfd76bf06ae505db9f3fa69765e1aa9a0366e5a0fec19b50c890daae1d41"
+        },
+        {
+          "name": "en-390-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 170,
+          "output_diameter": 170,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "016e43d648ff0f018558829dc63f0a1c3e020173e5cb8d614610106ee06ec352"
+        },
+        {
+          "name": "en-390-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 204,
+          "output_diameter": 204,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "b0c2478b6d04bbfc4541f2213a8c37d081ed41a3d720024e11f9d7e66791d967"
+        },
+        {
+          "name": "en-390-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 272,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "13d900d634a1d91db80152157405630e58f1e923eb96f0a5323cdc00e787e5dc"
+        },
+        {
+          "name": "en-800-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 168,
+          "output_diameter": 168,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "4f0bc89567f25f7c5fc59457ac0bb18b2089c639a2e563e321e7a9595768271f"
+        },
+        {
+          "name": "en-800-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 210,
+          "output_diameter": 210,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "2055db1642e0b817799f1aa43c739d57a316d05383b11a86c9c0ac7770f83888"
+        },
+        {
+          "name": "en-800-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 252,
+          "output_diameter": 252,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "479ee84d1990429bba4810fbe59a3b349cf90b843d8e8bbeebe2934c67b749c7"
+        },
+        {
+          "name": "en-800-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 336,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "345a93cfe0d2c8fae2021eee83b3b97f58119245b8f213ab8f89593e44d35ec7"
+        },
+        {
+          "name": "en-1024-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "2a339c2e739261aed431220bc8aef321eb26ab1675aef7186c12d70c8ee17f1f"
+        },
+        {
+          "name": "en-1024-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "132d7a5d4a9b916fccbecfe755a02386cab54c06941d7e834491843239311726"
+        },
+        {
+          "name": "en-1024-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "7837984d5e9d94515d9da55ce7c952b3ad664420cad1afc7e20effdc2a2180a3"
+        },
+        {
+          "name": "en-1024-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "a5eb0ef36049311b5d79319426663378cb51d768349b37310508b6189dab6cca"
+        },
+        {
+          "name": "en-1440-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "7cdcb228c320bc392df78c0dd61d50d382e010e6cacfd16224b10bd2f057eb7d"
+        },
+        {
+          "name": "en-1440-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "1365da9d0e77bf02a8b7f324fb7b0ac5cd504cbeff3a9a3a1b19394f6142132a"
+        },
+        {
+          "name": "en-1440-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "4b8a742ef4e514ca8e6281ac57a684ba0e83b9fcd5065ac542f2828e84520719"
+        },
+        {
+          "name": "en-1440-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "4e829f917ee9990c98f6a804584760f84ea267620fabf34ef74988ea61e24a10"
+        },
+        {
+          "name": "zh-CN-390-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 136,
+          "output_diameter": 136,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "35cec3b59ff7ad41df1ff484cee0e2465e702d7be597670c20349dbee8deb446"
+        },
+        {
+          "name": "zh-CN-390-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 170,
+          "output_diameter": 170,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "c03089c4b1477dd96310ca28106e95c803fcc0250e56af9cb8ab3a7f03028057"
+        },
+        {
+          "name": "zh-CN-390-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 204,
+          "output_diameter": 204,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "cbe3522d352964b75760757d62eed099593d1621c3c3fef6a2a9b021da91ccd4"
+        },
+        {
+          "name": "zh-CN-390-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 272,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "e4a28dbb8faa0e456c8ba37779bf68c0cb2f53e1986651ef23b889e71c33c15e"
+        },
+        {
+          "name": "zh-CN-800-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 168,
+          "output_diameter": 168,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "765a7e149e2dc93de37e03beda0fb83ee34dc7dc6a1a00d40750bca80f138b0d"
+        },
+        {
+          "name": "zh-CN-800-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 210,
+          "output_diameter": 210,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "f77b7b8b50df29b7848e0b3efafd6a9847d4dcb03c8cb6b5194e12d935d0b768"
+        },
+        {
+          "name": "zh-CN-800-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 252,
+          "output_diameter": 252,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "a0bdbcb9a8f4ce79e38f0f053ed116aa0de5810872874a3baceeb260d24eca6d"
+        },
+        {
+          "name": "zh-CN-800-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 336,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "76d46197540baf56552e49f76eecdfb110d045247fcbc539198ca38fa5ac7a88"
+        },
+        {
+          "name": "zh-CN-1024-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "a489345a698bd0f1d9aa7eaf18c5032f9392ea84dbab5cfb640ba71e60ee8633"
+        },
+        {
+          "name": "zh-CN-1024-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "0e6efa406e612760cdda6892ad5e56405a4532ebd2dbe76db386a83391e1a2a4"
+        },
+        {
+          "name": "zh-CN-1024-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "2d9671227c2a433a5ed4930cda82836b94018156a5d3658bfc5ccaefa0f0ea44"
+        },
+        {
+          "name": "zh-CN-1024-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "4429a2a74437f91f2930ce05089c98cce501c68e7693405c48806c24478ddec0"
+        },
+        {
+          "name": "zh-CN-1440-1.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "e506f8907ce46bead48828a94af83c925404450dcc0b435d8b90af613f08f17b"
+        },
+        {
+          "name": "zh-CN-1440-1.25.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "9ca3b9e4e2a979d4475793673e47d19e5f86b668f8cd9405e77e60fec50dee05"
+        },
+        {
+          "name": "zh-CN-1440-1.5.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "f304e0fe0af8a841d5b1a187a477a8fb553463fb9d54f1036405db30eb2fedb9"
+        },
+        {
+          "name": "zh-CN-1440-2.png",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "91d27ab4a7b4e60d0c1391b7fd89c1a3c40feaef66289f934b3437a691b525c3"
+        },
+        {
+          "name": "light",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": "block",
+          "screenshot_sha256": "35f99ac6fbaa324be6bf4971423eb484c0174c78ca35460bac47faa288ca56be"
+        },
+        {
+          "name": "forced",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": null,
+          "draw_count": 0,
+          "owned_frames": 0,
+          "source_diameter": null,
+          "output_diameter": 300,
+          "fallback_hidden": null,
+          "canvas_display": "none",
+          "screenshot_sha256": "60ddd1deedd4434fc098f78bea46829a6f0f95b50485cdef0c9cc047b3d73964"
+        },
+        {
+          "name": "texture-failure",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": "block",
+          "screenshot_sha256": "4e829f917ee9990c98f6a804584760f84ea267620fabf34ef74988ea61e24a10"
+        },
+        {
+          "name": "both-assets-failed",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": "block",
+          "screenshot_sha256": "4e829f917ee9990c98f6a804584760f84ea267620fabf34ef74988ea61e24a10"
+        },
+        {
+          "name": "context-unavailable",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": null,
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": "block",
+          "screenshot_sha256": "4e829f917ee9990c98f6a804584760f84ea267620fabf34ef74988ea61e24a10"
+        },
+        {
+          "name": "fps15",
+          "build": {
+            "mode": "baseline",
+            "baseline": "e75a29d",
+            "source_sha256": "f7c4fee4e1e809866f7abaedbb7ffed59f2548ec17cdad0fc251fc179f4cc9f2"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": null,
+          "draw_count": 72,
+          "owned_frames": 1,
+          "source_diameter": 256,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": "block",
+          "screenshot_sha256": "48f27455f9d9a96e0df733f60e1dafffdd2b1f7171504977802172138892b15e"
+        }
+      ]
+    },
+    {
+      "mode": "production",
+      "captures": [
+        {
+          "name": "en-390-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 136,
+          "output_diameter": 136,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "d52f2ea8d8a01d742e7177c46ece554c11060022f3a5f95de2036e078464d213"
+        },
+        {
+          "name": "en-390-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 170,
+          "output_diameter": 170,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "6a8ac984cbd8919a0aa172009bb9c08969c364c0503f2b4e1ea4ada24eac6ce2"
+        },
+        {
+          "name": "en-390-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 204,
+          "output_diameter": 204,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "4dd3dee80cc7476cadaaa477f0f033064fa5bd09c37840dee5a39acb07301477"
+        },
+        {
+          "name": "en-390-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 272,
+          "output_diameter": 272,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "b5fdf4046d677506fc6412d9c36b6af48b8cf283266d7fc59be35d91beb34f5b"
+        },
+        {
+          "name": "en-800-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 168,
+          "output_diameter": 168,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "36a1b96bc07b5b6328e9bf8c3cf2988c96187a3878d17f3499ef6b23b0cf222c"
+        },
+        {
+          "name": "en-800-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 210,
+          "output_diameter": 210,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "5b1dce78ae877a5b52f40edf78bc320b5a887a31b25684dd84eb34c51ef3cd49"
+        },
+        {
+          "name": "en-800-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 252,
+          "output_diameter": 252,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "06b115ec03a35f256fafafa3bc03193a0abf812a6b5028dbb3a9ae14cb17771b"
+        },
+        {
+          "name": "en-800-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 336,
+          "output_diameter": 336,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "d06b6c13c7346855ea530c363197bb2688616779e8ad11da154f5cf06dda7d55"
+        },
+        {
+          "name": "en-1024-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "044ce305f248351cbd54ba07de92d8c2daef6d36fcd17f352f8cadb4ea85c2f8"
+        },
+        {
+          "name": "en-1024-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 290,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "83c395814f3757287b4ffd3e970670cd14a5154a11d488874a5143d64418469d"
+        },
+        {
+          "name": "en-1024-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 348,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "5f757fe1c17cf8a61cb53302234b0e13f949926e897a913650764b2b36a388ee"
+        },
+        {
+          "name": "en-1024-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 464,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "dc3419f95b80f8106a66300b6c49dccd322846ebdb481867ed987ea577d7bc30"
+        },
+        {
+          "name": "en-1440-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "591c7391cdcb9128e7f80833dd62af93fbc57443fc831fd26e4b0872cafaa743"
+        },
+        {
+          "name": "en-1440-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 290,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "2c359bf85ba72b7ccad559cc6087c3a5a9f0431691c43073866ee2cdcbc34af5"
+        },
+        {
+          "name": "en-1440-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 348,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "df3b0e037d4aa72076ffdb9580f0c320cb45660bdfdbd44569fab74c7f16f573"
+        },
+        {
+          "name": "en-1440-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 464,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "f08b368fc9418fceef0bb8cf8452176aa7f4dcaeb764f89eecc6f844269518e7"
+        },
+        {
+          "name": "zh-CN-390-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 136,
+          "output_diameter": 136,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "f4b1d1bb7bc741ef51efb21b6b9fdaa50399ced51bee5847e85ec3fedd31b37e"
+        },
+        {
+          "name": "zh-CN-390-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 170,
+          "output_diameter": 170,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "66cef7f3f095a2131ca8dde5fc12092865fd6adf0490edabadc373cb50867502"
+        },
+        {
+          "name": "zh-CN-390-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 204,
+          "output_diameter": 204,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "0fbbc3ce8895fb493cc83a8d47de7ca24435205a5e71eb20163b3376211698ca"
+        },
+        {
+          "name": "zh-CN-390-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 390,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 272,
+          "output_diameter": 272,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "d4e63cef7504afeddcfc93794c24d6a5cb7c3e2c2e0d87dbeff5358ef47f254f"
+        },
+        {
+          "name": "zh-CN-800-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 168,
+          "output_diameter": 168,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "d06bc22f5b7cc03cc1d6ad53fe91f96889c2869880fb0e945552495da59569de"
+        },
+        {
+          "name": "zh-CN-800-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 210,
+          "output_diameter": 210,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "7635425e6a5fa52c306f841fbc155f0618f644d55c4d39663385b292ca971e7c"
+        },
+        {
+          "name": "zh-CN-800-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 252,
+          "output_diameter": 252,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "0720bc3ed1b75edfcf3ec6d7735346076f0de0ee088968ffdf8404e2e588659c"
+        },
+        {
+          "name": "zh-CN-800-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 800,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 336,
+          "output_diameter": 336,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "259df10f5fba0fee081978b522a21a7d92359769548e208e5b27cb2c81051487"
+        },
+        {
+          "name": "zh-CN-1024-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "7fc2598a2556e6033874f924863c079e283c9b51ae9e07caf5f793afd3f13e75"
+        },
+        {
+          "name": "zh-CN-1024-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 290,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "6006b5ea69ec7a5a478331ff918e9f617de40ed5ec6d8f4190ec52997d4c159a"
+        },
+        {
+          "name": "zh-CN-1024-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 348,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "0d843ba5e502b81df6aa6a021f05ebb16d0bfa54079e8e93cc89b3792b09feae"
+        },
+        {
+          "name": "zh-CN-1024-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1024,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 464,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "ed1efab713f0b7f183c71b1131f32fa9dcabe6097a6bb5c736490373c27582e6"
+        },
+        {
+          "name": "zh-CN-1440-1.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 232,
+          "output_diameter": 232,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "ac14b5315a76159a107a205c5a1d66e62bf26cfc4b76d42cf45fbe2ccbb9eda5"
+        },
+        {
+          "name": "zh-CN-1440-1.25.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.25,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 290,
+          "output_diameter": 290,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "e5abd79dcb1626baa9455ffce44501227e29d3432d08a98ed3a4171a97d994eb"
+        },
+        {
+          "name": "zh-CN-1440-1.5.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 1.5,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 348,
+          "output_diameter": 348,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "50b7c79da3f5612e566dc5046d3ecff204b34b74a34986472f0eaaee284b1a9b"
+        },
+        {
+          "name": "zh-CN-1440-2.png",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": "\"Segoe UI Variable\", system-ui, \"Microsoft YaHei UI\", sans-serif",
+          "overflow": false,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 464,
+          "output_diameter": 464,
+          "fallback_hidden": null,
+          "canvas_display": null,
+          "screenshot_sha256": "5bebf2381889a1b139c4f890d524c9be78608e0cd7eb43c8ef4d67380959fad0"
+        },
+        {
+          "name": "light",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": "ready",
+          "draw_count": 1,
+          "owned_frames": 0,
+          "source_diameter": 464,
+          "output_diameter": 464,
+          "fallback_hidden": false,
+          "canvas_display": "block",
+          "screenshot_sha256": "60bcd35c3bc668d6217b6ac76bfca84d80fd7ede04b3feea3f05226cfdb325e4"
+        },
+        {
+          "name": "forced",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": "fallback",
+          "draw_count": 0,
+          "owned_frames": 0,
+          "source_diameter": null,
+          "output_diameter": 300,
+          "fallback_hidden": null,
+          "canvas_display": "none",
+          "screenshot_sha256": "60ddd1deedd4434fc098f78bea46829a6f0f95b50485cdef0c9cc047b3d73964"
+        },
+        {
+          "name": "texture-failure",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": "fallback",
+          "draw_count": 0,
+          "owned_frames": 0,
+          "source_diameter": null,
+          "output_diameter": 300,
+          "fallback_hidden": false,
+          "canvas_display": "block",
+          "screenshot_sha256": "3913de09829cc8d993ca6a4a070cd7dbfc177d5ef9e303d011817c4895a9cb2e"
+        },
+        {
+          "name": "both-assets-failed",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": "fallback",
+          "draw_count": 0,
+          "owned_frames": 0,
+          "source_diameter": null,
+          "output_diameter": 300,
+          "fallback_hidden": true,
+          "canvas_display": "block",
+          "screenshot_sha256": "d746c968cee6fe10bda60e9bbbe055690d8322360ccb8dd4171dbad60918b305"
+        },
+        {
+          "name": "context-unavailable",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": "fallback",
+          "draw_count": 0,
+          "owned_frames": 0,
+          "source_diameter": null,
+          "output_diameter": 300,
+          "fallback_hidden": false,
+          "canvas_display": "block",
+          "screenshot_sha256": "3913de09829cc8d993ca6a4a070cd7dbfc177d5ef9e303d011817c4895a9cb2e"
+        },
+        {
+          "name": "fps15",
+          "build": {
+            "mode": "production",
+            "baseline": null,
+            "source_sha256": "478df97837bbefd23b23576dc5580f520e94d786fd96f5b472883bacc2f77659"
+          },
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "dpr": 2,
+          "font": null,
+          "overflow": null,
+          "render_state": "ready",
+          "draw_count": 72,
+          "owned_frames": 1,
+          "source_diameter": 464,
+          "output_diameter": 464,
+          "fallback_hidden": false,
+          "canvas_display": "block",
+          "screenshot_sha256": "53bee81dd6b63bb8f8b8e6f536f3f125a340ae7dd7b845dc6c1584e66f430d2c"
+        }
+      ]
+    }
+  ],
+  "teardown": {
+    "pid": 125428,
+    "forced": false,
+    "exit_code": 0,
+    "signal": null,
+    "lifecycle_pass": true
+  }
+}
