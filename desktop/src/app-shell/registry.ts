@@ -21,6 +21,8 @@ export interface ShellRegistrationInput {
   readonly bridge: DesktopBridge;
   readonly coordinator: OperationCoordinator;
   readonly locale: PresentationLanguageTag;
+  readonly analyzeRoot?: string;
+  readonly onAnalyzeRoot?: (root: string) => void;
 }
 
 const MODE_ADAPTERS: Record<ModeId, (input: ShellRegistrationInput) => ReactNode> = {
@@ -28,6 +30,7 @@ const MODE_ADAPTERS: Record<ModeId, (input: ShellRegistrationInput) => ReactNode
     bridge: input.bridge,
     coordinator: input.coordinator,
     locale: input.locale,
+    onAnalyzeRoot: input.onAnalyzeRoot,
   }),
   software: (input) => createElement(SoftwareWorkbench, {
     bridge: input.bridge,
@@ -43,6 +46,7 @@ const MODE_ADAPTERS: Record<ModeId, (input: ShellRegistrationInput) => ReactNode
     bridge: input.bridge,
     coordinator: input.coordinator,
     locale: input.locale,
+    initialRoot: input.analyzeRoot,
   }),
   status: (input) => createElement(StatusWorkbench, {
     bridge: input.bridge,

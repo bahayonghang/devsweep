@@ -98,6 +98,16 @@ permissions scoped to the main window and keep the HUD read-only.
   facts aligned.
 - Keep the persistent summary/action bar outside the table frame. It must remain
   stable when selection, errors, or result counts change.
+- Clean tables display at most 100 rows per table page. Native
+  first/previous/next/last buttons announce the current page and item range;
+  keyboard activation and complete path text remain available. This is a
+  display limit, never a report or selection limit. Search reaches the full
+  completed report or read-only preview and resets the displayed page;
+  shorter replacement lists clamp it. Keep pagination usable at narrow widths.
+- Mount evidence contents only while their native disclosure is open, and
+  mount the Skipped table only while its disclosure is open. Keep collapsed
+  counts and the underlying report intact. Reuse stable derived groups rather
+  than sorting the complete report again for a selection-only change.
 - Analyze tiles and list rows open a context menu from right-click,
   Shift+F10, or the ContextMenu key. The menu is a real `role=menu` with
   `role=menuitem` entries "Show in Explorer" and "Move to Recycle Bin".
@@ -254,24 +264,33 @@ use the current UI font; only the committed family drives the sample and root.
 - The original product icon may appear in native chrome and the brand button.
   When adjacent DevSweep text supplies the accessible product name, the image
   is decorative so the product name is announced once.
-- The procedural planet (`desktop/src/stage/Planet.tsx`) is the only stage
-  hero. It is drawn by DevSweep code on a `<canvas>` from a per-mode seed and
-  an original palette in `planet-palettes.ts` (Clean ocean/land, Software
-  rust-red, Optimize grey-silver, Analyze banded amber, Status warm
-  yellow-white). It is `aria-hidden`, non-interactive, and carries no data.
-  It renders at a capped source resolution (256 px diameter), rotates at no
-  more than the selected 15/30 frames per second only while the mode is active and the
-  document is visible, stops on route change, `visibilitychange` to hidden,
-  and unmount, and draws exactly one still frame under
-  effective reduced motion (OS preference or app setting). Under
-  `forced-colors: active` it renders as a
-  plain outlined circle. No image asset, texture file, photograph, WebGL, or
-  new dependency backs it.
+- The decorative planet (`desktop/src/stage/Planet.tsx`) is the only stage
+  hero. Clean uses recognizable real geography from a locally bundled,
+  redistributable Earth texture with recorded provenance and a local still
+  fallback. Software, Optimize, Analyze, and Status retain DevSweep's seeded
+  procedural sources and original palettes in `planet-palettes.ts`. All
+  planets are `aria-hidden`, non-interactive, and carry no data.
+  Clean's effective DPR is capped at 2 and its source/output diameter at
+  512 px; choose the smallest measured source that meets native fidelity and
+  frame budgets. Other modes retain their 256 px source cap. Render at no
+  more than the selected 15/30 frames per second only while the mode is active
+  and both the document and native main window are visible. WebView2 minimize
+  can leave document visibility unchanged; consume the decoration-only native
+  bridge from [Desktop Runtime](../backend/desktop-runtime.md). Stop on route change, hidden visibility, and
+  unmount; async decode must not revive a stale renderer. Effective reduced
+  motion (OS preference or app setting) draws one still pose, redrawn only
+  after asset readiness or an actual size/DPR change. Under
+  `forced-colors: active`, use a plain outlined circle without texture work.
+  Asset/context failure keeps a local fallback or outline and usable controls.
+  No runtime asset download or new production dependency is permitted.
+  Keep Canvas2D unless a documented dependency-free WebGL comparison is
+  needed to meet the approved fidelity/performance budgets. Record source
+  license, transformation, dimensions and checksums in distribution notices.
 - A status chip is a pill, 11px semibold, dot plus text, and semantic tint only.
 - A stacked meter uses solid segments with 2px separators and no animation
   beyond width transition, still under reduced motion. Segments are verified
   and partial lower bound only. Unknown is labelled, never drawn.
-- Prohibit glass, glow, photographic planets, NASA imagery, Mole assets,
+- Prohibit glass, glow, unlicensed planet imagery, copied Mole assets,
   textures, geometry, or colour values, fake macOS traffic lights,
   `linear-gradient`, `radial-gradient`, `backdrop-filter`, and copy that says
   space was freed or released. Shading exists only inside the planet canvas.

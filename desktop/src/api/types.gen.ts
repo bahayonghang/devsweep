@@ -149,6 +149,12 @@ export interface CleanMovedTotalsV1 {
     unknown_records: number;
 }
 
+export interface CleanScanPreferencesSnapshot {
+    roots:       string[];
+    suggestions: string[];
+    version:     number;
+}
+
 export interface CleanupIntentInspectOnly {
     rule_id: string;
     type:    "inspect_only";
@@ -589,11 +595,25 @@ export interface ScanReport {
 
 export interface ScanHealth {
     completeness: ScanCompleteness;
+    coverage?:    ScanCoverage[];
     diagnostics:  ScanDiagnostic[];
     totals:       ScanTotals;
 }
 
 export type ScanCompleteness = "complete" | "partial";
+
+export interface ScanCoverage {
+    detail:       string;
+    id:           string;
+    path:         null | string;
+    scope:        ScanCoverageScope;
+    status:       ScanCoverageStatus;
+    target_count: number;
+}
+
+export type ScanCoverageScope = "project" | "provider";
+
+export type ScanCoverageStatus = "absent" | "budget_limited" | "busy" | "canceled" | "complete" | "empty" | "failed" | "output_truncated" | "ownership_unknown" | "protected" | "skipped" | "timeout" | "unsupported";
 
 export interface ScanDiagnostic {
     detail:   string;

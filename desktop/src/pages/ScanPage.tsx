@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { ScanOptions, ScanPhase } from "../api/types.gen";
 import { formatBytes } from "../components/format";
 import { message, type PresentationLanguageTag } from "../i18n";
@@ -19,6 +19,8 @@ export function ScanPage(props: {
   locale?: PresentationLanguageTag;
   stage?: boolean;
   empty?: boolean;
+  incomplete?: boolean;
+  rootControls?: ReactNode;
   activeScan: ActiveScan | null; busy: boolean; options: ScanOptions;
   onOptions: (options: ScanOptions) => void; onScan: () => void; onCancel: () => void;
 }) {
@@ -44,7 +46,7 @@ export function ScanPage(props: {
   const headline = scanning
     ? message(locale, "clean.v1.stage.scanning_headline")
     : props.empty
-      ? message(locale, "clean.v1.scan.empty")
+      ? message(locale, props.incomplete ? "clean.v1.coverage.partial_empty" : "clean.v1.scan.empty")
       : message(locale, "clean.v1.stage.headline");
   const lede = props.empty
     ? message(locale, "clean.v1.review.empty_hint")
@@ -99,7 +101,7 @@ export function ScanPage(props: {
   </div>;
   const action = (scanClass: string, cancelClass: string) => scanning
     ? <button className={cancelClass} onClick={props.onCancel} disabled={props.activeScan?.cancelRequested}>{props.activeScan?.cancelRequested ? message(locale, "clean.v1.action.cancel") : message(locale, "clean.v1.action.cancel_scan")}</button>
-    : <button className={scanClass} onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global)}>{scanLabel}</button>;
+    : <button className={scanClass} onClick={props.onScan} disabled={props.busy || (!props.options.include_projects && !props.options.include_global) || (props.options.include_projects && props.options.roots.length === 0)}>{scanLabel}</button>;
   const scanStatus = scanning ? <div className="scan-status" aria-busy="true">
     <ol className="phase-rail" aria-label={scanLabel}>
       {requested.map((phase) => <li key={phase} data-state={phaseState(phase, requested, current)}>
@@ -116,6 +118,7 @@ export function ScanPage(props: {
   if (!stage) {
     return <section className="scan-toolbar" aria-label={scanLabel}>
       {scopeControls}
+      {props.options.include_projects && props.rootControls}
       <div className="scan-status"><span className="ready-status">{readyLabel}</span></div>
       {action("primary-button fixed-action", "secondary-button fixed-action")}
     </section>;
@@ -123,7 +126,7 @@ export function ScanPage(props: {
   return <Stage
     mode="clean"
     label={scanLabel}
-    className="clean-stage"
+    className={props.options.include_projects && props.rootControls ? "clean-stage clean-scope-stage" : "clean-stage"}
     busy={scanning}
     title={headline}
     meta={scanning
@@ -133,7 +136,7 @@ export function ScanPage(props: {
           <span className="stage-result-value">{formatBytes(foundBytes)}</span>
         </p>
       : <p className="stage-lede">{lede}</p>}
-    controls={<>{scopeControls}{scanStatus}</>}
+    controls={<>{scopeControls}{props.options.include_projects && props.rootControls}{scanStatus}</>}
     primary={action("stage-action", "stage-action")}
     secondary={scanning
       ? <p className="plaque-phase">{phaseLabel}</p>

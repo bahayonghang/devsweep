@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ScanTotals, UntrustedTarget } from "../api/types.gen";
 import { DestinationGlyph } from "../app-shell";
 import { formatBytes, formatTotals } from "../components/format";
@@ -6,9 +6,20 @@ import { TargetTable } from "../components/TargetTable";
 import { message, type PresentationLanguageTag } from "../i18n";
 import { orderGroups } from "../modes/clean/impact";
 import { kindLabel, scopeLabel } from "../modes/clean/labels";
+import { ScanCoverage } from "../modes/clean/ScanCoverage";
 import type { AppState } from "../state/app-state";
 import { isSelectable } from "../state/app-state";
 import { allExecutableSelected, selectedTotals } from "../state/selectors";
+
+const NO_TARGETS: UntrustedTarget[] = [];
+
+function SkippedTargets({ summary, children }: { summary: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return <details className="preview-group card skipped-group" onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary>{summary}</summary>
+    {open && children}
+  </details>;
+}
 
 function groupTotals(targets: readonly UntrustedTarget[]): ScanTotals {
   return targets.reduce<ScanTotals>((totals, target) => {
@@ -44,19 +55,31 @@ function CapacityMeter({ locale, totals }: { locale: PresentationLanguageTag; to
 export function ReviewPage(props: {
   locale?: PresentationLanguageTag;
   state: AppState;
+  /** Filters presentation only; summaries and selection retain the full report. */
+  query?: string;
   onSelect: (id: string, selected: boolean) => void;
   onSelectAll: (selected: boolean) => void;
   onDryRun: () => void;
   onSkip?: (id: string) => void;
   onRestore?: (id: string) => void;
   onProtect?: (target: UntrustedTarget) => void;
+  onRescan?: (target: UntrustedTarget) => void;
+  onAnalyze?: (target: UntrustedTarget) => void;
 }) {
   const locale = props.locale ?? "en";
-  const targets = props.state.scan?.plan.targets ?? [];
+  const targets = props.state.scan?.plan.targets ?? NO_TARGETS;
   const busy = props.state.pending !== null || props.state.phase === "executing";
   const skippedIds = props.state.skippedIds;
-  const groups = orderGroups(targets.filter((target) => !skippedIds.has(target.id)));
-  const skipped = targets.filter((target) => skippedIds.has(target.id));
+  const query = props.query?.trim().toLowerCase() ?? "";
+  const { groups, skipped, visibleCount } = useMemo(() => {
+    const visibleTargets = query ? targets.filter((target) => `${target.path ?? ""} ${target.id}`.toLowerCase().includes(query)) : targets;
+    return {
+      groups: orderGroups(visibleTargets.filter((target) => !skippedIds.has(target.id)))
+        .map((group) => ({ ...group, totals: groupTotals(group.targets) })),
+      skipped: visibleTargets.filter((target) => skippedIds.has(target.id)),
+      visibleCount: visibleTargets.length,
+    };
+  }, [targets, skippedIds, query]);
   const executable = targets.filter((target) => isSelectable(props.state, target));
   const selectedExecutable = executable.filter((target) => props.state.selectedIds.has(target.id)).length;
   const totals = selectedTotals(props.state);
@@ -69,8 +92,9 @@ export function ReviewPage(props: {
   if (targets.length === 0) {
     return <section className="card clean-stage">
       <p className="stage-eyebrow">{message(locale, "clean.v1.stage.eyebrow")}</p>
-      <h2 className="stage-headline">{message(locale, "clean.v1.scan.empty")}</h2>
+      <h2 className="stage-headline">{message(locale, props.state.scan.health.completeness === "partial" ? "clean.v1.coverage.partial_empty" : "clean.v1.scan.empty")}</h2>
       <p className="stage-lede">{message(locale, "clean.v1.review.empty_hint")}</p>
+      <ScanCoverage locale={locale} health={props.state.scan.health} />
     </section>;
   }
   return <section className="workspace">
@@ -85,19 +109,21 @@ export function ReviewPage(props: {
         <input ref={selectAllRef} type="checkbox" aria-label="Select all executable targets" checked={allExecutableSelected(props.state)} disabled={busy || executable.length === 0} onChange={(event) => props.onSelectAll(event.target.checked)} />
         {message(locale, "clean.v1.preview.selected", { count: String(props.state.selectedIds.size) })}
       </label>
-      {props.state.scan.health.diagnostics.length > 0 && <details className="diagnostics"><summary>{props.state.scan.health.diagnostics.length}</summary>{props.state.scan.health.diagnostics.map((item, index) => <p key={`${item.path}-${index}`}><strong>{item.stage}:</strong> {item.detail}</p>)}</details>}
+      <ScanCoverage locale={locale} health={props.state.scan.health} />
       {props.state.protectedIds.size > 0 && <p className="rescan-hint" role="status">{message(locale, "clean.v1.review.rescan_hint")}</p>}
       <button className="primary-button wide-action" disabled={props.state.selectedIds.size === 0 || busy} onClick={props.onDryRun}>{message(locale, "clean.v1.action.preview")}</button>
     </section>
     <div className="preview-groups">
+      {visibleCount === 0 && <p role="status">{message(locale, "clean.v1.search.empty")}</p>}
       {groups.map((group) => <section className="preview-group card" key={`${group.kind}-${group.scope}`}>
         <header>
           <span className="glyph-tile"><DestinationGlyph name={group.kind} /></span>
           <h3>{kindLabel(locale, group.kind)} <span>{group.targets.length}</span></h3>
           <p>{scopeLabel(locale, group.scope)}</p>
-          <span className="group-subtotal">{formatTotals(groupTotals(group.targets))}</span>
+          <span className="group-subtotal">{formatTotals(group.totals)}</span>
         </header>
         <TargetTable
+          key={query}
           locale={locale}
           mode="review"
           targets={group.targets}
@@ -110,11 +136,13 @@ export function ReviewPage(props: {
           onSelectAll={() => undefined}
           onSkip={props.onSkip}
           onProtect={props.onProtect}
+          onRescan={props.onRescan}
+          onAnalyze={props.onAnalyze}
         />
       </section>)}
-      {skipped.length > 0 && <details className="preview-group card skipped-group">
-        <summary>{message(locale, "clean.v1.review.skipped", { count: String(skipped.length) })}</summary>
+      {skipped.length > 0 && <SkippedTargets summary={message(locale, "clean.v1.review.skipped", { count: String(skipped.length) })}>
         <TargetTable
+          key={query}
           locale={locale}
           mode="review"
           targets={skipped}
@@ -128,7 +156,7 @@ export function ReviewPage(props: {
           onSelectAll={() => undefined}
           onRestore={props.onRestore}
         />
-      </details>}
+      </SkippedTargets>}
     </div>
   </section>;
 }

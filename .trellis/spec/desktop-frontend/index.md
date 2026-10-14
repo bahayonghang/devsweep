@@ -43,14 +43,22 @@ Before changing `desktop/src/`:
 
 ## Quality Check
 
-Run with the Node version required by `desktop/package.json`:
+Run with both the Node and npm versions required by `desktop/package.json`.
+Verify the effective npm executable too: `mise exec node@22 -- npm` can still
+resolve a global npm shim outside the supported range. On Windows, use Node's
+bundled npm entrypoint when that happens:
 
 ```powershell
-mise exec node@22 -- npm run types:generate
-mise exec node@22 -- npm run lint
-mise exec node@22 -- npm run typecheck
-mise exec node@22 -- npm run test
-mise exec node@22 -- npm run build
+$node22 = (mise exec node@22 -- node -p "process.execPath").Trim()
+$npm = Join-Path (Split-Path $node22) 'node_modules/npm/bin/npm-cli.js'
+$env:PATH = (Split-Path $node22) + ';' + $env:PATH
+& $node22 --version
+& $node22 $npm --version
+& $node22 $npm run types:generate -- --check
+& $node22 $npm run lint
+& $node22 $npm run typecheck
+& $node22 $npm run test
+& $node22 $npm run build
 ```
 
 Then run `just ci` at the repository root when frontend work changes shared
@@ -82,6 +90,18 @@ device scale rather than changing user display settings, and recording store
 audits, PID, hashes, and a CDP accessibility (screen-reader) tree alongside
 screenshots.
 
+Native scan drivers must locate scope controls by their associated labels and
+assert checked state, effective roots and both scope flags before every Scan
+click, including after reload. Also verify the submitted IPC request. A wrong
+scope invalidates that run; cancel/join it before retrying rather than treating
+its timings or findings as fixture evidence.
+
+WebView2 device-scale emulation can change `devicePixelRatio` without emitting
+resolution-media or resize events. Keep fresh-mount visual matrices separate
+from dynamic DPR lifecycle tests, assert exact CSS-size times bounded-DPR
+backing dimensions, and preserve missing-notification evidence. Do not claim
+an actual Windows scale transition from emulated screenshots.
+
 ## Completion Checklist
 
 - [ ] All five available operational modes and supporting destinations use one
@@ -96,11 +116,14 @@ screenshots.
       unaffected.
 - [ ] Complete dark/light/system/Latte/Mocha/Codex/Claude choices (near-black blue dark default), original brand, per-mode accent and
       planet palette, top-centered capsule navigation with brand menu, stage
-      first screens, detail views with a back control, original procedural
-      planet (one still frame under reduced motion, outlined circle under
-      forced colors), high contrast, and 390/800/1024/1440 layouts pass in
+      first screens, detail views with a back control, a locally bundled
+      geographic Earth for Clean and original procedural planets for other
+      modes (still pose under reduced motion, outlined circle under forced
+      colors), high contrast, and 390/800/1024/1440 layouts pass in
       both locales. Committed local font families and scale apply across main and HUD. No sidebar,
-      page header block, planet photograph, or Mole asset.
+      page header block, runtime texture download, or Mole asset. Earth source
+      provenance, packaged offline fallback, bounded rendering and stale-decode
+      disposal are verified.
 - [ ] Accelerators are collision-free; binary units remain canonical; user data
       truncation preserves complete accessible/copyable text; authority/action
       copy never truncates.

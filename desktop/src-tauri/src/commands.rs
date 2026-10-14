@@ -6,6 +6,7 @@ use std::{
 use anyhow::Result;
 use devsweep_core::{
     execution::UserProtectionList,
+    model::TargetId,
     presentation_settings::{
         PresentationLanguageTag, PresentationSettingsV1, load_presentation_settings,
         save_presentation_settings,
@@ -16,13 +17,22 @@ use tauri::{State, ipc::Channel};
 
 use crate::{
     error::CommandError,
-    scan::{CoreScanRunner, DesktopScanProgress, DesktopScanResult, ScanCoordinator, run_scan_job},
+    scan::{
+        CoreRescanRunner, CoreScanRunner, DesktopScanProgress, DesktopScanResult, ScanCoordinator,
+        run_scan_job,
+    },
 };
 
 /// Serializes settings calls within this process while the core store provides
 /// the cross-process transaction lock.
 #[derive(Clone, Default)]
 pub(crate) struct PresentationSettingsCoordinator(Arc<Mutex<()>>);
+
+/// Native presentation state only; this does not pause any domain operation.
+#[tauri::command]
+pub(crate) fn main_presentation_visibility(window: tauri::Window) -> Result<bool, CommandError> {
+    crate::tray::main_presentation_visibility(&window).map_err(CommandError::io)
+}
 
 #[tauri::command]
 pub(crate) async fn presentation_settings_get(
@@ -95,7 +105,9 @@ pub(crate) async fn scan_start(
     options: ScanOptions,
     on_progress: Channel<DesktopScanProgress>,
 ) -> Result<DesktopScanResult, CommandError> {
+    validate_desktop_scan_scope(&options)?;
     let cancel = state.begin(scan_id.clone())?;
+    let delivery = state.progress_delivery(&scan_id, &cancel)?;
     let worker_cancel = Arc::clone(&cancel);
     let worker_state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -104,7 +116,11 @@ pub(crate) async fn scan_start(
             &options,
             scan_id.clone(),
             &worker_cancel,
-            |progress| on_progress.send(progress).map_err(anyhow::Error::from),
+            |progress| {
+                delivery.send(progress, |progress| {
+                    on_progress.send(progress).map_err(anyhow::Error::from)
+                })
+            },
         )
         .map_err(CommandError::scan_failed);
         worker_state.finish(&scan_id, &worker_cancel)?;
@@ -124,6 +140,60 @@ pub(crate) async fn scan_cancel(
 }
 
 #[tauri::command]
+pub(crate) async fn scan_progress_ack(
+    state: State<'_, ScanCoordinator>,
+    scan_id: String,
+    sequence: u64,
+) -> Result<(), CommandError> {
+    state.acknowledge(&scan_id, sequence)
+}
+
+#[tauri::command]
+pub(crate) async fn scan_rescan_target(
+    state: State<'_, ScanCoordinator>,
+    scan_id: String,
+    options: ScanOptions,
+    target_id: TargetId,
+    on_progress: Channel<DesktopScanProgress>,
+) -> Result<DesktopScanResult, CommandError> {
+    validate_desktop_scan_scope(&options)?;
+    let cancel = state.begin(scan_id.clone())?;
+    let delivery = state.progress_delivery(&scan_id, &cancel)?;
+    let worker_cancel = Arc::clone(&cancel);
+    let worker_state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = run_scan_job(
+            &CoreRescanRunner(target_id),
+            &options,
+            scan_id.clone(),
+            &worker_cancel,
+            |progress| {
+                delivery.send(progress, |progress| {
+                    on_progress.send(progress).map_err(anyhow::Error::from)
+                })
+            },
+        )
+        .map_err(CommandError::scan_failed);
+        worker_state.finish(&scan_id, &worker_cancel)?;
+        result
+    })
+    .await
+    .map_err(CommandError::io)
+    .and_then(|result| result)
+}
+
+fn validate_desktop_scan_scope(options: &ScanOptions) -> Result<(), CommandError> {
+    if options.include_projects
+        && (options.roots.is_empty() || options.roots.iter().any(|root| !root.is_absolute()))
+    {
+        return Err(CommandError::scan_failed(anyhow::anyhow!(
+            "desktop project scanning requires explicit absolute roots"
+        )));
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub(crate) async fn protection_list_get() -> Result<Vec<PathBuf>, CommandError> {
     tauri::async_runtime::spawn_blocking(protection_list_get_inner)
         .await
@@ -137,6 +207,20 @@ pub(crate) async fn protection_list_set(paths: Vec<PathBuf>) -> Result<Vec<PathB
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn desktop_scan_never_uses_an_implicit_working_directory() {
+        use devsweep_core::scan::ScanOptions;
+        let mut options = ScanOptions {
+            include_projects: true,
+            include_global: true,
+            roots: vec![],
+        };
+        assert!(super::validate_desktop_scan_scope(&options).is_err());
+        options.roots.push(std::path::PathBuf::from("."));
+        assert!(super::validate_desktop_scan_scope(&options).is_err());
+        options.include_projects = false;
+        assert!(super::validate_desktop_scan_scope(&options).is_ok());
+    }
     use std::sync::Mutex;
     #[cfg(windows)]
     use std::{
@@ -239,7 +323,25 @@ mod tests {
 
     #[test]
     fn changed_selection_rejects_previous_digest() {
-        let plan = command_plan();
+        let fixture = tempfile::tempdir().unwrap();
+        for name in ["first", "second"] {
+            let root = fixture.path().join(name);
+            std::fs::create_dir_all(root.join("node_modules")).unwrap();
+            std::fs::write(root.join("package.json"), b"{}").unwrap();
+            std::fs::write(root.join("node_modules/sentinel"), name).unwrap();
+        }
+        let plan = devsweep_core::scan::Sweeper::default()
+            .full_scan_report(
+                &ScanOptions {
+                    include_projects: true,
+                    include_global: false,
+                    roots: vec![fixture.path().to_path_buf()],
+                },
+                &mut |_| {},
+            )
+            .unwrap()
+            .plan;
+        assert_eq!(plan.targets.len(), 2);
         let first = plan.targets[0].id.clone();
         let second = plan.targets[1].id.clone();
         let dry_run = plan_dry_run_inner(plan.clone(), vec![first]).expect("dry run succeeds");
@@ -248,6 +350,8 @@ mod tests {
             .expect_err("changed selection invalidates digest");
 
         assert!(matches!(error, CommandError::StaleConfirmation { .. }));
+        assert!(fixture.path().join("first/node_modules/sentinel").exists());
+        assert!(fixture.path().join("second/node_modules/sentinel").exists());
     }
 
     #[test]
@@ -420,59 +524,6 @@ mod tests {
             let status = WaitForSingleObject(handle, 0);
             CloseHandle(handle);
             status == WAIT_TIMEOUT
-        }
-    }
-
-    fn command_plan() -> UntrustedPlan {
-        UntrustedPlan {
-            version: CLEANUP_PLAN_VERSION,
-            targets: vec![
-                command_target(
-                    "npm.cache.clean:test",
-                    "npm.cache.clean",
-                    Ecosystem::Node,
-                    "npm",
-                    "cache_clean",
-                ),
-                command_target(
-                    "pip.cache.purge:test",
-                    "pip.cache.purge",
-                    Ecosystem::Python,
-                    "python",
-                    "cache_purge",
-                ),
-            ],
-        }
-    }
-
-    fn command_target(
-        id: &str,
-        rule_id: &str,
-        ecosystem: Ecosystem,
-        provider_id: &str,
-        action_id: &str,
-    ) -> UntrustedTarget {
-        UntrustedTarget {
-            id: TargetId::new(id),
-            rule_id: rule_id.to_string(),
-            scope: Scope::Global,
-            ecosystem,
-            kind: TargetKind::PackageCache,
-            path: None,
-            estimated_bytes: 1,
-            size_complete: true,
-            sizing_warnings: Vec::new(),
-            last_modified: None,
-            risk: RiskLevel::Medium,
-            reversible: false,
-            selected_by_default: false,
-            evidence: vec![Evidence::RuleMatched {
-                rule_id: rule_id.to_string(),
-            }],
-            intent: CleanupIntent::RunBuiltInAction {
-                provider_id: provider_id.to_string(),
-                action_id: action_id.to_string(),
-            },
         }
     }
 

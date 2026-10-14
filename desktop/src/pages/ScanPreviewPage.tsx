@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import type { DesktopScanProgress, Ecosystem, ScanPreviewSnapshot, ScanPreviewTarget } from "../api/types.gen";
 import { TargetTable } from "../components/TargetTable";
 import { formatBytes } from "../components/format";
@@ -6,6 +7,7 @@ import { message, type PresentationLanguageTag } from "../i18n";
 type PreviewStatus = "active" | "canceled" | "failed";
 
 const ecosystemOrder: Ecosystem[] = ["rust", "node", "python", "generic", "docker"];
+const NO_TARGETS: ScanPreviewTarget[] = [];
 
 function ecosystemCounts(targets: ScanPreviewTarget[]): string {
   const counts = new Map<Ecosystem, number>();
@@ -50,9 +52,13 @@ export function ScanPreviewPage(props: {
   onReturnToReport: () => void;
 }) {
   const locale = props.locale ?? "en";
-  const targets = props.preview?.targets ?? [];
-  const projects = targets.filter((target) => target.scope.type === "project");
-  const globals = targets.filter((target) => target.scope.type === "global");
+  const targets = props.preview?.targets ?? NO_TARGETS;
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const { projects, globals } = useMemo(() => {
+    const visible = normalizedQuery ? targets.filter((target) => `${target.path ?? ""} ${target.id}`.toLowerCase().includes(normalizedQuery)) : targets;
+    return { projects: visible.filter((target) => target.scope.type === "project"), globals: visible.filter((target) => target.scope.type === "global") };
+  }, [targets, normalizedQuery]);
   const active = props.status === "active";
   const statusText = props.status === "canceled" || props.status === "failed"
     ? message(locale, "clean.v1.scan.canceled")
@@ -62,7 +68,11 @@ export function ScanPreviewPage(props: {
         {!active && <h3>{message(locale, "clean.v1.scan.empty")}</h3>}
         <p>{active ? props.progress?.message ?? message(locale, "clean.v1.status.ready") : message(locale, "clean.v1.review.empty_hint")}</p>
       </div>
-    : <PreviewGroups locale={locale} projects={projects} globals={globals} />;
+    : <>
+        <div className="scan-toolbar"><label>{message(locale, "clean.v1.search.label")} <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} /></label></div>
+        {projects.length + globals.length === 0 ? <p role="status">{message(locale, "clean.v1.search.empty")}</p>
+          : <PreviewGroups key={normalizedQuery} locale={locale} projects={projects} globals={globals} />}
+      </>;
   if (active) {
     return <section className="card found-so-far" aria-busy="true">
       <h2>{message(locale, "clean.v1.preview.found_so_far")}</h2>

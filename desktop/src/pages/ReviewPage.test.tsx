@@ -55,7 +55,7 @@ describe("ReviewPage", () => {
     const state = reviewedState();
     const empty = {
       ...state,
-      scan: { ...state.scan!, plan: { ...state.scan!.plan, targets: [] } },
+      scan: { ...state.scan!, plan: { ...state.scan!.plan, targets: [] }, health: { completeness: "complete" as const, diagnostics: [], totals: { verified_bytes: 0, partial_lower_bound_bytes: 0, unknown_target_count: 0 } } },
     };
     render(<ReviewPage state={empty} onSelect={noOp} onSelectAll={noOp} onDryRun={noOp} />);
     expect(screen.getByText("Scan complete; no cleanup targets found.")).toBeInTheDocument();

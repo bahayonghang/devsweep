@@ -43,6 +43,7 @@ export interface AppState {
 }
 
 export type AppAction =
+  | { type: "scope_changed" }
   | { type: "scan_requested"; scanId: string }
   | { type: "scan_progressed"; progress: DesktopScanProgress }
   | { type: "scan_cancel_requested"; scanId: string }
@@ -131,6 +132,8 @@ function stoppedPreview(state: AppState, kind: StoppedPreview["kind"]): StoppedP
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
+    case "scope_changed":
+      return state.activeScan || state.phase === "executing" ? state : { ...initialState };
     case "scan_requested":
       if (!action.scanId) return state;
       return {

@@ -16,6 +16,18 @@ function reviewedState() {
 }
 
 describe("appReducer", () => {
+  it("invalidates a reviewed digest synchronously for scope edits and rescans", () => {
+    let state = appReducer(reviewedState(), { type: "dry_run_requested" });
+    state = appReducer(state, { type: "dry_run_succeeded", outcome: dryRun });
+    expect(state.dryRun).not.toBeNull();
+    const changed = appReducer(state, { type: "scope_changed" });
+    expect(changed.scan).toBeNull();
+    expect(changed.dryRun).toBeNull();
+    expect(changed.selectedIds.size).toBe(0);
+    const rescanning = appReducer(state, { type: "scan_requested", scanId: "rescan" });
+    expect(rescanning.dryRun).toBeNull();
+    expect(appReducer(rescanning, { type: "scan_completed", scanId: "old", report })).toBe(rescanning);
+  });
   it("projects defaults only from a matching final report and rejects inspect-only targets", () => {
     let state = reviewedState();
     expect([...state.selectedIds]).toEqual(["cargo.target:C:/work/app/target"]);

@@ -17,6 +17,7 @@ import softwareLeftoversReportJson from "./fixtures/software/leftovers-report.js
 import preferencesJson from "./fixtures/desktop-preferences.json";
 import preferencesUpdatedJson from "./fixtures/desktop-preferences-updated.json";
 import fontsJson from "./fixtures/desktop-fonts.json";
+import scanPreferencesJson from "./fixtures/clean/scan-preferences.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -50,6 +51,23 @@ describe("tauriBridge", () => {
     mocks.channels.length = 0;
   });
 
+  it("uses closed root commands and correlated reviewed-target rescan without path authority", async () => {
+    mocks.invoke.mockResolvedValue(scanPreferencesJson);
+    await tauriBridge.cleanScanPreferencesGet();
+    await tauriBridge.cleanScanRootsValidate(["D:/work"]);
+    await tauriBridge.cleanScanPreferencesSet(["D:/work"]);
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "clean_scan_preferences_get", {});
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "clean_scan_roots_validate", { roots: ["D:/work"] });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "clean_scan_preferences_set", { roots: ["D:/work"] });
+    const options = { roots: ["D:/work"], include_projects: true, include_global: false };
+    mocks.invoke.mockResolvedValue({ type: "completed", scan_id: "rescan", report: scanJson });
+    const onProgress = vi.fn();
+    await tauriBridge.scanRescanTarget("rescan", options, "reviewed-id", onProgress, vi.fn());
+    expect(mocks.invoke).toHaveBeenLastCalledWith("scan_rescan_target", { scanId: "rescan", options, targetId: "reviewed-id", onProgress: expect.any(mocks.Channel) });
+    mocks.invoke.mockResolvedValue({ type: "canceled", scan_id: "other" });
+    await expect(tauriBridge.scanRescanTarget("rescan", options, "reviewed-id", onProgress, vi.fn())).rejects.toThrow("does not match");
+  });
+
   it("uses closed desktop preference commands and the committed event envelope", async () => {
     mocks.invoke.mockResolvedValueOnce(preferencesJson).mockResolvedValueOnce(preferencesUpdatedJson);
     expect(await tauriDesktopPreferencesBridge.get()).toEqual(preferencesJson);
@@ -76,6 +94,7 @@ describe("tauriBridge", () => {
     const options = { include_projects: true, include_global: false, roots: ["."] };
     mocks.invoke
       .mockResolvedValueOnce({ type: "completed", scan_id: "scan-1", report: scanJson })
+      .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(dryRunJson)
       .mockResolvedValueOnce(executionJson)
       .mockResolvedValueOnce(undefined);
@@ -83,17 +102,18 @@ describe("tauriBridge", () => {
 
     const scanPromise = tauriBridge.scanStart("scan-1", options, onProgress, vi.fn());
     expect(mocks.channels).toHaveLength(1);
-    mocks.channels[0].onmessage(progressJson);
+    mocks.channels[0].onmessage({ ...progressJson, scan_id: "scan-1" });
     await scanPromise;
     await tauriBridge.planDryRun(plan, ["cargo.target:C:/work/app/target"]);
     await tauriBridge.planExecute(plan, ["cargo.target:C:/work/app/target", "npm.cache.clean:global"], executionJson.confirmation_digest);
     await tauriBridge.scanCancel("scan-1");
 
-    expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ scan_id: "fixture-scan-1", sequence: 1 }));
+    expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ scan_id: "scan-1", sequence: 1 }));
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "scan_start", { scanId: "scan-1", options, onProgress: expect.any(mocks.Channel) });
-    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "plan_dry_run", { plan, selectedIds: ["cargo.target:C:/work/app/target"] });
-    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "plan_execute", { plan, selectedIds: ["cargo.target:C:/work/app/target", "npm.cache.clean:global"], digest: executionJson.confirmation_digest });
-    expect(mocks.invoke).toHaveBeenNthCalledWith(4, "scan_cancel", { scanId: "scan-1" });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "scan_progress_ack", { scanId: "scan-1", sequence: 1 });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "plan_dry_run", { plan, selectedIds: ["cargo.target:C:/work/app/target"] });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(4, "plan_execute", { plan, selectedIds: ["cargo.target:C:/work/app/target", "npm.cache.clean:global"], digest: executionJson.confirmation_digest });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(5, "scan_cancel", { scanId: "scan-1" });
   });
 
   it("reads the cumulative Clean total through a closed decoder", async () => {
@@ -120,12 +140,54 @@ describe("tauriBridge", () => {
     const onError = vi.fn();
     const promise = tauriBridge.scanStart("scan-2", { include_projects: true, include_global: true, roots: ["."] }, onProgress, onError);
 
-    mocks.channels[0].onmessage(progressJson);
+    mocks.channels[0].onmessage({ ...progressJson, scan_id: "scan-2" });
     mocks.channels[0].onmessage({ ...progressJson, partial: { action: { program: "cmd.exe" } } });
     await promise;
 
     expect(onProgress).toHaveBeenCalledOnce();
     expect(onError).toHaveBeenCalledOnce();
+  });
+
+  it.each(["scan", "rescan"])("acknowledges %s progress only after matching decode and listener success", async (mode) => {
+    const options = { include_projects: true, include_global: false, roots: ["D:/fixture"] };
+    const order: string[] = [];
+    mocks.invoke.mockImplementation(async (command) => {
+      if (command === "scan_progress_ack") { order.push("ack"); return; }
+      return { type: "completed", scan_id: "owned", report: scanJson };
+    });
+    const onProgress = vi.fn(() => { order.push("listener"); });
+    const onError = vi.fn();
+    const run = mode === "scan"
+      ? tauriBridge.scanStart("owned", options, onProgress, onError)
+      : tauriBridge.scanRescanTarget("owned", options, "reviewed-id", onProgress, onError);
+    const deliver = mocks.channels[0].onmessage;
+    deliver({ ...progressJson, scan_id: "stale" });
+    deliver({ ...progressJson, scan_id: "owned", extra: true });
+    expect(order).toEqual([]);
+    expect(onError).toHaveBeenCalledOnce();
+
+    deliver({ ...progressJson, scan_id: "owned" });
+    expect(order).toEqual(["listener", "ack"]);
+    onProgress.mockImplementationOnce(() => { throw new Error("listener rejected"); });
+    deliver({ ...progressJson, scan_id: "owned", sequence: 2 });
+    expect(order).toEqual(["listener", "ack"]);
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(mocks.invoke.mock.calls.filter(([command]) => command === "scan_progress_ack")).toEqual([
+      ["scan_progress_ack", { scanId: "owned", sequence: 1 }],
+    ]);
+    await run;
+  });
+
+  it("routes acknowledgment failure into the invocation-local cancellation path", async () => {
+    mocks.invoke.mockImplementation(async (command) => {
+      if (command === "scan_progress_ack") throw new Error("ack transport failed");
+      return { type: "canceled", scan_id: "owned" };
+    });
+    const onError = vi.fn();
+    const run = tauriBridge.scanStart("owned", { include_projects: true, include_global: false, roots: ["D:/fixture"] }, vi.fn(), onError);
+    mocks.channels[0].onmessage({ ...progressJson, scan_id: "owned" });
+    await run;
+    expect(onError).toHaveBeenCalledExactlyOnceWith({ code: "io", message: "ack transport failed" });
   });
 
   it("uses a command-scoped Analyze channel and correlates terminal identity", async () => {

@@ -519,7 +519,7 @@ describe("desktop workflow", () => {
     expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
     const scanId = scanStart.mock.calls[0][0] as string;
-    act(() => finish({ type: "completed", scan_id: scanId, report: { ...scanReport, plan: { ...scanReport.plan, targets: [] } } }));
+    act(() => finish({ type: "completed", scan_id: scanId, report: { ...scanReport, plan: { ...scanReport.plan, targets: [] }, health: { completeness: "complete", diagnostics: [], totals: { verified_bytes: 0, partial_lower_bound_bytes: 0, unknown_target_count: 0 } } } }));
     expect(await screen.findByText("Scan complete; no cleanup targets found.")).toBeInTheDocument();
   });
 
@@ -653,7 +653,8 @@ describe("desktop workflow", () => {
     expect(document.body.textContent).not.toMatch(/freed|released|释放/i);
     await user.click(within(result).getByRole("button", { name: "Show details" }));
     expect((await screen.findAllByText("Execution completed.")).length).toBeGreaterThan(0);
-    expect(document.querySelector(".display-capacity")).toHaveTextContent(/500\.0 MiB \+ at least 128\.0 MiB/);
+    expect(document.querySelector(".display-capacity")).toHaveTextContent(/^500\.0 MiB$/);
+    expect(screen.getByText(/Owner commands completed: 1/)).toBeInTheDocument();
     expect(screen.queryByText(/space freed|released space|4K/i)).not.toBeInTheDocument();
     expect(planExecute).toHaveBeenCalledWith(scanReport.plan, expect.arrayContaining(["cargo.target:C:/work/app/target", "npm.cache.clean:global"]), twoTargetDryRun.digest);
   });

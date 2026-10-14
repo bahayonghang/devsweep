@@ -33,6 +33,7 @@ use crate::{
 pub(crate) const TRAY_ID: &str = "devsweep-tray";
 /// Main window label from `tauri.conf.json`.
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
+const MAIN_PRESENTATION_VISIBILITY_EVENT: &str = "main-presentation-visibility";
 const MENU_OPEN: &str = "tray-open";
 const MENU_QUIT: &str = "tray-quit";
 /// HUD logical size.
@@ -230,8 +231,25 @@ pub(crate) fn setup<R: Runtime>(app: &tauri::App<R>) -> tauri::Result<()> {
 /// Main-window close exits the app. HUD blur hides the HUD; a destroyed HUD
 /// (for example Alt+F4) also stops the sampler.
 pub(crate) fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
+    if window.label() == MAIN_WINDOW_LABEL
+        && matches!(event, WindowEvent::Resized(_) | WindowEvent::Focused(_))
+    {
+        // WebView2 can keep document.visibilityState visible while its native
+        // window is minimized. Publish presentation state without stopping work.
+        let visible = main_presentation_visibility(window).unwrap_or(false);
+        let _ = window.emit_to(
+            MAIN_WINDOW_LABEL,
+            MAIN_PRESENTATION_VISIBILITY_EVENT,
+            visible,
+        );
+    }
     match (window.label(), event) {
-        (MAIN_WINDOW_LABEL, WindowEvent::Destroyed) => exit_app(window.app_handle()),
+        (MAIN_WINDOW_LABEL, WindowEvent::Destroyed) => {
+            window
+                .state::<crate::scan::ScanCoordinator>()
+                .cancel_active();
+            exit_app(window.app_handle());
+        }
         (HUD_WINDOW_LABEL, WindowEvent::Focused(false) | WindowEvent::Destroyed) => {
             hide_hud(window.app_handle());
         }
@@ -239,9 +257,14 @@ pub(crate) fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEven
     }
 }
 
+pub(crate) fn main_presentation_visibility<R: Runtime>(window: &Window<R>) -> tauri::Result<bool> {
+    Ok(!window.is_minimized()? && window.is_visible()?)
+}
+
 /// App exit cancels and joins the HUD sampler before the process ends.
 pub(crate) fn on_run_event<R: Runtime>(app: &AppHandle<R>, event: &RunEvent) {
     if matches!(event, RunEvent::ExitRequested { .. } | RunEvent::Exit) {
+        app.state::<crate::scan::ScanCoordinator>().cancel_active();
         app.state::<HudState>().shutdown();
     }
 }
@@ -251,6 +274,7 @@ fn exit_app<R: Runtime>(app: &AppHandle<R>) {
     if state.exiting.swap(true, Ordering::SeqCst) {
         return;
     }
+    app.state::<crate::scan::ScanCoordinator>().cancel_active();
     state.shutdown();
     app.exit(0);
 }
@@ -303,6 +327,9 @@ fn create_hud<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<WebviewWindow<R>>
         .skip_taskbar(true)
         .always_on_top(true)
         .visible(false)
+        // WebView2's initial focus can queue a blur before this hidden window
+        // is shown. Focus belongs to show_hud, after creation has completed.
+        .focused(false)
         .build()
 }
 

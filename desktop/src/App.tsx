@@ -108,6 +108,7 @@ function AppContent({
   const presentationGeneration = useRef(0);
   const lifecycleGeneration = useRef(0);
   const saveInFlight = useRef(false);
+  const [analyzeRoot, setAnalyzeRoot] = useState<string>();
 
   useEffect(() => {
     const generation = ++presentationGeneration.current;
@@ -218,6 +219,11 @@ function AppContent({
     bridge,
     coordinator,
     locale: presentation.locale,
+    analyzeRoot,
+    onAnalyzeRoot: (root: string) => {
+      setAnalyzeRoot(root);
+      window.location.assign("#/analyze");
+    },
   };
   const modes = shippedModeRegistrations(registrationInput);
   const supporting = shippedSupportingRegistrations(registrationInput);

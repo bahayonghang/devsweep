@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ScanPreviewTarget, UntrustedTarget } from "../api/types.gen";
 import { AccessibleUserData, DestinationGlyph } from "../app-shell";
 import { message, type PresentationLanguageTag } from "../i18n";
@@ -34,6 +34,8 @@ interface ReviewProps {
   onSkip?: (id: string) => void;
   onRestore?: (id: string) => void;
   onProtect?: (target: UntrustedTarget) => void;
+  onRescan?: (target: UntrustedTarget) => void;
+  onAnalyze?: (target: UntrustedTarget) => void;
 }
 
 function RowActions({ locale, props, target, inspectOnly }: { locale: PresentationLanguageTag; props: ReviewProps; target: UntrustedTarget; inspectOnly: boolean }) {
@@ -46,32 +48,63 @@ function RowActions({ locale, props, target, inspectOnly }: { locale: Presentati
   }
   const isProtected = props.protectedIds?.has(target.id) ?? false;
   return <td className="row-actions">
+    {target.path && props.onRescan && <button type="button" className="secondary-button" disabled={props.disabled} onClick={() => props.onRescan?.(target)}>{message(locale, "clean.v1.rescan.action")}</button>}
+    {target.path && inspectOnly && props.onAnalyze && <button type="button" className="secondary-button" disabled={props.disabled} onClick={() => props.onAnalyze?.(target)}>{message(locale, "clean.v1.rescan.analyze")}</button>}
     {!inspectOnly && props.onSkip && <button type="button" className="secondary-button" aria-label={`${skipLabel} ${name}`} disabled={props.disabled} onClick={() => props.onSkip?.(target.id)}>{skipLabel}</button>}
     {target.path && !isProtected && props.onProtect && <button type="button" className="secondary-button" aria-label={`${protectLabel} ${name}`} disabled={props.disabled} onClick={() => props.onProtect?.(target)}>{protectLabel}</button>}
   </td>;
 }
 
+function TargetEvidence({ target }: { target: ScanPreviewTarget | UntrustedTarget }) {
+  const [open, setOpen] = useState(false);
+  return <details onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary>{target.evidence.length}</summary>
+    {open && <>
+      <ul>{target.evidence.map((item, index) => <li key={`${item.type}-${index}`}>{formatEvidence(item)}</li>)}</ul>
+      {target.sizing_warnings?.map((warning) => <p className="warning-text" key={warning.kind}>{warning.detail}</p>)}
+    </>}
+  </details>;
+}
+
 export function TargetTable(props: PreviewProps | ReviewProps) {
   const locale = props.locale ?? "en";
+  const [requestedPage, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(props.targets.length / 100));
+  const page = Math.min(requestedPage, pageCount - 1);
+  const pageTargets = props.targets.slice(page * 100, (page + 1) * 100);
   const reviewTargets = props.mode === "review" ? props.targets : [];
   const protectedIds = props.mode === "review" ? props.protectedIds : undefined;
   const reviewInspectOnly = (target: UntrustedTarget) => target.intent.type === "inspect_only" || (protectedIds?.has(target.id) ?? false);
-  const executableCount = reviewTargets.filter((target) => !reviewInspectOnly(target)).length;
-  const selectedExecutableCount = props.mode === "review"
-    ? reviewTargets.filter((target) => !reviewInspectOnly(target) && props.selectedIds.has(target.id)).length
-    : 0;
+  let executableCount = 0;
+  let selectedExecutableCount = 0;
+  if (props.mode === "review" && props.showSelectAll !== false) {
+    for (const target of reviewTargets) if (!reviewInspectOnly(target)) {
+      executableCount += 1;
+      if (props.selectedIds.has(target.id)) selectedExecutableCount += 1;
+    }
+  }
   const selectAllRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (selectAllRef.current) selectAllRef.current.indeterminate = selectedExecutableCount > 0 && selectedExecutableCount < executableCount;
   }, [executableCount, selectedExecutableCount]);
-  return <div className="table-frame">
+  return <div className="target-list">
+    {pageCount > 1 && <div className="target-pagination">
+      <p role="status">{message(locale, "clean.v1.list.page", { page: String(page + 1), pages: String(pageCount), start: String(page * 100 + 1), end: String(Math.min((page + 1) * 100, props.targets.length)), count: String(props.targets.length) })}</p>
+      <div>
+        <button type="button" className="secondary-button" disabled={page === 0} onClick={() => setPage(0)}>{message(locale, "clean.v1.list.first")}</button>
+        <button type="button" className="secondary-button" disabled={page === 0} onClick={() => setPage(page - 1)}>{message(locale, "clean.v1.list.previous")}</button>
+        <button type="button" className="secondary-button" disabled={page + 1 === pageCount} onClick={() => setPage(page + 1)}>{message(locale, "clean.v1.list.next")}</button>
+        <button type="button" className="secondary-button" disabled={page + 1 === pageCount} onClick={() => setPage(pageCount - 1)}>{message(locale, "clean.v1.list.last")}</button>
+      </div>
+    </div>}
+    <div className="table-frame">
     <table className={props.mode === "preview" ? "preview-table" : undefined}>
       <thead><tr>
         {props.mode === "review" && <th className="select-cell">{props.showSelectAll === false ? null : <input ref={selectAllRef} type="checkbox" aria-label="Select all executable targets" checked={props.allSelected} disabled={props.disabled || executableCount === 0} onChange={(event) => props.onSelectAll(event.target.checked)} />}</th>}
         <th>{message(locale, "clean.v1.table.target")}</th><th>{message(locale, "clean.v1.table.capacity")}</th><th>{message(locale, "clean.v1.table.risk")}</th><th>{props.mode === "preview" ? message(locale, "clean.v1.status.ready") : message(locale, "clean.v1.action.execute")}</th><th>{message(locale, "clean.v1.table.evidence")}</th>
         {props.mode === "review" && <th>{message(locale, "clean.v1.table.actions")}</th>}
       </tr></thead>
-      <tbody>{props.targets.map((target) => {
+      <tbody>{pageTargets.map((target) => {
         const previewTarget = "disposition" in target;
         const isProtected = !previewTarget && (protectedIds?.has(target.id) ?? false);
         const inspectOnly = previewTarget ? target.disposition === "inspect_only" : reviewInspectOnly(target);
@@ -87,11 +120,12 @@ export function TargetTable(props: PreviewProps | ReviewProps) {
           </td>
           <td className="capacity">{capacity(target, locale)}</td>
           <td><span className={`badge risk-${target.risk}`}>{riskLabel(locale, target.risk)}</span></td>
-          <td>{isProtected ? <span className="badge neutral">{message(locale, "clean.v1.target.protected")}</span> : inspectOnly ? <span className="badge neutral">{message(locale, "clean.v1.target.inspect_only")}</span> : previewTarget ? <span className="badge neutral">{message(locale, "clean.v1.status.ready")}</span> : message(locale, target.intent.type === "run_built_in_action" ? "clean.v1.action.execute" : "clean.v1.action.move_to_trash")}</td>
-          <td><details><summary>{target.evidence.length}</summary><ul>{target.evidence.map((item, index) => <li key={`${item.type}-${index}`}>{formatEvidence(item)}</li>)}</ul>{target.sizing_warnings?.map((warning) => <p className="warning-text" key={warning.kind}>{warning.detail}</p>)}</details></td>
+          <td>{isProtected ? <span className="badge neutral">{message(locale, "clean.v1.target.protected")}</span> : inspectOnly ? <span className="badge neutral">{message(locale, "clean.v1.target.inspect_only")}</span> : previewTarget ? <span className="badge neutral">{message(locale, "clean.v1.status.ready")}</span> : message(locale, target.intent.type === "run_built_in_action" ? "clean.v1.result.command_action" : "clean.v1.action.move_to_trash")}</td>
+          <td><TargetEvidence target={target} /></td>
           {props.mode === "review" && !previewTarget && <RowActions locale={locale} props={props} target={target} inspectOnly={inspectOnly} />}
         </tr>;
       })}</tbody>
     </table>
+    </div>
   </div>;
 }

@@ -1,4 +1,5 @@
 import type {
+  CleanScanPreferencesSnapshot,
   DesktopPreferencesSnapshot,
   DesktopPreferencesV2,
   DesktopFont,
@@ -82,6 +83,16 @@ import type {
 } from "./types.gen";
 
 type RecordValue = Record<string, unknown>;
+
+export function decodeCleanScanPreferences(value: unknown): CleanScanPreferencesSnapshot {
+  const source = record(value, "clean scan preferences");
+  exact(source, ["version", "roots", "suggestions"], "clean scan preferences");
+  if (source.version !== 1) throw new Error("Unsupported clean scan preferences version");
+  const roots = array(source.roots, "scan roots", (root) => nonEmptyString(root, "scan root"));
+  const suggestions = array(source.suggestions, "scan root suggestions", (root) => nonEmptyString(root, "scan root suggestion"));
+  if (new Set(roots).size !== roots.length || new Set(suggestions).size !== suggestions.length) throw new Error("Duplicate scan root");
+  return { version: 1, roots, suggestions };
+}
 
 function record(value: unknown, name: string): RecordValue {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`Invalid ${name}`);
@@ -1245,7 +1256,22 @@ export function decodeScanReport(value: unknown): ScanReport {
   const plan = record(input.plan, "plan");
   exact(plan, ["version", "targets"], "plan");
   const health = record(input.health, "health");
-  exact(health, ["completeness", "diagnostics", "totals"], "health");
+  exact(health, ["completeness", "diagnostics", "totals", "coverage"], "health");
+  const coverage = health.coverage === undefined ? undefined : array(health.coverage, "health.coverage", (value) => {
+    const unit = record(value, "coverage");
+    exact(unit, ["id", "scope", "path", "status", "target_count", "detail"], "coverage");
+    return {
+      id: nonEmptyString(unit.id, "coverage.id"),
+      scope: oneOf(unit.scope, ["project", "provider"] as const, "coverage.scope"),
+      path: unit.path === null ? null : nonEmptyString(unit.path, "coverage.path"),
+      status: oneOf(unit.status, ["complete", "empty", "absent", "unsupported", "skipped", "failed", "canceled", "timeout", "output_truncated", "budget_limited", "protected", "busy", "ownership_unknown"] as const, "coverage.status"),
+      target_count: unsignedInteger(unit.target_count, "coverage.target_count"),
+      detail: string(unit.detail, "coverage.detail"),
+    };
+  });
+  if (coverage && new Set(coverage.map((unit) => JSON.stringify([unit.scope, unit.id]))).size !== coverage.length) {
+    throw new Error("Invalid duplicate coverage unit");
+  }
   const report = {
     version: unsignedInteger(input.version, "scan.version"),
     plan: { version: unsignedInteger(plan.version, "plan.version"), targets: array(plan.targets, "plan.targets", decodeTarget) },
@@ -1254,9 +1280,10 @@ export function decodeScanReport(value: unknown): ScanReport {
       exact(diagnostic, ["stage", "path", "outcome", "detail", "process"], "diagnostic");
       const decoded = { stage: oneOf(diagnostic.stage, ["discovery", "sizing", "cargo_metadata", "provider"] as const, "diagnostic.stage"), path: string(diagnostic.path, "diagnostic.path"), outcome: oneOf(diagnostic.outcome, ["skipped", "failed", "canceled", "output_truncated"] as const, "diagnostic.outcome"), detail: string(diagnostic.detail, "diagnostic.detail") };
       return diagnostic.process === undefined ? decoded : { ...decoded, process: decodeProcess(diagnostic.process) };
-    }), totals: decodeTotals(health.totals) },
+    }), totals: decodeTotals(health.totals), ...(coverage === undefined ? {} : { coverage }) },
   };
   if (report.version !== 1 || report.plan.version !== 2) throw new Error("Unsupported scan or plan version");
+  if (report.health.completeness === "complete" && coverage?.some((unit) => !["complete", "empty", "absent", "unsupported"].includes(unit.status))) throw new Error("Incomplete coverage cannot have complete scan health");
   return report;
 }
 

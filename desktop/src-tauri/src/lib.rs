@@ -1,4 +1,5 @@
 mod analyze;
+mod async_runtime;
 mod clean;
 mod commands;
 mod desktop_preferences;
@@ -7,6 +8,7 @@ mod fonts;
 mod hud;
 mod optimize;
 mod scan;
+mod scan_preferences;
 #[cfg(test)]
 mod service_boundary;
 mod software;
@@ -23,6 +25,12 @@ mod wire_parity;
 const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "scan_start",
     "scan_cancel",
+    "scan_progress_ack",
+    "main_presentation_visibility",
+    "scan_rescan_target",
+    "clean_scan_preferences_get",
+    "clean_scan_preferences_set",
+    "clean_scan_roots_validate",
     "analyze_start",
     "analyze_cancel",
     "analyze_default_root",
@@ -104,6 +112,12 @@ fn window_gated<R: tauri::Runtime>(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    use tauri::Manager;
+
+    // Retain the runtime through the entire native event loop. Tauri's default
+    // runtime starts one async worker per logical CPU even while idle.
+    let runtime = async_runtime::build().expect("error while building async runtime");
+    tauri::async_runtime::set(runtime.handle().clone());
     tauri::Builder::default()
         .manage(scan::ScanCoordinator::default())
         .manage(analyze::AnalyzeCoordinator::default())
@@ -117,10 +131,24 @@ pub fn run() {
             tray::setup(app)?;
             Ok(())
         })
+        .on_page_load(|webview, payload| {
+            if webview.label() == tray::MAIN_WINDOW_LABEL
+                && matches!(payload.event(), tauri::webview::PageLoadEvent::Started)
+            {
+                // Reload discards the progress listener without destroying its window.
+                webview.state::<scan::ScanCoordinator>().cancel_active();
+            }
+        })
         .on_window_event(tray::on_window_event)
         .invoke_handler(window_gated(tauri::generate_handler![
             commands::scan_start,
             commands::scan_cancel,
+            commands::scan_progress_ack,
+            commands::main_presentation_visibility,
+            commands::scan_rescan_target,
+            scan_preferences::clean_scan_preferences_get,
+            scan_preferences::clean_scan_preferences_set,
+            scan_preferences::clean_scan_roots_validate,
             analyze::analyze_start,
             analyze::analyze_cancel,
             analyze::analyze_default_root,
@@ -202,7 +230,7 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 43);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 49);
     }
 
     #[test]

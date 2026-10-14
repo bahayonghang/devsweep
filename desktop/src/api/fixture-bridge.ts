@@ -131,6 +131,10 @@ function mixedProgress(scanId: string): DesktopScanProgress {
 }
 
 export const fixtureBridge: DesktopBridge = {
+  cleanScanPreferencesGet: async () => ({ version: 1, roots: ["C:/work/app"], suggestions: [] }),
+  cleanScanPreferencesSet: async (roots) => ({ version: 1, roots: [...new Set(roots)], suggestions: [] }),
+  cleanScanRootsValidate: async (roots) => ({ version: 1, roots: [...new Set(roots)], suggestions: [] }),
+  scanRescanTarget: (scanId, options, _targetId, onProgress, onProgressError) => fixtureBridge.scanStart(scanId, options, onProgress, onProgressError),
   analyzeStart: async (operationId, _root, onProgress) => {
     analyzeCount += 1;
     onProgress(correlatedAnalyzeProgress(operationId));

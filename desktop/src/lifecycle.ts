@@ -1,6 +1,43 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { OperationCoordinator } from "./state/operation-coordinator";
+
+export interface WindowPresentationBridge {
+  visible(): Promise<unknown>;
+  listen(handler: (value: unknown) => void): Promise<() => void>;
+}
+
+const tauriWindowPresentationBridge: WindowPresentationBridge = {
+  visible: () => invoke("main_presentation_visibility"),
+  listen: (handler) => listen<unknown>("main-presentation-visibility", (event) => handler(event.payload)),
+};
+
+/** Native minimize need not change document.hidden in WebView2. Only decoration consumes this state. */
+export function observeWindowPresentation(
+  handler: (visible: boolean) => void,
+  bridge: WindowPresentationBridge | null = isTauri() ? tauriWindowPresentationBridge : null,
+): () => void {
+  if (!bridge) { handler(true); return () => undefined; }
+  let disposed = false;
+  let eventVersion = 0;
+  let unlisten: (() => void) | undefined;
+  const publish = (value: unknown) => {
+    if (!disposed) handler(value === true);
+  };
+  // Unknown or failed native state suspends decoration, never domain work.
+  publish(false);
+  void bridge.listen((value) => { eventVersion += 1; publish(value); }).then(async (release) => {
+    if (disposed) { release(); return; }
+    unlisten = release;
+    const version = eventVersion;
+    try {
+      const value = await bridge.visible();
+      if (version === eventVersion) publish(value);
+    } catch { if (version === eventVersion) publish(false); }
+  }, () => publish(false));
+  return () => { disposed = true; unlisten?.(); };
+}
 
 export type NativeFaultMode = "disabled" | "route_cancel_once";
 

@@ -1,14 +1,15 @@
 use std::{
-    sync::{Arc, Mutex},
+    sync::{Arc, Condvar, Mutex},
     time::{Duration, Instant},
 };
 
 use anyhow::{Result, anyhow};
 use devsweep_core::{
-    model::{ScanPreviewSnapshot, ScanReport},
-    process::FlagCancelObserver,
+    model::{ScanPreviewSnapshot, ScanReport, TargetId},
+    process::{CancelObserver, FlagCancelObserver},
     scan::{
-        ScanOptions, ScanPhase, ScanProgress, ScanReportRunOutcome, Sweeper, scan_preview_from_plan,
+        ScanOptions, ScanPhase, ScanProgress, ScanProgressPolicy, ScanReportRunOutcome, Sweeper,
+        scan_preview_from_plan, validate_scan_preview_plan,
     },
 };
 use serde::Serialize;
@@ -54,7 +55,34 @@ impl ScanRunner for CoreScanRunner {
         progress: &mut dyn FnMut(ScanProgress),
         cancel: &Arc<FlagCancelObserver>,
     ) -> Result<ScanReportRunOutcome> {
-        Sweeper::default().full_scan_report_run_with_cancel(options, progress, Some(cancel))
+        Sweeper::default()
+            .with_progress_policy(ScanProgressPolicy::Interactive)
+            .full_scan_report_run_with_cancel(options, progress, Some(cancel))
+    }
+}
+
+pub(crate) struct CoreRescanRunner(pub TargetId);
+
+impl ScanRunner for CoreRescanRunner {
+    fn run(
+        &self,
+        options: &ScanOptions,
+        progress: &mut dyn FnMut(ScanProgress),
+        cancel: &Arc<FlagCancelObserver>,
+    ) -> Result<ScanReportRunOutcome> {
+        let result = Sweeper::default()
+            .with_progress_policy(ScanProgressPolicy::Interactive)
+            .full_scan_report_rescanning_target_with_cancel(
+                options,
+                &self.0,
+                progress,
+                Some(cancel),
+            );
+        if cancel.is_cancel_requested() {
+            Ok(ScanReportRunOutcome::Canceled)
+        } else {
+            Ok(ScanReportRunOutcome::Completed(result?))
+        }
     }
 }
 
@@ -62,6 +90,79 @@ impl ScanRunner for CoreScanRunner {
 struct RunningScan {
     scan_id: String,
     cancel: Arc<FlagCancelObserver>,
+    delivery: Arc<ProgressDelivery>,
+}
+
+#[derive(Default)]
+struct DeliverySequence {
+    sent: u64,
+    acknowledged: u64,
+}
+
+/// One progress packet may be retained by Tauri until the validated consumer
+/// acknowledges it. The worker, never the event loop, waits for consumption.
+pub(crate) struct ProgressDelivery {
+    sequence: Mutex<DeliverySequence>,
+    changed: Condvar,
+    cancel: Arc<FlagCancelObserver>,
+}
+
+impl ProgressDelivery {
+    pub(crate) fn send(
+        &self,
+        progress: DesktopScanProgress,
+        emit: impl FnOnce(DesktopScanProgress) -> Result<()>,
+    ) -> Result<()> {
+        {
+            let mut sequence = self
+                .sequence
+                .lock()
+                .map_err(|_| anyhow!("scan delivery lock poisoned"))?;
+            if self.cancel.is_cancel_requested() {
+                return Ok(());
+            }
+            sequence.sent = progress.sequence;
+        }
+        emit(progress)?;
+        let mut sequence = self
+            .sequence
+            .lock()
+            .map_err(|_| anyhow!("scan delivery lock poisoned"))?;
+        while sequence.acknowledged < sequence.sent && !self.cancel.is_cancel_requested() {
+            sequence = self
+                .changed
+                .wait(sequence)
+                .map_err(|_| anyhow!("scan delivery lock poisoned"))?;
+        }
+        Ok(())
+    }
+
+    fn acknowledge(&self, received: u64) -> Result<(), CommandError> {
+        let mut sequence = self.sequence.lock().map_err(CommandError::io)?;
+        if received == 0 || received > sequence.sent {
+            return Err(CommandError::scan_failed(anyhow!(
+                "invalid scan progress acknowledgment"
+            )));
+        }
+        if received <= sequence.acknowledged {
+            return Ok(());
+        }
+        if received != sequence.sent {
+            return Err(CommandError::scan_failed(anyhow!(
+                "unexpected scan progress acknowledgment"
+            )));
+        }
+        sequence.acknowledged = received;
+        self.changed.notify_all();
+        Ok(())
+    }
+
+    fn cancel(&self) {
+        // Hold the same mutex as wait so cancellation cannot lose a wakeup.
+        let _sequence = self.sequence.lock();
+        self.cancel.request_cancel();
+        self.changed.notify_all();
+    }
 }
 
 #[derive(Clone, Default)]
@@ -81,9 +182,15 @@ impl ScanCoordinator {
             return Err(CommandError::ScanAlreadyRunning);
         }
         let cancel = Arc::new(FlagCancelObserver::new());
+        let delivery = Arc::new(ProgressDelivery {
+            sequence: Mutex::default(),
+            changed: Condvar::new(),
+            cancel: Arc::clone(&cancel),
+        });
         *running = Some(RunningScan {
             scan_id,
             cancel: Arc::clone(&cancel),
+            delivery,
         });
         Ok(cancel)
     }
@@ -92,9 +199,41 @@ impl ScanCoordinator {
         if let Some(running) = self.running.lock().map_err(CommandError::io)?.as_ref()
             && running.scan_id == scan_id
         {
-            running.cancel.request_cancel();
+            running.delivery.cancel();
         }
         Ok(())
+    }
+
+    pub(crate) fn progress_delivery(
+        &self,
+        scan_id: &str,
+        cancel: &Arc<FlagCancelObserver>,
+    ) -> Result<Arc<ProgressDelivery>, CommandError> {
+        self.running
+            .lock()
+            .map_err(CommandError::io)?
+            .as_ref()
+            .filter(|running| running.scan_id == scan_id && Arc::ptr_eq(&running.cancel, cancel))
+            .map(|running| Arc::clone(&running.delivery))
+            .ok_or_else(|| CommandError::scan_failed(anyhow!("scan delivery is no longer active")))
+    }
+
+    pub(crate) fn acknowledge(&self, scan_id: &str, sequence: u64) -> Result<(), CommandError> {
+        if let Some(running) = self.running.lock().map_err(CommandError::io)?.as_ref()
+            && running.scan_id == scan_id
+        {
+            running.delivery.acknowledge(sequence)?;
+        }
+        Ok(())
+    }
+
+    /// Renderer destruction cannot leave a worker waiting for an absent ack.
+    pub(crate) fn cancel_active(&self) {
+        if let Ok(running) = self.running.lock()
+            && let Some(running) = running.as_ref()
+        {
+            running.delivery.cancel();
+        }
     }
 
     pub(crate) fn finish(
@@ -118,8 +257,10 @@ struct ProgressForwarder<S, N> {
     send: S,
     now: N,
     last_preview_at: Option<Duration>,
-    pending_preview: Option<DesktopScanProgress>,
+    pending_preview: Option<ScanProgress>,
     first_error: Option<anyhow::Error>,
+    #[cfg(test)]
+    projected_previews: usize,
 }
 
 impl<S, N> ProgressForwarder<S, N>
@@ -136,6 +277,8 @@ where
             last_preview_at: None,
             pending_preview: None,
             first_error: None,
+            #[cfg(test)]
+            projected_previews: 0,
         }
     }
 
@@ -144,29 +287,19 @@ where
             return;
         }
 
-        let preview = match progress
+        if let Err(error) = progress
             .partial
             .as_ref()
-            .map(scan_preview_from_plan)
+            .map(validate_scan_preview_plan)
             .transpose()
         {
-            Ok(preview) => preview,
-            Err(error) => {
-                self.first_error = Some(error);
-                return;
-            }
-        };
-        let event = DesktopScanProgress {
-            scan_id: self.scan_id.clone(),
-            sequence: 0,
-            phase: progress.phase,
-            message: progress.message,
-            preview,
-        };
+            self.first_error = Some(error);
+            return;
+        }
 
-        if event.preview.is_none() {
+        if progress.partial.is_none() {
             self.flush_pending();
-            self.send_now(event, false);
+            self.send_now(progress);
             return;
         }
 
@@ -175,9 +308,10 @@ where
             .last_preview_at
             .is_none_or(|last| now.saturating_sub(last) >= PREVIEW_EMISSION_INTERVAL);
         if may_send {
-            self.send_now(event, true);
+            self.pending_preview = None;
+            self.send_now(progress);
         } else {
-            self.pending_preview = Some(event);
+            self.pending_preview = Some(progress);
         }
     }
 
@@ -191,21 +325,44 @@ where
 
     fn flush_pending(&mut self) {
         if let Some(event) = self.pending_preview.take() {
-            self.send_now(event, true);
+            self.send_now(event);
         }
     }
 
-    fn send_now(&mut self, mut event: DesktopScanProgress, preview: bool) {
+    fn send_now(&mut self, progress: ScanProgress) {
         if self.first_error.is_some() {
             return;
         }
+        let preview = match progress
+            .partial
+            .as_ref()
+            .map(scan_preview_from_plan)
+            .transpose()
+        {
+            Ok(preview) => preview,
+            Err(error) => {
+                self.first_error = Some(error);
+                return;
+            }
+        };
+        let is_preview = preview.is_some();
+        #[cfg(test)]
+        if is_preview {
+            self.projected_previews += 1;
+        }
         self.sequence = self.sequence.saturating_add(1);
-        event.sequence = self.sequence;
+        let event = DesktopScanProgress {
+            scan_id: self.scan_id.clone(),
+            sequence: self.sequence,
+            phase: progress.phase,
+            message: progress.message,
+            preview,
+        };
         if let Err(error) = (self.send)(event) {
             self.first_error = Some(error);
             return;
         }
-        if preview {
+        if is_preview {
             self.last_preview_at = Some((self.now)());
         }
     }
@@ -254,6 +411,52 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn reviewed_rescan_uses_discovered_identity_and_maps_cancellation_to_terminal_canceled() {
+        let fixture = tempfile::tempdir().unwrap();
+        std::fs::write(fixture.path().join("package.json"), b"{}").unwrap();
+        let modules = fixture.path().join("node_modules");
+        std::fs::create_dir(&modules).unwrap();
+        std::fs::write(modules.join("fixture.bin"), b"fixture").unwrap();
+        let options = ScanOptions {
+            include_projects: true,
+            include_global: false,
+            roots: vec![fixture.path().to_path_buf()],
+        };
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let report = match CoreScanRunner.run(&options, &mut |_| {}, &cancel).unwrap() {
+            ScanReportRunOutcome::Completed(report) => report,
+            ScanReportRunOutcome::Canceled => panic!("fixture scan unexpectedly canceled"),
+        };
+        let target = report
+            .plan
+            .targets
+            .first()
+            .expect("discovered node dependency target");
+        assert!(matches!(
+            CoreRescanRunner(target.id.clone())
+                .run(&options, &mut |_| {}, &cancel)
+                .unwrap(),
+            ScanReportRunOutcome::Completed(_)
+        ));
+        assert!(
+            CoreRescanRunner(TargetId::new("caller-supplied-path"))
+                .run(&options, &mut |_| {}, &cancel)
+                .is_err()
+        );
+        cancel.request_cancel();
+        assert!(matches!(
+            CoreRescanRunner(target.id.clone())
+                .run(&options, &mut |_| {}, &cancel)
+                .unwrap(),
+            ScanReportRunOutcome::Canceled
+        ));
+        assert_eq!(
+            std::fs::read(modules.join("fixture.bin")).unwrap(),
+            b"fixture"
+        );
+    }
 
     struct SlowRunner;
 
@@ -305,6 +508,100 @@ mod tests {
             include_global: false,
             roots: Vec::new(),
         }
+    }
+
+    fn delivery_event(sequence: u64) -> DesktopScanProgress {
+        DesktopScanProgress {
+            scan_id: "delivery".to_string(),
+            sequence,
+            phase: ScanPhase::Projects,
+            message: "progress".to_string(),
+            preview: None,
+        }
+    }
+
+    #[test]
+    fn progress_delivery_waits_for_each_exact_ack_before_sending_or_settling() {
+        let coordinator = ScanCoordinator::default();
+        let cancel = coordinator.begin("delivery".to_string()).unwrap();
+        let delivery = coordinator.progress_delivery("delivery", &cancel).unwrap();
+        let (sent, received) = mpsc::channel();
+        let (done, completed) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            for sequence in 1..=3 {
+                delivery
+                    .send(delivery_event(sequence), |event| {
+                        sent.send(event.sequence)?;
+                        Ok(())
+                    })
+                    .unwrap();
+            }
+            done.send(()).unwrap();
+        });
+        assert_eq!(received.recv_timeout(Duration::from_secs(1)).unwrap(), 1);
+        assert!(coordinator.acknowledge("delivery", 0).is_err());
+        assert!(coordinator.acknowledge("delivery", 2).is_err());
+        assert!(received.recv_timeout(Duration::from_millis(30)).is_err());
+        coordinator.acknowledge("delivery", 1).unwrap();
+        assert_eq!(received.recv_timeout(Duration::from_secs(1)).unwrap(), 2);
+        coordinator.acknowledge("delivery", 1).unwrap();
+        coordinator.acknowledge("stale", 2).unwrap();
+        assert!(received.recv_timeout(Duration::from_millis(30)).is_err());
+        coordinator.acknowledge("delivery", 2).unwrap();
+        assert_eq!(received.recv_timeout(Duration::from_secs(1)).unwrap(), 3);
+        assert!(completed.recv_timeout(Duration::from_millis(30)).is_err());
+        coordinator.acknowledge("delivery", 3).unwrap();
+        completed.recv_timeout(Duration::from_secs(1)).unwrap();
+        worker.join().unwrap();
+        coordinator.finish("delivery", &cancel).unwrap();
+        coordinator.acknowledge("delivery", 3).unwrap();
+    }
+
+    #[test]
+    fn cancel_or_renderer_loss_wakes_unacknowledged_delivery_without_later_send() {
+        for renderer_lost in [false, true] {
+            let coordinator = ScanCoordinator::default();
+            let cancel = coordinator.begin("delivery".to_string()).unwrap();
+            let delivery = coordinator.progress_delivery("delivery", &cancel).unwrap();
+            let (sent, received) = mpsc::channel();
+            let (done, completed) = mpsc::channel();
+            let worker = thread::spawn(move || {
+                for sequence in 1..=2 {
+                    delivery
+                        .send(delivery_event(sequence), |event| {
+                            sent.send(event.sequence)?;
+                            Ok(())
+                        })
+                        .unwrap();
+                }
+                done.send(()).unwrap();
+            });
+            assert_eq!(received.recv_timeout(Duration::from_secs(1)).unwrap(), 1);
+            if renderer_lost {
+                coordinator.cancel_active();
+            } else {
+                coordinator.cancel("delivery").unwrap();
+            }
+            completed.recv_timeout(Duration::from_secs(1)).unwrap();
+            worker.join().unwrap();
+            assert!(received.try_recv().is_err());
+            assert!(cancel.is_cancel_requested());
+            coordinator.finish("delivery", &cancel).unwrap();
+            coordinator.begin("next".to_string()).unwrap();
+        }
+    }
+
+    #[test]
+    fn delivery_send_failure_does_not_wait_for_an_ack() {
+        let coordinator = ScanCoordinator::default();
+        let cancel = coordinator.begin("delivery".to_string()).unwrap();
+        let delivery = coordinator.progress_delivery("delivery", &cancel).unwrap();
+        assert!(
+            delivery
+                .send(delivery_event(1), |_| Err(anyhow!("closed channel")))
+                .is_err()
+        );
+        coordinator.finish("delivery", &cancel).unwrap();
     }
 
     #[test]
@@ -495,7 +792,8 @@ mod tests {
             move || clock.get(),
         );
 
-        for (index, message) in ["first", "second", "latest"].into_iter().enumerate() {
+        for index in 0..100 {
+            let message = if index == 0 { "first" } else { "latest" };
             forwarder.forward(ScanProgress {
                 phase: ScanPhase::Projects,
                 message: message.to_string(),
@@ -505,6 +803,22 @@ mod tests {
                 }),
             });
         }
+        assert_eq!(forwarder.projected_previews, 1);
+        assert_eq!(
+            forwarder
+                .pending_preview
+                .as_ref()
+                .unwrap()
+                .partial
+                .as_ref()
+                .unwrap()
+                .targets[0]
+                .id,
+            TargetId::new("target-99"),
+        );
+        forwarder.flush_pending();
+        assert_eq!(forwarder.projected_previews, 2);
+        assert!(forwarder.pending_preview.is_none());
         forwarder.finish().expect("terminal flush succeeds");
 
         let events = events.borrow();
@@ -512,6 +826,96 @@ mod tests {
         assert_eq!(events[0].message, "first");
         assert_eq!(events[1].message, "latest");
         assert_eq!(events[1].sequence, 2);
+    }
+
+    #[test]
+    fn a_newer_immediate_preview_supersedes_pending_before_phase_or_terminal_flush() {
+        for flush_phase in [false, true] {
+            let now = Cell::new(Duration::ZERO);
+            let events = RefCell::new(Vec::new());
+            let mut forwarder = ProgressForwarder::new(
+                "ordered".to_string(),
+                |event| {
+                    events.borrow_mut().push(event);
+                    Ok(())
+                },
+                || now.get(),
+            );
+            for (index, message) in ["first", "superseded", "newest"].into_iter().enumerate() {
+                if index == 2 {
+                    now.set(PREVIEW_EMISSION_INTERVAL);
+                }
+                forwarder.forward(ScanProgress {
+                    phase: ScanPhase::Projects,
+                    message: message.to_string(),
+                    partial: Some(CleanupPlan {
+                        version: CLEANUP_PLAN_VERSION,
+                        targets: vec![preview_target(message)],
+                    }),
+                });
+            }
+            assert!(forwarder.pending_preview.is_none());
+            if flush_phase {
+                forwarder.forward(ScanProgress {
+                    phase: ScanPhase::Projects,
+                    message: "phase".to_string(),
+                    partial: None,
+                });
+            }
+            forwarder.finish().unwrap();
+            let events = events.borrow();
+            let messages: Vec<_> = events.iter().map(|event| event.message.as_str()).collect();
+            assert_eq!(
+                messages,
+                if flush_phase {
+                    vec!["first", "newest", "phase"]
+                } else {
+                    vec!["first", "newest"]
+                }
+            );
+            assert!(
+                events
+                    .iter()
+                    .enumerate()
+                    .all(|(index, event)| event.sequence == index as u64 + 1)
+            );
+        }
+    }
+
+    #[test]
+    fn an_invalid_superseded_preview_still_fails_the_scan() {
+        let events = RefCell::new(Vec::new());
+        let mut forwarder = ProgressForwarder::new(
+            "invalid-pending".to_string(),
+            |event| {
+                events.borrow_mut().push(event);
+                Ok(())
+            },
+            || Duration::ZERO,
+        );
+        for targets in [
+            vec![preview_target("first")],
+            vec![preview_target("duplicate"), preview_target("duplicate")],
+            vec![preview_target("replacement")],
+        ] {
+            forwarder.forward(ScanProgress {
+                phase: ScanPhase::Projects,
+                message: "preview".to_string(),
+                partial: Some(CleanupPlan {
+                    version: CLEANUP_PLAN_VERSION,
+                    targets,
+                }),
+            });
+        }
+        let error = forwarder
+            .finish()
+            .expect_err("invalid input cannot be coalesced away");
+        assert!(
+            error
+                .to_string()
+                .contains("duplicate scan preview target id")
+        );
+        assert_eq!(events.borrow().len(), 1);
     }
 
     #[test]

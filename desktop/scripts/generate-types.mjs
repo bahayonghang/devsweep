@@ -17,9 +17,10 @@ const check = args.includes("--check");
 const typesPath = path.join(root, "src/api/types.gen.ts");
 
 const rootFixtures = {
+  CleanScanPreferencesSnapshot: ["clean/scan-preferences.json"],
   DesktopFonts: ["desktop-fonts.json", "desktop-fonts-unavailable.json"],
   DesktopPreferencesSnapshot: ["desktop-preferences.json", "desktop-preferences-updated.json"],
-  ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json"],
+  ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json", "clean/scan-coverage.json"],
   DesktopScanProgress: ["scan-progress.json", "clean/scan-progress.json"],
   DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json", "clean/dry-run-outcome.json"],
   ExecutionReport: ["execution-report.json", "clean/execution-report.json"],
@@ -74,7 +75,8 @@ const references = {
     risk: "RiskLevel", evidence: ["Evidence"], intent: "CleanupIntent",
   },
   SizingWarning: { kind: "SizingWarningKind" },
-  ScanHealth: { completeness: "ScanCompleteness", diagnostics: ["ScanDiagnostic"], totals: "ScanTotals" },
+  ScanHealth: { completeness: "ScanCompleteness", diagnostics: ["ScanDiagnostic"], totals: "ScanTotals", coverage: ["ScanCoverage"] },
+  ScanCoverage: { scope: "ScanCoverageScope", status: "ScanCoverageStatus" },
   ScanDiagnostic: { stage: "ScanDiagnosticStage", outcome: "ScanDiagnosticOutcome", process: "ScanProcessProbe" },
   ScanProcessProbe: { status: "ScanProcessStatus", stdout: "ScanProcessOutput", stderr: "ScanProcessOutput" },
   DesktopScanProgress: { phase: "ScanPhase", preview: "ScanPreviewSnapshot" },

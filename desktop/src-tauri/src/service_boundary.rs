@@ -11,6 +11,7 @@
 const ADAPTER_SOURCES: &[(&str, &str)] = &[
     ("lib.rs", include_str!("lib.rs")),
     ("analyze.rs", include_str!("analyze.rs")),
+    ("async_runtime.rs", include_str!("async_runtime.rs")),
     ("clean.rs", include_str!("clean.rs")),
     ("commands.rs", include_str!("commands.rs")),
     (
@@ -22,6 +23,7 @@ const ADAPTER_SOURCES: &[(&str, &str)] = &[
     ("hud.rs", include_str!("hud.rs")),
     ("optimize.rs", include_str!("optimize.rs")),
     ("scan.rs", include_str!("scan.rs")),
+    ("scan_preferences.rs", include_str!("scan_preferences.rs")),
     ("software.rs", include_str!("software.rs")),
     ("status.rs", include_str!("status.rs")),
     ("support.rs", include_str!("support.rs")),

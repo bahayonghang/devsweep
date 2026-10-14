@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import englishCatalogue from "../../../../resources/i18n/en.json";
@@ -105,7 +105,7 @@ const STAGES: readonly StageCase[] = [
             report: { ...report, plan: { ...report.plan, targets: [] } },
           })),
       }),
-    heading: (locale) => message(locale, "clean.v1.scan.empty"),
+    heading: (locale) => message(locale, "clean.v1.coverage.partial_empty"),
   },
   {
     name: "error",
@@ -201,6 +201,21 @@ function renderFound(overrides: Partial<DesktopBridge> = {}) {
 }
 
 describe("Clean found stage", () => {
+  it("rescans an exact reviewed target and routes inspect-only paths to Analyze", async () => {
+    const user = userEvent.setup();
+    const scanRescanTarget = vi.fn().mockImplementation(async (scanId: string) => ({ type: "completed", scan_id: scanId, report }));
+    const onAnalyzeRoot = vi.fn();
+    render(<CleanWorkbench bridge={bridge({ scanRescanTarget })} coordinator={new OperationCoordinator()} locale="en" onAnalyzeRoot={onAnalyzeRoot} />);
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Review targets" }));
+    const inspect = screen.getByText("C:/Users/dev/.cargo").closest("tr")!;
+    await user.click(within(inspect).getByRole("button", { name: message("en", "clean.v1.rescan.analyze") }));
+    expect(onAnalyzeRoot).toHaveBeenCalledExactlyOnceWith("C:/Users/dev/.cargo");
+    const target = screen.getByText("C:/work/app/target").closest("tr")!;
+    await user.click(within(target).getByRole("button", { name: message("en", "clean.v1.rescan.action") }));
+    expect(scanRescanTarget).toHaveBeenCalledWith(expect.any(String), { include_projects: true, include_global: true, roots: ["C:/work/app"] }, cargoTargetId, expect.any(Function), expect.any(Function));
+    expect(await screen.findByRole("button", { name: "Review targets" })).toBeInTheDocument();
+  });
   it("shows the selected estimate, the found facts, and opens review from the secondary action", async () => {
     const { user } = renderFound();
     await user.click(screen.getByRole("button", { name: "Scan" }));
@@ -223,7 +238,7 @@ describe("Clean found stage", () => {
     const trashRow = screen.getByText("C:/work/app/target").closest("tr");
     const commandRow = screen.getByText("npm.cache.clean:global").closest("tr");
     expect(trashRow && within(trashRow).getByText("Move to Recycle Bin")).toBeInTheDocument();
-    expect(commandRow && within(commandRow).getByText("Execute")).toBeInTheDocument();
+    expect(commandRow && within(commandRow).getByText(message("en", "clean.v1.result.command_action"))).toBeInTheDocument();
     for (const table of screen.getAllByRole("table")) {
       expect(table.textContent).not.toMatch(/Moved to trash/);
     }
@@ -348,6 +363,30 @@ async function openReview(overrides: Partial<DesktopBridge> = {}) {
 }
 
 describe("Clean review row controls", () => {
+  it("searches display rows without narrowing selection totals, select-all or the dry-run request", async () => {
+    const planDryRun = vi.fn().mockImplementation(fixtureBridge.planDryRun);
+    const { user } = await openReview({ planDryRun });
+    const search = screen.getByRole("textbox", { name: "Search" });
+    await user.type(search, "npm.cache.clean");
+    expect(screen.queryByRole("checkbox", { name: "Select C:/work/app/target" })).not.toBeInTheDocument();
+    expect(document.querySelector(".display-capacity")).toHaveTextContent("500.0 MiB");
+    expect(screen.getByText("Selected 1")).toBeInTheDocument();
+    const selectAll = screen.getByRole("checkbox", { name: "Select all executable targets" });
+    expect(selectAll).toBePartiallyChecked();
+    await user.click(selectAll);
+    expect(screen.getByText("Selected 2")).toBeInTheDocument();
+    expect(selectAll).toBeChecked();
+    await user.clear(search);
+    await user.type(search, "unmatched-display-query");
+    expect(screen.getByText("No targets match your search.")).toBeInTheDocument();
+    expect(screen.getByText("Selected 2")).toBeInTheDocument();
+    expect(screen.queryByText("Scan complete; no cleanup targets found.")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Review dry run" }));
+    expect(planDryRun).toHaveBeenCalledOnce();
+    expect(planDryRun.mock.calls[0][0]).toBe(report.plan);
+    expect(planDryRun.mock.calls[0][1]).toEqual(["cargo.target:C:/work/app/target", "npm.cache.clean:global"]);
+  });
+
   it("skips a row into the collapsed Skipped group and restores it; inspect-only rows have no Skip", async () => {
     const { user } = await openReview();
     expect(screen.getByText("Selected 1")).toBeInTheDocument();
@@ -365,6 +404,7 @@ describe("Clean review row controls", () => {
     const skipped = document.querySelector("details.skipped-group");
     expect(skipped).not.toBeNull();
     expect(skipped).not.toHaveAttribute("open");
+    expect(skipped?.querySelector("table")).toBeNull();
     expect(document.querySelector(".preview-groups")?.lastElementChild).toBe(
       skipped,
     );
@@ -479,6 +519,21 @@ describe("Clean review row controls", () => {
 const closedCoordinatorAlert = "Desktop operation failed: The desktop operation coordinator is closed.";
 
 describe("Clean closed coordinator", () => {
+  it("cancels a requested scan while waiting for another mode to join without starting native work", async () => {
+    const coordinator = new OperationCoordinator();
+    let finish!: () => void;
+    await coordinator.start({ kind: "status", id: "previous", cancel: () => undefined, start: () => new Promise<void>((resolve) => { finish = resolve; }) });
+    const scanStart = vi.fn();
+    const scanCancel = vi.fn();
+    const user = userEvent.setup();
+    render(<CleanWorkbench bridge={bridge({ scanStart, scanCancel })} coordinator={coordinator} locale="en" />);
+    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Cancel scan" }));
+    expect(scanCancel).not.toHaveBeenCalled();
+    await act(async () => finish());
+    expect(await screen.findByRole("heading", { name: "Scan canceled. Results stay non-selectable." })).toBeInTheDocument();
+    expect(scanStart).not.toHaveBeenCalled();
+  });
   it("shows the closed coordinator alert for dry run and does not call planDryRun", async () => {
     const coordinator = new OperationCoordinator();
     const planDryRun = vi.fn(fixtureBridge.planDryRun);

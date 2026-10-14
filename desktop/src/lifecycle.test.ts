@@ -3,6 +3,8 @@ import {
   decodeNativeFaultMode,
   DesktopLifecycleController,
   ShellRouteCoordinatorAdapter,
+  observeWindowPresentation,
+  type WindowPresentationBridge,
 } from "./lifecycle";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
@@ -13,6 +15,76 @@ function deferred<T>() {
 }
 
 describe("desktop lifecycle", () => {
+  it("uses visible presentation in browser fixtures without native calls", () => {
+    const handler = vi.fn();
+    const disconnect = observeWindowPresentation(handler, null);
+    expect(handler).toHaveBeenCalledExactlyOnceWith(true);
+    disconnect();
+  });
+
+  it("subscribes before reading visibility and rejects a stale initial read", async () => {
+    const initial = deferred<unknown>();
+    const handler = vi.fn();
+    let emit: (value: unknown) => void = () => undefined;
+    const order: string[] = [];
+    const release = vi.fn();
+    const bridge: WindowPresentationBridge = {
+      async listen(listener) { order.push("listen"); emit = listener; return release; },
+      visible() { order.push("read"); return initial.promise; },
+    };
+    const disconnect = observeWindowPresentation(handler, bridge);
+    expect(handler).toHaveBeenLastCalledWith(false);
+    await vi.waitFor(() => expect(order).toEqual(["listen", "read"]));
+    emit(false);
+    initial.resolve(true);
+    await Promise.resolve();
+    expect(handler).not.toHaveBeenCalledWith(true);
+    emit(true);
+    expect(handler).toHaveBeenLastCalledWith(true);
+    emit({ visible: true });
+    expect(handler).toHaveBeenLastCalledWith(false);
+    disconnect();
+    expect(release).toHaveBeenCalledOnce();
+    const calls = handler.mock.calls.length;
+    emit(true);
+    expect(handler).toHaveBeenCalledTimes(calls);
+  });
+
+  it("releases a late subscription and suppresses reads after disposal", async () => {
+    const subscription = deferred<() => void>();
+    const release = vi.fn();
+    const visible = vi.fn();
+    const handler = vi.fn();
+    const disconnect = observeWindowPresentation(handler, { listen: () => subscription.promise, visible });
+    disconnect();
+    subscription.resolve(release);
+    await vi.waitFor(() => expect(release).toHaveBeenCalledOnce());
+    expect(visible).not.toHaveBeenCalled();
+    expect(handler).toHaveBeenCalledExactlyOnceWith(false);
+  });
+
+  it("ignores a visibility read completing after disposal and suspends on bridge failures", async () => {
+    const pending = deferred<unknown>();
+    const handler = vi.fn();
+    const visible = vi.fn(() => pending.promise);
+    const disconnect = observeWindowPresentation(handler, { async listen() { return () => undefined; }, visible });
+    await vi.waitFor(() => expect(visible).toHaveBeenCalledOnce());
+    disconnect();
+    pending.resolve(true);
+    await Promise.resolve();
+    expect(handler).toHaveBeenCalledExactlyOnceWith(false);
+    for (const bridge of [
+      { async listen() { throw new Error("listen failed"); }, visible: vi.fn() },
+      { async listen() { return () => undefined; }, async visible() { throw new Error("read failed"); } },
+    ]) {
+      const failed = vi.fn();
+      const release = observeWindowPresentation(failed, bridge);
+      await vi.waitFor(() => expect(failed).toHaveBeenCalledTimes(2));
+      expect(failed.mock.calls.every(([value]) => value === false)).toBe(true);
+      release();
+    }
+  });
+
   it("decodes only the closed debug fault modes", () => {
     expect(decodeNativeFaultMode("disabled")).toBe("disabled");
     expect(decodeNativeFaultMode("route_cancel_once")).toBe("route_cancel_once");

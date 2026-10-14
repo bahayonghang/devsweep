@@ -1,7 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { decodeDesktopPreferencesSnapshot, decodeDesktopFonts } from "./contract";
-import type { DesktopPreferencesPatch, DesktopPreferencesSnapshot, DesktopFonts } from "./types.gen";
+import { decodeCleanScanPreferences, decodeDesktopPreferencesSnapshot, decodeDesktopFonts } from "./contract";
+import type { CleanScanPreferencesSnapshot, DesktopPreferencesPatch, DesktopPreferencesSnapshot, DesktopFonts } from "./types.gen";
 import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwareLeftoversResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeHudStatusEvent, decodeSoftwareStartupList, decodeSoftwareStartupToggleReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
 import type { AnalyzeTrashPreviewV1, AnalyzeTrashReportV1, DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopOptimizeAuditResult, DesktopOptimizeListResult, DesktopOptimizePreviewResult, DesktopOptimizeRunResult, DesktopScanProgress, DesktopScanResult, DesktopSoftwareAuditResult, DesktopSoftwareInventoryResult, DesktopSoftwareLeftoversPreviewResult, DesktopSoftwareLeftoversResult, DesktopSoftwarePreviewResult, DesktopSoftwareUninstallResult, DesktopSoftwareUpdatesResult, DesktopStatusLiveResult, DesktopStatusSnapshotResult, DryRunOutcome, ExecutionReport, CleanMovedTotalsV1, HudStatusEvent, MaintenancePlanV1, ScanOptions, SoftwareInventoryV1, SoftwareLeftoverPlanV1, SoftwareLeftoverSelectionV1, SoftwareSelectionPlanV1, SoftwareStartupListV1, SoftwareStartupToggleReportV1, StatusEventV1, UntrustedPlan } from "./types.gen";
 import {
@@ -48,6 +48,10 @@ export interface DesktopBridge {
   statusCancel(operationId: string): Promise<void>;
   scanStart(scanId: string, options: ScanOptions, onProgress: (progress: DesktopScanProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopScanResult>;
   scanCancel(scanId: string): Promise<void>;
+  scanRescanTarget(scanId: string, options: ScanOptions, targetId: string, onProgress: (progress: DesktopScanProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopScanResult>;
+  cleanScanPreferencesGet(): Promise<CleanScanPreferencesSnapshot>;
+  cleanScanPreferencesSet(roots: string[]): Promise<CleanScanPreferencesSnapshot>;
+  cleanScanRootsValidate(roots: string[]): Promise<CleanScanPreferencesSnapshot>;
   planDryRun(plan: UntrustedPlan, selectedIds: string[]): Promise<DryRunOutcome>;
   planExecute(plan: UntrustedPlan, selectedIds: string[], digest: string): Promise<ExecutionReport>;
   protectionList(): Promise<string[]>;
@@ -92,7 +96,21 @@ async function call<T>(command: string, args: Record<string, unknown>, decode: (
   return decode(value);
 }
 
+function scanProgressChannel(scanId: string, onProgress: (progress: DesktopScanProgress) => void, onError: (error: unknown) => void) {
+  return new Channel<unknown>((value) => {
+    try {
+      const progress = decodeDesktopScanProgress(value);
+      if (progress.scan_id !== scanId) return;
+      onProgress(progress);
+      void invoke("scan_progress_ack", { scanId, sequence: progress.sequence }).catch((error) => onError(bridgeError(error)));
+    } catch (error) { onError(error); }
+  });
+}
+
 export const tauriBridge: DesktopBridge = {
+  cleanScanPreferencesGet: () => call("clean_scan_preferences_get", {}, decodeCleanScanPreferences),
+  cleanScanPreferencesSet: (roots) => call("clean_scan_preferences_set", { roots }, decodeCleanScanPreferences),
+  cleanScanRootsValidate: (roots) => call("clean_scan_roots_validate", { roots }, decodeCleanScanPreferences),
   analyzeStart: async (operationId, root, onProgress, onProgressError) => {
     const channel = new Channel<unknown>((value) => {
       try { onProgress(decodeDesktopAnalyzeProgress(value)); }
@@ -203,15 +221,18 @@ export const tauriBridge: DesktopBridge = {
   },
   statusCancel: async (operationId) => { try { await invoke("status_cancel", { operationId }); } catch (error) { throw bridgeError(error); } },
   scanStart: async (scanId, options, onProgress, onProgressError) => {
-    const channel = new Channel<unknown>((value) => {
-      try { onProgress(decodeDesktopScanProgress(value)); }
-      catch (error) { onProgressError(error); }
-    });
+    const channel = scanProgressChannel(scanId, onProgress, onProgressError);
     const result = await call("scan_start", { scanId, options, onProgress: channel }, decodeDesktopScanResult);
     if (result.scan_id !== scanId) throw new Error("Scan result does not match the active scan");
     return result;
   },
   scanCancel: async (scanId) => { try { await invoke("scan_cancel", { scanId }); } catch (error) { throw bridgeError(error); } },
+  scanRescanTarget: async (scanId, options, targetId, onProgress, onProgressError) => {
+    const channel = scanProgressChannel(scanId, onProgress, onProgressError);
+    const result = await call("scan_rescan_target", { scanId, options, targetId, onProgress: channel }, decodeDesktopScanResult);
+    if (result.scan_id !== scanId) throw new Error("Scan result does not match the active scan");
+    return result;
+  },
   planDryRun: (plan, selectedIds) => call("plan_dry_run", { plan, selectedIds }, (value) => {
     const outcome = decodeDryRunOutcome(value);
     if (!reportMatchesSelection(outcome.report, selectedIds)) throw new Error("Dry-run response does not match the requested selection");

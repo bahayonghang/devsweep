@@ -12,6 +12,8 @@
     "dev:fixture": "vite --mode fixture",
     "benchmark:analyze:build": "tsc --noEmit && vite build --config vite.benchmark.config.ts",
     "benchmark:analyze:preview": "vite preview --config vite.benchmark.config.ts",
+    "benchmark:planet:build": "tsc --noEmit && vite build --config vite.planet-benchmark.config.ts",
+    "benchmark:planet:preview": "vite preview --config vite.planet-benchmark.config.ts",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

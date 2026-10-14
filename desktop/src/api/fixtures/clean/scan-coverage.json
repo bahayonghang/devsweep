@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "plan": {
+    "version": 2,
+    "targets": []
+  },
+  "health": {
+    "completeness": "partial",
+    "diagnostics": [],
+    "totals": {
+      "verified_bytes": 0,
+      "partial_lower_bound_bytes": 0,
+      "unknown_target_count": 0
+    },
+    "coverage": [
+      {
+        "id": "fixture.complete",
+        "scope": "project",
+        "path": "C:/work/example",
+        "status": "complete",
+        "target_count": 0,
+        "detail": "Controlled complete coverage fixture"
+      },
+      {
+        "id": "fixture.empty",
+        "scope": "provider",
+        "path": null,
+        "status": "empty",
+        "target_count": 0,
+        "detail": "Controlled empty coverage fixture"
+      },
+      {
+        "id": "fixture.absent",
+        "scope": "provider",
+        "path": null,
+        "status": "absent",
+        "target_count": 0,
+        "detail": "Controlled absent coverage fixture"
+      },
+      {
+        "id": "fixture.unsupported",
+        "scope": "provider",
+        "path": null,
+        "status": "unsupported",
+        "target_count": 0,
+        "detail": "Controlled unsupported coverage fixture"
+      },
+      {
+        "id": "fixture.skipped",
+        "scope": "provider",
+        "path": null,
+        "status": "skipped",
+        "target_count": 0,
+        "detail": "Controlled skipped coverage fixture"
+      },
+      {
+        "id": "fixture.failed",
+        "scope": "provider",
+        "path": null,
+        "status": "failed",
+        "target_count": 0,
+        "detail": "Controlled failed coverage fixture"
+      },
+      {
+        "id": "fixture.canceled",
+        "scope": "provider",
+        "path": null,
+        "status": "canceled",
+        "target_count": 0,
+        "detail": "Controlled canceled coverage fixture"
+      },
+      {
+        "id": "fixture.timeout",
+        "scope": "provider",
+        "path": null,
+        "status": "timeout",
+        "target_count": 0,
+        "detail": "Controlled timeout coverage fixture"
+      },
+      {
+        "id": "fixture.output_truncated",
+        "scope": "provider",
+        "path": null,
+        "status": "output_truncated",
+        "target_count": 0,
+        "detail": "Controlled output_truncated coverage fixture"
+      },
+      {
+        "id": "fixture.budget_limited",
+        "scope": "provider",
+        "path": null,
+        "status": "budget_limited",
+        "target_count": 0,
+        "detail": "Controlled budget_limited coverage fixture"
+      },
+      {
+        "id": "fixture.protected",
+        "scope": "provider",
+        "path": null,
+        "status": "protected",
+        "target_count": 0,
+        "detail": "Controlled protected coverage fixture"
+      },
+      {
+        "id": "fixture.busy",
+        "scope": "provider",
+        "path": null,
+        "status": "busy",
+        "target_count": 0,
+        "detail": "Controlled busy coverage fixture"
+      },
+      {
+        "id": "fixture.ownership_unknown",
+        "scope": "provider",
+        "path": null,
+        "status": "ownership_unknown",
+        "target_count": 0,
+        "detail": "Controlled ownership_unknown coverage fixture"
+      }
+    ]
+  }
+}

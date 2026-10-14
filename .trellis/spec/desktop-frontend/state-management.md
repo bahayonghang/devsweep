@@ -168,8 +168,13 @@ scan result or backend error remains authoritative.
 
 ## Async Effects
 
-- Create one Tauri `Channel<DesktopScanProgress>` for each `scan_start` command.
+- Create one Tauri `Channel<DesktopScanProgress>` for each scan/rescan command.
   Do not use the application-global event bus for scan progress.
+- The API bridge acknowledges a progress packet with `scan_progress_ack` only
+  after closed decoding, matching scan identity and a successful listener call.
+  The native worker permits one outstanding packet and waits before terminal
+  settlement. A decode/listener/ack error uses the same local cancellation path;
+  components never invoke the acknowledgment command themselves.
 - Keep command promises in `App` effect handlers. Dispatch request/success/fail
   actions around each call; do not store promises in state.
 - Disable conflicting commands while scanning, dry-running, or executing.
@@ -186,6 +191,12 @@ scan result or backend error remains authoritative.
   preview, preventing a replacement scan from racing the still-running backend.
 
 ## Status Process Table And Tray HUD
+
+Native window presentation visibility is separate from the operation
+coordinator. `lifecycle.ts` subscribes before querying the main-only closed
+boolean, rejects stale reads and disposes late listeners. Planet combines it
+with document visibility; no domain work is canceled on minimize. See
+[Desktop Runtime](../backend/desktop-runtime.md).
 
 - Status sort and pins are mode-local reducer state. `processes.ts` owns pure
   selectors: sort by CPU, private bytes, name, or PID in either direction, and
@@ -204,6 +215,11 @@ scan result or backend error remains authoritative.
   capability grants only event listen/unlisten. The HUD
   does not use the operation coordinator; the backend `HudSampler` owns its
   sampling lifecycle.
+- Create the hidden HUD with both `visible(false)` and `focused(false)`, then
+  apply the existing explicit focus after showing it. Initial hidden WebView2
+  focus can queue a blur which hides the first show. Keep blur dismissal and
+  exactly-one-visible-sampler behavior; verify first show plus twenty native
+  show/hide cycles after changing window creation or sampler ownership.
 
 ## Scenario: Command-scoped scan preview
 
@@ -227,6 +243,12 @@ async fn scan_cancel(
     state: State<'_, ScanCoordinator>,
     scan_id: String,
 ) -> Result<(), CommandError>;
+
+async fn scan_progress_ack(
+    state: State<'_, ScanCoordinator>,
+    scan_id: String,
+    sequence: u64,
+) -> Result<(), CommandError>;
 ```
 
 `DesktopScanProgress` contains `scan_id`, monotonically increasing `sequence`,
@@ -242,9 +264,15 @@ async fn scan_cancel(
 - The preview contains display identity, scope, ecosystem, capacity, risk,
   evidence, disposition, and aggregate totals. It omits plan/action fields and
   default selection.
-- The Tauri boundary may coalesce preview delivery to at most 10 sends per
-  second, but must flush the latest pending preview before phase changes and the
-  terminal command result.
+- The Tauri boundary coalesces ordinary preview delivery at 100 ms intervals,
+  with latest-pending flushes before phase messages and terminal settlement.
+  Boundary flushes are exceptions to that cadence. Validate every raw snapshot
+  before coalescing, but construct display targets only when emitting. Sending a
+  newer eligible preview discards any older pending one. See
+  [Runtime Publication](../backend/runtime-publication.md).
+- Scan/rescan waits for one packet's decoded-listener acknowledgment before
+  sending another or settling the terminal result. The transport acknowledgment
+  carries no selection authority and remains inside the API bridge.
 - The reducer accepts progress and terminal results only for the active scan id.
   Only a matching completed result promotes a report into cleanup authority.
 - If channel decoding fails, request cancellation and await the command result
@@ -276,9 +304,11 @@ async fn scan_cancel(
 
 ### 6. Tests Required
 
-- Rust tests assert per-target cumulative publication, strictly increasing
-  sequences, bounded channel sends, pending-preview terminal flush, and truthful
-  requested phases under cancellation.
+- Rust tests assert per-target discovery with cadence/boundary cumulative
+  publication, strictly increasing sequences, projection counts, latest-pending
+  terminal flush, malformed superseded-input rejection, and truthful requested
+  phases under cancellation. Measure downstream receive lag separately from
+  the bounded raw pending slot.
 - Contract tests reject unknown/authority-bearing fields, duplicate ids,
   malformed totals, invalid scan ids, and invalid sequences.
 - Reducer tests assert id/sequence rejection, preview/report isolation, stopped
@@ -305,6 +335,17 @@ catch (error) {
 ```
 
 ## Tests
+
+Clean's search query is a separate display input. Never replace
+`state.scan.plan.targets` with a filtered or paged subset: summary capacities,
+select-all, selected IDs and the dry-run request derive from the complete
+report. Paging and disclosure cannot promote preview observations, select
+inspect-only/protected/skipped rows, or invalidate the association between a
+selected ID and the original plan. Pure display changes preserve selections;
+actual selection, root, protection and report changes retain the existing
+digest-invalidation rules. Regression fixtures must reach the last of 10k
+targets by search/page, retain selections across pages, and verify a filtered
+view sends the full original plan with the complete valid selection.
 
 Reducer tests must cover scan-id/sequence rejection, preview/report isolation,
 cancel/failure retention, prior-report fallback, atomic final promotion, default

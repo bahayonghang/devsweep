@@ -59,6 +59,22 @@ where
 }
 
 #[test]
+fn scan_coverage_fixture_matches_core_and_preserves_legacy_reports() {
+    assert_round_trip::<crate::scan_preferences::CleanScanPreferencesSnapshot>(
+        "clean/scan-preferences.json",
+        include_str!("../../src/api/fixtures/clean/scan-preferences.json"),
+    );
+    assert_round_trip::<ScanReport>(
+        "clean/scan-coverage.json",
+        include_str!("../../src/api/fixtures/clean/scan-coverage.json"),
+    );
+    assert_round_trip::<ScanReport>(
+        "scan-report.json",
+        include_str!("../../src/api/fixtures/scan-report.json"),
+    );
+}
+
+#[test]
 fn desktop_preference_fixtures_match_committed_snapshots_and_closed_patches() {
     assert_round_trip::<Vec<DesktopPreferencesSnapshot>>(
         "desktop-preferences-themes.json",

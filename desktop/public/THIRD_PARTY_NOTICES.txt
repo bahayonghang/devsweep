@@ -1,5 +1,25 @@
 DevSweep desktop palette notices
 
+Natural Earth geographic Earth texture
+--------------------------------------
+Made with Natural Earth (Tom Patterson, Nathaniel Vaughn Kelso and contributors).
+Source: https://naturalearth.s3.amazonaws.com/10m_raster/NE1_LR_LC_SR_W.zip
+Catalogue: https://www.naturalearthdata.com/downloads/10m-raster-data/10m-natural-earth-1/
+Terms: https://www.naturalearthdata.com/about/terms-of-use/
+Natural Earth raster/vector map data are public domain, including redistribution
+and modification. This map is not a photograph, live data, or a Mole asset.
+Retrieved: 2026-10-13. The catalogue labels the release 3.2.0; the downloaded
+archive's VERSION.txt says 2.0.0. Exact source identity is pinned below.
+Archive SHA-256: 8e30c15d49bc73223a36eaeffc07fd49998e658e373a5498f276f5d26bfd1d0a
+TIFF SHA-256: 539906dc5f2cc83be551aeb2a4e7d2e168a6fdd573207a4477c69e923ff95dbb
+Conversion: desktop/scripts/prepare-earth-assets.py, Pillow 12.3.0; Lanczos
+16200x8100 RGB to 1024x512 PNG, no geographic or color edits. Still derivative:
+512x512 RGBA sphere, 20-degree longitude, bilinear sampling and fixed lighting.
+Packaged earth/natural-earth.png: 658001 bytes, SHA-256
+de1ded3b671bb14c3a518dbf4f2b932eb2fb0987621969df88a4d7e8036f8a60
+Packaged earth/still.png: 250789 bytes, SHA-256
+1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18
+
 Catppuccin Latte and Catppuccin Mocha use color values from:
 https://github.com/catppuccin/palette
 Revision: 07d02aa110ef9eb7e7427afca5c73ba9cf7f8ebd
