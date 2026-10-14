@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 57
-- **Last Active**: 2026-09-30
+- **Total Sessions**: 58
+- **Last Active**: 2026-10-13
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1683 | Active |
+| `journal-1.md` | ~1719 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 58 | 2026-10-13 | 提交清理覆盖、地球渲染和运行时边界并归档 | `f607bf734ec0627bcfd6561af153d4041a04374d`, `4d28a27554238030ceac9d19f41ed17133d85dae`, `bdab80708227c0ef21a3c654d21f09387f21440c`, `feda65d94834c6956aa0dfc3108b10a6348224f6`, `1d7e7183b13fc962c7afc0612401d2078de8a6ae` | `codex/cleanup-earth-performance` |
 | 57 | 2026-09-30 | 修正演练预览状态文案并归档 09-20 任务 | `b1556fa` | `dev` |
 | 56 | 2026-09-30 | Desktop Clean 首屏清理入口 | `5143df6`, `1fab4a0` | `dev` |
 | 55 | 2026-09-27 | 设置导航、字体和主题改造归档 | `5e73a4fb2e329c305d400efbb7670684f998d709`, `154566a77d3131b8ed950a08a645cac62e6bf048` | `dev` |

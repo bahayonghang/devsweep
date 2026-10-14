@@ -1681,3 +1681,39 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 58: 提交清理覆盖、地球渲染和运行时边界并归档
+<!-- trellis-session: v=2 fp=ccb01021345a38da -->
+
+**Date**: 2026-10-13
+**Task**: 提交清理覆盖、地球渲染和运行时边界并归档
+**Branch**: `codex/cleanup-earth-performance`
+
+### Summary
+
+把清理发现、桌面地球和有界运行时拆成提交，归档四个 10-13 任务，准备合并到 dev。
+
+### Main Changes
+
+- 扩展清理覆盖、扫描偏好和 provider 执行绑定，并限制 CLI/TUI 状态投递。
+- 桌面记住显式扫描目录、呈现覆盖结果，并用随包纹理绘制地球。
+- 补充扫描说明、代码地图和只读验收测量工具。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f607bf734ec0627bcfd6561af153d4041a04374d` | feat(core): ✨ 扩展清理覆盖并限制扫描与状态投递 |
+| `4d28a27554238030ceac9d19f41ed17133d85dae` | feat(desktop): ✨ 展示扫描范围、清理结果和本地地球 |
+| `bdab80708227c0ef21a3c654d21f09387f21440c` | docs: 📝 说明扫描边界、地球素材来源和模块地图 |
+| `feda65d94834c6956aa0dfc3108b10a6348224f6` | chore: 🔧 增加只读性能与原生验收测量工具 |
+| `1d7e7183b13fc962c7afc0612401d2078de8a6ae` | docs(task): 📝 保存清理、地球和运行时的规划与验收记录 |
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Software 原生计时仍超过 5000ms 门槛，证据保留了这个缺口。
