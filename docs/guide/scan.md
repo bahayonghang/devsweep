@@ -29,6 +29,27 @@ devsweep clean scan --root C:\code\my-project --scope all
 `--scope global` considers supported package-manager providers and inspect-only
 locations. The [rules reference](/reference/rules) shows the current catalog.
 
+On Windows, global scanning also checks supported default Chrome, Edge, Firefox,
+VS Code and Cursor cache locations, plus individual stale current-user temporary
+entries. These new candidates start unselected. Busy applications or uncertain
+ownership leave a visible refusal; profile data, editor state and entire temporary
+roots are not cleanup targets. Unsupported custom application layouts are not
+implied to be covered.
+
+## Select desktop folders
+
+In Clean, add existing absolute paths under **Project folders**, or choose one of
+the suggested existing folders. You can select folders on different drives.
+The desktop remembers validated selections and displays them before scanning;
+it does not silently use the application's launch directory. When Projects is
+enabled, select at least one folder. Turn Projects off to scan only global caches.
+
+Duplicate selections are removed. Removing a nested selection does not exclude
+it while a selected parent still covers it. Use [Protection](/guide/protection)
+to protect cleanup paths separately. If settings cannot be saved, the interface
+explains that validated selections apply only to this session. Desktop selections
+do not change the CLI's `--root` default.
+
 ## Save JSON for review
 
 Use `--format json` and a create-new `--output` file. Do not overwrite an
@@ -64,6 +85,18 @@ ask DevSweep to inspect an arbitrary path.
 A partial lower bound is not an exact size. Diagnostics explain skipped,
 canceled, or incomplete work. Resolve uncertainty before selecting a target
 into a new plan.
+
+Coverage records identify each evaluated root or provider and distinguish an
+empty result from an absent tool, unsupported configuration, busy owner, failure,
+timeout or bounded incomplete scan. A failed root does not erase healthy results
+from other roots. Partial CLI reports use the partial outcome and exit status;
+zero targets with failed coverage does not mean the selected locations are clean.
+Older saved observations without coverage need a fresh scan for these details.
+
+In desktop review, **Recheck size** requests a larger sizing budget for an
+existing target and invalidates the old preview. It does not make an Inspect Only
+target executable. **Analyze folder** opens the separate read-only Analyze flow.
+Result tables are paged; search and selection still operate on the complete report.
 
 ## Desktop live preview
 

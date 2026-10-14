@@ -9,7 +9,7 @@
 - Execution requires a saved plan, that live digest, and `--confirm`. There is no `--execute` flag and no `--audit-log` path.
 - Saved plans are declarative v2 documents. They carry observed facts and a typed cleanup intent; DevSweep validates them and reconstructs trusted actions from its built-in rule registry.
 - Every cleanup target carries evidence and a risk level. Evidence explains why the target was considered cleanable.
-- Global package-manager cleanup is command-backed. npm, pip, pnpm, and Yarn actions use registry-owned argv templates, not shell strings from a plan file.
+- Global package-manager cleanup is command-backed. Supported npm, pip, pnpm, Yarn, Go, uv, and Bun actions use registry-owned argv templates, not shell strings from a plan file. Preview binds the observed footprint, tool and relevant configuration; changed bindings require a fresh review.
 - Project cleanup is trash-backed by default for directories such as `node_modules`, `.venv`, and tool caches.
 - Rust project `target` cleanup prefers `cargo clean --manifest-path <Cargo.toml>`.
 - Cargo home is inspect-only in the MVP. `devsweep` does not delete `%USERPROFILE%\.cargo`, `~/.cargo`, credentials, installed binaries, registry internals, or git cache internals.
@@ -96,6 +96,12 @@ The desktop app uses the same core validation, confirmation digest, and
 trash-backed execution path as the CLI. Cleanup remains review-first; moving a
 path to the trash does not make its capacity available until the trash is
 emptied.
+
+Clean displays explicitly selected project folders before scanning and remembers
+validated selections. Add folders from any accessible drive, or choose global
+caches only. Per-root/provider coverage distinguishes empty results from failed,
+unsupported or incomplete checks. See the [scan guide](docs/guide/scan.md) for
+scope, supported Windows cache boundaries and reviewed size rechecks.
 
 ## Documentation
 

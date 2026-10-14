@@ -30,7 +30,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/model/mod.rs` - public domain-model interface.
 - `crates/devsweep-core/src/model/plan.rs` - v2 persisted plan DTOs and internal cleanup domain
   values.
-- `crates/devsweep-core/src/model/scan.rs` - scan report, health, diagnostics, totals, and sizing
+- `crates/devsweep-core/src/model/scan.rs` - scan report, root/provider coverage, health, diagnostics, totals, and sizing
   warning contracts.
 - `crates/devsweep-core/src/plan/mod.rs` - `UntrustedPlan` to opaque `ValidatedPlan` trust boundary.
 - `crates/devsweep-core/src/plan/digest.rs` - private canonical manifest and SHA-256 digest.
@@ -38,6 +38,10 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
   intent-resolution interface.
 - `crates/devsweep-core/src/rules/definitions.rs` - sole owner of built-in rule facts and IDs.
 - `crates/devsweep-core/src/rules/registry.rs` - private typed intent-to-action reconstruction.
+- `crates/devsweep-core/src/rules/configuration.rs` - shared trusted configured global-cache roots.
+- `crates/devsweep-core/src/rules/generated.rs` - marker, generated-content, repository and live-owner proof for new project outputs.
+- `crates/devsweep-core/src/rules/windows_caches.rs` - closed current-user browser/editor cache discovery and temporary-entry eligibility.
+- `crates/devsweep-core/src/scan_preferences.rs` - explicit desktop scan-root validation and atomic persistence.
 - `crates/devsweep-core/src/filesystem/mod.rs` - shared filesystem safety and sizing interface.
 - `crates/devsweep-core/src/filesystem/identity.rs` - lexical normalization and live file identity.
 - `crates/devsweep-core/src/filesystem/containment.rs` - containment and current-executable checks.
@@ -47,6 +51,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/process/cancel.rs` - cooperative cancellation observers.
 - `crates/devsweep-core/src/process/capture.rs` - bounded stream capture and output sanitization.
 - `crates/devsweep-core/src/process/tree.rs` - Windows Job Object and Unix process-group lifecycle.
+- `crates/devsweep-core/src/process/executable.rs` - shared executable lookup for provider discovery and binding.
+- `crates/devsweep-core/src/process/provider_dispatch.rs` - native provider dispatch and closed Windows Node-shim identities without shell execution.
 - `crates/devsweep-core/src/scan/mod.rs` - `Sweeper` merge/progress/report interface and sole
   production ranking call site.
 - `crates/devsweep-core/src/scan/ranking.rs` - pure ordering and conservative default selection.
@@ -63,6 +69,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
   authorize/audit/dispatch state machine.
 - `crates/devsweep-core/src/execution/audit.rs` - durable JSONL action journal and replay logic.
 - `crates/devsweep-core/src/execution/command.rs` - bounded command and trash runner adapters.
+- `crates/devsweep-core/src/execution/provider.rs` - live provider footprint/tool/configuration binding for preview and execute.
 - `crates/devsweep-core/src/execution/safety/mod.rs` - sole live authorization funnel.
 - `crates/devsweep-core/src/execution/safety/protections.rs` - versioned atomic user-protection
   persistence.
@@ -89,6 +96,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/optimize/execution.rs` - DNS flush and frozen Settings URI launch.
 - `crates/devsweep-core/src/status/mod.rs` - bounded read-only Status snapshots and live sampling.
 - `crates/devsweep-core/src/status/sampler.rs` - snapshot/live producer and lifecycle events.
+- `crates/devsweep-core/src/status/channel.rs` - bounded lossless Status delivery with cancellation and terminal reserves.
 - `crates/devsweep-core/src/status/pdh.rs` - read-only PDH probe for GPU engine and thermal-zone counters.
 - `crates/devsweep-core/src/history/mod.rs` - inspect-only reader for the three fixed V1 audit
   stores.
@@ -126,6 +134,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-cli/src/tui/runtime/mod.rs` - event loop, effects, channels, cancellation, and
   cleanup single-flight.
 - `crates/devsweep-cli/src/tui/runtime/workers.rs` - worker execution and event translation.
+- `crates/devsweep-cli/src/tui/runtime/mailbox.rs` - latest scan observation and bounded ordered worker lifecycle delivery.
 - `crates/devsweep-cli/src/tui/runtime/tests.rs` - fake-service and runtime behavior tests.
 - `crates/devsweep-cli/src/tui/render/` - pure layouts, views, overlays, themes, and render tests.
 - `crates/devsweep-cli/src/tui/support/` - History, Protection, and Rules surfaces.
@@ -134,9 +143,11 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 ### Desktop Shell
 
 - `desktop/src-tauri/src/lib.rs` - Tauri application composition and frozen invoke names.
+- `desktop/src-tauri/src/async_runtime.rs` - bounded asynchronous command workers, with a separate unchanged blocking executor.
 - `desktop/src-tauri/src/commands.rs` - shared IPC helpers (scan start/cancel, presentation
   settings, protections).
-- `desktop/src-tauri/src/scan.rs` - single-flight scan state, cancellation, and progress forwarding.
+- `desktop/src-tauri/src/scan.rs` - single-flight scan state, cancellation, progress forwarding and acknowledged delivery.
+- `desktop/src-tauri/src/scan_preferences.rs` - explicit root selection, session validation and persistence IPC.
 - `desktop/src-tauri/src/clean.rs` - Clean-mode IPC.
 - `desktop/src-tauri/src/software.rs` - Software-mode IPC.
 - `desktop/src-tauri/src/optimize.rs` - Optimize-mode IPC.
@@ -149,6 +160,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop/src-tauri/src/support.rs` - History, Protection, and Rules IPC.
 - `desktop/src-tauri/src/error.rs` - centralized structured command-error mapping.
 - `desktop/src/App.tsx` - React shell host: locale gate, operation coordinator, and AppShell.
+- `desktop/src/lifecycle.ts` - window controls, close coordination and native decorative-presentation visibility observation.
 - `desktop/src/app-shell/` - five-mode registry, routing, and accessible shell chrome.
 - `desktop/src/modes/` - Clean, Software, Optimize, Analyze, and Status workbenches.
 - `desktop/src/hud/` - second Vite entry (`desktop/hud.html`) for the tray HUD window.
@@ -160,6 +172,28 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop/src/state/` - reducer-owned workflow state, digest invalidation, and
   derived selection/capacity rules.
 - `desktop/src/components/` - shared table, evidence, error, and confirmation widgets.
+- `desktop/src/stage/Planet.tsx` - decorative renderer lifecycle, motion preferences and fallback.
+- `desktop/src/stage/earth-renderer.ts` - bounded geographic Clean WebGL renderer; other modes use `planet-renderer.ts`.
+- `desktop/src/stage/earth-texture.ts` - asynchronous bounded local texture loading.
+- `desktop/public/earth/` and `desktop/public/THIRD_PARTY_NOTICES.txt` - packaged Earth assets and exact redistribution evidence.
+- `desktop/scripts/prepare-earth-assets.py` - offline reproducible Earth asset conversion.
+
+### Performance evidence tools
+
+- `tools/measure-readonly.py` - isolated read-only CLI/native workloads and task-owned process-tree sampling.
+- `tools/inspect-native-readonly.mjs` - packaged native-page metadata/screenshot capture through an explicit loopback debug port.
+- `tools/planet-render-benchmark.mjs` and `desktop/vite.planet-benchmark.config.ts` - production Planet comparison and visual matrix.
+- `tools/clean-render-benchmark.mjs` and `desktop/vite.clean-benchmark.config.ts` - full-report Clean selection/preview measurements and pagination visuals.
+- `tools/native-clean-smoke.mjs` - owned packaged-app offline Earth, explicit-root UI and complete CLI/Tauri report parity smoke; no cleanup execution.
+- `tools/native-earth-smoke.mjs` - packaged Earth scale/locale captures and native route/minimize resource lifecycle checks.
+- `tools/native-operation-smoke.mjs` - one read-only Software/Optimize/Analyze UI and IPC sample per invocation for alternating builds.
+- `tools/native-scan-consumer.mjs` - native paused-consumer scan delivery and cancellation evidence.
+- `tools/native-status-lifecycle.mjs` and `tools/summarize-native-status.py` - same-PID Status stop and HUD visibility evidence with separate post-stop CPU accounting.
+- `tools/status-sink-smoke.py` - release CLI slow-reader/broken-pipe and create-new JSON output checks with natural-exit evidence.
+- `tools/provider-golden-parity.py` - isolated repaired-provider B3/C2 release CLI envelope parity, fixture preservation and offline semantic reassessment.
+- `tools/owned-console-smoke.py` - hidden owned-console Status signal/file and TUI input checks; keeps unsupported resize and failed attempts explicit.
+- `tools/analyze-layout-benchmark.mjs` - deterministic inherited Analyze layout fixture and percentile gate.
+- `tools/run-analyze-react-commit.mjs` - production Analyze component commit/DOM gate in an isolated browser.
 
 The dependency direction starts at `main -> devsweep::run -> application ->
 devsweep-core`. Core modules never import CLI or TUI code. TUI render code

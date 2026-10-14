@@ -44,11 +44,35 @@ centered planet visual per mode, and one large primary number with a single
 action below it.
 
 DevSweep did not copy Mole code, images, textures, planet renders, copy,
-taglines, labels, or colour values. The planets are drawn at runtime by
-DevSweep code (`desktop/src/stage/Planet.tsx`) from seeded value noise and
+taglines, labels, or colour values. In that September version, the planets
+were drawn at runtime by DevSweep code (`desktop/src/stage/Planet.tsx`) from seeded value noise and
 palettes chosen for this project (`desktop/src/stage/planet-palettes.ts`).
-No photograph, NASA image, or texture file backs them. All interface copy is
+No photograph, NASA image, or texture file backed that version. All interface copy is
 original DevSweep text in English and Simplified Chinese.
+
+## Geographic Earth direction
+
+On 2026-10-13 the user approved replacing Clean's invented noise geography
+with an offline geographic Earth texture. This changes only the Clean planet;
+other mode planets retain DevSweep's procedural sources. The renderer and
+interface remain independently implemented. Mole imagery and textures are
+not a source for this work.
+
+Clean's source is [Natural Earth I with Shaded Relief and Water](https://www.naturalearthdata.com/downloads/10m-raster-data/10m-natural-earth-1/),
+downloaded as `NE1_LR_LC_SR_W.zip` from Natural Earth's own distribution.
+[Natural Earth's terms](https://www.naturalearthdata.com/about/terms-of-use/)
+place its raster/vector map data in the public domain and permit modification
+and redistribution. This is a geographic cartographic map, not a photograph
+or live satellite observation.
+
+The catalogue advertises version 3.2.0, while this exact archive's embedded
+version file says 2.0.0. The packaged
+third-party notices in `desktop/public/THIRD_PARTY_NOTICES.txt` preserve that
+discrepancy and pin the archive, source TIFF and derivative SHA-256 values.
+The offline conversion script, `desktop/scripts/prepare-earth-assets.py`,
+downsamples the 16200 x 8100 RGB map to a 1024 x 512 texture and creates a
+local still-pose fallback. Only these small derivatives ship with the app;
+original source archives remain build evidence and are not application assets.
 
 ## Future review
 
