@@ -5,7 +5,7 @@
 This is a five-mode Operate surface for repeated Clean, Software, Optimize,
 Analyze, and Status work. Use one quiet immersive shell with application-drawn
 main-window controls, one top-centered capsule navigation bar, a stage host below it, and a
-mode-local stage/detail slot. There is no sidebar and no page header block.
+mode-local overview/detail slot. Clean uses the compact utility workbench in desktop/DESIGN.md; the other modes retain their Stage composition. There is no sidebar.
 Unavailable modes are absent from navigation and deep links; never render a
 clickable placeholder. There is no More disclosure.
 
@@ -52,12 +52,13 @@ permissions scoped to the main window and keep the HUD read-only.
   links/back behavior, restore focus to the activating navigation control, and
   omit unavailable registrations atomically.
 - Compose the shell as the capsule bar plus a stage host. Mode routes carry a
-  visually hidden `h1` that names the mode; the active capsule tab is the
-  visible identity. Settings has a visible `h1`, subtitle, and a tabpanel named
+  visually hidden shell `h1` that names the mode; Clean additionally exposes
+  its visible workbench heading, while the other modes use the active tab as
+  their visible identity. Settings has a visible `h1`, subtitle, and a tabpanel named
   by its tab. Every primary panel is associated with the active tab. Supporting
   routes retain a visible back control to the last mode, a visible `h1`, and a
   subtitle.
-- Every mode's first screen uses the shared `Stage` stack from
+- Software, Optimize, Analyze and Status first screens use the shared `Stage` stack from
   `desktop/src/stage/`: planet hero, one primary number or state title, one
   secondary line, one primary action, and an optional secondary action.
   Mode controls that the first action needs (scope, path) sit between the
@@ -67,19 +68,23 @@ permissions scoped to the main window and keep the HUD read-only.
 - Detail content (review lists, tables, treemap, process table, previews,
   results, audits) renders in `DetailView`: a full-width card region below the
   capsule that replaces the stage and has a "Back to overview" control. A
-  mode may show a detail region below the stage while its first action runs
-  (for example, the Clean scan preview); that region has no back control.
-- The Clean found stage shows the Estimated recoverable of the current
-  selection as its number, not the total of all found targets. The found
-  count and capacity facts go in the secondary line. When the default
-  selection is not empty, the primary action is `Clean {bytes}`: it runs the
-  same `plan_dry_run` as Review and opens the dry-run preview in `DetailView`.
-  `Review targets` and `Scan` are secondary links. When the selection is
-  empty, `Review targets` is the primary action and a status line gives the
-  reason. The stage action never skips the dry run or the confirmation dialog.
+  Stage-based mode may show a detail region below its stage while its first
+  action runs. Clean uses a separate named detail view with Back to cleanup,
+  including for read-only in-progress previews.
+- Clean uses two independent scope panels: global caches (no roots) and project
+  artifacts (explicit roots). At >=1024px use a 2:3 grid; stack below 1024px.
+  Show a visible workbench heading, per-scope action/status/timestamp, and no
+  Earth or StageResult. Use 44px controls, local palette aliases, saved font and
+  root text scale. Completed project reports collapse the folder editor behind
+  a named folder-count disclosure; warning settings expose their current GiB.
+- Clean project capacities come from the Rust advisory projection by owner,
+  with separate artifact/dependency confidence. Raw report target sums are not
+  an exact deduplicated project occupancy. Warnings neither select nor execute.
+  A selected estimate may offer `Clean {bytes}`; that still calls plan_dry_run,
+  shows its preview, and requires the unchanged second confirmation.
 - The dry-run preview footer returns with `Back to review`. The final result
-  detail has no footer return; the `DetailView` "Back to overview" control
-  returns to the result stage. Outcome rows show the target path (or kind
+  detail has no footer return; Clean uses "Back to cleanup" to its retained
+  two-scope overview. Other modes retain `DetailView`. Outcome rows show the target path (or kind
   label) and keep the target id in `title`.
 - Status chips render in the stage secondary line or the detail header. There
   is no page-header portal.
@@ -98,12 +103,16 @@ permissions scoped to the main window and keep the HUD read-only.
   facts aligned.
 - Keep the persistent summary/action bar outside the table frame. It must remain
   stable when selection, errors, or result counts change.
-- Clean tables display at most 100 rows per table page. Native
+- Clean review pages slice at most 100 targets before grouping by authoritative
+  owner root or provider rule, bounding both mounted rows and groups to 100.
+  Read-only preview tables also display at most 100 rows per table page. Native
   first/previous/next/last buttons announce the current page and item range;
   keyboard activation and complete path text remain available. This is a
   display limit, never a report or selection limit. Search reaches the full
   completed report or read-only preview and resets the displayed page;
-  shorter replacement lists clamp it. Keep pagination usable at narrow widths.
+  shorter replacement lists clamp it. Project advisory summaries mount at most
+  10 owners per page. Coverage/diagnostic disclosures mount at most 100 entries
+  each and no rows when closed. Keep pagination usable at narrow widths.
 - Mount evidence contents only while their native disclosure is open, and
   mount the Skipped table only while its disclosure is open. Keep collapsed
   counts and the underlying report intact. Reuse stable derived groups rather

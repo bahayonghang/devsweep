@@ -47,6 +47,15 @@ separate argv element; bind the shim, script and native binary. Never execute
 untrusted `.cmd` text or compose a shell string. Unsupported layouts, including
 unrecognized wrappers, remain explicitly unavailable.
 
+On Windows, canonical paths remain the identity and hashing inputs for the shim,
+script and native interpreter. Node's main-module loader requires a normal
+absolute script argument instead of the Windows verbatim `\\?\` spelling.
+Translate only the Node script argument's disk or UNC prefix; recanonicalize
+that runtime path and require exact equality with the bound canonical script.
+Reject other device namespaces, non-Unicode runtime arguments and conversions
+that cannot resolve to the same canonical file. Do not normalize executable
+identity, skip hashing, introduce a shell or widen the supported-version range.
+
 On Unix, a supported Node entry must also use the closed package path and exact
 `#!/usr/bin/env node` declaration. Resolve a native interpreter explicitly and
 bind both its identity and the entry script; do not let an implicit shebang
@@ -113,6 +122,12 @@ Do not replace this chain with a test-only validated-plan constructor.
 Cover custom Yarn rc selection, indented/quoted delegation, document markers,
 environment case variants and an unchanged entry script with a replaced native
 Node interpreter. Unrelated credential content must not affect the binding.
+Windows dispatch tests must distinguish the runtime argv spelling from canonical
+support identities, cover disk/UNC paths with spaces and Unicode, refuse changed
+identity after normalizing verbatim-only names, and retain script replacement
+checks. Native acceptance uses real Node with read-only isolated cache discovery
+and preview; the simulated `process_fixture` interpreter does not test Node's
+main-module path handling.
 Classic fixtures also cover the extra user/platform/explicit config sources,
 same-path content changes, relative selectors and rc argument refusal. Record
 all simulated provider calls so discovery and preview tests prove refusal

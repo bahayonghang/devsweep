@@ -18,6 +18,8 @@ domain model, scanner, and future execution/audit code.
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | Rust crate conventions |
 | [Database Guidelines](./database-guidelines.md) | File persistence and compatibility | JSON plans, audit, and settings |
 | [Scan Coverage](./scan-coverage.md) | Root/provider accounting and legacy report compatibility | Shared CLI/Tauri observation contract |
+| [Project Occupancy](./project-occupancy.md) | Observational ownership, overlap and qualified mbx reporting | Pure snapshot projection and shared Cargo refusal |
+| [Clean Advisories](./clean-advisories.md) | Confidence-aware project capacity warnings and focused threshold persistence | Pure snapshot projection, closed V1 DTO and store |
 | [Scan Preferences](./scan-preferences.md) | Explicit desktop scan roots, persistence and session scope | Closed V1 store and native IPC |
 | [Provider Authority](./provider-authority.md) | Live global tool, footprint, version and configuration binding | Shared preview and execution digest |
 | [Runtime Publication](./runtime-publication.md) | Scan observer cadence, raw preview validation and bounded sizing | Equal-coverage performance contract |

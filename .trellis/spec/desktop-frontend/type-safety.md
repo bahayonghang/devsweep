@@ -103,3 +103,12 @@ catppuccin_mocha/codex/claude. The typed appearance catalogue must exhaust that
 union. All seven response snapshots and patches feed the type generator and
 Rust wire parity. A palette ID never becomes a CSS color-scheme value: resolve
 System to legacy dark/light, then read the catalogue's light/dark scheme.
+
+Clean capacity advice is a separate closed `CleanAdvisoriesV1` observation, not
+an extension of saved ScanReport V1 or plan V2. The bridge exposes
+`cleanAdvisoryPreferencesGet`, `cleanAdvisoryPreferencesSet`, and `cleanAdvisories`.
+Decode positive whole-GiB safe integers, confidence/assessment consistency,
+included kinds and report identity before state updates. The core owns all
+project footprint attribution and sums. Browser fixtures replay Rust-generated
+report/advisory pairs; unsupported report input must fail explicitly. See the
+[backend advisory contract](../backend/clean-advisories.md).

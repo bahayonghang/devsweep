@@ -193,8 +193,8 @@ mod status;
   audit journal or dispatching a side effect. Unknown ids reject the whole
   request, duplicate ids produce one target outcome plus a normalization note,
   and selected targets still run in validated plan order. It does not read
-  `selected_by_default` — that flag is a scan-time ranking hint, written only
-  by the freshness guard, and callers translate it into an explicit selection
+  `selected_by_default` — that flag is a scan-time ranking hint finalized
+  by the shared ranking policy, and callers translate it into an explicit selection
   via `default_selected_ids()`.
 - `ExecutionReport` contains one terminal outcome for every deduplicated
   selected target, including dry-run and unprocessed targets after cancellation
@@ -1211,23 +1211,31 @@ cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
   output.
 - The default freshness floor is seven days. A target modified within the floor
   can only move from `selected_by_default = true` to `false`.
-- Missing `last_modified` leaves the existing default selection unchanged.
-  Future mtimes are treated as age zero and therefore conservative.
+- Incomplete sizing or missing `last_modified` clears default selection and
+  records `ranking.size_completeness_guard`. Future mtimes are treated as age
+  zero and therefore conservative.
 - When the freshness guard deselects a target, add one
   `Evidence::RuleMatched { rule_id: "ranking.freshness_guard.7d" }`.
+- Every project target requires explicit selection, including old, fully
+  measured Rust outputs. After the freshness guard, any remaining selected
+  `Scope::Project` target is deselected with one `ranking.project_opt_in`
+  evidence entry. Global provider defaults retain their existing risk and
+  freshness policy. Ranking never promotes a default selection.
 - Ranking must not add fields, enum variants, filesystem reads, process
   execution, trash moves, or delete operations.
-- Manual TUI selection is not blocked by the freshness guard; the TUI passes
+- Manual TUI and CLI selection is not blocked by the ranking guards; the TUI passes
   explicitly selected target ids through `ExecutionRequest.selected` without
-  rewriting `selected_by_default`.
+  rewriting `selected_by_default`. CLI `clean plan --select` records its explicit
+  selection in a new saved plan; loading an existing V2 plan does not re-rank it.
 
 #### 4. Validation & Error Matrix
 
 - Multiple targets -> output is size-ranked with deterministic tie-breakers.
 - Recently modified selected target -> deselected with freshness evidence.
-- Stale selected target -> remains selected.
+- Stale, fully measured global selected target -> remains selected.
+- Any project target -> unselected, regardless of size, age, kind or action.
 - Already unselected medium/high-risk target -> remains unselected.
-- Missing mtime -> no panic and no more aggressive default selection.
+- Missing mtime -> no panic and default selection cleared.
 - Future mtime -> no panic and conservative deselection if the target was
   selected by default.
 
@@ -1249,7 +1257,8 @@ cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
 #### 6. Tests Required
 
 - Unit tests for size ranking, tie-breakers, score calculation, missing mtime,
-  future mtime, and freshness evidence idempotence.
+  future mtime, global-default preservation, all project kinds and old Rust
+  outputs, and ranking evidence idempotence.
 - Sweep tests with fake scanners proving merge order, single ranking pass with
   freshness guard, staged progress event sequence, and cumulative ranked
   partial plans.
@@ -1267,7 +1276,9 @@ cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
   `selected_by_default`, and the versioned plan envelope.
 - TUI state tests proving staged scan partials apply as cumulative ranked
   snapshots with stale-scan protection.
-- TUI test proving explicit manual selection can still execute a fresh target.
+- TUI test proving explicit manual selection of fresh and old project targets
+  still reaches confirmation. CLI scan -> saved observation -> explicit plan ->
+  preview must preserve V1/V2 decoding and leave fixture files intact.
 
 #### 7. Wrong vs Correct
 
@@ -1322,9 +1333,13 @@ let report = Sweeper::default().full_scan_report(&options, &mut |_| {})?;
   set. Parent/child cleanup paths are deduplicated by canonical footprint plus
   action identity so one scan does not double-count or emit duplicate actions.
   Exact duplicates merge unique evidence; nested paths collapse only when their
-  semantic action is the same, while the same footprint with distinct actions
+  observed owner and semantic action are the same, while the same footprint with distinct actions
   remains visible. This is scan-output quality only: validated-plan/executor
   invariants own the once-only guarantee for externally supplied plans.
+- Known overlapping Cargo targets from distinct observed owners are retained as
+  `rust.target.shared` inspect-only observations, never independent per-owner
+  cleanup actions. See [Project Occupancy](./project-occupancy.md) for capacity,
+  stable observational identities, and the limited mbx reporting boundary.
 
 #### 4. Validation & Error Matrix
 

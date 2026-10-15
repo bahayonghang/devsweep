@@ -53,6 +53,11 @@ policy while building that projection. `execution::SafetyPolicy` remains the
 final authority immediately before a side effect, including the self-executable
 containment check.
 
+New core scans leave all project targets unselected, including old build outputs.
+The TUI preserves that hint and allows explicit row/group selection; capacity
+warnings never add selections. Existing saved plans retain their recorded hints
+and are not re-ranked by a presentation adapter.
+
 Opening cleanup confirmation freezes an immutable validated manifest and its
 digest. Selection or scan changes must not reconstruct or silently update that
 manifest. Current scan updates invalidate the confirmation, stale worker events

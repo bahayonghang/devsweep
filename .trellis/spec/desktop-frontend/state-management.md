@@ -145,9 +145,9 @@ scan result or backend error remains authoritative.
   pending dry run also drops that dry run. Protect calls
   `protectionAdd(path, true)` only after its confirmation dialog, only for rows
   with a path; it does not use the operation coordinator.
-- The Clean cumulative total comes only from `historyCleanTotals()` after a
-  matching execution report. A failed read hides the line; it never blocks the
-  result.
+- History remains the source of cumulative cleanup totals. Clean's overview
+  reports its scope-specific operation outcome; do not sum owner-command cache
+  occupancy into bytes moved to trash.
 - Analyze keeps the operation id of its terminal snapshot as
   `snapshotOperationId`. Reveal and trash calls send only that id and node
   ids; they never send a path. Analyze is read-only by default; the only
@@ -361,3 +361,27 @@ events/completions, unmount/close, and zero surviving owned work. Store contract
 tests cover exact V1 bytes/path, both frontend adapters, concurrent writers,
 missing `LOCALAPPDATA`, corrupt/unknown/newer byte preservation, exhaustive tag
 mapping, and machine-output isolation.
+
+## Independent Clean sessions
+
+`CleanSessionProvider` lives above routed content and owns two separate reducer
+slots, roots preferences and advisory preferences. The shell has no plan/digest
+or warning authority. Global requests are exactly `{include_projects:false,
+include_global:true,roots:[]}`; project requests are the opposite flags plus
+validated explicit roots. Root-store failures cannot block global scanning.
+One immediate request lock and the shared coordinator prevent concurrent work.
+
+Every state update carries scope and revision, and scan events additionally
+carry scan id/sequence. Root edits reset only project state. Protection changes
+conservatively invalidate both plans and preserve observations with an explicit
+stale message, without claiming every target is protected. Route hide drains
+owned work, clears busy/pending/confirmation state, and advances revisions to
+fence late callbacks while retaining completed reports, selections and previews.
+A matching authoritative completed scan remains completed if cancellation races
+its terminal result. Cancellation alone never promotes a partial preview.
+
+The warning preference is 5 whole GiB by default, positive whole GiB through the
+bridge. Failed saves keep a visibly session-only value across routes. Threshold
+changes never clear selection, invalidate a preview, scan, execute, or schedule
+work. Report identity plus request generation fence asynchronous advisory
+responses. Owners, deduplicated bytes and confidence come only from Rust.

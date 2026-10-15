@@ -34,6 +34,12 @@ embedded untrusted cleanup plan remains version 2.
 
 ## 3. Contracts
 
+- Global-only requests use `include_global=true`, `include_projects=false` and
+  may have no roots. They never call project discovery. Project-only requests
+  use the inverse flags and explicit roots; they never query global providers.
+  Desktop requires absolute roots. CLI retains its `projects|global|all` grammar
+  and default `all` scope with `.` root; do not transfer that implicit root to
+  desktop requests.
 - Emit one aggregate entry per `(scope, id)`. Provider fallback attempts belong
   to that provider's final outcome, not duplicate coverage rows. Repeated root
   selections must not duplicate the same effective project entry.

@@ -42,6 +42,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/rules/generated.rs` - marker, generated-content, repository and live-owner proof for new project outputs.
 - `crates/devsweep-core/src/rules/windows_caches.rs` - closed current-user browser/editor cache discovery and temporary-entry eligibility.
 - `crates/devsweep-core/src/scan_preferences.rs` - explicit desktop scan-root validation and atomic persistence.
+- `crates/devsweep-core/src/project_footprints.rs` - pure per-owner logical occupancy and overlap projection over completed observations.
+- `crates/devsweep-core/src/clean_advisories/` - pure project capacity advice, confidence-aware subtotals and the separate whole-GiB threshold store.
 - `crates/devsweep-core/src/filesystem/mod.rs` - shared filesystem safety and sizing interface.
 - `crates/devsweep-core/src/filesystem/identity.rs` - lexical normalization and live file identity.
 - `crates/devsweep-core/src/filesystem/containment.rs` - containment and current-executable checks.
@@ -62,6 +64,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/scan/project/dedupe.rs` - scan-root and target-footprint deduplication.
 - `crates/devsweep-core/src/scan/global/mod.rs` - global provider target construction.
 - `crates/devsweep-core/src/scan/global/probe.rs` - bounded read-only provider command probes.
+- `crates/devsweep-core/src/scan/global/mbx.rs` - public mbx version/shared-location coverage without storage traversal or cleanup authority.
 - `crates/devsweep-core/src/inventory/mod.rs` - read-only capacity inventory orchestration.
 - `crates/devsweep-core/src/inventory/pnpm.rs` - bounded pnpm project-reference and orphan evidence
   inspection.

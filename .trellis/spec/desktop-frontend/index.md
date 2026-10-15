@@ -90,9 +90,9 @@ device scale rather than changing user display settings, and recording store
 audits, PID, hashes, and a CDP accessibility (screen-reader) tree alongside
 screenshots.
 
-Native scan drivers must locate scope controls by their associated labels and
-assert checked state, effective roots and both scope flags before every Scan
-click, including after reload. Also verify the submitted IPC request. A wrong
+Native scan drivers must choose the explicit global/project action by label
+and assert effective roots and both submitted scope flags before each click,
+including after reload. Also verify the submitted IPC request. A wrong
 scope invalidates that run; cancel/join it before retrying rather than treating
 its timings or findings as fixture evidence.
 
@@ -116,14 +116,14 @@ an actual Windows scale transition from emulated screenshots.
       unaffected.
 - [ ] Complete dark/light/system/Latte/Mocha/Codex/Claude choices (near-black blue dark default), original brand, per-mode accent and
       planet palette, top-centered capsule navigation with brand menu, stage
-      first screens, detail views with a back control, a locally bundled
-      geographic Earth for Clean and original procedural planets for other
-      modes (still pose under reduced motion, outlined circle under forced
-      colors), high contrast, and 390/800/1024/1440 layouts pass in
+      first screens for Software/Optimize/Analyze/Status, detail views with a back
+      control, and the compact two-scope utility workbench for Clean (no Earth).
+      Other-mode planets retain reduced-motion/forced-colors behavior. High
+      contrast and 390/800/1024/1440 layouts pass in
       both locales. Committed local font families and scale apply across main and HUD. No sidebar,
-      page header block, runtime texture download, or Mole asset. Earth source
+      unrelated mode restyling, runtime texture download, or Mole asset. Existing planet asset
       provenance, packaged offline fallback, bounded rendering and stale-decode
-      disposal are verified.
+      disposal remain preserved; Clean does not mount the Earth renderer.
 - [ ] Accelerators are collision-free; binary units remain canonical; user data
       truncation preserves complete accessible/copyable text; authority/action
       copy never truncates.
