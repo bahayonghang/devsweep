@@ -1,0 +1,136 @@
+{
+  "icns_pixels_unchanged": [
+    {
+      "frame": [
+        512,
+        512,
+        2
+      ],
+      "size": [
+        1024,
+        1024
+      ],
+      "rgba_sha256": "52a43550907bacc74f1bf778be5d2d205fd97004880ab17b16f584d278d11b96",
+      "equal": true
+    },
+    {
+      "frame": [
+        512,
+        512,
+        1
+      ],
+      "size": [
+        512,
+        512
+      ],
+      "rgba_sha256": "660d8bf7393c3a5c9bc64578b235c6889a7a66c13f76ac5a265d7c2270bdcfc0",
+      "equal": true
+    },
+    {
+      "frame": [
+        256,
+        256,
+        2
+      ],
+      "size": [
+        512,
+        512
+      ],
+      "rgba_sha256": "660d8bf7393c3a5c9bc64578b235c6889a7a66c13f76ac5a265d7c2270bdcfc0",
+      "equal": true
+    },
+    {
+      "frame": [
+        256,
+        256,
+        1
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "rgba_sha256": "ed2fc4f2f442271874cb02a57514e0f2619c151bbccedbf7c0b9de14a369003f",
+      "equal": true
+    },
+    {
+      "frame": [
+        128,
+        128,
+        2
+      ],
+      "size": [
+        256,
+        256
+      ],
+      "rgba_sha256": "ed2fc4f2f442271874cb02a57514e0f2619c151bbccedbf7c0b9de14a369003f",
+      "equal": true
+    },
+    {
+      "frame": [
+        128,
+        128,
+        1
+      ],
+      "size": [
+        128,
+        128
+      ],
+      "rgba_sha256": "611db3ef4c0c9dc979354c83d795c629f5b19621103d63bbc7f8f794da32b2f9",
+      "equal": true
+    },
+    {
+      "frame": [
+        32,
+        32,
+        2
+      ],
+      "size": [
+        64,
+        64
+      ],
+      "rgba_sha256": "4ec2b6610467f92c6a39818872f8a24d89cb0c0803ac2a0abca37f70e9396a0b",
+      "equal": true
+    },
+    {
+      "frame": [
+        32,
+        32,
+        1
+      ],
+      "size": [
+        32,
+        32
+      ],
+      "rgba_sha256": "dbb04ffd61c1a301aeb45803618f165cdfe1cf65a2c8853b189bb23899179995",
+      "equal": true
+    },
+    {
+      "frame": [
+        16,
+        16,
+        2
+      ],
+      "size": [
+        32,
+        32
+      ],
+      "rgba_sha256": "dbb04ffd61c1a301aeb45803618f165cdfe1cf65a2c8853b189bb23899179995",
+      "equal": true
+    },
+    {
+      "frame": [
+        16,
+        16,
+        1
+      ],
+      "size": [
+        16,
+        16
+      ],
+      "rgba_sha256": "5622f351b73340c4052cc25eccf9c720003c919474a62569b2e32d393e625090",
+      "equal": true
+    }
+  ],
+  "native_icons": "NOT_RUN",
+  "manifest_reproducible": true
+}

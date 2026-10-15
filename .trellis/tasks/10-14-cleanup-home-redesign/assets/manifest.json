@@ -1,0 +1,34 @@
+{
+  "status": "concept_only",
+  "tool": "built-in image_gen",
+  "prompt": "assets/logo-prompt.txt",
+  "assets": [
+    {
+      "file": "assets/beaver-concept-v1.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "fe48db20205a31b8d32742f9b0eaa7717b54cc926ec1e230e8417da96307e296",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "transparent_pixels": 800443,
+      "opaque_pixels": 2046
+    },
+    {
+      "file": "assets/baseline-home.png",
+      "width": 1350,
+      "height": 900,
+      "mode": "RGBA",
+      "sha256": "702ab2e052c167cd62171f461eb8b6536fea53a810b930467bbaa47c3343712f",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "transparent_pixels": 0,
+      "opaque_pixels": 1215000
+    }
+  ],
+  "visual_inspection": "Original beaver is recognizable and fully contained; tail hatching, tonal variation and face detail require simplification for 16-32px use. Production icon/native acceptance NOT_RUN."
+}

@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "kind": "production-clean-home-display-performance",
+  "timestamp": "2026-10-14T17:34:59.302Z",
+  "measurement_status": "MEASURED",
+  "latency_budget_status": "NO_NEW_BUDGET",
+  "fixture_version": "clean-home-v1",
+  "embedded_source_sha256": "36826f8ddf401ad9cf78a7ce0b87c906d47187c986e21096fc451705f42dcf39",
+  "current_source_sha256": "36826f8ddf401ad9cf78a7ce0b87c906d47187c986e21096fc451705f42dcf39",
+  "source_matches_build": true,
+  "fixture_sha256": "e7e291b4fb426669662c56617fefcab410029994f906b0b5079f72c5f1d53347",
+  "warmups_per_operation": 5,
+  "sample_counts": {
+    "mount": 30,
+    "page": 30,
+    "threshold_refresh": 30
+  },
+  "independently_recomputed_nearest_rank_p95_ms": {
+    "mount": 14,
+    "page": 14.099999994039536,
+    "threshold_refresh": 14.199999988079071
+  },
+  "retained_targets": 10000,
+  "retained_owners": 10000,
+  "rendered_owners": 10,
+  "dom_elements": 218,
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logical_processors": 24
+  },
+  "node": "v22.23.2",
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "sample_viewport": {
+    "width": 1440,
+    "height": 900,
+    "dpr": 1.25
+  },
+  "oversized_screenshot_viewport": {
+    "width": 1350,
+    "height": 900,
+    "dpr": 1
+  },
+  "serialized_run": "Parent existing review benchmark completed; native driver paused and no compilation during samples. Parent notified after owned browser exit.",
+  "artifact_files": [
+    {
+      "path": "dist/cleanup-home-final/home-performance/10000-home.json",
+      "sha256": "831d02edc6109e09ae53f7ac30b1e5f82d62d8ce112e70fe8c2d6a1e149186f3",
+      "bytes": 8869
+    },
+    {
+      "path": "dist/cleanup-home-final/home-performance/record.json",
+      "sha256": "4e6a8c16881025a3b165d4a9d9e70957b918c82dee4a1bfdaada67b959a45d4d",
+      "bytes": 10007
+    },
+    {
+      "path": "dist/cleanup-home-final/home-performance/measured-home.png",
+      "sha256": "02f34ca4b5816465b74010e13af5da4bb25452848b6d513637ab633cfebd88e3",
+      "bytes": 79542
+    },
+    {
+      "path": "dist/cleanup-home-final/home-performance/oversized-home.png",
+      "sha256": "9474ece8cd1ec69deddb936e1f1e0c159caaae4f878dfad13875c0e56b2b1e99",
+      "bytes": 56113
+    },
+    {
+      "path": "dist/cleanup-home-final/home-performance/teardown.json",
+      "sha256": "a93fa6ce0830216009320477244fb7fd0b6b7a1b3e66cac98e0d58cb8ab986a3",
+      "bytes": 100
+    }
+  ],
+  "frozen_build_files": [
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/assets/clean-home-benchmark-CGBuIq-7.js",
+      "sha256": "f5a1e72f4cc1fb971f778c8890cf9602bb73fc68f3504457b49e970958bf2e90",
+      "bytes": 474949
+    },
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/assets/clean-home-benchmark-K5OiHaWp.css",
+      "sha256": "1ddbe7627c5a38c7ca6ce70b4d43b3db12fcf04c9da40abda8278a732e4dca21",
+      "bytes": 67664
+    },
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/assets/devsweep-icon-master-D8_WZnZq.png",
+      "sha256": "6a4b9d64b4c2e420ad9a3fdcf53b4538e44834dfeae4fd86a5622864398f2958",
+      "bytes": 813800
+    },
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/clean-home-benchmark.html",
+      "sha256": "d9330c6932fc05f0dd8d783700a657c31557a6b64e5d346537062a2a72ec38ad",
+      "bytes": 407
+    },
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/earth/natural-earth.png",
+      "sha256": "de1ded3b671bb14c3a518dbf4f2b932eb2fb0987621969df88a4d7e8036f8a60",
+      "bytes": 658001
+    },
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/earth/still.png",
+      "sha256": "1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18",
+      "bytes": 250789
+    },
+    {
+      "path": "dist/cleanup-home-final/benchmark-builds/clean-home/THIRD_PARTY_NOTICES.txt",
+      "sha256": "635a238219a195e79a43e8d5cf64b62ce5d8db45e9d051ec1f7b7cd5e91a00ba",
+      "bytes": 3186
+    }
+  ],
+  "harness_files": [
+    {
+      "path": "desktop/clean-home-benchmark.html",
+      "sha256": "8f2f3c4b07a6abdfc24c8ed807f1c7c548545055bfd9c797ca14b66c11894cd3",
+      "bytes": 298
+    },
+    {
+      "path": "desktop/vite.clean-home-benchmark.config.ts",
+      "sha256": "316c8eaa1e8620c8ce25a75f6236d58e4ad6222119667524f628203f89a43f29",
+      "bytes": 1085
+    },
+    {
+      "path": "desktop/src/modes/clean/home-benchmark.tsx",
+      "sha256": "ce793e88c6188dff3c053b0424f285f0cbd594755ecf9f6046a29b8af8d5873f",
+      "bytes": 8562
+    },
+    {
+      "path": "tools/clean-home-benchmark.mjs",
+      "sha256": "6d29d388de62ed2f2970bd158ae0fd39a6fd19f8d74bca0547f40a0aeef1b048",
+      "bytes": 8686
+    }
+  ],
+  "visual_review": "oversized-home.png inspected: current 5 GiB threshold, separate project owner, 6.0 GiB build/cache, exact 0 B dependencies, above-threshold warning and no automatic selection. The harness does not mount the shared shell.",
+  "limits": [
+    "No native IPC, Rust aggregation or OS input/compositor timings",
+    "Controlled API-shaped display data, synthetic report identity, no cleanup bridge",
+    "Two RAF opportunities are not native physical paint measurements",
+    "No new latency PASS budget or pre-change homepage comparison is asserted"
+  ]
+}

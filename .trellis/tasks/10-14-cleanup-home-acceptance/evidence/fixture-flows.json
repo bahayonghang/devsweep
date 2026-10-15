@@ -1,0 +1,81 @@
+{
+  "kind": "running-fixture-visual",
+  "states": [
+    "canceled",
+    "preview",
+    "confirmation",
+    "outcome"
+  ],
+  "viewport": {
+    "width": 1350,
+    "height": 900,
+    "dpr": 1
+  },
+  "overflow_cases": [],
+  "artifact_files": [
+    {
+      "path": "dist/cleanup-home-final/fixture-flows/canceled.png",
+      "sha256": "d218aff0bb8cefe9ee005701929034c3f51746ed1a885d880185788d4e0c4964"
+    },
+    {
+      "path": "dist/cleanup-home-final/fixture-flows/confirmation.png",
+      "sha256": "d4dea57c7360433b8eb3ceaf706f501534b45771bb5dc9b969dbcf1a99228745"
+    },
+    {
+      "path": "dist/cleanup-home-final/fixture-flows/outcome.png",
+      "sha256": "47734bd43ed50110a4e09fe266e4301add8c3a08e62b673bce574f1f42c9638d"
+    },
+    {
+      "path": "dist/cleanup-home-final/fixture-flows/preview.png",
+      "sha256": "498fa68a6351079899a09fbad7beb003e5b8aab3d3a416fe383f4f0e4cc4515d"
+    },
+    {
+      "path": "dist/cleanup-home-final/fixture-flows/geometry.json",
+      "sha256": "463ad19ef142048fd9770b0b511eabf36ed117fbcfdd56c3047565f59221b15f"
+    },
+    {
+      "path": "dist/cleanup-home-final/fixture-flows/teardown.json",
+      "sha256": "b9d975385231a8ec93cfcd03e36c00ffcca0addeb14bc8ac33f8ca5566d10c80"
+    },
+    {
+      "path": ".trellis/tasks/10-14-cleanup-home-acceptance/evidence/capture-flows.mjs",
+      "sha256": "f87105f7b2532986f48aecd7f59c3aa19122773a58356b8247ebc43d7811d8b2"
+    }
+  ],
+  "source_files": [
+    {
+      "path": "desktop/src/modes/clean/CleanWorkbench.tsx",
+      "sha256": "7f25f2fa0f1de95bf9525235ae5d56ef96fa797cf45e8ab9a7f59ce6307e1534"
+    },
+    {
+      "path": "desktop/src/modes/clean/CleanOverview.tsx",
+      "sha256": "0c715a86fc8abeff02ef0a776cca3acfa9489774a96e3da2ab914ea7dfcca6d7"
+    },
+    {
+      "path": "desktop/src/modes/clean/styles.css",
+      "sha256": "cf95b5e2acfb156a1db5ef4291675d2918378e8aa55a22a4806c31c0d4fda7ff"
+    },
+    {
+      "path": "desktop/src/components/ConfirmDialog.tsx",
+      "sha256": "6410ff1fdb27c556486cf6b153bf1e8720796ad967b66c42cccd6ce700e1ceab"
+    },
+    {
+      "path": "desktop/src/pages/ExecutePage.tsx",
+      "sha256": "245bb1f9a89c2d3eaf359fca60d213a77c7bebf391e2c185eb2a933f0152cb81"
+    },
+    {
+      "path": "desktop/src/api/fixture-bridge.ts",
+      "sha256": "85ce74dfbd37691b4fa68fcd0a1d363810bf523afb5231701985019d29ca599c"
+    },
+    {
+      "path": "desktop/src/api/fixtures/dry-run-outcome.json",
+      "sha256": "27ba89c096574ff872a9ed247ebccb08ad127c87dfa315e16f49ae82d98b816a"
+    }
+  ],
+  "limits": [
+    "Vite fixture mode, not native or packaged execution",
+    "Historical archived fixture replay, no production cleanup authority",
+    "Only in-memory fixture executor ran; no filesystem mutation or Tauri commands",
+    "Empty/error/oversized states are not covered by these four captures"
+  ]
+}

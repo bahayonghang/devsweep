@@ -1,0 +1,626 @@
+{
+  "pillow": "12.3.0",
+  "images": [
+    {
+      "file": "desktop\\src\\assets\\devsweep-icon-master.png",
+      "sha256": "6a4b9d64b4c2e420ad9a3fdcf53b4538e44834dfeae4fd86a5622864398f2958",
+      "format": "PNG",
+      "width": 1254,
+      "height": 1254,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 883690,
+        "one_to_eight": 12993,
+        "nine_to_249": 8639,
+        "250_to_254": 666556,
+        "255": 638
+      },
+      "bounds_alpha_gt_8": [
+        156,
+        182,
+        1091,
+        1126
+      ],
+      "bounds_alpha_gt_128": [
+        157,
+        183,
+        1090,
+        1125
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\128x128.png",
+      "sha256": "3401c4c560bd1ec155753dba6695f4857a3f785bab36ed980030e34dc3e1a185",
+      "format": "PNG",
+      "width": 128,
+      "height": 128,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 8805,
+        "one_to_eight": 376,
+        "nine_to_249": 461,
+        "250_to_254": 6431,
+        "255": 311
+      },
+      "bounds_alpha_gt_8": [
+        16,
+        18,
+        112,
+        115
+      ],
+      "bounds_alpha_gt_128": [
+        16,
+        19,
+        111,
+        115
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\128x128@2x.png",
+      "sha256": "2a0bf9d37caadc65558f888c969760d1957662de508fab99de452f19fa692a3c",
+      "format": "PNG",
+      "width": 256,
+      "height": 256,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 36259,
+        "one_to_eight": 843,
+        "nine_to_249": 1018,
+        "250_to_254": 26793,
+        "255": 623
+      },
+      "bounds_alpha_gt_8": [
+        32,
+        37,
+        223,
+        230
+      ],
+      "bounds_alpha_gt_128": [
+        32,
+        37,
+        222,
+        230
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\32x32.png",
+      "sha256": "38fb97536eba47aba2dcf4a66e0198375a7eeced7dd3cfcdf794ca0ed69979ad",
+      "format": "PNG",
+      "width": 32,
+      "height": 32,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 448,
+        "one_to_eight": 90,
+        "nine_to_249": 108,
+        "250_to_254": 303,
+        "255": 75
+      },
+      "bounds_alpha_gt_8": [
+        4,
+        4,
+        28,
+        29
+      ],
+      "bounds_alpha_gt_128": [
+        4,
+        5,
+        28,
+        29
+      ],
+      "outer_edge_max_alpha": 0
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\icon.icns",
+      "sha256": "c96423f5e3ce7e72922e2ce3a7f7adc0abe0e8cfca2e2c24ad8d7530fd651f40",
+      "format": "ICNS",
+      "width": 1024,
+      "height": 1024,
+      "frames": [
+        [
+          512,
+          512,
+          2
+        ],
+        [
+          512,
+          512,
+          1
+        ],
+        [
+          256,
+          256,
+          2
+        ],
+        [
+          256,
+          256,
+          1
+        ],
+        [
+          128,
+          128,
+          2
+        ],
+        [
+          128,
+          128,
+          1
+        ],
+        [
+          32,
+          32,
+          2
+        ],
+        [
+          32,
+          32,
+          1
+        ],
+        [
+          16,
+          16,
+          2
+        ],
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 589719,
+        "one_to_eight": 8029,
+        "nine_to_249": 6083,
+        "250_to_254": 443262,
+        "255": 1483
+      },
+      "bounds_alpha_gt_8": [
+        127,
+        149,
+        891,
+        920
+      ],
+      "bounds_alpha_gt_128": [
+        128,
+        150,
+        890,
+        919
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\icon.ico",
+      "sha256": "e685b9397baffd93e9d743750c4ea1a5b290a3c50cb9cba56da914247f11691b",
+      "format": "ICO",
+      "width": 256,
+      "height": 256,
+      "frames": [
+        [
+          16,
+          16
+        ],
+        [
+          24,
+          24
+        ],
+        [
+          32,
+          32
+        ],
+        [
+          48,
+          48
+        ],
+        [
+          64,
+          64
+        ],
+        [
+          256,
+          256
+        ]
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 36259,
+        "one_to_eight": 843,
+        "nine_to_249": 1018,
+        "250_to_254": 26793,
+        "255": 623
+      },
+      "bounds_alpha_gt_8": [
+        32,
+        37,
+        223,
+        230
+      ],
+      "bounds_alpha_gt_128": [
+        32,
+        37,
+        222,
+        230
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\icon.png",
+      "sha256": "d8c2325f63ac50f7bc2c207ec7bb37399ef0807105d47a90466d1b8f798729e8",
+      "format": "PNG",
+      "width": 512,
+      "height": 512,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 146912,
+        "one_to_eight": 2212,
+        "nine_to_249": 2081,
+        "250_to_254": 109812,
+        "255": 1127
+      },
+      "bounds_alpha_gt_8": [
+        64,
+        74,
+        446,
+        460
+      ],
+      "bounds_alpha_gt_128": [
+        64,
+        75,
+        445,
+        460
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square107x107Logo.png",
+      "sha256": "7eab4c5786e463df55ef9cc5124cc33de94dccfff951e8343a89bed858ddcc77",
+      "format": "PNG",
+      "width": 107,
+      "height": 107,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 6097,
+        "one_to_eight": 296,
+        "nine_to_249": 368,
+        "250_to_254": 4427,
+        "255": 261
+      },
+      "bounds_alpha_gt_8": [
+        13,
+        15,
+        94,
+        96
+      ],
+      "bounds_alpha_gt_128": [
+        13,
+        16,
+        93,
+        96
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square142x142Logo.png",
+      "sha256": "7550a7c0d1e1925a07ee7dc48659d7292489782adb5559b5bb14366cec3ca503",
+      "format": "PNG",
+      "width": 142,
+      "height": 142,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 10902,
+        "one_to_eight": 425,
+        "nine_to_249": 536,
+        "250_to_254": 7958,
+        "255": 343
+      },
+      "bounds_alpha_gt_8": [
+        17,
+        20,
+        124,
+        128
+      ],
+      "bounds_alpha_gt_128": [
+        18,
+        21,
+        123,
+        127
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square150x150Logo.png",
+      "sha256": "9394ba62ed19459463d88fb7c70fb10b43227e56812c2a05940c6d7b81eb916a",
+      "format": "PNG",
+      "width": 150,
+      "height": 150,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 12191,
+        "one_to_eight": 451,
+        "nine_to_249": 557,
+        "250_to_254": 8940,
+        "255": 361
+      },
+      "bounds_alpha_gt_8": [
+        18,
+        21,
+        131,
+        135
+      ],
+      "bounds_alpha_gt_128": [
+        19,
+        22,
+        130,
+        134
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square284x284Logo.png",
+      "sha256": "3046e391a8ff245aaba62a6119328ea2ad1924dfc66fa394e2637575c68eb713",
+      "format": "PNG",
+      "width": 284,
+      "height": 284,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 44751,
+        "one_to_eight": 954,
+        "nine_to_249": 1124,
+        "250_to_254": 33144,
+        "255": 683
+      },
+      "bounds_alpha_gt_8": [
+        35,
+        41,
+        247,
+        255
+      ],
+      "bounds_alpha_gt_128": [
+        36,
+        42,
+        247,
+        255
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square30x30Logo.png",
+      "sha256": "0d94f64ce87e632f4ba9d96a986b9f646505fe9fc3dc90b44a8c68d946d33bc7",
+      "format": "PNG",
+      "width": 30,
+      "height": 30,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 386,
+        "one_to_eight": 82,
+        "nine_to_249": 107,
+        "250_to_254": 255,
+        "255": 70
+      },
+      "bounds_alpha_gt_8": [
+        3,
+        4,
+        27,
+        27
+      ],
+      "bounds_alpha_gt_128": [
+        4,
+        4,
+        26,
+        27
+      ],
+      "outer_edge_max_alpha": 0
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square310x310Logo.png",
+      "sha256": "2dcd92f392e43f45b955cfe47b7e17d032d655dd42c5fed20827ae616d93b478",
+      "format": "PNG",
+      "width": 310,
+      "height": 310,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 53415,
+        "one_to_eight": 1090,
+        "nine_to_249": 1202,
+        "250_to_254": 39642,
+        "255": 751
+      },
+      "bounds_alpha_gt_8": [
+        38,
+        45,
+        270,
+        279
+      ],
+      "bounds_alpha_gt_128": [
+        39,
+        45,
+        269,
+        278
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square44x44Logo.png",
+      "sha256": "0feddd42d2a19b8625411403ec7b11fc4db34e70d0f6f5f55f3e5db47444bcff",
+      "format": "PNG",
+      "width": 44,
+      "height": 44,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 915,
+        "one_to_eight": 126,
+        "nine_to_249": 156,
+        "250_to_254": 637,
+        "255": 102
+      },
+      "bounds_alpha_gt_8": [
+        5,
+        6,
+        39,
+        40
+      ],
+      "bounds_alpha_gt_128": [
+        6,
+        6,
+        38,
+        39
+      ],
+      "outer_edge_max_alpha": 0
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square71x71Logo.png",
+      "sha256": "9942097c55a5223985302191d44a9fbf5aad3309450e262006a8f75025bb6533",
+      "format": "PNG",
+      "width": 71,
+      "height": 71,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 2583,
+        "one_to_eight": 195,
+        "nine_to_249": 239,
+        "250_to_254": 1854,
+        "255": 170
+      },
+      "bounds_alpha_gt_8": [
+        8,
+        10,
+        62,
+        64
+      ],
+      "bounds_alpha_gt_128": [
+        9,
+        10,
+        62,
+        64
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\Square89x89Logo.png",
+      "sha256": "1a10ac990ec33bbeb2edb782b157915daa856e1a3164a068662fcc9331424e67",
+      "format": "PNG",
+      "width": 89,
+      "height": 89,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 4150,
+        "one_to_eight": 258,
+        "nine_to_249": 292,
+        "250_to_254": 2999,
+        "255": 222
+      },
+      "bounds_alpha_gt_8": [
+        11,
+        12,
+        78,
+        80
+      ],
+      "bounds_alpha_gt_128": [
+        11,
+        13,
+        77,
+        80
+      ],
+      "outer_edge_max_alpha": 1
+    },
+    {
+      "file": "desktop\\src-tauri\\icons\\StoreLogo.png",
+      "sha256": "28fd3a0c32670534d458f2436890650bf073e0f02e4bd7e361ac2dbdacd8895f",
+      "format": "PNG",
+      "width": 50,
+      "height": 50,
+      "frames": null,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_counts": {
+        "zero": 1215,
+        "one_to_eight": 142,
+        "nine_to_249": 167,
+        "250_to_254": 857,
+        "255": 119
+      },
+      "bounds_alpha_gt_8": [
+        6,
+        7,
+        44,
+        45
+      ],
+      "bounds_alpha_gt_128": [
+        6,
+        7,
+        43,
+        45
+      ],
+      "outer_edge_max_alpha": 0
+    }
+  ],
+  "method": "Read-only alpha/format inspection; actual ICO frames where available. Only 20px uses deterministic master resizing for the review sheet."
+}

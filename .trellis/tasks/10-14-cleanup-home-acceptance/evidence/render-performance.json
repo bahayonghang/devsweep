@@ -1,0 +1,174 @@
+{
+  "status": "PASS",
+  "method_parity": true,
+  "source_build": {
+    "label": "home-final",
+    "source_sha256": "c13756f17adda379fbc3332b379f22b01c500f723ab90b2d6057e2ab0f28bc3f"
+  },
+  "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26300",
+    "cpu": "Intel(R) Core(TM) Ultra 9 275HX",
+    "logical_processors": 24
+  },
+  "warmups": 5,
+  "measured_samples": 30,
+  "percentile": "nearest-rank p95",
+  "rows": [
+    {
+      "count": 100,
+      "mode": "review",
+      "before_p95_ms": {
+        "parse": 0.20000001788139343,
+        "decode": 0.4000000059604645,
+        "report_reducer": 0,
+        "row_visible": 14,
+        "select_all_visible": 14,
+        "preview_visible": null
+      },
+      "after_p95_ms": {
+        "parse": 0.20000001788139343,
+        "decode": 0.29999998211860657,
+        "report_reducer": 0,
+        "row_visible": 14.099999994039536,
+        "select_all_visible": 14,
+        "preview_visible": null
+      },
+      "before_dom": 1954,
+      "after_dom": 4231,
+      "retained_targets": 100,
+      "rendered_rows": 100,
+      "fixture_sha256": "dd529385368b6dea23ba77820a7ae79edc91c60afa694e0320ce87ca6c5e0fed"
+    },
+    {
+      "count": 100,
+      "mode": "preview",
+      "before_p95_ms": {
+        "parse": 0.10000002384185791,
+        "decode": 0.19999998807907104,
+        "report_reducer": 0.09999999403953552,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 14
+      },
+      "after_p95_ms": {
+        "parse": 0.20000001788139343,
+        "decode": 0.20000001788139343,
+        "report_reducer": 0,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 14
+      },
+      "before_dom": 1722,
+      "after_dom": 1722,
+      "retained_targets": 100,
+      "rendered_rows": 100,
+      "fixture_sha256": "dd529385368b6dea23ba77820a7ae79edc91c60afa694e0320ce87ca6c5e0fed"
+    },
+    {
+      "count": 1000,
+      "mode": "review",
+      "before_p95_ms": {
+        "parse": 1.5,
+        "decode": 1.5,
+        "report_reducer": 0.09999999403953552,
+        "row_visible": 14.099999994039536,
+        "select_all_visible": 14.099999994039536,
+        "preview_visible": null
+      },
+      "after_p95_ms": {
+        "parse": 2.5999999940395355,
+        "decode": 3.199999988079071,
+        "report_reducer": 0.10000002384185791,
+        "row_visible": 14.099999994039536,
+        "select_all_visible": 14,
+        "preview_visible": null
+      },
+      "before_dom": 1962,
+      "after_dom": 4240,
+      "retained_targets": 1000,
+      "rendered_rows": 100,
+      "fixture_sha256": "5dcabf8066bea802b6b999d74e8906186a79989a7937f4769a6ea486ac3b095a"
+    },
+    {
+      "count": 1000,
+      "mode": "preview",
+      "before_p95_ms": {
+        "parse": 1.0999999940395355,
+        "decode": 1.4000000059604645,
+        "report_reducer": 0,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 14
+      },
+      "after_p95_ms": {
+        "parse": 0.9000000059604645,
+        "decode": 1.5,
+        "report_reducer": 0,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 14
+      },
+      "before_dom": 1729,
+      "after_dom": 1729,
+      "retained_targets": 1000,
+      "rendered_rows": 100,
+      "fixture_sha256": "5dcabf8066bea802b6b999d74e8906186a79989a7937f4769a6ea486ac3b095a"
+    },
+    {
+      "count": 10000,
+      "mode": "review",
+      "before_p95_ms": {
+        "parse": 12.599999994039536,
+        "decode": 12.900000005960464,
+        "report_reducer": 0.30000001192092896,
+        "row_visible": 21,
+        "select_all_visible": 14.099999994039536,
+        "preview_visible": null
+      },
+      "after_p95_ms": {
+        "parse": 12.800000011920929,
+        "decode": 14.900000005960464,
+        "report_reducer": 0.30000001192092896,
+        "row_visible": 14.099999994039536,
+        "select_all_visible": 14.299999982118607,
+        "preview_visible": null
+      },
+      "before_dom": 1962,
+      "after_dom": 4240,
+      "retained_targets": 10000,
+      "rendered_rows": 100,
+      "fixture_sha256": "220aca202a98ea0a198b3c6fd55c40470fe0cc04e838535b473977fa92d3014c"
+    },
+    {
+      "count": 10000,
+      "mode": "preview",
+      "before_p95_ms": {
+        "parse": 11.800000011920929,
+        "decode": 13.699999988079071,
+        "report_reducer": 0.09999999403953552,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 13.600000023841858
+      },
+      "after_p95_ms": {
+        "parse": 11.600000023841858,
+        "decode": 12.600000023841858,
+        "report_reducer": 0.09999999403953552,
+        "row_visible": null,
+        "select_all_visible": null,
+        "preview_visible": 13.599999994039536
+      },
+      "before_dom": 1729,
+      "after_dom": 1729,
+      "retained_targets": 10000,
+      "rendered_rows": 100,
+      "fixture_sha256": "220aca202a98ea0a198b3c6fd55c40470fe0cc04e838535b473977fa92d3014c"
+    }
+  ],
+  "records": {
+    "dist\\cleanup-home-baseline\\20261014-preedit\\clean-render-measure-final\\record.json": "4c909fe53a6540102e0b6d9efcaaa87b083bab49cc51aace8c6f6b87395553dc",
+    "dist\\cleanup-home-final\\render-performance\\record.json": "4757e625b44dc48f91d981264a9714599b86729f4ced76e5e03164f121c5abd4"
+  }
+}

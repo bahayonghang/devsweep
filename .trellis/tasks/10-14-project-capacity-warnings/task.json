@@ -1,0 +1,28 @@
+{
+  "id": "project-capacity-warnings",
+  "name": "project-capacity-warnings",
+  "title": "Add configurable project capacity warnings",
+  "description": "Warn after user scans when a project artifact total reaches a configurable 5 GiB default without authorizing cleanup.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-14",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-14-cleanup-home-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "execution_status": "implemented_and_verified"
+  }
+}

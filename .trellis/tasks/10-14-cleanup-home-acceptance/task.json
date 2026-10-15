@@ -1,0 +1,28 @@
+{
+  "id": "cleanup-home-acceptance",
+  "name": "cleanup-home-acceptance",
+  "title": "Verify cleanup home integration and native acceptance",
+  "description": "Validate CLI/core/Tauri parity, scoped workflow safety, warning boundaries, accessible visual matrices, packaged assets, and native performance evidence.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-14",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-14-cleanup-home-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "execution_status": "gates_cli_components_pass_native_partial_idle_tree_open"
+  }
+}

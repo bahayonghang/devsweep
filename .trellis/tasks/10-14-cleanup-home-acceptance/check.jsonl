@@ -1,0 +1,8 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Cleanup safety and selection invariants"}
+{"file":".trellis/tasks/10-14-cleanup-home-redesign/research/scan-contracts.md","reason":"Current scopes, ownership, mbx qualification and warning evidence"}
+{"file":".trellis/tasks/10-14-cleanup-home-redesign/research/home-ui.md","reason":"Current desktop entry/state/style/asset evidence"}
+{"file":".trellis/spec/desktop-frontend/index.md","reason":"Task-specific executable specification or reviewed design"}
+{"file":".trellis/spec/backend/provider-authority.md","reason":"Task-specific executable specification or reviewed design"}
+{"file":".trellis/spec/backend/runtime-publication.md","reason":"Task-specific executable specification or reviewed design"}
+{"file":".trellis/spec/backend/bounded-delivery.md","reason":"Task-specific executable specification or reviewed design"}
+{"file": ".trellis/tasks/10-14-cleanup-home-redesign/research/planning-review.md", "reason": "Pre-edit baseline ownership and evidence requirements"}

@@ -1,0 +1,35 @@
+{
+  "id": "cleanup-home-redesign",
+  "name": "cleanup-home-redesign",
+  "title": "Redesign cleanup home around global caches and project artifacts",
+  "description": "Analyze and plan independent global-cache cleanup, on-demand project artifact cleanup with capacity warnings, a utility-focused desktop home, and an original animal identity.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-14",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-14-cleanup-scope-contracts",
+    "10-14-project-artifacts-mbx",
+    "10-14-project-capacity-warnings",
+    "10-14-desktop-cleanup-workbench",
+    "10-14-devsweep-animal-identity",
+    "10-14-cleanup-home-acceptance"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "execution_status": "implemented_with_open_mbx_native_and_idle_acceptance"
+  }
+}

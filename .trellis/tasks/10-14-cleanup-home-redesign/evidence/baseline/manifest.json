@@ -1,0 +1,430 @@
+{
+  "schema_version": 1,
+  "evidence_root": "dist/cleanup-home-baseline/20261014-preedit",
+  "git_head": "e69a4ee47c4ebae960f41997354c28c0c6030537",
+  "git_branch": "dev",
+  "source_inventory_sha256": "4acc69a804efd393dc7b25aece5daf56b9febf1a3bf4ebee47ed00f37efef6bb",
+  "source_archive_sha256": "1f4de29c23e54c20e4b71084c01cbdc2d28b1380af3119fb9f17d9e00509d5e8",
+  "initial_working_tree_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "source_drift_at_finalize": [],
+  "source_freeze_note": "Drift checked at build freeze before A product edits; later evidence uses preserved outputs only.",
+  "source_note": "Initial git status reports Cargo.toml M, but normalized git diff HEAD is empty. Exact working bytes are in the source archive and per-file hash inventory.",
+  "runtime": {
+    "node_executable": "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+    "node": "v22.23.2",
+    "npm_entrypoint": "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js",
+    "npm": "10.9.8",
+    "cargo": "cargo 1.99.0 (5f94df478 2026-08-27)",
+    "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "warning": "mise exec node@22 fell back to PATH Node 26.7.0 after DNS failure; builds used the explicit installed Node 22.23.2 and bundled npm 10.9.8."
+  },
+  "host": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "",
+    "python": "3.14.7"
+  },
+  "builds": {
+    "production-web": [
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/assets/devsweep-icon-master-Bn2Ejx_Y.png",
+        "bytes": 956579,
+        "sha256": "70527f3773669ddce9fefeb1cfc40d9fa5efd5bf978cfc7bbb2f743da8e308fd"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/assets/hud--4IwXFR3.css",
+        "bytes": 8269,
+        "sha256": "0bbf4747d74b69f55345b890c43e56d2b42290a2b11733768da6212b746361c4"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/assets/hud-B9bX9AeB.js",
+        "bytes": 2686,
+        "sha256": "3aa8055e919dc48cac293e3ca6d8e474a501f13de7601b2fc9e9a6fdf0ab6ed5"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/assets/main-Bet9T92O.css",
+        "bytes": 61623,
+        "sha256": "68296ff4ff82ebbc67aeee770e45c1644e87820f121a825c2a3602877e9f07dd"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/assets/main-Q-4uoIpp.js",
+        "bytes": 188727,
+        "sha256": "6b6fa99a8099168eb5b27df7775b1ee78b2e94195853391321cd36c0df30fce5"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/assets/state-itqXXLsR.js",
+        "bytes": 677252,
+        "sha256": "930a3d0bbd3be3c750a4fdaabc13c782b240cced756ae498d713111956de6db3"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/earth/natural-earth.png",
+        "bytes": 658001,
+        "sha256": "de1ded3b671bb14c3a518dbf4f2b932eb2fb0987621969df88a4d7e8036f8a60"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/earth/still.png",
+        "bytes": 250789,
+        "sha256": "1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/hud.html",
+        "bytes": 472,
+        "sha256": "b4a90aacde30509071446ca3f34c449a3ad49befa5bc33716bc619b8abfb5c7f"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/index.html",
+        "bytes": 467,
+        "sha256": "1c9f1e789cead08e6875d407f86892891fce28142053d265878726b035e3fac4"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/production-web/THIRD_PARTY_NOTICES.txt",
+        "bytes": 3186,
+        "sha256": "635a238219a195e79a43e8d5cf64b62ce5d8db45e9d051ec1f7b7cd5e91a00ba"
+      }
+    ],
+    "clean-benchmark-web": [
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/assets/clean-render-benchmark-Bet9T92O.css",
+        "bytes": 61623,
+        "sha256": "68296ff4ff82ebbc67aeee770e45c1644e87820f121a825c2a3602877e9f07dd"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/assets/clean-render-benchmark-BZjzL99o.js",
+        "bytes": 467274,
+        "sha256": "0f1bd2e4093c644b6d6eb901681bb8f1ef659d14343152881366278a135a89d0"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/assets/devsweep-icon-master-Bn2Ejx_Y.png",
+        "bytes": 956579,
+        "sha256": "70527f3773669ddce9fefeb1cfc40d9fa5efd5bf978cfc7bbb2f743da8e308fd"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/clean-render-benchmark.html",
+        "bytes": 415,
+        "sha256": "38e855cac9cf997bbcb665d5f0e22cc8ad004b1b9d1f56770edd459e1d926039"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/earth/natural-earth.png",
+        "bytes": 658001,
+        "sha256": "de1ded3b671bb14c3a518dbf4f2b932eb2fb0987621969df88a4d7e8036f8a60"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/earth/still.png",
+        "bytes": 250789,
+        "sha256": "1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-web/THIRD_PARTY_NOTICES.txt",
+        "bytes": 3186,
+        "sha256": "635a238219a195e79a43e8d5cf64b62ce5d8db45e9d051ec1f7b7cd5e91a00ba"
+      }
+    ],
+    "native": [
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/native/devsweep-desktop-production.exe",
+        "bytes": 15083520,
+        "sha256": "264eed5dd13fa790093c91c36c118e7dd3b261646a4a099187d00fced10ab291"
+      },
+      {
+        "path": "dist/cleanup-home-baseline/20261014-preedit/native/devsweep-desktop.exe",
+        "bytes": 12927488,
+        "sha256": "c0639733f8ef0bcbac60b3d69213a6c3fef4614f35ff64181569ded672783011"
+      }
+    ]
+  },
+  "method": {
+    "benchmark_driver": "tools/clean-render-benchmark.mjs",
+    "harness": "desktop/src/modes/clean/render-benchmark.tsx",
+    "warmups": 5,
+    "samples": 30,
+    "percentile": "nearest-rank p95",
+    "fixture_counts": [
+      100,
+      1000,
+      10000
+    ],
+    "scope": "Synthetic reports only; no user scans, cleanup, uninstall or maintenance."
+  },
+  "benchmark_runs": [
+    {
+      "directory": "dist/cleanup-home-baseline/20261014-preedit/clean-render-measure",
+      "status": "FAILED_STARTUP",
+      "teardown": {
+        "pid": 111888,
+        "forced": false,
+        "exit_code": 4294930433,
+        "signal": null,
+        "lifecycle_pass": false
+      }
+    },
+    {
+      "directory": "dist/cleanup-home-baseline/20261014-preedit/clean-render-measure-retry",
+      "status": "CAPTURED",
+      "teardown": {
+        "pid": 126196,
+        "forced": false,
+        "exit_code": 0,
+        "signal": null,
+        "lifecycle_pass": true
+      },
+      "record_sha256": "bb0fd9b872e9cfcfd373d1ee6f7931240eaa3aba121459ada6d9bc5e26e4e080",
+      "qualification": "Initial successful run overlapped release compilation; retain as diagnostic, prefer final run."
+    },
+    {
+      "directory": "dist/cleanup-home-baseline/20261014-preedit/clean-render-measure-final",
+      "status": "CAPTURED",
+      "teardown": {
+        "pid": 108644,
+        "forced": false,
+        "exit_code": 0,
+        "signal": null,
+        "lifecycle_pass": true
+      },
+      "record_sha256": "4c909fe53a6540102e0b6d9efcaaa87b083bab49cc51aace8c6f6b87395553dc"
+    },
+    {
+      "directory": "dist/cleanup-home-baseline/20261014-preedit/clean-render-visual",
+      "status": "CAPTURED",
+      "teardown": {
+        "pid": 136816,
+        "forced": false,
+        "exit_code": 0,
+        "signal": null,
+        "lifecycle_pass": true
+      },
+      "record_sha256": "823faadf43133a95cfe14433baa7995787a0ec0449ea3f2799166205777e0f83"
+    }
+  ],
+  "native_status": "CAPTURED",
+  "native_files": [
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/accessibility.json",
+      "bytes": 87292,
+      "sha256": "551dc8a97ccc31205e6aded2e54b9da64ca7bbc1745f39197c5f0cb7225420f8"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-1080x720.json",
+      "bytes": 20862,
+      "sha256": "9521c61f86c958d7c8754574c86a44c92b5fc11c6377c35ef4dd8292d5e203ff"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-1080x720.png",
+      "bytes": 153207,
+      "sha256": "c5b357f4eb5f11a08d5740a4abe8b1f980c5d8d3b3accc776e1dad783e85d7cd"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-1350x900.json",
+      "bytes": 21095,
+      "sha256": "659f2458cef0c6d8eb88326c34b07720b451087c31be09e3f1a57bc2866a01b9"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-1350x900.png",
+      "bytes": 159985,
+      "sha256": "3b5e99b1c046d0ec3b67235e7f6e5ef8638ccfde51c1251eeae560c41a3a67a6"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-900x600.json",
+      "bytes": 20817,
+      "sha256": "095c70bee52257c3dd592ae94c5c1202d1dc4b65693b320fa1ea1a531656b067"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-900x600.png",
+      "bytes": 150405,
+      "sha256": "e4b48c3ef44e836e1af7f96b75a6004f0cca390011789dd118fc00af29081e32"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-after-route-return.json",
+      "bytes": 21512,
+      "sha256": "d5bff92bb72643564c24a2e28b4ab51407406b4ed6d4bf6254f04aafa301c426"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-after-route-return.png",
+      "bytes": 153207,
+      "sha256": "c5b357f4eb5f11a08d5740a4abe8b1f980c5d8d3b3accc776e1dad783e85d7cd"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-initial.json",
+      "bytes": 20727,
+      "sha256": "f05ee2808b5ee5e08dbbb72654847141a5e2f4c54e624639f392e967afa8223d"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/clean-initial.png",
+      "bytes": 153207,
+      "sha256": "c5b357f4eb5f11a08d5740a4abe8b1f980c5d8d3b3accc776e1dad783e85d7cd"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/identity.json",
+      "bytes": 5835,
+      "sha256": "7e7697631dec88f8775eddba9c39e10d6a5e0419e83225fdb25fdf3465010549"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/no-scan-assertion.json",
+      "bytes": 197,
+      "sha256": "44b03d0d99a736d310e9d9f3411c56b802d806a7859a92fd443d6d2b2ddc19b8"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/optimize-1080x720.json",
+      "bytes": 17485,
+      "sha256": "5cd4c91e9cbf0e682edda6a62443230073e1cdffc622fd0f99da2adf0cb7eeb6"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/optimize-1080x720.png",
+      "bytes": 103839,
+      "sha256": "765142fef6f865f18f110e21cf482afa267c95667d32a18c0a0fa7e8f0cfe167"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/settings-1080x720.json",
+      "bytes": 31936,
+      "sha256": "c2b58c524184198c4ad881f0300a54233eb8080fc85934d71b3f00e1f44b333f"
+    },
+    {
+      "path": "dist/cleanup-home-baseline/20261014-preedit/native-captures-final/settings-1080x720.png",
+      "bytes": 45659,
+      "sha256": "5daec42a4f4c61a10b23cd55cd27b51d230dbd05af306629eaacd9896fe1ac25"
+    }
+  ],
+  "native_note": "Final captures use DPI-aware client geometry. Earlier native-captures and native-captures-corrected remain retained diagnostics for DPI virtualization and fractional-pixel rounding; do not use their filename dimensions as actual viewport dimensions.",
+  "native_geometry": [
+    {
+      "name": "clean-1080x720.json",
+      "width": 1080,
+      "height": 720,
+      "dpr": 1.25,
+      "overflow": false
+    },
+    {
+      "name": "clean-1350x900.json",
+      "width": 1350,
+      "height": 900,
+      "dpr": 1.25,
+      "overflow": false
+    },
+    {
+      "name": "clean-900x600.json",
+      "width": 900,
+      "height": 600,
+      "dpr": 1.25,
+      "overflow": false
+    },
+    {
+      "name": "optimize-1080x720.json",
+      "width": 1080,
+      "height": 720,
+      "dpr": 1.25,
+      "overflow": false
+    },
+    {
+      "name": "settings-1080x720.json",
+      "width": 1080,
+      "height": 720,
+      "dpr": 1.25,
+      "overflow": false
+    }
+  ],
+  "native_launch_summary": {
+    "version": 2,
+    "workload": "desktop-idle",
+    "executable": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\cleanup-home-baseline\\20261014-preedit\\native\\devsweep-desktop-production.exe",
+    "sha256": "264eed5dd13fa790093c91c36c118e7dd3b261646a4a099187d00fced10ab291",
+    "argv": [],
+    "cwd": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\cleanup-home-baseline\\20261014-preedit\\empty-cwd",
+    "pid": 140424,
+    "exit_code": 0,
+    "elapsed_ms": 150064.3623000069,
+    "deadline_seconds": 180.0,
+    "timed_out": false,
+    "measurement_status": "completed",
+    "forced_teardown": [],
+    "lifecycle_pass": true,
+    "window_state_requested": "hidden",
+    "sample_count": 732,
+    "sample_period_ms": 200,
+    "resources_status": "available",
+    "cpu_definition": "100% = one logical core; delta CPU milliseconds / delta wall milliseconds * 100",
+    "close_requested": {
+      "wall_ms": 150001.27120001707,
+      "windows": 1
+    },
+    "owned_after_exit": [],
+    "post_exit_settle": {
+      "limit_ms": 5000,
+      "elapsed_ms": 247.2608000098262,
+      "samples": [
+        {
+          "wall_ms": 0.002900022082030773,
+          "remaining": [
+            {
+              "pid": 1408,
+              "parent": 140424,
+              "name": "msedgewebview2.exe",
+              "threads": 50,
+              "present": true,
+              "unavailable": [],
+              "created": 134364681197904080,
+              "kernel_ms": 1562.5,
+              "user_ms": 1125.0,
+              "cpu_ms": 2687.5,
+              "private_bytes": 39976960,
+              "working_bytes": 137773056,
+              "handles": 677,
+              "io": {
+                "read_ops": 8490,
+                "write_ops": 7834,
+                "other_ops": 19614,
+                "read_bytes": 88764030,
+                "write_bytes": 13207395,
+                "other_bytes": 382538
+              }
+            },
+            {
+              "pid": 144876,
+              "parent": 1408,
+              "name": "msedgewebview2.exe",
+              "threads": 10,
+              "present": true,
+              "unavailable": [],
+              "created": 134364681198345928,
+              "kernel_ms": 31.25,
+              "user_ms": 31.25,
+              "cpu_ms": 62.5,
+              "private_bytes": 3145728,
+              "working_bytes": 14204928,
+              "handles": 152,
+              "io": {
+                "read_ops": 22,
+                "write_ops": 14,
+                "other_ops": 169,
+                "read_bytes": 6843,
+                "write_bytes": 168,
+                "other_bytes": 4204
+              }
+            }
+          ]
+        }
+      ],
+      "forced_teardown": false
+    },
+    "profile": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\cleanup-home-baseline\\20261014-preedit\\native-launch\\profile",
+    "debug_port": 19314,
+    "stdout_bytes": 0,
+    "host": {
+      "platform": "Windows-11-10.0.26300-SP0",
+      "logical_cores": 24,
+      "python": "3.14.7",
+      "os_file_cache": "uncontrolled"
+    }
+  },
+  "raw_records": [
+    "dist/cleanup-home-baseline/20261014-preedit/clean-benchmark-build.log",
+    "dist/cleanup-home-baseline/20261014-preedit/clean-render-measure-final.log",
+    "dist/cleanup-home-baseline/20261014-preedit/clean-render-measure-retry.log",
+    "dist/cleanup-home-baseline/20261014-preedit/clean-render-measure.log",
+    "dist/cleanup-home-baseline/20261014-preedit/clean-render-visual.log",
+    "dist/cleanup-home-baseline/20261014-preedit/frontend-build.log",
+    "dist/cleanup-home-baseline/20261014-preedit/native-build.log",
+    "dist/cleanup-home-baseline/20261014-preedit/native-capture-corrected.log",
+    "dist/cleanup-home-baseline/20261014-preedit/native-capture-final.log",
+    "dist/cleanup-home-baseline/20261014-preedit/native-capture.log",
+    "dist/cleanup-home-baseline/20261014-preedit/native-launch.log",
+    "dist/cleanup-home-baseline/20261014-preedit/native-production-build.log"
+  ]
+}

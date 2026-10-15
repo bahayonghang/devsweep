@@ -1,0 +1,28 @@
+{
+  "id": "devsweep-animal-identity",
+  "name": "devsweep-animal-identity",
+  "title": "Create the original DevSweep animal identity and icons",
+  "description": "Develop the image-generated beaver concept into reviewed small-size logo variants and consistent desktop, tray, installer, and semantic icon assets.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-14",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-14-cleanup-home-redesign",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "execution_status": "assets_verified_native_consumers_pending"
+  }
+}

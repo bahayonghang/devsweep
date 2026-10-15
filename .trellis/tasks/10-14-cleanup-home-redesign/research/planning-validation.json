@@ -1,0 +1,154 @@
+{
+  "tasks": 7,
+  "planning": true,
+  "context_validation": [
+    {
+      "task": "10-14-cleanup-home-redesign",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-cleanup-home-redesign\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (7 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (8 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    },
+    {
+      "task": "10-14-cleanup-scope-contracts",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-cleanup-scope-contracts\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (6 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (6 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    },
+    {
+      "task": "10-14-project-artifacts-mbx",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-project-artifacts-mbx\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (6 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (7 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    },
+    {
+      "task": "10-14-project-capacity-warnings",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-project-capacity-warnings\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (6 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (6 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    },
+    {
+      "task": "10-14-desktop-cleanup-workbench",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-desktop-cleanup-workbench\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (7 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (8 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    },
+    {
+      "task": "10-14-devsweep-animal-identity",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-devsweep-animal-identity\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (6 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (6 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    },
+    {
+      "task": "10-14-cleanup-home-acceptance",
+      "exit_code": 0,
+      "output": "\u001b[0;34m=== Validating Context Files ===\u001b[0m\nTarget dir: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\.trellis\\tasks\\10-14-cleanup-home-acceptance\n\n  \u001b[1;33mimplement.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mimplement.jsonl: ✓ (7 entries)\u001b[0m\n  \u001b[1;33mcheck.jsonl:1: Warning: .trellis/spec/backend/quality-guidelines.md is 71116 bytes, exceeds context_injection.max_file_bytes (32768); injection will truncate it\u001b[0m\n  \u001b[0;32mcheck.jsonl: ✓ (8 entries)\u001b[0m\n\n\u001b[0;32m✓ All validations passed\u001b[0m\n"
+    }
+  ],
+  "contrast_checks": [
+    {
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 15.94,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "muted",
+      "background": "surface",
+      "ratio": 6.37,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "warning",
+      "background": "surface",
+      "ratio": 6.39,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "danger",
+      "background": "surface",
+      "ratio": 7.04,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "on-primary",
+      "background": "primary",
+      "ratio": 7.04,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "focus",
+      "background": "surface",
+      "ratio": 7.04,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "foreground": "control-border",
+      "background": "surface",
+      "ratio": 3.55,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "foreground": "text-dark",
+      "background": "surface-dark",
+      "ratio": 14.02,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "muted-dark",
+      "background": "surface-dark",
+      "ratio": 8.02,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "warning-dark",
+      "background": "surface-dark",
+      "ratio": 8.88,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "danger-dark",
+      "background": "surface-dark",
+      "ratio": 8.03,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "on-primary-dark",
+      "background": "primary-dark",
+      "ratio": 9.19,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "foreground": "focus-dark",
+      "background": "surface-dark",
+      "ratio": 11.22,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "foreground": "control-border-dark",
+      "background": "surface-dark",
+      "ratio": 3.88,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "foreground": "control-border-dark",
+      "background": "raised-dark",
+      "ratio": 3.41,
+      "minimum": 3,
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "product_tests": "NOT_RUN: planning-only change",
+  "native_acceptance": "NOT_RUN: planning-only change",
+  "artifact_files": 53,
+  "markdown_files_checked": 27,
+  "planning_review": "Three findings corrected; targeted confirmation recorded in planning-review.md"
+}

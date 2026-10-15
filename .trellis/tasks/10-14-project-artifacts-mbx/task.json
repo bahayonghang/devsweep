@@ -1,0 +1,28 @@
+{
+  "id": "project-artifacts-mbx",
+  "name": "project-artifacts-mbx",
+  "title": "Discover project artifacts and mbx ownership safely",
+  "description": "Inventory Node/Rust build outputs and mbx workspace-managed artifacts with verified ownership, shared-cache boundaries, and deduplicated accounting.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-14",
+  "completedAt": null,
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-14-cleanup-home-redesign",
+  "relatedFiles": [],
+  "notes": "Safe partial implementation handed off: pure owner/overlap projection, shared Cargo inspect-only refusal, unknown-capacity mbx shared-location coverage. Scan 88, rules 26, footprints 11 focused tests passed. Executable mbx cleanup unqualified and task remains in progress; see implementation-results.md.",
+  "meta": {
+    "execution_status": "safe_partial_mbx_execution_unqualified"
+  }
+}
