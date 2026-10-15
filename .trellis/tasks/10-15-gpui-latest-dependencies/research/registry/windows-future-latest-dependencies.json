@@ -1,0 +1,43 @@
+{
+  "source": "https://crates.io/api/v1/crates/windows-future/0.100.0/dependencies",
+  "data": {
+    "dependencies": [
+      {
+        "id": 35314829,
+        "version_id": 3145136,
+        "crate_id": "windows-core",
+        "req": "^0.100.0",
+        "optional": false,
+        "default_features": false,
+        "features": [],
+        "target": null,
+        "kind": "normal",
+        "downloads": 0
+      },
+      {
+        "id": 35314830,
+        "version_id": 3145136,
+        "crate_id": "windows-link",
+        "req": "^0.100.0",
+        "optional": false,
+        "default_features": false,
+        "features": [],
+        "target": null,
+        "kind": "normal",
+        "downloads": 0
+      },
+      {
+        "id": 35314831,
+        "version_id": 3145136,
+        "crate_id": "windows-threading",
+        "req": "^0.100.0",
+        "optional": false,
+        "default_features": false,
+        "features": [],
+        "target": null,
+        "kind": "normal",
+        "downloads": 0
+      }
+    ]
+  }
+}

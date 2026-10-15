@@ -31,6 +31,7 @@ crates/
 │   │   ├── lib.rs              # supported reusable module boundary
 │   │   ├── services.rs         # frontend-neutral traits and adapters
 │   │   ├── cargo_metadata.rs   # neutral Cargo probing and diagnostics
+│   │   ├── digest_encoding.rs  # private lowercase byte-to-hex encoding
 │   │   ├── execution/          # executor, audit, runners, live safety
 │   │   ├── filesystem/         # identity, containment, reparse, sizing
 │   │   ├── inventory/          # read-only capacity observations
@@ -70,7 +71,8 @@ Behavior tests live with the owner, including `application::cli::tests`,
 `model::plan::tests`, `scan::project::tests`, `execution::tests`, and the
 dedicated `tui/app/tests.rs`, `tui/runtime/tests.rs`, and
 `tui/render/tests.rs` modules. `crates/devsweep-core/tests/public_api.rs` is the
-one integration test proving use from an external crate boundary.
+integration test file proving use from an external crate boundary, including
+the public sampler's `Default + Send + Sync` guarantees.
 
 ---
 
@@ -101,6 +103,10 @@ one integration test proving use from an external crate boundary.
   `crates/devsweep-core/src/plan/digest.rs`. Keep lexical identity normalization, live identity,
   containment, no-follow reparse probing, and bounded sizing under
   `crates/devsweep-core/src/filesystem/` so every caller consumes one filesystem safety boundary.
+- Share only byte-to-lowercase-hex encoding through crate-private
+  `digest_encoding::hex_digest`. Domain owners retain their canonical preimage,
+  separators and wire prefixes; changing the SHA-2 library must not change
+  persisted fingerprints or confirmation digests.
 - Put every built-in rule id, catalogue fact, and declarative rule table in
   `crates/devsweep-core/src/rules/definitions.rs`. `rules/mod.rs` exposes catalogue/lookup
   operations, while private `rules/registry.rs` reconstructs trusted

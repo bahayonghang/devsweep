@@ -7,13 +7,16 @@
 | Windows、Ubuntu 和 macOS 上的 `rust` | 格式化、锁定依赖检查、锁定依赖测试，以及将警告视为错误的 Clippy。 |
 | Windows 上的 `desktop` | 在 Node 22 下将桌面前端的类型漂移检查、lint、typecheck、test 和 Vite build 拆成独立步骤，然后进行未签名的 Tauri 编译（`tauri build --no-bundle`）。 |
 | `docs` | 在 Node 22 下使用仓库根目录的 `package-lock.json` 构建文档站点（`npm ci` 然后 `npm run docs:build`）。 |
-| `msrv` | 在 Ubuntu 与 Windows 上使用 `Cargo.toml` 的精确 `package.rust-version` 进行检查和测试。 |
+| `msrv` | 在 Ubuntu 与 Windows 上使用 `Cargo.toml` 的精确 `package.rust-version` 检查和测试 core/CLI。 |
 | `cargo-audit` | RustSec 公告门禁。 |
 | `cargo-deny` | 依据 `deny.toml` 检查许可证、来源和公告策略。 |
 | `gitleaks` | 密钥扫描。 |
 
 托管 CI 只在 `pull_request` 与 `workflow_dispatch` 时运行。直接推送到 `dev` 或 `main`
 不会启动该工作流。
+
+非 Windows Rust 作业和所有 MSRV 作业均显式选择 `-p devsweep-core -p devsweep-cli`。
+桌面工作区成员单独验证平台与工具链；新增桌面成员不得隐式提高 CLI 的编译器要求。
 
 所有作业只授予读取仓库内容的权限，使用 cancel-in-progress 并发控制，并配置了时限。托管
 Desktop 前端检查按每个 npm 脚本拆成独立步骤，避免原生非零退出被后续命令掩盖。类型漂移

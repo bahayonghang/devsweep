@@ -1,0 +1,26 @@
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-1qnosyhmwroi1\s-hn86p29tid-0e37l3s-working`
+
+warning: `devsweep-core` (lib) generated 1 warning
+   Compiling devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-22pe42c02g2c9\s-hn86q3jbe7-0f16act-working`
+
+warning: `devsweep-cli` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.55s
+     Running unittests src\lib.rs (dist/c16-target-windows\debug\deps\devsweep-4c14b45229e45664.exe)
+
+running 1 test
+C16 diagnostic protection error: Io { stage: "replace_protection_store", path: "C:\\Users\\lyh\\AppData\\Local\\Packages\\sandbox.{43188738-a1ba-49a2-acd1-52bac9bb95fb}\\AC\\Temp\\.tmpg7qi1r\\devsweep\\protected-paths.json", source: Os { code: 5, kind: PermissionDenied, message: "Access is denied." } }
+
+thread 'application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit' (187368) panicked at crates\devsweep-cli\src\application\commands\protect.rs:267:31:
+add: ApplicationError { exit: Unavailable, code: "protection_store_unavailable", message: "The protection store is unavailable. Original bytes were preserved and cleanup cannot expand.", output_already_emitted: false }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit ... FAILED
+
+failures:
+
+failures:
+    application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 190 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p devsweep-cli --lib`

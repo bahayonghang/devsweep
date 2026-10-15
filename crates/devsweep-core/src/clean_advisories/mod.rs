@@ -11,6 +11,8 @@ use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use crate::{
     filesystem::normalize_absolute_path,
     model::{
@@ -297,7 +299,10 @@ pub fn project_capacity_advisories(
         .collect();
     Ok(CleanAdvisoriesV1 {
         version: 1,
-        report_id: format!("sha256:{:x}", Sha256::digest(serde_json::to_vec(report)?)),
+        report_id: format!(
+            "sha256:{}",
+            hex_digest(Sha256::digest(serde_json::to_vec(report)?))
+        ),
         threshold_bytes: preferences.threshold_bytes,
         included_kinds: vec![
             TargetKind::BuildArtifacts,

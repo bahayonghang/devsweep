@@ -1,0 +1,269 @@
+   Compiling devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-04peg1h9400x1\s-hn86o0rfck-0az32tb-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-0xh95rhkm9mb1\s-hn86o0sasz-063pjb1-working`
+
+   Compiling devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-2rvvu54buj4o1\s-hn86o2rmwp-1d6dl92-working`
+
+warning: `devsweep-core` (lib) generated 1 warning
+   Compiling devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\clean_advisory_fixture-1dzl0wscomcoj\s-hn86o3wd9d-04yuuxh-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\public_api-2rrf148xo0hbx\s-hn86o3wiwo-1v4aetm-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop_lib-19dy471elxg4s\s-hn86o3vzft-1vfvlnw-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-3dlvn94zestuj\s-hn86o3w355-07unae0-working`
+
+warning: `devsweep-core` (example "clean_advisory_fixture" test) generated 1 warning
+warning: `devsweep-cli` (lib) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop_lib-0csa54ll3huc6\s-hn86o3vpg8-0ae2cxa-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\process_fixture-3cvrx1f1l14s3\s-hn86o4rvub-05cseav-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-1979zbmlmd2ub\s-hn86o4rv6c-1pdugam-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\provider_authority-2h9krlsoq2hoc\s-hn86o4ppt9-0dqzx7i-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\five_mode_contract-1fk8l9fpgs2bg\s-hn86o4rwog-1v0p1mr-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-06q90qf6nkh8a\s-hn86o4wk2s-0lpvg4w-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\process_fixture-1y2rf3y7ox7tq\s-hn86o4wkd4-09apcz7-working`
+
+warning: `devsweep-core` (test "public_api") generated 1 warning
+warning: `devsweep-cli` (bin "process_fixture" test) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\cli_contract-1cw3k8eenaski\s-hn86o4wna5-0yksyf3-working`
+
+warning: `devsweep-cli` (test "provider_authority") generated 1 warning
+warning: `devsweep-cli` (test "five_mode_contract") generated 1 warning
+warning: `devsweep-cli` (bin "process_fixture") generated 1 warning
+warning: `devsweep-cli` (bin "devsweep" test) generated 1 warning
+warning: `devsweep-cli` (test "cli_contract") generated 1 warning
+warning: `devsweep-cli` (bin "devsweep") generated 1 warning
+warning: `devsweep-cli` (lib test) generated 1 warning
+warning: `devsweep-desktop` (lib test) generated 1 warning
+warning: `devsweep-core` (lib test) generated 1 warning
+warning: `devsweep-desktop` (lib) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop-31ye3l1zxp66h\s-hn86odxv8n-1j7wn70-working`
+
+warning: `devsweep-desktop` (bin "devsweep-desktop" test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 24.80s
+     Running unittests src\lib.rs (dist/c16-target-windows\debug\deps\devsweep-17429343f41a9103.exe)
+
+running 191 tests
+test application::cli::tests::cli_definition_is_valid ... ok
+test application::cli::tests::english_and_chinese_references_exactly_match_the_clap_manifest ... ok
+test application::cli::tests::built_tree_and_real_parser_preserve_inherited_language_semantics ... ok
+test application::cli::tests::removed_roots_are_unknown_commands ... ok
+test application::cli::tests::defaults_ranges_conflicts_and_authority_syntax_are_frozen ... ok
+test application::cli::tests::repeated_roots_and_selections_preserve_command_line_order ... ok
+test application::cli::tests::rescan_requires_one_project_containing_root ... ok
+test application::cli::tests::semantic_validation_rejects_machine_language_and_path_collisions ... ok
+test application::cli::tests::every_frozen_root_and_nested_shape_parses ... ok
+test application::cli::tests::set_true_flags_are_value_less_in_real_parser_and_chinese_help ... ok
+test application::commands::clean::tests::plan_rejects_inspect_only_selection ... ok
+test application::commands::analyze::tests::scan_json_is_locale_invariant_and_has_no_cleanup_plan ... ok
+{"command":"clean.preview","data":{"digest":"sha256:f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","report":{"attempted":0,"audit_log":null,"confirmation_digest":"f4143ffcb2b426f9e4830474b4b87b367acb1c75795d6f49ee51d01d5c6792a9","dry_run":true,"estimated_recoverable":{"partial_lower_bound_bytes":0,"unknown_target_count":0,"verified_bytes":0},"failed":0,"failures":[],"notes":[],"outcomes":[],"selected":0,"skipped":0,"succeeded":0}},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::clean::tests::preview_empty_plan_is_dry_run ... ok
+test application::commands::clean::tests::stale_execute_is_invalid_authority ... ok
+{"command":"history.list","data":{"operations":[{"domain":"clean","first_timestamp_unix_ms":1711929600000,"last_timestamp_unix_ms":1711929600000,"operation_id":"op-protect-v1-fixture","outcome_code":"committed","partial":false,"stable_codes":["committed"],"unknown":false,"unsupported":false}],"stores":[{"domain":"clean","reason_code":null,"state":"available"},{"domain":"software","reason_code":null,"state":"empty"},{"domain":"optimize","reason_code":null,"state":"empty"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::history::tests::history_list_reads_only_fixed_v1_stores_and_cannot_replay ... ok
+test application::commands::history::tests::history_show_missing_id_fails_without_replay ... ok
+test application::commands::optimize::tests::hostile_plan_fields_fail_closed_without_echoing_payloads ... ok
+test application::commands::optimize::tests::execution_machine_document_never_claims_settings_completion ... ok
+test application::commands::optimize::tests::plan_error_mapping_is_typed_by_exit_class ... ok
+test application::commands::analyze::tests::scan_human_uses_owned_renderer_in_both_locales ... ok
+test application::cli::tests::every_clap_context_has_complete_contextual_chinese_help ... ok
+test application::commands::optimize::tests::plan_writes_versioned_single_id_json_and_rejects_selections ... ok
+test application::commands::optimize::tests::list_documents_are_locale_invariant_and_closed ... ok
+test application::commands::optimize::tests::preview_is_locale_invariant_or_fails_closed_off_windows ... ok
+{"command":"clean.rules.list","data":{"count":53,"inspect_only":true,"rules":[{"ecosystem":"rust","id":"rust.target","inspect_only":false,"platform_applicability":"all","rationale":"Rust build directory (target/) via cargo clean","risk":"low","safety_class":"command","scope":"project","source":"shipped_registry"},{"ecosystem":"rust","id":"rust.target.shared","inspect_only":true,"platform_applicability":"all","rationale":"Cargo target overlaps multiple observed workspaces; ownership is ambiguous","risk":"medium","safety_class":"inspect_only","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.node_modules","inspect_only":false,"platform_applicability":"all","rationale":"Node dependency directory","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.next_cache","inspect_only":false,"platform_applicability":"all","rationale":"Next.js build cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.turbo","inspect_only":false,"platform_applicability":"all","rationale":"Turborepo cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.parcel_cache","inspect_only":false,"platform_applicability":"all","rationale":"Parcel cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.venv_dot","inspect_only":false,"platform_applicability":"all","rationale":"Python virtualenv (.venv)","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.venv","inspect_only":false,"platform_applicability":"all","rationale":"Python virtualenv (venv)","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.pytest_cache","inspect_only":false,"platform_applicability":"all","rationale":"pytest cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.mypy_cache","inspect_only":false,"platform_applicability":"all","rationale":"mypy cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.ruff_cache","inspect_only":false,"platform_applicability":"all","rationale":"Ruff cache","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.tox","inspect_only":false,"platform_applicability":"all","rationale":"tox environments","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.__pycache__","inspect_only":false,"platform_applicability":"all","rationale":"Python __pycache__ directories","risk":"low","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"generic","id":"windows.chrome.cache","inspect_only":false,"platform_applicability":"windows","rationale":"Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"windows.edge.cache","inspect_only":false,"platform_applicability":"windows","rationale":"Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"windows.firefox.cache","inspect_only":false,"platform_applicability":"windows","rationale":"Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"windows.vscode.cache","inspect_only":false,"platform_applicability":"windows","rationale":"Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"windows.cursor.cache","inspect_only":false,"platform_applicability":"windows","rationale":"Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"windows.user_temp.stale","inspect_only":false,"platform_applicability":"windows","rationale":"Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"node.nuxt","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.nuxt_output","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.svelte_kit","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.angular_cache","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.astro","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.dist","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.build","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"node","id":"node.coverage","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"generic","id":"maven.target","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"generic","id":"gradle.build","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"generic","id":"gradle.project_cache","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"generic","id":"dotnet.bin","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"generic","id":"dotnet.obj","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"python.nox","inspect_only":false,"platform_applicability":"all","rationale":"Generated project output; marker, generated-content and untracked/ignored proof required; rebuild may be costly","risk":"medium","safety_class":"trash","scope":"project","source":"shipped_registry"},{"ecosystem":"python","id":"uv.cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"uv cache via uv cache clean; never delete cache internals directly","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"bun.cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"Bun package cache via bun pm cache rm","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"go.build_cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"Go build cache via go clean -cache; separate from module cache","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"npm.cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"npm cache via npm cache clean --force","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"python","id":"pip.cache.purge","inspect_only":false,"platform_applicability":"all","rationale":"pip cache via pip cache purge","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"pnpm.store.prune","inspect_only":false,"platform_applicability":"all","rationale":"pnpm store via pnpm store prune","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"yarn.cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"yarn cache via yarn cache clean (see classic/modern variants)","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"yarn.cache.clean.classic","inspect_only":false,"platform_applicability":"all","rationale":"yarn classic cache via yarn cache clean","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"node","id":"yarn.cache.clean.modern","inspect_only":false,"platform_applicability":"all","rationale":"yarn berry cache via yarn cache clean --mirror","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"rust","id":"cargo.home.inspect","inspect_only":true,"platform_applicability":"all","rationale":"Cargo home (~/.cargo) — inspect only, never auto-deleted","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"go.mod_cache.clean","inspect_only":false,"platform_applicability":"all","rationale":"Go module cache via go clean -modcache","risk":"medium","safety_class":"command","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"gradle.caches","inspect_only":false,"platform_applicability":"all","rationale":"gradle caches","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"gradle.wrapper_dists","inspect_only":false,"platform_applicability":"all","rationale":"gradle wrapper distributions","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"maven.repository","inspect_only":true,"platform_applicability":"all","rationale":"maven local repository","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"go.mod_cache","inspect_only":true,"platform_applicability":"all","rationale":"go module cache","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"ivy.cache","inspect_only":false,"platform_applicability":"all","rationale":"ivy cache","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"nuget.packages","inspect_only":false,"platform_applicability":"all","rationale":"NuGet global packages","risk":"medium","safety_class":"trash","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"jetbrains.caches","inspect_only":true,"platform_applicability":"os_native","rationale":"JetBrains IDE caches (vendor root inspect)","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"generic","id":"huggingface.hub","inspect_only":true,"platform_applicability":"os_native","rationale":"HuggingFace hub models","risk":"high","safety_class":"inspect_only","scope":"global","source":"shipped_registry"},{"ecosystem":"docker","id":"docker","inspect_only":true,"platform_applicability":"all","rationale":"Docker prune — planned, not yet scanned","risk":"high","safety_class":"deferred","scope":"global","source":"shipped_registry"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::rules::tests::rules_list_is_inspect_only_and_matches_the_shipped_registry ... ok
+{"command":"clean.rules.show","data":{"ecosystem":"rust","id":"rust.target","inspect_only":false,"platform_applicability":"all","rationale":"Rust build directory (target/) via cargo clean","risk":"low","safety_class":"command","scope":"project","source":"shipped_registry"},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::rules::tests::rules_show_known_id_is_inspect_only ... ok
+test application::commands::rules::tests::rules_show_unknown_id_fails_closed ... ok
+test application::commands::software::execution::tests::emitted_failure_uses_one_machine_document_and_preserves_failed_exit ... ok
+test application::commands::software::execution::tests::execution_machine_document_never_uses_partial_or_reversible ... ok
+test application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit ... FAILED
+test application::commands::software::execution::tests::hostile_plan_fields_fail_closed_before_any_live_or_adapter_call ... ok
+test application::commands::software::inventory::tests::hostile_inventory_fields_cannot_enter_a_saved_plan ... ok
+test application::commands::protect::tests::protect_corrupt_store_is_unavailable_and_preserves_bytes ... ok
+test application::commands::software::inventory::tests::truthful_last_used_shape_is_not_relabelled_by_the_cli ... ok
+test application::commands::status::tests::broken_pipe_classifier_is_success ... ok
+test application::commands::status::tests::coordinator_refusal_is_unavailable ... ok
+{"command":"clean.protect.list","data":{"count":0,"paths":[]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::protect::tests::protect_list_empty_json_has_no_raw_audit_path ... ok
+test application::commands::tests::frozen_module_tree_is_compiler_registered ... ok
+{"command":"history.list","data":{"operations":[],"stores":[{"domain":"clean","reason_code":null,"state":"empty"},{"domain":"software","reason_code":null,"state":"empty"},{"domain":"optimize","reason_code":null,"state":"empty"}]},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::tests::history_commands_reach_the_owned_handler ... ok
+test application::commands::tests::optimize_commands_reach_the_owned_handler ... ok
+test application::commands::software::execution::tests::preview_machine_document_is_locale_invariant_and_irreversible ... ok
+test application::commands::tests::software_commands_reach_the_owned_handler ... ok
+test application::output::tests::broken_pipe_cancels_and_joins_without_another_write ... ok
+test application::commands::software::inventory::tests::software_inventory_json_is_locale_invariant_and_preserves_partial_evidence ... ok
+test application::output::tests::machine_error_envelope_has_stable_locale_neutral_fields ... ok
+test application::output::tests::non_broken_write_failure_records_producer_error_and_joins ... ok
+test application::output::tests::output_files_use_exclusive_create_new_without_truncation ... ok
+test application::presentation::analyze::tests::bilingual_snapshots_use_owned_renderer ... ok
+test application::presentation::clean::tests::empty_scan_is_truthful_in_both_locales ... ok
+test application::presentation::optimize::tests::catalogue_is_bilingual_and_lists_all_eight_rows ... ok
+test application::presentation::optimize::tests::guidance_has_no_run_action_and_settings_is_not_execution ... ok
+test application::presentation::optimize::tests::preview_and_execution_state_launched_is_not_completion ... ok
+test application::presentation::software::tests::software_inventory_summary_is_bilingual ... ok
+test application::presentation::status::tests::bilingual_snapshot_keeps_privacy_and_availability ... ok
+test application::presentation::status::tests::thermal_rows_use_tenths_of_a_degree_and_missing_gpu_is_not_zero ... ok
+test application::presentation::tests::renderer_tree_is_frozen_without_domain_implementations ... ok
+test application::tests::bare_invocation_requires_both_terminal_streams ... ok
+test application::tests::chinese_help_detection_requires_an_explicit_supported_flag ... ok
+test application::tests::human_live_requires_stdout_tty_but_ndjson_does_not ... ok
+test application::tests::non_interactive_resolution_remains_explicit_then_os_then_english ... ok
+test application::tests::shipped_roots_are_registered_without_compatibility_aliases ... ok
+test i18n::tests::binary_formatter_covers_boundaries_without_floating_point ... ok
+test i18n::tests::canonical_shell_v1_namespace_has_exact_copy_and_closed_metadata ... ok
+test application::output::tests::closed_os_pipe_is_classified_as_graceful_broken_pipe ... ok
+test i18n::tests::catalogue_schema_rejects_unknown_fields_and_duplicate_placeholders ... ok
+test i18n::tests::duplicate_accelerators_are_rejected_within_one_group ... ok
+test i18n::tests::human_golden_fixtures_are_owned_by_the_canonical_catalogues ... ok
+test i18n::tests::locale_resolution_and_presentation_tag_boundary_are_closed ... ok
+test i18n::tests::long_user_data_is_returned_in_full_by_the_catalogue ... ok
+test i18n::tests::plural_selection_and_interpolation_are_locale_specific_and_injection_safe ... ok
+test i18n::tests::embedded_catalogues_have_exact_schema_parity ... ok
+test tui::app::tests::accepted_confirmation_emits_selected_clean_plan ... ok
+test i18n::tests::shell_metadata_facade_exposes_exact_locale_specific_contracts ... ok
+test tui::app::tests::accepted_confirmation_executes_its_frozen_manifest ... ok
+test tui::app::tests::active_cleanup_rejects_new_scan_and_cleanup_requests ... ok
+test tui::app::tests::accepted_confirmation_keeps_explicit_project_target_selection ... ok
+test tui::app::tests::byte_summaries_count_duplicate_paths_once ... ok
+test tui::app::tests::cancellation_key_requests_active_job_cancellation ... ok
+test tui::app::tests::canceled_scan_targets_remain_preview_only_until_a_later_scan_finishes ... ok
+test tui::app::tests::cancelling_job_ignores_late_progress_events ... ok
+test tui::app::tests::chinese_clean_has_no_q_accelerator_and_q_remains_exclusively_quit ... ok
+test tui::app::tests::completed_scan_keeps_partial_health_and_capacity_totals_in_state ... ok
+test tui::app::tests::completed_scan_replaces_preview_and_reapplies_final_defaults ... ok
+test tui::app::tests::clean_confirmation_copy_differs_by_action_strength ... ok
+test tui::app::tests::inspect_only_targets_are_not_selectable_for_cleanup ... ok
+test tui::app::tests::inventory_report_is_display_only_and_cannot_change_cleanup_selection ... ok
+test tui::app::tests::language_save_failure_stays_visible_without_changing_the_session_locale ... ok
+test tui::app::tests::language_settings_flow_is_typed_visible_and_preserves_clean_state ... ok
+test tui::app::tests::pycache_groups_collapse_without_changing_target_selection_or_identity ... ok
+test tui::app::tests::quit_during_active_job_opens_confirm_instead_of_detaching ... ok
+test tui::app::tests::finished_cleanup_progress_stays_visible_until_dismissed ... ok
+test tui::app::tests::replacement_scan_waits_for_cancel_terminal_and_rejects_stale_results ... ok
+test tui::app::tests::scan_progress_applies_latest_cumulative_partial_plan ... ok
+test tui::app::tests::rejected_confirmation_shows_inline_feedback ... ok
+test tui::app::tests::scan_progress_shows_project_targets_before_global_scan_finishes ... ok
+test tui::app::tests::startup_default_selection_follows_selected_by_default_even_for_self_targets ... ok
+test tui::app::tests::startup_effects_request_an_initial_scan ... ok
+test tui::app::tests::successful_cleanup_tombstones_target_until_rescan ... ok
+test tui::app::tests::terminal_jobs_ignore_late_worker_events ... ok
+test tui::app::tests::update_keeps_scan_preview_read_only_then_restores_completed_selection ... ok
+test tui::app::tests::viewport_keeps_selection_visible_for_long_lists ... ok
+test tui::app::tests::worker_events_update_jobs_and_targets ... ok
+test tui::display::tests::command_preview_quotes_and_sanitizes_argv ... ok
+test tui::display::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::modes::analyze::tests::bars_are_proportional_lower_bounds_and_never_invent_unknown_area ... ok
+test tui::app::tests::scan_updates_invalidate_open_confirmation_and_block_enter ... ok
+test tui::modes::analyze::tests::keyboard_drill_down_and_up_restore_the_directory_anchor ... ok
+test tui::modes::analyze::tests::cli_generated_fixture_matches_tui_reducer_totals_evidence_and_warnings ... ok
+test tui::modes::analyze::tests::leaving_analyze_requests_cancel_and_releases_state_only_after_terminal_join_event ... ok
+test tui::modes::analyze::tests::paging_breadcrumbs_focus_and_viewport_are_bounded ... ok
+test tui::modes::analyze::tests::projection_keeps_only_frozen_analyze_snapshot_data ... ok
+test tui::modes::analyze::tests::stale_progress_and_terminal_events_are_rejected ... ok
+test tui::modes::analyze::tests::viewport_scrolls_to_keep_the_keyboard_cursor_visible ... ok
+test tui::modes::clean::tests::execute_requires_preview_and_second_confirmation ... ok
+test tui::modes::clean::tests::inspect_only_never_selects_and_selection_invalidates_preview ... ok
+test tui::modes::clean::tests::no_selection_during_scan_and_stale_events_are_ignored ... ok
+test tui::modes::analyze::tests::test_backend_renders_only_viewport_rows_with_bilingual_evidence_copy ... ok
+test tui::modes::optimize::tests::cancel_and_failed_events_reject_mismatched_ids ... ok
+test tui::modes::optimize::tests::catalogue_rows_are_the_closed_eight_and_guidance_cannot_preview ... ok
+test tui::modes::optimize::tests::confirmation_is_required_and_settings_launch_is_not_completion ... ok
+test tui::modes::optimize::tests::only_dns_enters_running_and_unknown_after_dispatch_is_preserved ... ok
+test tui::modes::optimize::tests::stale_preview_and_stale_run_are_rejected ... ok
+test tui::modes::software::tests::bilingual_test_backend_keeps_manual_unknown_and_irreversible_copy_visible ... ok
+test tui::modes::software::tests::exact_manual_identity_never_enters_selection ... ok
+test tui::modes::software::tests::restart_audit_accepts_only_matching_operation_and_preserves_unknown ... ok
+test tui::modes::software::tests::stale_preview_is_rejected_and_selection_invalidates_authority ... ok
+test tui::modes::status::tests::canonical_snapshot_keeps_privacy_partial_and_no_battery ... ok
+test tui::modes::status::tests::chart_caps_at_sixty_gaps_missing_samples_and_drops_on_leave ... ok
+test tui::modes::status::tests::exact_sequence_rejects_duplicate_and_nonmonotonic_events ... ok
+test tui::modes::status::tests::interval_change_is_local_until_a_new_live_operation ... ok
+test tui::modes::status::tests::leave_close_and_pause_clear_ephemeral_live_state ... ok
+test tui::modes::status::tests::live_opt_in_skip_stale_terminal_and_broken_pipe ... ok
+test tui::modes::status::tests::process_sort_and_churn_keep_privacy_and_truncation_flags ... ok
+test tui::modes::status::tests::serde_rejects_unknown_status_event_variant_from_fixture ... ok
+test tui::modes::optimize::tests::bilingual_test_backend_keeps_badges_and_never_claims_settings_completion ... ok
+test tui::modes::status::tests::unknown_event_and_unknown_fields_are_rejected_at_the_wire ... ok
+test tui::render::tests::accepted_irreversible_confirmation_renders_initial_progress ... ok
+test tui::modes::status::tests::tui_renders_snapshot_cards_text_chart_alternative_and_chinese ... ok
+test tui::render::tests::cleaned_target_renders_as_tombstone ... ok
+test tui::render::tests::cleanup_progress_renders_mixed_target_results ... ok
+test tui::render::tests::cleanup_progress_updates_job_and_renders_modal ... ok
+test tui::render::tests::display_hygiene_quotes_argv_and_strips_controls ... ok
+test tui::render::tests::display_path_removes_windows_verbatim_prefixes ... ok
+test tui::render::tests::confirmation_and_dry_run_show_selected_targets_across_scopes ... ok
+test tui::render::tests::invalidated_confirmation_renders_reconfirmation_state ... ok
+test tui::render::tests::footer_renders_contextual_key_actions ... ok
+test tui::render::tests::inventory_tab_renders_read_only_observations_health_and_inspection ... ok
+test tui::render::tests::narrow_footer_keeps_primary_actions_visible ... ok
+test tui::render::tests::partial_scan_health_renders_truthful_totals_and_diagnostics ... ok
+test tui::render::tests::presentation_save_failure_renders_only_canonical_locale_copy ... ok
+test tui::render::tests::pycache_group_renders_collapsed_and_expanded_target_paths ... ok
+test tui::render::tests::real_shell_settings_and_saved_locale_render_from_app_state ... ok
+test tui::render::tests::render_path_does_not_mutate_app_state ... ok
+test tui::render::tests::representative_state_renders_at_degraded_supported_size ... ok
+test tui::render::tests::rendered_paths_hide_windows_verbatim_prefixes ... ok
+test tui::render::tests::representative_state_renders_at_full_supported_size ... ok
+test tui::render::tests::representative_state_renders_with_targets_details_and_jobs ... ok
+test tui::render::tests::rules_tab_renders_catalogue_in_content_sized_fixture ... ok
+test tui::render::tests::target_details_show_freshness_guard_evidence ... ok
+test tui::render::tests::target_details_show_typed_sizing_warnings ... ok
+test tui::runtime::mailbox::tests::full_fifo_keeps_all_lifecycle_records_and_final_in_order ... ok
+test tui::render::tests::smoke_renders_dashboard_details_confirm_and_jobs_logs_states ... ok
+test tui::runtime::mailbox::tests::ten_thousand_snapshots_retain_one_and_flush_before_phase_and_terminal ... ok
+test tui::runtime::tests::cancel_effect_does_not_fabricate_a_cancellation_event ... ok
+test tui::runtime::tests::canceled_inventory_has_exactly_one_terminal_without_late_finish ... ok
+test tui::runtime::tests::clean_worker_reports_finish_and_failure ... ok
+test tui::runtime::tests::clean_worker_translates_execution_progress ... ok
+test tui::runtime::tests::confirmed_digest_must_match_the_revalidated_snapshot ... ok
+test tui::runtime::tests::duplicate_clean_dispatch_starts_only_one_worker ... ok
+test tui::runtime::tests::idle_polls_draw_once_then_redraw_when_input_or_resize_marks_dirty ... ok
+test tui::runtime::tests::inventory_worker_emits_read_only_report_events ... ok
+test tui::runtime::tests::presentation_effect_returns_typed_success_and_failure_without_stdout ... ok
+test tui::runtime::tests::scan_dispatch_is_refused_until_prior_worker_terminal_is_joined ... ok
+test tui::runtime::tests::scan_worker_does_not_promote_an_explicitly_canceled_scan ... ok
+test tui::runtime::tests::scan_worker_emits_started_progress_finished ... ok
+test tui::runtime::tests::scan_worker_reports_failure_as_job_failed ... ok
+test tui::runtime::mailbox::tests::receiver_close_unblocks_full_lifecycle_fifo ... ok
+test tui::runtime::tests::teardown_waits_for_dispatched_cleanup_without_implicit_cancel ... ok
+test tui::shell::tests::corrupt_persisted_store_fails_closed_at_every_precedence_level ... ok
+test tui::runtime::tests::worker_burst_yields_after_thirty_two_events_before_pending_scan ... ok
+test tui::shell::tests::exhaustive_stable_tag_mapping_round_trips ... ok
+test tui::shell::tests::frozen_mode_identity_is_complete_but_unregistered_modes_are_absent ... ok
+test tui::shell::tests::locale_precedence_is_explicit_then_persisted_then_os_then_english ... ok
+test tui::support::tests::help_overflow_opens_support_from_analyze_without_a_sixth_mode ... ok
+test tui::support::tests::support_overlay_renders_chinese_protection_copy ... ok
+test tui::terminal::tests::drop_restores_session ... ok
+test tui::terminal::tests::partial_enter_failure_restores_completed_steps ... ok
+test tui::terminal::tests::restore_continues_after_first_failure ... ok
+test tui::support::tests::support_overlay_is_not_a_sixth_mode_and_history_cannot_replay ... ok
+{"command":"status.snapshot","data":{"cpu":{"age_ms":0,"sampled_at_unix_ms":1792046241982,"state":"available","value":{"system_utilization_basis_points":4974}},"gpu":{"reason_code":"counter_missing","sampled_at_unix_ms":null,"state":"unavailable"},"logical_processor_count":24,"memory":{"age_ms":0,"sampled_at_unix_ms":1792046241987,"state":"available","value":{"available_bytes":13914779648,"total_bytes":68143853568,"used_bytes":54229073920}},"network":{"age_ms":0,"sampled_at_unix_ms":1792046241987,"state":"available","value":{"interfaces":[{"interface_luid":"1688849860263936","name":"vSwitch (Default Switch)-Hyper-V Virtual Switch Extension Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849877041152","name":"vEthernet (Default Switch)-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849893818368","name":"vEthernet (Default Switch)-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849910595584","name":"vEthernet (Default Switch)-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849927372800","name":"vSwitch (WSL (Hyper-V firewall))-Hyper-V Virtual Switch Extension Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849944150016","name":"vSwitch (WSL (Hyper-V firewall))-Virtual Filtering Platform VMSwitch Extension-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849960927232","name":"以太网 4-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849977704448","name":"以太网 4-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688849994481664","name":"以太网 4-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850011258880","name":"vEthernet (WSL (Hyper-V firewall))-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850028036096","name":"vEthernet (WSL (Hyper-V firewall))-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850044813312","name":"vEthernet (WSL (Hyper-V firewall))-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850061590528","name":"以太网-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850078367744","name":"以太网-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850095144960","name":"以太网-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850111922176","name":"本地连接* 4-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850128699392","name":"本地连接* 4-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850145476608","name":"本地连接* 5-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850162253824","name":"本地连接* 5-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850179031040","name":"本地连接* 3-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1688850195808256","name":"本地连接* 3-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399616077824","name":"蓝牙网络连接","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399632855040","name":"以太网","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399649632256","name":"以太网(内核调试器)","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399666409472","name":"本地连接* 3","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399683186688","name":"本地连接* 4","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399699963904","name":"本地连接* 5","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399716741120","name":"vSwitch (Default Switch)","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399733518336","name":"以太网 4","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399750295552","name":"vEthernet (Default Switch)","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399767072768","name":"vSwitch (WSL (Hyper-V firewall))","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"1689399783849984","name":"vEthernet (WSL (Hyper-V firewall))","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"6474474220158976","name":"本地连接* 6","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"6755399441055744","name":"Loopback Pseudo-Interface 1","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918173765664768","name":"本地连接-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918173782441984","name":"本地连接-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918173799219200","name":"本地连接-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"14918723521478656","name":"Mihomo","rx_bytes_per_second":64650,"tx_bytes_per_second":22358},{"interface_luid":"14918723538255872","name":"本地连接","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723346456576","name":"WLAN-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":70608,"tx_bytes_per_second":25566},{"interface_luid":"19984723363233792","name":"WLAN-Virtual WiFi Filter Driver-0000","rx_bytes_per_second":70608,"tx_bytes_per_second":25566},{"interface_luid":"19984723380011008","name":"WLAN-Native WiFi Filter Driver-0000","rx_bytes_per_second":70608,"tx_bytes_per_second":25566},{"interface_luid":"19984723396788224","name":"WLAN-QoS Packet Scheduler-0000","rx_bytes_per_second":70608,"tx_bytes_per_second":25566},{"interface_luid":"19984723413565440","name":"WLAN-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":70608,"tx_bytes_per_second":25566},{"interface_luid":"19984723430342656","name":"本地连接* 9-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723447119872","name":"本地连接* 9-Native WiFi Filter Driver-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723463897088","name":"本地连接* 9-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723480674304","name":"本地连接* 9-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723497451520","name":"本地连接* 10-WFP Native MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723514228736","name":"本地连接* 10-Native WiFi Filter Driver-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723531005952","name":"本地连接* 10-QoS Packet Scheduler-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19984723547783168","name":"本地连接* 10-WFP 802.3 MAC Layer LightWeight Filter-0000","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19985273102270464","name":"WLAN","rx_bytes_per_second":70608,"tx_bytes_per_second":25962},{"interface_luid":"19985273119047680","name":"本地连接* 9","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"19985273135824896","name":"本地连接* 10","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873767409942528","name":"Teredo Tunneling Pseudo-Interface","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873767426719744","name":"Microsoft IP-HTTPS Platform Interface","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873767443496960","name":"6to4 Adapter","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771704909824","name":"本地连接* 1","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771721687040","name":"本地连接* 2","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771738464256","name":"本地连接* 7","rx_bytes_per_second":0,"tx_bytes_per_second":0},{"interface_luid":"36873771755241472","name":"本地连接* 8","rx_bytes_per_second":0,"tx_bytes_per_second":0}],"interval_ms":500}},"power":{"age_ms":0,"sampled_at_unix_ms":1792046241988,"state":"available","value":{"ac_state":"online","battery_present":true,"charge_basis_points":9900,"remaining_seconds":null}},"processes":{"age_ms":0,"sampled_at_unix_ms":1792046241988,"state":"available","value":{"budget_exhausted":false,"detail_budget_ms":150,"enumerated_count":9,"enumeration_ceiling":4096,"items":[{"cpu_basis_points_of_one_logical_core":6250,"name":"devsweep-17429343f41a9103.exe","pid":170548,"private_bytes":7655424,"read_bytes_per_second":0,"write_bytes_per_second":49160},{"cpu_basis_points_of_one_logical_core":0,"name":"vctip.exe","pid":171532,"private_bytes":36089856,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":0,"name":"pwsh.exe","pid":129140,"private_bytes":31895552,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":0,"name":"cargo.exe","pid":183664,"private_bytes":13754368,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":0,"name":"python.exe","pid":163708,"private_bytes":9748480,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":0,"name":"rustup.exe","pid":186872,"private_bytes":3051520,"read_bytes_per_second":0,"write_bytes_per_second":0},{"cpu_basis_points_of_one_logical_core":0,"name":"conhost.exe","pid":169952,"private_bytes":1265664,"read_bytes_per_second":0,"write_bytes_per_second":0}],"requested_limit":15,"returned_count":7,"truncated_by_limit":false}},"sample_window_ms":500,"sampled_at_unix_ms":1792046241982,"snapshot_id":"snapshot-1792046241982-2","thermal":{"reason_code":"counter_missing","sampled_at_unix_ms":null,"state":"unavailable"},"unsupported_capabilities":[{"code":"gpu_utilization","reason_code":"not_supported_v1","state":"unsupported"},{"code":"vram","reason_code":"not_supported_v1","state":"unsupported"},{"code":"thermal","reason_code":"not_supported_v1","state":"unsupported"},{"code":"fan","reason_code":"not_supported_v1","state":"unsupported"},{"code":"smart","reason_code":"not_supported_v1","state":"unsupported"},{"code":"physical_disk_activity","reason_code":"not_supported_v1","state":"unsupported"}],"volumes":{"age_ms":0,"sampled_at_unix_ms":1792046241988,"state":"available","value":{"complete":true,"items":[{"available_bytes":715408977920,"mount_points":["C:\\"],"total_bytes":2047183155200,"volume_id":"\\\\?\\Volume{8b53c71d-e130-4d26-b010-e0dfffd1bdb0}"},{"available_bytes":891987898368,"mount_points":["D:\\"],"total_bytes":2048405794816,"volume_id":"\\\\?\\Volume{900b2658-0000-0000-0000-100000000000}"}]}}},"error":null,"outcome":"success","schema_version":1,"warnings":[]}
+test application::commands::tests::status_commands_reach_the_owned_handler ... ok
+test application::commands::status::tests::snapshot_json_is_locale_invariant_and_privacy_limited ... ok
+
+failures:
+
+---- application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit stdout ----
+
+thread 'application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit' (186152) panicked at crates\devsweep-cli\src\application\commands\protect.rs:265:31:
+add: ApplicationError { exit: Unavailable, code: "protection_store_unavailable", message: "The protection store is unavailable. Original bytes were preserved and cleanup cannot expand.", output_already_emitted: false }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit
+
+test result: FAILED. 190 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.14s
+
+error: test failed, to rerun pass `-p devsweep-cli --lib`

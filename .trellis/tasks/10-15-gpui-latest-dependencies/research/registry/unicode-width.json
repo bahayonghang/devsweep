@@ -1,0 +1,147 @@
+{
+  "source": "https://crates.io/api/v1/crates/unicode-width",
+  "crate": {
+    "id": "unicode-width",
+    "name": "unicode-width",
+    "updated_at": "2025-10-06T14:33:47.922595Z",
+    "versions": [
+      1761509,
+      1596187,
+      1275438,
+      1275383,
+      1164431,
+      1127594,
+      901331,
+      620424,
+      426562,
+      257265,
+      194156,
+      170545,
+      93477,
+      40271,
+      14814,
+      12884,
+      9032,
+      8901,
+      8836
+    ],
+    "keywords": [
+      "text",
+      "unicode",
+      "width"
+    ],
+    "categories": [
+      "command-line-interface",
+      "text-processing",
+      "internationalization",
+      "no-std::no-alloc"
+    ],
+    "badges": [],
+    "created_at": "2015-04-14T19:29:07.865266Z",
+    "downloads": 873326002,
+    "recent_downloads": 186632712,
+    "default_version": "0.2.2",
+    "num_versions": 19,
+    "yanked": false,
+    "max_version": "0.2.2",
+    "newest_version": "0.2.2",
+    "max_stable_version": "0.2.2",
+    "description": "Determine displayed width of `char` and `str` types\naccording to Unicode Standard Annex #11 rules.\n",
+    "homepage": "https://github.com/unicode-rs/unicode-width",
+    "documentation": null,
+    "repository": "https://github.com/unicode-rs/unicode-width",
+    "links": {
+      "version_downloads": "/api/v1/crates/unicode-width/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/unicode-width/owners",
+      "owner_team": "/api/v1/crates/unicode-width/owner_team",
+      "owner_user": "/api/v1/crates/unicode-width/owner_user",
+      "reverse_dependencies": "/api/v1/crates/unicode-width/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 1761509,
+      "crate": "unicode-width",
+      "num": "0.2.2",
+      "dl_path": "/api/v1/crates/unicode-width/0.2.2/download",
+      "readme_path": "/api/v1/crates/unicode-width/0.2.2/readme",
+      "updated_at": "2025-10-06T14:33:47.922595Z",
+      "created_at": "2025-10-06T14:33:47.922595Z",
+      "downloads": 210913194,
+      "features": {
+        "cjk": [],
+        "default": [
+          "cjk"
+        ],
+        "no_std": [],
+        "rustc-dep-of-std": [
+          "std",
+          "core"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/unicode-width/0.2.2/dependencies",
+        "version_downloads": "/api/v1/crates/unicode-width/0.2.2/downloads",
+        "authors": "/api/v1/crates/unicode-width/0.2.2/authors"
+      },
+      "crate_size": 282768,
+      "published_by": {
+        "id": 1139,
+        "login": "Manishearth",
+        "name": "Manish Goregaokar",
+        "avatar": "https://avatars.githubusercontent.com/u/1617736?v=4",
+        "url": "https://github.com/Manishearth",
+        "github_username_matches": true,
+        "created_at": "2012-04-06T05:41:40Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 1139,
+            "login": "Manishearth",
+            "name": "Manish Goregaokar",
+            "avatar": "https://avatars.githubusercontent.com/u/1617736?v=4",
+            "url": "https://github.com/Manishearth",
+            "github_username_matches": true,
+            "created_at": "2012-04-06T05:41:40Z"
+          },
+          "time": "2025-10-06T14:33:47.922595Z"
+        }
+      ],
+      "checksum": "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254",
+      "rust_version": "1.66",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "Determine displayed width of `char` and `str` types\naccording to Unicode Standard Annex #11 rules.\n",
+      "homepage": "https://github.com/unicode-rs/unicode-width",
+      "documentation": null,
+      "repository": "https://github.com/unicode-rs/unicode-width",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Python": {
+            "code_lines": 1033,
+            "comment_lines": 933,
+            "files": 1
+          },
+          "Rust": {
+            "code_lines": 22680,
+            "comment_lines": 74,
+            "files": 2
+          }
+        },
+        "total_code_lines": 23713,
+        "total_comment_lines": 1007
+      }
+    }
+  ]
+}

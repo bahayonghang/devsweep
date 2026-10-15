@@ -1,0 +1,59 @@
+[
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.263,
+    "log": "isolated-fmt.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "check",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 55.47,
+    "log": "isolated-check.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 128.88,
+    "log": "isolated-test.log"
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 101,
+    "elapsed_seconds": 12.835,
+    "log": "isolated-clippy.log"
+  }
+]

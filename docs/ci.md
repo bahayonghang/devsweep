@@ -7,13 +7,17 @@
 | `rust` on Windows, Ubuntu, and macOS | Format, locked check, locked tests, and Clippy with warnings denied. |
 | `desktop` on Windows | Node 22 desktop frontend types drift check, lint, typecheck, test, and Vite build as separate steps, then unsigned Tauri compile (`tauri build --no-bundle`). |
 | `docs` | Node 22 documentation site build from the root `package-lock.json` (`npm ci` then `npm run docs:build`). |
-| `msrv` | Check and test the exact `package.rust-version` from `Cargo.toml` on Ubuntu and Windows. |
+| `msrv` | Check and test core/CLI on the exact `package.rust-version` from `Cargo.toml` on Ubuntu and Windows. |
 | `cargo-audit` | RustSec advisory gate. |
 | `cargo-deny` | License, source, and advisory policy from `deny.toml`. |
 | `gitleaks` | Secret scan. |
 
 Hosted CI runs on `pull_request` and `workflow_dispatch` only. Direct pushes to
 `dev` or `main` do not start this workflow.
+
+Non-Windows Rust jobs and all MSRV jobs select `-p devsweep-core -p devsweep-cli`
+explicitly. Desktop workspace members have separate platform/toolchain validation;
+adding a desktop member must not silently expand the CLI's compiler requirements.
 
 All jobs use read-only contents permission, cancel-in-progress concurrency, and
 bounded timeouts. Hosted Desktop frontend checks are split into one step per npm

@@ -1,0 +1,160 @@
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/pages/ScanPreviewPage.test.tsx (1 test) 3232ms
+   ✓ large read-only scan preview > searches the full 10k observation and exposes the last full path without selection  3231ms
+ ✓ src/api/types-generation.test.ts (2 tests) 5479ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  2596ms
+   ✓ IPC type generation > changes when a named fixture changes  2882ms
+ ✓ src/modes/clean/CleanWorkbench.test.tsx (26 tests) 9407ms
+   ✓ Clean stage states in en > renders home at 390, 800, 1024, and 1440 CSS px  402ms
+   ✓ Clean stage states in en > renders scanning at 390, 800, 1024, and 1440 CSS px  621ms
+   ✓ Clean stage states in en > renders found at 390, 800, 1024, and 1440 CSS px  482ms
+   ✓ Clean stage states in en > renders empty at 390, 800, 1024, and 1440 CSS px  459ms
+   ✓ Clean stage states in en > renders error at 390, 800, 1024, and 1440 CSS px  496ms
+   ✓ Clean stage states in en > renders canceled at 390, 800, 1024, and 1440 CSS px  445ms
+   ✓ Clean stage states in zh-CN > renders scanning at 390, 800, 1024, and 1440 CSS px  425ms
+   ✓ Clean stage states in zh-CN > renders found at 390, 800, 1024, and 1440 CSS px  418ms
+   ✓ Clean stage states in zh-CN > renders empty at 390, 800, 1024, and 1440 CSS px  353ms
+   ✓ Clean stage states in zh-CN > renders error at 390, 800, 1024, and 1440 CSS px  361ms
+   ✓ Clean stage states in zh-CN > renders canceled at 390, 800, 1024, and 1440 CSS px  338ms
+   ✓ Clean found stage > rescans an exact reviewed target and routes inspect-only paths to Analyze  300ms
+   ✓ Clean found stage > runs the dry run for the default selection from the Clean action, then confirms and executes with its digest  430ms
+   ✓ Clean review row controls > searches display rows without narrowing selection totals, select-all or the dry-run request  978ms
+   ✓ Clean review row controls > skips a row into the collapsed Skipped group and restores it; inspect-only rows have no Skip  446ms
+   ✓ Clean review row controls > requires confirmation, calls protectionAdd with the path and confirm=true, and marks the row protected  581ms
+   ✓ Clean closed coordinator > shows the closed coordinator alert for execute and does not call planExecute  314ms
+ ✓ src/components/settings-choices.test.tsx (15 tests) 4398ms
+   ✓ Settings Select > labels its committed value and description and commits one pointer choice  461ms
+   ✓ Settings Select > keeps keyboard highlight separate from selection and restores focus on Escape  386ms
+   ✓ Settings Select > supports typeahead without saving and ignores the current option  449ms
+   ✓ Settings Combobox > filters aliases and full long labels without committing query or highlight  349ms
+   ✓ Settings Combobox > commits one explicit choice and displays only the committed value  431ms
+   ✓ Settings Combobox > does not select an already highlighted font for 'native isComposing'  325ms
+   ✓ Settings Combobox > does not select an already highlighted font for 'legacy keyCode 229'  341ms
+   ✓ Settings Combobox > announces empty and catalogue states without disabling available choices  320ms
+ ✓ src/app-shell/AppShell.test.tsx (30 tests) 6303ms
+   ✓ AppShell > opens and closes the brand menu by mouse and keyboard and restores focus  599ms
+   ✓ AppShell > moves through all primary tabs without navigating until Enter or Space and keeps focused Settings visible  913ms
+   ✓ AppShell > names every mode route and shows a visible title and subtitle on every supporting route  606ms
+   ✓ AppShell > names every zh-CN mode route and shows a visible title and subtitle on every zh-CN supporting route  639ms
+   ✓ AppShell > renders Chinese canonical labels and writes language selection through the adapter  464ms
+   ✓ AppShell > restores primary and supporting destination focus through actual Back and Forward  595ms
+   ✓ AppShell > keeps route, history, and focus stable when cancel-and-join rejects  303ms
+ ✓ src/App.test.tsx (41 tests) 12718ms
+   ✓ desktop workflow > zh-CN Clean workbench does not show English Projects Scan Search Ready  646ms
+   ✓ desktop workflow > starts Status live after StrictMode replays the lifecycle effect  315ms
+   ✓ desktop workflow > rejects an old save settlement while a replacement store is loading  679ms
+   ✓ desktop workflow > loads and persists the shared language setting without registering unavailable modes  623ms
+   ✓ desktop workflow > keeps the prior locale visible until a matching save response succeeds  616ms
+   ✓ desktop workflow > preserves the prior locale and selection when save rejects  499ms
+   ✓ desktop workflow > preserves the prior locale when the save response tag mismatches  399ms
+   ✓ desktop workflow > ignores pending load and save settlement after unmount  376ms
+   ✓ desktop workflow > keeps scan IPC arguments locale-neutral across presentation changes  726ms
+   ✓ desktop workflow > keeps a canceled preview read-only and replaces it on rescan  525ms
+   ✓ desktop workflow > distinguishes an active empty scan from a completed empty report  310ms
+   ✓ desktop workflow > offers an explicit return to the previous completed report after a stopped rescan  533ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  907ms
+   ✓ desktop workflow > reviews global commands independently while Cargo home remains inspect-only  593ms
+   ✓ desktop workflow > keeps partial project selection indeterminate and previews the entire original scoped plan  435ms
+   ✓ desktop workflow > disables conflicting scan controls during dry run and execution  622ms
+   ✓ desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  549ms
+   ✓ desktop workflow > projects the exact debug one-shot route fault through the real App shell  344ms
+ ✓ src/preferences/palettes.test.tsx (16 tests) 4078ms
+   ✓ closed shared palette catalogue > offers seven labeled, commit-only radio previews in en  1685ms
+   ✓ closed shared palette catalogue > offers seven labeled, commit-only radio previews in zh-CN  1322ms
+stdout | src/preferences/fonts.test.tsx > installed font picker > reaches all 2000 families and aliases without per-key enumeration
+{"method":"Vitest/jsdom; rendering and accessible queries; diagnostic only, not native latency","host":{"platform":"win32","arch":"x64","node":"v22.23.2"},"families":2000,"openMs":2446.1089,"queryMs":[97.49060000000009,24.368600000000697,30.71810000000005]}
+
+ ✓ src/preferences/fonts.test.tsx (11 tests) 4270ms
+   ✓ installed font picker > keeps system usable during loading and distinguishes empty success  440ms
+   ✓ installed font picker > reaches all 2000 families and aliases without per-key enumeration  3326ms
+ ✓ src/modes/software/SoftwareSupportViews.test.tsx (10 tests) 2777ms
+   ✓ Software support views in en > Inventory view reviews leftovers after a succeeded uninstall and reports moved size  782ms
+   ✓ Software support views in zh-CN > Inventory view reviews leftovers after a succeeded uninstall and reports moved size  805ms
+ ✓ src/modes/analyze/AnalyzePage.test.tsx (10 tests) 2991ms
+   ✓ AnalyzePage > opens the context menu from the keyboard, reveals, and moves after a second confirmation in 'en'  466ms
+   ✓ AnalyzePage > opens the context menu from the keyboard, reveals, and moves after a second confirmation in 'zh-CN'  401ms
+   ✓ AnalyzePage > restores the focused directory on its canonical 200-row parent page  884ms
+ ✓ src/modes/clean/scope-session.test.tsx (6 tests) 2622ms
+   ✓ independent scope sessions > allows exact global-only scanning with an unavailable roots store  320ms
+   ✓ independent scope sessions > retains separate reports and clears only project authority on a root edit  331ms
+   ✓ independent scope sessions > keeps a failed-save threshold in the retained session across route changes  415ms
+   ✓ independent scope sessions > rejects invalid thresholds without changing selection or calling persistence  633ms
+   ✓ independent scope sessions > retains the live preview digest and selection when a valid warning threshold changes  706ms
+ ✓ src/stage/Planet.test.tsx (22 tests) 2042ms
+   ✓ planet renderer > is deterministic for a seed, leaves corners transparent, and rotates  1263ms
+ ✓ src/preferences/preferences.test.tsx (15 tests) 2694ms
+   ✓ committed desktop preference owner > resets each group in one patch without changing the other group or language  693ms
+   ✓ Settings committed controls > retains the selected radio during save and failure, then permits retry  501ms
+   ✓ Settings committed controls > disables desktop persistence during load or unavailability while language stays independent  372ms
+ ✓ src/components/TargetTable.test.tsx (3 tests) 1489ms
+   ✓ TargetTable headers > pages real rows with keyboard controls while preserving complete paths and review exclusions  1445ms
+ ✓ src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 691ms
+   ✓ OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  626ms
+ ✓ src/pages/ReviewPage.test.tsx (4 tests) 1297ms
+   ✓ ReviewPage > bounds 10k distinct owner groups to 100 rows while searching and paging the full report  1225ms
+ ✓ src/modes/status/StatusWorkbench.test.tsx (4 tests) 869ms
+   ✓ StatusWorkbench > loads a snapshot first, starts live explicitly, and never shows GPU zero cards  461ms
+ ✓ src/api/fixture-bridge.test.ts (7 tests) 2157ms
+   ✓ fixtureBridge selection contract > keeps global-only rows, progress and totals free of project data  715ms
+   ✓ fixtureBridge selection contract > emits only the explicit fixture project and leaves it opt-in  716ms
+   ✓ fixtureBridge selection contract > does not invent project discoveries for unsupported explicit fixture roots  718ms
+ ✓ src/modes/software/SoftwareWorkbench.test.tsx (3 tests) 606ms
+   ✓ SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  524ms
+ ✓ src/stage/Stage.test.tsx (15 tests) 869ms
+ ✓ src/App.window.test.tsx (3 tests) 722ms
+   ✓ custom controls and App lifecycle > joins cooperative work before native destruction after a custom close  422ms
+ ✓ src/app-shell/WindowTitlebar.test.tsx (7 tests) 963ms
+   ✓ custom window titlebar > labels and operates all controls in en  439ms
+   ✓ custom window titlebar > labels and operates all controls in zh-CN  309ms
+ ✓ src/modes/status/preferences.test.tsx (2 tests) 693ms
+   ✓ Status committed preferences > passes rows to snapshot/live and commits before cancel, join, and replacement  439ms
+ ✓ src/support/SupportViews.test.tsx (6 tests) 454ms
+   ✓ support views > keeps protection add behind confirmation  408ms
+ ✓ src/pages/ScanPage.test.tsx (5 tests) 254ms
+ ✓ src/modes/clean/session-retention.test.tsx (1 test) 620ms
+   ✓ retains a completed Clean report through Settings and back  619ms
+ ✓ src/modes/clean/useScanScope.test.ts (4 tests) 322ms
+ ✓ src/lifecycle.test.ts (8 tests) 370ms
+ ✓ src/window-controls.test.ts (5 tests) 380ms
+ ✓ src/modes/clean/coverage-results.test.tsx (4 tests) 212ms
+ ✓ src/styles.test.ts (14 tests) 224ms
+ ✓ src/state/large-results.test.ts (2 tests) 85ms
+ ✓ src/hud/Hud.test.tsx (4 tests) 160ms
+ ✓ src/app-shell/glyphs.test.tsx (1 test) 59ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 68ms
+ ✓ src/api/ipc-boundary.test.ts (2 tests) 17ms
+ ✓ src/api/bridge.test.ts (15 tests) 20ms
+ ✓ src/stage/earth-texture.test.ts (3 tests) 51ms
+ ✓ src/modes/clean/useCleanAdvisory.test.ts (1 test) 20ms
+ ✓ src/i18n/index.test.ts (5 tests) 12ms
+ ✓ src/modes/status/processes.test.ts (8 tests) 13ms
+ ✓ src/modes/analyze/treemap.test.ts (3 tests) 14ms
+ ✓ src/api/contract.test.ts (41 tests) 18ms
+ ✓ src/stage/earth-renderer.test.ts (4 tests) 10ms
+ ✓ src/api/clean-advisories.test.ts (10 tests) 8ms
+ ✓ src/api/scan-coverage.test.ts (3 tests) 7ms
+ ✓ src/api/software-support-contract.test.ts (4 tests) 9ms
+ ✓ src/state/app-state.test.ts (11 tests) 8ms
+ ✓ src/modes/analyze/selectors.test.ts (3 tests) 6ms
+ ✓ src/modes/software/state.test.ts (4 tests) 5ms
+ ✓ src/modes/optimize/state.test.ts (4 tests) 6ms
+ ✓ src/modes/analyze/parity.test.ts (1 test) 6ms
+ ✓ src/modes/clean/skip-protect.test.ts (7 tests) 6ms
+ ✓ src/modes/status/parity.test.ts (2 tests) 5ms
+ ✓ src/modes/clean/labels.test.ts (2 tests) 4ms
+ ✓ src/modes/analyze/state.test.ts (4 tests) 5ms
+ ✓ src/modes/optimize/parity.test.ts (2 tests) 4ms
+ ✓ src/modes/software/parity.test.ts (2 tests) 4ms
+ ✓ src/modes/status/state.test.ts (3 tests) 4ms
+ ✓ src/modes/clean/session-state.test.ts (5 tests) 5ms
+ ✓ src/modes/clean/reducer.test.ts (1 test) 3ms
+ ✓ src/app-shell/registry.test.ts (2 tests) 4ms
+ ✓ src/modes/clean/impact.test.ts (3 tests) 4ms
+
+ Test Files  63 passed (63)
+      Tests  471 passed (471)
+   Start at  02:25:50
+   Duration  54.63s (transform 3.19s, setup 16.91s, collect 21.16s, tests 76.86s, environment 70.02s, prepare 6.40s)
+

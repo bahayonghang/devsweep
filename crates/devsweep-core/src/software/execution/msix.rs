@@ -63,7 +63,8 @@ fn remove_on_mta(
 ) -> AdapterEvidence {
     use std::time::Instant;
 
-    use windows::{Foundation::AsyncStatus, Management::Deployment::PackageManager, core::HSTRING};
+    use windows::{Management::Deployment::PackageManager, core::HSTRING};
+    use windows_future::AsyncStatus;
 
     use crate::process::CancelObserver;
 

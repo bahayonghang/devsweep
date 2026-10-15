@@ -1,0 +1,194 @@
+{
+  "source": "https://crates.io/api/v1/crates/lru",
+  "crate": {
+    "id": "lru",
+    "name": "lru",
+    "updated_at": "2026-09-23T02:33:10.002145Z",
+    "versions": [
+      3300083,
+      3139087,
+      3096204,
+      2920821,
+      2748387,
+      2314700,
+      2258363,
+      2252727,
+      1927340,
+      1774183,
+      1721042,
+      1625157,
+      1617533,
+      1521202,
+      1424100,
+      1293693,
+      1219486,
+      1062563,
+      1030977,
+      963613,
+      914686,
+      890328,
+      843987,
+      835114,
+      741216,
+      693949,
+      632394,
+      618733,
+      586746,
+      566486,
+      555756,
+      527101,
+      526897,
+      508187,
+      474058,
+      470095,
+      433718,
+      406224,
+      338816,
+      335180,
+      316634,
+      314325,
+      301232,
+      268768,
+      259534,
+      253258,
+      248158,
+      246455,
+      245088,
+      243141,
+      195568,
+      194717,
+      192400,
+      185706,
+      181075,
+      180713,
+      179042,
+      178544,
+      171059,
+      165151,
+      144637,
+      144636,
+      138522,
+      137181,
+      121895,
+      116690,
+      115330,
+      104568,
+      78375,
+      77579,
+      77567,
+      45892,
+      41405,
+      41397,
+      41276,
+      41275
+    ],
+    "keywords": [
+      "cache",
+      "lru"
+    ],
+    "categories": [
+      "caching",
+      "no-std"
+    ],
+    "badges": [],
+    "created_at": "2016-12-31T13:49:16.056740Z",
+    "downloads": 386206443,
+    "recent_downloads": 103465885,
+    "default_version": "0.18.5",
+    "num_versions": 76,
+    "yanked": false,
+    "max_version": "0.18.5",
+    "newest_version": "0.18.5",
+    "max_stable_version": "0.18.5",
+    "description": "A LRU cache implementation",
+    "homepage": "https://github.com/jeromefroe/lru-rs",
+    "documentation": "https://docs.rs/lru/",
+    "repository": "https://github.com/jeromefroe/lru-rs.git",
+    "links": {
+      "version_downloads": "/api/v1/crates/lru/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/lru/owners",
+      "owner_team": "/api/v1/crates/lru/owner_team",
+      "owner_user": "/api/v1/crates/lru/owner_user",
+      "reverse_dependencies": "/api/v1/crates/lru/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 3300083,
+      "crate": "lru",
+      "num": "0.18.5",
+      "dl_path": "/api/v1/crates/lru/0.18.5/download",
+      "readme_path": "/api/v1/crates/lru/0.18.5/readme",
+      "updated_at": "2026-09-23T02:33:10.002145Z",
+      "created_at": "2026-09-23T02:33:10.002145Z",
+      "downloads": 4087737,
+      "features": {
+        "default": [
+          "hashbrown"
+        ],
+        "nightly": [
+          "hashbrown",
+          "hashbrown/nightly"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/lru/0.18.5/dependencies",
+        "version_downloads": "/api/v1/crates/lru/0.18.5/downloads",
+        "authors": "/api/v1/crates/lru/0.18.5/authors"
+      },
+      "crate_size": 19761,
+      "published_by": {
+        "id": 4747,
+        "login": "jeromefroe",
+        "name": "Jerome Froelich",
+        "avatar": "https://avatars.githubusercontent.com/u/7217598?v=4",
+        "url": "https://github.com/jeromefroe",
+        "github_username_matches": true,
+        "created_at": "2014-04-07T23:21:35Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 4747,
+            "login": "jeromefroe",
+            "name": "Jerome Froelich",
+            "avatar": "https://avatars.githubusercontent.com/u/7217598?v=4",
+            "url": "https://github.com/jeromefroe",
+            "github_username_matches": true,
+            "created_at": "2014-04-07T23:21:35Z"
+          },
+          "time": "2026-09-23T02:33:10.002145Z"
+        }
+      ],
+      "checksum": "ef9ac18847474e638e3702b76c65d4eb93428471a74778ef0f1be711717f89b5",
+      "rust_version": "1.85.0",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": null,
+      "description": "A LRU cache implementation",
+      "homepage": "https://github.com/jeromefroe/lru-rs",
+      "documentation": "https://docs.rs/lru/",
+      "repository": "https://github.com/jeromefroe/lru-rs.git",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 1928,
+            "comment_lines": 75,
+            "files": 1
+          }
+        },
+        "total_code_lines": 1928,
+        "total_comment_lines": 75
+      }
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "tasks": 17,
+  "children": 16,
+  "markdown_files": 63,
+  "task_validations": [
+    {
+      "task": "10-15-gpui-desktop-rewrite",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-cli-contracts",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-windows-action-boundary",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-clean-coverage",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-software-uninstall",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-software-maintenance",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-optimize-maintenance",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-analyze-capabilities",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-status-capabilities",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-native-feasibility",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-shell-assets",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-clean-workbench",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-software-optimize-workbenches",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-analyze-status-tray",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-acceptance-migration",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-ai-tool-cleanup",
+      "exit_code": 0
+    },
+    {
+      "task": "10-15-gpui-latest-dependencies",
+      "exit_code": 0
+    }
+  ],
+  "reference_image_hashes": "verified 5",
+  "warnings": [],
+  "errors": [],
+  "tracked_changes": "",
+  "dependency_graph": "acyclic",
+  "product_tests": "NOT_RUN",
+  "platform_scope": "Windows x64 first; existing cross-platform CLI retained",
+  "blocking_product_questions": [],
+  "prd_convergence_complete": true,
+  "final_review": "final-review.md",
+  "implementation_approved": false
+}

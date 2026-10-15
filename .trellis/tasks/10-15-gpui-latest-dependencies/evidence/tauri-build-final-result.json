@@ -1,0 +1,21 @@
+{
+  "command": [
+    "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+    "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop\\node_modules\\@tauri-apps\\cli\\tauri.js",
+    "build",
+    "--no-bundle",
+    "--config",
+    "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\tauri-node22-check-config.json",
+    "--",
+    "--locked",
+    "--target-dir",
+    "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16-target-windows"
+  ],
+  "build_config": {
+    "build": {
+      "beforeBuildCommand": "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js run build"
+    }
+  },
+  "exit_code": 0,
+  "elapsed_seconds": 281.199
+}

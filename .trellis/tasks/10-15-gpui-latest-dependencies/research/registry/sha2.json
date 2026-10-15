@@ -1,0 +1,245 @@
+{
+  "source": "https://crates.io/api/v1/crates/sha2",
+  "crate": {
+    "id": "sha2",
+    "name": "sha2",
+    "updated_at": "2026-10-12T18:58:22.836567Z",
+    "versions": [
+      3477152,
+      2167409,
+      1992513,
+      1969796,
+      1810333,
+      1712136,
+      1583644,
+      1545117,
+      1470387,
+      1216059,
+      1036232,
+      1017153,
+      1010167,
+      1007835,
+      907374,
+      823587,
+      622453,
+      613705,
+      613617,
+      611449,
+      501532,
+      478394,
+      478383,
+      464599,
+      423436,
+      423212,
+      418247,
+      377262,
+      374814,
+      333533,
+      301553,
+      255630,
+      250781,
+      244563,
+      201429,
+      110478,
+      90465,
+      71399,
+      56521,
+      55741,
+      52763,
+      51949,
+      49665,
+      43127,
+      42795,
+      40581,
+      38005,
+      36740,
+      26710,
+      26707,
+      26705
+    ],
+    "keywords": [
+      "digest",
+      "hash",
+      "sha2"
+    ],
+    "categories": [
+      "cryptography",
+      "no-std"
+    ],
+    "badges": [],
+    "created_at": "2016-05-06T20:20:25.502104Z",
+    "downloads": 1061960430,
+    "recent_downloads": 301957903,
+    "default_version": "0.11.1",
+    "num_versions": 51,
+    "yanked": false,
+    "max_version": "0.11.1",
+    "newest_version": "0.11.1",
+    "max_stable_version": "0.11.1",
+    "description": "Pure Rust implementation of the SHA-2 hash function family\nincluding SHA-224, SHA-256, SHA-384, and SHA-512.\n",
+    "homepage": null,
+    "documentation": "https://docs.rs/sha2",
+    "repository": "https://github.com/RustCrypto/hashes",
+    "links": {
+      "version_downloads": "/api/v1/crates/sha2/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/sha2/owners",
+      "owner_team": "/api/v1/crates/sha2/owner_team",
+      "owner_user": "/api/v1/crates/sha2/owner_user",
+      "reverse_dependencies": "/api/v1/crates/sha2/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": true
+  },
+  "versions": [
+    {
+      "id": 3477152,
+      "crate": "sha2",
+      "num": "0.11.1",
+      "dl_path": "/api/v1/crates/sha2/0.11.1/download",
+      "readme_path": "/api/v1/crates/sha2/0.11.1/readme",
+      "updated_at": "2026-10-12T18:58:22.836567Z",
+      "created_at": "2026-10-12T18:58:22.836567Z",
+      "downloads": 514352,
+      "features": {
+        "alloc": [
+          "digest/alloc"
+        ],
+        "default": [
+          "alloc",
+          "oid"
+        ],
+        "oid": [
+          "digest/oid"
+        ],
+        "zeroize": [
+          "digest/zeroize"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/sha2/0.11.1/dependencies",
+        "version_downloads": "/api/v1/crates/sha2/0.11.1/downloads",
+        "authors": "/api/v1/crates/sha2/0.11.1/authors"
+      },
+      "crate_size": 32748,
+      "published_by": null,
+      "audit_actions": [],
+      "checksum": "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19",
+      "rust_version": "1.88",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2024",
+      "description": "Pure Rust implementation of the SHA-2 hash function family\nincluding SHA-224, SHA-256, SHA-384, and SHA-512.\n",
+      "homepage": null,
+      "documentation": "https://docs.rs/sha2",
+      "repository": "https://github.com/RustCrypto/hashes",
+      "trustpub_data": {
+        "provider": "github",
+        "repository": "RustCrypto/hashes",
+        "run_id": "38294476233",
+        "sha": "138dc5a05b93f8e49cda177fc6cfd7cc43673e5d"
+      },
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 2466,
+            "comment_lines": 106,
+            "files": 25
+          }
+        },
+        "total_code_lines": 2466,
+        "total_comment_lines": 106
+      }
+    },
+    {
+      "id": 1545117,
+      "crate": "sha2",
+      "num": "0.10.9",
+      "dl_path": "/api/v1/crates/sha2/0.10.9/download",
+      "readme_path": "/api/v1/crates/sha2/0.10.9/readme",
+      "updated_at": "2025-04-30T14:38:09.894118Z",
+      "created_at": "2025-04-30T14:38:09.894118Z",
+      "downloads": 467046907,
+      "features": {
+        "asm": [
+          "sha2-asm"
+        ],
+        "asm-aarch64": [
+          "asm"
+        ],
+        "compress": [],
+        "default": [
+          "std"
+        ],
+        "force-soft": [],
+        "force-soft-compact": [],
+        "loongarch64_asm": [],
+        "oid": [
+          "digest/oid"
+        ],
+        "std": [
+          "digest/std"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/sha2/0.10.9/dependencies",
+        "version_downloads": "/api/v1/crates/sha2/0.10.9/downloads",
+        "authors": "/api/v1/crates/sha2/0.10.9/authors"
+      },
+      "crate_size": 29271,
+      "published_by": {
+        "id": 5059,
+        "login": "newpavlov",
+        "name": "Artyom Pavlov",
+        "avatar": "https://avatars.githubusercontent.com/u/329626?v=4",
+        "url": "https://github.com/newpavlov",
+        "github_username_matches": true,
+        "created_at": "2010-07-12T13:48:27Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 5059,
+            "login": "newpavlov",
+            "name": "Artyom Pavlov",
+            "avatar": "https://avatars.githubusercontent.com/u/329626?v=4",
+            "url": "https://github.com/newpavlov",
+            "github_username_matches": true,
+            "created_at": "2010-07-12T13:48:27Z"
+          },
+          "time": "2025-04-30T14:38:09.894118Z"
+        }
+      ],
+      "checksum": "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283",
+      "rust_version": null,
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2018",
+      "description": "Pure Rust implementation of the SHA-2 hash function family\nincluding SHA-224, SHA-256, SHA-384, and SHA-512.\n",
+      "homepage": null,
+      "documentation": "https://docs.rs/sha2",
+      "repository": "https://github.com/RustCrypto/hashes",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 1869,
+            "comment_lines": 124,
+            "files": 15
+          }
+        },
+        "total_code_lines": 1869,
+        "total_comment_lines": 124
+      }
+    }
+  ]
+}

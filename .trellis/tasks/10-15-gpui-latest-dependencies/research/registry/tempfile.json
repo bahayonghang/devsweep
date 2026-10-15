@@ -1,0 +1,179 @@
+{
+  "source": "https://crates.io/api/v1/crates/tempfile",
+  "crate": {
+    "id": "tempfile",
+    "name": "tempfile",
+    "updated_at": "2026-03-11T00:20:04.812840Z",
+    "versions": [
+      2108984,
+      2057762,
+      2012931,
+      1899946,
+      1741841,
+      1721630,
+      1692605,
+      1559763,
+      1488904,
+      1482251,
+      1472341,
+      1449896,
+      1448992,
+      1425003,
+      1393163,
+      1332612,
+      1284362,
+      1226002,
+      1222275,
+      1064980,
+      1040404,
+      997804,
+      936599,
+      875434,
+      865356,
+      850880,
+      817102,
+      762150,
+      735514,
+      479610,
+      326280,
+      159607,
+      159472,
+      151200,
+      134374,
+      132354,
+      119704,
+      108169,
+      100200,
+      92227,
+      89343,
+      86367,
+      66871,
+      59750,
+      42728,
+      28616,
+      25953,
+      25462,
+      22544,
+      22221,
+      20966,
+      20264,
+      18335,
+      17825,
+      14630,
+      12966,
+      12445,
+      10582,
+      10566,
+      10560,
+      10386,
+      9596,
+      9253,
+      8904,
+      8853,
+      8833
+    ],
+    "keywords": [
+      "filesystem",
+      "tempfile",
+      "tmpfile"
+    ],
+    "categories": [],
+    "badges": [],
+    "created_at": "2015-04-14T18:26:06.249019Z",
+    "downloads": 889758676,
+    "recent_downloads": 207946319,
+    "default_version": "3.27.0",
+    "num_versions": 66,
+    "yanked": false,
+    "max_version": "3.27.0",
+    "newest_version": "3.27.0",
+    "max_stable_version": "3.27.0",
+    "description": "A library for managing temporary files and directories.",
+    "homepage": "https://stebalien.com/projects/tempfile-rs/",
+    "documentation": "https://docs.rs/tempfile",
+    "repository": "https://github.com/Stebalien/tempfile",
+    "links": {
+      "version_downloads": "/api/v1/crates/tempfile/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/tempfile/owners",
+      "owner_team": "/api/v1/crates/tempfile/owner_team",
+      "owner_user": "/api/v1/crates/tempfile/owner_user",
+      "reverse_dependencies": "/api/v1/crates/tempfile/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 2108984,
+      "crate": "tempfile",
+      "num": "3.27.0",
+      "dl_path": "/api/v1/crates/tempfile/3.27.0/download",
+      "readme_path": "/api/v1/crates/tempfile/3.27.0/readme",
+      "updated_at": "2026-03-11T00:20:04.812840Z",
+      "created_at": "2026-03-11T00:20:04.812840Z",
+      "downloads": 244758005,
+      "features": {
+        "default": [
+          "getrandom"
+        ],
+        "nightly": []
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/tempfile/3.27.0/dependencies",
+        "version_downloads": "/api/v1/crates/tempfile/3.27.0/downloads",
+        "authors": "/api/v1/crates/tempfile/3.27.0/authors"
+      },
+      "crate_size": 44780,
+      "published_by": {
+        "id": 280,
+        "login": "Stebalien",
+        "name": "Steven Allen",
+        "avatar": "https://avatars.githubusercontent.com/u/310393?v=4",
+        "url": "https://github.com/Stebalien",
+        "github_username_matches": true,
+        "created_at": "2010-06-21T04:59:57Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 280,
+            "login": "Stebalien",
+            "name": "Steven Allen",
+            "avatar": "https://avatars.githubusercontent.com/u/310393?v=4",
+            "url": "https://github.com/Stebalien",
+            "github_username_matches": true,
+            "created_at": "2010-06-21T04:59:57Z"
+          },
+          "time": "2026-03-11T00:20:04.812840Z"
+        }
+      ],
+      "checksum": "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd",
+      "rust_version": "1.63",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "A library for managing temporary files and directories.",
+      "homepage": "https://stebalien.com/projects/tempfile-rs/",
+      "documentation": "https://docs.rs/tempfile",
+      "repository": "https://github.com/Stebalien/tempfile",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 1289,
+            "comment_lines": 56,
+            "files": 14
+          }
+        },
+        "total_code_lines": 1289,
+        "total_comment_lines": 56
+      }
+    }
+  ]
+}

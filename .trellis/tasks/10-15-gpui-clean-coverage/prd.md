@@ -1,0 +1,34 @@
+# C03 Windows cleanup catalogue and CLI coverage
+
+Status: **approved for implementation**; Windows x64-first scope confirmed. Execution follows dependency acceptance.
+Parent: [CLI-first GPUI rewrite](../10-15-gpui-desktop-rewrite/prd.md).
+Dependencies: [C01](../10-15-gpui-cli-contracts/prd.md), [C02](../10-15-gpui-windows-action-boundary/prd.md).
+
+## Goal
+
+Expand evidence-backed Windows cleanup coverage while preserving developer-cache ownership and retained-data safety.
+
+## Requirements
+
+C03-R1. Retain project artifacts, provider-managed caches, root preferences, project occupancy, warnings and the six existing Windows cache families.
+
+C03-R2. Add a finite reviewed catalogue for shader/application caches, Windows temp/error-report/download-cache candidates and supported AI-tool caches; every exact rule needs ownership, age/use, regeneration-cost and retained-data evidence.
+
+C03-R3. Support protection/ignore review, grouped totals, explicit personal-data exclusions, full-report filtering and separately selected privileged rows.
+
+C03-R4. Keep Cargo home and Docker cleanup forbidden; local models, sessions, credentials, offline content and virtual disks are not ordinary cache. System-managed candidates without permitted execution remain explanation/Settings handoff with reason.
+
+## Acceptance criteria
+
+- [ ] C03-AC1: Each proposed rule has positive, adjacent-personal-data negative, busy/unknown owner, reparse/hardlink/cloud and stale-preview cases through the production scan-to-plan path.
+- [ ] C03-AC2: Global and project scans remain independently useful; partial provider failure never erases healthy findings or reports unreadable as empty.
+- [ ] C03-AC3: No permanent file deletion fallback; estimated occupancy, moved-to-Recycle-Bin and verified freed bytes remain separate.
+- [ ] C03-AC4: A checked-in rule/coverage manifest states exact supported families and omissions; no unsupported claim of matching Mole's advertised rule count.
+
+## Scope and decisions
+
+Parent safety exclusions, platform decision, latest-dependency policy and evidence
+rules apply. Detailed design and execution are in [design.md](design.md) and
+[implement.md](implement.md). These are proposals, not implementation evidence.
+Obtain approval of the parent final summary and resolve applicable technical decisions before starting.
+Do not recreate completed upstream work or promote fixture/native gaps to PASS.

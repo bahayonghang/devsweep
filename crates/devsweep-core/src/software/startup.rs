@@ -14,6 +14,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use super::{
     RegistryHive, RegistryView, SoftwareAuditError, SoftwareScope, SoftwareSourceState,
     audit::{SoftwareAuditJournal, SoftwareSupportAuditRecordV1},
@@ -335,8 +337,11 @@ fn entry(
 }
 
 fn startup_id(location: SoftwareStartupLocation, name: &str) -> String {
-    let digest = Sha256::digest(format!("devsweep.startup.v1\0{}\0{name}", location.tag()));
-    format!("startup:v1:{digest:x}")
+    let digest = hex_digest(Sha256::digest(format!(
+        "devsweep.startup.v1\0{}\0{name}",
+        location.tag()
+    )));
+    format!("startup:v1:{digest}")
 }
 
 fn set_with(
@@ -714,14 +719,14 @@ mod tests {
 
         impl TestTree {
             fn new() -> Self {
-                let nonce = Sha256::digest(format!(
+                let nonce = hex_digest(Sha256::digest(format!(
                     "{}-{:?}-{}",
                     std::process::id(),
                     std::thread::current().id(),
                     unix_ms(SystemTime::now())
-                ));
+                )));
                 Self {
-                    root: format!(r"Software\DevSweepTest-startup-{nonce:x}"),
+                    root: format!(r"Software\DevSweepTest-startup-{nonce}"),
                 }
             }
 

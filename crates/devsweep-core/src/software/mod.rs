@@ -8,6 +8,8 @@ use std::{collections::BTreeMap, sync::Arc, thread, time::SystemTime};
 use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use crate::process::FlagCancelObserver;
 
 mod arp;
@@ -346,8 +348,8 @@ fn software_id(identity: &SoftwareIdentity) -> Result<String> {
         SoftwareIdentity::Msix { .. } => "msix",
     };
     Ok(format!(
-        "software:v1:{family}:{:x}",
-        Sha256::digest(canonical)
+        "software:v1:{family}:{}",
+        hex_digest(Sha256::digest(canonical))
     ))
 }
 
@@ -360,7 +362,7 @@ fn inventory_fingerprint(inventory: &SoftwareInventoryV1) -> Result<String> {
         &inventory.entries,
     ))
     .context("failed to serialize software inventory fingerprint")?;
-    Ok(format!("sha256:{:x}", Sha256::digest(canonical)))
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
 }
 
 fn reported_size(

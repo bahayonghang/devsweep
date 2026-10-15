@@ -1,0 +1,244 @@
+{
+  "source": "https://crates.io/api/v1/crates/trash",
+  "crate": {
+    "id": "trash",
+    "name": "trash",
+    "updated_at": "2026-09-13T16:38:38.522661Z",
+    "versions": [
+      3228506,
+      3184846,
+      3139967,
+      2343646,
+      1791367,
+      1789526,
+      1686117,
+      1456506,
+      1366981,
+      1316114,
+      1255220,
+      1228960,
+      1177313,
+      1131827,
+      1087871,
+      1079608,
+      1048687,
+      1046988,
+      1046987,
+      1014823,
+      1009668,
+      928622,
+      928244,
+      919614,
+      844326,
+      839988,
+      836186,
+      820013,
+      801614,
+      714811,
+      671295,
+      578780,
+      555282,
+      550376,
+      548139,
+      546497,
+      544539,
+      488068,
+      471865,
+      414819,
+      373564,
+      369113,
+      331253,
+      298040,
+      275634,
+      271947,
+      242146,
+      181846,
+      162796,
+      162661
+    ],
+    "keywords": [
+      "bin",
+      "recycle",
+      "remove",
+      "rubbish",
+      "trash"
+    ],
+    "categories": [],
+    "badges": [],
+    "created_at": "2019-07-12T23:42:39.320861Z",
+    "downloads": 3485151,
+    "recent_downloads": 1207496,
+    "default_version": "5.2.9",
+    "num_versions": 50,
+    "yanked": false,
+    "max_version": "5.2.9",
+    "newest_version": "5.2.9",
+    "max_stable_version": "5.2.9",
+    "description": "A library for moving files and folders to the Recycle Bin",
+    "homepage": null,
+    "documentation": null,
+    "repository": "https://github.com/ArturKovacs/trash",
+    "links": {
+      "version_downloads": "/api/v1/crates/trash/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/trash/owners",
+      "owner_team": "/api/v1/crates/trash/owner_team",
+      "owner_user": "/api/v1/crates/trash/owner_user",
+      "reverse_dependencies": "/api/v1/crates/trash/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 3228506,
+      "crate": "trash",
+      "num": "5.2.9",
+      "dl_path": "/api/v1/crates/trash/5.2.9/download",
+      "readme_path": "/api/v1/crates/trash/5.2.9/readme",
+      "updated_at": "2026-09-13T16:38:38.522661Z",
+      "created_at": "2026-09-13T16:38:38.522661Z",
+      "downloads": 170365,
+      "features": {
+        "coinit_apartmentthreaded": [],
+        "coinit_disable_ole1dde": [],
+        "coinit_multithreaded": [],
+        "coinit_speed_over_memory": [],
+        "default": [
+          "coinit_apartmentthreaded",
+          "chrono"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/trash/5.2.9/dependencies",
+        "version_downloads": "/api/v1/crates/trash/5.2.9/downloads",
+        "authors": "/api/v1/crates/trash/5.2.9/authors"
+      },
+      "crate_size": 72090,
+      "published_by": {
+        "id": 980,
+        "login": "Byron",
+        "name": "Sebastian Thiel",
+        "avatar": "https://avatars.githubusercontent.com/u/63622?v=4",
+        "url": "https://github.com/Byron",
+        "github_username_matches": true,
+        "created_at": "2009-03-15T13:15:06Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 980,
+            "login": "Byron",
+            "name": "Sebastian Thiel",
+            "avatar": "https://avatars.githubusercontent.com/u/63622?v=4",
+            "url": "https://github.com/Byron",
+            "github_username_matches": true,
+            "created_at": "2009-03-15T13:15:06Z"
+          },
+          "time": "2026-09-13T16:38:38.522661Z"
+        }
+      ],
+      "checksum": "be89b3fe156965d29ac4f8522f3a640c655affdd9f21cb4f36857f0c92c00317",
+      "rust_version": "1.85.0",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "A library for moving files and folders to the Recycle Bin",
+      "homepage": null,
+      "documentation": null,
+      "repository": "https://github.com/ArturKovacs/trash",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 2430,
+            "comment_lines": 158,
+            "files": 6
+          }
+        },
+        "total_code_lines": 2430,
+        "total_comment_lines": 158
+      }
+    },
+    {
+      "id": 2343646,
+      "crate": "trash",
+      "num": "5.2.6",
+      "dl_path": "/api/v1/crates/trash/5.2.6/download",
+      "readme_path": "/api/v1/crates/trash/5.2.6/readme",
+      "updated_at": "2026-05-03T15:07:08.869411Z",
+      "created_at": "2026-05-03T15:07:08.869411Z",
+      "downloads": 816525,
+      "features": {
+        "coinit_apartmentthreaded": [],
+        "coinit_disable_ole1dde": [],
+        "coinit_multithreaded": [],
+        "coinit_speed_over_memory": [],
+        "default": [
+          "coinit_apartmentthreaded",
+          "chrono"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/trash/5.2.6/dependencies",
+        "version_downloads": "/api/v1/crates/trash/5.2.6/downloads",
+        "authors": "/api/v1/crates/trash/5.2.6/authors"
+      },
+      "crate_size": 69585,
+      "published_by": {
+        "id": 980,
+        "login": "Byron",
+        "name": "Sebastian Thiel",
+        "avatar": "https://avatars.githubusercontent.com/u/63622?v=4",
+        "url": "https://github.com/Byron",
+        "github_username_matches": true,
+        "created_at": "2009-03-15T13:15:06Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 980,
+            "login": "Byron",
+            "name": "Sebastian Thiel",
+            "avatar": "https://avatars.githubusercontent.com/u/63622?v=4",
+            "url": "https://github.com/Byron",
+            "github_username_matches": true,
+            "created_at": "2009-03-15T13:15:06Z"
+          },
+          "time": "2026-05-03T15:07:08.869411Z"
+        }
+      ],
+      "checksum": "7602e0c7d66ec2d92a8c917219fbc7894039efa2063b9064260110828a356f46",
+      "rust_version": "1.85.0",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "A library for moving files and folders to the Recycle Bin",
+      "homepage": null,
+      "documentation": null,
+      "repository": "https://github.com/ArturKovacs/trash",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 2252,
+            "comment_lines": 167,
+            "files": 6
+          }
+        },
+        "total_code_lines": 2252,
+        "total_comment_lines": 167
+      }
+    }
+  ]
+}

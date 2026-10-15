@@ -1,0 +1,8 @@
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/existing-contracts.md", "reason": "Compact authoritative-spec loading map; read complete applicable sections before edits to avoid injection truncation"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Versioned plans stores and migration"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/mole-feature-matrix.md", "reason": "Parent scope architecture and evidence contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/repository-audit.md", "reason": "Parent scope architecture and evidence contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/release-log-delta.md", "reason": "Parent scope architecture and evidence contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/dependency-policy.md", "reason": "Parent scope architecture and evidence contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/gpui-windows-feasibility.md", "reason": "Parent scope architecture and evidence contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/performance-protocol.md", "reason": "Parent scope architecture and evidence contract"}

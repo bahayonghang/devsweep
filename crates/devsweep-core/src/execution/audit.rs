@@ -9,6 +9,8 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use crate::model::{CleanAction, CleanTarget};
 
 use super::CapacityEstimate;
@@ -324,7 +326,7 @@ pub fn legacy_audit_log_path() -> Option<PathBuf> {
 
 /// SHA-256 of a canonical identity string. Never persist the preimage.
 pub fn identity_sha256(identity: &str) -> String {
-    format!("{:x}", Sha256::digest(identity.as_bytes()))
+    hex_digest(Sha256::digest(identity.as_bytes()))
 }
 
 pub(super) fn redacted_action_kind(action: &CleanAction) -> Option<RedactedActionKind> {

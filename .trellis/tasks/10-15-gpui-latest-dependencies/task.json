@@ -1,0 +1,33 @@
+{
+  "id": "gpui-latest-dependencies",
+  "name": "gpui-latest-dependencies",
+  "title": "C16 Latest compatible dependencies and Rust toolchain",
+  "description": "Audit and adopt current stable dependencies across shared Rust code and the new GPUI application with reproducible pins and documented exceptions.",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-15",
+  "completedAt": null,
+  "branch": "codex/gpui-desktop-rewrite",
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-15-gpui-desktop-rewrite",
+  "relatedFiles": [],
+  "notes": "Implemented and independently reviewed. User selected installed Windows Rust/Cargo 1.99.0; no 1.88 download. Windows isolated 794 tests and Linux 674 tests pass, final retained Tauri build passes. Canonical shared-target failure and exact MSRV/hosted/macOS evidence remain open. Current snapshot commit/push authorized; see parent delivery-authorization.md and next-session-prompt.md. C16 remains unaccepted.",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "depends_on": [],
+    "task_code": "C16",
+    "blocking_product_questions": [],
+    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md"
+  }
+}

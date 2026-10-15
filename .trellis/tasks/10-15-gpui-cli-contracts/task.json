@@ -1,0 +1,35 @@
+{
+  "id": "gpui-cli-contracts",
+  "name": "gpui-cli-contracts",
+  "title": "C01 Shared services and CLI feature parity",
+  "description": "Expose existing desktop-only Rust capabilities through stable CLI commands and freeze shared operation contracts.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-15",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-15-gpui-desktop-rewrite",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "depends_on": [
+      "C16"
+    ],
+    "task_code": "C01",
+    "blocking_product_questions": [],
+    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md"
+  }
+}

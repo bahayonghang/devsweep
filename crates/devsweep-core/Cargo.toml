@@ -9,27 +9,29 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-anyhow = "1"
-rayon = "1"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-sha2 = "0.10"
-trash = "5"
-tracing = "0.1"
+anyhow = "1.0.104"
+rayon = "1.12.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+trash = "5.2.9"
+tracing = "0.1.44"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "=0.56.0", features = [
+windows-collections = "0.3.2"
+windows-future = "0.3.2"
+windows = { version = "=0.62.2", features = [
     "ApplicationModel",
     "Foundation",
     "Foundation_Collections",
     "Management_Deployment",
     "Win32_System_WinRT",
 ] }
-windows-sys = { version = "0.59", features = [
+windows-sys = { version = "0.61.2", features = [
     "Wdk_System_SystemServices",
     "Win32_Foundation",
     "Win32_NetworkManagement_IpHelper",
-    # windows-sys 0.59 cfg-gates GetIfTable2 / MIB_IF_ROW2 on this feature.
+    # GetIfTable2 / MIB_IF_ROW2 require the Ndis feature.
     "Win32_NetworkManagement_Ndis",
     "Win32_Security",
     "Win32_Storage_FileSystem",
@@ -45,7 +47,7 @@ windows-sys = { version = "0.59", features = [
 ] }
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc = "0.2.190"
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "3.27.0"

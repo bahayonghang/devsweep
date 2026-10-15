@@ -1,0 +1,4 @@
+
+> devsweep-desktop-ui@0.3.0 types:generate
+> node scripts/generate-types.mjs --check
+

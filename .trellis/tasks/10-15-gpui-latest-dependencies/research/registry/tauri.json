@@ -1,0 +1,647 @@
+{
+  "source": "https://crates.io/api/v1/crates/tauri",
+  "crate": {
+    "id": "tauri",
+    "name": "tauri",
+    "updated_at": "2026-10-14T21:14:08.359953Z",
+    "versions": [
+      3498106,
+      3496724,
+      3459328,
+      3443259,
+      3374765,
+      3368456,
+      3333962,
+      3332338,
+      3288513,
+      3278084,
+      3241618,
+      3224881,
+      2687439,
+      2680480,
+      2593633,
+      2408325,
+      2356576,
+      2330671,
+      2085526,
+      1998390,
+      1993193,
+      1991781,
+      1869368,
+      1851012,
+      1823364,
+      1798479,
+      1787171,
+      1783480,
+      1710186,
+      1699763,
+      1698593,
+      1691804,
+      1691063,
+      1690924,
+      1650953,
+      1618326,
+      1616822,
+      1614514,
+      1567828,
+      1532464,
+      1525233,
+      1505551,
+      1490170,
+      1463515,
+      1461356,
+      1421862,
+      1421690,
+      1412569,
+      1405778,
+      1402886,
+      1402501,
+      1393049,
+      1335713,
+      1334015,
+      1309788,
+      1308854,
+      1301948,
+      1301632,
+      1299792,
+      1293892,
+      1289090,
+      1288011,
+      1287912,
+      1283557,
+      1272393,
+      1271219,
+      1270929,
+      1270842,
+      1270574,
+      1266100,
+      1260831,
+      1259778,
+      1252096,
+      1251624,
+      1246474,
+      1244930,
+      1242785,
+      1242057,
+      1238736,
+      1228519,
+      1226927,
+      1221935,
+      1217895,
+      1201561,
+      1190729,
+      1190419,
+      1190397,
+      1164988,
+      1159028,
+      1158421,
+      1152957,
+      1152928,
+      1145621,
+      1140164,
+      1140050,
+      1140041,
+      1136471,
+      1136420,
+      1130885,
+      1122657,
+      1122301,
+      1115707,
+      1101505,
+      1089614,
+      1086594,
+      1079027,
+      1075948,
+      1074958,
+      1067825,
+      1066622,
+      1065149,
+      1060970,
+      1060779,
+      1059249,
+      1056858,
+      1055907,
+      1039259,
+      1038307,
+      1038204,
+      1016109,
+      991755,
+      990722,
+      990662,
+      972810,
+      961737,
+      938123,
+      929664,
+      922861,
+      919708,
+      913228,
+      909740,
+      894759,
+      892421,
+      891009,
+      871560,
+      825182,
+      825052,
+      822721,
+      802655,
+      791470,
+      791455,
+      791436,
+      791350,
+      776024,
+      772611,
+      767382,
+      767164,
+      754437,
+      717996,
+      706428,
+      689881,
+      689859,
+      689852,
+      689850,
+      684629,
+      680036,
+      679333,
+      670075,
+      659578,
+      659563,
+      659543,
+      622944,
+      622330,
+      622230,
+      589192,
+      584611,
+      579815,
+      576345,
+      575367,
+      567736,
+      567161,
+      566854,
+      566299,
+      556972,
+      555488,
+      555020,
+      551411,
+      546983,
+      545341,
+      539409,
+      539119,
+      523765,
+      523637,
+      511834,
+      502161,
+      499885,
+      499041,
+      498234,
+      416542,
+      414214,
+      413979,
+      401911,
+      395083,
+      394897,
+      393385,
+      377748,
+      377414,
+      371097,
+      371043,
+      368603,
+      366381,
+      331167,
+      323568,
+      304348,
+      275031,
+      269199,
+      266553,
+      264292,
+      261748,
+      261198,
+      260628,
+      260393,
+      259561,
+      258787,
+      255756,
+      253689,
+      251617,
+      243924,
+      239212,
+      225584,
+      217139,
+      215912,
+      214428,
+      211317,
+      202441,
+      200169,
+      200109,
+      197088,
+      193709,
+      193350,
+      192969,
+      192658
+    ],
+    "keywords": [],
+    "categories": [
+      "gui",
+      "web-programming"
+    ],
+    "badges": [],
+    "created_at": "2019-11-27T15:28:11.006181Z",
+    "downloads": 36450432,
+    "recent_downloads": 14252207,
+    "default_version": "2.12.4",
+    "num_versions": 232,
+    "yanked": false,
+    "max_version": "3.0.0-alpha.5",
+    "newest_version": "3.0.0-alpha.5",
+    "max_stable_version": "2.12.4",
+    "description": "Make tiny, secure apps for all desktop platforms with Tauri",
+    "homepage": "https://tauri.app/",
+    "documentation": null,
+    "repository": "https://github.com/tauri-apps/tauri",
+    "links": {
+      "version_downloads": "/api/v1/crates/tauri/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/tauri/owners",
+      "owner_team": "/api/v1/crates/tauri/owner_team",
+      "owner_user": "/api/v1/crates/tauri/owner_user",
+      "reverse_dependencies": "/api/v1/crates/tauri/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 3496724,
+      "crate": "tauri",
+      "num": "2.12.4",
+      "dl_path": "/api/v1/crates/tauri/2.12.4/download",
+      "readme_path": "/api/v1/crates/tauri/2.12.4/readme",
+      "updated_at": "2026-10-14T18:52:10.735395Z",
+      "created_at": "2026-10-14T18:52:10.735395Z",
+      "downloads": 6705,
+      "features": {
+        "common-controls-v6": [
+          "tray-icon?/muda-common-controls-v6",
+          "muda/common-controls-v6",
+          "tauri-runtime-wry?/common-controls-v6"
+        ],
+        "compression": [
+          "tauri-macros/compression",
+          "tauri-utils/compression"
+        ],
+        "config-json5": [
+          "tauri-macros/config-json5"
+        ],
+        "config-toml": [
+          "tauri-macros/config-toml"
+        ],
+        "custom-protocol": [
+          "tauri-macros/custom-protocol"
+        ],
+        "dbus": [
+          "tauri-runtime-wry?/dbus"
+        ],
+        "default": [
+          "wry",
+          "compression",
+          "common-controls-v6",
+          "dynamic-acl",
+          "x11",
+          "dbus"
+        ],
+        "devtools": [
+          "tauri-runtime/devtools",
+          "tauri-runtime-wry?/devtools"
+        ],
+        "dynamic-acl": [],
+        "image-ico": [
+          "image/ico"
+        ],
+        "image-png": [
+          "image/png"
+        ],
+        "isolation": [
+          "tauri-utils/isolation",
+          "tauri-macros/isolation",
+          "uuid"
+        ],
+        "linux-libxdo": [
+          "tray-icon/muda-libxdo",
+          "muda/libxdo"
+        ],
+        "macos-private-api": [
+          "tauri-runtime/macos-private-api",
+          "tauri-runtime-wry?/macos-private-api"
+        ],
+        "macos-proxy": [
+          "tauri-runtime-wry?/macos-proxy"
+        ],
+        "native-tls": [
+          "reqwest/native-tls"
+        ],
+        "native-tls-vendored": [
+          "reqwest/native-tls-vendored"
+        ],
+        "objc-exception": [],
+        "process-relaunch-dangerous-allow-symlink-macos": [
+          "tauri-utils/process-relaunch-dangerous-allow-symlink-macos"
+        ],
+        "protocol-asset": [
+          "http-range"
+        ],
+        "rustls-tls": [
+          "reqwest/rustls-no-provider",
+          "dep:rustls"
+        ],
+        "specta": [
+          "dep:specta"
+        ],
+        "test": [],
+        "tracing": [
+          "dep:tracing",
+          "tauri-macros/tracing",
+          "tauri-runtime-wry?/tracing"
+        ],
+        "tray-icon": [
+          "dep:tray-icon"
+        ],
+        "unstable": [
+          "tauri-runtime-wry?/unstable"
+        ],
+        "webview-data-url": [
+          "data-url",
+          "tauri-utils/html-manipulation-2"
+        ],
+        "wry": [
+          "webview2-com",
+          "webkit2gtk",
+          "tauri-runtime-wry"
+        ],
+        "x11": [
+          "tauri-runtime-wry?/x11"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": "Tauri",
+      "license": "Apache-2.0 OR MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/tauri/2.12.4/dependencies",
+        "version_downloads": "/api/v1/crates/tauri/2.12.4/downloads",
+        "authors": "/api/v1/crates/tauri/2.12.4/authors"
+      },
+      "crate_size": 329333,
+      "published_by": {
+        "id": 95389,
+        "login": "tauri-bot",
+        "name": "tauri",
+        "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+        "url": "https://github.com/tauri-bot",
+        "github_username_matches": true,
+        "created_at": "2020-07-05T19:08:07Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 95389,
+            "login": "tauri-bot",
+            "name": "tauri",
+            "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+            "url": "https://github.com/tauri-bot",
+            "github_username_matches": true,
+            "created_at": "2020-07-05T19:08:07Z"
+          },
+          "time": "2026-10-14T18:52:10.735395Z"
+        }
+      ],
+      "checksum": "f316751027fc2644221d1a448564d519efb07067fda584879d9cda966391d212",
+      "rust_version": "1.90",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2024",
+      "description": "Make tiny, secure apps for all desktop platforms with Tauri",
+      "homepage": "https://tauri.app/",
+      "documentation": null,
+      "repository": "https://github.com/tauri-apps/tauri",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "JavaScript": {
+            "code_lines": 520,
+            "comment_lines": 141,
+            "files": 15
+          },
+          "Kotlin": {
+            "code_lines": 1552,
+            "comment_lines": 339,
+            "files": 25
+          },
+          "Prolog": {
+            "code_lines": 36,
+            "comment_lines": 0,
+            "files": 2
+          },
+          "Rust": {
+            "code_lines": 23751,
+            "comment_lines": 613,
+            "files": 65
+          },
+          "Swift": {
+            "code_lines": 637,
+            "comment_lines": 45,
+            "files": 9
+          }
+        },
+        "total_code_lines": 26496,
+        "total_comment_lines": 1138
+      }
+    },
+    {
+      "id": 2687439,
+      "crate": "tauri",
+      "num": "2.11.5",
+      "dl_path": "/api/v1/crates/tauri/2.11.5/download",
+      "readme_path": "/api/v1/crates/tauri/2.11.5/readme",
+      "updated_at": "2026-07-01T13:56:38.810372Z",
+      "created_at": "2026-07-01T13:56:38.810372Z",
+      "downloads": 7362257,
+      "features": {
+        "common-controls-v6": [
+          "tray-icon?/common-controls-v6",
+          "muda/common-controls-v6",
+          "tauri-runtime-wry?/common-controls-v6"
+        ],
+        "compression": [
+          "tauri-macros/compression",
+          "tauri-utils/compression"
+        ],
+        "config-json5": [
+          "tauri-macros/config-json5"
+        ],
+        "config-toml": [
+          "tauri-macros/config-toml"
+        ],
+        "custom-protocol": [
+          "tauri-macros/custom-protocol"
+        ],
+        "dbus": [
+          "tauri-runtime-wry?/dbus"
+        ],
+        "default": [
+          "wry",
+          "compression",
+          "common-controls-v6",
+          "dynamic-acl",
+          "x11",
+          "dbus"
+        ],
+        "devtools": [
+          "tauri-runtime/devtools",
+          "tauri-runtime-wry?/devtools"
+        ],
+        "dynamic-acl": [],
+        "image-ico": [
+          "image/ico"
+        ],
+        "image-png": [
+          "image/png"
+        ],
+        "isolation": [
+          "tauri-utils/isolation",
+          "tauri-macros/isolation",
+          "uuid"
+        ],
+        "linux-libxdo": [
+          "tray-icon/libxdo",
+          "muda/libxdo"
+        ],
+        "macos-private-api": [
+          "tauri-runtime/macos-private-api",
+          "tauri-runtime-wry?/macos-private-api"
+        ],
+        "macos-proxy": [
+          "tauri-runtime-wry?/macos-proxy"
+        ],
+        "native-tls": [
+          "reqwest/native-tls"
+        ],
+        "native-tls-vendored": [
+          "reqwest/native-tls-vendored"
+        ],
+        "objc-exception": [],
+        "process-relaunch-dangerous-allow-symlink-macos": [
+          "tauri-utils/process-relaunch-dangerous-allow-symlink-macos"
+        ],
+        "protocol-asset": [
+          "http-range"
+        ],
+        "rustls-tls": [
+          "reqwest/rustls-no-provider",
+          "dep:rustls"
+        ],
+        "specta": [
+          "dep:specta"
+        ],
+        "test": [],
+        "tracing": [
+          "dep:tracing",
+          "tauri-macros/tracing",
+          "tauri-runtime-wry?/tracing"
+        ],
+        "tray-icon": [
+          "dep:tray-icon"
+        ],
+        "unstable": [
+          "tauri-runtime-wry?/unstable"
+        ],
+        "webview-data-url": [
+          "data-url",
+          "tauri-utils/html-manipulation-2"
+        ],
+        "wry": [
+          "webview2-com",
+          "webkit2gtk",
+          "tauri-runtime-wry"
+        ],
+        "x11": [
+          "tauri-runtime-wry?/x11"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": "Tauri",
+      "license": "Apache-2.0 OR MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/tauri/2.11.5/dependencies",
+        "version_downloads": "/api/v1/crates/tauri/2.11.5/downloads",
+        "authors": "/api/v1/crates/tauri/2.11.5/authors"
+      },
+      "crate_size": 297874,
+      "published_by": {
+        "id": 95389,
+        "login": "tauri-bot",
+        "name": "tauri",
+        "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+        "url": "https://github.com/tauri-bot",
+        "github_username_matches": true,
+        "created_at": "2020-07-05T19:08:07Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 95389,
+            "login": "tauri-bot",
+            "name": "tauri",
+            "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+            "url": "https://github.com/tauri-bot",
+            "github_username_matches": true,
+            "created_at": "2020-07-05T19:08:07Z"
+          },
+          "time": "2026-07-01T13:56:38.810372Z"
+        }
+      ],
+      "checksum": "667b20e2726d572dea2de7370da16e188eb06008faf9a92fab7cdc46791190b5",
+      "rust_version": "1.77.2",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "Make tiny, secure apps for all desktop platforms with Tauri",
+      "homepage": "https://tauri.app/",
+      "documentation": null,
+      "repository": "https://github.com/tauri-apps/tauri",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "JavaScript": {
+            "code_lines": 520,
+            "comment_lines": 141,
+            "files": 15
+          },
+          "Kotlin": {
+            "code_lines": 1543,
+            "comment_lines": 314,
+            "files": 25
+          },
+          "Prolog": {
+            "code_lines": 36,
+            "comment_lines": 0,
+            "files": 2
+          },
+          "Rust": {
+            "code_lines": 21882,
+            "comment_lines": 520,
+            "files": 65
+          },
+          "Swift": {
+            "code_lines": 637,
+            "comment_lines": 45,
+            "files": 9
+          }
+        },
+        "total_code_lines": 24618,
+        "total_comment_lines": 1020
+      }
+    }
+  ]
+}

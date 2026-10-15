@@ -79,3 +79,11 @@ fn assert_scan_service<T: ScanService>() {}
 fn assert_inventory_service<T: InventoryService>() {}
 
 fn assert_clean_service<T: CleanService>() {}
+
+#[test]
+fn status_sampler_preserves_thread_safe_public_surface() {
+    fn assert_send_sync<T: Send + Sync>() {}
+
+    assert_default::<devsweep_core::status::StatusSampler>();
+    assert_send_sync::<devsweep_core::status::StatusSampler>();
+}

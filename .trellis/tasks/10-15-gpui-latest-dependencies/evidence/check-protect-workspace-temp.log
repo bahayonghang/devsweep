@@ -1,0 +1,17 @@
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-1qnosyhmwroi1\s-hn86p29tid-0e37l3s-working`
+
+warning: `devsweep-core` (lib) generated 1 warning
+   Compiling devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-22pe42c02g2c9\s-hn86qyqqq9-1075ph3-working`
+
+warning: `devsweep-cli` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.67s
+     Running unittests src\lib.rs (dist/c16-target-windows\debug\deps\devsweep-4c14b45229e45664.exe)
+
+running 1 test
+{"command":"clean.protect.add","data":{"action":"add","changed":true,"display_path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp\\.tmpDvIUDY\\keep-cli","error_code":null,"identity_sha256":"fb07b8d09a071df5960d23b7b44b1be3d2d61b36e79d261aebe215081a1c754a","operation_id":"protect-1792046401869-30344","outcome_code":"committed"},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+{"command":"clean.protect.remove","data":{"action":"remove","changed":true,"display_path":"D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp\\.tmpDvIUDY\\keep-cli","error_code":null,"identity_sha256":"fb07b8d09a071df5960d23b7b44b1be3d2d61b36e79d261aebe215081a1c754a","operation_id":"protect-1792046401888-30344","outcome_code":"committed"},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}
+test application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 190 filtered out; finished in 0.04s
+

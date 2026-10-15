@@ -1,0 +1,113 @@
+{
+  "observed_utc": "2026-10-15T06:08:03.452878+00:00",
+  "git": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exit_code": 0,
+    "output": "25437d102ab7355198b3ef2647c2cbced740b3b2"
+  },
+  "branch": {
+    "command": [
+      "git",
+      "branch",
+      "--show-current"
+    ],
+    "exit_code": 0,
+    "output": "codex/gpui-desktop-rewrite"
+  },
+  "tracked_diff": {
+    "command": [
+      "git",
+      "diff",
+      "--stat",
+      "HEAD"
+    ],
+    "exit_code": 0,
+    "output": ""
+  },
+  "rustc": {
+    "command": [
+      "rustc",
+      "-vV"
+    ],
+    "exit_code": 0,
+    "output": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-pc-windows-msvc\nrelease: 1.99.0\nLLVM version: 23.1.1"
+  },
+  "cargo": {
+    "command": [
+      "cargo",
+      "-V"
+    ],
+    "exit_code": 0,
+    "output": "cargo 1.99.0 (5f94df478 2026-08-27)"
+  },
+  "toolchains": {
+    "command": [
+      "rustup",
+      "toolchain",
+      "list"
+    ],
+    "exit_code": 0,
+    "output": "stable-x86_64-pc-windows-msvc (active, default)\nnightly-2026-07-01-x86_64-pc-windows-msvc\n1.78.0-x86_64-pc-windows-msvc\n1.85.0-x86_64-pc-windows-msvc\n1.86-x86_64-pc-windows-msvc\n1.90.0-x86_64-pc-windows-msvc\n1.95-x86_64-pc-windows-msvc\n1.96.1-x86_64-pc-windows-msvc\n1.97.0-x86_64-pc-windows-msvc\n1.98.0-x86_64-pc-windows-msvc\n1.99.0-x86_64-pc-windows-msvc"
+  },
+  "files": [
+    {
+      "path": "Cargo.toml",
+      "sha256": "36aeb7660992c3223fc3683c4ea1cc88e3835bad04fc93c088d50e7edc191acf",
+      "bytes": 319
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "fc4de29a37efb919dd67317bf425fd25e5b27ff64d28cdb8dbab933bbb4a0838",
+      "bytes": 144220
+    },
+    {
+      "path": "crates/devsweep-core/Cargo.toml",
+      "sha256": "c1f04d973b75585e1909fb482e3970e176a34f47c82555e0f2bdf8496d202dc2",
+      "bytes": 1359
+    },
+    {
+      "path": "crates/devsweep-cli/Cargo.toml",
+      "sha256": "761de5517daafb72942781e48c873d9fa943f0b5fee4055daf7111bc7f0daa03",
+      "bytes": 725
+    },
+    {
+      "path": "desktop/src-tauri/Cargo.toml",
+      "sha256": "41144870e365d60cc73d116140ebea25f8a386523373459238579ab66c3ea9dc",
+      "bytes": 1089
+    },
+    {
+      "path": "desktop/package.json",
+      "sha256": "e84810adc0af20a662099fc25d3d46c718f871fc1b76f91aa74f527dc6ce2038",
+      "bytes": 1762
+    },
+    {
+      "path": "desktop/package-lock.json",
+      "sha256": "6799845b1f45877fa64857eb45b48d6246b056149d4098de4c0206cd684e91d8",
+      "bytes": 189757
+    },
+    {
+      "path": "package.json",
+      "sha256": "e53c0d822efc71ab9ddb3e8f43820d3efef78155bb5965fb046558ccb36222b0",
+      "bytes": 293
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "0f7e0be1a0a19898e777cb191e046aee90306e3d68c36797ba8d661c820944ff",
+      "bytes": 89124
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "07b80ea343822064d176c932fcc08f35c7e37d025a524c16b167eed52d88ce98",
+      "bytes": 5640
+    },
+    {
+      "path": "justfile",
+      "sha256": "473259e4f6b4124509c3148aa51b571909f9b5b3739b4b128b5ef9e504c44a75",
+      "bytes": 9624
+    }
+  ]
+}

@@ -320,6 +320,54 @@ fn status_wire_fixtures_are_closed_typed_and_cli_tauri_exact() {
 }
 
 #[test]
+fn status_outcome_excludes_optional_probes_but_requires_supported_groups() {
+    let mut envelope: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/cli/status-snapshot.json")).unwrap();
+    for group in ["memory", "processes"] {
+        envelope["data"][group]["state"] = "available".into();
+        envelope["data"][group]
+            .as_object_mut()
+            .unwrap()
+            .remove("reason_codes");
+    }
+    envelope["data"]["processes"]["value"]["enumerated_count"] = 1.into();
+    envelope["data"]["processes"]["value"]["truncated_by_limit"] = false.into();
+    envelope["data"]["processes"]["value"]["budget_exhausted"] = false.into();
+    envelope["data"]["gpu"] = serde_json::json!({
+        "state": "permission_denied",
+        "sampled_at_unix_ms": null,
+        "reason_code": "access_denied"
+    });
+    envelope["data"]["unsupported_capabilities"]
+        .as_array_mut()
+        .unwrap()
+        .insert(
+            0,
+            serde_json::json!({
+                "code": "gpu_utilization",
+                "state": "unsupported",
+                "reason_code": "not_supported_v1"
+            }),
+        );
+    envelope["warnings"] = serde_json::json!([]);
+    envelope["outcome"] = "success".into();
+    status_v1_contract::decode_snapshot_envelope(&envelope)
+        .expect("optional GPU and thermal failures do not degrade success");
+    envelope["outcome"] = "partial".into();
+    assert!(status_v1_contract::decode_snapshot_envelope(&envelope).is_err());
+
+    envelope["data"]["cpu"] = serde_json::json!({
+        "state": "unavailable",
+        "sampled_at_unix_ms": null,
+        "reason_code": "api_unavailable"
+    });
+    status_v1_contract::decode_snapshot_envelope(&envelope)
+        .expect("supported CPU failure requires partial");
+    envelope["outcome"] = "success".into();
+    assert!(status_v1_contract::decode_snapshot_envelope(&envelope).is_err());
+}
+
+#[test]
 fn reference_and_migration_documents_cover_the_breaking_surface() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let english = fs::read_to_string(root.join("docs/reference/cli.md")).unwrap();
@@ -750,8 +798,6 @@ mod status_v1_contract {
                 || self.volumes.is_degraded()
                 || self.network.is_degraded()
                 || self.power.is_degraded()
-                || self.gpu.is_degraded()
-                || self.thermal.is_degraded()
                 || self.processes.is_degraded()
         }
 

@@ -1,0 +1,338 @@
+{
+  "source": "https://crates.io/api/v1/crates/tauri-build",
+  "crate": {
+    "id": "tauri-build",
+    "name": "tauri-build",
+    "updated_at": "2026-10-14T21:13:30.805968Z",
+    "versions": [
+      3498100,
+      3496720,
+      3459324,
+      3374762,
+      3368445,
+      3333959,
+      3332331,
+      3288512,
+      3224877,
+      2682708,
+      2593618,
+      2408323,
+      2356569,
+      2330666,
+      2085521,
+      1998387,
+      1991778,
+      1851011,
+      1823360,
+      1787169,
+      1783477,
+      1710184,
+      1690920,
+      1650951,
+      1614513,
+      1525229,
+      1505547,
+      1490166,
+      1461354,
+      1402883,
+      1402497,
+      1393048,
+      1334014,
+      1309785,
+      1289088,
+      1288004,
+      1283552,
+      1272392,
+      1270838,
+      1270572,
+      1266099,
+      1260830,
+      1259777,
+      1251622,
+      1246472,
+      1244928,
+      1242783,
+      1242056,
+      1238734,
+      1228516,
+      1226923,
+      1221933,
+      1201553,
+      1190418,
+      1190395,
+      1158420,
+      1152954,
+      1140048,
+      1136470,
+      1136419,
+      1122651,
+      1115704,
+      1101501,
+      1086573,
+      1079024,
+      1075946,
+      1074955,
+      1067823,
+      1065147,
+      1060776,
+      1059247,
+      1056855,
+      1039257,
+      1038190,
+      1016107,
+      991752,
+      990719,
+      961736,
+      938120,
+      929661,
+      919706,
+      911521,
+      909702,
+      871720,
+      871558,
+      825181,
+      822719,
+      802651,
+      791344,
+      772607,
+      767125,
+      754426,
+      717991,
+      680016,
+      670073,
+      659530,
+      622937,
+      622226,
+      584609,
+      579812,
+      576342,
+      575364,
+      567735,
+      567160,
+      566853,
+      566298,
+      556971,
+      555487,
+      555019,
+      551410,
+      545340,
+      539408,
+      539118,
+      523636,
+      511833,
+      502160,
+      500047,
+      499040,
+      498232,
+      413977,
+      401909,
+      394894,
+      393382,
+      377408,
+      371095,
+      366365,
+      366341
+    ],
+    "keywords": [],
+    "categories": [
+      "gui",
+      "web-programming"
+    ],
+    "badges": [],
+    "created_at": "2021-04-14T19:44:18.754055Z",
+    "downloads": 36090048,
+    "recent_downloads": 14265976,
+    "default_version": "2.7.3",
+    "num_versions": 127,
+    "yanked": false,
+    "max_version": "3.0.0-alpha.4",
+    "newest_version": "3.0.0-alpha.4",
+    "max_stable_version": "2.7.3",
+    "description": "build time code to pair with https://crates.io/crates/tauri",
+    "homepage": "https://tauri.app/",
+    "documentation": null,
+    "repository": "https://github.com/tauri-apps/tauri",
+    "links": {
+      "version_downloads": "/api/v1/crates/tauri-build/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/tauri-build/owners",
+      "owner_team": "/api/v1/crates/tauri-build/owner_team",
+      "owner_user": "/api/v1/crates/tauri-build/owner_user",
+      "reverse_dependencies": "/api/v1/crates/tauri-build/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 3496720,
+      "crate": "tauri-build",
+      "num": "2.7.3",
+      "dl_path": "/api/v1/crates/tauri-build/2.7.3/download",
+      "readme_path": "/api/v1/crates/tauri-build/2.7.3/readme",
+      "updated_at": "2026-10-14T18:51:08.630528Z",
+      "created_at": "2026-10-14T18:51:08.630528Z",
+      "downloads": 7073,
+      "features": {
+        "codegen": [
+          "tauri-codegen",
+          "quote"
+        ],
+        "config-json": [],
+        "config-json5": [
+          "tauri-utils/config-json5"
+        ],
+        "config-toml": [
+          "tauri-utils/config-toml"
+        ],
+        "default": [
+          "config-json"
+        ],
+        "isolation": [
+          "tauri-codegen/isolation",
+          "tauri-utils/isolation"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "Apache-2.0 OR MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/tauri-build/2.7.3/dependencies",
+        "version_downloads": "/api/v1/crates/tauri-build/2.7.3/downloads",
+        "authors": "/api/v1/crates/tauri-build/2.7.3/authors"
+      },
+      "crate_size": 44852,
+      "published_by": {
+        "id": 95389,
+        "login": "tauri-bot",
+        "name": "tauri",
+        "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+        "url": "https://github.com/tauri-bot",
+        "github_username_matches": true,
+        "created_at": "2020-07-05T19:08:07Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 95389,
+            "login": "tauri-bot",
+            "name": "tauri",
+            "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+            "url": "https://github.com/tauri-bot",
+            "github_username_matches": true,
+            "created_at": "2020-07-05T19:08:07Z"
+          },
+          "time": "2026-10-14T18:51:08.630528Z"
+        }
+      ],
+      "checksum": "641dd5fd297c99ab92717b0428cca5b9c6f960b2ac96ca131b3eebc9d70b8ddc",
+      "rust_version": "1.90",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2024",
+      "description": "build time code to pair with https://crates.io/crates/tauri",
+      "homepage": "https://tauri.app/",
+      "documentation": null,
+      "repository": "https://github.com/tauri-apps/tauri",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 1753,
+            "comment_lines": 83,
+            "files": 6
+          }
+        },
+        "total_code_lines": 1753,
+        "total_comment_lines": 83
+      }
+    },
+    {
+      "id": 2593618,
+      "crate": "tauri-build",
+      "num": "2.6.3",
+      "dl_path": "/api/v1/crates/tauri-build/2.6.3/download",
+      "readme_path": "/api/v1/crates/tauri-build/2.6.3/readme",
+      "updated_at": "2026-06-17T13:45:31.588957Z",
+      "created_at": "2026-06-17T13:45:31.588957Z",
+      "downloads": 9335905,
+      "features": {
+        "codegen": [
+          "tauri-codegen",
+          "quote"
+        ],
+        "config-json": [],
+        "config-json5": [
+          "tauri-utils/config-json5"
+        ],
+        "config-toml": [
+          "tauri-utils/config-toml"
+        ],
+        "default": [
+          "config-json"
+        ],
+        "isolation": [
+          "tauri-codegen/isolation",
+          "tauri-utils/isolation"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "Apache-2.0 OR MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/tauri-build/2.6.3/dependencies",
+        "version_downloads": "/api/v1/crates/tauri-build/2.6.3/downloads",
+        "authors": "/api/v1/crates/tauri-build/2.6.3/authors"
+      },
+      "crate_size": 39423,
+      "published_by": {
+        "id": 95389,
+        "login": "tauri-bot",
+        "name": "tauri",
+        "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+        "url": "https://github.com/tauri-bot",
+        "github_username_matches": true,
+        "created_at": "2020-07-05T19:08:07Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 95389,
+            "login": "tauri-bot",
+            "name": "tauri",
+            "avatar": "https://avatars.githubusercontent.com/u/67875262?v=4",
+            "url": "https://github.com/tauri-bot",
+            "github_username_matches": true,
+            "created_at": "2020-07-05T19:08:07Z"
+          },
+          "time": "2026-06-17T13:45:31.588957Z"
+        }
+      ],
+      "checksum": "bc9ce40b16101cb6ea63d3e221567affd1c3a9205f95d7bc574941a10636b632",
+      "rust_version": "1.77.2",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "build time code to pair with https://crates.io/crates/tauri",
+      "homepage": "https://tauri.app/",
+      "documentation": null,
+      "repository": "https://github.com/tauri-apps/tauri",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 1384,
+            "comment_lines": 57,
+            "files": 7
+          }
+        },
+        "total_code_lines": 1384,
+        "total_comment_lines": 57
+      }
+    }
+  ]
+}

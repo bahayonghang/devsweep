@@ -8,6 +8,9 @@
 
 use std::collections::BTreeMap;
 
+#[cfg(windows)]
+use windows_sys::Win32::System::Performance::{PDH_HCOUNTER, PDH_HQUERY};
+
 use super::{AvailabilityV1, GpuAdapterV1, GpuV1, ThermalV1, ThermalZoneV1};
 
 /// English counter path for per-engine GPU utilization.
@@ -139,11 +142,11 @@ fn kelvin_to_tenths_celsius(kelvin: f64) -> i32 {
 #[derive(Debug)]
 pub(crate) struct PdhProbe {
     #[cfg(windows)]
-    query: isize,
+    query: PDH_HQUERY,
     #[cfg(windows)]
-    gpu: Result<isize, &'static str>,
+    gpu: Result<PDH_HCOUNTER, &'static str>,
     #[cfg(windows)]
-    thermal: Result<isize, &'static str>,
+    thermal: Result<PDH_HCOUNTER, &'static str>,
 }
 
 /// GPU and thermal groups from one collection.
@@ -192,12 +195,12 @@ impl PdhProbe {
     fn open() -> Self {
         use windows_sys::Win32::System::Performance::PdhOpenQueryW;
 
-        let mut query = 0_isize;
+        let mut query = std::ptr::null_mut();
         // SAFETY: a null data source selects live data; `query` is writable.
         let status = unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) };
-        if status != 0 || query == 0 {
+        if status != 0 || query.is_null() {
             return Self {
-                query: 0,
+                query: std::ptr::null_mut(),
                 gpu: Err("pdh_unavailable"),
                 thermal: Err("pdh_unavailable"),
             };
@@ -218,7 +221,7 @@ impl PdhProbe {
     fn collect(&self) -> Result<(), &'static str> {
         use windows_sys::Win32::System::Performance::PdhCollectQueryData;
 
-        if self.query == 0 {
+        if self.query.is_null() {
             return Err("pdh_unavailable");
         }
         // SAFETY: `query` is an open PDH query owned by this probe.
@@ -236,7 +239,7 @@ impl Drop for PdhProbe {
     fn drop(&mut self) {
         use windows_sys::Win32::System::Performance::PdhCloseQuery;
 
-        if self.query != 0 {
+        if !self.query.is_null() {
             // SAFETY: `query` is open and closed exactly once here.
             unsafe { PdhCloseQuery(self.query) };
         }
@@ -244,14 +247,14 @@ impl Drop for PdhProbe {
 }
 
 #[cfg(windows)]
-fn add_counter(query: isize, path: &str) -> Result<isize, &'static str> {
+fn add_counter(query: PDH_HQUERY, path: &str) -> Result<PDH_HCOUNTER, &'static str> {
     use windows_sys::Win32::System::Performance::PdhAddEnglishCounterW;
 
     let wide = path.encode_utf16().chain([0]).collect::<Vec<u16>>();
-    let mut counter = 0_isize;
+    let mut counter = std::ptr::null_mut();
     // SAFETY: `wide` is NUL-terminated and `counter` is writable.
     let status = unsafe { PdhAddEnglishCounterW(query, wide.as_ptr(), 0, &mut counter) };
-    if status == 0 && counter != 0 {
+    if status == 0 && !counter.is_null() {
         Ok(counter)
     } else {
         Err("counter_missing")
@@ -259,7 +262,7 @@ fn add_counter(query: isize, path: &str) -> Result<isize, &'static str> {
 }
 
 #[cfg(windows)]
-fn read_counter(counter: isize) -> CounterRead {
+fn read_counter(counter: PDH_HCOUNTER) -> CounterRead {
     use windows_sys::Win32::System::Performance::{
         PDH_CSTATUS_NEW_DATA, PDH_CSTATUS_NO_INSTANCE, PDH_CSTATUS_VALID_DATA,
         PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_DOUBLE, PDH_MORE_DATA, PDH_NO_DATA,

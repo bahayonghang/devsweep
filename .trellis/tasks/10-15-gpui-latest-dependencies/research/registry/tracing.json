@@ -1,0 +1,195 @@
+{
+  "source": "https://crates.io/api/v1/crates/tracing",
+  "crate": {
+    "id": "tracing",
+    "name": "tracing",
+    "updated_at": "2025-12-18T14:26:12.360139Z",
+    "versions": [
+      1888842,
+      1847782,
+      1844151,
+      1355043,
+      929112,
+      924824,
+      785037,
+      635871,
+      593148,
+      563231,
+      532500,
+      529773,
+      513510,
+      501859,
+      494586,
+      434217,
+      427037,
+      425118,
+      373204,
+      343715,
+      341065,
+      335532,
+      308211,
+      288293,
+      276045,
+      271470,
+      268284,
+      264984,
+      260239,
+      248384,
+      241517,
+      215920,
+      204165,
+      197886,
+      184623,
+      176094,
+      173779,
+      172953,
+      170779,
+      168509,
+      168264,
+      162417,
+      161420,
+      160143,
+      159080,
+      72492
+    ],
+    "keywords": [
+      "async",
+      "logging",
+      "metrics",
+      "tracing"
+    ],
+    "categories": [
+      "asynchronous",
+      "development-tools::debugging",
+      "development-tools::profiling",
+      "no-std"
+    ],
+    "badges": [],
+    "created_at": "2017-11-27T18:43:02.901436Z",
+    "downloads": 933225560,
+    "recent_downloads": 220663593,
+    "default_version": "0.1.44",
+    "num_versions": 46,
+    "yanked": false,
+    "max_version": "0.1.44",
+    "newest_version": "0.1.44",
+    "max_stable_version": "0.1.44",
+    "description": "Application-level tracing for Rust.\n",
+    "homepage": "https://tokio.rs",
+    "documentation": null,
+    "repository": "https://github.com/tokio-rs/tracing",
+    "links": {
+      "version_downloads": "/api/v1/crates/tracing/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/tracing/owners",
+      "owner_team": "/api/v1/crates/tracing/owner_team",
+      "owner_user": "/api/v1/crates/tracing/owner_user",
+      "reverse_dependencies": "/api/v1/crates/tracing/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 1888842,
+      "crate": "tracing",
+      "num": "0.1.44",
+      "dl_path": "/api/v1/crates/tracing/0.1.44/download",
+      "readme_path": "/api/v1/crates/tracing/0.1.44/readme",
+      "updated_at": "2025-12-18T14:26:12.360139Z",
+      "created_at": "2025-12-18T14:26:12.360139Z",
+      "downloads": 359218903,
+      "features": {
+        "async-await": [],
+        "attributes": [
+          "tracing-attributes"
+        ],
+        "default": [
+          "std",
+          "attributes"
+        ],
+        "log-always": [
+          "log"
+        ],
+        "max_level_debug": [],
+        "max_level_error": [],
+        "max_level_info": [],
+        "max_level_off": [],
+        "max_level_trace": [],
+        "max_level_warn": [],
+        "release_max_level_debug": [],
+        "release_max_level_error": [],
+        "release_max_level_info": [],
+        "release_max_level_off": [],
+        "release_max_level_trace": [],
+        "release_max_level_warn": [],
+        "std": [
+          "tracing-core/std"
+        ],
+        "valuable": [
+          "tracing-core/valuable"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/tracing/0.1.44/dependencies",
+        "version_downloads": "/api/v1/crates/tracing/0.1.44/downloads",
+        "authors": "/api/v1/crates/tracing/0.1.44/authors"
+      },
+      "crate_size": 463135,
+      "published_by": {
+        "id": 172786,
+        "login": "hds",
+        "name": "Hayden Stainsby",
+        "avatar": "https://avatars.githubusercontent.com/u/89589?v=4",
+        "url": "https://github.com/hds",
+        "github_username_matches": true,
+        "created_at": "2009-05-28T15:55:02Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 172786,
+            "login": "hds",
+            "name": "Hayden Stainsby",
+            "avatar": "https://avatars.githubusercontent.com/u/89589?v=4",
+            "url": "https://github.com/hds",
+            "github_username_matches": true,
+            "created_at": "2009-05-28T15:55:02Z"
+          },
+          "time": "2025-12-18T14:26:12.360139Z"
+        }
+      ],
+      "checksum": "63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100",
+      "rust_version": "1.65.0",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2018",
+      "description": "Application-level tracing for Rust.\n",
+      "homepage": "https://tokio.rs",
+      "documentation": null,
+      "repository": "https://github.com/tokio-rs/tracing",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 3572,
+            "comment_lines": 147,
+            "files": 8
+          },
+          "Shell": {
+            "code_lines": 14,
+            "comment_lines": 1,
+            "files": 1
+          }
+        },
+        "total_code_lines": 3586,
+        "total_comment_lines": 148
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "id": "gpui-clean-workbench",
+  "name": "gpui-clean-workbench",
+  "title": "C11 Native cleanup workbench",
+  "description": "Build the GPUI review-and-clean workflow over accepted CLI/core capabilities.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-15",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-15-gpui-desktop-rewrite",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "depends_on": [
+      "C03",
+      "C10",
+      "C15"
+    ],
+    "task_code": "C11",
+    "blocking_product_questions": [],
+    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md"
+  }
+}

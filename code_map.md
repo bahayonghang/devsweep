@@ -25,6 +25,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/lib.rs` - public reusable core module boundary.
 - `crates/devsweep-core/src/cargo_metadata.rs` - neutral Cargo scope probes, result classification,
   JSON parsing, and diagnostics shared by scanning and live authorization.
+- `crates/devsweep-core/src/digest_encoding.rs` - private lowercase hex encoding;
+  domain modules retain ownership of digest preimages and wire prefixes.
 - `crates/devsweep-core/src/services.rs` - frontend-neutral scan, inventory,
   and cleanup service traits plus production adapters.
 - `crates/devsweep-core/src/model/mod.rs` - public domain-model interface.

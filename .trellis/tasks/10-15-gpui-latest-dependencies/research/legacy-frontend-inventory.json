@@ -1,0 +1,353 @@
+[
+  {
+    "manifest": "desktop/package.json",
+    "kind": "dependencies",
+    "name": "@base-ui/react",
+    "requirement": "1.8.0",
+    "selected": "1.8.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "1.9.0",
+    "license": "MIT",
+    "engines": {
+      "node": ">=14.0.0"
+    },
+    "source": "https://registry.npmjs.org/%40base-ui%2Freact/latest",
+    "checked_utc": "2026-10-15T06:11:02.305016+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "dependencies",
+    "name": "@tauri-apps/api",
+    "requirement": "^2.8.0",
+    "selected": "2.11.1",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "2.12.4",
+    "license": "Apache-2.0 OR MIT",
+    "engines": null,
+    "source": "https://registry.npmjs.org/%40tauri-apps%2Fapi/latest",
+    "checked_utc": "2026-10-15T06:11:01.931068+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "dependencies",
+    "name": "react",
+    "requirement": "^19.1.1",
+    "selected": "19.2.8",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "19.3.1",
+    "license": "MIT",
+    "engines": {
+      "node": ">=0.10.0"
+    },
+    "source": "https://registry.npmjs.org/react/latest",
+    "checked_utc": "2026-10-15T06:11:02.603358+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "dependencies",
+    "name": "react-dom",
+    "requirement": "^19.1.1",
+    "selected": "19.2.8",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "19.3.1",
+    "license": "MIT",
+    "engines": null,
+    "source": "https://registry.npmjs.org/react-dom/latest",
+    "checked_utc": "2026-10-15T06:11:02.612306+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@tauri-apps/cli",
+    "requirement": "2.11.4",
+    "selected": "2.11.4",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "2.12.3",
+    "license": "Apache-2.0 OR MIT",
+    "engines": {
+      "node": ">= 10"
+    },
+    "source": "https://registry.npmjs.org/%40tauri-apps%2Fcli/latest",
+    "checked_utc": "2026-10-15T06:11:02.786155+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@testing-library/jest-dom",
+    "requirement": "^6.6.3",
+    "selected": "6.9.1",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "7.0.1",
+    "license": "MIT",
+    "engines": {
+      "npm": ">=6",
+      "node": ">=22",
+      "yarn": ">=1"
+    },
+    "source": "https://registry.npmjs.org/%40testing-library%2Fjest-dom/latest",
+    "checked_utc": "2026-10-15T06:11:03.006078+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@testing-library/react",
+    "requirement": "^16.3.0",
+    "selected": "16.3.2",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "16.3.3",
+    "license": "MIT",
+    "engines": {
+      "node": ">=18"
+    },
+    "source": "https://registry.npmjs.org/%40testing-library%2Freact/latest",
+    "checked_utc": "2026-10-15T06:11:03.300825+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@testing-library/user-event",
+    "requirement": "^14.6.1",
+    "selected": "14.6.1",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "14.6.8",
+    "license": "MIT",
+    "engines": {
+      "npm": ">=6",
+      "node": ">=12"
+    },
+    "source": "https://registry.npmjs.org/%40testing-library%2Fuser-event/latest",
+    "checked_utc": "2026-10-15T06:11:03.708782+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@types/node",
+    "requirement": "22.19.11",
+    "selected": "22.19.11",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "26.6.5",
+    "license": "MIT",
+    "engines": null,
+    "source": "https://registry.npmjs.org/%40types%2Fnode/latest",
+    "checked_utc": "2026-10-15T06:11:03.427103+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@types/react",
+    "requirement": "^19.1.10",
+    "selected": "19.2.18",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "19.3.0",
+    "license": "MIT",
+    "engines": null,
+    "source": "https://registry.npmjs.org/%40types%2Freact/latest",
+    "checked_utc": "2026-10-15T06:11:03.702175+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@types/react-dom",
+    "requirement": "^19.1.7",
+    "selected": "19.2.4",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "19.3.0",
+    "license": "MIT",
+    "engines": null,
+    "source": "https://registry.npmjs.org/%40types%2Freact-dom/latest",
+    "checked_utc": "2026-10-15T06:11:03.934801+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@typescript-eslint/eslint-plugin",
+    "requirement": "^8.46.1",
+    "selected": "8.65.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "8.71.2",
+    "license": "MIT",
+    "engines": {
+      "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+    },
+    "source": "https://registry.npmjs.org/%40typescript-eslint%2Feslint-plugin/latest",
+    "checked_utc": "2026-10-15T06:11:04.116740+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@typescript-eslint/parser",
+    "requirement": "^8.46.1",
+    "selected": "8.65.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "8.71.2",
+    "license": "MIT",
+    "engines": {
+      "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+    },
+    "source": "https://registry.npmjs.org/%40typescript-eslint%2Fparser/latest",
+    "checked_utc": "2026-10-15T06:11:04.377749+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "@vitejs/plugin-react",
+    "requirement": "^5.0.4",
+    "selected": "5.2.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "6.1.2",
+    "license": "MIT",
+    "engines": {
+      "node": "^20.19.0 || >=22.12.0"
+    },
+    "source": "https://registry.npmjs.org/%40vitejs%2Fplugin-react/latest",
+    "checked_utc": "2026-10-15T06:11:04.566986+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "eslint",
+    "requirement": "^9.37.0",
+    "selected": "9.39.5",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "10.12.0",
+    "license": "MIT",
+    "engines": {
+      "node": "^20.19.0 || ^22.13.0 || >=24"
+    },
+    "source": "https://registry.npmjs.org/eslint/latest",
+    "checked_utc": "2026-10-15T06:11:04.538915+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "eslint-plugin-react-hooks",
+    "requirement": "^7.0.0",
+    "selected": "7.1.1",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "7.1.1",
+    "license": "MIT",
+    "engines": {
+      "node": ">=18"
+    },
+    "source": "https://registry.npmjs.org/eslint-plugin-react-hooks/latest",
+    "checked_utc": "2026-10-15T06:11:05.140672+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "globals",
+    "requirement": "^16.4.0",
+    "selected": "16.5.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "17.13.0",
+    "license": "MIT",
+    "engines": {
+      "node": ">=18"
+    },
+    "source": "https://registry.npmjs.org/globals/latest",
+    "checked_utc": "2026-10-15T06:11:04.964002+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "jsdom",
+    "requirement": "^27.0.0",
+    "selected": "27.4.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "30.1.2",
+    "license": "MIT",
+    "engines": {
+      "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+    },
+    "source": "https://registry.npmjs.org/jsdom/latest",
+    "checked_utc": "2026-10-15T06:11:05.202104+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "quicktype-core",
+    "requirement": "23.2.6",
+    "selected": "23.2.6",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "26.0.0",
+    "license": "Apache-2.0",
+    "engines": {
+      "node": ">=20.0.0"
+    },
+    "source": "https://registry.npmjs.org/quicktype-core/latest",
+    "checked_utc": "2026-10-15T06:11:05.218866+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "typescript",
+    "requirement": "~5.9.3",
+    "selected": "5.9.3",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "7.0.2",
+    "license": "Apache-2.0",
+    "engines": {
+      "node": ">=16.20.0"
+    },
+    "source": "https://registry.npmjs.org/typescript/latest",
+    "checked_utc": "2026-10-15T06:11:05.537740+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "typescript-eslint",
+    "requirement": "^8.46.1",
+    "selected": "8.65.0",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "8.71.2",
+    "license": "MIT",
+    "engines": {
+      "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+    },
+    "source": "https://registry.npmjs.org/typescript-eslint/latest",
+    "checked_utc": "2026-10-15T06:11:05.692419+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "vite",
+    "requirement": "^7.1.7",
+    "selected": "7.3.6",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "8.3.4",
+    "license": "MIT",
+    "engines": {
+      "node": "^20.19.0 || >=22.12.0"
+    },
+    "source": "https://registry.npmjs.org/vite/latest",
+    "checked_utc": "2026-10-15T06:11:05.796245+00:00"
+  },
+  {
+    "manifest": "desktop/package.json",
+    "kind": "devDependencies",
+    "name": "vitest",
+    "requirement": "^3.2.4",
+    "selected": "3.2.7",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "5.0.4",
+    "license": "MIT",
+    "engines": {
+      "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+    },
+    "source": "https://registry.npmjs.org/vitest/latest",
+    "checked_utc": "2026-10-15T06:11:05.767881+00:00"
+  },
+  {
+    "manifest": "package.json",
+    "kind": "devDependencies",
+    "name": "vitepress",
+    "requirement": "1.6.4",
+    "selected": "1.6.4",
+    "reason": "Retained legacy baseline only; no frontend modernization in C16.",
+    "latest": "1.6.4",
+    "license": "MIT",
+    "engines": null,
+    "source": "https://registry.npmjs.org/vitepress/latest",
+    "checked_utc": "2026-10-15T06:11:06.206111+00:00"
+  }
+]

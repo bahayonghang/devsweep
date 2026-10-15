@@ -652,11 +652,14 @@ ProcessRequest {
 
 #### 3. Contracts
 
-- One PDH query per `StatusSampler` holds the English wildcard counters
+- Each snapshot call owns a local sampler cache; the live worker retains its
+  own cache across ticks. The public `StatusSampler` stays stateless,
+  `Default + Send + Sync`. Each cache owns one PDH query through `Rc`, without
+  moving native handles between threads. The query holds the English wildcard counters
   `\GPU Engine(*)\Utilization Percentage` and
   `\Thermal Zone Information(*)\Temperature`, added with
   `PdhAddEnglishCounterW`. The query is primed once and collected once per
-  sample; `Drop` closes it on every path. Only the `windows-sys` feature
+  sample; `Drop` closes it when its owning collection/worker ends. Only the `windows-sys` feature
   `Win32_System_Performance` is added; no new crate.
 - GPU: group instances by the `luid_..._phys_<n>` adapter key, sum per engine
   type, keep the busiest type per adapter, and clamp to 10000 basis points.
@@ -1070,6 +1073,8 @@ GlobalCacheRule {
   - `cargo check --workspace --locked --all-targets`
   - `cargo test --workspace --locked --all-targets`
   - `cargo clippy --workspace --locked --all-targets -- -D warnings`
+  - On Ubuntu/macOS and in both MSRV jobs, replace `--workspace` with
+    `-p devsweep-core -p devsweep-cli`.
 
 #### 3. Contracts
 
@@ -1079,6 +1084,13 @@ GlobalCacheRule {
   starts a full matrix on every push to `dev`.
 - CI must run the same four validation classes as `just ci`: format, check,
   tests, and clippy.
+- The Windows stable job validates the workspace, including the retained Tauri
+  shell. Ubuntu/macOS stable jobs explicitly select core/CLI. MSRV jobs read
+  `workspace.package.rust-version` and check/test core/CLI on Windows and Ubuntu;
+  adding a desktop package must not silently broaden the CLI compiler contract.
+- The development compiler and declared minimum compiler are separate facts.
+  Record the actual `rustc` and Cargo versions for local evidence. A successful
+  current-toolchain run does not prove the MSRV or an unexecuted platform job.
 - Process-runner tests in `devsweep-core` use the CLI-owned `process_fixture`
   binary. The shared test helper must build a missing fixture into the target
   root derived from the current test executable, including when Cargo uses a
@@ -1087,6 +1099,10 @@ GlobalCacheRule {
   exported `CARGO_TARGET_DIR`. The project scanner intentionally reads that
   environment variable as Cargo cleanup authority; exporting it into a test
   process changes the target discovered for Rust fixtures.
+- Keep temporary standalone Cargo fixture projects outside this repository's
+  workspace. Redirecting `TMP`/`TEMP` into `dist/` changes Cargo parent-workspace
+  discovery for fixtures without their own `[workspace]`; an isolated build
+  target directory does not make that temporary-project placement valid.
 - `just release-archive` builds the release binary and writes a Windows archive
   to `dist/devsweep-x86_64-pc-windows-msvc.zip`.
 - `dist/` is a generated artifact directory and must stay ignored by git.
@@ -1096,12 +1112,18 @@ GlobalCacheRule {
 #### 4. Validation & Error Matrix
 
 - Format/check/test/clippy failure -> CI fails and local `just ci` fails.
+- Missing compiler, test executable, or runner -> unavailable/incomplete gate,
+  never a successful run. Retain the failing receipt if isolated verification
+  succeeds later.
 - Clean or custom Cargo target without `process_fixture` -> the core test helper
   builds that exact target before running process assertions; it must not rely
   on a stale binary under the default `target/` directory.
 - Exported `CARGO_TARGET_DIR` during scanner tests -> Rust fixtures correctly
   discover the override instead of their local `target/`; a harness that expects
   the local path is invalid, not evidence of a scanner regression.
+- Standalone Cargo fixture under this workspace -> Cargo can reject it as a
+  package that believes it belongs to a workspace. Restore a valid temporary
+  root outside the repository; do not weaken provider/fallback assertions.
 - Release build failure -> `just release-archive` fails before creating or
   replacing the archive.
 - Missing `target/release/devsweep.exe` after build -> archive command fails.
@@ -1111,6 +1133,8 @@ GlobalCacheRule {
 
 - Good: CI includes Windows and a non-Windows runner for the Rust validation
   matrix.
+- Good: core/CLI MSRV jobs explicitly select their packages while desktop
+  compiler and native validation remain separately scoped.
 - Good: hosted CI starts from `pull_request` or `workflow_dispatch`, not from
   every push to `dev`.
 - Good: a clean `cargo test --target-dir <isolated> --workspace --locked
@@ -1133,11 +1157,16 @@ GlobalCacheRule {
 #### 6. Tests Required
 
 - Run `just ci` after workflow or validation command changes.
+- Verify the explicit core/CLI package selectors and record actual compiler
+  versions; do not infer platform or MSRV success from dependency resolution.
 - Run the workspace tests once with a clean/custom target directory so cached
   `process_fixture` output cannot mask a broken cross-crate test dependency.
 - When using a custom target for scanner tests, pass Cargo `--target-dir` and
   confirm `CARGO_TARGET_DIR` is not inherited by the test process unless the
   test explicitly covers Cargo's override behavior.
+- If sandbox temporary-file operations fail, retain the exact OS error and
+  validate with an accessible isolated temporary root outside the workspace;
+  do not assume any writable in-repository directory is equivalent.
 - Run the process-runner tests on Windows and one Unix host; the Unix run must
   exercise the process-group tree-termination test dynamically.
 - Run `just release-archive` after release recipe changes on Windows.

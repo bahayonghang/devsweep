@@ -1,0 +1,770 @@
+{
+  "dependencies": [
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "anyhow",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.0.104"
+      ],
+      "selected": "1.0.104",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.68",
+      "baseline_direct": "1.0.104",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "rayon",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.12.0"
+      ],
+      "selected": "1.12.0",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.80",
+      "baseline_direct": "1.12.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "serde",
+      "requirement": {
+        "version": "1",
+        "features": [
+          "derive"
+        ]
+      },
+      "baseline_locked": [
+        "1.0.229"
+      ],
+      "selected": "1.0.229",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.56",
+      "baseline_direct": "1.0.229",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "serde_json",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.0.151"
+      ],
+      "selected": "1.0.154",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.71",
+      "baseline_direct": "1.0.151",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "sha2",
+      "requirement": {
+        "version": "0.10"
+      },
+      "baseline_locked": [
+        "0.10.9"
+      ],
+      "selected": "0.11.1",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.88",
+      "baseline_direct": "0.10.9",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "trash",
+      "requirement": {
+        "version": "5"
+      },
+      "baseline_locked": [
+        "5.2.6"
+      ],
+      "selected": "5.2.9",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.85.0",
+      "baseline_direct": "5.2.6",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "tracing",
+      "requirement": {
+        "version": "0.1"
+      },
+      "baseline_locked": [
+        "0.1.44"
+      ],
+      "selected": "0.1.44",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.65.0",
+      "baseline_direct": "0.1.44",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "",
+      "kind": "dev-dependencies",
+      "name": "tempfile",
+      "requirement": {
+        "version": "3"
+      },
+      "baseline_locked": [
+        "3.27.0"
+      ],
+      "selected": "3.27.0",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.63",
+      "baseline_direct": "3.27.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "cfg(windows)",
+      "kind": "dependencies",
+      "name": "windows",
+      "requirement": {
+        "version": "=0.56.0",
+        "features": [
+          "ApplicationModel",
+          "Foundation",
+          "Foundation_Collections",
+          "Management_Deployment",
+          "Win32_System_WinRT"
+        ]
+      },
+      "baseline_locked": [
+        "0.56.0",
+        "0.61.3"
+      ],
+      "selected": "0.62.2",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.82",
+      "baseline_direct": "0.56.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "cfg(windows)",
+      "kind": "dependencies",
+      "name": "windows-sys",
+      "requirement": {
+        "version": "0.59",
+        "features": [
+          "Wdk_System_SystemServices",
+          "Win32_Foundation",
+          "Win32_NetworkManagement_IpHelper",
+          "Win32_NetworkManagement_Ndis",
+          "Win32_Security",
+          "Win32_Storage_FileSystem",
+          "Win32_System_Diagnostics_ToolHelp",
+          "Win32_System_JobObjects",
+          "Win32_System_Performance",
+          "Win32_System_Power",
+          "Win32_System_ProcessStatus",
+          "Win32_System_SystemInformation",
+          "Win32_System_Threading",
+          "Win32_UI_Shell",
+          "Win32_UI_WindowsAndMessaging"
+        ]
+      },
+      "baseline_locked": [
+        "0.45.0",
+        "0.59.0",
+        "0.61.2"
+      ],
+      "selected": "0.61.2",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.71",
+      "baseline_direct": "0.59.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "cfg(unix)",
+      "kind": "dependencies",
+      "name": "libc",
+      "requirement": {
+        "version": "0.2"
+      },
+      "baseline_locked": [
+        "0.2.189"
+      ],
+      "selected": "0.2.190",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.65",
+      "baseline_direct": "0.2.189",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "anyhow",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.0.104"
+      ],
+      "selected": "1.0.104",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.68",
+      "baseline_direct": "1.0.104",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "clap",
+      "requirement": {
+        "version": "4",
+        "features": [
+          "derive"
+        ]
+      },
+      "baseline_locked": [
+        "4.6.4"
+      ],
+      "selected": "4.6.7",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.85",
+      "baseline_direct": "4.6.4",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "crossterm",
+      "requirement": {
+        "version": "0.29"
+      },
+      "baseline_locked": [
+        "0.29.0"
+      ],
+      "selected": "0.29.0",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.63.0",
+      "baseline_direct": "0.29.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "devsweep-core",
+      "requirement": {
+        "path": "../devsweep-core"
+      },
+      "baseline_locked": [
+        "0.3.0"
+      ],
+      "selected": "0.3.0",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.88.0",
+      "baseline_direct": "0.3.0",
+      "reason": "Local shared core; no registry version."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "ratatui",
+      "requirement": {
+        "version": "0.30",
+        "features": [
+          "crossterm"
+        ]
+      },
+      "baseline_locked": [
+        "0.30.2"
+      ],
+      "selected": "0.30.2",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.88.0",
+      "baseline_direct": "0.30.2",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "serde_json",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.0.151"
+      ],
+      "selected": "1.0.154",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.71",
+      "baseline_direct": "1.0.151",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "tracing-subscriber",
+      "requirement": {
+        "version": "0.3"
+      },
+      "baseline_locked": [
+        "0.3.23"
+      ],
+      "selected": "0.3.23",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.65.0",
+      "baseline_direct": "0.3.23",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "unicode-width",
+      "requirement": {
+        "version": "0.2"
+      },
+      "baseline_locked": [
+        "0.2.2"
+      ],
+      "selected": "0.2.2",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.66",
+      "baseline_direct": "0.2.2",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "crates/devsweep-cli/Cargo.toml",
+      "target": "",
+      "kind": "dev-dependencies",
+      "name": "tempfile",
+      "requirement": {
+        "version": "3"
+      },
+      "baseline_locked": [
+        "3.27.0"
+      ],
+      "selected": "3.27.0",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.63",
+      "baseline_direct": "3.27.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "anyhow",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.0.104"
+      ],
+      "selected": "1.0.104",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.68",
+      "baseline_direct": "1.0.104",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "devsweep-core",
+      "requirement": {
+        "path": "../../crates/devsweep-core"
+      },
+      "baseline_locked": [
+        "0.3.0"
+      ],
+      "selected": "0.3.0",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.88.0",
+      "baseline_direct": "0.3.0",
+      "reason": "Local shared core; no registry version."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "serde",
+      "requirement": {
+        "version": "1",
+        "features": [
+          "derive"
+        ]
+      },
+      "baseline_locked": [
+        "1.0.229"
+      ],
+      "selected": "1.0.229",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.56",
+      "baseline_direct": "1.0.229",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "serde_json",
+      "requirement": {
+        "version": "1"
+      },
+      "baseline_locked": [
+        "1.0.151"
+      ],
+      "selected": "1.0.154",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.71",
+      "baseline_direct": "1.0.151",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "tauri",
+      "requirement": {
+        "version": "2.11.3",
+        "features": [
+          "tray-icon"
+        ]
+      },
+      "baseline_locked": [
+        "2.11.5"
+      ],
+      "selected": "2.11.5",
+      "selected_license": "Apache-2.0 OR MIT",
+      "selected_rust_version": "1.77.2",
+      "baseline_direct": "2.11.5",
+      "reason": "Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dependencies",
+      "name": "tokio",
+      "requirement": {
+        "version": "1",
+        "features": [
+          "rt-multi-thread"
+        ]
+      },
+      "baseline_locked": [
+        "1.53.1"
+      ],
+      "selected": "1.53.1",
+      "selected_license": "MIT",
+      "selected_rust_version": "1.71",
+      "baseline_direct": "1.53.1",
+      "reason": "Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "dev-dependencies",
+      "name": "tempfile",
+      "requirement": {
+        "version": "3"
+      },
+      "baseline_locked": [
+        "3.27.0"
+      ],
+      "selected": "3.27.0",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.63",
+      "baseline_direct": "3.27.0",
+      "reason": "Latest stable compatible direct release; required minimum recorded and exact resolution locked."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "",
+      "kind": "build-dependencies",
+      "name": "tauri-build",
+      "requirement": {
+        "version": "2.6.3",
+        "features": []
+      },
+      "baseline_locked": [
+        "2.6.3"
+      ],
+      "selected": "2.6.3",
+      "selected_license": "Apache-2.0 OR MIT",
+      "selected_rust_version": "1.77.2",
+      "baseline_direct": "2.6.3",
+      "reason": "Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "cfg(windows)",
+      "kind": "dependencies",
+      "name": "windows",
+      "requirement": {
+        "version": "=0.61.3",
+        "features": [
+          "Win32_Graphics_DirectWrite"
+        ]
+      },
+      "baseline_locked": [
+        "0.56.0",
+        "0.61.3"
+      ],
+      "selected": "0.61.3",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.74",
+      "baseline_direct": "0.61.3",
+      "reason": "Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection."
+    },
+    {
+      "manifest": "desktop/src-tauri/Cargo.toml",
+      "target": "cfg(windows)",
+      "kind": "dev-dependencies",
+      "name": "windows-sys",
+      "requirement": {
+        "version": "0.59",
+        "features": [
+          "Win32_Foundation",
+          "Win32_System_Threading"
+        ]
+      },
+      "baseline_locked": [
+        "0.45.0",
+        "0.59.0",
+        "0.61.2"
+      ],
+      "selected": "0.59.0",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.60",
+      "baseline_direct": "0.59.0",
+      "reason": "Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection."
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "cfg(windows)",
+      "kind": "dependencies",
+      "name": "windows-collections",
+      "requirement": {
+        "version": "0.3.2"
+      },
+      "baseline_locked": [],
+      "reason": "windows 0.62.2 requires 0.3.2 with windows-core0.62; latest0.100 requires incompatible windows-core0.100 and Rust1.95.",
+      "selected": "0.3.2",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.82",
+      "baseline_direct": "not present (new direct edge)"
+    },
+    {
+      "manifest": "crates/devsweep-core/Cargo.toml",
+      "target": "cfg(windows)",
+      "kind": "dependencies",
+      "name": "windows-future",
+      "requirement": {
+        "version": "0.3.2"
+      },
+      "baseline_locked": [],
+      "reason": "windows 0.62.2 requires 0.3.2 with windows-core0.62; latest0.100 requires incompatible windows-core0.100 and Rust1.95.",
+      "selected": "0.3.2",
+      "selected_license": "MIT OR Apache-2.0",
+      "selected_rust_version": "1.82",
+      "baseline_direct": "not present (new direct edge)"
+    }
+  ],
+  "registry": [
+    {
+      "name": "anyhow",
+      "latest": "1.0.104",
+      "rust_version": "1.68",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/anyhow",
+      "checked_utc": "2026-10-15T06:08:31.028851+00:00"
+    },
+    {
+      "name": "clap",
+      "latest": "4.6.7",
+      "rust_version": "1.85",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/clap",
+      "checked_utc": "2026-10-15T06:08:31.309084+00:00"
+    },
+    {
+      "name": "crossterm",
+      "latest": "0.29.0",
+      "rust_version": "1.63.0",
+      "license": "MIT",
+      "source": "https://crates.io/api/v1/crates/crossterm",
+      "checked_utc": "2026-10-15T06:08:30.605073+00:00"
+    },
+    {
+      "name": "libc",
+      "latest": "0.2.190",
+      "rust_version": "1.65",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/libc",
+      "checked_utc": "2026-10-15T06:08:30.646525+00:00"
+    },
+    {
+      "name": "ratatui",
+      "latest": "0.30.2",
+      "rust_version": "1.88.0",
+      "license": "MIT",
+      "source": "https://crates.io/api/v1/crates/ratatui",
+      "checked_utc": "2026-10-15T06:08:31.573466+00:00"
+    },
+    {
+      "name": "rayon",
+      "latest": "1.12.0",
+      "rust_version": "1.80",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/rayon",
+      "checked_utc": "2026-10-15T06:08:31.249578+00:00"
+    },
+    {
+      "name": "serde",
+      "latest": "1.0.229",
+      "rust_version": "1.56",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/serde",
+      "checked_utc": "2026-10-15T06:08:32.161872+00:00"
+    },
+    {
+      "name": "serde_json",
+      "latest": "1.0.154",
+      "rust_version": "1.71",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/serde_json",
+      "checked_utc": "2026-10-15T06:08:32.218543+00:00"
+    },
+    {
+      "name": "sha2",
+      "latest": "0.11.1",
+      "rust_version": "1.88",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/sha2",
+      "checked_utc": "2026-10-15T06:08:32.119172+00:00"
+    },
+    {
+      "name": "tauri",
+      "latest": "2.12.4",
+      "rust_version": "1.90",
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://crates.io/api/v1/crates/tauri",
+      "checked_utc": "2026-10-15T06:08:32.770547+00:00"
+    },
+    {
+      "name": "tauri-build",
+      "latest": "2.7.3",
+      "rust_version": "1.90",
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://crates.io/api/v1/crates/tauri-build",
+      "checked_utc": "2026-10-15T06:08:33.407278+00:00"
+    },
+    {
+      "name": "tempfile",
+      "latest": "3.27.0",
+      "rust_version": "1.63",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/tempfile",
+      "checked_utc": "2026-10-15T06:08:32.823133+00:00"
+    },
+    {
+      "name": "tokio",
+      "latest": "1.53.3",
+      "rust_version": "1.71",
+      "license": "MIT",
+      "source": "https://crates.io/api/v1/crates/tokio",
+      "checked_utc": "2026-10-15T06:08:33.223530+00:00"
+    },
+    {
+      "name": "tracing",
+      "latest": "0.1.44",
+      "rust_version": "1.65.0",
+      "license": "MIT",
+      "source": "https://crates.io/api/v1/crates/tracing",
+      "checked_utc": "2026-10-15T06:08:33.396346+00:00"
+    },
+    {
+      "name": "tracing-subscriber",
+      "latest": "0.3.23",
+      "rust_version": "1.65.0",
+      "license": "MIT",
+      "source": "https://crates.io/api/v1/crates/tracing-subscriber",
+      "checked_utc": "2026-10-15T06:08:33.672778+00:00"
+    },
+    {
+      "name": "trash",
+      "latest": "5.2.9",
+      "rust_version": "1.85.0",
+      "license": "MIT",
+      "source": "https://crates.io/api/v1/crates/trash",
+      "checked_utc": "2026-10-15T06:08:33.810520+00:00"
+    },
+    {
+      "name": "unicode-width",
+      "latest": "0.2.2",
+      "rust_version": "1.66",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/unicode-width",
+      "checked_utc": "2026-10-15T06:08:34.156297+00:00"
+    },
+    {
+      "name": "windows",
+      "latest": "0.62.2",
+      "rust_version": "1.82",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/windows",
+      "checked_utc": "2026-10-15T06:08:34.806762+00:00"
+    },
+    {
+      "name": "windows-sys",
+      "latest": "0.61.2",
+      "rust_version": "1.71",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/windows-sys",
+      "checked_utc": "2026-10-15T06:08:34.691116+00:00"
+    },
+    {
+      "name": "windows-collections",
+      "latest": "0.100.0",
+      "rust_version": "1.95",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/windows-collections",
+      "checked_utc": "2026-10-15T06:17:03.110195+00:00"
+    },
+    {
+      "name": "windows-future",
+      "latest": "0.100.0",
+      "rust_version": "1.95",
+      "license": "MIT OR Apache-2.0",
+      "source": "https://crates.io/api/v1/crates/windows-future",
+      "checked_utc": "2026-10-15T06:17:03.944174+00:00"
+    }
+  ]
+}

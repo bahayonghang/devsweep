@@ -1,0 +1,72 @@
+{
+  "id": "gpui-desktop-rewrite",
+  "name": "gpui-desktop-rewrite",
+  "title": "CLI-first GPUI desktop rewrite and Mole Windows feature parity",
+  "description": "Plan a Rust-first five-mode desktop replacement, strengthen shared core and CLI capabilities, reuse approved assets, and verify native Windows performance.",
+  "status": "in_progress",
+  "dev_type": "fullstack",
+  "scope": "cli-first-gpui-rewrite",
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-15",
+  "completedAt": null,
+  "branch": "codex/gpui-desktop-rewrite",
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-15-gpui-cli-contracts",
+    "10-15-gpui-windows-action-boundary",
+    "10-15-gpui-clean-coverage",
+    "10-15-gpui-software-uninstall",
+    "10-15-gpui-software-maintenance",
+    "10-15-gpui-optimize-maintenance",
+    "10-15-gpui-analyze-capabilities",
+    "10-15-gpui-status-capabilities",
+    "10-15-gpui-native-feasibility",
+    "10-15-gpui-shell-assets",
+    "10-15-gpui-clean-workbench",
+    "10-15-gpui-software-optimize-workbenches",
+    "10-15-gpui-analyze-status-tray",
+    "10-15-gpui-acceptance-migration",
+    "10-15-gpui-ai-tool-cleanup",
+    "10-15-gpui-latest-dependencies"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "analysis_source_commit": "25437d102ab7355198b3ef2647c2cbced740b3b2",
+    "analysis_source_branch": "dev",
+    "user_requirements": [
+      "GPUI and Rust",
+      "CLI first",
+      "Mole screenshots and release logs",
+      "AI tool cleanup including Claude Code",
+      "Prefer latest compatible libraries"
+    ],
+    "child_count": 16,
+    "blocking_product_questions": [],
+    "platform_decision": {
+      "confirmed_by": "user",
+      "confirmed_date": "2026-10-15",
+      "desktop_first_release": "windows-x64",
+      "preserve_existing_cross_platform_cli": true,
+      "deferred_native_desktop": [
+        "macos",
+        "linux",
+        "windows-arm64"
+      ]
+    },
+    "final_review": "final-review.md",
+    "prd_convergence_complete": true,
+    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md",
+    "approved_summary_sha256": "365a0fa0454ef91c0445369e10e07e5d653476d23c5c4c1ebf5fc93c9c1b756d"
+  }
+}

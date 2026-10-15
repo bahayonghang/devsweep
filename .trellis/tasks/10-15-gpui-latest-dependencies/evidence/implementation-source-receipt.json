@@ -1,0 +1,91 @@
+{
+  "snapshot_label": "C16 implementer handoff before independent checker repairs",
+  "cargo_lock_sha256": "8b3db0d1771fa999d6f8b3d2df695aecae7752e8ef94ae3fa04529108f5cfefa",
+  "toolchain": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-pc-windows-msvc\nrelease: 1.99.0\nLLVM version: 23.1.1\n",
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "4d8881e8beb95b8c67ff1cf5649c1469cee516fd3615bbc5d20388b307cc2df8"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "8b3db0d1771fa999d6f8b3d2df695aecae7752e8ef94ae3fa04529108f5cfefa"
+    },
+    {
+      "path": "crates/devsweep-cli/Cargo.toml",
+      "sha256": "471889615d208771ce193264b252284deba6256482af05e7c3e948203b39d060"
+    },
+    {
+      "path": "crates/devsweep-core/Cargo.toml",
+      "sha256": "748676c7256b6e5b390f82a5b389a3211a8b0418b3321be63234e2b8709c69c4"
+    },
+    {
+      "path": "crates/devsweep-core/src/clean_advisories/mod.rs",
+      "sha256": "d5ef51f636b10e9f48fc138dc287fc0c9e94737091d4f1dd13b85c15219b2d71"
+    },
+    {
+      "path": "crates/devsweep-core/src/execution/audit.rs",
+      "sha256": "8f665f12953322d26e6b50164ceb248d9951987b058d0adcd6bb5536df4563dd"
+    },
+    {
+      "path": "crates/devsweep-core/src/execution/provider.rs",
+      "sha256": "c09442a31a94191018504a3501b43e620ac8c4ebfdd92a9659e7892e340b6c4a"
+    },
+    {
+      "path": "crates/devsweep-core/src/lib.rs",
+      "sha256": "44fefc7a1f1eb6775e33963e67cf8f07f153f5a20ff27473696a39ac82a92426"
+    },
+    {
+      "path": "crates/devsweep-core/src/optimize/plan.rs",
+      "sha256": "5d96530f9606697d3b0d66d6aee45f32108fd325a12db3a9046d06a991342dd8"
+    },
+    {
+      "path": "crates/devsweep-core/src/plan/digest.rs",
+      "sha256": "f4896b131f814e55071f28df35e95a54e7a75764771a3ffda90f03b912e85504"
+    },
+    {
+      "path": "crates/devsweep-core/src/process/provider_dispatch.rs",
+      "sha256": "1f44381a3f828dcf1c5eebb7e5bd61b83d04f66099532bcc7dfc073158f0666b"
+    },
+    {
+      "path": "crates/devsweep-core/src/software/execution/msix.rs",
+      "sha256": "c0023e51affbd6c19a9dd61e4eb7b066a18593ed61b9800fa93632a6b164c680"
+    },
+    {
+      "path": "crates/devsweep-core/src/software/leftovers.rs",
+      "sha256": "c2a4810df425bee5601f08b2d553f30d863e4c6deb4e7d6208aa61b1f9f3e0bc"
+    },
+    {
+      "path": "crates/devsweep-core/src/software/mod.rs",
+      "sha256": "fb2e00468d46aa60e8794195e1fd5d560439268c6a6aa2d28fc158de4bbe80bd"
+    },
+    {
+      "path": "crates/devsweep-core/src/software/msix.rs",
+      "sha256": "29683c082341f1fa11ea9ed8bda947ce251913cda07cf1a838aeeda8033aaf26"
+    },
+    {
+      "path": "crates/devsweep-core/src/software/plan.rs",
+      "sha256": "48403dfe1edf1a5de6c52c5178171d5d8823e81ab18aabb9c69a73cecb1cd1a0"
+    },
+    {
+      "path": "crates/devsweep-core/src/software/startup.rs",
+      "sha256": "505fb7ec39a0ab7659118de15d7b207b69d80a6c0d09ac4add3bc5aa4bb23f01"
+    },
+    {
+      "path": "crates/devsweep-core/src/status/pdh.rs",
+      "sha256": "98dafb398e9ea761dfe85238f404b82929b843fa3c4c845460b772f3ad3dcc38"
+    },
+    {
+      "path": "docs/ci.md",
+      "sha256": "f69b76ffa999d48a1463e6c558f892c50b1cc844b95922dbe66f803e95520a1d"
+    },
+    {
+      "path": "docs/zh/ci.md",
+      "sha256": "e5acd4363093ca631bc18b9170b31b3427b84cd4a65baf5df19ccc6349cc9ed9"
+    },
+    {
+      "path": "crates/devsweep-core/src/digest_encoding.rs",
+      "sha256": "be12c8ce92758d10cb6a84460325f84b673757327defba33a8585afe464b3d4a"
+    }
+  ]
+}

@@ -10,6 +10,8 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use super::LivePreflight;
 use super::catalogue::{MaintenanceActionClass, OPTIMIZE_CATALOGUE_VERSION};
 
@@ -294,7 +296,7 @@ fn preview_digest(
         literals,
     ))
     .map_err(|_| OptimizePlanError::SerializationFailed)?;
-    Ok(format!("sha256:{:x}", Sha256::digest(canonical)))
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
 }
 
 pub(super) fn is_sha256(value: &str) -> bool {

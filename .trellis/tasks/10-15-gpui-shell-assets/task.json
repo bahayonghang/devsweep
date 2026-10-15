@@ -1,0 +1,36 @@
+{
+  "id": "gpui-shell-assets",
+  "name": "gpui-shell-assets",
+  "title": "C10 GPUI shell assets preferences and lifecycle",
+  "description": "Create the native five-mode shell with reusable assets, settings and bounded operation ownership.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-10-15",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "dev",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "10-15-gpui-desktop-rewrite",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "planning_status": "approved",
+    "implementation_approved": true,
+    "depends_on": [
+      "C01",
+      "C09"
+    ],
+    "task_code": "C10",
+    "blocking_product_questions": [],
+    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md"
+  }
+}

@@ -19,6 +19,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use super::{
     SoftwareAuditError, SoftwareIdentity, SoftwareInventoryV1, SoftwareSizeBasis,
     SoftwareSizeEvidence, SoftwareSizeSourceCode, SoftwareSupportErrorCode,
@@ -689,7 +691,7 @@ fn plan_digest(
         .collect::<Result<Vec<_>, _>>()?;
     let canonical = serde_json::to_vec(&("devsweep.software.leftover.plan.v1", plan, items))
         .map_err(|_| SoftwareLeftoverError::SerializationFailed)?;
-    Ok(format!("sha256:{:x}", Sha256::digest(canonical)))
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
 }
 
 fn discover_candidates(
@@ -801,10 +803,10 @@ fn child_named(root: &Path, name: &str) -> Option<PathBuf> {
 
 fn candidate_id(software_id: &str, origin: SoftwareLeftoverOrigin, key: &str) -> String {
     let origin = serde_json::to_string(&origin).unwrap_or_default();
-    let digest = Sha256::digest(format!(
+    let digest = hex_digest(Sha256::digest(format!(
         "devsweep.software.leftover.v1\0{software_id}\0{origin}\0{key}"
-    ));
-    format!("leftover:v1:{digest:x}")
+    )));
+    format!("leftover:v1:{digest}")
 }
 
 fn size_evidence(size: &SizeEstimate, observed_at_unix_ms: u64) -> SoftwareSizeEvidence {

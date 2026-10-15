@@ -1,0 +1,8 @@
+    Checking windows-collections v0.3.2
+    Checking windows-future v0.3.2
+    Checking windows v0.62.2
+    Checking trash v5.2.9
+    Checking devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Checking devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Checking devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.80s

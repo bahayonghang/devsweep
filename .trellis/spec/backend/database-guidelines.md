@@ -83,6 +83,56 @@ mapping and failure tests. Future persistent formats must also add:
 
 ---
 
+## Scenario: Unix Optimize audit lock lifetime
+
+### 1. Scope / Trigger
+
+Changes to `optimize/audit.rs::SidecarLock` or process spawning while an audit
+guard is alive must preserve exclusive ownership and prompt release.
+
+### 2. Signatures
+
+- `SidecarLock::acquire(&Path) -> Result<Self, OptimizeAuditError>`.
+- Unix acquisition: `flock(fd, LOCK_EX | LOCK_NB)`.
+- Unix `Drop`: explicit `flock(fd, LOCK_UN)` before the owned file closes.
+
+### 3. Contracts
+
+The private guard owns the fixed Optimize sidecar lock. A concurrent fork or
+duplicated descriptor can retain its open file description past the guard's
+lifetime; close-on-exec alone does not close that window. Explicit owner release
+must not wait for those unrelated references to disappear. Windows acquisition
+and release retain their existing behavior. This correction does not change
+audit records, dispatch authority, or recovery into a retry operation.
+
+### 4. Validation & Error Matrix
+
+- Independent acquisition while the owner lives -> `LockUnavailable`, no dispatch.
+- Guard released while a duplicate lives -> independent acquisition can succeed.
+- Old duplicate closes after a new owner acquires -> the new owner's lock remains.
+- Open/acquire failure -> existing audit error; never proceed without the lock.
+
+### 5. Good/Base/Bad Cases
+
+- Good: live owners exclude other open file descriptions; guard release explicitly
+  unlocks before closing its descriptor.
+- Base: acquiring and dropping a guard without any duplicate releases normally.
+- Bad: adding sleeps/retries or serializing the test suite to hide a release defect.
+
+### 6. Tests Required
+
+`owner_drop_unlocks_while_an_inherited_description_remains_open` uses `try_clone`
+to retain the same open file description. Assert all three ownership transitions
+above, then run the full parallel core/CLI suite including process-spawn tests.
+
+### 7. Wrong vs Correct
+
+Wrong: rely only on dropping the original `File` while a forked child can still
+hold its open file description. Correct: explicitly unlock in the owning guard's
+Unix `Drop`, then let the file close; keep nonblocking exclusive acquisition.
+
+---
+
 ## Naming Conventions
 
 - JSON fields use Serde defaults or explicit `snake_case` settings already

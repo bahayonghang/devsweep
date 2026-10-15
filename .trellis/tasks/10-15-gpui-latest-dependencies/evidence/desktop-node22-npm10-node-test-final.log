@@ -1,0 +1,54 @@
+TAP version 13
+# Subtest: dev server port
+    # Subtest: reads an explicit port and rejects values that are not TCP ports
+    ok 1 - reads an explicit port and rejects values that are not TCP ports
+      ---
+      duration_ms: 1.0586
+      type: 'test'
+      ...
+    # Subtest: returns the preferred port when it can listen
+    ok 2 - returns the preferred port when it can listen
+      ---
+      duration_ms: 47.1982
+      type: 'test'
+      ...
+    # Subtest: skips a busy preferred port
+    ok 3 - skips a busy preferred port
+      ---
+      duration_ms: 5.3409
+      type: 'test'
+      ...
+    1..3
+ok 1 - dev server port
+  ---
+  duration_ms: 54.4625
+  type: 'suite'
+  ...
+# Subtest: tauri dev arguments
+    # Subtest: selects a port only for a real dev run
+    ok 1 - selects a port only for a real dev run
+      ---
+      duration_ms: 0.3742
+      type: 'test'
+      ...
+    # Subtest: places the devUrl override before runner arguments
+    ok 2 - places the devUrl override before runner arguments
+      ---
+      duration_ms: 1.3141
+      type: 'test'
+      ...
+    1..2
+ok 2 - tauri dev arguments
+  ---
+  duration_ms: 2.9999
+  type: 'suite'
+  ...
+1..2
+# tests 5
+# suites 2
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 523.3657

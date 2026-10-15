@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-15",
+  "event": "approved-plan implementation activation",
+  "approval_record": "implementation-approval.md",
+  "files": [
+    {
+      "file": "final-review.md",
+      "sha256": "365a0fa0454ef91c0445369e10e07e5d653476d23c5c4c1ebf5fc93c9c1b756d"
+    },
+    {
+      "file": "prd.md",
+      "sha256": "2e7a50fb361a046f29d3684b849713f85494c7e13c1f5dba01ef1f08aab44129"
+    },
+    {
+      "file": "design.md",
+      "sha256": "bb134ff80e893098839dc42dd0803de5d235c2d46d330a263ac5fcf3ea3ae8f9"
+    },
+    {
+      "file": "implement.md",
+      "sha256": "e964555eaadffedb3c24ddf714d7fa9570c4bec889370fae9cfd2aca91656d3a"
+    },
+    {
+      "file": "research/performance-protocol.md",
+      "sha256": "f5b6994099561cefd6d70de430cb6b9f99cd9676d298cc2aefd4aa914d05ff8f"
+    },
+    {
+      "file": "research/mole-feature-matrix.md",
+      "sha256": "e8a963329908ccf4dd4bdf95eac11e042008c70c4bafbf04a2da2d8acefc3db6"
+    },
+    {
+      "file": "research/dependency-policy.md",
+      "sha256": "ef5c1bfa855c81d79fd8af5c9112673e75a85a5823e9780668503edc88cc85e8"
+    }
+  ]
+}

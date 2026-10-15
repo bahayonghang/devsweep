@@ -1,0 +1,27 @@
+{
+  "build_subprocess_exit_code": 0,
+  "artifact_matches_recorded_hash": true,
+  "artifact": {
+    "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16-target-windows\\release\\devsweep-desktop.exe",
+    "sha256": "df36cc169970fa0b137eb87e4a7442af331c60fad9a2b93a6d46882439e2320f",
+    "size": 15027200
+  },
+  "source_mismatches": [],
+  "source_file_count": 26,
+  "test_totals": {
+    "passed": 794,
+    "failed": 0,
+    "ignored": 5
+  },
+  "build_log_sha256": "8215891c9db3ed7cd5f298126c0902300ba75e8ba82b8a87a9ea188c297343c8",
+  "build_log_tail": [
+    "- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks",
+    "- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.",
+    "\u2713 built in 2.12s",
+    "   Compiling devsweep-core v0.3.0 (D:\\Documents\\Code\\Rust\\Exp\\devsweep\\crates\\devsweep-core)",
+    "   Compiling devsweep-desktop v0.3.0 (D:\\Documents\\Code\\Rust\\Exp\\devsweep\\desktop\\src-tauri)",
+    "    Finished `release` profile [optimized] target(s) in 3m 20s",
+    "       Built application at: D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16-target-windows\\release\\devsweep-desktop.exe"
+  ],
+  "harness_note": "The build exited 0 and its complete UTF-8 log/result JSON were saved. The outer Python display then raised UnicodeEncodeError when printing a checkmark through GBK stdout; this does not change the subprocess result. No successful build was rerun."
+}

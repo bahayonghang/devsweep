@@ -1,0 +1,278 @@
+npm notice run devsweep-desktop-ui@0.3.0 types:generate
+npm notice run node scripts/generate-types.mjs --check
+npm notice run devsweep-desktop-ui@0.3.0 lint
+npm notice run eslint .
+npm notice run devsweep-desktop-ui@0.3.0 typecheck
+npm notice run tsc --noEmit
+npm notice run devsweep-desktop-ui@0.3.0 test
+npm notice run vitest run && node --test scripts/dev-server-port.node-test.mjs
+
+ RUN  v3.2.7 D:/Documents/Code/Rust/Exp/devsweep/desktop
+
+ ✓ src/app-shell/WindowTitlebar.test.tsx (7 tests) 1361ms
+   ✓ custom window titlebar > labels and operates all controls in en  596ms
+   ✓ custom window titlebar > labels and operates all controls in zh-CN  432ms
+ ✓ src/api/fixture-bridge.test.ts (7 tests) 2257ms
+   ✓ fixtureBridge selection contract > keeps global-only rows, progress and totals free of project data  720ms
+   ✓ fixtureBridge selection contract > emits only the explicit fixture project and leaves it opt-in  744ms
+   ✓ fixtureBridge selection contract > does not invent project discoveries for unsupported explicit fixture roots  773ms
+ ✓ src/modes/software/SoftwareWorkbench.test.tsx (3 tests) 1487ms
+   ✓ SoftwareWorkbench > renders manual rows, exact identity detail, preview, and second confirmation  1259ms
+ ✓ src/modes/status/preferences.test.tsx (2 tests) 1616ms
+   ✓ Status committed preferences > passes rows to snapshot/live and commits before cancel, join, and replacement  987ms
+   ✓ Status committed preferences > leaves the running sampler and committed selector unchanged when saving fails  627ms
+ ✓ src/modes/status/StatusWorkbench.test.tsx (4 tests) 1772ms
+   ✓ StatusWorkbench > loads a snapshot first, starts live explicitly, and never shows GPU zero cards  895ms
+   ✓ StatusWorkbench > sorts through header buttons with aria-sort and pins a process at the top  692ms
+ ✓ src/App.window.test.tsx (3 tests) 1421ms
+   ✓ custom controls and App lifecycle > joins cooperative work before native destruction after a custom close  943ms
+   ✓ custom controls and App lifecycle > joins wait-only work before native destruction after a custom close  362ms
+ ✓ src/modes/optimize/OptimizeWorkbench.test.tsx (3 tests) 1887ms
+   ✓ OptimizeWorkbench > renders closed badges, refuses guidance run, and requires Settings confirmation  1731ms
+ ✓ src/stage/Stage.test.tsx (15 tests) 1872ms
+   ✓ Stage > renders the hero, title, meta, controls, primary, and secondary slots in order  308ms
+   ✓ stage and detail switching > opens detail after inventory, returns to the stage result, and reopens detail  497ms
+ ✓ src/stage/Planet.test.tsx (22 tests) 3520ms
+   ✓ planet renderer > is deterministic for a seed, leaves corners transparent, and rotates  2323ms
+ ✓ src/pages/ReviewPage.test.tsx (4 tests) 3014ms
+   ✓ ReviewPage > bounds 10k distinct owner groups to 100 rows while searching and paging the full report  2878ms
+ ✓ src/components/TargetTable.test.tsx (3 tests) 3418ms
+   ✓ TargetTable headers > pages real rows with keyboard controls while preserving complete paths and review exclusions  3324ms
+ ✓ src/preferences/preferences.test.tsx (15 tests) 4671ms
+   ✓ committed desktop preference owner > resets each group in one patch without changing the other group or language  1582ms
+   ✓ Settings committed controls > retains the selected radio during save and failure, then permits retry  785ms
+   ✓ Settings committed controls > keeps the saved font visible during a failed save  597ms
+   ✓ Settings committed controls > disables desktop persistence during load or unavailability while language stays independent  657ms
+ ✓ src/pages/ScanPreviewPage.test.tsx (1 test) 4308ms
+   ✓ large read-only scan preview > searches the full 10k observation and exposes the last full path without selection  4307ms
+ ✓ src/modes/clean/scope-session.test.tsx (6 tests) 5019ms
+   ✓ independent scope sessions > allows exact global-only scanning with an unavailable roots store  706ms
+   ✓ independent scope sessions > retains separate reports and clears only project authority on a root edit  794ms
+   ✓ independent scope sessions > single-flights scopes and accepts the completed terminal after cancellation is requested  321ms
+   ✓ independent scope sessions > keeps a failed-save threshold in the retained session across route changes  885ms
+   ✓ independent scope sessions > rejects invalid thresholds without changing selection or calling persistence  1008ms
+   ✓ independent scope sessions > retains the live preview digest and selection when a valid warning threshold changes  1303ms
+ ✓ src/modes/software/SoftwareSupportViews.test.tsx (10 tests) 5428ms
+   ✓ Software support views in en > shows installed, update, and startup counts on the stage  379ms
+   ✓ Software support views in en > Updates view checks winget read-only and lists rows with truncation  564ms
+   ✓ Software support views in en > Startup view toggles only current-user rows and labels machine rows  439ms
+   ✓ Software support views in en > Inventory view reviews leftovers after a succeeded uninstall and reports moved size  1605ms
+   ✓ Software support views in zh-CN > Updates view shows a stable unavailable reason  303ms
+   ✓ Software support views in zh-CN > Startup view toggles only current-user rows and labels machine rows  387ms
+   ✓ Software support views in zh-CN > Inventory view reviews leftovers after a succeeded uninstall and reports moved size  1225ms
+ ✓ src/window-controls.test.ts (5 tests) 377ms
+ ✓ src/lifecycle.test.ts (8 tests) 388ms
+ ✓ src/modes/clean/useScanScope.test.ts (4 tests) 364ms
+ ✓ src/modes/clean/session-retention.test.tsx (1 test) 1022ms
+   ✓ retains a completed Clean report through Settings and back  1021ms
+ ✓ src/modes/analyze/AnalyzePage.test.tsx (10 tests) 6289ms
+   ✓ AnalyzePage > renders bilingual empty/complete states with canonical list and supplemental labelled rectangles  588ms
+   ✓ AnalyzePage > opens the context menu from the keyboard, reveals, and moves after a second confirmation in 'en'  1181ms
+   ✓ AnalyzePage > opens the context menu from the keyboard, reveals, and moves after a second confirmation in 'zh-CN'  975ms
+   ✓ AnalyzePage > shows a refused node as view only and keeps its Move item disabled  570ms
+   ✓ AnalyzePage > restores the focused directory on its canonical 200-row parent page  1687ms
+   ✓ AnalyzePage > covers empty/loading/canceling/canceled/partial/error/complete copy in 'en'  469ms
+   ✓ AnalyzePage > covers empty/loading/canceling/canceled/partial/error/complete copy in 'zh-CN'  612ms
+ ✓ src/pages/ScanPage.test.tsx (5 tests) 485ms
+ ✓ src/api/types-generation.test.ts (2 tests) 8355ms
+   ✓ IPC type generation > is deterministic, committed, ASCII, and type-only  3736ms
+   ✓ IPC type generation > changes when a named fixture changes  4618ms
+ ✓ src/hud/Hud.test.tsx (4 tests) 295ms
+stdout | src/preferences/fonts.test.tsx > installed font picker > reaches all 2000 families and aliases without per-key enumeration
+{"method":"Vitest/jsdom; rendering and accessible queries; diagnostic only, not native latency","host":{"platform":"win32","arch":"x64","node":"v22.23.2"},"families":2000,"openMs":4205.1049,"queryMs":[183.17459999999846,51.186500000001615,42.122699999999895]}
+
+ ✓ src/preferences/fonts.test.tsx (11 tests) 7324ms
+   ✓ installed font picker > keeps system usable during loading and distinguishes empty success  724ms
+   ✓ installed font picker > keeps saved names after errors and selects canonical names on Refresh  450ms
+   ✓ installed font picker > reaches all 2000 families and aliases without per-key enumeration  5847ms
+ ✓ src/support/SupportViews.test.tsx (6 tests) 967ms
+   ✓ support views > keeps protection add behind confirmation  864ms
+ ✓ src/styles.test.ts (14 tests) 377ms
+   ✓ responsive scan workbench styles > measures every semantic palette and consumer contrast pair  365ms
+ ✓ src/components/settings-choices.test.tsx (15 tests) 7927ms
+   ✓ Settings Select > labels its committed value and description and commits one pointer choice  769ms
+   ✓ Settings Select > keeps keyboard highlight separate from selection and restores focus on Escape  905ms
+   ✓ Settings Select > supports typeahead without saving and ignores the current option  894ms
+   ✓ Settings Select > dismisses outside without a write and keeps disabled controls closed  457ms
+   ✓ Settings Combobox > keeps keyboard search after replacing committed text with   545ms
+   ✓ Settings Combobox > keeps keyboard search after replacing committed text with {Backspace}  460ms
+   ✓ Settings Combobox > filters aliases and full long labels without committing query or highlight  602ms
+   ✓ Settings Combobox > commits one explicit choice and displays only the committed value  753ms
+   ✓ Settings Combobox > does not select an already highlighted font for 'native isComposing'  566ms
+   ✓ Settings Combobox > does not select an already highlighted font for 'legacy keyCode 229'  608ms
+   ✓ Settings Combobox > announces empty and catalogue states without disabling available choices  584ms
+ ✓ src/preferences/palettes.test.tsx (16 tests) 7457ms
+   ✓ closed shared palette catalogue > offers seven labeled, commit-only radio previews in en  3433ms
+   ✓ closed shared palette catalogue > offers seven labeled, commit-only radio previews in zh-CN  2170ms
+   ✓ closed shared palette catalogue > keeps the committed palette when saving 'catppuccin_latte' fails  335ms
+   ✓ closed shared palette catalogue > keeps the committed palette when saving 'catppuccin_mocha' fails  474ms
+   ✓ closed shared palette catalogue > keeps the committed palette when saving 'codex' fails  385ms
+   ✓ closed shared palette catalogue > keeps the committed palette when saving 'claude' fails  404ms
+ ✓ src/state/large-results.test.ts (2 tests) 147ms
+ ✓ src/app-shell/operation-coordinator.test.ts (6 tests) 63ms
+ ✓ src/modes/clean/coverage-results.test.tsx (4 tests) 488ms
+   ✓ truthful Clean coverage and outcomes > shows coverage and diagnostics for partial zero-target reports  359ms
+ ✓ src/api/ipc-boundary.test.ts (2 tests) 64ms
+ ✓ src/app-shell/glyphs.test.tsx (1 test) 166ms
+ ✓ src/app-shell/AppShell.test.tsx (30 tests) 10322ms
+   ✓ AppShell > renders one capsule with the brand button and mode tabs and no sidebar or page header  351ms
+   ✓ AppShell > opens and closes the brand menu by mouse and keyboard and restores focus  1117ms
+   ✓ AppShell > renders a supporting page in the stage with a back control to the last mode  430ms
+   ✓ AppShell > restores the actual primary and supporting activators after composition  341ms
+   ✓ AppShell > makes Settings the final labelled primary tab and panel in 'en'  380ms
+   ✓ AppShell > moves through all primary tabs without navigating until Enter or Space and keeps focused Settings visible  1127ms
+   ✓ AppShell > names every mode route and shows a visible title and subtitle on every supporting route  1330ms
+   ✓ AppShell > names every zh-CN mode route and shows a visible title and subtitle on every zh-CN supporting route  1199ms
+   ✓ AppShell > renders Chinese canonical labels and writes language selection through the adapter  814ms
+   ✓ AppShell > restores primary and supporting destination focus through actual Back and Forward  1046ms
+   ✓ AppShell > keeps route, history, and focus stable when cancel-and-join rejects  320ms
+ ✓ src/i18n/index.test.ts (5 tests) 14ms
+ ✓ src/stage/earth-texture.test.ts (3 tests) 22ms
+ ✓ src/modes/clean/useCleanAdvisory.test.ts (1 test) 23ms
+ ✓ src/api/bridge.test.ts (15 tests) 24ms
+ ✓ src/api/contract.test.ts (41 tests) 31ms
+ ✓ src/modes/status/processes.test.ts (8 tests) 16ms
+ ✓ src/modes/analyze/treemap.test.ts (3 tests) 13ms
+ ✓ src/stage/earth-renderer.test.ts (4 tests) 9ms
+ ✓ src/api/software-support-contract.test.ts (4 tests) 7ms
+ ✓ src/api/clean-advisories.test.ts (10 tests) 8ms
+ ✓ src/state/app-state.test.ts (11 tests) 6ms
+ ✓ src/api/scan-coverage.test.ts (3 tests) 6ms
+ ✓ src/modes/analyze/parity.test.ts (1 test) 5ms
+ ✓ src/modes/software/parity.test.ts (2 tests) 5ms
+ ✓ src/modes/clean/session-state.test.ts (5 tests) 4ms
+ ✓ src/modes/analyze/state.test.ts (4 tests) 4ms
+ ✓ src/modes/clean/CleanWorkbench.test.tsx (26 tests) 12660ms
+   ✓ Clean stage states in en > renders home at 390, 800, 1024, and 1440 CSS px  662ms
+   ✓ Clean stage states in en > renders scanning at 390, 800, 1024, and 1440 CSS px  731ms
+   ✓ Clean stage states in en > renders found at 390, 800, 1024, and 1440 CSS px  596ms
+   ✓ Clean stage states in en > renders empty at 390, 800, 1024, and 1440 CSS px  532ms
+   ✓ Clean stage states in en > renders error at 390, 800, 1024, and 1440 CSS px  619ms
+   ✓ Clean stage states in en > renders canceled at 390, 800, 1024, and 1440 CSS px  642ms
+   ✓ Clean stage states in zh-CN > renders scanning at 390, 800, 1024, and 1440 CSS px  510ms
+   ✓ Clean stage states in zh-CN > renders found at 390, 800, 1024, and 1440 CSS px  491ms
+   ✓ Clean stage states in zh-CN > renders empty at 390, 800, 1024, and 1440 CSS px  463ms
+   ✓ Clean stage states in zh-CN > renders error at 390, 800, 1024, and 1440 CSS px  614ms
+   ✓ Clean stage states in zh-CN > renders canceled at 390, 800, 1024, and 1440 CSS px  511ms
+   ✓ Clean found stage > rescans an exact reviewed target and routes inspect-only paths to Analyze  555ms
+   ✓ Clean found stage > runs the dry run for the default selection from the Clean action, then confirms and executes with its digest  871ms
+   ✓ Clean found stage > returns from the dry-run preview to review  412ms
+   ✓ Clean review row controls > searches display rows without narrowing selection totals, select-all or the dry-run request  1061ms
+   ✓ Clean review row controls > skips a row into the collapsed Skipped group and restores it; inspect-only rows have no Skip  415ms
+   ✓ Clean review row controls > requires confirmation, calls protectionAdd with the path and confirm=true, and marks the row protected  786ms
+   ✓ Clean review row controls > keeps the row selectable and shows the error when protectionAdd fails  439ms
+   ✓ Clean closed coordinator > shows the closed coordinator alert for dry run and does not call planDryRun  329ms
+   ✓ Clean closed coordinator > shows the closed coordinator alert for execute and does not call planExecute  337ms
+ ✓ src/modes/analyze/selectors.test.ts (3 tests) 6ms
+ ✓ src/modes/status/parity.test.ts (2 tests) 5ms
+ ✓ src/modes/clean/skip-protect.test.ts (7 tests) 5ms
+ ✓ src/modes/clean/impact.test.ts (3 tests) 4ms
+ ✓ src/modes/clean/labels.test.ts (2 tests) 6ms
+ ✓ src/modes/status/state.test.ts (3 tests) 7ms
+ ✓ src/modes/software/state.test.ts (4 tests) 4ms
+ ✓ src/modes/optimize/state.test.ts (4 tests) 5ms
+ ✓ src/modes/clean/reducer.test.ts (1 test) 3ms
+ ✓ src/modes/optimize/parity.test.ts (2 tests) 3ms
+ ✓ src/app-shell/registry.test.ts (2 tests) 3ms
+ ✓ src/App.test.tsx (41 tests) 15463ms
+   ✓ desktop workflow > zh-CN Clean workbench does not show English Projects Scan Search Ready  724ms
+   ✓ desktop workflow > starts a Clean scan after StrictMode replays the lifecycle effect  383ms
+   ✓ desktop workflow > starts Status live after StrictMode replays the lifecycle effect  497ms
+   ✓ desktop workflow > keeps global scanning independent of unavailable project-root settings  305ms
+   ✓ desktop workflow > rejects an old save settlement while a replacement store is loading  791ms
+   ✓ desktop workflow > loads and persists the shared language setting without registering unavailable modes  740ms
+   ✓ desktop workflow > keeps the prior locale visible until a matching save response succeeds  898ms
+   ✓ desktop workflow > preserves the prior locale and selection when save rejects  718ms
+   ✓ desktop workflow > preserves the prior locale when the save response tag mismatches  653ms
+   ✓ desktop workflow > ignores pending load and save settlement after unmount  537ms
+   ✓ desktop workflow > keeps scan IPC arguments locale-neutral across presentation changes  1036ms
+   ✓ desktop workflow > keeps a canceled preview read-only and replaces it on rescan  781ms
+   ✓ desktop workflow > distinguishes an active empty scan from a completed empty report  324ms
+   ✓ desktop workflow > offers an explicit return to the previous completed report after a stopped rescan  656ms
+   ✓ desktop workflow > invalidates a dry run after selection changes, then confirms and reports execution  1218ms
+   ✓ desktop workflow > reviews global commands independently while Cargo home remains inspect-only  735ms
+   ✓ desktop workflow > keeps partial project selection indeterminate and previews the entire original scoped plan  538ms
+   ✓ desktop workflow > disables conflicting scan controls during dry run and execution  697ms
+   ✓ desktop workflow > orders real bridge scan, dry-run, and execute starts after old cancel and join  435ms
+   ✓ desktop workflow > projects the exact debug one-shot route fault through the real App shell  313ms
+
+ Test Files  63 passed (63)
+      Tests  471 passed (471)
+   Start at  02:17:23
+   Duration  24.69s (transform 7.07s, setup 46.33s, collect 54.32s, tests 124.30s, environment 219.61s, prepare 14.59s)
+
+TAP version 13
+# Subtest: dev server port
+    # Subtest: reads an explicit port and rejects values that are not TCP ports
+    ok 1 - reads an explicit port and rejects values that are not TCP ports
+      ---
+      duration_ms: 0.8151
+      type: 'test'
+      ...
+    # Subtest: returns the preferred port when it can listen
+    ok 2 - returns the preferred port when it can listen
+      ---
+      duration_ms: 32.375
+      type: 'test'
+      ...
+    # Subtest: skips a busy preferred port
+    ok 3 - skips a busy preferred port
+      ---
+      duration_ms: 3.7602
+      type: 'test'
+      ...
+    1..3
+ok 1 - dev server port
+  ---
+  duration_ms: 37.6443
+  type: 'suite'
+  ...
+# Subtest: tauri dev arguments
+    # Subtest: selects a port only for a real dev run
+    ok 1 - selects a port only for a real dev run
+      ---
+      duration_ms: 0.2547
+      type: 'test'
+      ...
+    # Subtest: places the devUrl override before runner arguments
+    ok 2 - places the devUrl override before runner arguments
+      ---
+      duration_ms: 0.6412
+      type: 'test'
+      ...
+    1..2
+ok 2 - tauri dev arguments
+  ---
+  duration_ms: 1.0507
+  type: 'suite'
+  ...
+1..2
+# tests 5
+# suites 2
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 171.4962
+npm notice run devsweep-desktop-ui@0.3.0 build
+npm notice run tsc --noEmit && vite build
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 416 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  0.47 kB │ gzip:   0.29 kB
+dist/hud.html                                    0.47 kB │ gzip:   0.29 kB
+dist/assets/devsweep-icon-master-D8_WZnZq.png  813.80 kB
+dist/assets/hud--4IwXFR3.css                     8.27 kB │ gzip:   2.35 kB
+dist/assets/main-K5OiHaWp.css                   67.66 kB │ gzip:  12.85 kB
+dist/assets/hud-B1izvevA.js                      2.69 kB │ gzip:   1.18 kB
+dist/assets/main-DBnl-pvg.js                   193.58 kB │ gzip:  49.27 kB
+dist/assets/state-C_H_zre3.js                  693.90 kB │ gzip: 173.71 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.89s

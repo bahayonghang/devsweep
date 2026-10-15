@@ -1,0 +1,67 @@
+[
+  {
+    "command": [
+      "just",
+      "ci"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 3.065,
+    "log": "review-final-just-ci.log",
+    "source_aggregate": "a6b63b8681383ed8f3c85d1300e26a6f12b16d092ea24b7ac3f7cbc837de43be",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.243,
+    "log": "review-final-fmt.log",
+    "source_aggregate": "a6b63b8681383ed8f3c85d1300e26a6f12b16d092ea24b7ac3f7cbc837de43be",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "check",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 5.302,
+    "log": "review-final-check.log",
+    "source_aggregate": "a6b63b8681383ed8f3c85d1300e26a6f12b16d092ea24b7ac3f7cbc837de43be",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 101,
+    "elapsed_seconds": 20.265,
+    "log": "review-final-test.log",
+    "source_aggregate": "a6b63b8681383ed8f3c85d1300e26a6f12b16d092ea24b7ac3f7cbc837de43be",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  }
+]

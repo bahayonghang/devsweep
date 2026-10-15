@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/provider-authority.md", "reason": "Existing safety compatibility and lifecycle contract for C02"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Existing safety compatibility and lifecycle contract for C02"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/repository-audit.md", "reason": "Current source and reusable asset evidence"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/mole-feature-matrix.md", "reason": "Functional scope and explicit parity gaps"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/cli-contract-proposal.md", "reason": "CLI-first proposed additive command contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/dependency-policy.md", "reason": "User requirement to prefer latest compatible dependencies"}

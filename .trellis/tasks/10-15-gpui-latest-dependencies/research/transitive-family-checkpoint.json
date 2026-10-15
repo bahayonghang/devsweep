@@ -1,0 +1,639 @@
+[
+  {
+    "name": "windows-core",
+    "latest": "0.100.0",
+    "latest_rust_version": "1.95",
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "0.61.2",
+      "0.62.2"
+    ],
+    "parents": [
+      {
+        "name": "iana-time-zone",
+        "version": "0.1.65",
+        "requirement": ">=0.56, <=0.62"
+      },
+      {
+        "name": "tao",
+        "version": "0.35.3",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "webview2-com",
+        "version": "0.38.2",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "webview2-com-sys",
+        "version": "0.38.2",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "windows",
+        "version": "0.61.3",
+        "requirement": "^0.61.2"
+      },
+      {
+        "name": "windows",
+        "version": "0.62.2",
+        "requirement": "^0.62.2"
+      },
+      {
+        "name": "windows-collections",
+        "version": "0.2.0",
+        "requirement": "^0.61.0"
+      },
+      {
+        "name": "windows-collections",
+        "version": "0.3.2",
+        "requirement": "^0.62.2"
+      },
+      {
+        "name": "windows-future",
+        "version": "0.2.1",
+        "requirement": "^0.61.1"
+      },
+      {
+        "name": "windows-future",
+        "version": "0.3.2",
+        "requirement": "^0.62.2"
+      },
+      {
+        "name": "windows-numerics",
+        "version": "0.2.0",
+        "requirement": "^0.61.0"
+      },
+      {
+        "name": "windows-numerics",
+        "version": "0.3.1",
+        "requirement": "^0.62.2"
+      },
+      {
+        "name": "wry",
+        "version": "0.55.1",
+        "requirement": "^0.61"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/windows-core",
+    "checked_utc": "2026-10-15T06:34:47.060058+00:00"
+  },
+  {
+    "name": "windows-sys",
+    "latest": "0.61.2",
+    "latest_rust_version": "1.71",
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "0.45.0",
+      "0.59.0",
+      "0.61.2"
+    ],
+    "parents": [
+      {
+        "name": "anstyle-query",
+        "version": "1.1.5",
+        "requirement": ">=0.60.2, <0.62"
+      },
+      {
+        "name": "anstyle-wincon",
+        "version": "3.0.11",
+        "requirement": ">=0.60.2, <0.62"
+      },
+      {
+        "name": "dbus",
+        "version": "0.9.12",
+        "requirement": "^0.61.0"
+      },
+      {
+        "name": "devsweep-core",
+        "version": "0.3.0",
+        "requirement": "^0.61.2"
+      },
+      {
+        "name": "devsweep-desktop",
+        "version": "0.3.0",
+        "requirement": "^0.59"
+      },
+      {
+        "name": "dirs-sys",
+        "version": "0.5.0",
+        "requirement": ">=0.59.0"
+      },
+      {
+        "name": "errno",
+        "version": "0.3.14",
+        "requirement": ">=0.52, <0.62"
+      },
+      {
+        "name": "jni",
+        "version": "0.21.1",
+        "requirement": "^0.45.0"
+      },
+      {
+        "name": "mio",
+        "version": "1.2.2",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "muda",
+        "version": "0.19.3",
+        "requirement": ">=0.60, <=0.61"
+      },
+      {
+        "name": "nu-ansi-term",
+        "version": "0.50.3",
+        "requirement": ">=0.59, <=0.61"
+      },
+      {
+        "name": "portable-atomic",
+        "version": "1.14.0",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "rustix",
+        "version": "1.1.4",
+        "requirement": ">=0.52, <0.62"
+      },
+      {
+        "name": "socket2",
+        "version": "0.6.5",
+        "requirement": ">=0.60, <0.62"
+      },
+      {
+        "name": "softbuffer",
+        "version": "0.4.8",
+        "requirement": "^0.61.2"
+      },
+      {
+        "name": "tempfile",
+        "version": "3.27.0",
+        "requirement": ">=0.52, <0.62"
+      },
+      {
+        "name": "termina",
+        "version": "0.3.3",
+        "requirement": ">=0.60"
+      },
+      {
+        "name": "tokio",
+        "version": "1.53.1",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "tokio",
+        "version": "1.53.1",
+        "requirement": "^0.61"
+      },
+      {
+        "name": "tray-icon",
+        "version": "0.24.2",
+        "requirement": ">=0.60, <=0.61"
+      },
+      {
+        "name": "winapi-util",
+        "version": "0.1.11",
+        "requirement": ">=0.48.0, <=0.61"
+      },
+      {
+        "name": "window-vibrancy",
+        "version": "0.6.0",
+        "requirement": "^0.59.0"
+      },
+      {
+        "name": "winreg",
+        "version": "0.55.0",
+        "requirement": "^0.59"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/windows-sys",
+    "checked_utc": "2026-10-15T06:34:48.219722+00:00"
+  },
+  {
+    "name": "sha2",
+    "latest": "0.11.1",
+    "latest_rust_version": "1.88",
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "0.10.9",
+      "0.11.1"
+    ],
+    "parents": [
+      {
+        "name": "brotli",
+        "version": "8.0.4",
+        "requirement": "~0.10"
+      },
+      {
+        "name": "bs58",
+        "version": "0.5.1",
+        "requirement": "^0.10"
+      },
+      {
+        "name": "cookie",
+        "version": "0.18.1",
+        "requirement": "^0.10.0"
+      },
+      {
+        "name": "devsweep-core",
+        "version": "0.3.0",
+        "requirement": "^0.11.1"
+      },
+      {
+        "name": "digest",
+        "version": "0.11.3",
+        "requirement": "^0.11"
+      },
+      {
+        "name": "tauri-codegen",
+        "version": "2.6.3",
+        "requirement": "^0.10"
+      },
+      {
+        "name": "termwiz",
+        "version": "0.23.3",
+        "requirement": "^0.10"
+      },
+      {
+        "name": "wezterm-blob-leases",
+        "version": "0.1.1",
+        "requirement": "^0.10"
+      },
+      {
+        "name": "wry",
+        "version": "0.55.1",
+        "requirement": "^0.10"
+      },
+      {
+        "name": "wry",
+        "version": "0.55.1",
+        "requirement": "^0.10"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/sha2",
+    "checked_utc": "2026-10-15T06:34:47.799545+00:00"
+  },
+  {
+    "name": "digest",
+    "latest": "0.11.3",
+    "latest_rust_version": "1.85",
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "0.10.7",
+      "0.11.3"
+    ],
+    "parents": [
+      {
+        "name": "sha2",
+        "version": "0.10.9",
+        "requirement": "^0.10.7"
+      },
+      {
+        "name": "sha2",
+        "version": "0.10.9",
+        "requirement": "^0.10.7"
+      },
+      {
+        "name": "sha2",
+        "version": "0.11.1",
+        "requirement": "^0.11"
+      },
+      {
+        "name": "sha2",
+        "version": "0.11.1",
+        "requirement": "^0.11"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/digest",
+    "checked_utc": "2026-10-15T06:34:47.069414+00:00"
+  },
+  {
+    "name": "block-buffer",
+    "latest": "0.12.1",
+    "latest_rust_version": "1.85",
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "0.10.4",
+      "0.12.1"
+    ],
+    "parents": [
+      {
+        "name": "digest",
+        "version": "0.10.7",
+        "requirement": "^0.10"
+      },
+      {
+        "name": "digest",
+        "version": "0.11.3",
+        "requirement": "^0.12"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/block-buffer",
+    "checked_utc": "2026-10-15T06:34:47.837122+00:00"
+  },
+  {
+    "name": "crypto-common",
+    "latest": "0.2.2",
+    "latest_rust_version": "1.85",
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "0.1.7",
+      "0.2.2"
+    ],
+    "parents": [
+      {
+        "name": "digest",
+        "version": "0.10.7",
+        "requirement": "^0.1.3"
+      },
+      {
+        "name": "digest",
+        "version": "0.11.3",
+        "requirement": "^0.2"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/crypto-common",
+    "checked_utc": "2026-10-15T06:34:48.020690+00:00"
+  },
+  {
+    "name": "glib",
+    "latest": "0.22.10",
+    "latest_rust_version": "1.92",
+    "latest_license": "MIT",
+    "selected_versions": [
+      "0.18.5"
+    ],
+    "parents": [
+      {
+        "name": "atk",
+        "version": "0.18.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "cairo-rs",
+        "version": "0.18.5",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "gdk",
+        "version": "0.18.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "gdk-pixbuf",
+        "version": "0.18.5",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "gdkx11",
+        "version": "0.18.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "gio",
+        "version": "0.18.4",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "glib-macros",
+        "version": "0.18.5",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "gtk",
+        "version": "0.18.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "javascriptcore-rs",
+        "version": "1.1.2",
+        "requirement": "^0.18.0"
+      },
+      {
+        "name": "libappindicator",
+        "version": "0.9.0",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "pango",
+        "version": "0.18.3",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "soup3",
+        "version": "0.5.0",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "webkit2gtk",
+        "version": "2.0.2",
+        "requirement": "^0.18.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/glib",
+    "checked_utc": "2026-10-15T06:34:48.849569+00:00"
+  },
+  {
+    "name": "gtk",
+    "latest": "0.19.0",
+    "latest_rust_version": "1.92",
+    "latest_license": "MIT",
+    "selected_versions": [
+      "0.18.2"
+    ],
+    "parents": [
+      {
+        "name": "gtk3-macros",
+        "version": "0.18.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "libappindicator",
+        "version": "0.9.0",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "muda",
+        "version": "0.19.3",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "tao",
+        "version": "0.35.3",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "tauri",
+        "version": "2.11.5",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "tauri-runtime",
+        "version": "2.11.3",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "tauri-runtime-wry",
+        "version": "2.11.4",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "tray-icon",
+        "version": "0.24.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "webkit2gtk",
+        "version": "2.0.2",
+        "requirement": "^0.18.0"
+      },
+      {
+        "name": "wry",
+        "version": "0.55.1",
+        "requirement": "^0.18"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/gtk",
+    "checked_utc": "2026-10-15T06:34:48.734480+00:00"
+  },
+  {
+    "name": "proc-macro-error",
+    "latest": "1.0.4",
+    "latest_rust_version": null,
+    "latest_license": "MIT OR Apache-2.0",
+    "selected_versions": [
+      "1.0.4"
+    ],
+    "parents": [
+      {
+        "name": "glib-macros",
+        "version": "0.18.5",
+        "requirement": "^1.0"
+      },
+      {
+        "name": "gtk3-macros",
+        "version": "0.18.2",
+        "requirement": "^1.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/proc-macro-error",
+    "checked_utc": "2026-10-15T06:34:48.818732+00:00"
+  },
+  {
+    "name": "unic-char-property",
+    "latest": "0.9.0",
+    "latest_rust_version": null,
+    "latest_license": "MIT/Apache-2.0",
+    "selected_versions": [
+      "0.9.0"
+    ],
+    "parents": [
+      {
+        "name": "unic-ucd-ident",
+        "version": "0.9.0",
+        "requirement": "^0.9.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/unic-char-property",
+    "checked_utc": "2026-10-15T06:34:48.696260+00:00"
+  },
+  {
+    "name": "unic-char-range",
+    "latest": "0.9.0",
+    "latest_rust_version": null,
+    "latest_license": "MIT/Apache-2.0",
+    "selected_versions": [
+      "0.9.0"
+    ],
+    "parents": [
+      {
+        "name": "unic-char-property",
+        "version": "0.9.0",
+        "requirement": "^0.9.0"
+      },
+      {
+        "name": "unic-ucd-ident",
+        "version": "0.9.0",
+        "requirement": "^0.9.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/unic-char-range",
+    "checked_utc": "2026-10-15T06:34:49.360538+00:00"
+  },
+  {
+    "name": "unic-common",
+    "latest": "0.9.0",
+    "latest_rust_version": null,
+    "latest_license": "MIT/Apache-2.0",
+    "selected_versions": [
+      "0.9.0"
+    ],
+    "parents": [
+      {
+        "name": "unic-ucd-version",
+        "version": "0.9.0",
+        "requirement": "^0.9.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/unic-common",
+    "checked_utc": "2026-10-15T06:34:49.419992+00:00"
+  },
+  {
+    "name": "unic-ucd-ident",
+    "latest": "0.9.0",
+    "latest_rust_version": null,
+    "latest_license": "MIT/Apache-2.0",
+    "selected_versions": [
+      "0.9.0"
+    ],
+    "parents": [
+      {
+        "name": "urlpattern",
+        "version": "0.3.0",
+        "requirement": "^0.9.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/unic-ucd-ident",
+    "checked_utc": "2026-10-15T06:34:49.473359+00:00"
+  },
+  {
+    "name": "unic-ucd-version",
+    "latest": "0.9.0",
+    "latest_rust_version": null,
+    "latest_license": "MIT/Apache-2.0",
+    "selected_versions": [
+      "0.9.0"
+    ],
+    "parents": [
+      {
+        "name": "unic-ucd-ident",
+        "version": "0.9.0",
+        "requirement": "^0.9.0"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/unic-ucd-version",
+    "checked_utc": "2026-10-15T06:34:49.499390+00:00"
+  },
+  {
+    "name": "lru",
+    "latest": "0.18.5",
+    "latest_rust_version": "1.85.0",
+    "latest_license": "MIT",
+    "selected_versions": [
+      "0.18.5"
+    ],
+    "parents": [
+      {
+        "name": "ratatui-core",
+        "version": "0.1.2",
+        "requirement": "^0.18"
+      },
+      {
+        "name": "tracing-log",
+        "version": "0.2.0",
+        "requirement": "^0.7.7"
+      }
+    ],
+    "source": "https://crates.io/api/v1/crates/lru",
+    "checked_utc": "2026-10-15T06:34:50.279344+00:00"
+  }
+]

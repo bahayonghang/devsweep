@@ -1,0 +1,19 @@
+   Compiling devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-1qnosyhmwroi1\s-hn86zusfuq-0di9rys-working`
+
+   Compiling devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-0l0p09vpvpdgq\s-hn86zwbfjk-1o6or1c-working`
+
+warning: `devsweep-core` (lib) generated 1 warning
+warning: `devsweep-cli` (lib) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\process_fixture-2wa1cx53n5r84\s-hn86zxut9h-0xzwpca-working`
+
+warning: `devsweep-cli` (bin "process_fixture") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.15s
+     Running tests\cli_contract.rs (dist/c16-target-windows\debug\deps\cli_contract-2aff5d1f282ebd02.exe)
+
+running 1 test
+test status_outcome_excludes_optional_probes_but_requires_supported_groups ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+

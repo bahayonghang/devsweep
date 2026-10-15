@@ -1,0 +1,272 @@
+{
+  "source": "https://crates.io/api/v1/crates/ratatui",
+  "crate": {
+    "id": "ratatui",
+    "name": "ratatui",
+    "updated_at": "2026-06-19T08:56:46.628604Z",
+    "versions": [
+      2606220,
+      2516981,
+      1903075,
+      1899809,
+      1802793,
+      1621255,
+      1569381,
+      1562434,
+      1464809,
+      1409743,
+      1355347,
+      1315592,
+      1309768,
+      1307687,
+      1299231,
+      1291019,
+      1283810,
+      1276559,
+      1269572,
+      1262634,
+      1254754,
+      1247839,
+      1246688,
+      1238634,
+      1229882,
+      1226628,
+      1222590,
+      1216183,
+      1208973,
+      1202215,
+      1194485,
+      1188483,
+      1183860,
+      1181866,
+      1176535,
+      1149689,
+      1147927,
+      1141057,
+      1134364,
+      1127777,
+      1120402,
+      1115616,
+      1113898,
+      1105197,
+      1098391,
+      1091449,
+      1084305,
+      1076991,
+      1069691,
+      1062010,
+      1054509,
+      1048860,
+      1046702,
+      1037572,
+      1037212,
+      1029392,
+      1019716,
+      1012601,
+      1006775,
+      989651,
+      987920,
+      980216,
+      973755,
+      966458,
+      959295,
+      951614,
+      945156,
+      937642,
+      932707,
+      931224,
+      924874,
+      918539,
+      911441,
+      904989,
+      898630,
+      893034,
+      887384,
+      883225,
+      881686,
+      875713,
+      870522,
+      870101,
+      847914,
+      810695,
+      756478,
+      753834,
+      722284
+    ],
+    "keywords": [
+      "dashboard",
+      "terminal",
+      "tui"
+    ],
+    "categories": [
+      "command-line-interface"
+    ],
+    "badges": [],
+    "created_at": "2023-02-08T17:11:50.886679Z",
+    "downloads": 60074840,
+    "recent_downloads": 21665779,
+    "default_version": "0.30.2",
+    "num_versions": 87,
+    "yanked": false,
+    "max_version": "0.30.2",
+    "newest_version": "0.30.2",
+    "max_stable_version": "0.30.2",
+    "description": "A library that's all about cooking up terminal user interfaces",
+    "homepage": "https://ratatui.rs",
+    "documentation": "https://docs.rs/ratatui/latest/ratatui/",
+    "repository": "https://github.com/ratatui/ratatui",
+    "links": {
+      "version_downloads": "/api/v1/crates/ratatui/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/ratatui/owners",
+      "owner_team": "/api/v1/crates/ratatui/owner_team",
+      "owner_user": "/api/v1/crates/ratatui/owner_user",
+      "reverse_dependencies": "/api/v1/crates/ratatui/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": true
+  },
+  "versions": [
+    {
+      "id": 2606220,
+      "crate": "ratatui",
+      "num": "0.30.2",
+      "dl_path": "/api/v1/crates/ratatui/0.30.2/download",
+      "readme_path": "/api/v1/crates/ratatui/0.30.2/readme",
+      "updated_at": "2026-06-19T08:56:46.628604Z",
+      "created_at": "2026-06-19T08:56:46.628604Z",
+      "downloads": 11177491,
+      "features": {
+        "all-widgets": [
+          "widget-calendar"
+        ],
+        "crossterm": [
+          "dep:ratatui-crossterm",
+          "std"
+        ],
+        "crossterm_0_28": [
+          "crossterm",
+          "ratatui-crossterm/crossterm_0_28"
+        ],
+        "crossterm_0_29": [
+          "crossterm",
+          "ratatui-crossterm/crossterm_0_29"
+        ],
+        "default": [
+          "all-widgets",
+          "crossterm",
+          "layout-cache",
+          "macros",
+          "underline-color"
+        ],
+        "layout-cache": [
+          "ratatui-core/layout-cache"
+        ],
+        "macros": [
+          "dep:ratatui-macros"
+        ],
+        "palette": [
+          "dep:palette",
+          "ratatui-core/palette"
+        ],
+        "portable-atomic": [
+          "ratatui-core/portable-atomic"
+        ],
+        "scrolling-regions": [
+          "ratatui-core/scrolling-regions",
+          "ratatui-crossterm?/scrolling-regions",
+          "ratatui-termina?/scrolling-regions",
+          "ratatui-termion?/scrolling-regions",
+          "ratatui-termwiz?/scrolling-regions"
+        ],
+        "serde": [
+          "dep:serde",
+          "ratatui-core/serde",
+          "ratatui-crossterm?/serde",
+          "ratatui-termina?/serde",
+          "ratatui-termion?/serde",
+          "ratatui-termwiz?/serde",
+          "ratatui-widgets/serde"
+        ],
+        "std": [
+          "ratatui-core/std",
+          "ratatui-widgets/std",
+          "serde?/std"
+        ],
+        "termina": [
+          "dep:ratatui-termina",
+          "std"
+        ],
+        "termion": [
+          "dep:ratatui-termion",
+          "std"
+        ],
+        "termwiz": [
+          "dep:ratatui-termwiz",
+          "std"
+        ],
+        "underline-color": [
+          "ratatui-core/underline-color",
+          "ratatui-crossterm?/underline-color",
+          "ratatui-termina?/underline-color",
+          "ratatui-termwiz?/underline-color"
+        ],
+        "unstable": [
+          "unstable-backend-writer",
+          "unstable-rendered-line-info",
+          "unstable-widget-ref"
+        ],
+        "unstable-backend-writer": [
+          "ratatui-crossterm?/unstable-backend-writer",
+          "ratatui-termina?/unstable-backend-writer",
+          "ratatui-termion?/unstable-backend-writer"
+        ],
+        "unstable-rendered-line-info": [
+          "ratatui-widgets/unstable-rendered-line-info"
+        ],
+        "unstable-widget-ref": [],
+        "widget-calendar": [
+          "ratatui-widgets/calendar"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT",
+      "links": {
+        "dependencies": "/api/v1/crates/ratatui/0.30.2/dependencies",
+        "version_downloads": "/api/v1/crates/ratatui/0.30.2/downloads",
+        "authors": "/api/v1/crates/ratatui/0.30.2/authors"
+      },
+      "crate_size": 72412,
+      "published_by": null,
+      "audit_actions": [],
+      "checksum": "3274ba0a2c5e1bcad2a2005d20f4dc59dad26b2eb0940fb094500dba4099d57d",
+      "rust_version": "1.88.0",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2024",
+      "description": "A library that's all about cooking up terminal user interfaces",
+      "homepage": "https://ratatui.rs",
+      "documentation": "https://docs.rs/ratatui/latest/ratatui/",
+      "repository": "https://github.com/ratatui/ratatui",
+      "trustpub_data": {
+        "provider": "github",
+        "repository": "ratatui/ratatui",
+        "run_id": "27815735762",
+        "sha": "e665c36cb14752a61cd777fbd06dbef8474f2add"
+      },
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 371,
+            "comment_lines": 4,
+            "files": 6
+          }
+        },
+        "total_code_lines": 371,
+        "total_comment_lines": 4
+      }
+    }
+  ]
+}

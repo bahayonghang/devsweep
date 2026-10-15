@@ -573,6 +573,19 @@ struct SidecarLock {
     _file: File,
 }
 
+#[cfg(unix)]
+impl Drop for SidecarLock {
+    fn drop(&mut self) {
+        use std::os::fd::AsRawFd;
+
+        // A concurrently forked child may retain this open file description
+        // until exec. Release our lock explicitly instead of waiting for its
+        // last descriptor to close.
+        // SAFETY: the guard still owns a valid descriptor for its acquired lock.
+        unsafe { libc::flock(self._file.as_raw_fd(), libc::LOCK_UN) };
+    }
+}
+
 impl SidecarLock {
     fn acquire(path: &Path) -> Result<Self, OptimizeAuditError> {
         #[cfg(windows)]
@@ -627,5 +640,35 @@ impl SidecarLock {
                 .map_err(|error| OptimizeAuditError::LockUnavailable(path.to_path_buf()))?;
             Ok(Self { _file: file })
         }
+    }
+}
+
+#[cfg(all(test, unix))]
+mod lock_tests {
+    use super::{OptimizeAuditError, SidecarLock};
+
+    #[test]
+    fn owner_drop_unlocks_while_an_inherited_description_remains_open() {
+        let directory = tempfile::TempDir::new().expect("isolated lock directory");
+        let path = directory.path().join("optimize.lock");
+        let owner = SidecarLock::acquire(&path).expect("first lock owner");
+        // dup shares the open file description, just like fork inheritance,
+        // without a timing-dependent child or unsafe post-fork test code.
+        let inherited = owner._file.try_clone().expect("retained description");
+        assert!(matches!(
+            SidecarLock::acquire(&path),
+            Err(OptimizeAuditError::LockUnavailable(_))
+        ));
+
+        drop(owner);
+        let replacement = SidecarLock::acquire(&path)
+            .expect("owner release unlocks even while the duplicate is alive");
+        drop(inherited);
+        assert!(matches!(
+            SidecarLock::acquire(&path),
+            Err(OptimizeAuditError::LockUnavailable(_))
+        ));
+        drop(replacement);
+        SidecarLock::acquire(&path).expect("replacement owner releases its lock");
     }
 }

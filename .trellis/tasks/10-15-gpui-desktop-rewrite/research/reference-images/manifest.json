@@ -1,0 +1,37 @@
+[
+  {
+    "file": "01-clean.png",
+    "original_name": "codex-clipboard-568a9400-f3f9-47dd-b7ca-4599b806d51b.png",
+    "bytes": 201383,
+    "sha256": "2f9782ea1a6827e25aa74c361f911cc18f0b2082c7821c009d89458d9f5d3a55",
+    "purpose": "User supplied visual reference only; never package as application asset"
+  },
+  {
+    "file": "02-software.png",
+    "original_name": "codex-clipboard-65a44a04-e7e5-4c1b-ab5f-3c6fb3f23922.png",
+    "bytes": 144367,
+    "sha256": "31399cef5c144a4bd41cf5b629bb09cb3275173393c4a8b78878aa9632e9fff0",
+    "purpose": "User supplied visual reference only; never package as application asset"
+  },
+  {
+    "file": "03-optimize.png",
+    "original_name": "codex-clipboard-ef7fae16-282a-4c71-b9e8-0caba4315f50.png",
+    "bytes": 248559,
+    "sha256": "4e1d425a57a40c9a61b690f01d836839e5c71dd501e7a0f081a794ca170aa588",
+    "purpose": "User supplied visual reference only; never package as application asset"
+  },
+  {
+    "file": "04-analyze.png",
+    "original_name": "codex-clipboard-667f0e9c-6ae2-405c-91a5-2395d8b2027b.png",
+    "bytes": 238320,
+    "sha256": "1c2fe5a96a12e07703b4800f4d04d8ca8000bc7c1d4d7c9aa509392364788d91",
+    "purpose": "User supplied visual reference only; never package as application asset"
+  },
+  {
+    "file": "05-status.png",
+    "original_name": "codex-clipboard-4c07c3e1-5ae0-4e5f-9d47-e4339d212a29.png",
+    "bytes": 225521,
+    "sha256": "7b78dc745de2ba70fbdbec3b339db95003c2eadfcf805d47b53f3358cc855a52",
+    "purpose": "User supplied visual reference only; never package as application asset"
+  }
+]

@@ -308,7 +308,7 @@ fn enumerate_on_mta(
             let id = package.Id()?;
             let full_name = bounded_hstring(id.FullName()?, 8 * 1024)?;
             if full_name.is_empty() {
-                return Err(windows::core::Error::from_win32());
+                return Err(windows::core::Error::from_thread());
             }
             let version = id.Version()?;
             let status = package.Status()?;
@@ -404,7 +404,7 @@ fn finish_enumeration(raw: Vec<RawPackage>, partial: bool) -> MtaResult {
 
 #[cfg(windows)]
 fn collect_iterable<T>(
-    iterable: &windows::Foundation::Collections::IIterable<T>,
+    iterable: &windows_collections::IIterable<T>,
     cancel: Option<&Arc<FlagCancelObserver>>,
 ) -> (Vec<T>, bool)
 where
@@ -440,7 +440,7 @@ where
 
 #[cfg(windows)]
 fn collect_vector_view<T>(
-    view: &windows::Foundation::Collections::IVectorView<T>,
+    view: &windows_collections::IVectorView<T>,
     cancel: Option<&Arc<FlagCancelObserver>>,
 ) -> (Vec<T>, bool)
 where
@@ -472,7 +472,7 @@ fn bounded_hstring(
 ) -> windows::core::Result<String> {
     let value = value.to_string_lossy();
     if value.len() > max_bytes {
-        return Err(windows::core::Error::from_win32());
+        return Err(windows::core::Error::from_thread());
     }
     Ok(value)
 }

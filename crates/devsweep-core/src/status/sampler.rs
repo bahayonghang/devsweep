@@ -1,5 +1,6 @@
 //! Snapshot and live cadence: one sample in flight, skipped ticks, cancel/join.
 
+use std::rc::Rc;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, AtomicU64, Ordering},
@@ -74,10 +75,10 @@ fn acquire_live() -> Result<LivePermit, StatusError> {
 /// One bounded Status sampler. Live occupies the process coordinator permit.
 #[derive(Debug, Default)]
 pub struct StatusSampler {
-    state: SamplerCache,
+    _private: (),
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 struct SamplerCache {
     cpu: Option<CpuTimes>,
     network: Option<Vec<InterfaceCounters>>,
@@ -93,16 +94,16 @@ struct SamplerCache {
     power_at_ms: u64,
     last_processes: Option<AvailabilityV1<super::ProcessesV1>>,
     last_sample_at: Option<Instant>,
-    pdh: Option<Arc<PdhProbe>>,
+    pdh: Option<Rc<PdhProbe>>,
 }
 
 impl SamplerCache {
     /// Open and prime the PDH query once per sampler. Later ticks collect once
     /// and read the rate since the previous tick.
-    fn pdh_probe(&mut self) -> Arc<PdhProbe> {
-        Arc::clone(
+    fn pdh_probe(&mut self) -> Rc<PdhProbe> {
+        Rc::clone(
             self.pdh
-                .get_or_insert_with(|| Arc::new(PdhProbe::open_primed())),
+                .get_or_insert_with(|| Rc::new(PdhProbe::open_primed())),
         )
     }
 }
@@ -116,7 +117,8 @@ impl StatusSampler {
     ) -> Result<StatusSnapshotV1, StatusError> {
         let noop = NoopCancelObserver;
         let observer: &dyn CancelObserver = cancel.unwrap_or(&noop);
-        let mut cache = self.state.clone();
+        // Snapshot calls and the live worker each own their native query locally.
+        let mut cache = SamplerCache::default();
         collect_snapshot(&mut cache, process_limit, SNAPSHOT_WINDOW_MS, observer)
     }
 }

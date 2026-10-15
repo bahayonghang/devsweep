@@ -1,0 +1,17 @@
+   Compiling serde_json v1.0.154
+   Compiling windows-sys v0.61.2
+   Compiling syn v2.0.119
+   Compiling tempfile v3.27.0
+   Compiling windows-implement v0.60.2
+   Compiling windows-interface v0.59.3
+   Compiling tracing-attributes v0.1.31
+   Compiling windows-core v0.62.2
+   Compiling tracing v0.1.44
+   Compiling windows-numerics v0.3.1
+   Compiling windows-collections v0.3.2
+   Compiling windows-future v0.3.2
+   Compiling windows v0.62.2
+   Compiling trash v5.2.9
+   Compiling devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 30.56s
+  Executable unittests src\lib.rs (target\debug\deps\devsweep_core-f16b4421543c4d43.exe)

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "just",
+    "ci"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 56.551,
+  "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+  "sandbox_permissions": "require_escalated",
+  "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+  "rust_test_threads": "4",
+  "cargo_target_dir_environment": null,
+  "log": "review-escalated-just-ci.log"
+}

@@ -26,9 +26,9 @@ jobs:
           - os: windows-latest
             workspace_args: --workspace
           - os: ubuntu-latest
-            workspace_args: --workspace --exclude devsweep-desktop
+            workspace_args: -p devsweep-core -p devsweep-cli
           - os: macos-latest
-            workspace_args: --workspace --exclude devsweep-desktop
+            workspace_args: -p devsweep-core -p devsweep-cli
 
     steps:
       - name: Checkout
@@ -148,10 +148,10 @@ jobs:
           toolchain: ${{ steps.msrv.outputs.version }}
 
       - name: Check on MSRV
-        run: cargo check --workspace --exclude devsweep-desktop --locked --all-targets
+        run: cargo check -p devsweep-core -p devsweep-cli --locked --all-targets
 
       - name: Test on MSRV
-        run: cargo test --workspace --exclude devsweep-desktop --locked --all-targets
+        run: cargo test -p devsweep-core -p devsweep-cli --locked --all-targets
 
   audit:
     name: cargo-audit

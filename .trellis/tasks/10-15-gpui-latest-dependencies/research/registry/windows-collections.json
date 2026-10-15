@@ -1,0 +1,195 @@
+{
+  "source": "https://crates.io/api/v1/crates/windows-collections",
+  "crate": {
+    "id": "windows-collections",
+    "name": "windows-collections",
+    "updated_at": "2026-09-03T16:43:47.705066Z",
+    "versions": [
+      3145134,
+      1761935,
+      1745845,
+      1715119,
+      1487546,
+      1487168,
+      1455270,
+      1455202,
+      1436883
+    ],
+    "keywords": [],
+    "categories": [
+      "os::windows-apis"
+    ],
+    "badges": [],
+    "created_at": "2025-02-06T18:28:17.661562Z",
+    "downloads": 110593758,
+    "recent_downloads": 47201347,
+    "default_version": "0.100.0",
+    "num_versions": 9,
+    "yanked": false,
+    "max_version": "0.100.0",
+    "newest_version": "0.100.0",
+    "max_stable_version": "0.100.0",
+    "description": "Windows collection types",
+    "homepage": null,
+    "documentation": null,
+    "repository": "https://github.com/microsoft/windows-rs",
+    "links": {
+      "version_downloads": "/api/v1/crates/windows-collections/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/windows-collections/owners",
+      "owner_team": "/api/v1/crates/windows-collections/owner_team",
+      "owner_user": "/api/v1/crates/windows-collections/owner_user",
+      "reverse_dependencies": "/api/v1/crates/windows-collections/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 3145134,
+      "crate": "windows-collections",
+      "num": "0.100.0",
+      "dl_path": "/api/v1/crates/windows-collections/0.100.0/download",
+      "readme_path": "/api/v1/crates/windows-collections/0.100.0/readme",
+      "updated_at": "2026-09-03T16:43:47.705066Z",
+      "created_at": "2026-09-03T16:43:47.705066Z",
+      "downloads": 10474,
+      "features": {
+        "default": [
+          "std"
+        ],
+        "std": [
+          "windows-core/std"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/windows-collections/0.100.0/dependencies",
+        "version_downloads": "/api/v1/crates/windows-collections/0.100.0/downloads",
+        "authors": "/api/v1/crates/windows-collections/0.100.0/authors"
+      },
+      "crate_size": 19243,
+      "published_by": {
+        "id": 64539,
+        "login": "kennykerr",
+        "name": "Kenny Kerr",
+        "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+        "url": "https://github.com/kennykerr",
+        "github_username_matches": true,
+        "created_at": "2014-11-19T14:22:06Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 64539,
+            "login": "kennykerr",
+            "name": "Kenny Kerr",
+            "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+            "url": "https://github.com/kennykerr",
+            "github_username_matches": true,
+            "created_at": "2014-11-19T14:22:06Z"
+          },
+          "time": "2026-09-03T16:43:47.705066Z"
+        }
+      ],
+      "checksum": "e884f6b14b3c101363efab151e89271b4da599d1e29d945023f92656b23020c2",
+      "rust_version": "1.95",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2024",
+      "description": "Windows collection types",
+      "homepage": null,
+      "documentation": null,
+      "repository": "https://github.com/microsoft/windows-rs",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 4424,
+            "comment_lines": 8,
+            "files": 11
+          }
+        },
+        "total_code_lines": 4424,
+        "total_comment_lines": 8
+      }
+    },
+    {
+      "id": 1761935,
+      "crate": "windows-collections",
+      "num": "0.3.2",
+      "dl_path": "/api/v1/crates/windows-collections/0.3.2/download",
+      "readme_path": "/api/v1/crates/windows-collections/0.3.2/readme",
+      "updated_at": "2025-10-06T19:16:09.553894Z",
+      "created_at": "2025-10-06T19:16:09.553894Z",
+      "downloads": 41573614,
+      "features": {
+        "default": [
+          "std"
+        ],
+        "std": [
+          "windows-core/std"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/windows-collections/0.3.2/dependencies",
+        "version_downloads": "/api/v1/crates/windows-collections/0.3.2/downloads",
+        "authors": "/api/v1/crates/windows-collections/0.3.2/authors"
+      },
+      "crate_size": 13510,
+      "published_by": {
+        "id": 64539,
+        "login": "kennykerr",
+        "name": "Kenny Kerr",
+        "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+        "url": "https://github.com/kennykerr",
+        "github_username_matches": true,
+        "created_at": "2014-11-19T14:22:06Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 64539,
+            "login": "kennykerr",
+            "name": "Kenny Kerr",
+            "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+            "url": "https://github.com/kennykerr",
+            "github_username_matches": true,
+            "created_at": "2014-11-19T14:22:06Z"
+          },
+          "time": "2025-10-06T19:16:09.553894Z"
+        }
+      ],
+      "checksum": "23b2d95af1a8a14a3c7367e1ed4fc9c20e0a26e79551b1454d72583c97cc6610",
+      "rust_version": "1.82",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "Windows collection types",
+      "homepage": null,
+      "documentation": null,
+      "repository": "https://github.com/microsoft/windows-rs",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 2316,
+            "comment_lines": 0,
+            "files": 5
+          }
+        },
+        "total_code_lines": 2316,
+        "total_comment_lines": 0
+      }
+    }
+  ]
+}

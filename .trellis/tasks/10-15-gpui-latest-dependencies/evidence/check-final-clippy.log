@@ -1,0 +1,4 @@
+    Checking devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+    Checking devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Checking devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 12.28s

@@ -1,0 +1,8 @@
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/existing-contracts.md", "reason": "Compact authoritative-spec loading map; read complete applicable sections before edits to avoid injection truncation"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Existing safety compatibility and lifecycle contract for C01"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/repository-audit.md", "reason": "Current source and reusable asset evidence"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/mole-feature-matrix.md", "reason": "Functional scope and explicit parity gaps"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/cli-contract-proposal.md", "reason": "CLI-first proposed additive command contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/dependency-policy.md", "reason": "User requirement to prefer latest compatible dependencies"}
+{"file": ".trellis/tasks/10-15-gpui-cli-contracts/research/cli-entry-points.md", "reason": "Verified existing API locations and missing saved-plan wrappers"}
+{"file": ".trellis/tasks/10-15-gpui-cli-contracts/research/strict-wrapper-findings.md", "reason": "Saved startup/Analyze/leftover input boundaries and technical decisions to freeze before implementation"}

@@ -12,6 +12,8 @@ use anyhow::{Context, Result, bail};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use crate::{
     filesystem::{normalize_absolute_path, paths_equal},
     model::{CleanAction, Scope},
@@ -142,14 +144,11 @@ pub(super) fn resolve(target: &ValidatedTarget) -> Result<Option<ProviderBinding
         .collect::<Vec<_>>();
     // Only allowlisted effective cache configuration is hashed; no entire config
     // files, credentials, environment dumps or captured output are retained.
-    let configuration_sha256 = format!(
-        "{:x}",
-        Sha256::digest(serde_json::to_vec(&(
-            normalize_absolute_path(&footprint)?,
-            effective_config,
-            relevant_config(target.rule_id())?
-        ))?)
-    );
+    let configuration_sha256 = hex_digest(Sha256::digest(serde_json::to_vec(&(
+        normalize_absolute_path(&footprint)?,
+        effective_config,
+        relevant_config(target.rule_id())?,
+    ))?));
     Ok(Some(ProviderBinding {
         rule: target.rule_id().to_string(),
         footprint: normalize_absolute_path(&footprint)?,
@@ -302,14 +301,11 @@ pub(super) fn digest(base: &str, bindings: &[(String, ProviderBinding)]) -> Resu
     }
     let mut ordered = bindings.to_vec();
     ordered.sort_by(|left, right| left.0.cmp(&right.0));
-    Ok(format!(
-        "{:x}",
-        Sha256::digest(serde_json::to_vec(&(
-            "devsweep.provider-confirmation.v1",
-            base,
-            ordered
-        ))?)
-    ))
+    Ok(hex_digest(Sha256::digest(serde_json::to_vec(&(
+        "devsweep.provider-confirmation.v1",
+        base,
+        ordered,
+    ))?)))
 }
 
 fn query(program: &Path, prefix_args: &[String], args: &[&str]) -> Result<String> {

@@ -1,0 +1,6 @@
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `"C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node.exe" "C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node_modules\npm\bin\npm-cli.js" run build`
+'\"C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node.exe\"' is not recognized as an internal or external command,
+operable program or batch file.
+beforeBuildCommand `"C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node.exe" "C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node_modules\npm\bin\npm-cli.js" run build` failed with exit code 1
+       Error beforeBuildCommand `"C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node.exe" "C:\Users\lyh\AppData\Local\mise\installs\node\22.23.2\node_modules\npm\bin\npm-cli.js" run build` failed with exit code 1

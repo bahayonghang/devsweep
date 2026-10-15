@@ -1,0 +1,3 @@
+# Preserve raw console evidence, including its spacing and original line endings.
+# These captured logs are data; source and authored documents retain normal checks.
+*.log -text -diff

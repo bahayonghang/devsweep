@@ -12,6 +12,7 @@ pub mod cargo_metadata;
 pub mod clean_advisories;
 /// Validated desktop appearance and bounded runtime preferences.
 pub mod desktop_preferences;
+mod digest_encoding;
 /// Cleanup execution orchestration and safety enforcement.
 pub mod execution;
 /// Shared filesystem identity, containment, reparse, and sizing operations.

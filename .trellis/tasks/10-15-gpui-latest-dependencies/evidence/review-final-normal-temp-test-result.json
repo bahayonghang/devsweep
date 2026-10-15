@@ -1,0 +1,20 @@
+{
+  "command": [
+    "cargo",
+    "test",
+    "--workspace",
+    "--locked",
+    "--all-targets",
+    "--target-dir",
+    "dist/c16-target-windows"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 64.878,
+  "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+  "sandbox_permissions": "require_escalated",
+  "TMP": "C:\\Users\\lyh\\AppData\\Local\\Temp",
+  "TEMP": "C:\\Users\\lyh\\AppData\\Local\\Temp",
+  "rust_test_threads": "4",
+  "cargo_target_dir_environment": null,
+  "log": "review-final-normal-temp-test.log"
+}

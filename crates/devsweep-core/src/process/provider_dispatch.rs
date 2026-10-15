@@ -8,6 +8,8 @@ use std::{
 use anyhow::{Context, Result, bail};
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 pub(crate) type ProviderDispatch = (PathBuf, Vec<String>, Vec<(PathBuf, String)>);
 
 pub(crate) fn resolve_provider_dispatch(resolved: &Path, rule: &str) -> Result<ProviderDispatch> {
@@ -195,7 +197,7 @@ pub(crate) fn provider_file_digest(path: &Path) -> Result<String> {
         }
         hash.update(&bytes[..count]);
     }
-    Ok(format!("{:x}", hash.finalize()))
+    Ok(hex_digest(hash.finalize()))
 }
 
 #[cfg(test)]

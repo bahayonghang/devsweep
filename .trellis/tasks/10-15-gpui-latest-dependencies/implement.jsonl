@@ -1,0 +1,8 @@
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/existing-contracts.md", "reason": "Compact authoritative-spec loading map; read complete applicable sections before edits to avoid injection truncation"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Existing safety compatibility and lifecycle contract for C16"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/repository-audit.md", "reason": "Current source and reusable asset evidence"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/mole-feature-matrix.md", "reason": "Functional scope and explicit parity gaps"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/cli-contract-proposal.md", "reason": "CLI-first proposed additive command contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/dependency-policy.md", "reason": "User requirement to prefer latest compatible dependencies"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/gpui-windows-feasibility.md", "reason": "Primary source feasibility and native evidence gate"}
+{"file": ".trellis/tasks/10-15-gpui-latest-dependencies/research/toolchain-decision.md", "reason": "User selected installed Rust 1.99; do not repeat the declined 1.88 download proposal"}

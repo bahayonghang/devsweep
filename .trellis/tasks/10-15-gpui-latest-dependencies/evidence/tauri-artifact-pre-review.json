@@ -1,0 +1,7 @@
+{
+  "evidence_scope": "pre-review snapshot; native compilation only, not launch or performance acceptance",
+  "path": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16-target-windows\\release\\devsweep-desktop.exe",
+  "exists": true,
+  "sha256": "5b96f2525bdb65aad552a33d489a9b048f668c3ff27e90592a97e07b40847351",
+  "bytes": 15027200
+}

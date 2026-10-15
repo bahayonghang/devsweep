@@ -1,0 +1,27 @@
+   Compiling tempfile v3.27.0
+   Compiling devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-1qnosyhmwroi1\s-hn86p29tid-0e37l3s-working`
+
+warning: `devsweep-core` (lib) generated 1 warning
+   Compiling devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.15s
+     Running unittests src\lib.rs (dist/c16-target-windows\debug\deps\devsweep-4c14b45229e45664.exe)
+
+running 1 test
+test application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit ... FAILED
+
+failures:
+
+---- application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit stdout ----
+
+thread 'application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit' (155292) panicked at crates\devsweep-cli\src\application\commands\protect.rs:265:31:
+add: ApplicationError { exit: Unavailable, code: "protection_store_unavailable", message: "The protection store is unavailable. Original bytes were preserved and cleanup cannot expand.", output_already_emitted: false }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 190 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p devsweep-cli --lib`

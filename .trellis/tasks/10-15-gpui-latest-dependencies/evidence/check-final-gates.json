@@ -1,0 +1,75 @@
+[
+  {
+    "name": "fmt",
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.134,
+    "log": "check-final-fmt.log",
+    "product_snapshot": "7ec9397c3ab6cce1f44e1c628d15a7cf121f21bfcd6d4c83cae78dc5daf1ee24",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "name": "check",
+    "command": [
+      "cargo",
+      "check",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 7.313,
+    "log": "check-final-check.log",
+    "product_snapshot": "7ec9397c3ab6cce1f44e1c628d15a7cf121f21bfcd6d4c83cae78dc5daf1ee24",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 12.654,
+    "log": "check-final-clippy.log",
+    "product_snapshot": "7ec9397c3ab6cce1f44e1c628d15a7cf121f21bfcd6d4c83cae78dc5daf1ee24",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "name": "test",
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 101,
+    "elapsed_seconds": 26.195,
+    "log": "check-final-test.log",
+    "product_snapshot": "7ec9397c3ab6cce1f44e1c628d15a7cf121f21bfcd6d4c83cae78dc5daf1ee24",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  }
+]

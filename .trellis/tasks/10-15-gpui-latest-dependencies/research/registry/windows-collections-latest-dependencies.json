@@ -1,0 +1,31 @@
+{
+  "source": "https://crates.io/api/v1/crates/windows-collections/0.100.0/dependencies",
+  "data": {
+    "dependencies": [
+      {
+        "id": 35314812,
+        "version_id": 3145134,
+        "crate_id": "windows-core",
+        "req": "^0.100.0",
+        "optional": false,
+        "default_features": false,
+        "features": [],
+        "target": null,
+        "kind": "normal",
+        "downloads": 0
+      },
+      {
+        "id": 35314813,
+        "version_id": 3145134,
+        "crate_id": "windows-strings",
+        "req": "^0.100.0",
+        "optional": false,
+        "default_features": false,
+        "features": [],
+        "target": null,
+        "kind": "dev",
+        "downloads": 0
+      }
+    ]
+  }
+}

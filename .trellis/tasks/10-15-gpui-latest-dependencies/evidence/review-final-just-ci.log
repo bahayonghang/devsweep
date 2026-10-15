@@ -1,0 +1,7 @@
+cargo fmt --all -- --check
+cargo check --workspace --locked --all-targets
+error: failed to open: D:\Documents\Code\Rust\Exp\devsweep\target\debug\.cargo-build-lock
+
+Caused by:
+  Access is denied. (os error 5)
+error: recipe `check` failed on line 15 with exit code 1

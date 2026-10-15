@@ -1,0 +1,57 @@
+[
+  {
+    "command": [
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js",
+      "--version"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.61,
+    "log": "desktop-node22-npm10-version.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js",
+      "run",
+      "types:generate",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.828,
+    "log": "desktop-node22-npm10-types-generate.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js",
+      "run",
+      "lint"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 12.584,
+    "log": "desktop-node22-npm10-lint.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js",
+      "run",
+      "typecheck"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 7.368,
+    "log": "desktop-node22-npm10-typecheck.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node.exe",
+      "C:\\Users\\lyh\\AppData\\Local\\mise\\installs\\node\\22.23.2\\node_modules\\npm\\bin\\npm-cli.js",
+      "test"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 30.613,
+    "log": "desktop-node22-npm10-test.log"
+  }
+]

@@ -1,0 +1,53 @@
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-0vwsq2f8uct8e\s-hn86y8esit-07fh1i3-working`
+
+warning: `devsweep-core` (lib) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-17ieaeu8z2qo4\s-hn86y9szjf-1nybqd2-working`
+
+warning: `devsweep-cli` (lib) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\five_mode_contract-0t1926bh1s0g0\s-hn86ya9zg1-1b9sed3-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\process_fixture-09dmrg0ovok8c\s-hn86yaalhv-1wa0d7a-working`
+
+    Checking devsweep-cli v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-cli)
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\provider_authority-16ikxwudu6arf\s-hn86yaagxr-03rk85g-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-061pesok7sqwv\s-hn86yaasno-0vt0sl1-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\process_fixture-3rrrqvt0a5g3q\s-hn86ya9tpx-0g4i3qo-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-2xloe0hznd51p\s-hn86yaaaxo-0f3fvs7-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep-0vk263i4i7biw\s-hn86y9sv4e-1gvq89o-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\clean_advisory_fixture-32stco5soppzo\s-hn86y9svdq-1u342el-working`
+
+warning: `devsweep-cli` (test "five_mode_contract") generated 1 warning
+warning: `devsweep-cli` (bin "process_fixture") generated 1 warning
+warning: `devsweep-cli` (test "provider_authority") generated 1 warning
+warning: `devsweep-cli` (bin "devsweep" test) generated 1 warning
+warning: `devsweep-cli` (bin "process_fixture" test) generated 1 warning
+warning: `devsweep-cli` (bin "devsweep") generated 1 warning
+warning: `devsweep-cli` (lib test) generated 1 warning
+warning: `devsweep-core` (example "clean_advisory_fixture") generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\public_api-237201g8yg6ig\s-hn86y9thng-157t05c-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_core-2dxsrzzrw2yfk\s-hn86y8fm3m-15zhkar-working`
+
+warning: `devsweep-core` (test "public_api") generated 1 warning
+warning: `devsweep-core` (lib test) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop_lib-08yq4twi8077p\s-hn86y9t75y-05kgzwe-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop_lib-17y7qh5eobpzi\s-hn86y9te20-0w065dv-working`
+
+warning: `devsweep-desktop` (lib) generated 1 warning
+warning: `devsweep-desktop` (lib test) generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop-0a4vqkruo64i1\s-hn86yaifzp-0p34h4v-working`
+
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\devsweep_desktop-3bdhju3jwd48c\s-hn86yaijne-1tfo1qr-working`
+
+warning: `devsweep-desktop` (bin "devsweep-desktop" test) generated 1 warning
+warning: `devsweep-desktop` (bin "devsweep-desktop") generated 1 warning
+warning: hard linking files in the incremental compilation cache failed. copying files instead. consider moving the cache directory to a file system which supports hard linking in session dir `\\?\D:\Documents\Code\Rust\Exp\devsweep\dist\c16-target-windows\debug\incremental\cli_contract-32867wme1k50c\s-hn86zzxgd9-0gji3vv-working`
+
+warning: `devsweep-cli` (test "cli_contract") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.21s

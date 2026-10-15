@@ -1,0 +1,18 @@
+    Checking devsweep-core v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\crates\devsweep-core)
+   Compiling devsweep-desktop v0.3.0 (D:\Documents\Code\Rust\Exp\devsweep\desktop\src-tauri)
+error: usage of an `Arc` that is not `Send` and `Sync`
+   --> crates\devsweep-core\src\status\sampler.rs:105:40
+    |
+105 |                 .get_or_insert_with(|| Arc::new(PdhProbe::open_primed())),
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `Arc<PdhProbe>` is not `Send` and `Sync` as `PdhProbe` is neither `Send` nor `Sync`
+    = help: if the `Arc` will not be used across threads replace it with an `Rc`
+    = help: otherwise make `PdhProbe` `Send` and `Sync` or consider a wrapper type such as `Mutex`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.99.0/index.html#arc_with_non_send_sync
+    = note: `-D clippy::arc-with-non-send-sync` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::arc_with_non_send_sync)]`
+
+error: could not compile `devsweep-core` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `devsweep-core` (lib test) due to 1 previous error

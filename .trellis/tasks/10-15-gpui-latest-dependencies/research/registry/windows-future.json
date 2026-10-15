@@ -1,0 +1,196 @@
+{
+  "source": "https://crates.io/api/v1/crates/windows-future",
+  "crate": {
+    "id": "windows-future",
+    "name": "windows-future",
+    "updated_at": "2026-09-03T16:44:03.555455Z",
+    "versions": [
+      3145136,
+      1761932,
+      1745844,
+      1715118,
+      1565573,
+      1487545,
+      1487167,
+      1455273,
+      1455208,
+      1441519
+    ],
+    "keywords": [],
+    "categories": [
+      "os::windows-apis"
+    ],
+    "badges": [],
+    "created_at": "2025-02-10T20:05:42.906954Z",
+    "downloads": 111373997,
+    "recent_downloads": 47405713,
+    "default_version": "0.100.0",
+    "num_versions": 10,
+    "yanked": false,
+    "max_version": "0.100.0",
+    "newest_version": "0.100.0",
+    "max_stable_version": "0.100.0",
+    "description": "Windows async types",
+    "homepage": null,
+    "documentation": null,
+    "repository": "https://github.com/microsoft/windows-rs",
+    "links": {
+      "version_downloads": "/api/v1/crates/windows-future/downloads",
+      "versions": null,
+      "owners": "/api/v1/crates/windows-future/owners",
+      "owner_team": "/api/v1/crates/windows-future/owner_team",
+      "owner_user": "/api/v1/crates/windows-future/owner_user",
+      "reverse_dependencies": "/api/v1/crates/windows-future/reverse_dependencies"
+    },
+    "exact_match": false,
+    "trustpub_only": false
+  },
+  "versions": [
+    {
+      "id": 3145136,
+      "crate": "windows-future",
+      "num": "0.100.0",
+      "dl_path": "/api/v1/crates/windows-future/0.100.0/download",
+      "readme_path": "/api/v1/crates/windows-future/0.100.0/readme",
+      "updated_at": "2026-09-03T16:44:03.555455Z",
+      "created_at": "2026-09-03T16:44:03.555455Z",
+      "downloads": 8785,
+      "features": {
+        "default": [
+          "std"
+        ],
+        "std": [
+          "windows-core/std"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/windows-future/0.100.0/dependencies",
+        "version_downloads": "/api/v1/crates/windows-future/0.100.0/downloads",
+        "authors": "/api/v1/crates/windows-future/0.100.0/authors"
+      },
+      "crate_size": 16532,
+      "published_by": {
+        "id": 64539,
+        "login": "kennykerr",
+        "name": "Kenny Kerr",
+        "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+        "url": "https://github.com/kennykerr",
+        "github_username_matches": true,
+        "created_at": "2014-11-19T14:22:06Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 64539,
+            "login": "kennykerr",
+            "name": "Kenny Kerr",
+            "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+            "url": "https://github.com/kennykerr",
+            "github_username_matches": true,
+            "created_at": "2014-11-19T14:22:06Z"
+          },
+          "time": "2026-09-03T16:44:03.555455Z"
+        }
+      ],
+      "checksum": "a74555161b6c58612bbe052b9964c9c069326c487d24b8f7e77d5a8e83fb81c8",
+      "rust_version": "1.95",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2024",
+      "description": "Windows async types",
+      "homepage": null,
+      "documentation": null,
+      "repository": "https://github.com/microsoft/windows-rs",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 2802,
+            "comment_lines": 12,
+            "files": 10
+          }
+        },
+        "total_code_lines": 2802,
+        "total_comment_lines": 12
+      }
+    },
+    {
+      "id": 1761932,
+      "crate": "windows-future",
+      "num": "0.3.2",
+      "dl_path": "/api/v1/crates/windows-future/0.3.2/download",
+      "readme_path": "/api/v1/crates/windows-future/0.3.2/readme",
+      "updated_at": "2025-10-06T19:15:33.355015Z",
+      "created_at": "2025-10-06T19:15:33.355015Z",
+      "downloads": 41565317,
+      "features": {
+        "default": [
+          "std"
+        ],
+        "std": [
+          "windows-core/std"
+        ]
+      },
+      "yanked": false,
+      "yank_message": null,
+      "lib_links": null,
+      "license": "MIT OR Apache-2.0",
+      "links": {
+        "dependencies": "/api/v1/crates/windows-future/0.3.2/dependencies",
+        "version_downloads": "/api/v1/crates/windows-future/0.3.2/downloads",
+        "authors": "/api/v1/crates/windows-future/0.3.2/authors"
+      },
+      "crate_size": 17944,
+      "published_by": {
+        "id": 64539,
+        "login": "kennykerr",
+        "name": "Kenny Kerr",
+        "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+        "url": "https://github.com/kennykerr",
+        "github_username_matches": true,
+        "created_at": "2014-11-19T14:22:06Z"
+      },
+      "audit_actions": [
+        {
+          "action": "publish",
+          "user": {
+            "id": 64539,
+            "login": "kennykerr",
+            "name": "Kenny Kerr",
+            "avatar": "https://avatars.githubusercontent.com/u/9845234?v=4",
+            "url": "https://github.com/kennykerr",
+            "github_username_matches": true,
+            "created_at": "2014-11-19T14:22:06Z"
+          },
+          "time": "2025-10-06T19:15:33.355015Z"
+        }
+      ],
+      "checksum": "e1d6f90251fe18a279739e78025bd6ddc52a7e22f921070ccdc67dde84c605cb",
+      "rust_version": "1.82",
+      "has_lib": true,
+      "bin_names": [],
+      "edition": "2021",
+      "description": "Windows async types",
+      "homepage": null,
+      "documentation": null,
+      "repository": "https://github.com/microsoft/windows-rs",
+      "trustpub_data": null,
+      "linecounts": {
+        "languages": {
+          "Rust": {
+            "code_lines": 3034,
+            "comment_lines": 54,
+            "files": 10
+          }
+        },
+        "total_code_lines": 3034,
+        "total_comment_lines": 54
+      }
+    }
+  ]
+}

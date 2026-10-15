@@ -1,0 +1,35 @@
+[package]
+name = "devsweep-cli"
+version.workspace = true
+edition.workspace = true
+description = "Safety-first developer cleanup planner and executor."
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+name = "devsweep"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.29"
+devsweep-core = { path = "../devsweep-core" }
+ratatui = { version = "0.30", features = ["crossterm"] }
+serde_json = "1"
+tracing-subscriber = "0.3"
+unicode-width = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "devsweep"
+path = "src/main.rs"
+
+[[bin]]
+name = "process_fixture"
+path = "src/bin/process_fixture.rs"
+doc = false

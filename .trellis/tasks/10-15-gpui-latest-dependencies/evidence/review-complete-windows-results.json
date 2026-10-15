@@ -1,0 +1,98 @@
+[
+  {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "devsweep-cli",
+      "--test",
+      "cli_contract",
+      "--locked",
+      "--target-dir",
+      "dist/c16-target-windows",
+      "status_outcome_excludes_optional_probes_but_requires_supported_groups",
+      "--",
+      "--exact"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 7.348,
+    "log": "review-complete-optional-probe.log",
+    "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "fmt",
+      "--all",
+      "--",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.961,
+    "log": "review-complete-fmt.log",
+    "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "check",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.344,
+    "log": "review-complete-check.log",
+    "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "clippy",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 5.059,
+    "log": "review-complete-clippy.log",
+    "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  },
+  {
+    "command": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--locked",
+      "--all-targets",
+      "--target-dir",
+      "dist/c16-target-windows"
+    ],
+    "exit_code": 101,
+    "elapsed_seconds": 59.629,
+    "log": "review-complete-test.log",
+    "source_aggregate": "a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485",
+    "temporary_directory": "D:\\Documents\\Code\\Rust\\Exp\\devsweep\\dist\\c16\\review-temp",
+    "rust_test_threads": "4",
+    "cargo_target_dir_environment": null
+  }
+]

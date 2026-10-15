@@ -4,6 +4,8 @@ use std::{collections::BTreeSet, fmt};
 
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use super::model::{
     SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION, SOFTWARE_PREVIEW_VERSION,
     SoftwareActionClass, SoftwareEligibilityReason, SoftwareIdentity, SoftwareInventoryV1,
@@ -361,7 +363,7 @@ fn preview_digest(
 }
 
 fn hex_sha256(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    hex_digest(Sha256::digest(bytes))
 }
 
 fn is_sha256(value: &str) -> bool {

@@ -1,0 +1,21 @@
+[
+  {
+    "command": [
+      "cargo",
+      "test",
+      "-p",
+      "devsweep-cli",
+      "--lib",
+      "--locked",
+      "--target-dir",
+      "dist/c16-target-windows",
+      "application::commands::protect::tests::protect_add_remove_round_trip_and_redacts_audit",
+      "--",
+      "--exact"
+    ],
+    "exit_code": 101,
+    "elapsed_seconds": 21.67,
+    "log": "check-protect-isolated.log",
+    "rust_test_threads": "4"
+  }
+]

@@ -1,0 +1,4 @@
+# Preserve existing hashed research snapshots without editing their EOF whitespace.
+dependency-policy.md -text whitespace=-blank-at-eof
+existing-contracts.md -text whitespace=-blank-at-eof
+release-log-delta.md -text whitespace=-blank-at-eof

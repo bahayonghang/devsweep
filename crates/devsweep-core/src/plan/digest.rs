@@ -4,6 +4,8 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
+use crate::digest_encoding::hex_digest;
+
 use crate::{
     filesystem::normalize_absolute_path,
     model::{CLEANUP_PLAN_VERSION, CleanAction, Evidence, Scope, TargetId},
@@ -57,7 +59,7 @@ fn canonical_manifest(targets: &[ValidatedTarget]) -> Result<CanonicalManifest> 
 
 fn hash_serializable(value: &impl Serialize, context: &'static str) -> Result<String> {
     let bytes = serde_json::to_vec(value).context(context)?;
-    Ok(format!("{:x}", Sha256::digest(bytes)))
+    Ok(hex_digest(Sha256::digest(bytes)))
 }
 
 #[derive(Serialize)]
