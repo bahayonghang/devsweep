@@ -1717,3 +1717,31 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - Software 原生计时仍超过 5000ms 门槛，证据保留了这个缺口。
+
+
+## Session 59: 清理首页范围、占用提醒与河狸标识
+<!-- trellis-session: v=2 fp=e2a0e7c42bca29bc -->
+
+**Date**: 2026-10-14
+**Task**: 清理首页范围、占用提醒与河狸标识
+**Branch**: `dev`
+
+### Summary
+
+拆分提交了清理范围与项目占用、容量提醒、桌面双流程、河狸标识、只读测量和规范，并归档本轮父任务与六个子任务。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e7ebf4be4b4dc3ecc4014dd1ba0562d1a79518bb` | feat(core): ✨ 分离清理范围并只读记录项目占用 |
+| `cb6747fb34e81d20eb6e89ca27c4dd354c57c6f0` | feat(core): ✨ 为项目产物增加可配置容量提醒 |
+| `e277ae82cde42e86ecd952c84c79e3470b91499f` | feat(desktop): ✨ 重做清理首页的全局与项目流程 |
+| `fc1f54570b620720b8a02f842e8fef146407be89` | feat(desktop): ✨ 换上原创河狸标识 |
+| `864183207151f990d37316b72c52233980e585b0` | chore: 🔧 增加清理首页的只读性能测量 |
+| `178e279e278679b9f68b42e77b2678de90f3570e` | docs: 📝 说明清理范围、项目占用和容量提醒 |
+| `203a67a35d2ca8b55aa81c66e420d1ae48deb584` | docs(task): 📝 保存清理首页重做的规划与验收记录 |
+
+### Status
+
+[OK] **Completed**

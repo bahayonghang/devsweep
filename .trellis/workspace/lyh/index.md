@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 58
-- **Last Active**: 2026-10-13
+- **Total Sessions**: 59
+- **Last Active**: 2026-10-14
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1719 | Active |
+| `journal-1.md` | ~1747 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 59 | 2026-10-14 | 清理首页范围、占用提醒与河狸标识 | `e7ebf4be4b4dc3ecc4014dd1ba0562d1a79518bb`, `cb6747fb34e81d20eb6e89ca27c4dd354c57c6f0`, `e277ae82cde42e86ecd952c84c79e3470b91499f`, `fc1f54570b620720b8a02f842e8fef146407be89`, `864183207151f990d37316b72c52233980e585b0`, `178e279e278679b9f68b42e77b2678de90f3570e`, `203a67a35d2ca8b55aa81c66e420d1ae48deb584` | `dev` |
 | 58 | 2026-10-13 | 提交清理覆盖、地球渲染和运行时边界并归档 | `f607bf734ec0627bcfd6561af153d4041a04374d`, `4d28a27554238030ceac9d19f41ed17133d85dae`, `bdab80708227c0ef21a3c654d21f09387f21440c`, `feda65d94834c6956aa0dfc3108b10a6348224f6`, `1d7e7183b13fc962c7afc0612401d2078de8a6ae` | `codex/cleanup-earth-performance` |
 | 57 | 2026-09-30 | 修正演练预览状态文案并归档 09-20 任务 | `b1556fa` | `dev` |
 | 56 | 2026-09-30 | Desktop Clean 首屏清理入口 | `5143df6`, `1fab4a0` | `dev` |
