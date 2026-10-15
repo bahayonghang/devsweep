@@ -1,0 +1,377 @@
+{
+  "combined": {
+    "advisories": {
+      "included_kinds": [
+        "build_artifacts",
+        "test_cache",
+        "tool_cache"
+      ],
+      "projects": [
+        {
+          "artifacts": {
+            "confidence": "lower_bound",
+            "known_bytes": 524288000,
+            "target_ids": [
+              "cargo.target:C:/work/app/target"
+            ]
+          },
+          "assessment": "incomplete",
+          "dependencies": {
+            "confidence": "unknown",
+            "known_bytes": 0,
+            "target_ids": []
+          },
+          "excluded_target_ids": [],
+          "owner_root": "C:/work/app"
+        }
+      ],
+      "report_id": "sha256:238da2a0ef5ebf2a05efd81b4513a3eb3ee904c5a269c25617db693253d41631",
+      "threshold_bytes": 5368709120,
+      "version": 1
+    },
+    "report": {
+      "health": {
+        "completeness": "partial",
+        "diagnostics": [
+          {
+            "detail": "Bounded estimate retained",
+            "outcome": "skipped",
+            "path": "C:/Users/dev/AppData/Local/npm-cache",
+            "stage": "sizing"
+          }
+        ],
+        "totals": {
+          "partial_lower_bound_bytes": 134217728,
+          "unknown_target_count": 1,
+          "verified_bytes": 524288000
+        }
+      },
+      "plan": {
+        "targets": [
+          {
+            "ecosystem": "rust",
+            "estimated_bytes": 524288000,
+            "evidence": [
+              {
+                "path": "C:/work/app/Cargo.toml",
+                "type": "marker_file"
+              },
+              {
+                "rule_id": "cargo.target",
+                "type": "rule_matched"
+              }
+            ],
+            "id": "cargo.target:C:/work/app/target",
+            "intent": {
+              "rule_id": "cargo.target",
+              "type": "trash_project_artifact"
+            },
+            "kind": "build_artifacts",
+            "last_modified": {
+              "nanos_since_epoch": 0,
+              "secs_since_epoch": 1785720000
+            },
+            "path": "C:/work/app/target",
+            "reversible": true,
+            "risk": "low",
+            "rule_id": "cargo.target",
+            "scope": {
+              "root": "C:/work/app",
+              "type": "project"
+            },
+            "selected_by_default": false,
+            "size_complete": true
+          },
+          {
+            "ecosystem": "rust",
+            "estimated_bytes": 0,
+            "evidence": [
+              {
+                "type": "user_configured"
+              }
+            ],
+            "id": "cargo.home.inspect:C:/Users/dev/.cargo",
+            "intent": {
+              "rule_id": "cargo.home.inspect",
+              "type": "inspect_only"
+            },
+            "kind": "package_cache",
+            "last_modified": null,
+            "path": "C:/Users/dev/.cargo",
+            "reversible": true,
+            "risk": "high",
+            "rule_id": "cargo.home.inspect",
+            "scope": {
+              "type": "global"
+            },
+            "selected_by_default": false,
+            "size_complete": false,
+            "sizing_warnings": [
+              {
+                "detail": "Inspect-only aggregate",
+                "kind": "metadata_unavailable"
+              }
+            ]
+          },
+          {
+            "ecosystem": "node",
+            "estimated_bytes": 134217728,
+            "evidence": [
+              {
+                "command": "npm cache verify",
+                "type": "official_command"
+              },
+              {
+                "path": "C:/Users/dev/AppData/Local/npm-cache",
+                "source": "npm config",
+                "type": "known_cache_dir"
+              }
+            ],
+            "id": "npm.cache.clean:global",
+            "intent": {
+              "action_id": "cache_clean",
+              "provider_id": "npm",
+              "type": "run_built_in_action"
+            },
+            "kind": "package_cache",
+            "last_modified": null,
+            "path": null,
+            "reversible": false,
+            "risk": "medium",
+            "rule_id": "npm.cache.clean",
+            "scope": {
+              "type": "global"
+            },
+            "selected_by_default": false,
+            "size_complete": false,
+            "sizing_warnings": [
+              {
+                "detail": "Bounded estimate",
+                "kind": "entry_budget_exhausted"
+              }
+            ]
+          }
+        ],
+        "version": 2
+      },
+      "version": 1
+    }
+  },
+  "empty": {
+    "advisories": {
+      "included_kinds": [
+        "build_artifacts",
+        "test_cache",
+        "tool_cache"
+      ],
+      "projects": [],
+      "report_id": "sha256:0b0d2d1c34e66543be55696b4852f2e93a5f27d26dd5494e16c6b53469e71118",
+      "threshold_bytes": 5368709120,
+      "version": 1
+    },
+    "report": {
+      "health": {
+        "completeness": "complete",
+        "diagnostics": [],
+        "totals": {
+          "partial_lower_bound_bytes": 0,
+          "unknown_target_count": 0,
+          "verified_bytes": 0
+        }
+      },
+      "plan": {
+        "targets": [],
+        "version": 2
+      },
+      "version": 1
+    }
+  },
+  "global": {
+    "advisories": {
+      "included_kinds": [
+        "build_artifacts",
+        "test_cache",
+        "tool_cache"
+      ],
+      "projects": [],
+      "report_id": "sha256:863fd0f1ec0ab83e5fb0a8780139f7b3c683cd4accc3239a83162ccc827ef41e",
+      "threshold_bytes": 5368709120,
+      "version": 1
+    },
+    "report": {
+      "health": {
+        "completeness": "partial",
+        "diagnostics": [
+          {
+            "detail": "Bounded estimate retained",
+            "outcome": "skipped",
+            "path": "C:/Users/dev/AppData/Local/npm-cache",
+            "stage": "sizing"
+          }
+        ],
+        "totals": {
+          "partial_lower_bound_bytes": 134217728,
+          "unknown_target_count": 1,
+          "verified_bytes": 0
+        }
+      },
+      "plan": {
+        "targets": [
+          {
+            "ecosystem": "rust",
+            "estimated_bytes": 0,
+            "evidence": [
+              {
+                "type": "user_configured"
+              }
+            ],
+            "id": "cargo.home.inspect:C:/Users/dev/.cargo",
+            "intent": {
+              "rule_id": "cargo.home.inspect",
+              "type": "inspect_only"
+            },
+            "kind": "package_cache",
+            "last_modified": null,
+            "path": "C:/Users/dev/.cargo",
+            "reversible": true,
+            "risk": "high",
+            "rule_id": "cargo.home.inspect",
+            "scope": {
+              "type": "global"
+            },
+            "selected_by_default": false,
+            "size_complete": false,
+            "sizing_warnings": [
+              {
+                "detail": "Inspect-only aggregate",
+                "kind": "metadata_unavailable"
+              }
+            ]
+          },
+          {
+            "ecosystem": "node",
+            "estimated_bytes": 134217728,
+            "evidence": [
+              {
+                "command": "npm cache verify",
+                "type": "official_command"
+              },
+              {
+                "path": "C:/Users/dev/AppData/Local/npm-cache",
+                "source": "npm config",
+                "type": "known_cache_dir"
+              }
+            ],
+            "id": "npm.cache.clean:global",
+            "intent": {
+              "action_id": "cache_clean",
+              "provider_id": "npm",
+              "type": "run_built_in_action"
+            },
+            "kind": "package_cache",
+            "last_modified": null,
+            "path": null,
+            "reversible": false,
+            "risk": "medium",
+            "rule_id": "npm.cache.clean",
+            "scope": {
+              "type": "global"
+            },
+            "selected_by_default": false,
+            "size_complete": false,
+            "sizing_warnings": [
+              {
+                "detail": "Bounded estimate",
+                "kind": "entry_budget_exhausted"
+              }
+            ]
+          }
+        ],
+        "version": 2
+      },
+      "version": 1
+    }
+  },
+  "projects": {
+    "advisories": {
+      "included_kinds": [
+        "build_artifacts",
+        "test_cache",
+        "tool_cache"
+      ],
+      "projects": [
+        {
+          "artifacts": {
+            "confidence": "lower_bound",
+            "known_bytes": 524288000,
+            "target_ids": [
+              "cargo.target:C:/work/app/target"
+            ]
+          },
+          "assessment": "incomplete",
+          "dependencies": {
+            "confidence": "unknown",
+            "known_bytes": 0,
+            "target_ids": []
+          },
+          "excluded_target_ids": [],
+          "owner_root": "C:/work/app"
+        }
+      ],
+      "report_id": "sha256:f55fb05d3df66c1116a81de5d54c8b0479ec2e72a3d2f2d1527202adb0e00b6e",
+      "threshold_bytes": 5368709120,
+      "version": 1
+    },
+    "report": {
+      "health": {
+        "completeness": "complete",
+        "diagnostics": [],
+        "totals": {
+          "partial_lower_bound_bytes": 0,
+          "unknown_target_count": 0,
+          "verified_bytes": 524288000
+        }
+      },
+      "plan": {
+        "targets": [
+          {
+            "ecosystem": "rust",
+            "estimated_bytes": 524288000,
+            "evidence": [
+              {
+                "path": "C:/work/app/Cargo.toml",
+                "type": "marker_file"
+              },
+              {
+                "rule_id": "cargo.target",
+                "type": "rule_matched"
+              }
+            ],
+            "id": "cargo.target:C:/work/app/target",
+            "intent": {
+              "rule_id": "cargo.target",
+              "type": "trash_project_artifact"
+            },
+            "kind": "build_artifacts",
+            "last_modified": {
+              "nanos_since_epoch": 0,
+              "secs_since_epoch": 1785720000
+            },
+            "path": "C:/work/app/target",
+            "reversible": true,
+            "risk": "low",
+            "rule_id": "cargo.target",
+            "scope": {
+              "root": "C:/work/app",
+              "type": "project"
+            },
+            "selected_by_default": false,
+            "size_complete": true
+          }
+        ],
+        "version": 2
+      },
+      "version": 1
+    }
+  }
+}

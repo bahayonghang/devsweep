@@ -8,6 +8,9 @@
 
 use devsweep_core::{
     analysis::{AnalyzeSnapshotV1, AnalyzeTrashPreviewV1, AnalyzeTrashReportV1},
+    clean_advisories::{
+        CleanAdvisoriesV1, CleanAdvisoryPreferencesV1, project_capacity_advisories,
+    },
     desktop_preferences::DesktopPreferencesPatch,
     execution::ExecutionReport,
     history::CleanMovedTotalsV1,
@@ -75,6 +78,60 @@ fn scan_coverage_fixture_matches_core_and_preserves_legacy_reports() {
 }
 
 #[test]
+fn clean_advisory_wire_matches_pure_core_projection_without_report_changes() {
+    let raw = include_str!("../../src/api/fixtures/clean/advisory-input.json");
+    let input: ScanReport = serde_json::from_str(raw).unwrap();
+    let before = serde_json::to_value(&input).unwrap();
+    let output = project_capacity_advisories(&input, 5).unwrap();
+    let archived: serde_json::Value =
+        serde_json::from_str(include_str!("../../src/api/fixtures/clean/advisories.json")).unwrap();
+    // The archived input contains native Windows path identities. Other hosts
+    // still prove closed wire roundtrip; native projection parity is Windows-only.
+    if cfg!(windows) {
+        assert_eq!(serde_json::to_value(output).unwrap(), archived);
+    }
+    assert_eq!(serde_json::to_value(input).unwrap(), before);
+    assert_round_trip::<CleanAdvisoriesV1>(
+        "clean/advisories.json",
+        include_str!("../../src/api/fixtures/clean/advisories.json"),
+    );
+    assert_round_trip::<CleanAdvisoryPreferencesV1>(
+        "clean/advisory-preferences.json",
+        include_str!("../../src/api/fixtures/clean/advisory-preferences.json"),
+    );
+}
+
+#[test]
+fn scoped_fixture_advisories_correlate_to_the_exact_report() {
+    let replays: serde_json::Value = serde_json::from_str(include_str!(
+        "../../src/api/fixtures/clean/scan-advisory-replays.json"
+    ))
+    .unwrap();
+    for (name, replay) in replays.as_object().unwrap() {
+        let input: ScanReport = serde_json::from_value(replay["report"].clone()).unwrap();
+        let advice: CleanAdvisoriesV1 =
+            serde_json::from_value(replay["advisories"].clone()).unwrap();
+        assert_eq!(
+            serde_json::to_value(&input).unwrap(),
+            replay["report"],
+            "{name}"
+        );
+        assert_eq!(
+            serde_json::to_value(&advice).unwrap(),
+            replay["advisories"],
+            "{name}"
+        );
+        if cfg!(windows) {
+            assert_eq!(
+                project_capacity_advisories(&input, 5).unwrap(),
+                advice,
+                "{name}"
+            );
+        }
+    }
+}
+
+#[test]
 fn desktop_preference_fixtures_match_committed_snapshots_and_closed_patches() {
     assert_round_trip::<Vec<DesktopPreferencesSnapshot>>(
         "desktop-preferences-themes.json",
@@ -135,6 +192,10 @@ fn clean_fixtures_match_the_clean_command_wire_types() {
     assert_round_trip::<DryRunOutcome>(
         "dry-run-outcome-two-targets.json",
         include_str!("../../src/api/fixtures/dry-run-outcome-two-targets.json"),
+    );
+    assert_round_trip::<DryRunOutcome>(
+        "dry-run-outcome-npm.json",
+        include_str!("../../src/api/fixtures/dry-run-outcome-npm.json"),
     );
     assert_round_trip::<ExecutionReport>(
         "clean/execution-report.json",

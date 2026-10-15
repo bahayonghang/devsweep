@@ -1,0 +1,29 @@
+{
+  "included_kinds": [
+    "build_artifacts",
+    "test_cache",
+    "tool_cache"
+  ],
+  "projects": [
+    {
+      "artifacts": {
+        "confidence": "lower_bound",
+        "known_bytes": 524288000,
+        "target_ids": [
+          "cargo.target:C:/work/app/target"
+        ]
+      },
+      "assessment": "incomplete",
+      "dependencies": {
+        "confidence": "unknown",
+        "known_bytes": 0,
+        "target_ids": []
+      },
+      "excluded_target_ids": [],
+      "owner_root": "C:/work/app"
+    }
+  ],
+  "report_id": "sha256:b86f4abc4bf07c34dea84227f5c00cd813fdf3b886b3e0bfbb0270bdc51a7af9",
+  "threshold_bytes": 5368709120,
+  "version": 1
+}

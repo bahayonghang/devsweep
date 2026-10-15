@@ -32,7 +32,8 @@ describe("Settings Select", () => {
     expect(trigger).toHaveTextContent("100%");
     expect(trigger).toHaveAccessibleDescription("Scale the interface");
     await user.click(trigger);
-    expect(view.container).not.toContainElement(screen.getByRole("listbox"));
+    // Base UI exposes the portal after its asynchronous open-state transition.
+    expect(view.container).not.toContainElement(await screen.findByRole("listbox"));
     expect(screen.getByRole("option", { name: "100%" })).toHaveAttribute("aria-selected", "true");
     await user.click(screen.getByRole("option", { name: "125%" }));
     expect(choose).toHaveBeenCalledExactlyOnceWith(125);

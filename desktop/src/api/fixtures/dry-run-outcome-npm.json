@@ -1,0 +1,22 @@
+{
+  "report": {
+    "dry_run": true,
+    "selected": 1,
+    "attempted": 1,
+    "succeeded": 1,
+    "failed": 0,
+    "skipped": 0,
+    "failures": [],
+    "outcomes": [{
+      "target_id": "npm.cache.clean:global",
+      "action": { "type": "command", "irreversible": true },
+      "status": { "type": "succeeded" },
+      "estimated_recoverable": { "type": "partial", "lower_bound_bytes": 134217728 }
+    }],
+    "notes": [],
+    "estimated_recoverable": { "verified_bytes": 0, "partial_lower_bound_bytes": 134217728, "unknown_target_count": 0 },
+    "confirmation_digest": "fixture-npm-only-preview-v1",
+    "audit_log": null
+  },
+  "digest": "fixture-npm-only-preview-v1"
+}

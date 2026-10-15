@@ -1,5 +1,7 @@
 {
   "string_enums": {
+    "CapacityConfidence": ["exact", "lower_bound", "unknown"],
+    "CapacityAssessment": ["oversized", "below_threshold", "incomplete"],
     "ScanCoverageScope": ["project", "provider"],
     "ScanCoverageStatus": ["complete", "empty", "absent", "unsupported", "skipped", "failed", "canceled", "timeout", "output_truncated", "budget_limited", "protected", "busy", "ownership_unknown"],
     "DesktopTheme": ["dark", "light", "system", "catppuccin_latte", "catppuccin_mocha", "codex", "claude"],

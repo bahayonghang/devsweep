@@ -17,12 +17,14 @@ const check = args.includes("--check");
 const typesPath = path.join(root, "src/api/types.gen.ts");
 
 const rootFixtures = {
+  CleanAdvisoryPreferencesV1: ["clean/advisory-preferences.json"],
+  CleanAdvisoriesV1: ["clean/advisories.json"],
   CleanScanPreferencesSnapshot: ["clean/scan-preferences.json"],
   DesktopFonts: ["desktop-fonts.json", "desktop-fonts-unavailable.json"],
   DesktopPreferencesSnapshot: ["desktop-preferences.json", "desktop-preferences-updated.json"],
   ScanReport: ["scan-report.json", "scan-report.real.json", "clean/scan-report.json", "clean/scan-coverage.json"],
   DesktopScanProgress: ["scan-progress.json", "clean/scan-progress.json"],
-  DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json", "clean/dry-run-outcome.json"],
+  DryRunOutcome: ["dry-run-outcome.json", "dry-run-outcome-two-targets.json", "dry-run-outcome-npm.json", "clean/dry-run-outcome.json"],
   ExecutionReport: ["execution-report.json", "clean/execution-report.json"],
   AnalyzeSnapshotV1: ["analyze/snapshot.json"],
   DesktopAnalyzeProgress: ["analyze/progress.json"],
@@ -59,6 +61,9 @@ const rootFixtures = {
 // This graph names nested Rust-owned DTOs. Fields, optionality, nullability,
 // variants, and primitive shapes still come exclusively from fixture values.
 const references = {
+  CleanAdvisoriesV1: { projects: ["ProjectCapacityAdvisoryV1"], included_kinds: ["TargetKind"] },
+  ProjectCapacityAdvisoryV1: { artifacts: "ProjectCapacitySubtotalV1", dependencies: "ProjectCapacitySubtotalV1", assessment: "CapacityAssessment" },
+  ProjectCapacitySubtotalV1: { confidence: "CapacityConfidence" },
   DesktopPreferencesSnapshot: { preferences: "DesktopPreferencesV2" },
   DesktopPreferencesV2: { theme: "DesktopTheme", font: "DesktopFont", motion: "DesktopMotion" },
   DesktopPreferencesPatchTheme: { value: "DesktopTheme" },

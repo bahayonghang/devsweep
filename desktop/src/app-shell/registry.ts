@@ -23,6 +23,7 @@ export interface ShellRegistrationInput {
   readonly locale: PresentationLanguageTag;
   readonly analyzeRoot?: string;
   readonly onAnalyzeRoot?: (root: string) => void;
+  readonly onProtectionsChanged?: () => void;
 }
 
 const MODE_ADAPTERS: Record<ModeId, (input: ShellRegistrationInput) => ReactNode> = {
@@ -62,6 +63,7 @@ const SUPPORT_ADAPTERS: Record<
   protection: (input) => createElement(ProtectionPage, {
     bridge: input.bridge,
     locale: input.locale,
+    onChanged: input.onProtectionsChanged,
   }),
   rules: (input) => createElement(RulesPage, {
     bridge: input.bridge,

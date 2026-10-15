@@ -1,7 +1,9 @@
 import scanJson from "./fixtures/scan-report.json";
-import progressJson from "./fixtures/scan-progress.json";
+import scanAdvisoryReplaysJson from "./fixtures/clean/scan-advisory-replays.json";
+import { decodeCleanAdvisories, decodeCleanAdvisoryPreferences } from "./contract";
 import dryRunJson from "./fixtures/dry-run-outcome.json";
 import twoTargetDryRunJson from "./fixtures/dry-run-outcome-two-targets.json";
+import npmDryRunJson from "./fixtures/dry-run-outcome-npm.json";
 import executionJson from "./fixtures/execution-report.json";
 import analyzeCompleteJson from "./fixtures/analyze/complete.json";
 import analyzeProgressJson from "./fixtures/analyze/progress.json";
@@ -31,15 +33,19 @@ import statusLiveSnapshotJson from "./fixtures/status/event-snapshot.json";
 import statusSkippedJson from "./fixtures/status/event-skipped.json";
 import statusTerminalJson from "./fixtures/status/event-terminal.json";
 import cleanMovedTotalsJson from "./fixtures/history/clean-moved-totals.json";
-import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeSoftwareStartupList, decodeStatusEvent } from "./contract";
+import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport, decodeSoftwareInventory, decodeSoftwareStartupList, decodeStatusEvent } from "./contract";
 import type { DesktopBridge } from "./bridge";
 import { decodeCleanMovedTotals } from "../support/decode";
-import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult } from "./types.gen";
+import type { DesktopAnalyzeProgress, DesktopAnalyzeResult, DesktopScanProgress, DesktopScanResult, ScanOptions, ScanReport } from "./types.gen";
 
 const scanReport = decodeScanReport(scanJson);
-const projectProgress = decodeDesktopScanProgress(progressJson);
+const scanAdvisoryReplays = Object.entries(scanAdvisoryReplaysJson).map(([name, replay]) => ({
+  name, report: decodeScanReport(replay.report), advisories: decodeCleanAdvisories(replay.advisories),
+}));
+let advisoryPreferences = decodeCleanAdvisoryPreferences({ version: 1, threshold_bytes: 5368709120 });
 const dryRun = decodeDryRunOutcome(dryRunJson);
 const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
+const npmDryRun = decodeDryRunOutcome(npmDryRunJson);
 const execution = decodeExecutionReport(executionJson);
 const cleanMovedTotals = decodeCleanMovedTotals(cleanMovedTotalsJson);
 const analyzeComplete = decodeDesktopAnalyzeResult(analyzeCompleteJson);
@@ -98,39 +104,64 @@ function fixtureTrashPreview(operationId: string, nodeIds: number[]) {
   };
 }
 
-function correlatedProjectProgress(scanId: string): DesktopScanProgress {
-  return { ...projectProgress, scan_id: scanId, sequence: 1 };
+function fixtureRoot(root: string): string {
+  return root.replaceAll("\\", "/").replace(/\/+$/, "").toLowerCase();
 }
 
-function mixedProgress(scanId: string): DesktopScanProgress {
-  const projectTarget = projectProgress.preview!.targets[0];
-  const globalTarget = {
-    ...projectTarget,
-    id: "fixture.npm.cache:global",
-    scope: { type: "global" as const },
-    ecosystem: "node" as const,
-    kind: "package_cache" as const,
-    path: "C:/Users/dev/AppData/Local/npm-cache",
-    estimated_bytes: 8192,
-  };
+function scopedFixtureReport(options: ScanOptions): ScanReport {
+  const roots = new Set(options.roots.map(fixtureRoot));
+  const knownRoots = new Set(scanReport.plan.targets.flatMap((target) => target.scope.type === "project" ? [fixtureRoot(target.scope.root)] : []));
+  const unsupportedRoots = options.include_projects ? options.roots.filter((root) => !knownRoots.has(fixtureRoot(root))) : [];
+  const projects = options.include_projects && [...knownRoots].some((root) => roots.has(root));
+  const name = projects ? options.include_global ? "combined" : "projects" : options.include_global ? "global" : "empty";
+  const report = structuredClone(scanAdvisoryReplays.find((replay) => replay.name === name)!.report);
+  // The archived sample has no discovery coverage. Keep that absence explicit;
+  // unsupported fixture roots must not fabricate complete-empty discoveries.
+  if (unsupportedRoots.length > 0) {
+    report.health.completeness = "partial";
+    report.health.diagnostics.push(...unsupportedRoots.map((root) => ({ stage: "discovery" as const, outcome: "skipped" as const, path: root, detail: "No controlled fixture data for this explicit project root" })));
+  }
+  return report;
+}
+
+function scopedFixtureProgress(scanId: string, report: ScanReport, options: ScanOptions): DesktopScanProgress {
   return {
     scan_id: scanId,
-    sequence: 3,
-    phase: "global",
-    message: "Reviewing controlled provider fixture",
+    sequence: 1,
+    phase: options.include_projects ? "projects" : "global",
+    message: "Reviewing controlled requested-scope fixture",
     preview: {
-      targets: [globalTarget, projectTarget],
-      totals: {
-        target_count: 2,
-        verified_bytes: 12288,
-        partial_lower_bound_bytes: 0,
-        unknown_target_count: 0,
-      },
+      targets: report.plan.targets.map((target) => ({
+        id: target.id, scope: target.scope, ecosystem: target.ecosystem, kind: target.kind,
+        path: target.path, estimated_bytes: target.estimated_bytes, size_complete: target.size_complete,
+        sizing_warnings: target.sizing_warnings ?? [], last_modified: target.last_modified,
+        risk: target.risk, evidence: target.evidence,
+        disposition: target.intent.type === "inspect_only" ? "inspect_only" : "candidate",
+      })),
+      totals: { target_count: report.plan.targets.length, ...report.health.totals },
     },
   };
 }
 
 export const fixtureBridge: DesktopBridge = {
+  cleanAdvisoryPreferencesGet: async () => ({ ...advisoryPreferences }),
+  cleanAdvisoryPreferencesSet: async (thresholdGiB) => {
+    advisoryPreferences = decodeCleanAdvisoryPreferences({ version: 1, threshold_bytes: thresholdGiB * 1073741824 });
+    return { ...advisoryPreferences };
+  },
+  cleanAdvisories: async (report, thresholdGiB) => {
+    const preferences = decodeCleanAdvisoryPreferences({ version: 1, threshold_bytes: thresholdGiB * 1073741824 });
+    const replay = scanAdvisoryReplays.find((replay) => JSON.stringify(replay.report) === JSON.stringify(report));
+    if (!replay) {
+      throw new Error("Fixture capacity advice requires an archived matching report");
+    }
+    // Replay core-owned totals; fixture code never derives path ownership or sums.
+    return decodeCleanAdvisories({ ...replay.advisories, threshold_bytes: preferences.threshold_bytes,
+      projects: replay.advisories.projects.map((project) => ({ ...project,
+        assessment: project.artifacts.known_bytes >= preferences.threshold_bytes ? "oversized" : project.artifacts.confidence === "exact" ? "below_threshold" : "incomplete",
+      })),
+    });
+  },
   cleanScanPreferencesGet: async () => ({ version: 1, roots: ["C:/work/app"], suggestions: [] }),
   cleanScanPreferencesSet: async (roots) => ({ version: 1, roots: [...new Set(roots)], suggestions: [] }),
   cleanScanRootsValidate: async (roots) => ({ version: 1, roots: [...new Set(roots)], suggestions: [] }),
@@ -319,17 +350,19 @@ export const fixtureBridge: DesktopBridge = {
       pendingStatusLive = undefined;
     }
   },
-  scanStart: async (scanId, _options, onProgress) => {
+  scanStart: async (scanId, options, onProgress) => {
     scanCount += 1;
-    onProgress(correlatedProjectProgress(scanId));
+    const report = scopedFixtureReport(options);
+    const progress = scopedFixtureProgress(scanId, report, options);
+    onProgress(progress);
     if (scanCount === 1) {
       return new Promise((resolve) => { pendingCancellation = { scanId, resolve }; });
     }
     await new Promise((resolve) => setTimeout(resolve, 350));
-    onProgress(mixedProgress(scanId));
-    onProgress({ ...correlatedProjectProgress(scanId), sequence: 2, message: "Controlled stale progress" });
+    onProgress({ ...progress, sequence: 3 });
+    onProgress({ ...progress, sequence: 2, message: "Controlled stale progress" });
     await new Promise((resolve) => setTimeout(resolve, 350));
-    return { type: "completed", scan_id: scanId, report: scanReport };
+    return { type: "completed", scan_id: scanId, report };
   },
   scanCancel: async (scanId) => {
     if (pendingCancellation?.scanId === scanId) {
@@ -343,8 +376,9 @@ export const fixtureBridge: DesktopBridge = {
     const unknown = selectedIds.find((id) => id !== cargoTargetId && id !== npmTargetId);
     if (unknown) throw { code: "unknown_target", target_id: unknown };
     if (selected.size === 1 && selected.has(cargoTargetId)) return dryRun;
+    if (selected.size === 1 && selected.has(npmTargetId)) return npmDryRun;
     if (selected.size === 2 && selected.has(cargoTargetId) && selected.has(npmTargetId)) return twoTargetDryRun;
-    throw { code: "invalid_plan", issues: ["Controlled fixture supports the cargo target alone or cargo plus npm"] };
+    throw { code: "invalid_plan", issues: ["Controlled fixture supports cargo, npm, or both"] };
   },
   planExecute: async (_plan, selectedIds, digest) => {
     const selected = new Set(selectedIds);
@@ -352,7 +386,10 @@ export const fixtureBridge: DesktopBridge = {
     if (selected.size === 1 && selected.has(cargoTargetId) && digest === dryRun.digest) {
       return { ...dryRun.report, dry_run: false, audit_log: "C:/Users/dev/AppData/Roaming/devsweep/audit/devsweep-audit.jsonl" };
     }
-    throw { code: "stale_confirmation", expected_digest: digest, actual_digest: selected.size === 2 ? twoTargetDryRun.digest : dryRun.digest };
+    if (selected.size === 1 && selected.has(npmTargetId) && digest === npmDryRun.digest) {
+      return { ...npmDryRun.report, dry_run: false, audit_log: "C:/Users/dev/AppData/Roaming/devsweep/audit/devsweep-audit.jsonl" };
+    }
+    throw { code: "stale_confirmation", expected_digest: digest, actual_digest: selected.size === 2 ? twoTargetDryRun.digest : selected.has(npmTargetId) ? npmDryRun.digest : dryRun.digest };
   },
   protectionList: async () => [],
   protectionAdd: async () => { throw { code: "protection_confirmation_required", message: "fixture add requires confirmation" }; },

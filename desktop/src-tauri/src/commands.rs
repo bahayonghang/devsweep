@@ -219,6 +219,12 @@ mod tests {
         options.roots.push(std::path::PathBuf::from("."));
         assert!(super::validate_desktop_scan_scope(&options).is_err());
         options.include_projects = false;
+        options.roots.clear();
+        assert!(super::validate_desktop_scan_scope(&options).is_ok());
+        options.include_projects = true;
+        options.include_global = false;
+        assert!(super::validate_desktop_scan_scope(&options).is_err());
+        options.roots.push(std::env::temp_dir());
         assert!(super::validate_desktop_scan_scope(&options).is_ok());
     }
     use std::sync::Mutex;

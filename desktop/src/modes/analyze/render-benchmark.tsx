@@ -146,6 +146,9 @@ async function sha256(value: string): Promise<string> {
 
 function benchmarkBridge(snapshot: AnalyzeSnapshotV1): DesktopBridge {
   return {
+    cleanAdvisoryPreferencesGet: async () => { throw new Error("unused benchmark bridge method"); },
+    cleanAdvisoryPreferencesSet: async () => { throw new Error("unused benchmark bridge method"); },
+    cleanAdvisories: async () => { throw new Error("unused benchmark bridge method"); },
     softwareInventoryStart: async () => { throw new Error("unused benchmark bridge method"); },
     softwarePreview: async () => { throw new Error("unused benchmark bridge method"); },
     softwareUninstall: async () => { throw new Error("unused benchmark bridge method"); },

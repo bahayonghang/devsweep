@@ -66,7 +66,7 @@ const STAGES: readonly StageCase[] = [
   {
     name: "home",
     bridge: () => bridge(),
-    heading: (locale) => message(locale, "clean.v1.stage.headline"),
+    heading: (locale) => message(locale, "clean.v2.heading"),
   },
   {
     name: "scanning",
@@ -91,7 +91,7 @@ const STAGES: readonly StageCase[] = [
     name: "found",
     bridge: () => bridge(),
     heading: (locale) =>
-      new RegExp(message(locale, "stage.v1.caption.estimated")),
+      message(locale, "clean.v1.scan.complete", { count: "3" }),
   },
   {
     name: "empty",
@@ -105,7 +105,7 @@ const STAGES: readonly StageCase[] = [
             report: { ...report, plan: { ...report.plan, targets: [] } },
           })),
       }),
-    heading: (locale) => message(locale, "clean.v1.coverage.partial_empty"),
+    heading: (locale) => message(locale, "clean.v2.empty"),
   },
   {
     name: "error",
@@ -158,25 +158,21 @@ describe.each(LOCALES)("Clean stage states in %s", (locale) => {
         if (stage.name !== "home")
           await user.click(
             screen.getByRole("button", {
-              name: message(locale, "clean.v1.action.scan"),
+              name: message(locale, "clean.v2.project_scan"),
             }),
           );
-        const heading = await screen.findByRole("heading", {
-          level: 2,
-          name: stage.heading(locale),
-        });
-        const region = heading.closest(".stage");
+        await screen.findByText(stage.heading(locale));
+        const region = document.querySelector(".clean-workbench");
         expect(region).not.toBeNull();
-        expect(
-          region?.querySelector(".planet[aria-hidden='true']"),
-        ).toBeInTheDocument();
-        expect(region?.querySelector(".card")).not.toBeInTheDocument();
+        expect(region?.querySelector(".planet")).not.toBeInTheDocument();
+        expect(screen.getByRole("region", { name: message(locale, "clean.v2.global") })).toBeInTheDocument();
+        expect(screen.getByRole("region", { name: message(locale, "clean.v2.project") })).toBeInTheDocument();
         if (stage.name === "error")
           expect(screen.getByRole("alert")).toHaveTextContent(
             "controlled failure",
           );
         expect(document.body.textContent).not.toMatch(/freed|released|释放/i);
-        if (locale === "zh-CN")
+        if (locale === "zh-CN" && stage.name !== "error")
           expect(region?.textContent).not.toMatch(/Scan|Review|Found|Moved/);
         view.unmount();
       }
@@ -206,29 +202,23 @@ describe("Clean found stage", () => {
     const scanRescanTarget = vi.fn().mockImplementation(async (scanId: string) => ({ type: "completed", scan_id: scanId, report }));
     const onAnalyzeRoot = vi.fn();
     render(<CleanWorkbench bridge={bridge({ scanRescanTarget })} coordinator={new OperationCoordinator()} locale="en" onAnalyzeRoot={onAnalyzeRoot} />);
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     await user.click(await screen.findByRole("button", { name: "Review targets" }));
     const inspect = screen.getByText("C:/Users/dev/.cargo").closest("tr")!;
     await user.click(within(inspect).getByRole("button", { name: message("en", "clean.v1.rescan.analyze") }));
     expect(onAnalyzeRoot).toHaveBeenCalledExactlyOnceWith("C:/Users/dev/.cargo");
     const target = screen.getByText("C:/work/app/target").closest("tr")!;
     await user.click(within(target).getByRole("button", { name: message("en", "clean.v1.rescan.action") }));
-    expect(scanRescanTarget).toHaveBeenCalledWith(expect.any(String), { include_projects: true, include_global: true, roots: ["C:/work/app"] }, cargoTargetId, expect.any(Function), expect.any(Function));
+    expect(scanRescanTarget).toHaveBeenCalledWith(expect.any(String), { include_projects: true, include_global: false, roots: ["C:/work/app"] }, cargoTargetId, expect.any(Function), expect.any(Function));
     expect(await screen.findByRole("button", { name: "Review targets" })).toBeInTheDocument();
   });
   it("shows the selected estimate, the found facts, and opens review from the secondary action", async () => {
     const { user } = renderFound();
-    await user.click(screen.getByRole("button", { name: "Scan" }));
-    const stage = await screen.findByRole("region", { name: "Clean" });
-    expect(within(stage).getByRole("heading", { level: 2 })).toHaveTextContent(
-      "Estimated recoverable in the current selection 500.0 MiB",
-    );
-    expect(within(stage).getByText("Found 3 targets")).toBeInTheDocument();
-    expect(
-      within(stage).getByText("At least 128.0 MiB (partial)"),
-    ).toBeInTheDocument();
-    expect(within(stage).getByText("Selected 1")).toBeInTheDocument();
-    expect(stage.textContent).not.toMatch(/\. ·/);
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
+    const stage = await screen.findByRole("region", { name: "Project artifacts" });
+    expect(within(stage).getByText("Scan complete. 3 targets.")).toBeInTheDocument();
+    expect(within(stage).getByRole("button", { name: "Clean 500.0 MiB" })).toBeEnabled();
+    expect(stage.textContent).not.toMatch(/Estimated recoverable/);
     await user.click(
       within(stage).getByRole("button", { name: "Review targets" }),
     );
@@ -248,7 +238,7 @@ describe("Clean found stage", () => {
     const planDryRun = vi.fn(fixtureBridge.planDryRun);
     const planExecute = vi.fn(fixtureBridge.planExecute);
     const { user } = renderFound({ planDryRun, planExecute });
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     await user.click(
       await screen.findByRole("button", { name: "Clean 500.0 MiB" }),
     );
@@ -266,17 +256,15 @@ describe("Clean found stage", () => {
     );
     const digest = (await fixtureBridge.planDryRun(report.plan, [cargoTargetId])).digest;
     expect(planExecute).toHaveBeenCalledWith(report.plan, [cargoTargetId], digest);
-    const result = await screen.findByRole("region", { name: "Clean" });
-    await user.click(within(result).getByRole("button", { name: "Show details" }));
-    await user.click(screen.getByRole("button", { name: "Back to overview" }));
-    expect(
-      screen.getByRole("button", { name: "Show details" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Execution completed." })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Back to cleanup" }));
+    await user.click(screen.getByRole("button", { name: "Review targets" }));
+    expect(screen.getByRole("heading", { name: "Execution completed." })).toBeInTheDocument();
   });
 
   it("returns from the dry-run preview to review", async () => {
     const { user } = renderFound();
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     await user.click(
       await screen.findByRole("button", { name: "Clean 500.0 MiB" }),
     );
@@ -294,7 +282,7 @@ describe("Clean found stage", () => {
       .fn()
       .mockRejectedValue({ code: "io", message: "controlled dry-run failure" });
     const { user } = renderFound({ planDryRun });
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     await user.click(
       await screen.findByRole("button", { name: "Clean 500.0 MiB" }),
     );
@@ -326,8 +314,8 @@ describe("Clean found stage", () => {
         report: unselected,
       })),
     });
-    await user.click(screen.getByRole("button", { name: "Scan" }));
-    const stage = await screen.findByRole("region", { name: "Clean" });
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
+    const stage = await screen.findByRole("region", { name: "Project artifacts" });
     expect(
       await within(stage).findByText(
         "No target is selected by default. Review targets to choose.",
@@ -355,7 +343,7 @@ async function openReview(overrides: Partial<DesktopBridge> = {}) {
       locale="en"
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Scan" }));
+  await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
   await user.click(
     await screen.findByRole("button", { name: "Review targets" }),
   );
@@ -366,7 +354,7 @@ describe("Clean review row controls", () => {
   it("searches display rows without narrowing selection totals, select-all or the dry-run request", async () => {
     const planDryRun = vi.fn().mockImplementation(fixtureBridge.planDryRun);
     const { user } = await openReview({ planDryRun });
-    const search = screen.getByRole("textbox", { name: "Search" });
+    const search = screen.getByRole("searchbox", { name: "Search" });
     await user.type(search, "npm.cache.clean");
     expect(screen.queryByRole("checkbox", { name: "Select C:/work/app/target" })).not.toBeInTheDocument();
     expect(document.querySelector(".display-capacity")).toHaveTextContent("500.0 MiB");
@@ -464,7 +452,7 @@ describe("Clean review row controls", () => {
       true,
     );
     expect(
-      await screen.findByText("Protected; scan again to refresh"),
+      (await screen.findAllByText("Protected; scan again to refresh"))[0],
     ).toBeInTheDocument();
     expect(
       screen.getByRole("checkbox", { name: /C:\/work\/app\/target/ }),
@@ -482,10 +470,10 @@ describe("Clean review row controls", () => {
       ),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Back to overview" }));
+    await user.click(screen.getByRole("button", { name: "Back to cleanup" }));
     expect(
-      within(screen.getByRole("region", { name: "Clean" })).getByText(
-        "The protection list changed. Scan again to refresh the report.",
+      within(screen.getByRole("region", { name: "Project artifacts" })).getByText(
+        "Protection rules changed. Rescan before selecting or cleaning targets.",
       ),
     ).toBeInTheDocument();
   });
@@ -527,11 +515,11 @@ describe("Clean closed coordinator", () => {
     const scanCancel = vi.fn();
     const user = userEvent.setup();
     render(<CleanWorkbench bridge={bridge({ scanStart, scanCancel })} coordinator={coordinator} locale="en" />);
-    await user.click(screen.getByRole("button", { name: "Scan" }));
-    await user.click(screen.getByRole("button", { name: "Cancel scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(scanCancel).not.toHaveBeenCalled();
     await act(async () => finish());
-    expect(await screen.findByRole("heading", { name: "Scan canceled. Results stay non-selectable." })).toBeInTheDocument();
+    expect(await screen.findByText("Scan canceled. Results stay non-selectable.")).toBeInTheDocument();
     expect(scanStart).not.toHaveBeenCalled();
   });
   it("shows the closed coordinator alert for dry run and does not call planDryRun", async () => {
@@ -545,7 +533,7 @@ describe("Clean closed coordinator", () => {
         locale="en"
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     await screen.findByRole("button", { name: "Review targets" });
     await coordinator.close();
     await user.click(screen.getByRole("button", { name: "Review targets" }));
@@ -566,7 +554,7 @@ describe("Clean closed coordinator", () => {
         locale="en"
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     await user.click(await screen.findByRole("button", { name: "Review targets" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(await screen.findByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();

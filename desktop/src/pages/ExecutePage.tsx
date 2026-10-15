@@ -24,12 +24,12 @@ function OutcomeTable({ locale, report, targets, final }: { locale: Presentation
   const byId = new Map(targets.map((target) => [target.id, target]));
   return <div className="outcome-list">{report.outcomes.map((outcome) => {
     const target = byId.get(outcome.target_id);
-    return <div className="outcome-row" key={outcome.target_id} title={outcome.target_id}><div><strong>{target ? target.path ?? kindLabel(locale, target.kind) : outcome.target_id}</strong><span className="secondary">{target ? `${kindLabel(locale, target.kind)} · ` : ""}{actionLabel(locale, outcome)}</span></div><span className={`outcome-status status-${outcome.status.type}`}>{statusLabel(locale, outcome, final)}</span><span className="capacity">{formatCapacity(outcome.estimated_recoverable)}</span></div>;
+    return <div className="outcome-row" key={outcome.target_id} title={outcome.target_id}><div><strong>{target ? target.path ?? kindLabel(locale, target.kind) : outcome.target_id}</strong><span className="secondary">{target ? `${kindLabel(locale, target.kind)} · ` : ""}{actionLabel(locale, outcome)}</span></div><span className={`outcome-status status-${outcome.status.type}`}>{statusLabel(locale, outcome, final)}</span><span className="capacity">{formatCapacity(outcome.estimated_recoverable, locale)}</span></div>;
   })}</div>;
 }
 export function ExecutePage(props: { locale?: PresentationLanguageTag; report: ExecutionReport; targets?: readonly UntrustedTarget[]; final: boolean; onConfirm: () => void; onReturn: () => void }) {
   const locale = props.locale ?? "en";
-  const totals = formatTotals(props.final ? movedTotals(props.report) : props.report.estimated_recoverable);
+  const totals = formatTotals(props.final ? movedTotals(props.report) : props.report.estimated_recoverable, locale);
   const moved = props.report.outcomes.some((outcome) => outcome.status.type === "succeeded" && outcome.action.type === "move_to_trash");
   const commands = props.report.outcomes.filter((outcome) => outcome.status.type === "succeeded" && outcome.action.type === "command").length;
   return <section className="card execute-panel">

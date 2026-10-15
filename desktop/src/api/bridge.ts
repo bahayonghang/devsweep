@@ -1,5 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { decodeCleanAdvisories, decodeCleanAdvisoryPreferences } from "./contract";
+import type { CleanAdvisoriesV1, CleanAdvisoryPreferencesV1, ScanReport } from "./types.gen";
 import { decodeCleanScanPreferences, decodeDesktopPreferencesSnapshot, decodeDesktopFonts } from "./contract";
 import type { CleanScanPreferencesSnapshot, DesktopPreferencesPatch, DesktopPreferencesSnapshot, DesktopFonts } from "./types.gen";
 import { decodeAnalyzeTrashPreview, decodeAnalyzeTrashReport, decodeCommandError, decodeDesktopAnalyzeProgress, decodeDesktopAnalyzeResult, decodeDesktopOptimizeAuditResult, decodeDesktopOptimizeListResult, decodeDesktopOptimizePreviewResult, decodeDesktopOptimizeRunResult, decodeDesktopScanProgress, decodeDesktopScanResult, decodeDesktopSoftwareAuditResult, decodeDesktopSoftwareInventoryResult, decodeDesktopSoftwareLeftoversPreviewResult, decodeDesktopSoftwareLeftoversResult, decodeDesktopSoftwarePreviewResult, decodeDesktopSoftwareUninstallResult, decodeDesktopSoftwareUpdatesResult, decodeDesktopStatusLiveResult, decodeDesktopStatusSnapshotResult, decodeDryRunOutcome, decodeExecutedReport, decodeHudStatusEvent, decodeSoftwareStartupList, decodeSoftwareStartupToggleReport, decodeStatusEvent, reportMatchesSelection } from "./contract";
@@ -22,6 +24,9 @@ import type {
 } from "../support/types";
 
 export interface DesktopBridge {
+  cleanAdvisoryPreferencesGet(): Promise<CleanAdvisoryPreferencesV1>;
+  cleanAdvisoryPreferencesSet(thresholdGiB: number): Promise<CleanAdvisoryPreferencesV1>;
+  cleanAdvisories(report: ScanReport, thresholdGiB: number): Promise<CleanAdvisoriesV1>;
   analyzeStart(operationId: string, root: string, onProgress: (progress: DesktopAnalyzeProgress) => void, onProgressError: (error: unknown) => void): Promise<DesktopAnalyzeResult>;
   analyzeCancel(operationId: string): Promise<void>;
   analyzeDefaultRoot(): Promise<string>;
@@ -108,6 +113,19 @@ function scanProgressChannel(scanId: string, onProgress: (progress: DesktopScanP
 }
 
 export const tauriBridge: DesktopBridge = {
+  cleanAdvisoryPreferencesGet: () => call("clean_advisory_preferences_get", {}, decodeCleanAdvisoryPreferences),
+  cleanAdvisoryPreferencesSet: async (thresholdGiB) => {
+    const expected = decodeCleanAdvisoryPreferences({ version: 1, threshold_bytes: thresholdGiB * 1073741824 });
+    const result = await call("clean_advisory_preferences_set", { thresholdGib: thresholdGiB }, decodeCleanAdvisoryPreferences);
+    if (result.threshold_bytes !== expected.threshold_bytes) throw new Error("Advisory preferences do not match the requested threshold");
+    return result;
+  },
+  cleanAdvisories: async (report, thresholdGiB) => {
+    const expected = decodeCleanAdvisoryPreferences({ version: 1, threshold_bytes: thresholdGiB * 1073741824 });
+    const result = await call("clean_advisories", { report, thresholdGib: thresholdGiB }, decodeCleanAdvisories);
+    if (result.threshold_bytes !== expected.threshold_bytes) throw new Error("Advisories do not match the requested threshold");
+    return result;
+  },
   cleanScanPreferencesGet: () => call("clean_scan_preferences_get", {}, decodeCleanScanPreferences),
   cleanScanPreferencesSet: (roots) => call("clean_scan_preferences_set", { roots }, decodeCleanScanPreferences),
   cleanScanRootsValidate: (roots) => call("clean_scan_roots_validate", { roots }, decodeCleanScanPreferences),

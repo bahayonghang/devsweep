@@ -10,9 +10,10 @@ import "./styles.css";
 interface ProtectionPageProps {
   readonly bridge: DesktopBridge;
   readonly locale: PresentationLanguageTag;
+  readonly onChanged?: () => void;
 }
 
-export function ProtectionPage({ bridge, locale }: ProtectionPageProps) {
+export function ProtectionPage({ bridge, locale, onChanged }: ProtectionPageProps) {
   const [paths, setPaths] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
@@ -50,7 +51,7 @@ export function ProtectionPage({ bridge, locale }: ProtectionPageProps) {
     const work = confirm.kind === "add"
       ? bridge.protectionAdd(confirm.path, true)
       : bridge.protectionRemove(confirm.path, true);
-    void work.then(() => bridge.protectionList()).then((next) => {
+    void work.then(() => { onChanged?.(); return bridge.protectionList(); }).then((next) => {
       setPaths(next);
       setUnavailable(false);
       setError(null);

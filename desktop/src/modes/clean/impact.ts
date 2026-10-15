@@ -14,6 +14,7 @@ type Sized = Pick<UntrustedTarget, "estimated_bytes" | "size_complete">;
 type Scope = UntrustedTarget["scope"]["type"];
 
 export interface TargetGroup {
+  readonly owner: string;
   readonly kind: TargetKind;
   readonly scope: Scope;
   readonly targets: UntrustedTarget[];
@@ -57,10 +58,11 @@ export function orderGroups(
 ): TargetGroup[] {
   const byKey = new Map<string, TargetGroup>();
   for (const target of targets) {
-    const key = `${target.kind}:${target.scope.type}`;
+    const owner = target.scope.type === "project" ? target.scope.root : target.rule_id;
+    const key = JSON.stringify([owner, target.kind, target.scope.type]);
     let group = byKey.get(key);
     if (!group) {
-      group = { kind: target.kind, scope: target.scope.type, targets: [] };
+      group = { owner, kind: target.kind, scope: target.scope.type, targets: [] };
       byKey.set(key, group);
     }
     group.targets.push(target);
@@ -72,6 +74,6 @@ export function orderGroups(
       IMPACT_RANK[left.kind] - IMPACT_RANK[right.kind] ||
       compareSize(sizeKey(left.targets), sizeKey(right.targets)) ||
       left.kind.localeCompare(right.kind) ||
-      left.scope.localeCompare(right.scope),
+      left.scope.localeCompare(right.scope) || left.owner.localeCompare(right.owner),
   );
 }

@@ -23,6 +23,7 @@ import {
   type WindowControlBridge,
 } from "./lifecycle";
 import { OperationCoordinator } from "./state/operation-coordinator";
+import { CleanSessionProvider, useCleanSession } from "./modes/clean/CleanSession";
 
 
 interface AppProps {
@@ -76,7 +77,7 @@ function PresentationStoreGate({ state }: { readonly state: "loading" | "unavail
 }
 
 export function App(props: AppProps) {
-  return <PreferencesProvider bridge={props.desktopPreferences ?? tauriDesktopPreferencesBridge} fonts={props.desktopFonts}><AppContent {...props} /></PreferencesProvider>;
+  return <CleanSessionProvider bridge={props.bridge ?? tauriBridge}><PreferencesProvider bridge={props.desktopPreferences ?? tauriDesktopPreferencesBridge} fonts={props.desktopFonts}><AppContent {...props} /></PreferencesProvider></CleanSessionProvider>;
 }
 
 function AppContent({
@@ -88,6 +89,7 @@ function AppContent({
   windowControls = tauriWindowControlBridge,
 }: AppProps) {
   const preferences = usePreferences();
+  const cleanSession = useCleanSession();
   const coordinator = useMemo(
     () => coordinatorOverride ?? new OperationCoordinator(),
     [coordinatorOverride],
@@ -220,6 +222,7 @@ function AppContent({
     coordinator,
     locale: presentation.locale,
     analyzeRoot,
+    onProtectionsChanged: () => cleanSession?.dispatch({ type: "protections_changed" }),
     onAnalyzeRoot: (root: string) => {
       setAnalyzeRoot(root);
       window.location.assign("#/analyze");

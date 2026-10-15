@@ -13,6 +13,7 @@ const ADAPTER_SOURCES: &[(&str, &str)] = &[
     ("analyze.rs", include_str!("analyze.rs")),
     ("async_runtime.rs", include_str!("async_runtime.rs")),
     ("clean.rs", include_str!("clean.rs")),
+    ("clean_advisories.rs", include_str!("clean_advisories.rs")),
     ("commands.rs", include_str!("commands.rs")),
     (
         "desktop_preferences.rs",

@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "plan": {
+    "version": 2,
+    "targets": [
+      {
+        "id": "one:build_artifacts",
+        "rule_id": "node.next_cache",
+        "scope": {
+          "type": "project",
+          "root": "C:/projects/one"
+        },
+        "ecosystem": "node",
+        "kind": "build_artifacts",
+        "path": "C:/projects/one/build_artifacts",
+        "estimated_bytes": 6442450944,
+        "size_complete": true,
+        "sizing_warnings": [],
+        "last_modified": null,
+        "risk": "low",
+        "reversible": true,
+        "selected_by_default": false,
+        "evidence": [
+          {
+            "type": "rule_matched",
+            "rule_id": "node.next_cache"
+          }
+        ],
+        "intent": {
+          "type": "trash_project_artifact",
+          "rule_id": "node.next_cache"
+        }
+      },
+      {
+        "id": "one:dependency_directory",
+        "rule_id": "node.next_cache",
+        "scope": {
+          "type": "project",
+          "root": "C:/projects/one"
+        },
+        "ecosystem": "node",
+        "kind": "dependency_directory",
+        "path": "C:/projects/one/dependency_directory",
+        "estimated_bytes": 2147483648,
+        "size_complete": true,
+        "sizing_warnings": [],
+        "last_modified": null,
+        "risk": "low",
+        "reversible": true,
+        "selected_by_default": false,
+        "evidence": [
+          {
+            "type": "rule_matched",
+            "rule_id": "node.next_cache"
+          }
+        ],
+        "intent": {
+          "type": "trash_project_artifact",
+          "rule_id": "node.next_cache"
+        }
+      },
+      {
+        "id": "two:tool_cache",
+        "rule_id": "node.next_cache",
+        "scope": {
+          "type": "project",
+          "root": "C:/projects/two"
+        },
+        "ecosystem": "node",
+        "kind": "tool_cache",
+        "path": "C:/projects/two/tool_cache",
+        "estimated_bytes": 5368709120,
+        "size_complete": false,
+        "sizing_warnings": [],
+        "last_modified": null,
+        "risk": "low",
+        "reversible": true,
+        "selected_by_default": false,
+        "evidence": [
+          {
+            "type": "rule_matched",
+            "rule_id": "node.next_cache"
+          }
+        ],
+        "intent": {
+          "type": "trash_project_artifact",
+          "rule_id": "node.next_cache"
+        }
+      },
+      {
+        "id": "three:test_cache",
+        "rule_id": "node.next_cache",
+        "scope": {
+          "type": "project",
+          "root": "C:/projects/three"
+        },
+        "ecosystem": "node",
+        "kind": "test_cache",
+        "path": null,
+        "estimated_bytes": 0,
+        "size_complete": false,
+        "sizing_warnings": [],
+        "last_modified": null,
+        "risk": "low",
+        "reversible": true,
+        "selected_by_default": false,
+        "evidence": [
+          {
+            "type": "rule_matched",
+            "rule_id": "node.next_cache"
+          }
+        ],
+        "intent": {
+          "type": "inspect_only",
+          "rule_id": "node.next_cache"
+        }
+      },
+      {
+        "id": "four:build_artifacts",
+        "rule_id": "node.next_cache",
+        "scope": {
+          "type": "project",
+          "root": "C:/projects/four"
+        },
+        "ecosystem": "node",
+        "kind": "build_artifacts",
+        "path": "C:/projects/four/build_artifacts",
+        "estimated_bytes": 1073741824,
+        "size_complete": true,
+        "sizing_warnings": [],
+        "last_modified": null,
+        "risk": "low",
+        "reversible": true,
+        "selected_by_default": false,
+        "evidence": [
+          {
+            "type": "rule_matched",
+            "rule_id": "node.next_cache"
+          }
+        ],
+        "intent": {
+          "type": "trash_project_artifact",
+          "rule_id": "node.next_cache"
+        }
+      }
+    ]
+  },
+  "health": {
+    "completeness": "partial",
+    "diagnostics": [],
+    "totals": {
+      "verified_bytes": 9663676416,
+      "partial_lower_bound_bytes": 5368709120,
+      "unknown_target_count": 1
+    },
+    "coverage": [
+      {
+        "id": "one",
+        "scope": "project",
+        "path": "C:/projects/one",
+        "status": "complete",
+        "target_count": 2,
+        "detail": "Controlled completed project observation"
+      },
+      {
+        "id": "two",
+        "scope": "project",
+        "path": "C:/projects/two",
+        "status": "complete",
+        "target_count": 1,
+        "detail": "Controlled completed project observation"
+      },
+      {
+        "id": "three",
+        "scope": "project",
+        "path": "C:/projects/three",
+        "status": "complete",
+        "target_count": 1,
+        "detail": "Controlled completed project observation"
+      },
+      {
+        "id": "four",
+        "scope": "project",
+        "path": "C:/projects/four",
+        "status": "complete",
+        "target_count": 1,
+        "detail": "Controlled completed project observation"
+      }
+    ]
+  }
+}

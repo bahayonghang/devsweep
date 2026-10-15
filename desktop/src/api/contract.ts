@@ -1,4 +1,7 @@
 import type {
+  CleanAdvisoriesV1,
+  CleanAdvisoryPreferencesV1,
+  ProjectCapacitySubtotalV1,
   CleanScanPreferencesSnapshot,
   DesktopPreferencesSnapshot,
   DesktopPreferencesV2,
@@ -83,6 +86,53 @@ import type {
 } from "./types.gen";
 
 type RecordValue = Record<string, unknown>;
+
+export function decodeCleanAdvisoryPreferences(value: unknown): CleanAdvisoryPreferencesV1 {
+  const source = record(value, "clean advisory preferences");
+  exact(source, ["version", "threshold_bytes"], "clean advisory preferences");
+  if (source.version !== 1) throw new Error("Unsupported clean advisory preferences version");
+  const threshold_bytes = unsignedInteger(source.threshold_bytes, "project warning threshold");
+  if (threshold_bytes === 0 || threshold_bytes % 1073741824 !== 0) throw new Error("Project warning threshold must be positive whole GiB");
+  return { version: 1, threshold_bytes };
+}
+
+export function decodeCleanAdvisories(value: unknown): CleanAdvisoriesV1 {
+  const source = record(value, "clean advisories");
+  exact(source, ["version", "report_id", "threshold_bytes", "included_kinds", "projects"], "clean advisories");
+  const { threshold_bytes } = decodeCleanAdvisoryPreferences({ version: source.version, threshold_bytes: source.threshold_bytes });
+  const report_id = nonEmptyString(source.report_id, "observational report identity");
+  if (!/^sha256:[0-9a-f]{64}$/.test(report_id)) throw new Error("Invalid observational report identity");
+  const included_kinds = array(source.included_kinds, "included artifact kinds", (kind) => oneOf(kind, ["build_artifacts", "test_cache", "tool_cache"] as const, "artifact kind"));
+  if (included_kinds.length !== 3 || new Set(included_kinds).size !== 3) throw new Error("Invalid included artifact kinds");
+  const identifiers = (value: unknown): string[] => {
+    const ids = array(value, "advisory target identities", (id) => nonEmptyString(id, "target identity"));
+    if (new Set(ids).size !== ids.length) throw new Error("Duplicate advisory target identity");
+    return ids;
+  };
+  const subtotal = (value: unknown): ProjectCapacitySubtotalV1 => {
+    const row = record(value, "capacity subtotal");
+    exact(row, ["known_bytes", "confidence", "target_ids"], "capacity subtotal");
+    const known_bytes = unsignedInteger(row.known_bytes, "known logical bytes");
+    const confidence = oneOf(row.confidence, ["exact", "lower_bound", "unknown"], "capacity confidence");
+    if ((confidence === "unknown" && known_bytes !== 0) || (confidence === "lower_bound" && known_bytes === 0)) throw new Error("Inconsistent capacity confidence");
+    return { known_bytes, confidence, target_ids: identifiers(row.target_ids) };
+  };
+  const projects = array(source.projects, "project advisories", (value) => {
+    const row = record(value, "project advisory");
+    exact(row, ["owner_root", "artifacts", "dependencies", "excluded_target_ids", "assessment"], "project advisory");
+    const artifacts = subtotal(row.artifacts);
+    const dependencies = subtotal(row.dependencies);
+    const excluded_target_ids = identifiers(row.excluded_target_ids);
+    const allIds = [...artifacts.target_ids, ...dependencies.target_ids, ...excluded_target_ids];
+    if (new Set(allIds).size !== allIds.length) throw new Error("Advisory subtotals overlap");
+    const assessment = oneOf(row.assessment, ["oversized", "below_threshold", "incomplete"], "capacity assessment");
+    const expected = artifacts.known_bytes >= threshold_bytes ? "oversized" : artifacts.confidence === "exact" ? "below_threshold" : "incomplete";
+    if (assessment !== expected) throw new Error("Inconsistent project capacity assessment");
+    return { owner_root: nonEmptyString(row.owner_root, "project owner"), artifacts, dependencies, excluded_target_ids, assessment };
+  });
+  if (new Set(projects.map((project) => project.owner_root)).size !== projects.length) throw new Error("Duplicate advisory project owner");
+  return { version: 1, report_id, threshold_bytes, included_kinds, projects };
+}
 
 export function decodeCleanScanPreferences(value: unknown): CleanScanPreferencesSnapshot {
   const source = record(value, "clean scan preferences");

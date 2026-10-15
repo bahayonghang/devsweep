@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { fixtureBridge } from "../api/fixture-bridge";
@@ -101,22 +101,26 @@ describe("Stage", () => {
 });
 
 describe.each(LOCALES)("mode first screens in %s", (locale) => {
-  it("Clean shows the stage stack with scope and Scan", () => {
+  it("Clean exposes independent scopes and enables global scanning without project roots", async () => {
     render(
       <CleanWorkbench
-        bridge={fixtureBridge}
+        bridge={{
+          ...fixtureBridge,
+          cleanScanPreferencesGet: async () => ({ version: 1, roots: [], suggestions: [] }),
+        }}
         coordinator={new OperationCoordinator()}
         locale={locale}
       />,
     );
-    expectStageStack(
-      message(locale, "clean.v1.action.scan"),
-      message(locale, "clean.v1.stage.headline"),
-      message(locale, "clean.v1.action.scan"),
-    );
-    expect(
-      screen.getByText(message(locale, "clean.v1.scope.projects")),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: message(locale, "clean.v2.heading") })).toBeInTheDocument();
+    const global = screen.getByRole("region", { name: message(locale, "clean.v2.global") });
+    const project = screen.getByRole("region", { name: message(locale, "clean.v2.project") });
+    await waitFor(() => expect(within(project).getByRole("group", {
+      name: message(locale, "clean.v1.scope.roots"),
+    })).toBeEnabled());
+    expect(within(global).getByRole("button", { name: message(locale, "clean.v2.global_scan") })).toBeEnabled();
+    expect(within(project).getByRole("button", { name: message(locale, "clean.v2.project_scan") })).toBeDisabled();
+    expect(document.querySelector(".planet")).not.toBeInTheDocument();
   });
 
   it("Software shows the stage stack with the inventory action", () => {

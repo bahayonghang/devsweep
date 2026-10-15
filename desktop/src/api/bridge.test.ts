@@ -18,6 +18,9 @@ import preferencesJson from "./fixtures/desktop-preferences.json";
 import preferencesUpdatedJson from "./fixtures/desktop-preferences-updated.json";
 import fontsJson from "./fixtures/desktop-fonts.json";
 import scanPreferencesJson from "./fixtures/clean/scan-preferences.json";
+import advisoryJson from "./fixtures/clean/advisories.json";
+import advisoryInputJson from "./fixtures/clean/advisory-input.json";
+import advisoryPreferencesJson from "./fixtures/clean/advisory-preferences.json";
 
 const mocks = vi.hoisted(() => {
   const channels: Array<{ onmessage: (value: unknown) => void }> = [];
@@ -49,6 +52,29 @@ describe("tauriBridge", () => {
     mocks.invoke.mockReset();
     mocks.listen.mockReset();
     mocks.channels.length = 0;
+  });
+
+  it("keeps advisory preferences and projection separate from cleanup authority", async () => {
+    const report = decodeScanReport(advisoryInputJson);
+    const original = structuredClone(report);
+    mocks.invoke.mockResolvedValueOnce(advisoryPreferencesJson).mockResolvedValueOnce(advisoryPreferencesJson).mockResolvedValueOnce(advisoryJson);
+    await tauriBridge.cleanAdvisoryPreferencesGet();
+    await tauriBridge.cleanAdvisoryPreferencesSet(5);
+    expect(await tauriBridge.cleanAdvisories(report, 5)).toEqual(advisoryJson);
+    expect(mocks.invoke).toHaveBeenNthCalledWith(1, "clean_advisory_preferences_get", {});
+    expect(mocks.invoke).toHaveBeenNthCalledWith(2, "clean_advisory_preferences_set", { thresholdGib: 5 });
+    expect(mocks.invoke).toHaveBeenNthCalledWith(3, "clean_advisories", { report, thresholdGib: 5 });
+    expect(report).toEqual(original);
+  });
+
+  it("refuses invalid session thresholds before IPC and mismatched returned thresholds", async () => {
+    await expect(tauriBridge.cleanAdvisoryPreferencesSet(0)).rejects.toThrow();
+    await expect(tauriBridge.cleanAdvisories(decodeScanReport(advisoryInputJson), 1.5)).rejects.toThrow();
+    expect(mocks.invoke).not.toHaveBeenCalled();
+    mocks.invoke.mockResolvedValue(advisoryPreferencesJson);
+    await expect(tauriBridge.cleanAdvisoryPreferencesSet(6)).rejects.toThrow("do not match");
+    mocks.invoke.mockResolvedValue({ ...advisoryJson, threshold_bytes: 4 * 1073741824 });
+    await expect(tauriBridge.cleanAdvisories(decodeScanReport(advisoryInputJson), 5)).rejects.toThrow("do not match");
   });
 
   it("uses closed root commands and correlated reviewed-target rescan without path authority", async () => {

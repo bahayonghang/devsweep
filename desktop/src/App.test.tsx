@@ -3,12 +3,11 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode, useState, type ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import scanJson from "./api/fixtures/scan-report.json";
+import scanReplays from "./api/fixtures/clean/scan-advisory-replays.json";
 import dryRunJson from "./api/fixtures/dry-run-outcome.json";
-import twoTargetDryRunJson from "./api/fixtures/dry-run-outcome-two-targets.json";
-import executionJson from "./api/fixtures/execution-report.json";
+import npmDryRunJson from "./api/fixtures/dry-run-outcome-npm.json";
 import progressJson from "./api/fixtures/scan-progress.json";
-import { decodeDesktopScanProgress, decodeDryRunOutcome, decodeExecutionReport, decodeScanReport } from "./api/contract";
+import { decodeDesktopScanProgress, decodeDryRunOutcome, decodeScanReport } from "./api/contract";
 import type { DesktopBridge } from "./api/bridge";
 import { fixtureBridge } from "./api/fixture-bridge";
 import type { DesktopScanProgress, DesktopScanResult, ExecutionReport } from "./api/types.gen";
@@ -18,10 +17,10 @@ import type { PresentationSettings, PresentationSettingsBridge } from "./i18n";
 import { createFixtureWindowBridge, type DesktopLifecycleBridge } from "./lifecycle";
 import { OperationCoordinator } from "./state/operation-coordinator";
 
-const scanReport = decodeScanReport(scanJson);
+const scanReport = decodeScanReport(scanReplays.projects.report);
 const dryRun = decodeDryRunOutcome(dryRunJson);
-const twoTargetDryRun = decodeDryRunOutcome(twoTargetDryRunJson);
-const execution = decodeExecutionReport(executionJson);
+const npmDryRun = decodeDryRunOutcome(npmDryRunJson);
+const execution: ExecutionReport = { ...dryRun.report, dry_run: false, audit_log: "C:/fixture-audit.jsonl" };
 const progress = decodeDesktopScanProgress(progressJson);
 
 function App(props: ComponentProps<typeof DesktopApp>) {
@@ -112,20 +111,21 @@ describe("desktop workflow", () => {
 
   it("zh-CN Clean workbench does not show English Projects Scan Search Ready", async () => {
     render(<App bridge={fakeBridge()} presentationSettings={fakePresentationSettings("zh-CN")} userLocales={["zh-CN"]} />);
-    expect(await screen.findByRole("button", { name: "扫描" })).toBeInTheDocument();
-    expect(screen.getByText("项目")).toBeInTheDocument();
-    expect(screen.getByText("全局缓存")).toBeInTheDocument();
-    expect(screen.getByText("就绪")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "扫描项目产物" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "项目产物" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "全局缓存" })).toBeInTheDocument();
+    expect(screen.getAllByText("尚未扫描")).toHaveLength(2);
     expect(screen.queryByText("Projects")).not.toBeInTheDocument();
     expect(screen.queryByText("Scan")).not.toBeInTheDocument();
     expect(screen.queryByText("Search")).not.toBeInTheDocument();
     expect(screen.queryByText("Ready")).not.toBeInTheDocument();
     expect(screen.queryByText("没有扫描结果")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "先逐项审核，再移动任何文件。" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "扫描全局缓存" })).toBeEnabled();
     expect(screen.queryByText("Found so far")).not.toBeInTheDocument();
     expect(screen.queryByText("目前已发现")).not.toBeInTheDocument();
     expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
-    expect(document.querySelector(".clean-stage")).toBeInTheDocument();
+    expect(document.querySelector(".clean-workbench")).toBeInTheDocument();
+    expect(document.querySelector(".clean-workbench .planet")).not.toBeInTheDocument();
   });
 
   it("starts a Clean scan after StrictMode replays the lifecycle effect", async () => {
@@ -138,14 +138,14 @@ describe("desktop workflow", () => {
       <App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings("zh-CN")} userLocales={["zh-CN"]} />
     </StrictMode>);
 
-    expect(await screen.findByRole("button", { name: "扫描" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "扫描项目产物" })).toBeInTheDocument();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    await user.click(screen.getByRole("button", { name: "扫描" }));
+    await user.click(screen.getByRole("button", { name: "扫描项目产物" }));
     expect(scanStart).toHaveBeenCalledOnce();
-    expect(screen.queryByText("就绪")).not.toBeInTheDocument();
+    expect(scanStart.mock.calls[0][1]).toEqual({ include_projects: true, include_global: false, roots: ["C:/work/app"] });
   });
 
   it("starts Status live after StrictMode replays the lifecycle effect", async () => {
@@ -155,7 +155,7 @@ describe("desktop workflow", () => {
       <App bridge={fakeBridge({ statusLiveStart })} presentationSettings={fakePresentationSettings()} />
     </StrictMode>);
 
-    expect(await screen.findByRole("button", { name: "Scan" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Scan project artifacts" })).toBeInTheDocument();
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
@@ -166,19 +166,35 @@ describe("desktop workflow", () => {
     expect(statusLiveStart).toHaveBeenCalledOnce();
   });
 
-  it("idle Clean home is a planet stage with visible scope and no cards", async () => {
+  it("idle Clean home exposes independent global and project actions without a decorative planet", async () => {
     render(<App bridge={fakeBridge()} presentationSettings={fakePresentationSettings()} />);
-    expect(await screen.findByRole("button", { name: "Scan" })).toBeInTheDocument();
-    expect(screen.getByText("Projects")).toBeInTheDocument();
-    expect(screen.getByText("Global caches")).toBeInTheDocument();
-    expect(screen.getByText("Ready")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Review every target before anything moves." })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Scan project artifacts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Project artifacts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Global caches" })).toBeInTheDocument();
+    expect(screen.getAllByText("Not scanned")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Scan global caches" })).toBeEnabled();
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
     expect(screen.queryByText("Found so far")).not.toBeInTheDocument();
     expect(document.querySelector(".sweep-body-hero")).not.toBeInTheDocument();
-    expect(document.querySelector(".clean-stage")).toBeInTheDocument();
-    expect(document.querySelector(".clean-stage .planet")).toBeInTheDocument();
-    expect(document.querySelector(".clean-stage .card")).not.toBeInTheDocument();
+    expect(document.querySelector(".clean-workbench")).toBeInTheDocument();
+    expect(document.querySelector(".clean-workbench .planet")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".clean-scope-panel")).toHaveLength(2);
+  });
+
+  it("keeps global scanning independent of unavailable project-root settings", async () => {
+    const report = decodeScanReport(scanReplays.global.report);
+    const scanStart = vi.fn(async (scanId: string) => ({ type: "completed" as const, scan_id: scanId, report }));
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({
+      cleanScanPreferencesGet: vi.fn().mockRejectedValue(new Error("project roots unavailable")),
+      scanStart,
+    })} presentationSettings={fakePresentationSettings()} />);
+    expect(await screen.findByRole("button", { name: "Scan global caches" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Scan project artifacts" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Scan global caches" }));
+    expect(scanStart).toHaveBeenCalledWith(expect.any(String), { include_projects: false, include_global: true, roots: [] }, expect.any(Function), expect.any(Function));
+    expect(await screen.findByRole("button", { name: "Review global targets" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Review targets" })).not.toBeInTheDocument();
   });
 
   it("opens Settings without starting Status sampling", async () => {
@@ -463,16 +479,20 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={presentationSettings} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
-    await screen.findByText("Found 3 targets");
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    await screen.findByText("Scan complete. 1 targets.");
     await openLanguageSettings(user);
     await user.click(screen.getByRole("combobox", { name: "Language" }));
     await user.click(await screen.findByRole("option", { name: "Simplified Chinese" }));
     await user.click(screen.getByRole("tab", { name: "清理" }));
-    await user.click(screen.getByRole("button", { name: "扫描" }));
+    expect(await screen.findByText("扫描完成。1 个目标。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "审核项目目标" })).toBeEnabled();
+    expect(scanStart).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "扫描项目产物" }));
     await waitFor(() => expect(scanStart).toHaveBeenCalledTimes(2));
     expect(scanStart.mock.calls[0][1]).toEqual(scanStart.mock.calls[1][1]);
-    expect(JSON.stringify(scanReport)).toBe(JSON.stringify(scanJson));
+    expect(scanStart.mock.calls[0][1]).toEqual({ include_projects: true, include_global: false, roots: ["C:/work/app"] });
+    expect(scanReport).toEqual(decodeScanReport(scanReplays.projects.report));
   });
 
   it("keeps a canceled preview read-only and replaces it on rescan", async () => {
@@ -488,23 +508,24 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ scanStart, scanCancel })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    await user.click(screen.getByRole("button", { name: "Show details" }));
     expect(screen.getByText("Scan completed with partial evidence. Totals are not exact.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
-    expect(screen.getByRole("progressbar", { name: "Scan" })).not.toHaveAttribute("aria-valuenow");
+    expect(document.querySelector(".found-so-far")).toHaveAttribute("aria-busy", "true");
     expect(screen.queryByRole("checkbox", { name: /Select node.node_modules/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Review dry run" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Cancel scan" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(scanCancel).toHaveBeenCalledWith(expect.any(String));
-    expect(screen.getByText("Cancel scan")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
     const firstScanId = scanStart.mock.calls[0][0] as string;
     act(() => finishFirst({ type: "canceled", scan_id: firstScanId }));
-    expect(await screen.findByRole("heading", { name: "Scan canceled. Results stay non-selectable." })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Clean" }).querySelector(".planet")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Show details" }));
+    expect(await screen.findByText("Scan canceled. Results stay non-selectable.")).toBeInTheDocument();
+    expect(screen.getByRole("tabpanel", { name: "Clean" }).querySelector(".planet")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Scan" }));
-    expect(await screen.findByText("Found 3 targets")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Back to cleanup" }));
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
+    expect(await screen.findByText("Scan complete. 1 targets.")).toBeInTheDocument();
     expect(scanStart).toHaveBeenCalledTimes(2);
   });
 
@@ -514,13 +535,15 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
-    expect(screen.getByRole("heading", { name: "Scanning. Targets appear as they are found." })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    expect(screen.getByText("Scanning. Targets appear as they are found.")).toHaveAttribute("role", "status");
+    await user.click(screen.getByRole("button", { name: "Show details" }));
     expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
     expect(screen.queryByText("No scan results")).not.toBeInTheDocument();
     const scanId = scanStart.mock.calls[0][0] as string;
     act(() => finish({ type: "completed", scan_id: scanId, report: { ...scanReport, plan: { ...scanReport.plan, targets: [] }, health: { completeness: "complete", diagnostics: [], totals: { verified_bytes: 0, partial_lower_bound_bytes: 0, unknown_target_count: 0 } } } }));
-    expect(await screen.findByText("Scan complete; no cleanup targets found.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Back to cleanup" }));
+    expect(await screen.findByText("No cleanup targets found. See coverage for missing or unsupported locations.")).toBeInTheDocument();
   });
 
   it("offers an explicit return to the previous completed report after a stopped rescan", async () => {
@@ -535,9 +558,9 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
-    await screen.findByText("Found 3 targets");
-    await user.click(screen.getByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    await screen.findByText("Scan complete. 1 targets.");
+    await user.click(screen.getByRole("button", { name: "Scan project artifacts" }));
     const rescanId = scanStart.mock.calls[1][0] as string;
     act(() => finishRescan({ type: "canceled", scan_id: rescanId }));
 
@@ -545,7 +568,9 @@ describe("desktop workflow", () => {
     const returnButton = await screen.findByRole("button", { name: "Cancel" });
     expect(screen.queryByRole("button", { name: "Review dry run" })).not.toBeInTheDocument();
     await user.click(returnButton);
-    expect(await screen.findByText("Scan complete. 3 targets.")).toBeInTheDocument();
+    expect(await screen.findByText("Scan complete. 1 targets.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review dry run" })).toBeDisabled();
+    await user.click(screen.getByRole("checkbox", { name: "Select C:/work/app/target" }));
     expect(screen.getByRole("button", { name: "Review dry run" })).toBeEnabled();
   });
 
@@ -560,16 +585,16 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ scanStart, scanCancel })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
     await waitFor(() => expect(scanCancel).toHaveBeenCalledOnce());
     expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
     expect(screen.getByRole("alert")).toHaveTextContent("Malformed scan progress");
     const scanId = scanStart.mock.calls[0][0] as string;
     act(() => finish({ type: "canceled", scan_id: scanId }));
-    expect(await screen.findByRole("heading", { name: "Scan stopped with an error. Found targets stay non-selectable." })).toBeInTheDocument();
+    expect(await screen.findByText("Scan stopped with an error. Found targets stay non-selectable.")).toBeInTheDocument();
   });
 
-  it("groups cumulative preview rows by scope without announcing the table", async () => {
+  it("keeps cumulative global preview rows read-only and rejects stale project updates", async () => {
     let finish: (result: DesktopScanResult) => void = () => undefined;
     const scanStart = vi.fn().mockImplementation((scanId: string, _options, onProgress: (value: DesktopScanProgress) => void) => {
       const projectTarget = progress.preview!.targets[0];
@@ -587,8 +612,8 @@ describe("desktop workflow", () => {
         phase: "global",
         message: "Scanning controlled global providers",
         preview: {
-          targets: [globalTarget, projectTarget],
-          totals: { target_count: 2, verified_bytes: 12288, partial_lower_bound_bytes: 0, unknown_target_count: 0 },
+          targets: [globalTarget],
+          totals: { target_count: 1, verified_bytes: 8192, partial_lower_bound_bytes: 0, unknown_target_count: 0 },
         },
       });
       onProgress({ ...progress, scan_id: scanId, sequence: 1, message: "Stale project message" });
@@ -597,66 +622,123 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ scanStart })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Scan global caches" }));
+    await user.click(screen.getByRole("button", { name: "Show details" }));
     expect(screen.getByRole("heading", { name: "Found so far" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Projects 1" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Projects 1" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Global caches 1" })).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Scanning controlled global providers");
     expect(screen.queryByText("Stale project message")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("table")).toHaveLength(2);
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("table")).toHaveLength(1);
     expect(screen.getAllByRole("table").every((table) => !table.hasAttribute("aria-live"))).toBe(true);
     const scanId = scanStart.mock.calls[0][0] as string;
     act(() => finish({ type: "canceled", scan_id: scanId }));
   });
 
   it("invalidates a dry run after selection changes, then confirms and reports execution", async () => {
-    const planDryRun = vi.fn().mockResolvedValueOnce(dryRun).mockResolvedValueOnce(twoTargetDryRun);
-    const planExecute = vi.fn().mockResolvedValue(execution);
+    const refreshed = { ...dryRun, digest: "fixture-refreshed-live-preview", report: { ...dryRun.report, confirmation_digest: "fixture-refreshed-live-preview" } };
+    const planDryRun = vi.fn().mockResolvedValueOnce(dryRun).mockResolvedValueOnce(refreshed);
+    const planExecute = vi.fn().mockResolvedValue({ ...execution, confirmation_digest: refreshed.digest });
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ planDryRun, planExecute })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
-    expect(await screen.findByText("Found 3 targets")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Estimated recoverable in the current selection 500.0 MiB");
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    expect(await screen.findByText("Scan complete. 1 targets.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clean 500.0 MiB" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Review targets" }));
-    expect(screen.getByText("Build artifacts")).toBeInTheDocument();
-    expect(screen.getByText("Package caches")).toBeInTheDocument();
+    expect(screen.getByText(/^Build artifacts/)).toBeInTheDocument();
     expect(screen.queryByText("build_artifacts")).not.toBeInTheDocument();
     expect(screen.queryByText("dangerous")).not.toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: /C:\/Users\/dev\/\.cargo/ })).toBeDisabled();
-    expect(screen.getByRole<HTMLInputElement>("checkbox", { name: "Select all executable targets" }).indeterminate).toBe(true);
+    expect(screen.getByRole("button", { name: "Review dry run" })).toBeDisabled();
+    const target = screen.getByRole("checkbox", { name: "Select C:/work/app/target" });
+    expect(target).not.toBeChecked();
+    await user.click(target);
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
     expect(screen.getByText("Selected 1")).toBeInTheDocument();
     expect(screen.getAllByText("500.0 MiB").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: "Back to review" }));
-    await user.click(screen.getByRole("checkbox", { name: /npm.cache.clean/ }));
+    await user.click(screen.getByRole("checkbox", { name: "Select C:/work/app/target" }));
     expect(screen.queryByText("Dry-run preview")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm cleanup" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review dry run" })).toBeDisabled();
+    expect(planExecute).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("checkbox", { name: "Select C:/work/app/target" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
     expect(planDryRun).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("Selected 2")).toBeInTheDocument();
-    expect(screen.getAllByText(/500\.0 MiB \+ at least 128\.0 MiB/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(twoTargetDryRun.digest, { exact: false }).length).toBeGreaterThan(0);
-    expect(twoTargetDryRun.digest).not.toBe(dryRun.digest);
+    expect(screen.getByText("Selected 1")).toBeInTheDocument();
+    expect(screen.getAllByText(refreshed.digest, { exact: false }).length).toBeGreaterThan(0);
+    expect(refreshed.digest).not.toBe(dryRun.digest);
 
     await user.click(screen.getByRole("button", { name: "Confirm cleanup" }));
-    expect(screen.getByRole("dialog")).toHaveTextContent(twoTargetDryRun.digest);
+    expect(screen.getByRole("dialog")).toHaveTextContent(refreshed.digest);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Execute" }));
-    const result = await screen.findByRole("region", { name: "Clean" });
-    expect(within(result).getByRole("heading", { level: 2 })).toHaveTextContent("Moved to Recycle Bin 500.0 MiB");
-    expect(within(result).getByText("2 succeeded · 0 skipped · 0 failed")).toBeInTheDocument();
-    expect(within(result).getByText(/capacity becomes available after trash is emptied/)).toBeInTheDocument();
-    expect(await within(result).findByText("Total moved to Recycle Bin by DevSweep: at least 12.0 GiB")).toBeInTheDocument();
+    const result = await screen.findByRole("tabpanel", { name: "Clean" });
+    expect(await within(result).findByRole("heading", { name: "Execution completed." })).toBeInTheDocument();
+    expect(within(result).getByText("1 succeeded · 0 skipped · 0 failed")).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/freed|released|释放/i);
-    await user.click(within(result).getByRole("button", { name: "Show details" }));
-    expect((await screen.findAllByText("Execution completed.")).length).toBeGreaterThan(0);
     expect(document.querySelector(".display-capacity")).toHaveTextContent(/^500\.0 MiB$/);
-    expect(screen.getByText(/Owner commands completed: 1/)).toBeInTheDocument();
     expect(screen.queryByText(/space freed|released space|4K/i)).not.toBeInTheDocument();
-    expect(planExecute).toHaveBeenCalledWith(scanReport.plan, expect.arrayContaining(["cargo.target:C:/work/app/target", "npm.cache.clean:global"]), twoTargetDryRun.digest);
+    expect(planExecute).toHaveBeenCalledWith(scanReport.plan, ["cargo.target:C:/work/app/target"], refreshed.digest);
+    await user.click(screen.getByRole("button", { name: "Back to cleanup" }));
+    expect(within(screen.getByRole("region", { name: "Project artifacts" })).getByText("Moved to trash; capacity becomes available after trash is emptied.")).toBeInTheDocument();
+    expect(screen.getByText("1 succeeded · 0 skipped · 0 failed")).toBeInTheDocument();
+  });
+
+  it("reviews global commands independently while Cargo home remains inspect-only", async () => {
+    const globalReport = decodeScanReport(scanReplays.global.report);
+    const planExecute = vi.fn().mockResolvedValue({ ...npmDryRun.report, dry_run: false, audit_log: "C:/fixture-audit.jsonl" });
+    const scanStart = vi.fn(async (scanId: string) => ({ type: "completed" as const, scan_id: scanId, report: globalReport }));
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({ scanStart, planDryRun: vi.fn().mockResolvedValue(npmDryRun), planExecute })} presentationSettings={fakePresentationSettings()} />);
+    await user.click(await screen.findByRole("button", { name: "Scan global caches" }));
+    expect(scanStart.mock.calls[0]).toEqual(expect.arrayContaining([{ include_projects: false, include_global: true, roots: [] }]));
+    await user.click(await screen.findByRole("button", { name: "Review global targets" }));
+    expect(screen.getAllByText(/^Package caches/)[0]).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /C:\/Users\/dev\/\.cargo/ })).toBeDisabled();
+    expect(screen.queryByText("Build artifacts")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review dry run" })).toBeDisabled();
+    await user.click(screen.getByRole("checkbox", { name: /Select npm.cache.clean/ }));
+    await user.click(screen.getByRole("button", { name: "Review dry run" }));
+    expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
+    expect(planExecute).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Confirm cleanup" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent(npmDryRun.digest);
+    expect(screen.getByRole("dialog").querySelector(".dialog-warning")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Execute" }));
+    expect(await screen.findByText(/Owner commands completed: 1/)).toBeInTheDocument();
+    expect(screen.queryByText(/space freed|released space/i)).not.toBeInTheDocument();
+    expect(planExecute).toHaveBeenCalledWith(globalReport.plan, ["npm.cache.clean:global"], npmDryRun.digest);
+  });
+
+  it("keeps partial project selection indeterminate and previews the entire original scoped plan", async () => {
+    const second = { ...scanReport.plan.targets[0], id: "cargo.target:C:/work/second/target", path: "C:/work/second/target", scope: { type: "project" as const, root: "C:/work/second" } };
+    const report = { ...scanReport, plan: { ...scanReport.plan, targets: [...scanReport.plan.targets, second] }, health: { ...scanReport.health, totals: { ...scanReport.health.totals, verified_bytes: 1048576000 } } };
+    const preview = { ...dryRun, digest: "fixture-two-project-preview", report: { ...dryRun.report, selected: 2, attempted: 2, succeeded: 2,
+      outcomes: [...dryRun.report.outcomes, { ...dryRun.report.outcomes[0], target_id: second.id }],
+      estimated_recoverable: { verified_bytes: 1048576000, partial_lower_bound_bytes: 0, unknown_target_count: 0 }, confirmation_digest: "fixture-two-project-preview" } };
+    const planDryRun = vi.fn().mockResolvedValue(preview);
+    const user = userEvent.setup();
+    render(<App bridge={fakeBridge({
+      cleanScanPreferencesGet: async () => ({ version: 1, roots: ["C:/work/app", "C:/work/second"], suggestions: [] }),
+      scanStart: vi.fn(async (scanId: string) => ({ type: "completed" as const, scan_id: scanId, report })),
+      planDryRun,
+    })} presentationSettings={fakePresentationSettings()} />);
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    await user.click(await screen.findByRole("button", { name: "Review targets" }));
+    const selectAll = screen.getByRole<HTMLInputElement>("checkbox", { name: "Select all executable targets" });
+    expect(selectAll).not.toBeChecked();
+    await user.click(screen.getByRole("checkbox", { name: "Select C:/work/app/target" }));
+    expect(selectAll.indeterminate).toBe(true);
+    await user.click(selectAll);
+    expect(selectAll).toBeChecked();
+    expect(selectAll.indeterminate).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Review dry run" }));
+    expect(planDryRun).toHaveBeenCalledWith(report.plan, [scanReport.plan.targets[0].id, second.id]);
+    expect(await screen.findByText("Selected 2")).toBeInTheDocument();
   });
 
   it("disables conflicting scan controls during dry run and execution", async () => {
@@ -668,18 +750,22 @@ describe("desktop workflow", () => {
     const user = userEvent.setup();
     render(<App bridge={fakeBridge({ planDryRun, planExecute })} presentationSettings={fakePresentationSettings()} />);
 
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
-    await screen.findByText("Found 3 targets");
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    await screen.findByText("Scan complete. 1 targets.");
     await user.click(screen.getByRole("button", { name: "Review targets" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select C:/work/app/target" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
-    expect(screen.getByRole("button", { name: "Scan" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Back to cleanup" }));
+    expect(screen.getByRole("button", { name: "Scan project artifacts" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Scan global caches" })).toBeDisabled();
     await act(async () => resolveDryRun(dryRun));
 
     await user.click(screen.getByRole("button", { name: "Confirm cleanup" }));
     await user.click(screen.getByRole("button", { name: "Execute" }));
-    expect(screen.getByRole("button", { name: "Scan" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Execute" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
     await act(async () => resolveExecution(oneTargetExecution));
-    expect(await screen.findByText("Moved to Recycle Bin")).toBeInTheDocument();
+    expect((await screen.findAllByText("Moved to trash; capacity becomes available after trash is emptied.")).length).toBeGreaterThan(0);
   });
 
   it.each([
@@ -692,7 +778,7 @@ describe("desktop workflow", () => {
       bridge={fakeBridge({ scanStart: vi.fn().mockRejectedValue(error) })}
       presentationSettings={fakePresentationSettings()}
     />);
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(message));
   });
 
@@ -721,14 +807,15 @@ describe("desktop workflow", () => {
       presentationSettings={fakePresentationSettings()}
       coordinator={coordinator}
     />);
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
-    expect(await screen.findByText("Found 3 targets")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
+    expect(await screen.findByText("Scan complete. 1 targets.")).toBeInTheDocument();
     expect(events).toEqual(["scan-old.cancel", "scan-old.join", "scan.start"]);
     await waitFor(() => expect(coordinator.activeIdentity()).toBeNull());
 
     events.length = 0;
     await armActiveOperation(coordinator, events, "dry-run-old");
     await user.click(screen.getByRole("button", { name: "Review targets" }));
+    await user.click(screen.getByRole("checkbox", { name: "Select C:/work/app/target" }));
     await user.click(screen.getByRole("button", { name: "Review dry run" }));
     expect(await screen.findByText("Dry-run preview")).toBeInTheDocument();
     expect(events).toEqual(["dry-run-old.cancel", "dry-run-old.join", "dry-run.start"]);
@@ -757,7 +844,7 @@ describe("desktop workflow", () => {
       userLocales={["zh-CN"]}
       coordinator={closedCoordinator}
     />);
-    await user.click(await screen.findByRole("button", { name: "扫描" }));
+    await user.click(await screen.findByRole("button", { name: "扫描项目产物" }));
     expect(closedBridge.scanStart).not.toHaveBeenCalled();
     expect(await screen.findByRole("alert")).toHaveTextContent("Desktop operation failed: The desktop operation coordinator is closed.");
     expect(closedCoordinator.activeIdentity()).toBeNull();
@@ -772,7 +859,7 @@ describe("desktop workflow", () => {
       presentationSettings={fakePresentationSettings()}
       coordinator={refusedCoordinator}
     />);
-    await user.click(await screen.findByRole("button", { name: "Scan" }));
+    await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
     await waitFor(() => expect(refusedCoordinator.activeIdentity()).toBeNull());
     expect(refusedEvents).toEqual(["refused-old.cancel", "refused-old.join"]);
     expect(refusedBridge.scanStart).not.toHaveBeenCalled();
@@ -792,7 +879,7 @@ describe("desktop workflow", () => {
         coordinator={coordinator}
       />);
 
-      await user.click(await screen.findByRole("button", { name: "Scan" }));
+      await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
       expect(await screen.findByRole("alert")).toHaveTextContent(`${failureKind} start failure`);
       expect(scanStart).toHaveBeenCalledOnce();
       await waitFor(() => expect(coordinator.activeIdentity()).toBeNull());
@@ -819,7 +906,7 @@ describe("desktop workflow", () => {
         presentationSettings={fakePresentationSettings()}
         coordinator={coordinator}
       />);
-      await user.click(await screen.findByRole("button", { name: "Scan" }));
+      await user.click(await screen.findByRole("button", { name: "Scan project artifacts" }));
       await waitFor(() => expect(coordinator.activeIdentity()?.kind).toBe("clean.scan"));
 
       view.unmount();

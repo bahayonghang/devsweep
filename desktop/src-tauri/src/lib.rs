@@ -1,6 +1,7 @@
 mod analyze;
 mod async_runtime;
 mod clean;
+mod clean_advisories;
 mod commands;
 mod desktop_preferences;
 mod error;
@@ -31,6 +32,9 @@ const SHIPPED_INVOKE_COMMANDS: &[&str] = &[
     "clean_scan_preferences_get",
     "clean_scan_preferences_set",
     "clean_scan_roots_validate",
+    "clean_advisory_preferences_get",
+    "clean_advisory_preferences_set",
+    "clean_advisories",
     "analyze_start",
     "analyze_cancel",
     "analyze_default_root",
@@ -149,6 +153,9 @@ pub fn run() {
             scan_preferences::clean_scan_preferences_get,
             scan_preferences::clean_scan_preferences_set,
             scan_preferences::clean_scan_roots_validate,
+            clean_advisories::clean_advisory_preferences_get,
+            clean_advisories::clean_advisory_preferences_set,
+            clean_advisories::clean_advisories,
             analyze::analyze_start,
             analyze::analyze_cancel,
             analyze::analyze_default_root,
@@ -230,7 +237,7 @@ mod tests {
             );
         }
         assert!(block.contains("debug_native_fault_mode"));
-        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 49);
+        assert_eq!(SHIPPED_INVOKE_COMMANDS.len(), 52);
     }
 
     #[test]

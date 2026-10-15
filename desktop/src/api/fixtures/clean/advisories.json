@@ -1,0 +1,82 @@
+{
+  "included_kinds": [
+    "build_artifacts",
+    "test_cache",
+    "tool_cache"
+  ],
+  "projects": [
+    {
+      "artifacts": {
+        "confidence": "exact",
+        "known_bytes": 1073741824,
+        "target_ids": [
+          "four:build_artifacts"
+        ]
+      },
+      "assessment": "below_threshold",
+      "dependencies": {
+        "confidence": "exact",
+        "known_bytes": 0,
+        "target_ids": []
+      },
+      "excluded_target_ids": [],
+      "owner_root": "C:/projects/four"
+    },
+    {
+      "artifacts": {
+        "confidence": "exact",
+        "known_bytes": 6442450944,
+        "target_ids": [
+          "one:build_artifacts"
+        ]
+      },
+      "assessment": "oversized",
+      "dependencies": {
+        "confidence": "exact",
+        "known_bytes": 2147483648,
+        "target_ids": [
+          "one:dependency_directory"
+        ]
+      },
+      "excluded_target_ids": [],
+      "owner_root": "C:/projects/one"
+    },
+    {
+      "artifacts": {
+        "confidence": "unknown",
+        "known_bytes": 0,
+        "target_ids": []
+      },
+      "assessment": "incomplete",
+      "dependencies": {
+        "confidence": "unknown",
+        "known_bytes": 0,
+        "target_ids": []
+      },
+      "excluded_target_ids": [
+        "three:test_cache"
+      ],
+      "owner_root": "C:/projects/three"
+    },
+    {
+      "artifacts": {
+        "confidence": "lower_bound",
+        "known_bytes": 5368709120,
+        "target_ids": [
+          "two:tool_cache"
+        ]
+      },
+      "assessment": "oversized",
+      "dependencies": {
+        "confidence": "exact",
+        "known_bytes": 0,
+        "target_ids": []
+      },
+      "excluded_target_ids": [],
+      "owner_root": "C:/projects/two"
+    }
+  ],
+  "report_id": "sha256:0a1d7128c0e09858f6b52a5f8cd72907acf58511029972e3048bdce5b8ba33b8",
+  "threshold_bytes": 5368709120,
+  "version": 1
+}

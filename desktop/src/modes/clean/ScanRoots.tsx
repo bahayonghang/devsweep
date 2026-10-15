@@ -15,7 +15,7 @@ export function ScanRoots({ roots, suggestions, disabled, locale, onChange }: {
       <button type="button" className="stage-link" aria-label={`${message(locale, "clean.v1.scope.remove")} ${root}`} onClick={() => void onChange(roots.filter((item) => item !== root))}>{message(locale, "clean.v1.scope.remove")}</button>
     </li>)}</ul>
     {roots.length > 1 && <button type="button" className="stage-link" onClick={() => void onChange([])}>{message(locale, "clean.v1.scope.clear")}</button>}
-    <div className="scan-root-entry"><label>{message(locale, "clean.v1.scope.path")}<input value={path} onChange={(event) => setPath(event.target.value)} /></label>
+    <div className="scan-root-entry"><label>{message(locale, "clean.v1.scope.path")}<input type="text" value={path} onChange={(event) => setPath(event.target.value)} /></label>
       <button type="button" className="secondary-button" disabled={!path.trim()} onClick={() => void add(path)}>{message(locale, "clean.v1.scope.add")}</button>
     </div>
     {roots.length === 0 && <p role="status">{message(locale, "clean.v1.scope.required")}</p>}

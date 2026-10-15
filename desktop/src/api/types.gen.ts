@@ -129,6 +129,10 @@ export interface TargetOutcome {
     target_id:             string;
 }
 
+export type CapacityAssessment = "below_threshold" | "incomplete" | "oversized";
+
+export type CapacityConfidence = "exact" | "lower_bound" | "unknown";
+
 export interface CapacityEstimatePartial {
     lower_bound_bytes: number;
     type:              "partial";
@@ -141,6 +145,35 @@ export interface CapacityEstimateUnknown {
 export interface CapacityEstimateVerified {
     bytes: number;
     type:  "verified";
+}
+
+export interface CleanAdvisoriesV1 {
+    included_kinds:  TargetKind[];
+    projects:        ProjectCapacityAdvisoryV1[];
+    report_id:       string;
+    threshold_bytes: number;
+    version:         number;
+}
+
+export type TargetKind = "build_artifacts" | "dependency_directory" | "package_cache" | "test_cache" | "tool_cache" | "virtual_env";
+
+export interface ProjectCapacityAdvisoryV1 {
+    artifacts:           ProjectCapacitySubtotalV1;
+    assessment:          CapacityAssessment;
+    dependencies:        ProjectCapacitySubtotalV1;
+    excluded_target_ids: string[];
+    owner_root:          string;
+}
+
+export interface ProjectCapacitySubtotalV1 {
+    confidence:  CapacityConfidence;
+    known_bytes: number;
+    target_ids:  string[];
+}
+
+export interface CleanAdvisoryPreferencesV1 {
+    threshold_bytes: number;
+    version:         number;
 }
 
 export interface CleanMovedTotalsV1 {
@@ -563,8 +596,6 @@ export interface ScanPreviewTarget {
 export type ScanPreviewDisposition = "candidate" | "inspect_only";
 
 export type Ecosystem = "docker" | "generic" | "node" | "python" | "rust";
-
-export type TargetKind = "build_artifacts" | "dependency_directory" | "package_cache" | "test_cache" | "tool_cache" | "virtual_env";
 
 export interface SystemTime {
     nanos_since_epoch: number;

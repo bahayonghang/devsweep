@@ -1,339 +1,201 @@
-import { Fragment, useEffect, useReducer, useRef, useState, type ReactNode } from "react";
-import type { CleanMovedTotalsV1, CommandError, DesktopScanProgress, DesktopScanResult, DryRunOutcome, ExecutionReport, ScanTotals, UntrustedTarget } from "../../api/types.gen";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { CommandError, DesktopScanResult, DryRunOutcome, ExecutionReport, UntrustedTarget } from "../../api/types.gen";
 import type { DesktopBridge } from "../../api/bridge";
 import { decodeCommandError } from "../../api/contract";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ErrorBanner } from "../../components/ErrorBanner";
-import { formatBytes } from "../../components/format";
 import { ExecutePage } from "../../pages/ExecutePage";
 import { ReviewPage } from "../../pages/ReviewPage";
-import { ScanPage } from "../../pages/ScanPage";
 import { ScanPreviewPage } from "../../pages/ScanPreviewPage";
 import { message, type PresentationLanguageTag } from "../../i18n";
-import { DetailView, Stage, StageResult } from "../../stage";
-import { hasIrreversibleSelection, selectedTotals } from "../../state/selectors";
+import { hasIrreversibleSelection } from "../../state/selectors";
 import { OperationCoordinator } from "../../state/operation-coordinator";
-import { movedTotals } from "./result";
 import { ProtectDialog } from "./ProtectDialog";
-import { cleanReducer, initialCleanState } from "./reducer";
-import { ScanCoverage } from "./ScanCoverage";
-import { ScanRoots } from "./ScanRoots";
-import { useScanScope } from "./useScanScope";
+import type { CleanAction } from "./reducer";
+import { CleanSessionProvider, useCleanSession } from "./CleanSession";
+import { CleanOverview } from "./CleanOverview";
+import { useCleanAdvisory } from "./useCleanAdvisory";
+import type { CleanScope } from "./session-state";
 import "./styles.css";
 
 function commandError(error: unknown): CommandError {
   try { return decodeCommandError(error); }
   catch { return { code: "io", message: error instanceof Error ? error.message : "Unexpected desktop error" }; }
 }
+let sequence = 0;
+const operationId = (kind: string) => `${kind}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${++sequence}`}`;
+interface Props { bridge: DesktopBridge; coordinator: OperationCoordinator; locale: PresentationLanguageTag; onAnalyzeRoot?: (root: string) => void }
+type Session = NonNullable<ReturnType<typeof useCleanSession>>;
 
-/** Localized capacity labels: verified, lower bound, and unknown stay separate. */
-function capacityParts(locale: PresentationLanguageTag, totals: ScanTotals): string[] {
-  const parts: string[] = [];
-  if (totals.verified_bytes > 0) parts.push(message(locale, "clean.v1.capacity.verified", { bytes: formatBytes(totals.verified_bytes) }));
-  if (totals.partial_lower_bound_bytes > 0) parts.push(message(locale, "clean.v1.capacity.partial", { bytes: formatBytes(totals.partial_lower_bound_bytes) }));
-  if (totals.unknown_target_count > 0) parts.push(message(locale, "clean.v1.capacity.unknown"));
-  return parts;
+/** The shell retains this provider; standalone consumers get the same domain controller. */
+export function CleanWorkbench(props: Props) {
+  const session = useCleanSession();
+  return session ? <Workbench {...props} session={session} /> : <CleanSessionProvider bridge={props.bridge}><CleanWorkbench {...props} /></CleanSessionProvider>;
 }
 
-/** One muted line; each fact stays a separate text node. */
-function MetaLine({ parts }: { parts: readonly string[] }) {
-  return <p>{parts.filter(Boolean).map((part, index) => <Fragment key={index}>{index > 0 ? " · " : null}<span>{part}</span></Fragment>)}</p>;
-}
-
-let scanIdSequence = 0;
-function createScanId(): string {
-  scanIdSequence += 1;
-  const randomId = globalThis.crypto?.randomUUID?.();
-  return randomId ? `scan-${randomId}` : `scan-${Date.now()}-${scanIdSequence}`;
-}
-
-export function CleanWorkbench({ bridge, coordinator, locale, onAnalyzeRoot }: { bridge: DesktopBridge; coordinator: OperationCoordinator; locale: PresentationLanguageTag; onAnalyzeRoot?: (root: string) => void }) {
-  const [state, dispatch] = useReducer(cleanReducer, initialCleanState);
-  const scope = useScanScope(bridge, () => dispatch({ type: "scope_changed" }));
-  const { options } = scope;
+function Workbench({ bridge, coordinator, locale, onAnalyzeRoot, session }: Props & { session: Session }) {
+  const { slots, dispatch, scope, advisory } = session;
+  const [detail, setDetail] = useState<CleanScope | null>(null);
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<"stage" | "detail">("stage");
   const [protectTarget, setProtectTarget] = useState<UntrustedTarget | null>(null);
   const [protectBusy, setProtectBusy] = useState(false);
   const [protectError, setProtectError] = useState<CommandError | null>(null);
-  const [cumulative, setCumulative] = useState<CleanMovedTotalsV1 | null>(null);
   const mounted = useRef(true);
-  const scanRequest = useRef<{ id: string; started: boolean; canceled: boolean } | null>(null);
-
-  // StrictMode replays this effect. Setup must restore the flag after cleanup.
+  const current = useRef(slots);
+  useLayoutEffect(() => { current.current = slots; }, [slots]);
+  // Locks immediately, before React renders disabled controls or the coordinator joins.
+  const request = useRef<{ id: string; scope: CleanScope; kind: "scan" | "preview" | "execute"; started: boolean; canceled: boolean } | null>(null);
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
+    return () => {
+      mounted.current = false;
+      const owned = request.current;
+      if (owned) {
+        owned.canceled = true;
+        if (coordinator.activeIdentity()?.id === owned.id) void coordinator.cancelAndJoin().catch(() => undefined);
+      }
+      dispatch({ type: "hidden" });
+    };
+  }, [coordinator, dispatch]);
+  const update = (name: CleanScope, revision: number, change: CleanAction) => dispatch({ type: "update", scope: name, revision, change, completedAt: change.type === "scan_completed" ? new Date().toISOString() : undefined });
+  const busy = protectBusy || Object.values(slots).some(({ state }) => state.activeScan !== null || state.pending !== null || state.phase === "executing");
+  const assessment = useCleanAdvisory(bridge, slots.project.state.scan, advisory.threshold);
 
-  const scan = async (targetId?: string) => {
-    if (scanRequest.current || scope.loading || scope.saving || (options.include_projects && options.roots.length === 0) || state.phase === "scanning" || state.phase === "executing" || state.pending !== null) return;
-    const scanId = createScanId();
-    const request = { id: scanId, started: false, canceled: false };
-    scanRequest.current = request;
-    setView("stage");
-    // Invalidates the digest before waiting for another mode's cancellation.
-    dispatch({ type: "scan_requested", scanId });
+  const scan = async (name: CleanScope, targetId?: string) => {
+    if (request.current || busy || (name === "project" && (scope.loading || scope.saving || scope.options.roots.length === 0))) return;
+    const options = name === "global" ? { include_projects: false, include_global: true, roots: [] }
+      : { include_projects: true, include_global: false, roots: [...scope.options.roots] };
+    const scanId = operationId("scan");
+    const owned = { id: scanId, scope: name, kind: "scan" as const, started: false, canceled: false };
+    request.current = owned;
+    const revision = slots[name].revision + 1;
+    update(name, revision - 1, { type: "scan_requested", scanId });
+    setDetail(null);
     let progressError: CommandError | null = null;
     try {
-      const lease = await coordinator.start<DesktopScanResult>({
-        kind: "clean.scan",
-        id: scanId,
-        cancel: () => bridge.scanCancel(scanId),
+      const lease = await coordinator.start<DesktopScanResult>({ kind: "clean.scan", id: scanId,
+        cancel: () => { owned.canceled = true; return bridge.scanCancel(scanId); },
         start: () => {
-          if (request.canceled) return Promise.resolve({ type: "canceled" as const, scan_id: scanId });
-          request.started = true;
-          const onProgress = (progress: DesktopScanProgress) => {
-              if (mounted.current) dispatch({ type: "scan_progressed", progress });
-            };
+          if (owned.canceled || !mounted.current) return Promise.resolve({ type: "canceled", scan_id: scanId });
+          owned.started = true;
+          const onProgress: Parameters<DesktopBridge["scanStart"]>[2] = progress => { if (mounted.current) update(name, revision, { type: "scan_progressed", progress }); };
           const onError = (error: unknown) => {
-              if (progressError) return;
-              progressError = commandError(error);
-              if (mounted.current) {
-                dispatch({ type: "scan_cancel_requested", scanId });
-                dispatch({ type: "command_failed", error: progressError });
-              }
-              void bridge.scanCancel(scanId).catch(() => undefined);
-            };
-          return targetId
-            ? bridge.scanRescanTarget(scanId, options, targetId, onProgress, onError)
-            : bridge.scanStart(scanId, options, onProgress, onError);
-        },
-      });
-      if (!lease) {
-        if (mounted.current) dispatch({ type: "scan_failed", scanId, error: commandError(new Error("The desktop operation coordinator is closed.")) });
-        return;
-      }
+            if (progressError) return;
+            progressError = commandError(error);
+            if (mounted.current) {
+              update(name, revision, { type: "scan_cancel_requested", scanId });
+              update(name, revision, { type: "command_failed", error: progressError });
+            }
+            void bridge.scanCancel(scanId).catch(() => undefined);
+          };
+          return targetId ? bridge.scanRescanTarget(scanId, options, targetId, onProgress, onError) : bridge.scanStart(scanId, options, onProgress, onError);
+        } });
+      if (!lease) throw new Error("The desktop operation coordinator is closed.");
       try {
         const result = await lease.result;
-        if (!mounted.current) return;
-        if (progressError) dispatch({ type: "scan_failed", scanId, error: progressError });
-        else if (result.type === "completed") dispatch({ type: "scan_completed", scanId, report: result.report });
-        else dispatch({ type: "scan_canceled", scanId });
-      } finally {
-        await lease.complete().catch(() => false);
-      }
-    } catch (error) {
-      if (mounted.current) {
-        dispatch({ type: "scan_failed", scanId, error: progressError ?? commandError(error) });
-      }
-    } finally {
-      if (scanRequest.current === request) scanRequest.current = null;
-    }
+        if (mounted.current) {
+          if (progressError) update(name, revision, { type: "scan_failed", scanId, error: progressError });
+          else if (result.type === "completed") update(name, revision, { type: "scan_completed", scanId, report: result.report });
+          else update(name, revision, { type: "scan_canceled", scanId });
+        }
+      } finally { await lease.complete().catch(() => false); }
+    } catch (error) { if (mounted.current) update(name, revision, { type: "scan_failed", scanId, error: progressError ?? commandError(error) }); }
+    finally { if (request.current === owned) request.current = null; }
   };
-  const cancel = async () => {
-    const scanId = state.activeScan?.scanId;
+
+  const cancel = async (name: CleanScope) => {
+    const scanId = slots[name].state.activeScan?.scanId;
     if (!scanId) return;
-    dispatch({ type: "scan_cancel_requested", scanId });
-    const request = scanRequest.current;
-    if (request?.id === scanId) {
-      request.canceled = true;
-      if (!request.started) return;
-    }
+    update(name, slots[name].revision, { type: "scan_cancel_requested", scanId });
+    const owned = request.current;
+    if (owned?.id === scanId) { owned.canceled = true; if (!owned.started) return; }
     try { await bridge.scanCancel(scanId); }
-    catch (error) { dispatch({ type: "command_failed", error: commandError(error) }); }
+    catch (error) { update(name, slots[name].revision, { type: "command_failed", error: commandError(error) }); }
   };
-  const dryRun = async () => {
-    if (!state.scan || state.selectedIds.size === 0) return;
-    const plan = state.scan.plan;
-    const selectedIds = [...state.selectedIds];
-    const operationId = `dry-run-${Date.now()}`;
-    let started = false;
+
+  const dryRun = async (name: CleanScope) => {
+    const { state, revision, stale } = slots[name];
+    if (request.current || busy || stale || !state.scan || state.selectedIds.size === 0) return;
+    const plan = state.scan.plan, selectedIds = [...state.selectedIds];
+    const owned = { id: operationId("preview"), scope: name, kind: "preview" as const, started: false, canceled: false };
+    request.current = owned;
+    update(name, revision, { type: "dry_run_requested" });
     try {
-      const lease = await coordinator.start<DryRunOutcome>({
-        kind: "clean.dry-run",
-        id: operationId,
-        cancel: () => undefined,
+      const lease = await coordinator.start<DryRunOutcome>({ kind: "clean.dry-run", id: owned.id,
+        cancel: () => { owned.canceled = true; },
         start: () => {
-          started = true;
-          if (mounted.current) dispatch({ type: "dry_run_requested" });
+          if (!mounted.current || owned.canceled || current.current[name].revision !== revision) throw new Error("Preview superseded.");
+          owned.started = true;
           return bridge.planDryRun(plan, selectedIds);
-        },
-      });
-      if (!lease) {
-        if (mounted.current) dispatch({ type: "command_failed", error: commandError(new Error("The desktop operation coordinator is closed.")) });
-        return;
-      }
+        } });
+      if (!lease) throw new Error("The desktop operation coordinator is closed.");
       try {
         const outcome = await lease.result;
-        if (mounted.current) {
-          dispatch({ type: "dry_run_succeeded", outcome });
-          setView("detail");
-        }
+        if (mounted.current && !owned.canceled) { update(name, revision, { type: "dry_run_succeeded", outcome }); setDetail(name); }
       } finally { await lease.complete().catch(() => false); }
-    } catch (error) {
-      if (started && mounted.current) dispatch({ type: "command_failed", error: commandError(error) });
-    }
+    } catch (error) { if (mounted.current) update(name, revision, { type: "command_failed", error: commandError(error) }); }
+    finally { if (request.current === owned) request.current = null; }
   };
-  const execute = async () => {
-    if (state.phase !== "confirming" || !state.scan || !state.dryRun) return;
-    const plan = state.scan.plan;
-    const selectedIds = [...state.selectedIds];
-    const digest = state.dryRun.digest;
-    const operationId = `execute-${Date.now()}`;
-    let started = false;
+
+  const execute = async (name: CleanScope) => {
+    const { state, revision, stale } = slots[name];
+    if (request.current || busy || stale || state.phase !== "confirming" || !state.scan || !state.dryRun) return;
+    const plan = state.scan.plan, selectedIds = [...state.selectedIds], digest = state.dryRun.digest;
+    const owned = { id: operationId("execute"), scope: name, kind: "execute" as const, started: false, canceled: false };
+    request.current = owned;
+    update(name, revision, { type: "execute_requested" });
     try {
-      const lease = await coordinator.start<ExecutionReport>({
-        kind: "clean.execute",
-        id: operationId,
-        cancel: () => undefined,
+      const lease = await coordinator.start<ExecutionReport>({ kind: "clean.execute", id: owned.id,
+        cancel: () => { owned.canceled = true; },
         start: () => {
-          started = true;
-          if (mounted.current) {
-            dispatch({ type: "execute_requested" });
-            setCumulative(null);
-          }
+          if (!mounted.current || owned.canceled || current.current[name].revision !== revision) throw new Error("Execution superseded.");
+          owned.started = true;
           return bridge.planExecute(plan, selectedIds, digest);
-        },
-      });
-      if (!lease) {
-        if (mounted.current) dispatch({ type: "command_failed", error: commandError(new Error("The desktop operation coordinator is closed.")) });
-        return;
-      }
-      try {
-        const report = await lease.result;
-        if (mounted.current) {
-          dispatch({ type: "execute_succeeded", report });
-          setView("stage");
-          void bridge.historyCleanTotals().then((totals) => { if (mounted.current) setCumulative(totals); }).catch(() => undefined);
-        }
-      } finally { await lease.complete().catch(() => false); }
-    } catch (error) {
-      if (started && mounted.current) dispatch({ type: "command_failed", error: commandError(error) });
-    }
+        } });
+      if (!lease) throw new Error("The desktop operation coordinator is closed.");
+      try { const report = await lease.result; if (mounted.current) { update(name, revision, { type: "execute_succeeded", report }); setDetail(name); } }
+      finally { await lease.complete().catch(() => false); }
+    } catch (error) { if (mounted.current) update(name, revision, { type: "command_failed", error: commandError(error) }); }
+    finally { if (request.current === owned) request.current = null; }
   };
 
   const protect = async () => {
-    const target = protectTarget;
-    if (!target?.path || protectBusy) return;
-    setProtectBusy(true);
-    setProtectError(null);
+    if (!protectTarget?.path || protectBusy || request.current) return;
+    setProtectBusy(true); setProtectError(null);
     try {
-      await bridge.protectionAdd(target.path, true);
-      if (!mounted.current) return;
-      dispatch({ type: "target_protected", targetId: target.id });
-      setProtectTarget(null);
-    } catch (error) {
-      if (mounted.current) setProtectError(commandError(error));
-    } finally {
-      if (mounted.current) setProtectBusy(false);
+      await bridge.protectionAdd(protectTarget.path, true);
+      for (const name of ["global", "project"] as const) update(name, current.current[name].revision, { type: "target_protected", targetId: protectTarget.id });
+      dispatch({ type: "protections_changed" });
+      if (mounted.current) setProtectTarget(null);
     }
+    catch (error) { if (mounted.current) setProtectError(commandError(error)); }
+    finally { if (mounted.current) setProtectBusy(false); }
   };
 
-  const showDryRun = state.dryRun && ["dry_run", "confirming", "executing"].includes(state.phase);
-  const preview = state.activeScan
-    ? { status: "active" as const, progress: state.activeScan.progress, preview: state.activeScan.preview }
-    : state.stoppedPreview
-      ? { status: state.stoppedPreview.kind, progress: state.stoppedPreview.progress, preview: state.stoppedPreview.preview }
-      : null;
-  const reported = state.execution !== null && state.phase === "reported";
-  const scanning = state.activeScan !== null;
-  const emptyReport = Boolean(state.scan && state.scan.plan.targets.length === 0 && !scanning && !state.stoppedPreview);
-  const idleHome = state.scan === null && state.stoppedPreview === null && !scanning;
-  const showStage = scanning || idleHome || emptyReport;
-  const showMain = reported || Boolean(showDryRun && state.dryRun) || preview !== null || (state.scan !== null && !emptyReport);
-  const stageVisible = showMain && !showStage && view === "stage";
-  const detailVisible = showMain && !showStage && view === "detail";
-  const busy = state.phase === "executing" || state.pending !== null;
-  const errorBanner = state.error && <ErrorBanner error={state.error} onDismiss={() => dispatch({ type: "error_dismissed" })} />;
-  const mainContent = showMain ? <div className="main-content">
-    {reported && state.execution ? <ExecutePage locale={locale} report={state.execution} targets={state.scan?.plan.targets} final onConfirm={() => undefined} onReturn={() => dispatch({ type: "review_requested" })} />
-      : showDryRun && state.dryRun ? <ExecutePage locale={locale} report={state.dryRun.report} targets={state.scan?.plan.targets} final={false} onConfirm={() => dispatch({ type: "confirmation_opened" })} onReturn={() => dispatch({ type: "review_requested" })} />
-      : preview ? <ScanPreviewPage locale={locale} status={preview.status} progress={preview.progress} preview={preview.preview} canReturnToReport={state.scan !== null} onReturnToReport={() => dispatch({ type: "stopped_preview_dismissed" })} />
-      : <ReviewPage
-          locale={locale}
-          state={state}
-          query={query}
-          onSelect={(targetId, selected) => dispatch({ type: "selection_changed", targetId, selected })}
-          onSelectAll={(selected) => dispatch({ type: "select_all_changed", selected })}
-          onDryRun={() => void dryRun()}
-          onSkip={(targetId) => dispatch({ type: "target_skipped", targetId })}
-          onRestore={(targetId) => dispatch({ type: "target_restored", targetId })}
-          onProtect={(target) => { setProtectError(null); setProtectTarget(target); }}
-          onRescan={(target) => void scan(target.id)}
-          onAnalyze={onAnalyzeRoot ? (target) => { if (target.path) onAnalyzeRoot(target.path); } : undefined}
-        />}
-  </div> : null;
-  const scanPage = <ScanPage locale={locale} stage={showStage} empty={emptyReport} incomplete={state.scan?.health.completeness === "partial"} activeScan={state.activeScan} busy={busy || scope.loading || scope.saving} options={options} onOptions={scope.changeOptions} onScan={() => void scan()} onCancel={() => void cancel()}
-    rootControls={<ScanRoots locale={locale} roots={options.roots} suggestions={scope.suggestions} disabled={busy || scanning || scope.loading || scope.saving} onChange={scope.changeRoots} />} />;
-  const rescanLink = <button type="button" className="stage-link" disabled={busy || (!options.include_projects && !options.include_global)} onClick={() => void scan()}>{message(locale, "clean.v1.action.scan")}</button>;
-  const detailsAction = <button type="button" className="stage-action" onClick={() => setView("detail")}>{message(locale, "stage.v1.action.details")}</button>;
-  let stage: ReactNode = null;
-  if (stageVisible && reported && state.execution) {
-    const moved = movedTotals(state.execution);
-    const hasMoves = state.execution.outcomes.some((outcome) => outcome.status.type === "succeeded" && outcome.action.type === "move_to_trash");
-    const commands = state.execution.outcomes.filter((outcome) => outcome.status.type === "succeeded" && outcome.action.type === "command").length;
-    const counts = message(locale, "clean.v1.result.counts", { succeeded: String(state.execution.succeeded), skipped: String(state.execution.skipped), failed: String(state.execution.failed) });
-    stage = <StageResult
-      mode="clean"
-      label={message(locale, "command.clean")}
-      className="clean-stage clean-result"
-      caption={message(locale, hasMoves ? "clean.v1.result.caption" : commands > 0 ? "clean.v1.result.command_action" : "clean.v1.result.no_changes")}
-      value={hasMoves ? formatBytes(moved.verified_bytes + moved.partial_lower_bound_bytes) : String(commands)}
-      meta={<>
-        <MetaLine parts={[counts, ...capacityParts(locale, moved)]} />
-        {hasMoves && <p>{message(locale, "clean.v1.trash.moved")}</p>}
-        {commands > 0 && <p>{message(locale, "clean.v1.result.commands", { count: String(commands) })} {message(locale, "clean.v1.result.commands_caption")}</p>}
-        {cumulative && <p className="clean-cumulative">{message(locale, cumulative.lower_bound ? "clean.v1.result.cumulative_at_least" : "clean.v1.result.cumulative", { bytes: formatBytes(cumulative.known_bytes) })}</p>}
-      </>}
-      action={detailsAction}
-      secondary={rescanLink}
-    />;
-  } else if (stageVisible && preview) {
-    const totals = preview.preview?.totals;
-    stage = <Stage
-      mode="clean"
-      label={message(locale, "command.clean")}
-      className="clean-stage clean-stopped"
-      title={message(locale, preview.status === "failed" ? "clean.v1.stage.stopped_failed" : "clean.v1.scan.canceled")}
-      meta={totals ? <MetaLine parts={[message(locale, "clean.v1.stage.found_meta", { count: String(totals.target_count) }), ...capacityParts(locale, totals)]} /> : undefined}
-      primary={detailsAction}
-      secondary={rescanLink}
-    />;
-  } else if (stageVisible && state.scan) {
-    const totals = state.scan.health.totals;
-    const selected = selectedTotals(state);
-    const selectedBytes = formatBytes(selected.verified_bytes + selected.partial_lower_bound_bytes);
-    const hasSelection = state.selectedIds.size > 0;
-    const reviewAction = <button type="button" className={hasSelection ? "stage-link" : "stage-action"} onClick={() => setView("detail")}>{message(locale, "clean.v1.action.review")}</button>;
-    stage = <StageResult
-      mode="clean"
-      label={message(locale, "command.clean")}
-      className="clean-stage clean-found"
-      caption={message(locale, "stage.v1.caption.estimated")}
-      value={selectedBytes}
-      busy={state.pending === "dry_run"}
-      meta={<>
-        <MetaLine parts={[message(locale, "clean.v1.stage.found_meta", { count: String(state.scan.plan.targets.length) }), ...capacityParts(locale, totals)]} />
-        {hasSelection
-          ? <p>{message(locale, "clean.v1.preview.selected", { count: String(state.selectedIds.size) })}</p>
-          : <p role="status">{message(locale, "clean.v1.stage.none_selected")}</p>}
-        {state.protectedIds.size > 0 && <p role="status">{message(locale, "clean.v1.review.rescan_hint")}</p>}
-      </>}
-      action={hasSelection
-        ? <button type="button" className="stage-action" disabled={busy} onClick={() => void dryRun()}>{message(locale, "clean.v1.action.clean_selected", { bytes: selectedBytes })}</button>
-        : reviewAction}
-      secondary={hasSelection ? <>{reviewAction}{rescanLink}</> : rescanLink}
-    />;
-  }
-  return <div className="clean-mode">
-    {scope.sessionOnly && <p role="status">{message(locale, "clean.v1.scope.session_only")}</p>}
+  const selectedScope = detail ?? "project";
+  const slot = slots[selectedScope], state = slot.state;
+  const change = (action: CleanAction) => update(selectedScope, slot.revision, action);
+  const preview = state.activeScan ? { status: "active" as const, ...state.activeScan }
+    : state.stoppedPreview ? { status: state.stoppedPreview.kind, ...state.stoppedPreview } : null;
+  return <div className="clean-mode clean-workbench">
     {scope.error !== null && <ErrorBanner error={commandError(scope.error)} onDismiss={scope.dismissError} />}
-    {showStage ? <>
-      {scanPage}
-      {errorBanner}
-      {mainContent}
-    </> : stage ? <>
-      {stage}
-      {errorBanner}
-    </> : detailVisible ? <DetailView locale={locale} onBack={() => setView("stage")}>
-      {scanPage}
-      {state.phase !== "scanning" && state.scan && !emptyReport && !preview ? <div className="scan-toolbar"><label>{message(locale, "clean.v1.search.label")} <input value={query} onChange={(event) => setQuery(event.target.value)} /></label></div> : null}
-      {errorBanner}
-      {mainContent}
-    </DetailView> : null}
-    {state.scan && !scanning && !detailVisible && <ScanCoverage locale={locale} health={state.scan.health} />}
-    <ConfirmDialog locale={locale} open={state.phase === "confirming" || state.phase === "executing"} digest={state.dryRun?.digest ?? ""} irreversible={hasIrreversibleSelection(state)} busy={state.phase === "executing"} onCancel={() => dispatch({ type: "confirmation_closed" })} onConfirm={() => void execute()} />
+    {detail === null ? <CleanOverview session={session} locale={locale} busy={busy} scan={name => void scan(name)} cancel={name => void cancel(name)} review={name => { setQuery(""); setDetail(name); }} preview={name => void dryRun(name)} dismiss={name => update(name, slots[name].revision, { type: "error_dismissed" })} assessment={assessment} /> : <>
+      <header className="clean-detail-heading"><button type="button" className="secondary-button" onClick={() => setDetail(null)}>{message(locale, "clean.v2.back")}</button><h1>{message(locale, `clean.v2.${detail}`)}</h1></header>
+      {state.error && <ErrorBanner error={state.error} onDismiss={() => change({ type: "error_dismissed" })} />}
+      {slot.stale && <p className="warning-text" role="status">{message(locale, "clean.v2.stale")}</p>}
+      {state.execution && state.phase === "reported" ? <ExecutePage locale={locale} report={state.execution} targets={state.scan?.plan.targets} final onConfirm={() => undefined} onReturn={() => change({ type: "review_requested" })} />
+        : state.dryRun && ["dry_run", "confirming", "executing"].includes(state.phase) ? <ExecutePage locale={locale} report={state.dryRun.report} targets={state.scan?.plan.targets} final={false} onConfirm={() => change({ type: "confirmation_opened" })} onReturn={() => change({ type: "review_requested" })} />
+          : preview ? <><ScanPreviewPage locale={locale} status={preview.status} progress={preview.progress} preview={preview.preview} canReturnToReport={state.scan !== null} onReturnToReport={() => change({ type: "stopped_preview_dismissed" })} />{state.activeScan && <button type="button" disabled={state.activeScan.cancelRequested} onClick={() => void cancel(selectedScope)}>{message(locale, "clean.v1.action.cancel")}</button>}</>
+            : <><label className="clean-search">{message(locale, "clean.v1.search.label")}<input type="search" value={query} onChange={event => setQuery(event.target.value)} /></label><ReviewPage locale={locale} state={state} query={query} disabled={busy || slot.stale}
+              onSelect={(targetId, selected) => { if (!busy && !slot.stale) change({ type: "selection_changed", targetId, selected }); }}
+              onSelectAll={selected => { if (!busy && !slot.stale) change({ type: "select_all_changed", selected }); }}
+              onDryRun={() => void dryRun(selectedScope)}
+              onSkip={targetId => change({ type: "target_skipped", targetId })} onRestore={targetId => change({ type: "target_restored", targetId })}
+              onProtect={target => { setProtectError(null); setProtectTarget(target); }}
+              onRescan={target => void scan(selectedScope, target.id)}
+              onAnalyze={onAnalyzeRoot ? target => { if (target.path) onAnalyzeRoot(target.path); } : undefined} /></>}
+    </>}
+    <ConfirmDialog locale={locale} open={state.phase === "confirming" || state.phase === "executing"} digest={state.dryRun?.digest ?? ""} irreversible={hasIrreversibleSelection(state)} busy={state.phase === "executing"} onCancel={() => change({ type: "confirmation_closed" })} onConfirm={() => void execute(selectedScope)} />
     <ProtectDialog locale={locale} path={protectTarget?.path ?? null} busy={protectBusy} error={protectError} onCancel={() => { setProtectTarget(null); setProtectError(null); }} onConfirm={() => void protect()} onDismissError={() => setProtectError(null)} />
   </div>;
 }
