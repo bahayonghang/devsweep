@@ -8,6 +8,8 @@ pub mod analysis;
 
 /// Neutral Cargo metadata probing and diagnostics.
 pub mod cargo_metadata;
+/// Pure project capacity advice and its independent warning preference store.
+pub mod clean_advisories;
 /// Validated desktop appearance and bounded runtime preferences.
 pub mod desktop_preferences;
 /// Cleanup execution orchestration and safety enforcement.
