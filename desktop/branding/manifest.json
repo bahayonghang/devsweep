@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "generator": {
+    "tool": "@tauri-apps/cli icon",
+    "version": "2.11.4",
+    "node": "22.23.2",
+    "icns_container": "Sort chunk types lexicographically; encoded pixel and alpha payloads unchanged"
+  },
+  "artwork": {
+    "tool": "built-in image_gen",
+    "selected": "compact-v2",
+    "content_edits_after_generation": false
+  },
+  "master": {
+    "path": "src/assets/devsweep-icon-master.png",
+    "bytes": 813800,
+    "sha256": "6a4b9d64b4c2e420ad9a3fdcf53b4538e44834dfeae4fd86a5622864398f2958",
+    "width": 1254,
+    "height": 1254
+  },
+  "provenance": [
+    {
+      "path": "branding/devsweep-beaver-full.png",
+      "bytes": 1021948,
+      "sha256": "fe48db20205a31b8d32742f9b0eaa7717b54cc926ec1e230e8417da96307e296"
+    },
+    {
+      "path": "branding/prompts/full.txt",
+      "bytes": 1606,
+      "sha256": "dec43767e066b9ecedd3f1047c43c6f2c936c2be9c650222173a3a74e9181af0"
+    },
+    {
+      "path": "branding/prompts/compact-v1.txt",
+      "bytes": 1219,
+      "sha256": "92e980a7044048004f583517811249e328100a75c4897a3439dd4daa643aa772"
+    },
+    {
+      "path": "branding/prompts/compact-v2.txt",
+      "bytes": 1071,
+      "sha256": "471d835b5260199a26c13414eaea7b5cf0ee1acad77a58117c7cd566c14ec31b"
+    }
+  ],
+  "derived": [
+    {
+      "path": "src-tauri/icons/128x128.png",
+      "bytes": 16154,
+      "sha256": "3401c4c560bd1ec155753dba6695f4857a3f785bab36ed980030e34dc3e1a185",
+      "width": 128,
+      "height": 128
+    },
+    {
+      "path": "src-tauri/icons/128x128@2x.png",
+      "bytes": 46876,
+      "sha256": "2a0bf9d37caadc65558f888c969760d1957662de508fab99de452f19fa692a3c",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "path": "src-tauri/icons/32x32.png",
+      "bytes": 2259,
+      "sha256": "38fb97536eba47aba2dcf4a66e0198375a7eeced7dd3cfcdf794ca0ed69979ad",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "path": "src-tauri/icons/Square107x107Logo.png",
+      "bytes": 12368,
+      "sha256": "7eab4c5786e463df55ef9cc5124cc33de94dccfff951e8343a89bed858ddcc77",
+      "width": 107,
+      "height": 107
+    },
+    {
+      "path": "src-tauri/icons/Square142x142Logo.png",
+      "bytes": 18853,
+      "sha256": "7550a7c0d1e1925a07ee7dc48659d7292489782adb5559b5bb14366cec3ca503",
+      "width": 142,
+      "height": 142
+    },
+    {
+      "path": "src-tauri/icons/Square150x150Logo.png",
+      "bytes": 20393,
+      "sha256": "9394ba62ed19459463d88fb7c70fb10b43227e56812c2a05940c6d7b81eb916a",
+      "width": 150,
+      "height": 150
+    },
+    {
+      "path": "src-tauri/icons/Square284x284Logo.png",
+      "bytes": 55490,
+      "sha256": "3046e391a8ff245aaba62a6119328ea2ad1924dfc66fa394e2637575c68eb713",
+      "width": 284,
+      "height": 284
+    },
+    {
+      "path": "src-tauri/icons/Square30x30Logo.png",
+      "bytes": 2044,
+      "sha256": "0d94f64ce87e632f4ba9d96a986b9f646505fe9fc3dc90b44a8c68d946d33bc7",
+      "width": 30,
+      "height": 30
+    },
+    {
+      "path": "src-tauri/icons/Square310x310Logo.png",
+      "bytes": 64425,
+      "sha256": "2dcd92f392e43f45b955cfe47b7e17d032d655dd42c5fed20827ae616d93b478",
+      "width": 310,
+      "height": 310
+    },
+    {
+      "path": "src-tauri/icons/Square44x44Logo.png",
+      "bytes": 3496,
+      "sha256": "0feddd42d2a19b8625411403ec7b11fc4db34e70d0f6f5f55f3e5db47444bcff",
+      "width": 44,
+      "height": 44
+    },
+    {
+      "path": "src-tauri/icons/Square71x71Logo.png",
+      "bytes": 6829,
+      "sha256": "9942097c55a5223985302191d44a9fbf5aad3309450e262006a8f75025bb6533",
+      "width": 71,
+      "height": 71
+    },
+    {
+      "path": "src-tauri/icons/Square89x89Logo.png",
+      "bytes": 9518,
+      "sha256": "1a10ac990ec33bbeb2edb782b157915daa856e1a3164a068662fcc9331424e67",
+      "width": 89,
+      "height": 89
+    },
+    {
+      "path": "src-tauri/icons/StoreLogo.png",
+      "bytes": 4167,
+      "sha256": "28fd3a0c32670534d458f2436890650bf073e0f02e4bd7e361ac2dbdacd8895f",
+      "width": 50,
+      "height": 50
+    },
+    {
+      "path": "src-tauri/icons/icon.icns",
+      "bytes": 896500,
+      "sha256": "c96423f5e3ce7e72922e2ce3a7f7adc0abe0e8cfca2e2c24ad8d7530fd651f40"
+    },
+    {
+      "path": "src-tauri/icons/icon.ico",
+      "bytes": 63751,
+      "sha256": "e685b9397baffd93e9d743750c4ea1a5b290a3c50cb9cba56da914247f11691b"
+    },
+    {
+      "path": "src-tauri/icons/icon.png",
+      "bytes": 149148,
+      "sha256": "d8c2325f63ac50f7bc2c207ec7bb37399ef0807105d47a90466d1b8f798729e8",
+      "width": 512,
+      "height": 512
+    }
+  ]
+}

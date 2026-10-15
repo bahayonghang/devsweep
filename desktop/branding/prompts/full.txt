@@ -1,0 +1,10 @@
+Use case: logo-brand.
+Asset type: original DevSweep desktop application mascot logo concept, square transparent raster asset for app icon and small navigation mark.
+Primary request: create a charming, capable little beaver that conveys building and tidying developer workspaces. Original character, inspired only by the idea of an approachable small-animal utility mascot. Do not reproduce Mole or any existing mascot.
+Subject: one compact little beaver in three-quarter view, broad recognizable paddle tail curling beside its small rounded body, two simple front teeth, confident friendly eyes, small rounded ears. Keep the head prominent and silhouette exceptionally clear. One small sage-green neckerchief is its single identifying accent. No tools or props.
+Style/medium: beautifully balanced flat vector-like illustration rendered as PNG, few broad shapes, restrained rounded geometry, crisp edges, charming professional software identity, not a children's sticker.
+Composition: one centered full mascot, fills 78 percent of the square, generous transparent margin, fully contained silhouette, readily legible at 32 and 64 pixels.
+Palette: exactly three flat colors: charcoal #283630, warm ivory #F3E8D1, sage green #74B88B. Use charcoal outlining and large ivory face shapes for light/dark readability. No gradients, no shadows, no tiny fur details.
+Text: none.
+Background: genuinely transparent alpha, no white matte, no checkerboard texture, no app-tile background.
+Constraints: no letters, no wordmark, no watermark, no frame, no globe, no copied brand graphics. Output one polished logo concept.
