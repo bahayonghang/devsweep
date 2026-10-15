@@ -439,32 +439,37 @@ fn accepted_confirmation_emits_selected_clean_plan() {
 }
 
 #[test]
-fn accepted_confirmation_keeps_explicit_fresh_target_selection() {
-    let mut target = representative_plan().targets[0].clone();
-    target.last_modified = Some(SystemTime::now());
-    target.selected_by_default = false;
-    target.evidence.push(Evidence::RuleMatched {
-        rule_id: "ranking.freshness_guard.7d".to_string(),
-    });
-    let mut app = App::with_plan(plan_with_targets(vec![target.clone()]));
-    app.selected_ids.insert(target.id.clone());
+fn accepted_confirmation_keeps_explicit_project_target_selection() {
+    for age_days in [0, 10] {
+        let mut target = representative_plan().targets[0].clone();
+        target.last_modified =
+            Some(SystemTime::now() - std::time::Duration::from_secs(age_days * 86_400));
+        target.selected_by_default = false;
+        target.evidence.push(Evidence::RuleMatched {
+            rule_id: "ranking.project_opt_in".to_string(),
+        });
+        let mut app = App::with_plan(plan_with_targets(vec![target.clone()]));
+        assert!(app.selected_ids.is_empty());
+        app.update(key(KeyCode::Char(' ')));
+        assert!(app.selected_ids.contains(&target.id));
 
-    app.update(key(KeyCode::Char('c')));
-    for ch in "confirm".chars() {
-        app.update(key(KeyCode::Char(ch)));
+        app.update(key(KeyCode::Char('c')));
+        for ch in "confirm".chars() {
+            app.update(key(KeyCode::Char(ch)));
+        }
+        let effects = app.update(key(KeyCode::Enter));
+
+        let [Effect::StartClean { plan, selected, .. }] = effects.as_slice() else {
+            panic!("confirmation emits clean effect");
+        };
+        assert_eq!(plan.targets.len(), 1);
+        assert_eq!(plan.targets[0].id, target.id);
+        assert_eq!(selected, &vec![target.id.clone()]);
+        assert!(
+            !plan.targets[0].selected_by_default,
+            "explicit selection must not rewrite the ranking hint"
+        );
     }
-    let effects = app.update(key(KeyCode::Enter));
-
-    let [Effect::StartClean { plan, selected, .. }] = effects.as_slice() else {
-        panic!("confirmation emits clean effect");
-    };
-    assert_eq!(plan.targets.len(), 1);
-    assert_eq!(plan.targets[0].id, target.id);
-    assert_eq!(selected, &vec![target.id.clone()]);
-    assert!(
-        !plan.targets[0].selected_by_default,
-        "explicit selection must not rewrite the ranking hint"
-    );
 }
 
 #[test]

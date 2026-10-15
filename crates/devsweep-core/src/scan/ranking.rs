@@ -3,11 +3,12 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use crate::model::{CleanTarget, CleanupPlan, Evidence};
+use crate::model::{CleanTarget, CleanupPlan, Evidence, Scope};
 
 pub(super) const DEFAULT_FRESHNESS_FLOOR: Duration = Duration::from_secs(7 * 86_400);
 /// Evidence rule applied when a target is newer than the freshness floor.
 pub(crate) const FRESHNESS_GUARD_RULE_ID: &str = "ranking.freshness_guard.7d";
+const PROJECT_OPT_IN_RULE_ID: &str = "ranking.project_opt_in";
 
 pub(super) fn rank_cleanup_plan(plan: &mut CleanupPlan) {
     rank_cleanup_plan_at(plan, SystemTime::now(), DEFAULT_FRESHNESS_FLOOR);
@@ -27,6 +28,16 @@ pub(super) fn freshness_tiebreaker(target: &CleanTarget, now: SystemTime) -> f64
 pub(crate) fn rank_cleanup_plan_at(plan: &mut CleanupPlan, now: SystemTime, floor: Duration) {
     for target in &mut plan.targets {
         apply_freshness_guard(target, now, floor);
+        if matches!(target.scope, Scope::Project { .. }) && target.selected_by_default {
+            target.selected_by_default = false;
+            if !target.evidence.iter().any(|evidence| {
+                matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == PROJECT_OPT_IN_RULE_ID)
+            }) {
+                target.evidence.push(Evidence::RuleMatched {
+                    rule_id: PROJECT_OPT_IN_RULE_ID.to_string(),
+                });
+            }
+        }
     }
     sort_targets(&mut plan.targets, now);
 }
@@ -299,6 +310,61 @@ mod tests {
         );
     }
 
+    #[test]
+    fn project_targets_require_explicit_selection_for_every_kind() {
+        let now = UNIX_EPOCH + Duration::from_secs(30 * 86_400);
+        let kinds = [
+            TargetKind::PackageCache,
+            TargetKind::BuildArtifacts,
+            TargetKind::DependencyDirectory,
+            TargetKind::VirtualEnv,
+            TargetKind::TestCache,
+            TargetKind::ToolCache,
+        ];
+        let mut plan = plan(
+            kinds
+                .into_iter()
+                .enumerate()
+                .map(|(index, kind)| {
+                    let mut candidate = target(
+                        &format!("project-{index}"),
+                        100,
+                        Some(now - Duration::from_secs(10 * 86_400)),
+                        true,
+                    );
+                    candidate.scope = Scope::Project {
+                        root: PathBuf::from("C:/workspace/app"),
+                    };
+                    candidate.kind = kind;
+                    if candidate.kind == TargetKind::BuildArtifacts {
+                        candidate.ecosystem = Ecosystem::Rust;
+                        candidate.action = CleanAction::Command {
+                            program: "cargo".to_string(),
+                            args: vec!["clean".to_string()],
+                            cwd: None,
+                            irreversible: true,
+                        };
+                    }
+                    candidate
+                })
+                .collect(),
+        );
+
+        rank_cleanup_plan_at(&mut plan, now, DEFAULT_FRESHNESS_FLOOR);
+        rank_cleanup_plan_at(&mut plan, now, DEFAULT_FRESHNESS_FLOOR);
+
+        assert!(
+            plan.targets
+                .iter()
+                .all(|target| !target.selected_by_default)
+        );
+        assert!(plan.targets.iter().all(|target| {
+            target.evidence.iter().filter(|evidence| {
+                matches!(evidence, Evidence::RuleMatched { rule_id } if rule_id == PROJECT_OPT_IN_RULE_ID)
+            }).count() == 1
+        }));
+    }
+
     fn plan(targets: Vec<CleanTarget>) -> CleanupPlan {
         CleanupPlan {
             version: crate::model::CLEANUP_PLAN_VERSION,
@@ -314,9 +380,7 @@ mod tests {
     ) -> CleanTarget {
         CleanTarget {
             id: TargetId::new(id),
-            scope: Scope::Project {
-                root: PathBuf::from("C:/workspace/app"),
-            },
+            scope: Scope::Global,
             ecosystem: Ecosystem::Generic,
             kind: TargetKind::ToolCache,
             path: Some(PathBuf::from(format!("C:/workspace/app/{id}"))),

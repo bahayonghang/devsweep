@@ -22,6 +22,7 @@ use crate::rules::{
     YARN_CACHE_MODERN_RULE_DOC, global_cache_rules,
 };
 
+mod mbx;
 mod probe;
 
 pub(crate) use probe::resolve_executable;
@@ -351,6 +352,9 @@ fn scan_outcome_with_probe(
     if !cancel_requested(cancel) {
         add_known_cache_targets_with_progress(probe, &mut targets, cancel, on_target, &mut health);
     }
+    if !cancel_requested(cancel) {
+        health.record_coverage(mbx::coverage(probe));
+    }
 
     if cancel_requested(cancel) {
         for id in [
@@ -363,6 +367,7 @@ fn scan_outcome_with_probe(
             "uv.cache.clean",
             "bun.cache.clean",
             "go.build_cache.clean",
+            mbx::COVERAGE_ID,
         ]
         .into_iter()
         .chain(global_cache_rules().map(|rule| {

@@ -425,11 +425,13 @@ mod tests {
             let (program, prefix, identities) =
                 resolve_dispatch(&shim, rule).expect("supported layout");
             assert!(program.ends_with("node.exe"));
+            assert_eq!(prefix.len(), 1);
             assert_eq!(
-                prefix,
-                vec![entry.canonicalize().expect("entry").display().to_string()]
+                Path::new(&prefix[0]).canonicalize().expect("runtime entry"),
+                entry.canonicalize().expect("entry")
             );
             assert_eq!(identities.len(), 2);
+            assert_eq!(identities[1].0, entry.canonicalize().expect("bound entry"));
             let before = identities[1].1.clone();
             std::fs::write(&entry, "changed script").expect("replace script");
             assert_ne!(

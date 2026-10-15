@@ -28,6 +28,7 @@ pub mod plan;
 pub mod presentation_settings;
 /// Bounded external-process execution and cooperative cancellation.
 pub mod process;
+mod project_footprints;
 /// Built-in cleanup rule declarations and trusted action reconstruction.
 pub mod rules;
 /// Project and global cleanup target discovery.

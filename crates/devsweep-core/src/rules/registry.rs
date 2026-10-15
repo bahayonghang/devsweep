@@ -416,6 +416,34 @@ impl RuleRegistry {
     }
 
     fn resolve_inspect_only(&self, target: &UntrustedTarget) -> Result<ActionSpec> {
+        if target.rule_id == super::RUST_SHARED_TARGET_RULE_DOC.id {
+            let Scope::Project { root } = &target.scope else {
+                bail!("shared Cargo observation requires project scope")
+            };
+            let path = target
+                .path
+                .clone()
+                .ok_or_else(|| anyhow::anyhow!("shared Cargo observation requires a path"))?;
+            normalize_absolute_path(root)?;
+            normalize_absolute_path(&path)?;
+            require_target_facts(
+                target,
+                &Ecosystem::Rust,
+                &TargetKind::BuildArtifacts,
+                &super::RUST_SHARED_TARGET_RULE_DOC.risk,
+                true,
+            )?;
+            let mut spec = inspect_path_spec(
+                path,
+                &target.rule_id,
+                &super::RUST_SHARED_TARGET_RULE_DOC.risk,
+            );
+            // Separate observational owners may describe one shared footprint.
+            // This identity can never reconstruct a command or trash action.
+            spec.identity
+                .push_str(&format!(":{}", normalize_absolute_path(root)?));
+            return Ok(spec);
+        }
         if let Some(family) = super::windows_cache_family(&target.rule_id) {
             let path = global_target_path(target)?;
             super::windows_caches::validate_windows_cache_location(family, &path)?;

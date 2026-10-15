@@ -419,7 +419,7 @@ impl ProjectScanner {
         ) {
             CargoMetadataProbeResult::Resolved(scope) => {
                 let target_dir = scope.target_directory;
-                if !is_real_dir(&target_dir, self.reparse_probe.as_ref()) {
+                if !self.rust_target_available(&target_dir, diagnostics) {
                     return;
                 }
                 let workspace_root = if scope.workspace_root.as_os_str().is_empty() {
@@ -486,7 +486,7 @@ impl ProjectScanner {
                 // Metadata failure: downgrade to a local trash candidate only when
                 // `<dir>/target` exists as a real directory under the project.
                 let local_target = dir.join("target");
-                if !is_real_dir(&local_target, self.reparse_probe.as_ref()) {
+                if !self.rust_target_available(&local_target, diagnostics) {
                     warn!(
                         project = %dir.display(),
                         error = %error,
@@ -528,6 +528,37 @@ impl ProjectScanner {
                 push_observed_target(targets, target, on_target);
             }
         }
+    }
+
+    fn rust_target_available(&self, path: &Path, diagnostics: &mut Vec<ScanDiagnostic>) -> bool {
+        let metadata = match fs::symlink_metadata(path) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return false,
+            Err(error) => {
+                diagnostics.push(scan_diagnostic(
+                    ScanDiagnosticStage::Discovery,
+                    path.to_path_buf(),
+                    ScanDiagnosticOutcome::Failed,
+                    format!("Cargo target could not be inspected; capacity is unknown: {error}"),
+                ));
+                return false;
+            }
+        };
+        let safety = inspect_path_no_follow(path, &metadata, self.reparse_probe.as_ref());
+        if !matches!(safety, PathSafety::Safe) || !metadata.is_dir() {
+            diagnostics.push(scan_diagnostic(
+                ScanDiagnosticStage::Discovery,
+                path.to_path_buf(),
+                ScanDiagnosticOutcome::Skipped,
+                if matches!(safety, PathSafety::Safe) {
+                    "Cargo target is not a directory; capacity is unknown".to_string()
+                } else {
+                    format!("Cargo target ownership is unresolved; capacity is unknown; {}. Managed targets require a separately qualified adapter", skipped_path_detail(&safety))
+                },
+            ));
+            return false;
+        }
+        true
     }
 
     fn scan_node_project(
@@ -1750,6 +1781,119 @@ mod tests {
     }
 
     #[test]
+    fn external_unverified_cargo_target_keeps_project_coverage_incomplete() {
+        let fixture = Fixture::new();
+        fixture.file("app/Cargo.toml", "[package]\nname = \"app\"\n");
+        fixture.file("external-target/keep", "sentinel");
+        let app = fixture.path().join("app");
+        let target = fixture.path().join("external-target");
+        let probe = RecordingCargoMetadataProbe::new([(
+            app.clone(),
+            metadata_scope(&app, &target, vec![app.join("Cargo.toml")]),
+        )]);
+        let scanner = ProjectScanner::with_probes(
+            Arc::new(FixtureReparseProbe::tagged(&target)),
+            Arc::new(probe),
+        );
+        let outcome = scanner.scan_roots_with_diagnostics(&[app]).expect("scan");
+        assert!(outcome.plan.targets.is_empty());
+        assert_eq!(outcome.completeness, ScanCompleteness::Partial);
+        assert_eq!(outcome.coverage[0].status, ScanCoverageStatus::Skipped);
+        assert!(outcome.diagnostics.iter().any(|diagnostic| {
+            diagnostic.stage == ScanDiagnosticStage::Discovery
+                && diagnostic.path == target
+                && diagnostic.detail.contains("capacity is unknown")
+        }));
+        assert_eq!(
+            fs::read_to_string(target.join("keep")).expect("sentinel"),
+            "sentinel"
+        );
+    }
+
+    #[test]
+    fn shared_external_cargo_target_is_inspect_only_with_stable_distinct_owner_ids() {
+        use crate::execution::{ExecutionError, ExecutionRequest, Executor};
+        let fixture = Fixture::new();
+        fixture.file("a/Cargo.toml", "[package]\nname = \"a\"\n");
+        fixture.file("b/Cargo.toml", "[package]\nname = \"b\"\n");
+        fixture.file("shared/keep", "shared sentinel");
+        let a = fixture.path().join("a");
+        let b = fixture.path().join("b");
+        let shared = fixture.path().join("shared");
+        let probe = RecordingCargoMetadataProbe::new([
+            (
+                a.clone(),
+                metadata_scope(&a, &shared, vec![a.join("Cargo.toml")]),
+            ),
+            (
+                b.clone(),
+                metadata_scope(&b, &shared, vec![b.join("Cargo.toml")]),
+            ),
+        ]);
+        let scanner =
+            ProjectScanner::with_probes(Arc::new(SystemPathReparseProbe), Arc::new(probe));
+        let ordinary = scanner
+            .scan_roots(std::slice::from_ref(&a))
+            .expect("single workspace");
+        assert_eq!(
+            ordinary.targets[0].id.as_str(),
+            format!("rust.target:{}", shared.display())
+        );
+        assert!(matches!(
+            ordinary.targets[0].action,
+            CleanAction::Command { .. }
+        ));
+        let plan = scanner
+            .scan_roots(&[a.clone(), b.clone()])
+            .expect("shared target scan");
+        let reverse = scanner.scan_roots(&[b, a]).expect("reversed roots");
+        assert_eq!(plan, reverse);
+        assert_eq!(plan.targets.len(), 2);
+        assert_ne!(plan.targets[0].id, plan.targets[1].id);
+        assert!(plan.targets.iter().all(|target| matches!(
+            target.action,
+            CleanAction::NoopInspectOnly
+        ) && !target.selected_by_default));
+        let dto = crate::plan::untrusted_plan_from_scan(&plan).expect("closed DTO");
+        let validated =
+            crate::plan::validate_plan(&dto).expect("production registry accepts observations");
+        let footprints = crate::project_footprints::project_footprints(&dto.targets);
+        assert_eq!(footprints.len(), 1);
+        assert_eq!(
+            footprints[0].attribution,
+            crate::project_footprints::FootprintAttribution::Shared
+        );
+        for target in &plan.targets {
+            let error = Executor::default()
+                .run_plan(
+                    &validated,
+                    ExecutionRequest {
+                        execute: false,
+                        audit_log: None,
+                        selected: vec![target.id.clone()],
+                        expected_digest: None,
+                        cancel: None,
+                    },
+                )
+                .expect_err("shared observation cannot be previewed for execution");
+            assert!(matches!(
+                error.downcast_ref::<ExecutionError>(),
+                Some(ExecutionError::InspectOnlyTarget { .. })
+            ));
+        }
+        let mut forged = dto;
+        forged.targets[0].intent = crate::model::CleanupIntent::RunBuiltInAction {
+            provider_id: "cargo".into(),
+            action_id: "clean_manifest".into(),
+        };
+        assert!(crate::plan::validate_plan(&forged).is_err());
+        assert_eq!(
+            fs::read_to_string(shared.join("keep")).expect("sentinel"),
+            "shared sentinel"
+        );
+    }
+
+    #[test]
     fn unproven_nested_manifest_runs_its_own_cargo_metadata_probe() {
         let fixture = Fixture::new();
         fixture.file("parent/Cargo.toml", "[package]\nname = \"parent\"\n");
@@ -1946,6 +2090,31 @@ mod tests {
             rule_id: "node.next_cache".to_string(),
         }));
         assert!(deduped[0].evidence.contains(&Evidence::UserConfigured));
+    }
+
+    #[test]
+    fn dedupe_preserves_competing_project_and_global_ownership() {
+        let fixture = Fixture::new();
+        fixture.file("shared/item", "payload");
+        let root = fixture.path().to_path_buf();
+        let first = build_path_target(PathTargetInput {
+            rule_id: "node.next_cache",
+            ecosystem: Ecosystem::Node,
+            kind: TargetKind::BuildArtifacts,
+            project_root: root.join("a"),
+            path: root.join("shared"),
+            risk: RiskLevel::Low,
+            selected_by_default: false,
+            evidence: vec![],
+        });
+        let mut other = first.clone();
+        other.id = TargetId::new("second-owner");
+        other.scope = Scope::Project {
+            root: root.join("b"),
+        };
+        assert_eq!(dedupe_targets(vec![first.clone(), other.clone()]).len(), 2);
+        other.scope = Scope::Global;
+        assert_eq!(dedupe_targets(vec![first, other]).len(), 2);
     }
 
     #[test]

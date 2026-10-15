@@ -1,8 +1,13 @@
 use std::path::{Path, PathBuf};
 
-use crate::model::{CleanAction, CleanTarget, Evidence};
+use crate::{
+    filesystem::normalize_absolute_path,
+    model::{CleanAction, CleanTarget, Evidence, Scope, TargetId},
+    rules::{RUST_SHARED_TARGET_RULE_DOC, RUST_TARGET_RULE_DOC},
+};
 
 pub(in crate::scan) fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<CleanTarget> {
+    mark_shared_rust_targets(&mut targets);
     targets.sort_by(|left, right| {
         let left_path = left.path.as_deref().map(footprint_depth);
         let right_path = right.path.as_deref().map(footprint_depth);
@@ -42,6 +47,20 @@ fn canonical_footprint(path: &Path) -> PathBuf {
 }
 
 fn same_action_identity(left: &CleanTarget, right: &CleanTarget) -> bool {
+    // Preserve competing owners for the observational footprint
+    // projection. A matching cleanup method does not prove exclusive ownership.
+    let same_owner = match (&left.scope, &right.scope) {
+        (Scope::Global, Scope::Global) => true,
+        (Scope::Project { root: left }, Scope::Project { root: right }) => {
+            left == right
+                || matches!((normalize_absolute_path(left), normalize_absolute_path(right)),
+                (Ok(left), Ok(right)) if left == right)
+        }
+        _ => false,
+    };
+    if !same_owner {
+        return false;
+    }
     match (&left.action, &right.action) {
         (CleanAction::MoveToTrash { .. }, CleanAction::MoveToTrash { .. })
         | (CleanAction::NoopInspectOnly, CleanAction::NoopInspectOnly) => true,
@@ -75,6 +94,73 @@ fn same_action_identity(left: &CleanTarget, right: &CleanTarget) -> bool {
                 && left_irreversible == right_irreversible
         }
         _ => false,
+    }
+}
+
+fn mark_shared_rust_targets(targets: &mut [CleanTarget]) {
+    let mut located = targets
+        .iter()
+        .enumerate()
+        .filter_map(|(index, target)| {
+            let Scope::Project { root } = &target.scope else {
+                return None;
+            };
+            if !target.evidence.iter().any(|item| {
+                matches!(item, Evidence::RuleMatched { rule_id }
+            if rule_id == RUST_TARGET_RULE_DOC.id || rule_id == RUST_SHARED_TARGET_RULE_DOC.id)
+            }) {
+                return None;
+            }
+            let path =
+                normalize_absolute_path(&canonical_footprint(target.path.as_deref()?)).ok()?;
+            let owner = normalize_absolute_path(root).ok()?;
+            Some((
+                path.split('/')
+                    .filter(|part| !part.is_empty())
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>(),
+                owner,
+                index,
+            ))
+        })
+        .collect::<Vec<_>>();
+    located.sort_unstable();
+    let mut cursor = 0;
+    while cursor < located.len() {
+        let mut end = cursor + 1;
+        while end < located.len() && located[end].0.starts_with(&located[cursor].0) {
+            end += 1;
+        }
+        if located[cursor..end]
+            .iter()
+            .any(|(_, owner, _)| owner != &located[cursor].1)
+        {
+            for (path, owner, index) in &located[cursor..end] {
+                let target = &mut targets[*index];
+                target.id = TargetId::new(format!(
+                    "{}:{}:{owner}{}",
+                    RUST_SHARED_TARGET_RULE_DOC.id,
+                    owner.len(),
+                    path.join("/")
+                ));
+                target.action = CleanAction::NoopInspectOnly;
+                target.risk = RUST_SHARED_TARGET_RULE_DOC.risk;
+                target.reversible = true;
+                target.selected_by_default = false;
+                target.evidence.retain(|item| {
+                    !matches!(item,
+                        Evidence::RuleMatched { rule_id } if rule_id == RUST_TARGET_RULE_DOC.id
+                    ) && !matches!(item, Evidence::OfficialCommand { .. })
+                });
+                let matched = Evidence::RuleMatched {
+                    rule_id: RUST_SHARED_TARGET_RULE_DOC.id.into(),
+                };
+                if !target.evidence.contains(&matched) {
+                    target.evidence.insert(0, matched);
+                }
+            }
+        }
+        cursor = end;
     }
 }
 

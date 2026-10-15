@@ -410,6 +410,7 @@ mod inventory_tests;
 mod windows {
     #[test]
     fn current_process_sid_is_exact_and_mta_worker_joins() {
+        let _mta_test = super::msix::mta_test_guard();
         let sid = super::msix::current_process_sid().expect("current process SID");
         assert!(sid.starts_with("S-1-"));
         let _ = super::msix::inventory(1, None);

@@ -147,6 +147,15 @@ pub(crate) const RUST_TARGET_RULE_DOC: RuleDoc = RuleDoc {
     summary: "Rust build directory (target/) via cargo clean",
 };
 
+pub(crate) const RUST_SHARED_TARGET_RULE_DOC: RuleDoc = RuleDoc {
+    id: "rust.target.shared",
+    ecosystem: Ecosystem::Rust,
+    scope: RuleScope::Project,
+    risk: RiskLevel::Medium,
+    action: "inspect only",
+    summary: "Cargo target overlaps multiple observed workspaces; ownership is ambiguous",
+};
+
 /// Catalogue entry for Python bytecode cache directories.
 pub const PYCACHE_RULE_DOC: RuleDoc = RuleDoc {
     id: "python.__pycache__",
@@ -265,8 +274,11 @@ pub(crate) const GO_BUILD_CACHE_RULE_DOC: RuleDoc = RuleDoc {
 };
 
 #[cfg(test)]
-pub(crate) const PROJECT_PROCEDURAL_RULE_DOCS: &[RuleDoc] =
-    &[RUST_TARGET_RULE_DOC, PYCACHE_RULE_DOC];
+pub(crate) const PROJECT_PROCEDURAL_RULE_DOCS: &[RuleDoc] = &[
+    RUST_TARGET_RULE_DOC,
+    RUST_SHARED_TARGET_RULE_DOC,
+    PYCACHE_RULE_DOC,
+];
 
 pub(crate) const PROVIDER_RULE_DOCS: &[RuleDoc] = &[
     UV_CACHE_RULE_DOC,

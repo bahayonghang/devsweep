@@ -39,6 +39,78 @@ fn digest_placeholder() -> String {
 }
 
 #[test]
+fn project_scan_defaults_are_opt_in_and_explicit_cli_selection_still_previews() {
+    let directory = TempDir::new().unwrap();
+    let root = directory.path().join("project");
+    let cache = root.join(".next/cache");
+    fs::create_dir_all(&cache).unwrap();
+    fs::write(root.join("package.json"), "{}").unwrap();
+    fs::write(cache.join("sentinel"), "keep this fixture").unwrap();
+
+    let scan = devsweep(&[
+        "clean",
+        "scan",
+        "--scope",
+        "projects",
+        "--root",
+        root.to_str().unwrap(),
+        "--format",
+        "json",
+    ]);
+    assert_eq!(scan.status.code(), Some(0), "{}", stderr(&scan));
+    let document = envelope(&scan);
+    assert_eq!(document["data"]["version"], 1);
+    assert_eq!(document["data"]["plan"]["version"], 2);
+    let targets = document["data"]["plan"]["targets"].as_array().unwrap();
+    assert!(!targets.is_empty());
+    assert!(targets.iter().all(|target| {
+        target["scope"]["type"] == "project" && target["selected_by_default"] == false
+    }));
+    assert!(
+        document["data"]["health"]["coverage"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|unit| unit["scope"] == "project")
+    );
+    let selected = targets
+        .iter()
+        .find(|target| target["rule_id"] == "node.next_cache")
+        .expect("marker-backed cache is discovered");
+    let observation = directory.path().join("observation.json");
+    let plan = directory.path().join("plan.json");
+    fs::write(&observation, &scan.stdout).unwrap();
+    let selection = devsweep(&[
+        "clean",
+        "plan",
+        "--observation",
+        observation.to_str().unwrap(),
+        "--select",
+        selected["id"].as_str().unwrap(),
+        "--output",
+        plan.to_str().unwrap(),
+    ]);
+    assert_eq!(selection.status.code(), Some(0), "{}", stderr(&selection));
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&plan).unwrap()).unwrap();
+    assert_eq!(saved["targets"].as_array().unwrap().len(), 1);
+    assert_eq!(saved["targets"][0]["selected_by_default"], true);
+    let preview = devsweep(&[
+        "clean",
+        "preview",
+        "--plan",
+        plan.to_str().unwrap(),
+        "--format",
+        "json",
+    ]);
+    assert_eq!(preview.status.code(), Some(0), "{}", stderr(&preview));
+    assert_eq!(envelope(&preview)["data"]["report"]["selected"], 1);
+    assert!(
+        cache.join("sentinel").is_file(),
+        "preview never cleans the fixture"
+    );
+}
+
+#[test]
 fn shipped_modes_are_reachable_and_removed_roots_stay_unknown() {
     for (args, command) in [
         (

@@ -564,6 +564,15 @@ pub(crate) fn current_process_sid() -> Result<String, ()> {
 }
 
 #[cfg(all(test, windows))]
+pub(super) fn mta_test_guard() -> std::sync::MutexGuard<'static, ()> {
+    // Worker-count assertions observe a process-wide counter. Hold this across
+    // the entire test, including its post-join assertions, so sibling tests
+    // cannot contribute unrelated workers to that observation.
+    static TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    TEST_LOCK.lock().expect("MTA test lock")
+}
+
+#[cfg(all(test, windows))]
 pub(crate) fn active_mta_workers() -> usize {
     use std::sync::atomic::Ordering;
 
@@ -632,6 +641,7 @@ mod phase_benchmark {
     #[test]
     #[ignore = "read-only native host benchmark; run explicitly in a quiet measurement slot"]
     fn profile_msix_inventory_phases() {
+        let _mta_test = mta_test_guard();
         let started = Instant::now();
         let packages = run_joined_mta(|| enumerate_on_mta(None, &mut |_, _| {}))
             .expect("joined MTA inventory");
@@ -674,6 +684,7 @@ mod phase_benchmark {
     #[test]
     #[ignore = "read-only native metadata-count diagnostic; not a release timing benchmark"]
     fn profile_msix_metadata_calls() {
+        let _mta_test = mta_test_guard();
         let packages = run_joined_mta(|| enumerate_on_mta(None, &mut |_, _| {}))
             .expect("joined MTA inventory");
         let probe = CountingProbe::default();
@@ -747,6 +758,7 @@ mod overlap_tests {
 
     #[test]
     fn late_dependency_and_partial_source_are_finalized_after_streamed_measurement() {
+        let _mta_test = mta_test_guard();
         let fixture = tempfile::tempdir().expect("MSIX path fixture");
         let installed = fixture.path().join("installed");
         std::fs::write(&installed, b"sized fixture").expect("installed fixture");
@@ -823,6 +835,7 @@ mod overlap_tests {
 
     #[test]
     fn streamed_panic_is_resumed_after_join_even_when_canceled() {
+        let _mta_test = mta_test_guard();
         let cancel = Arc::new(FlagCancelObserver::new());
         cancel.request_cancel();
         let joined = Arc::new(AtomicBool::new(false));
@@ -853,6 +866,7 @@ mod overlap_tests {
 
     #[test]
     fn enumeration_panic_keeps_the_existing_joined_mta_failure() {
+        let _mta_test = mta_test_guard();
         let fixture = tempfile::tempdir().expect("MSIX path fixture");
         let path = fixture.path().join("installed");
         std::fs::write(&path, b"fixture").expect("installed fixture");

@@ -52,7 +52,7 @@ pub(crate) fn resolve_provider_dispatch(resolved: &Path, rule: &str) -> Result<P
             (executable.clone(), provider_file_digest(&executable)?),
             (script.clone(), provider_file_digest(&script)?),
         ];
-        return Ok((node, vec![script.display().to_string()], support));
+        return Ok((node, vec![node_script_argument(&script)?], support));
     }
     if matches!(extension.as_str(), "ps1" | "sh") {
         bail!("unsupported provider interpreter layout")
@@ -119,9 +119,66 @@ fn resolve_node_script(script: &Path, rule: &str, node: &Path) -> Result<Provide
     }
     Ok((
         node,
-        vec![script.display().to_string()],
+        vec![node_script_argument(script)?],
         vec![(script.to_path_buf(), provider_file_digest(script)?)],
     ))
+}
+
+fn node_script_argument(script: &Path) -> Result<String> {
+    #[cfg(windows)]
+    {
+        // Node's main-module loader does not accept Windows verbatim paths.
+        // Keep canonical paths in support identities; only translate the argv
+        // spelling, and refuse if Windows resolves it to a different file.
+        let canonical = script
+            .canonicalize()
+            .context("Node entrypoint cannot be resolved")?;
+        let runtime = windows_node_script_path(&canonical)?;
+        if runtime
+            .canonicalize()
+            .context("Node entrypoint runtime path cannot be resolved")?
+            != canonical
+        {
+            bail!("Node entrypoint runtime path changes the canonical script identity")
+        }
+        runtime
+            .to_str()
+            .map(str::to_owned)
+            .context("Node entrypoint path must be valid Unicode")
+    }
+    #[cfg(not(windows))]
+    {
+        Ok(script.display().to_string())
+    }
+}
+
+#[cfg(windows)]
+fn windows_node_script_path(path: &Path) -> Result<PathBuf> {
+    use std::path::{Component, Prefix};
+
+    if !path.is_absolute() {
+        bail!("Node entrypoint must have an absolute filesystem path")
+    }
+    let mut components = path.components();
+    let Some(Component::Prefix(prefix)) = components.next() else {
+        bail!("Node entrypoint has an unsupported Windows path prefix")
+    };
+    let mut runtime = match prefix.kind() {
+        Prefix::VerbatimDisk(drive) => PathBuf::from(format!("{}:", char::from(drive))),
+        Prefix::VerbatimUNC(server, share) => PathBuf::from(format!(
+            r"\\{}\{}",
+            server
+                .to_str()
+                .context("Node entrypoint server must be valid Unicode")?,
+            share
+                .to_str()
+                .context("Node entrypoint share must be valid Unicode")?
+        )),
+        Prefix::Disk(_) | Prefix::UNC(..) => return Ok(path.to_path_buf()),
+        _ => bail!("Node entrypoint has an unsupported Windows path prefix"),
+    };
+    runtime.extend(components);
+    Ok(runtime)
 }
 
 pub(crate) fn provider_file_digest(path: &Path) -> Result<String> {
@@ -145,6 +202,82 @@ pub(crate) fn provider_file_digest(path: &Path) -> Result<String> {
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
+    #[test]
+    fn windows_node_paths_translate_disk_and_unc_without_accepting_device_namespaces() {
+        for (canonical, runtime) in [
+            (r"\\?\C:\tools 空格\npm-cli.js", r"C:\tools 空格\npm-cli.js"),
+            (
+                r"\\?\UNC\server\share\tools 空格\npm-cli.js",
+                r"\\server\share\tools 空格\npm-cli.js",
+            ),
+        ] {
+            assert_eq!(
+                windows_node_script_path(Path::new(canonical)).unwrap(),
+                Path::new(runtime)
+            );
+        }
+        for unsupported in [
+            r"C:npm-cli.js",
+            r"npm-cli.js",
+            r"\\.\pipe\node",
+            r"\\?\Volume{example}\npm-cli.js",
+        ] {
+            assert!(windows_node_script_path(Path::new(unsupported)).is_err());
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_node_argument_refuses_a_non_equivalent_normalized_path() {
+        let fixture = tempfile::TempDir::new().unwrap();
+        let directory = fixture.path().canonicalize().unwrap();
+        let script = directory.join("entry.js.");
+        std::fs::write(&script, "// verbatim-only filename").unwrap();
+        std::fs::write(directory.join("entry.js"), "// different file").unwrap();
+        assert!(node_script_argument(&script).is_err());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_shim_runtime_argument_preserves_the_canonical_script_identity() {
+        use std::path::{Component, Prefix};
+
+        let fixture = tempfile::TempDir::new().unwrap();
+        let tools = fixture.path().join("tools 空格");
+        let script = tools.join("node_modules/npm/bin/npm-cli.js");
+        std::fs::create_dir_all(script.parent().unwrap()).unwrap();
+        std::fs::write(&script, "// fixed npm entrypoint\n").unwrap();
+        let shim = tools.join("npm.cmd");
+        std::fs::write(&shim, "this shim must never execute").unwrap();
+        let node = tools.join("node.exe");
+        std::fs::copy(std::env::current_exe().unwrap(), &node).unwrap();
+
+        let (program, args, support) = resolve_provider_dispatch(&shim, "npm.cache.clean").unwrap();
+        assert_eq!(program, node.canonicalize().unwrap());
+        assert_eq!(args.len(), 1);
+        let runtime_script = Path::new(&args[0]);
+        assert!(matches!(runtime_script.components().next(),
+            Some(Component::Prefix(prefix)) if matches!(prefix.kind(), Prefix::Disk(_) | Prefix::UNC(..))));
+        assert_eq!(
+            runtime_script.canonicalize().unwrap(),
+            script.canonicalize().unwrap()
+        );
+        assert_eq!(
+            support,
+            vec![
+                (
+                    shim.canonicalize().unwrap(),
+                    provider_file_digest(&shim).unwrap()
+                ),
+                (
+                    script.canonicalize().unwrap(),
+                    provider_file_digest(&script).unwrap()
+                ),
+            ]
+        );
+    }
+
     #[test]
     fn fixed_node_entries_bind_script_and_use_native_interpreter() {
         let fixture = tempfile::TempDir::new().unwrap();
@@ -162,7 +295,11 @@ mod tests {
             std::fs::write(&script, "#!/usr/bin/env node\n// fixture\n").unwrap();
             let dispatch = resolve_node_script(&script, rule, &node).unwrap();
             assert_eq!(dispatch.0, node.canonicalize().unwrap());
-            assert_eq!(dispatch.1, vec![script.display().to_string()]);
+            assert_eq!(dispatch.1.len(), 1);
+            assert_eq!(
+                Path::new(&dispatch.1[0]).canonicalize().unwrap(),
+                script.canonicalize().unwrap()
+            );
             assert_eq!(
                 dispatch.2,
                 vec![(script.clone(), provider_file_digest(&script).unwrap())]

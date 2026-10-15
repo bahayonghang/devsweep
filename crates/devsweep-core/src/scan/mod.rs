@@ -656,9 +656,11 @@ mod tests {
     #[test]
     fn discovery_publication_does_not_latch_freshness_before_final_ranking() {
         let now = SystemTime::now();
+        let mut candidate = target("ages-during-scan", 100, Some(now), true);
+        candidate.scope = Scope::Global;
         let mut interactive = CleanupPlan {
             version: CLEANUP_PLAN_VERSION,
-            targets: vec![target("ages-during-scan", 100, Some(now), true)],
+            targets: vec![candidate],
         };
         let mut terminal = interactive.clone();
         let mut events = Vec::new();
@@ -667,7 +669,7 @@ mod tests {
             observer: &mut |event| events.push(event),
             last_discovery: None,
         }
-        .discovered(ScanPhase::Projects, &interactive, Instant::now());
+        .discovered(ScanPhase::Global, &interactive, Instant::now());
         assert!(!events[0].partial.as_ref().unwrap().targets[0].selected_by_default);
 
         // The two policies must rank the same original candidate at the final
@@ -781,7 +783,7 @@ mod tests {
         let projects_only = ScanOptions {
             include_projects: true,
             include_global: false,
-            roots: Vec::new(),
+            roots: vec![std::env::temp_dir().join("explicit-project")],
         };
         let mut events = Vec::new();
         let plan = sweeper_with_both_sides()
@@ -805,6 +807,40 @@ mod tests {
             .expect("fake scan succeeds");
         assert!(events.iter().all(|event| event.phase == ScanPhase::Global));
         assert_eq!(target_ids(&plan), ["global"]);
+    }
+
+    #[test]
+    fn empty_roots_are_valid_only_when_project_discovery_is_disabled() {
+        let sweeper = Sweeper::new(ProjectScanner::new(), FakeGlobal(Vec::new()));
+        let mut options = ScanOptions {
+            include_projects: false,
+            include_global: true,
+            roots: Vec::new(),
+        };
+        assert!(sweeper.full_scan_report(&options, &mut |_| {}).is_ok());
+
+        options.include_projects = true;
+        options.include_global = false;
+        let error = sweeper.full_scan_report(&options, &mut |_| {}).unwrap_err();
+        assert!(error.to_string().contains("at least one explicit root"));
+    }
+
+    #[test]
+    fn completed_report_preserves_global_defaults_and_clears_project_defaults() {
+        let old = Some(SystemTime::now() - Duration::from_secs(10 * 86_400));
+        let project = target("project", 200, old, true);
+        let mut global = target("global", 100, old, true);
+        global.scope = Scope::Global;
+        let report = Sweeper::new(FakeProjects(vec![project]), FakeGlobal(vec![global]))
+            .full_scan_report(&scan_all(), &mut |_| {})
+            .expect("scopes merge into a compatible report");
+
+        assert_eq!(report.version, crate::model::SCAN_REPORT_VERSION);
+        assert_eq!(report.plan.version, CLEANUP_PLAN_VERSION);
+        assert!(!report.plan.targets[0].selected_by_default);
+        assert!(report.plan.targets[1].selected_by_default);
+        let json = serde_json::to_string(&report).unwrap();
+        assert_eq!(serde_json::from_str::<ScanReport>(&json).unwrap(), report);
     }
 
     #[test]
