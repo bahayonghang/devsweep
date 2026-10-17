@@ -1745,3 +1745,25 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 60: 归档 08-29 与 09-28 历史任务
+<!-- trellis-session: v=2 fp=9f7b7f829a76893f -->
+
+**Date**: 2026-10-16
+**Task**: 归档 08-29 与 09-28 历史任务
+**Branch**: `codex/gpui-desktop-rewrite`
+
+### Summary
+
+归档 08-29-five-mode-native-integration 残留目录并归档 09-28-product-icon-redesign
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `eaff884` | chore(task): archive 09-28-product-icon-redesign |
+
+### Status
+
+[OK] **Completed**
