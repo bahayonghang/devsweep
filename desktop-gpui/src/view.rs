@@ -433,6 +433,7 @@ impl Render for ShellView {
                     .children(lines.into_iter().enumerate().map(|(index, line)| {
                         div()
                             .id(gpui::ElementId::named_usize("panel-line", index))
+                            .role(gpui::Role::ListItem)
                             .aria_label(SharedString::from(line.clone()))
                             .child(SharedString::from(line))
                     })),
@@ -1223,12 +1224,20 @@ mod tests {
         let marker = r#".id(gpui::ElementId::named_usize("panel-line", index))"#;
         let start = source.find(marker).expect("panel-line row div must exist");
         let snippet = &source[start..];
+        let role = snippet
+            .find(".role(gpui::Role::ListItem)")
+            .expect("panel-line div must set Role::ListItem");
         let aria = snippet
             .find(".aria_label(SharedString::from(line.clone()))")
             .expect("panel-line div must set aria_label from line.clone()");
         let child = snippet
             .find(".child(SharedString::from(line))")
             .expect("panel-line div must still paint line as the child");
+        assert!(
+            !snippet[..child].contains("GenericContainer"),
+            "panel-line div must not set GenericContainer"
+        );
+        assert!(role < aria, "Role::ListItem must come before aria_label");
         assert!(
             aria < child,
             "aria_label from line.clone() must come before the child"
