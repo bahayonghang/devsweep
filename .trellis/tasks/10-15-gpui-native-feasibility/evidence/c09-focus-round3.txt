@@ -1,0 +1,9 @@
+binary_sha256=D1E778D32CAE1E7D0AB99BD8FFCEAEA1090A4AB2CA2F6CDE424C7D20E90EE061
+pid=63184 hwnd=1904508
+foreground_before=1116310
+attach=True setForeground=False foreground_after=1116310 match=False
+GetGUIThreadInfo=1 hwndActive=1904508 hwndFocus=1904508 hwndCaret=0 flags=0
+ImmGetContext(1904508)=NULL
+ImmGetContext(1904508)=NULL
+uia_focused_nodes=0 of 12
+keyboard_probe_skipped: window never became foreground

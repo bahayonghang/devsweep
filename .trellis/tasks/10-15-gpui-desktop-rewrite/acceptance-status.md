@@ -9,7 +9,7 @@ real user cleanup, uninstall or maintenance is authorized as a validation shortc
 | Parent | P-AC01 through P-AC12 | NOT_RUN | Mandatory gates remain open: hosted matrix, the performance protocol's relative baselines, UIA focus/IME, real Recycle Bin, and native defrag/dism/w32tm. Rust 1.88.0 is now actually executed on Linux (see C16) but not on Windows. No aggregate completion claim. |
 | C01 | C01-AC1, C01-AC2, C01-AC3 | CHECKED_NOT_ACCEPTED | All three boxes checked in the child prd. Not archived. C16-AC3 is still open. The file's Windows-only tests are now `#[cfg(windows)]`-gated so the hosted Linux jobs can run. |
 | C02 | C02-AC1, C02-AC2, C02-AC3 | CHECKED_NOT_ACCEPTED | All three boxes checked. Real Windows UAC prompt remains NOT_RUN inside C02-AC2. Not archived. |
-| C03 | C03-AC1, C03-AC2, C03-AC4 checked; C03-AC3 open | NOT_ACCEPTED | `user_temp_foreign_sid_is_ownership_unknown` exited 0. A real cloud-files reparse tag and the Recycle Bin remain NOT_RUN. |
+| C03 | C03-AC1 through C03-AC4 | CHECKED_NOT_ACCEPTED | All four boxes checked. The Recycle Bin clause is now measured for real: the production scan -> plan -> preview -> execute flow exited 0, the source path was gone, and the shell Recycle Bin count rose 201 -> 202. A real cloud-files reparse tag remains NOT_RUN. Not archived. |
 | C04 | C04-AC1, C04-AC2, C04-AC3 | CHECKED_NOT_ACCEPTED | All three boxes checked. Real MSIX removal remains NOT_RUN inside C04-AC3. Not archived. |
 | C05 | C05-AC1 through C05-AC4 | CHECKED_NOT_ACCEPTED | All four boxes checked. GPUI parity stays with C12. Not archived. |
 | C06 | C06-AC1, C06-AC2, C06-AC3 checked; C06-AC4 open | NOT_ACCEPTED | Native defrag/dism/w32tm evidence remains NOT_RUN. The `dead_startup` `.lnk` path now moves the shortcut to the Recycle Bin through `SystemTrashRunner` instead of `fs::remove_file`, and the `.reg` backup records each moved link as a `;` comment. |
@@ -27,3 +27,4 @@ real user cleanup, uninstall or maintenance is authorized as a validation shortc
 Historic C3 Software failure remains in the archived evidence described in
 research/repository-audit.md. No GPUI measurement is inferred from it.
 Planning validation is recorded separately in planning-validation.md.
+
