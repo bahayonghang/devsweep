@@ -1,0 +1,11 @@
+high_contrast_before: on=False dwFlags=0x0000007E
+binary_sha256=DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34
+set_on=True high_contrast_during: on=True dwFlags=0x0000007F
+window_ms=1736 found=True
+window_rect=1318x947
+printwindow=True png=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-shell-assets\evidence\c10-highcontrast-window.png bytes=27057
+top_colors=000000x22352 A6A6A6x1570 FFFFFFx1524 717171x112 AAAAAAx8 1D4E89x6
+black_samples=22352 white_samples=1524
+shutdown_exit=0
+restore_ok=True high_contrast_after: on=False dwFlags=0x0000007E
+restored_to_original=True
