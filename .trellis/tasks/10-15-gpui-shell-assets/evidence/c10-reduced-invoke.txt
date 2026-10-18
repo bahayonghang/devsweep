@@ -1,0 +1,25 @@
+binary_sha256: 9EEB657B731C147473FA7853304ED59C7B663DE0F7952C025ECBA302409249C6
+binary_length: 13351936
+hash_gate: matched
+reproducibility_pair: no
+reproducibility_note: build log contains 1 incremental; this is not a reproducibility pair
+pid: 4936
+window_title: DevSweep
+window_class: Zed::Window
+window_raised: yes
+automation_id_nonempty_count: 6
+screenshot_method: screen
+beaver-menu: no
+menu-settings: no
+shell-root: no
+mode-tabs: no
+invoke_beaver_menu: not_run
+menu_settings_at_invoke: absent
+invoke_menu_settings: not_run
+painted_text_contains_reduced: false
+reduced: NOT observed
+settings_visible: false
+wm_close: posted
+exit_code: 0
+ocr: words=17
+screenshot: C:\Users\lyh\AppData\Local\Temp\devsweep-c10-reduced-invoke.png

@@ -1,0 +1,212 @@
+binary=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\target\release\devsweep-gpui-spike.exe
+binary_sha256=493B826857B6B9BC9349ACB6C30AB579EBAD0964117C0A040EA72888A00569B9
+binary_bytes=13144576
+binary_contains_packaged_text=True
+binary_contains_png=True png_offset=1095132
+binary_dll_string_count=35
+binary_dll_forbidden=NONE
+binary_dlls=advapi32.dll,amd_ags_x64.dll,api-ms-win-core-synch-l1-2-0.dll,api-ms-win-core-winrt-error-l1-1-0.dll,api-ms-win-core-winrt-l1-1-0.dll,api-ms-win-crt-heap-l1-1-0.dll,api-ms-win-crt-locale-l1-1-0.dll,api-ms-win-crt-math-l1-1-0.dll,api-ms-win-crt-runtime-l1-1-0.dll,api-ms-win-crt-stdio-l1-1-0.dll,api-ms-win-crt-string-l1-1-0.dll,api-ms-win-shcore-scaling-l1-1-1.dll,bcryptprimitives.dll,combase.dll,comctl32.dll,d3d11.dll,dbghelp.dll,dcomp.dll,dwmapi.dll,dwrite.dll,dxgi.dll,gdi32.dll,icuuc.dll,imm32.dll,kernel32.dll,ntdll.dll,nvapi64.dll,ole32.dll,oleaut32.dll,shell32.dll,uiautomationcore.dll,user32.dll,userenv.dll,vcruntime140.dll,winmm.dll
+root_cargo_lock_sha256=5BA0DF4FBFE12B32628E5F11AE277C59C80CBDFF8F5E3AD221C4927BE941532A
+rustc=rustc 1.99.0 (b940084d7 2026-09-28)
+launch_cwd=C:\Users\lyh\AppData\Local\Temp\c09-unrelated-launch
+launch_cwd_entries=0
+launch1 started_local=2026-10-17T03:14:42.8280472-04:00 pid=62380
+launch1 window_seen_ms=512.5176 hwnd=15537240
+launch1 window 15537240 visible=True class=Zed::Window title=DevSweep native spike
+launch1 window 13965438 visible=False class=Zed::PlatformWindow title=
+launch1 window 16912336 visible=False class=MSCTFIME UI title=MSCTFIME UI
+launch1 window 3083960 visible=False class=IME title=Default IME
+launch1 pid=62380
+launch1 creation=2026-10-17T03:14:42.8675000-04:00
+launch1 executable=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\target\release\devsweep-gpui-spike.exe
+launch1 command="D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\target\release\devsweep-gpui-spike.exe" 
+launch1 parent_pid=34080
+launch1 parent_name=pwsh.exe parent_command="pwsh" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "& \"C:\Users\lyh\AppData\Local\Temp\grok-goal-8f19d0d75913\implementer\c09-evidence.ps1\"; Write-Output \"SCRIPT_EXIT=$LASTEXITCODE\""
+launch1 working_set=76718080 private_bytes=105562112 cpu_seconds=0.328125
+launch1 module_count=78
+launch1 modules_forbidden=NONE
+launch1 module=devsweep-gpui-spike.exe
+launch1 module=ntdll.dll
+launch1 module=KERNEL32.DLL
+launch1 module=KERNELBASE.dll
+launch1 module=advapi32.dll
+launch1 module=msvcrt.dll
+launch1 module=sechost.dll
+launch1 module=RPCRT4.dll
+launch1 module=ole32.dll
+launch1 module=msvcp_win.dll
+launch1 module=ucrtbase.dll
+launch1 module=GDI32.dll
+launch1 module=win32u.dll
+launch1 module=dcomp.dll
+launch1 module=gdi32full.dll
+launch1 module=combase.dll
+launch1 module=USER32.dll
+launch1 module=shell32.dll
+launch1 module=imm32.dll
+launch1 module=shcore.dll
+launch1 module=kernel.appcore.dll
+launch1 module=Microsoft.Internal.WarpPal.dll
+launch1 module=OLEAUT32.dll
+launch1 module=bcryptprimitives.dll
+launch1 module=dxgi.dll
+launch1 module=d3d11.dll
+launch1 module=dwmapi.dll
+launch1 module=dwrite.dll
+launch1 module=comctl32.dll
+launch1 module=winmm.dll
+launch1 module=uiautomationcore.dll
+launch1 module=powrprof.dll
+launch1 module=VCRUNTIME140.dll
+launch1 module=USERENV.dll
+launch1 module=icuuc.dll
+launch1 module=icu.DLL
+launch1 module=UMPDC.dll
+launch1 module=uxtheme.dll
+launch1 module=MSCTF.dll
+launch1 module=clbcatq.dll
+launch1 children=NONE
+launch1 idle_working_set=76722176 idle_private_bytes=105402368 idle_cpu_seconds=0.328125
+screenshot hwnd=15537240 rect=697,294,654,518 getrect=True
+screenshot method=PrintWindow
+screenshot path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-native-feasibility\evidence\c09-launch-1.png bytes=25297 sample_colors=43
+uia_exit=0 path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-native-feasibility\evidence\c09-uia-before.txt
+uia_line window_count=1
+uia_line name=DevSweep native spike type=ControlType.Window id= focus=False
+uia_line  name=DevSweep native spike type=ControlType.Pane id= focus=False
+uia_line   name=DevSweep type=ControlType.Image id= focus=False
+uia_line   name= type=ControlType.Text id= focus=False
+uia_line   name= type=ControlType.Text id= focus=False
+uia_line   name=Note type=ControlType.Edit id= focus=False
+uia_line   name=Acknowledge note type=ControlType.Button id= focus=False
+uia_line   name=Idle type=ControlType.StatusBar id= focus=False
+uia_line nodes=8
+foreground_before_ime=134630 expected=15537240
+ime_layout=0x804 thread=75556
+ime_installed=en-US,zh-Hans-CN
+ime_focus_hwnd=15537240
+ime_context=NONE composition=NOT_RUN
+uia_exit=0 path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-native-feasibility\evidence\c09-uia-ime.txt
+uia_line window_count=1
+uia_line name=DevSweep native spike type=ControlType.Window id= focus=False
+uia_line  name=DevSweep native spike type=ControlType.Pane id= focus=False
+uia_line   name=DevSweep type=ControlType.Image id= focus=False
+uia_line   name= type=ControlType.Text id= focus=False
+uia_line   name= type=ControlType.Text id= focus=False
+uia_line   name=Note type=ControlType.Edit id= focus=False
+uia_line   name=Acknowledge note type=ControlType.Button id= focus=False
+uia_line   name=Idle type=ControlType.StatusBar id= focus=False
+uia_line nodes=8
+foreground_after_keys=7997848
+uia_exit=0 path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-native-feasibility\evidence\c09-uia-after-keys.txt
+uia_line window_count=1
+uia_line name=DevSweep native spike type=ControlType.Window id= focus=False
+uia_line  name=DevSweep native spike type=ControlType.Pane id= focus=False
+uia_line   name=DevSweep type=ControlType.Image id= focus=False
+uia_line   name= type=ControlType.Text id= focus=False
+uia_line   name= type=ControlType.Text id= focus=False
+uia_line   name=Note type=ControlType.Edit id= focus=False
+uia_line   name=Acknowledge note type=ControlType.Button id= focus=False
+uia_line   name=Idle type=ControlType.StatusBar id= focus=False
+uia_line nodes=8
+keyboard_status_before_has_idle=True
+keyboard_status_after_has_acknowledged=False
+launch1 wm_close_posted=True
+launch1 exited_after_wm_close=True
+launch1 shutdown=WM_CLOSE exit_code=0
+launch2 started_local=2026-10-17T03:14:51.8265217-04:00 pid=74992
+launch2 window_seen_ms=453.3213 hwnd=25758982
+launch2 window 25758982 visible=True class=Zed::Window title=DevSweep native spike
+launch2 window 14030974 visible=False class=Zed::PlatformWindow title=
+launch2 window 724948 visible=False class=MSCTFIME UI title=MSCTFIME UI
+launch2 window 3149496 visible=False class=IME title=Default IME
+launch2 pid=74992
+launch2 creation=2026-10-17T03:14:51.8336260-04:00
+launch2 executable=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\target\release\devsweep-gpui-spike.exe
+launch2 command="D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\target\release\devsweep-gpui-spike.exe" 
+launch2 parent_pid=34080
+launch2 parent_name=pwsh.exe parent_command="pwsh" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "& \"C:\Users\lyh\AppData\Local\Temp\grok-goal-8f19d0d75913\implementer\c09-evidence.ps1\"; Write-Output \"SCRIPT_EXIT=$LASTEXITCODE\""
+launch2 working_set=89489408 private_bytes=113868800 cpu_seconds=0.5
+launch2 module_count=89
+launch2 modules_forbidden=NONE
+launch2 module=devsweep-gpui-spike.exe
+launch2 module=ntdll.dll
+launch2 module=KERNEL32.DLL
+launch2 module=KERNELBASE.dll
+launch2 module=advapi32.dll
+launch2 module=msvcrt.dll
+launch2 module=sechost.dll
+launch2 module=RPCRT4.dll
+launch2 module=ole32.dll
+launch2 module=msvcp_win.dll
+launch2 module=ucrtbase.dll
+launch2 module=GDI32.dll
+launch2 module=win32u.dll
+launch2 module=gdi32full.dll
+launch2 module=dcomp.dll
+launch2 module=USER32.dll
+launch2 module=combase.dll
+launch2 module=shell32.dll
+launch2 module=imm32.dll
+launch2 module=shcore.dll
+launch2 module=kernel.appcore.dll
+launch2 module=Microsoft.Internal.WarpPal.dll
+launch2 module=oleaut32.dll
+launch2 module=bcryptprimitives.dll
+launch2 module=dxgi.dll
+launch2 module=d3d11.dll
+launch2 module=dwmapi.dll
+launch2 module=dwrite.dll
+launch2 module=comctl32.dll
+launch2 module=winmm.dll
+launch2 module=uiautomationcore.dll
+launch2 module=powrprof.dll
+launch2 module=USERENV.dll
+launch2 module=VCRUNTIME140.dll
+launch2 module=icuuc.dll
+launch2 module=icu.DLL
+launch2 module=UMPDC.dll
+launch2 module=uxtheme.dll
+launch2 module=MSCTF.dll
+launch2 module=clbcatq.dll
+launch2 children=NONE
+launch2 wm_close_posted=True
+launch2 exited_after_wm_close=True
+launch2 shutdown=WM_CLOSE exit_code=0
+probe_pid=55252 hwnd=14096510
+probe_foreground=14096510 expected=14096510
+probe_layout=0x804
+probe_ime_context_null=True
+probe_composition=NOT_RUN ImmGetContext returned none
+probe_uia_exit=0 path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-native-feasibility\evidence\c09-uia-probe-keys.txt
+probe_uia window_count=1
+probe_uia name=DevSweep native spike type=ControlType.Window id= focus=False
+probe_uia  name=DevSweep native spike type=ControlType.Pane id= focus=False
+probe_uia   name=DevSweep type=ControlType.Image id= focus=False
+probe_uia   name= type=ControlType.Text id= focus=False
+probe_uia   name= type=ControlType.Text id= focus=False
+probe_uia   name=Note type=ControlType.Edit id= focus=False
+probe_uia   name=Acknowledge note type=ControlType.Button id= focus=False
+probe_uia   name=Acknowledged:  type=ControlType.StatusBar id= focus=False
+probe_uia nodes=8
+probe_keybd_acknowledged=True
+probe_closed=True exit=0
+focus_probe_pid=78492 hwnd=10092704
+focus_probe_foreground=10092704
+focus_probe_gui=True active=10092704 focus=10092704 caret=0
+focus_probe_child_count=0
+focus_probe_hwnd=10092704 class=Zed::Window context_null=True open=False
+focus_probe_hwnd=10092704 class=Zed::Window context_null=True open=False
+focus_probe_composition=NOT_RUN ImmGetContext was null for the window, focus hwnd, caret hwnd, and child hwnds
+focus_probe_uia_exit=0
+focus_probe_uia window_count=1
+focus_probe_uia name=DevSweep native spike type=ControlType.Window id= focus=False
+focus_probe_uia  name=DevSweep native spike type=ControlType.Pane id= focus=False
+focus_probe_uia   name=DevSweep type=ControlType.Image id= focus=False
+focus_probe_uia   name= type=ControlType.Text id= focus=False
+focus_probe_uia   name= type=ControlType.Text id= focus=False
+focus_probe_uia   name=Note type=ControlType.Edit id= focus=False
+focus_probe_uia   name=Acknowledge note type=ControlType.Button id= focus=False
+focus_probe_uia   name=Idle type=ControlType.StatusBar id= focus=False
+focus_probe_uia nodes=8
+focus_probe_closed=True exit=0

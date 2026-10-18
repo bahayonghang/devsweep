@@ -39,9 +39,46 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+Authority: this section, `prd.md`, and the C01 startup/leftover/update contracts
+already in the tree. Do not run winget, startup changes, or leftover moves
+against this machine. Tests use temp homes, an offline registry fixture, and a
+command double. Program and argv stay separate. No shell string. No permanent
+delete. No registry cleaner that matches a vendor name prefix.
+
+### Updates
+
+`software updates check` stays read-only and does not download. New mutation
+leaves, if not already present, are `plan`, `preview`, and `execute` for one
+explicit package id, source, and version. Ambiguous id, unsupported source,
+injected network failure, and a version that changed since the plan are
+refusals before a process starts. Restart-required is not recorded as updated.
+The test double is not the installed winget. Argv may include
+`--disable-interactivity`. Do not add `--accept-source-agreements`.
+
+### Startup
+
+Keep `StartupTogglePlanV1`. HKLM stays view-only. `already_in_state` does not
+write. Add backup and restore on an offline fixture hive, not the host HKCU or
+HKLM. Restore writes only when the live value still matches the backed-up
+post-change identity. An external change refuses and leaves the fixture bytes
+unchanged. Entries classified `security`, `network`, or `device_management`
+are not toggled. The class comes from the fixture record, not from a host scan.
+
+### Leftovers
+
+Leftover execute runs only when the saved uninstall outcome for that software
+id is `Removed`. `Failed`, cancel, `StillPresent`, `RebootRequired`, and
+`UnknownAfterDispatch` leave every leftover path unchanged and create no
+leftover plan execution. Personal-data rows start unselected. A shared folder
+is protected. File mutation is move-to-trash through the existing trash runner.
+Registry residue is one closed fixture key. Write the exact bytes to a backup
+file before the change. Restore refuses if those bytes changed. Do not add a
+second uninstaller.
+
+Cargo tests use `--target-dir dist/ci-target`. Do not export `CARGO_TARGET_DIR`.
+Do not set `HOME`, `CARGO_HOME`, or `RUSTUP_HOME`. Do not download Rust 1.88.0.
+Do not commit. Check an acceptance box only when the saved log shows that case.
+Desktop parity in C05-AC4 is the CLI and the shared service. GPUI parity stays
+C12.

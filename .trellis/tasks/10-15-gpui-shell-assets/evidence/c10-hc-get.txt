@@ -1,0 +1,6 @@
+NOT_RUN
+SPI_GETHIGHCONTRAST success=True
+last_error=0
+cbSize=16
+dwFlags=0x0000007E
+HCF_HIGHCONTRASTON=False

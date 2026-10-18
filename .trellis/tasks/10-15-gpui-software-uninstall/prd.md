@@ -20,9 +20,9 @@ C04-R4. Requery installed state and capture vendor UI pending, reboot-needed, pa
 
 ## Acceptance criteria
 
-- [ ] C04-AC1: MSIX/MSI/ARP/Scoop fixtures cover identity collisions, shared vendor folders, malformed/untrusted commands, missing tool, command drift and reboot transitions.
-- [ ] C04-AC2: Vendor UI opening or exit code alone cannot report uninstalled; failed/canceled/unknown removal does not trigger leftovers.
-- [ ] C04-AC3: Isolated test applications exercise each executable provider in a disposable Windows environment; unsupported native evidence stays NOT_RUN.
+- [x] C04-AC1: MSIX/MSI/ARP/Scoop fixtures cover identity collisions, shared vendor folders, malformed/untrusted commands, missing tool, command drift and reboot transitions.
+- [x] C04-AC2: Vendor UI opening or exit code alone cannot report uninstalled; failed/canceled/unknown removal does not trigger leftovers.
+- [x] C04-AC3: Isolated test applications exercise each executable provider in a disposable Windows environment; unsupported native evidence stays NOT_RUN. Host-installed MSI, vendor, and Scoop products were not used, and real MSIX removal remains NOT_RUN. Evidence: `disposable_provider_executables_run_isolated_msi_vendor_and_scoop` exited 0 (`C:\Users\lyh\AppData\Local\Temp\devsweep-c04-providers.txt`).
 
 ## Scope and decisions
 

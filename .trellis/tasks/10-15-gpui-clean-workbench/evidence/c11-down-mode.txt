@@ -1,0 +1,10 @@
+sha256=793245A0E369011E362BB8641FE1A6D42CB8DC12B3B9A25267B6540A1B4A88B5
+length=13355008
+pid=93804
+foreground_title=DevSweep
+key_result=sent_one_down
+selected_mode_caption_changed_from_clean_to_software=true
+clean_still_selected_pill=false
+software_is_selected_mode=true
+exit_record=0
+screenshot=C:\Users\lyh\AppData\Local\Temp\devsweep-c11-down-mode.png

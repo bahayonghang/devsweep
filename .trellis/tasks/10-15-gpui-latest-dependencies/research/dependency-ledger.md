@@ -18,7 +18,7 @@ timestamps are retained in `direct-dependency-inventory.json`, `registry/` and
 | core / dev-dependencies | tempfile | 3.27.0 | 3.27.0 | 3.27.0 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | core / dependencies | windows | 0.56.0 | 0.62.2 | 0.62.2 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | core / dependencies | windows-sys | 0.59.0 | 0.61.2 | 0.61.2 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
-| core / dependencies | libc | 0.2.189 | 0.2.190 | 0.2.190 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
+| core / dependencies | libc | 0.2.189 | 0.2.191 | 0.2.191 | Latest stable compatible release checked 2026-10-17 on crates.io. |
 | cli / dependencies | anyhow | 1.0.104 | 1.0.104 | 1.0.104 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | cli / dependencies | clap | 4.6.4 | 4.6.7 | 4.6.7 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | cli / dependencies | crossterm | 0.29.0 | 0.29.0 | 0.29.0 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
@@ -28,6 +28,7 @@ timestamps are retained in `direct-dependency-inventory.json`, `registry/` and
 | cli / dependencies | tracing-subscriber | 0.3.23 | 0.3.23 | 0.3.23 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | cli / dependencies | unicode-width | 0.2.2 | 0.2.2 | 0.2.2 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | cli / dev-dependencies | tempfile | 3.27.0 | 3.27.0 | 3.27.0 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
+| cli / dev-dependencies | sha2 | new direct edge | 0.11.1 | 0.11.1 | Same selected release as core. Checked 2026-10-17 on crates.io; max stable and newest are 0.11.1. Cargo.lock resolves this CLI dev edge to sha2 0.11.1. |
 | desktop / dependencies | anyhow | 1.0.104 | 1.0.104 | 1.0.104 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
 | desktop / dependencies | devsweep-core | 0.3.0 | local | 0.3.0 | Local shared core; no registry version. |
 | desktop / dependencies | serde | 1.0.229 | 1.0.229 | 1.0.229 | Latest stable compatible direct release; required minimum recorded and exact resolution locked. |
@@ -38,6 +39,15 @@ timestamps are retained in `direct-dependency-inventory.json`, `registry/` and
 | desktop / build-dependencies | tauri-build | 2.6.3 | 2.7.3 | 2.6.3 | Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection. |
 | desktop / dependencies | windows | 0.61.3 | 0.62.2 | 0.61.3 | Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection. |
 | desktop / dev-dependencies | windows-sys | 0.59.0 | 0.61.2 | 0.59.0 | Legacy Tauri comparison baseline only; unchanged pinned resolution, not a new-app selection. |
+| desktop-gpui / dependencies | anyhow | new direct edge | 1.0.104 | 1.0.104 | Reuses the core anyhow row: latest/selected 1.0.104, source https://crates.io/api/v1/crates/anyhow, checked 2026-10-15. Not a new crates.io query. |
+| desktop-gpui / dependencies | devsweep-core | 0.3.0 | local | 0.3.0 | Local shared core; no registry version. |
+| desktop-gpui / dependencies | gpui | new direct edge | 3e145061d861ed32bb6a08dad7b03f2b5e455ad8 | 322cd509dcccaee1f6bc44725d270598ae8171ad | Latest/candidate remains checkpoint rev `3e145061d861ed32bb6a08dad7b03f2b5e455ad8` from [gpui-latest-checkpoint.md](gpui-latest-checkpoint.md) (checked 2026-10-15). Selected is C09 pin.md rev `322cd509dcccaee1f6bc44725d270598ae8171ad`. C09 owns the final native pin; C16 does not claim a GPUI compile or performance pass. |
+| desktop-gpui / dependencies | gpui_platform | new direct edge | 3e145061d861ed32bb6a08dad7b03f2b5e455ad8 | 322cd509dcccaee1f6bc44725d270598ae8171ad | Latest/candidate remains checkpoint rev `3e145061d861ed32bb6a08dad7b03f2b5e455ad8` from [gpui-latest-checkpoint.md](gpui-latest-checkpoint.md) (checked 2026-10-15). Selected is C09 pin.md rev `322cd509dcccaee1f6bc44725d270598ae8171ad`. C09 owns the final native pin; C16 does not claim a GPUI compile or performance pass. |
+| desktop-gpui / dependencies | gpui_windows | new direct edge | 3e145061d861ed32bb6a08dad7b03f2b5e455ad8 | 322cd509dcccaee1f6bc44725d270598ae8171ad | Latest/candidate remains checkpoint rev `3e145061d861ed32bb6a08dad7b03f2b5e455ad8` from [gpui-latest-checkpoint.md](gpui-latest-checkpoint.md) (checked 2026-10-15). Selected is C09 pin.md rev `322cd509dcccaee1f6bc44725d270598ae8171ad`. C09 owns the final native pin; C16 does not claim a GPUI compile or performance pass. |
+| desktop-gpui / dependencies | serde | new direct edge | 1.0.229 | 1.0.229 | Reuses the core serde row: latest/selected 1.0.229, source https://crates.io/api/v1/crates/serde, checked 2026-10-15. Not a new crates.io query. |
+| desktop-gpui / dependencies | serde_json | new direct edge | 1.0.154 | 1.0.154 | Reuses the core serde_json row: latest/selected 1.0.154, source https://crates.io/api/v1/crates/serde_json, checked 2026-10-15. Not a new crates.io query. |
+| desktop-gpui / dependencies | windows | new direct edge | 0.62.2 | 0.62.2 | Reuses the core windows row: latest/selected 0.62.2, source https://crates.io/api/v1/crates/windows, checked 2026-10-15. Not a new crates.io query. Win32_UI_Shell is enabled for Shell_NotifyIconW (NIM_ADD and NIM_DELETE). |
+| desktop-gpui / dev-dependencies | sha2 | new direct edge | 0.11.1 | 0.11.1 | Reuses the CLI sha2 dev-dependency row: latest/selected 0.11.1, source crates.io, checked 2026-10-17. Not a new crates.io query. |
 | core / dependencies | windows-collections | new direct edge | 0.100.0 | 0.3.2 | windows 0.62.2 requires 0.3.2 with windows-core 0.62; latest 0.100 requires incompatible windows-core 0.100 and Rust 1.95. |
 | core / dependencies | windows-future | new direct edge | 0.100.0 | 0.3.2 | windows 0.62.2 requires 0.3.2 with windows-core 0.62; latest 0.100 requires incompatible windows-core 0.100 and Rust 1.95. |
 
@@ -137,7 +147,10 @@ See final verification receipts for exact database revision and gate results.
 ## GPUI handoff
 
 See [fresh GPUI checkpoint](gpui-latest-checkpoint.md): published 0.2.2 versus
-upstream commit `3e145061d861ed32bb6a08dad7b03f2b5e455ad8`. The latter uses
-unpublished platform crates and toolchain 1.98.1. C09 owns final native selection,
-coherent revision pin, native build and current compiler acceptance; C16 makes
-no GPUI compile/performance claim.
+evaluated candidate `3e145061d861ed32bb6a08dad7b03f2b5e455ad8`. The candidate uses
+unpublished platform crates and toolchain 1.98.1 and remains the recorded latest
+checkpoint revision. Selected C09 pin is `322cd509dcccaee1f6bc44725d270598ae8171ad`
+on `gpui`, `gpui_platform`, and `gpui_windows` (see
+[C09 pin.md](../../10-15-gpui-native-feasibility/pin.md)). C09 owns final native
+selection, coherent revision pin, native build and current compiler acceptance;
+C16 makes no GPUI compile/performance claim.

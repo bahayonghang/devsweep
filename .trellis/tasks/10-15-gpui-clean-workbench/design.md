@@ -37,9 +37,19 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+GPUI calls the shared Rust scan, plan, preview, and execute services. It does
+not parse CLI text and it does not start a scan from the landing render.
+States, in order, are Landing, Scanning, Found, AllClean, Cleaning, Completed,
+and Failed. Landing shows the licensed Earth still once and one button. That
+button asks for global cache or project artifacts before any scan. First
+launch does not scan the machine.
+
+Selection, live preview digest, and explicit confirm stay the Clean contract.
+A stale digest does not move files. Partial and inspect-only rows stay visible.
+AI review is a Clean subview over the C15 classes. It does not add a trash
+rule to generic clean scan. Tests compare GPUI state or the service digest to
+the CLI digest on a temp fixture. C11-AC4 stays unchecked until a real keyboard
+and UIA pass is saved. Do not edit `desktop/`. Do not commit. Do not run
+`clean execute` on this machine.

@@ -39,9 +39,24 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+Authority: this PRD, `research/gpui-windows-feasibility.md`, and C16 `research/gpui-latest-checkpoint.md`. Those notes are not a successful native build.
+
+### Pin
+
+Do not use floating `main`. Do not mix crates.io `gpui` 0.2.2 with upstream `gpui_platform` or `gpui_windows`. The published 0.2.2 archive is the registry alternative, not the Windows accessibility candidate.
+
+Start from immutable upstream revision `3e145061d861ed32bb6a08dad7b03f2b5e455ad8`, with `gpui`, `gpui_platform`, and `gpui_windows` from that same tree. Before writing the manifest, refresh the upstream default-branch SHA once. If the refresh returns a newer full commit SHA, pin that SHA instead and record both SHAs in this task directory. If the refresh fails, keep `3e145061d861ed32bb6a08dad7b03f2b5e455ad8` and record the refresh as NOT_RUN. The manifest dependency is `rev = "<40-hex>"` plus a locked checksum. No branch name and no `*` version.
+
+### Package location
+
+Create a standalone package at `desktop-gpui/` with its own `Cargo.lock`. Do not add it to the root workspace. Do not edit the root `Cargo.toml`, `justfile`, `.github/workflows/ci.yml`, or `desktop/`. The Tauri app stays the rollback. The GPUI process must not link a Tauri, WebView, or Node runtime.
+
+### Spike behavior
+
+One native window. Packaged offline text and one existing DevSweep icon copied into `desktop-gpui/` without modifying the source asset. One focusable text control and one keyboard-reachable action. No Mole assets. No five-mode product shell; that belongs to C10.
+
+### Evidence
+
+C09-AC2 and C09-AC4 stay unchecked unless a real Windows run records UIA labels/roles/focus, Chinese IME composition, keyboard-only operation, a screenshot, the release binary hash, and PID/creation identity plus shutdown. A unit test or a failed launcher is NOT_RUN, not PASS. `just ci` still has to exit 0 for the existing workspace. Local Rust 1.88.0 is not installed and must not be downloaded. Do not claim that the declared MSRV ran.

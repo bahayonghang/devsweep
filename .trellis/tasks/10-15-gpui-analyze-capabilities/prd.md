@@ -20,10 +20,10 @@ C07-R4. Report supported file-lock owner evidence without auto-terminating proce
 
 ## Acceptance criteria
 
-- [ ] C07-AC1: Permission, junction cycle, deep/large tree, sparse/hardlinked data, Unicode and cancellation fixtures preserve bounded memory and truthful totals.
-- [ ] C07-AC2: Root and node identity changes refuse recycle; protected/system/shared locations stay read-only and scan code creates no action authority.
-- [ ] C07-AC3: Large-item classification has exact evidence and unknown fallback; a WSL disk or model is never labeled disposable because of its size.
-- [ ] C07-AC4: CLI and shared service reports agree; render-ready projections remain separate from discovery and execution.
+- [x] C07-AC1: Permission, junction cycle, deep/large tree, sparse/hardlinked data, Unicode and cancellation fixtures preserve bounded memory and truthful totals.
+- [x] C07-AC2: Root and node identity changes refuse recycle; protected/system/shared locations stay read-only and scan code creates no action authority. Node replacement remains tested. `root_identity_change_refuses_preview_and_keeps_the_replacement` exited 0 and returned `ChangedSinceSnapshot(0)`. `shared_public_file_is_refused_as_profile_root` exited 0 and returned `ProfileRoot` for `users/Public/shared.txt` without calling the trash runner.
+- [x] C07-AC3: Large-item classification has exact evidence and unknown fallback; a WSL disk or model is never labeled disposable because of its size.
+- [x] C07-AC4: CLI and shared service reports agree; render-ready projections remain separate from discovery and execution.
 
 ## Scope and decisions
 

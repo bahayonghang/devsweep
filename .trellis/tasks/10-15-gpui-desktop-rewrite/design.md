@@ -78,17 +78,42 @@ No new default production dependencies are added in this planning turn.
 
 ## Presentation design
 
-- Five top-level destinations, compact persistent navigation and consistent status.
-- Clean foregrounds global/project scan controls, result groups and review actions.
-- Software uses Uninstall/Updates/Startup tabs, full-report search/sort and virtual rows.
-- Optimize prioritizes applicable tasks and explanations before a reviewed action.
-- Analyze pairs a bounded treemap with an accessible list and breadcrumb navigation.
-- Status uses compact live cards with clear availability and a process table.
-- Optional tray panel shares collectors. Screen-on/screen-cover sessions are visible,
-  user initiated, and have explicit end/escape behavior.
-- Use existing beaver identity, semantic icon meanings and local licensed assets.
-  The screenshots are functional references; a large continuous planet animation
-  is not required. Still artwork is the initial low-cost option.
+Amended 2026-10-16 from `research/mole-014-rea.md` and the Clean screenshot.
+The Tauri PureMac sidebar remains the current `desktop/` shell. This section
+is only the GPUI shell.
+
+Visual thesis: a dark navy field, a light selected pill, and one licensed Earth
+still. The selected control is a solid pill. Do not use gradient text, glass
+cards, or the reference poem, planet textures, or silhouette.
+
+- Window: custom title bar, caption buttons at the top right, no document title
+  in the content.
+- Navigation: one horizontally centered capsule. Beaver button, then five mode
+  tabs in this order: Clean, Software, Optimize, Analyze, Status. The selected
+  tab is a light pill. The beaver menu opens Settings and the existing
+  supporting destinations. Keep Screen On and Clean Screen stay C13 sessions.
+  Do not add license, activation, or a Mole self-update flow.
+- Clean states: Landing, Scanning, Found, AllClean, Cleaning, Completed, Failed.
+  Landing centers the Earth still, one existing DevSweep sentence, and one
+  primary button. That button opens the global-cache / project-artifact choice
+  and does not start a scan by itself. Found is the review. Cleaning and
+  Completed show per-group results. Recycle is the only clean execution path.
+- Software states use three segments: Uninstall, Updates, Startup. Leftover
+  review is a later step, not a fourth segment.
+- Optimize states: Landing, Running, Completed, Failed. Landing opens grouped
+  tasks (startup, network and search, maintenance). Each task shows precheck,
+  privilege, skip reason, and last result. The run button creates a review for
+  the selected operation ids. Admin request is a visible activity, not a silent
+  elevation.
+- Analyze states: Landing, Scanning, Detail, Failed. Landing chooses a drive or
+  root. Detail keeps treemap and accessible list together.
+- Status states: Landing, then Live. Live shows capability-aware cards and a
+  process table. Missing sensors stay unavailable.
+- Optional tray panel shares collectors. Screen-on and screen-cover sessions
+  are visible, user initiated, and have explicit end/escape behavior.
+- Use the existing beaver identity and local licensed Earth still. Reduced
+  motion and idle/hidden windows paint the still once and do no recurring
+  decorative work.
 
 Keep original EN/zh-CN catalogue and preference semantics. If pure presentation
 catalogue helpers currently live in CLI, extract only those needed by both consumers

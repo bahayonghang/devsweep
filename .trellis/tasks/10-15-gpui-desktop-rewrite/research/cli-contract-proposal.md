@@ -21,7 +21,7 @@ Existing grammar is documented by crates/devsweep-cli/src/application/cli.rs.
 | software leftovers | scan; plan; preview; execute | C01 exposes existing core; C05 expands only proven ownership/registry residue. |
 | analyze | roots; list; explain; reveal; trash-plan; trash-preview; trash-execute | C01 exposes existing supported actions; C07 adds projections/explanations. Snapshot + root/node identity is revalidated live. |
 | status | process show; process plan; process preview; process execute | C08 provides details and distinct termination authority bound to PID + creation identity; no implicit escalation. |
-| optimize | existing leaves, with a versioned multi-selection plan when supported | C06 extends closed catalogue; legacy single-operation plans retain their meaning. |
+| optimize | existing `list`, `plan`, `preview`, `run`, plus read-only `health` | C06 catalogue v2 adds one-id execute plans. Legacy v1 plans retain their meaning. `health` does not write a plan. |
 | status keep-awake | run; status; stop | C08 owns the shared service and CLI before C13 consumes it. Explicit finite lease, confirmation and owner-bound session token; stop/expiry/owner exit releases only this request. No persistent power-setting change. |
 
 The leaf names are a reviewable proposal, not a frozen public API. C01 freezes shared

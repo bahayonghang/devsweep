@@ -1,0 +1,9 @@
+build_exit_code: 0
+incremental_standalone: true
+sha256: 793245A0E369011E362BB8641FE1A6D42CB8DC12B3B9A25267B6540A1B4A88B5
+byte_length: 13355008
+pid: 92404
+key_result: sent F10, Enter
+settings_visible: true
+reduced_painted: true
+exit_record: 0

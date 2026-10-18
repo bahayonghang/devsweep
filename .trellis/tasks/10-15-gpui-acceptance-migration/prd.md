@@ -22,8 +22,8 @@ C14-R4. Prepare isolated Windows packaging and compatible settings migration; sw
 
 - [ ] C14-AC1: Every parent criterion is PASS or explicitly FAIL/NOT_RUN/UNVERIFIED with evidence; no aggregate complete claim while a mandatory gate remains unmet.
 - [ ] C14-AC2: Canonical Rust checks, CLI contract fixtures and separate GPUI build/test/native gates pass; unchanged legacy baseline remains reproducible.
-- [ ] C14-AC3: Packaged GPUI launches offline/from unrelated CWD with correct assets, native actions and normal owned-process shutdown without WebView/Node runtime.
-- [ ] C14-AC4: Tauri removal/publishing/install/signing/commit are separate approval actions; planning or build completion does not perform them.
+- [ ] C14-AC3: Packaged GPUI launches offline/from unrelated CWD with correct assets, native actions and normal owned-process shutdown without WebView/Node runtime. The current release binary SHA-256 `095f51d77da5da5729c2341d24c726d460ca1a44ede2204789c13227e521fe62` launched from an empty temp directory, showed the DevSweep window, exited 0 after `WM_CLOSE`, and did not load WebView, Node, or Tauri. A packaged installer and a native action beyond launch remain NOT_RUN.
+- [x] C14-AC4: Tauri removal/publishing/install/signing/commit are separate approval actions; planning or build completion does not perform them. `desktop/` remains. `just tdev` is still `cd desktop; npm run tauri -- dev`. This session did not remove Tauri, publish, install, or sign a package, and did not commit a retirement.
 
 ## Scope and decisions
 

@@ -1,6 +1,6 @@
 # C04 Implementation and verification
 
-Status: planning; dependencies: C01, C02.
+Status: technical freeze recorded 2026-10-17 in design.md. Isolated MSI, vendor, and Scoop `process_fixture` launches passed. Host-installed MSI, vendor, and Scoop products were not used. Real current-user MSIX removal remains NOT_RUN.
 
 ## Sequence
 

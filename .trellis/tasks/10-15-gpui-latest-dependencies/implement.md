@@ -1,8 +1,11 @@
 # C16 Implementation and verification
 
 Status: implementation approved and active; dependency audit/API adaptation are
-implemented and independently reviewed; required hosted/MSRV matrix evidence
-and the canonical shared-target failure remain open.
+implemented and independently reviewed. Local `just ci` on rustc 1.99.0 exited 0
+on 2026-10-17 with `--target-dir dist/ci-target`. Hosted run 39001489521 on
+`b0b5ce62` concluded failure, and that SHA does not contain the later working-tree
+fixes. Declared MSRV 1.88.0 was not executed locally. C16-AC3 remains
+NOT_YET_ACCEPTED, so C01 has not started.
 See acceptance-status.md and research/toolchain-decision.md.
 
 ## Sequence

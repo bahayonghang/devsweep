@@ -1,0 +1,28 @@
+build_exit_code=0
+incremental=False
+sha256=79F58E4BA32F266151263A99B0A83FA226430E37B58F20EAFD76B5B9EBCE285E
+byte_length=13442048
+pid=63532
+window_found=True
+tray_match=False
+overflow_match=True
+notify_icon_overflow_window_exists=False
+notify_icon_overflow_window_match=False
+overflow_island_class=TopLevelWindowForOverflowXamlIsland
+overflow_island_match=True
+match_pid_equals=False
+match_uia_pid=15260
+taskbar_button_match=False
+shell_unclassified_match=False
+chevron_clicked=True
+chevron_name=Show Hidden Icons
+process_exit_code=0
+tray_match_after_exit=False
+overflow_match_after_exit=False
+after_exit_overflow_reopened=True
+after_exit_pid_equals=False
+icon=observed
+
+The matching UI Automation process was explorer, which hosts notification icons.
+The icon was absent after the DevSweep process exited.
+This sample does not close C10-AC3.

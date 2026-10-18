@@ -6,3 +6,4 @@
 {"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/dependency-policy.md", "reason": "Parent scope architecture and evidence contract"}
 {"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/gpui-windows-feasibility.md", "reason": "Parent scope architecture and evidence contract"}
 {"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/performance-protocol.md", "reason": "Parent scope architecture and evidence contract"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/mole-014-rea.md", "reason": "Mole 0.14.0 static REA evidence for UI states and optimize CLI"}

@@ -1,0 +1,15 @@
+binary_sha256: 9EEB657B731C147473FA7853304ED59C7B663DE0F7952C025ECBA302409249C6
+binary_length: 13351936
+hash_gate: matched
+reproducibility_pair: no
+reproducibility_note: build log already contains 1 incremental; this is not a reproducibility pair
+pid: 35008
+window_title: DevSweep
+devsweep_menu_click: observed
+settings_click: NOT observed
+painted_text_contains_reduced: false
+settings_visible: false
+wm_close: posted
+exited_within_20s: yes
+exit_code: 0
+screenshot: C:\Users\lyh\AppData\Local\Temp\devsweep-c10-reduced-motion.png

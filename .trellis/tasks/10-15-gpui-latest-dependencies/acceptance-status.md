@@ -15,7 +15,7 @@ aggregate `a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485`.
 | --- | --- | --- |
 | C16-AC1 | PASS | research/dependency-ledger.md: 32 Rust direct edges, 24 retained npm edges, 550 resolved packages, latest/selected versions, sources, compatibility exceptions and licenses. |
 | C16-AC2 | PASS on tested platforms | Shared-core/CLI versions resolve and pass Windows 1.99/Linux 1.98 checks and semantic suites. GPUI candidate constraints are recorded; final native pin/build belongs to C09. |
-| C16-AC3 | NOT_YET_ACCEPTED | Local isolated equivalents and final retained Tauri build pass. Canonical shared-cache execution still fails before core tests; exact declared MSRV, macOS and hosted runs remain unavailable. |
+| C16-AC3 | NOT_YET_ACCEPTED | 2026-10-17 local `just ci` EXIT=0 on rustc 1.99.0 with `--target-dir dist/ci-target` (fmt, check, test, clippy). Hosted run 39001489521 on `b0b5ce62` conclusion=failure: MSRV windows, Rust ubuntu, Rust macos, Rust windows, secret-scan. MSRV ubuntu on that SHA succeeded. The SHA does not include the uncommitted lock, fixture, justfile, or borrow edits. Local 1.88.0 was not executed. |
 | C16-AC4 | Baseline identity and tested functional contracts PASS | research/baseline-receipt.json preserves clean baseline manifests/locks; reviewed digest encoding and shared schema/authority regressions pass. This is not runtime performance acceptance. |
 
 ## Reviewer fixes and final Windows evidence
@@ -117,3 +117,51 @@ child-process fixture entrypoints. No test was disabled.
 
 No real user cleanup, software removal or host repair was executed. Isolated
 fixture tests do not constitute GPUI, uninstaller or performance acceptance.
+
+## 2026-10-17 continuation
+
+Local canonical `just ci` on installed rustc/Cargo 1.99.0 exited 0. The log is
+outside the repo, in the session scratch `c16-just-ci.txt` and `just-ci.txt`.
+Counts in that run: CLI unit 191, `cli_contract` 13, `five_mode_contract` 8,
+`provider_authority` 5, core 481 passed / 0 failed / 3 ignored, public API 2,
+desktop 94 passed / 0 failed / 2 ignored. Clippy finished with warnings denied.
+`check`, `test`, and `clippy` used `--target-dir dist/ci-target`. `fmt` was unchanged.
+
+That local pass does not accept C16-AC3. Hosted run 39001489521 matches HEAD
+`b0b5ce62f2994440743766ebcae3bae2a3feab59` and concluded failure. The working tree
+after that run adds the Software Unix `LOCK_UN` drop, the Unix provider-fixture
+canonical root, the justfile target directory, and the provider sentinel borrow
+fix. Those edits are not on the hosted SHA. Declared MSRV 1.88.0 was not
+downloaded or executed on this machine. The Software Unix audit-lock regression
+has not run on Unix. C01 has not started.
+
+## 2026-10-17 after libc 0.2.191
+
+`just ci` exited 0 on rustc 1.99.0 (`b940084d7`, 2026-09-28). Log:
+`C:\Users\lyh\AppData\Local\Temp\devsweep-just-ci-3.txt`. The recipe finished
+with `ci complete` after fmt, locked workspace check, tests, and
+`clippy -D warnings` using `--target-dir dist/ci-target`. The run reported
+911 passed, 0 failed, 5 ignored. This does not accept C16-AC3. Declared MSRV
+1.88.0 was not executed. Hosted CI was not re-run.
+
+## 2026-10-17 after the software re-export format
+
+`just ci` exited 0 again. Log: `C:\Users\lyh\AppData\Local\Temp\devsweep-just-ci-5.txt`.
+Exit file: `devsweep-just-ci-5-exit.txt` (`exit=0`). The recipe ended with
+`ci complete` after fmt, locked workspace check, tests, and `clippy -D warnings`
+using `--target-dir dist/ci-target`. The summed test results are 911 passed,
+0 failed, 5 ignored. The log does not print a rustc version. The check process reported
+`rustc 1.99.0 (b940084d7 2026-09-28)`. This does not
+accept C16-AC3. Declared MSRV 1.88.0 was not executed. Hosted CI was not re-run.
+`desktop-gpui` is not a workspace member, so this gate did not build it.
+
+## 2026-10-17 dependency audit
+
+`cargo audit` exited 0. It reported 7 allowed warnings, starting with
+`RUSTSEC-2024-0370` for `proc-macro-error` 1.0.4. Log:
+`C:\Users\lyh\AppData\Local\Temp\devsweep-cargo-audit.txt`.
+`cargo deny check --all-features` exited 2 on cargo-deny 0.20.2 because that
+flag is not accepted. That run did not evaluate policy. `cargo deny check all`
+then exited 0. The log ends with `advisories ok, bans ok, licenses ok, sources ok`
+(`C:\Users\lyh\AppData\Local\Temp\devsweep-cargo-deny-all.txt`). This does not
+accept C16-AC3.

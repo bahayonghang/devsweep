@@ -23,14 +23,16 @@ design proposal, not statements that the reference implements the same internals
   Windows CLI, Mac desktop/preview and the unverified user-linked X post.
 - GPUI primary sources and revision caveats are in gpui-windows-feasibility.md.
 
-No binaries were downloaded, installed, launched or reverse engineered. Two linked
-startup/update blog pages returned fetch failures; their contents were not used.
+On 2026-10-16, REA 6.5.0 statically inspected the already installed Mole 0.14.0
+assemblies. The command did not load or execute them. Findings and the CLI
+mapping are in [mole-014-rea.md](mole-014-rea.md). Two linked startup/update
+blog pages returned fetch failures on 2026-10-15; their contents were not used.
 
 ## Screenshot observations supplied by the user
 
 | Image | Visible interaction evidence | Proposed use |
 | --- | --- | --- |
-| 01 Clean | Five tabs; prominent scan entry on a blue background | Clear first action and mode identity; keep global/project choices explicit. |
+| 01 Clean | Centered capsule, Earth hero, one line, one scan button. REA stages: Landing, Scanning, Found, AllClean, Cleaning, Completed, Failed | Same composition with the licensed Earth still. The button chooses global or project scope before any scan. |
 | 02 Software | Uninstall/Updates/Startup tabs; icon/name/version/size rows; counts, sorting, filter, search and selection | Dense virtualized list with shared selection/review semantics. |
 | 03 Optimize | One prominent optimization entry | Entry opens applicable tasks and review rather than silently executing everything. |
 | 04 Analyze | Disk selection and scan action | Explicit root/drive, then treemap/list and breadcrumbs. |
@@ -56,7 +58,7 @@ A row is not complete merely because a similar screen already exists.
 | Update check and selected update execution | T / N | CLI check then exact package/version/source plan and install outcome | C01,C05,C12 |
 | Startup list/enable/disable and orphan repair | T / N | CLI parity, protected entries, backup/conditional restore and exact identity | C01,C05,C06,C12 |
 | Residual files/keys | T / N | Separate review, exact ownership, recycle files; finite backed-up registry work only | C04,C05,C12 |
-| Maintenance catalogue | Partial E | Preflighted supported repairs, due checks, clear skip/reboot conditions | C02,C06,C12 |
+| Maintenance catalogue | Partial E | Catalogue v2 in C06: keep the eight v1 rows; add retrim, clock probe, clock sync, image scan, image repair, and dead-startup removal as separate CLI plans. Disk health is read-only. Update cache, icon cache, search restart, and winget repair stay guidance | C02,C06,C12 |
 | Disk map/drill-down/reveal/recycle | E / T | CLI parity, native treemap plus accessible list, independent action authority | C01,C07,C13 |
 | Large managed files and lock owners | N/partial | Explain evidence and ownership; system/virtual/cloud/shared content protected | C07,C13 |
 | Live metrics/process list | E/partial | Capability-aware GPU/thermal/disk data, explainable health and process details | C08,C13 |

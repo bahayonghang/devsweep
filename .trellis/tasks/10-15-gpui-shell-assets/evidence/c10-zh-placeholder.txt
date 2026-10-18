@@ -1,0 +1,13 @@
+sha256=9EEB657B731C147473FA7853304ED59C7B663DE0F7952C025ECBA302409249C6
+byte_length=13351936
+pid=76924
+placeholder_exact_在此输入=true
+type_here_visible=false
+label_清理=true
+label_软件=true
+label_优化=true
+label_分析=true
+label_状态=true
+process_stopped_after_20_seconds=false
+process_exit_code=not_exposed
+process_exit=exited after WM_CLOSE within 20 seconds

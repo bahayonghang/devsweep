@@ -38,9 +38,27 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+C01 already exposes `analyze reveal`, `trash-plan`, `trash-preview`, and
+`trash-execute`. This child adds read-only `analyze roots`, `analyze list`,
+and `analyze explain`. Do not change the Clean V1 digest. Scan and explain
+create no cleanup action. Reveal stays `explorer.exe` with argv `/select,`
+and the path, through the existing process runner.
+
+`analyze roots` lists volumes the existing snapshot source can see. A missing
+root is an error for that root, not a scan of the profile. `analyze list`
+returns bounded children of one snapshot node id. `analyze explain` returns
+one closed class: `hibernation`, `page_file`, `wsl_disk`, `docker_disk`,
+`ai_model`, `backup`, `game`, `cloud_placeholder`, or `unknown`. Size never
+selects a class and never makes a class disposable. Unknown is the fallback.
+A class is not a cleanup plan.
+
+Recycle preview and execute keep the C01 refusals, including a live identity
+mismatch. Protected, system, and shared locations stay read-only. File-lock
+evidence is a report. It does not terminate a process. Tests use temp trees.
+Do not analyze or trash this machine's user profile. Do not edit `desktop/`.
+Do not commit. Cargo uses `--target-dir dist/ci-target`. Do not export
+`CARGO_TARGET_DIR`. Do not set `HOME`, `CARGO_HOME`, or `RUSTUP_HOME`. Do not
+download Rust 1.88.0. Check a box only when the saved log shows that case.
+GPUI parity stays C13.

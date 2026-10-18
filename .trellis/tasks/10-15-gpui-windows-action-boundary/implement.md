@@ -1,6 +1,6 @@
 # C02 Implementation and verification
 
-Status: planning; dependencies: C01.
+Status: technical freeze recorded in design.md on 2026-10-17. Implementation waits until C01's named checks have exit codes. Do not dispatch while C01 still owns the shared crates.
 
 ## Sequence
 

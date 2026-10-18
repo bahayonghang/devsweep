@@ -7,3 +7,4 @@
 {"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/release-log-delta.md", "reason": "Current official release-log additions and platform distinctions"}
 {"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/gpui-windows-feasibility.md", "reason": "Primary source feasibility and native evidence gate"}
 {"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/performance-protocol.md", "reason": "Proposed native evidence and performance budgets"}
+{"file": ".trellis/tasks/10-15-gpui-desktop-rewrite/research/mole-014-rea.md", "reason": "Review UI states and optimize CLI against Mole 0.14.0 REA evidence"}

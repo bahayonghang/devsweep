@@ -1,0 +1,38 @@
+binary_sha256: 79F58E4BA32F266151263A99B0A83FA226430E37B58F20EAFD76B5B9EBCE285E
+binary_length: 13442048
+hash_gate: matched before launch
+
+Launch A English
+pid: 95220
+window_title: DevSweep
+window_class: Zed::Window
+Clean: observed
+Software: observed
+Optimize: observed
+Analyze: observed
+Status: observed
+DevSweep menu: observed
+Modes: observed
+Note: observed
+wm_close: posted
+stopped_after_20s: no
+exit_code: 0
+
+Launch B Chinese
+pid: 90644
+window_title: DevSweep
+window_class: Zed::Window
+screenshot: C:\Users\lyh\AppData\Local\Temp\devsweep-c10-zh-window.png
+UIA 清理: observed
+UIA 软件: observed
+UIA 优化: observed
+UIA 分析: observed
+UIA 状态: observed
+painted 清理: observed
+painted 软件: observed
+painted 优化: observed
+painted 分析: observed
+painted 状态: observed
+wm_close: posted
+stopped_after_20s: no
+exit_code: 0

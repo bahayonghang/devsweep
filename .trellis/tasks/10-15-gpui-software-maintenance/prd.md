@@ -20,10 +20,10 @@ C05-R4. Handle registry residue only for a finite approved key set with backup a
 
 ## Acceptance criteria
 
-- [ ] C05-AC1: Ambiguous package match, unsupported source, network failure, changed offered version and restart-required outcomes are explicit.
-- [ ] C05-AC2: Startup restore refuses to overwrite externally changed values; mutation tests run under isolated test registry roots.
-- [ ] C05-AC3: Failure/cancel of uninstall retains all leftovers; files use Recycle Bin and registry modifications have verifiable backups and audit entries.
-- [ ] C05-AC4: CLI human/JSON and service/desktop parity covers updates, startup and leftovers without unsupported bulk selection.
+- [x] C05-AC1: Ambiguous package match, unsupported source, network failure, changed offered version and restart-required outcomes are explicit.
+- [x] C05-AC2: Startup restore refuses to overwrite externally changed values; mutation tests run under isolated test registry roots.
+- [x] C05-AC3: Failure/cancel of uninstall retains all leftovers; files use Recycle Bin and registry modifications have verifiable backups and audit entries.
+- [x] C05-AC4: CLI human/JSON and service/desktop parity covers updates, startup and leftovers without unsupported bulk selection. `c05_software_maintenance` exited 0 on 2026-10-17: `ac1_update_refusals_and_restart_are_explicit` and `ac4_cli_json_matches_the_shared_service`. Desktop parity here is the CLI and the shared service. GPUI parity stays C12.
 
 ## Scope and decisions
 

@@ -24,11 +24,11 @@ C15-R6. Emit a typed installed-tool identity for optional handoff to Software; n
 
 ## Acceptance criteria
 
-- [ ] C15-AC1: Claude Code/Codex/Cursor fixture matrices cover default/custom roots, current and superseded versions, active/unknown sessions, locked stores, malformed metadata and unrelated adjacent data.
-- [ ] C15-AC2: No current version, active session, credentials, memory, settings, skill/MCP definitions, models or project content is selected by generic cache cleanup.
-- [ ] C15-AC3: No-GUI session recovery/read-back proves content and provider-index consistency; restore refuses external changes. Inject failure before recovery durability and at each bundle/index/move/registration stage: no premature mutation, recoverable or explicitly unknown partial outcomes, no automatic redispatch and no permanently destructive fallback. Locked/changing indexes and unknown active ownership refuse mutation.
-- [ ] C15-AC4: Dirty/untracked/ignored/unpushed/submodule/shared/active worktrees remain protected. Native fixture worktree removal/recovery uses a disposable repository only.
-- [ ] C15-AC5: Large session inventories remain bounded and cancelable; CLI and direct-service reports/preview digests match and unsupported provider versions explain the refusal. GPUI parity belongs to C11/C14 after this child passes.
+- [x] C15-AC1: Claude Code/Codex/Cursor fixture matrices cover default/custom roots, current and superseded versions, active/unknown sessions, locked stores, malformed metadata and unrelated adjacent data.
+- [x] C15-AC2: No current version, active session, credentials, memory, settings, skill/MCP definitions, models or project content is selected by generic cache cleanup. The AI planner tests remain. This new test is the generic scan: `generic_clean_scan_does_not_select_protected_ai_paths` via `Sweeper::default().full_scan_report`.
+- [x] C15-AC3: No-GUI session recovery/read-back proves content and provider-index consistency; restore refuses external changes. Inject failure before recovery durability and at each bundle/index/move/registration stage: no premature mutation, recoverable or explicitly unknown partial outcomes, no automatic redispatch and no permanently destructive fallback. Locked/changing indexes and unknown active ownership refuse mutation. Bundle failure, move failure, unknown-after-dispatch, and external-edit refusal remain covered by `ac3_bundle_failure_leaves_home_unchanged`, `ac3_failed_move_is_not_retried`, `ac3_disappeared_move_is_unknown_and_not_retried`, and `ac3_restore_refuses_external_edit`. `ac3_unknown_sessions_active` and `ac3_unregistered_worktree` exit 0.
+- [x] C15-AC4: Dirty/untracked/ignored/unpushed/submodule/shared/active worktrees remain protected. Native fixture worktree removal/recovery uses a disposable repository only. `ac4_worktree_protections_refuse_deletion_policy` exited 0 on 2026-10-17. Protected classes stay unselected. The clean disposable worktree returns `deletion_policy` before a bundle write or a trash move; `git worktree remove` was not run.
+- [x] C15-AC5: Large session inventories remain bounded and cancelable; CLI and direct-service reports/preview digests match and unsupported provider versions explain the refusal. GPUI parity belongs to C11/C14 after this child passes.
 
 ## Scope and decisions
 

@@ -1,0 +1,10 @@
+window_count=1
+name=DevSweep native spike type=ControlType.Window id= focus=False
+ name=DevSweep native spike type=ControlType.Pane id= focus=False
+  name=DevSweep type=ControlType.Image id= focus=False
+  name= type=ControlType.Text id= focus=False
+  name= type=ControlType.Text id= focus=False
+  name=Note type=ControlType.Edit id= focus=False
+  name=Acknowledge note type=ControlType.Button id= focus=False
+  name=Idle type=ControlType.StatusBar id= focus=False
+nodes=8

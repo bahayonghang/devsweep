@@ -39,9 +39,32 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+Authority: this PRD, parent `design.md` "Authority boundary", and `research/mole-014-rea.md` only as a catalogue description. Mole's elevation UX is not evidence. No production Rust module currently requests elevation. `optimize/windows.rs` launches three literal Settings URIs and does not elevate. Do not turn that into a privileged command runner.
+
+### Closed operation set
+
+The helper accepts one closed typed set. C02 does not enable a new host catalogue action. The set used by tests is fixture-only and runs against isolated registry keys and files:
+
+- `fixture.backup`
+- `fixture.restore`
+- `fixture.identity_check`
+
+Each request carries operation id, operation enum, live preview digest, caller user SID, tool identity hash, and the exact target identity captured at plan time. It does not carry a program path, argv, a shell string, or a free-form registry path supplied by the caller. The core reconstructs the fixture target from the saved plan's isolated root and the typed operation.
+
+Later children may add a reviewed variant only by extending this enum and its tests. A string command is never a variant.
+
+### Process and privilege
+
+The normal app stays a standard user. There is no persistent service and no arbitrary command endpoint. A privileged fixture action starts one short-lived helper process bound to that operation id and caller. The helper exits when the operation reaches a terminal record. Tests inject the helper binary and the elevation response. They do not show a UAC dialog on this machine and do not change host policy.
+
+After handoff, the helper re-reads the target identity and the live digest. Tool replacement, path replacement, digest mismatch, forged payload, replay of a spent operation id, stale preview, or a different user SID fails before any write.
+
+### Audit, backup, and outcomes
+
+A durable start record is written before dispatch. Cancellation before that write is cancellation. Disconnect, timeout, crash, or a missing terminal record after dispatch is unknown. None of these retry. UAC decline and a missing consent prompt are not success.
+
+Registry and file mutation in the fixture requires a versioned backup of the exact bytes, then a read-back of the current identity. Restore runs only when that identity still matches the backup subject. A changed subject refuses restore. There is no generic undo.
+
+No permanent delete, Cargo-home mutation, Docker cleanup, or shell command string. Do not run `clean execute` or `optimize run` on this machine.

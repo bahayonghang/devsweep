@@ -20,10 +20,10 @@ C03-R4. Keep Cargo home and Docker cleanup forbidden; local models, sessions, cr
 
 ## Acceptance criteria
 
-- [ ] C03-AC1: Each proposed rule has positive, adjacent-personal-data negative, busy/unknown owner, reparse/hardlink/cloud and stale-preview cases through the production scan-to-plan path.
-- [ ] C03-AC2: Global and project scans remain independently useful; partial provider failure never erases healthy findings or reports unreadable as empty.
-- [ ] C03-AC3: No permanent file deletion fallback; estimated occupancy, moved-to-Recycle-Bin and verified freed bytes remain separate.
-- [ ] C03-AC4: A checked-in rule/coverage manifest states exact supported families and omissions; no unsupported claim of matching Mole's advertised rule count.
+- [x] C03-AC1: Each proposed rule has positive, adjacent-personal-data negative, busy/unknown owner, reparse/hardlink/cloud and stale-preview cases through the production scan-to-plan path. Other AC1 clauses were already recorded in implement.md. `user_temp_foreign_sid_is_ownership_unknown` closes the user-temp unknown-owner gap. A real cloud-files reparse tag stays NOT_RUN. The Recycle Bin stays NOT_RUN.
+- [x] C03-AC2: Global and project scans remain independently useful; partial provider failure never erases healthy findings or reports unreadable as empty.
+- [ ] C03-AC3: No permanent file deletion fallback; estimated occupancy, moved-to-Recycle-Bin and verified freed bytes remain separate. Isolated rename evidence: `verified_freed_bytes_after_isolated_rename` exited 0 and measured the renamed file length after the source disappeared. That run did not move a file into the Recycle Bin, so the Recycle Bin clause stays NOT_RUN.
+- [x] C03-AC4: A checked-in rule/coverage manifest states exact supported families and omissions; no unsupported claim of matching Mole's advertised rule count.
 
 ## Scope and decisions
 

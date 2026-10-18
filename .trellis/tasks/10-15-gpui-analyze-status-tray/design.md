@@ -39,9 +39,15 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+GPUI state on the C10 shell. Analyze states are Landing, Scanning, Detail, and
+Failed. Landing chooses a root and does not scan by itself. Detail has a list
+and a treemap that share node ids. Recycle uses the C07 preview digest. Status
+states are Landing and Live. A missing sensor stays unavailable. The tray reads
+the same sampler as the main panel and does not start a second one while the
+main panel is visible. Keep Screen On calls the C08 lease. It does not call
+powercfg. Clean Screen is presentation-only: Escape restores the view, and a
+test proves the shortcut. A displayed PID does not kill a process. C13-AC4
+stays unchecked without a real UIA sample and a 20-cycle measurement. Do not
+edit `desktop/`. Do not commit. Do not kill a process the test did not spawn.

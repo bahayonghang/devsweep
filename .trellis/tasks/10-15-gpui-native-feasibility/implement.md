@@ -1,6 +1,6 @@
 # C09 Implementation and verification
 
-Status: planning; dependencies: C16, C01.
+Status: technical freeze recorded in design.md on 2026-10-17. C02 checks passed and `just ci` exited 0. Implementation is dispatched inside `desktop-gpui/` and this task directory. C09-AC4 launch evidence is recorded for SHA-256 `7C1A82CD42F6E071624DFAAD8B1E70AD21C822FCBE833FC6764D54B73230669D`. UIA focus and IME composition stay NOT_RUN.
 
 ## Sequence
 

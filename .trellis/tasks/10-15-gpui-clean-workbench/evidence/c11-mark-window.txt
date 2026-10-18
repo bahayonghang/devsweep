@@ -1,0 +1,12 @@
+build_exit=0
+incremental_standalone=true
+sha256=E96C7024DAC8E6E63234AB3CAD2BC80622C4B051A0E5CEFC61B981874C0ACD3B
+length=14099968
+pid=87176
+both_cache_lines_visible=devsweep-c11-mark-f9.png does not show them (the DevSweep rectangle was covered by CCR Desktop). devsweep-c11-mark-1.png and devsweep-c11-mark-2.png both show python.pytest_cache and python.mypy_cache.
+first_marker_image=devsweep-c11-mark-1.png
+marker_after_first_alt_down=> python.pytest_cache
+marker_after_second_alt_down=> python.mypy_cache
+second_alt_down_moves_marker=true
+selected_mode_stays_clean=true
+exit_record=0

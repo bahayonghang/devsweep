@@ -37,9 +37,14 @@ Retain existing CLI/Tauri paths while this child is developed. Roll back isolate
 adapter changes without changing unrelated work or historical evidence. Installation,
 publishing and Tauri retirement are not implicit consequences of passing tests.
 
-## Technical freeze before implementation
+## Technical freeze (2026-10-17)
 
-Refresh source evidence, freeze concrete provider/rule/action or native API choices,
-and record exact schemas and refusal states needed for this child's requirements.
-Do not turn an unresolved technical candidate into executable authority.
-A material change to product scope, safety, platform or acceptance returns to review.
+GPUI state only, on top of the C10 shell and the existing software and optimize
+services. Software segments are Uninstall, Updates, and Startup. Leftovers are
+a later review, not a fourth segment. Optimize states are Landing, Running,
+Completed, and Failed. Optimize groups are startup, network and search, and
+maintenance. One confirmed plan is one operation id. Image scan does not start
+image repair. A guidance or observe row has no run button that launches a
+program. A route change does not cancel a dispatched mutation. Do not uninstall
+host software and do not run defrag, dism, or w32tm. C12-AC4 stays unchecked
+without a saved screenshot and UIA sample. Do not edit `desktop/`. Do not commit.

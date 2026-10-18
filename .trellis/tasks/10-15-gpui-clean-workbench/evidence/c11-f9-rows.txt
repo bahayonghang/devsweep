@@ -1,0 +1,9 @@
+build_exit=0
+incremental_standalone=true
+sha256=A664EDD107B7488047972416049180013DEB787D7A3410B827AF70DE74E10C8F
+length=14099456
+pid=110520
+line_observation=python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-c11-f9-bucket-ead0e8d0a2d640b89276f532ac1f67a8\devsweep-gpui-c11-3cb4d094afc4\.pytest_cache
+alt_down=sent_one_alt_down
+mode_still_clean=true
+exit_record=0

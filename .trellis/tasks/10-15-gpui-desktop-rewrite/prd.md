@@ -1,6 +1,11 @@
 # CLI-first GPUI desktop rewrite
 
 Status: **in progress — final implementation plan approved on 2026-10-15**.
+Amended 2026-10-16 from a static REA inspection of installed Mole 0.14.0.
+The amendment freezes Clean/Software/Optimize/Analyze/Status screen states and
+the optimize CLI catalogue. Evidence is
+[mole-014-rea.md](research/mole-014-rea.md). Approval of the 2026-10-15 summary
+still stands for the unchanged safety, platform, and migration decisions.
 Created at the user's explicit request on 2026-10-15. Baseline checkout: `dev`,
 `25437d102ab7355198b3ef2647c2cbced740b3b2`; initially clean, no active tasks.
 The older Tauri tasks are archived; this task does not reopen or relabel them.
@@ -40,11 +45,11 @@ caused solely by WebView; backend discovery and rendering are measured separatel
 | R02 | One authoritative Rust core: renderers never invent file/package/process identity, reconstruct cleanup commands, or bypass live validation. | C01, C02, C10 |
 | R03 | Clean retains developer-cache capabilities and independent global/project flows, adds a finite evidence-backed Windows catalogue, explains recoverability/cost and protects personal data. | C03, C11 |
 | R04 | Software supports qualified inventory, supported native uninstall providers, separate residual-data review, explicit winget updates and reversible startup controls. | C04, C05, C12 |
-| R05 | Optimize becomes a usable catalogue of applicable Windows maintenance, with preflight, privilege and skip explanations, reviewed selection and per-action results. | C02, C06, C12 |
+| R05 | Optimize is a closed CLI catalogue: existing eight rows stay valid, and the 2026-10-16 amendment adds only the preflighted execute, read-only, and guidance rows in C06. One plan is one operation. Image scan does not start image repair. | C02, C06, C12 |
 | R06 | Analyze provides bounded disk/folder inspection, treemap/list drill-down, storage explanations, lock-owner evidence and separate reviewed recycle actions. | C07, C13 |
 | R07 | Status provides honest live telemetry, explainable health/process details and carefully separated process actions; tray sessions follow native lifecycle rules. | C08, C13 |
 | R08 | New desktop uses GPUI and Rust application/domain logic with no React, WebView, Node or Tauri runtime. OS APIs and explicitly supported installed providers remain valid dependencies. | C09, C10 |
-| R09 | Reuse original DevSweep identity and licensed assets. Reference the screenshots' interaction logic; keep dense workbenches usable without a mandatory animated planet. | C10–C13 |
+| R09 | Reuse original DevSweep identity and licensed assets. GPUI navigation is the centered five-mode capsule from the Clean screenshot. Clean landing shows the licensed Earth still, one original line, and one primary action that chooses global or project scope before scanning. A continuous planet animation is not required. | C10–C13 |
 | R10 | Preserve EN/zh-CN, font/scale/theme settings, keyboard use, screen-reader semantics, high contrast/reduced motion and report retention across navigation. | C09–C13 |
 | R11 | Prove performance and cancellation/exit/resource behavior on native release builds, with equal scopes and complete reports. | C09, C14 |
 | R12 | Keep a working rollback during migration and an explicit later decision on making GPUI default/retiring Tauri. | C10, C14 |

@@ -22,11 +22,11 @@ C08-R5. Own the Keep Screen On shared service and CLI before native UI integrati
 
 ## Acceptance criteria
 
-- [ ] C08-AC1: Counter reset, multiple adapters, missing battery/sensor, protected processes and sample aging are covered; no driver installation is required.
-- [ ] C08-AC2: Slow NDJSON reader, disconnect, cancellation and full-queue join retain the existing sequence/terminal contracts.
-- [ ] C08-AC3: PID reuse and process identity drift refuse termination; a fixture-owned process is the only native termination target.
-- [ ] C08-AC4: Health explanation distinguishes CPU load from a system fault; no opaque numeric score or always-on extra sampler.
-- [ ] C08-AC5: No-GUI keep-awake start/status/stop behavior proves lease expiry, token ownership, cancellation and owner-exit cleanup using an isolated short-lived request; unsupported platforms explain capability gaps. C13 owns native controls over this accepted service.
+- [x] C08-AC1: Counter reset, multiple adapters, missing battery/sensor, protected processes and sample aging are covered; no driver installation is required.
+- [x] C08-AC2: Slow NDJSON reader, disconnect, cancellation and full-queue join retain the existing sequence/terminal contracts.
+- [x] C08-AC3: PID reuse and process identity drift refuse termination; a fixture-owned process is the only native termination target.
+- [x] C08-AC4: Health explanation distinguishes CPU load from a system fault; no opaque numeric score or always-on extra sampler.
+- [x] C08-AC5: No-GUI keep-awake start/status/stop behavior proves lease expiry, token ownership, cancellation and owner-exit cleanup using an isolated short-lived request; unsupported platforms explain capability gaps. C13 owns native controls over this accepted service.
 
 ## Scope and decisions
 
