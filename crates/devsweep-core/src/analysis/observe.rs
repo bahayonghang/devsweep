@@ -860,6 +860,9 @@ mod tests {
         assert!(report.roots.is_empty());
     }
 
+    // Volume/alias semantics (`volume_id`, `alias_of`) are Windows-only: a POSIX
+    // mount table has no equivalent volume identity for two roots.
+    #[cfg(windows)]
     #[test]
     fn shared_volume_is_an_alias_and_not_a_second_scan() {
         let first = PathBuf::from(r"C:\mount-one");
@@ -898,6 +901,10 @@ mod tests {
         assert_eq!(error, AnalyzeObserveError::RootsUnavailable);
     }
 
+    // Classification keys off Windows system paths (`C:\hiberfil.sys`,
+    // `C:\pagefile.sys`, ...) and Windows reparse tags, so the table only holds
+    // on Windows.
+    #[cfg(windows)]
     #[test]
     fn classes_use_exact_evidence_and_size_cannot_select_one() {
         let cases = [

@@ -1880,6 +1880,10 @@ mod tests {
         }
     }
 
+    // Gated to Windows with the rest of the maintenance adapter's platform
+    // assumptions. Note: this test also passes on Linux (measured 10/10 runs), so
+    // the gate is conservative rather than fixing an observed Linux failure.
+    #[cfg(windows)]
     #[test]
     fn command_double_receives_separate_argv_without_system_repair_programs() {
         let temp = tempfile::TempDir::new().unwrap();

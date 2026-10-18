@@ -128,6 +128,9 @@ fn assert_unchanged(prepared: &super::PreparedFixture, file_bytes: &[u8], regist
     );
 }
 
+// Offline registry fixtures (`registry::create_hive` / `replace_value_in_place`)
+// return `Unsupported` off Windows, and the helper binary is a Windows target.
+#[cfg(windows)]
 #[test]
 fn ac1_forged_replayed_stale_cross_user_and_tool_or_path_replacement_fail_before_dispatch() {
     let (_dir, prepared, helper) = setup(FILE_A, REG_A);
@@ -278,6 +281,7 @@ fn ac1_forged_replayed_stale_cross_user_and_tool_or_path_replacement_fail_before
     );
 }
 
+#[cfg(windows)]
 #[test]
 fn ac2_decline_cancel_disconnect_timeout_crash_and_audit_failure_do_not_retry() {
     let (_dir, prepared, helper) = setup(FILE_A, REG_A);
@@ -444,6 +448,7 @@ fn ac2_decline_cancel_disconnect_timeout_crash_and_audit_failure_do_not_retry() 
     assert_unchanged(&audit_plan, FILE_A, REG_A);
 }
 
+#[cfg(windows)]
 #[test]
 fn ac3_backup_readback_conditional_restore_and_post_handoff_refusal() {
     let (_dir, prepared, helper) = setup(FILE_A, REG_A);

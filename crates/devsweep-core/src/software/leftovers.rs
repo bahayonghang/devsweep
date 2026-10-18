@@ -2272,6 +2272,11 @@ mod tests {
         );
     }
 
+    // The fixture proves replacement by unlinking and recreating the reviewed
+    // directory, which only yields a new object identity on Windows. On Unix the
+    // identity is `dev:ino`, and ext4 reuses the freed inode, so the recreated
+    // directory is indistinguishable from the reviewed one.
+    #[cfg(windows)]
     #[test]
     fn strict_execute_refuses_a_replaced_directory_and_keeps_v1_digest() {
         let fixture = fixture();

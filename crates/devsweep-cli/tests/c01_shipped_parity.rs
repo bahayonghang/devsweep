@@ -3,22 +3,27 @@
 use std::{
     ffi::OsString,
     fs,
-    path::{Path, PathBuf},
+    path::Path,
     process::{Command, Output, Stdio},
     sync::{Mutex, MutexGuard, PoisonError},
 };
 
+#[cfg(windows)]
+use std::path::PathBuf;
+
+use devsweep_core::software::{
+    SoftwareAuditRecordV1, SoftwareEligibility, SoftwareEligibilityReason,
+    SoftwareEligibilityState, SoftwareEntryV1, SoftwareIdentity, SoftwareInventoryV1,
+    SoftwareLastUsedEvidence, SoftwareLastUsedReason, SoftwareLeftoverPlanV1, SoftwareScope,
+    SoftwareSizeEvidence, discover_software_leftovers, preview_software_leftover_plan,
+};
+#[cfg(windows)]
 use devsweep_core::{
     analysis::{
         analyze_path, decode_analyze_trash_plan, plan_analyze_trash, preview_analyze_trash_plan,
     },
     software::{
-        SoftwareAuditRecordV1, SoftwareEligibility, SoftwareEligibilityReason,
-        SoftwareEligibilityState, SoftwareEntryV1, SoftwareIdentity, SoftwareInventoryV1,
-        SoftwareLastUsedEvidence, SoftwareLastUsedReason, SoftwareLeftoverPlanV1, SoftwareScope,
-        SoftwareSizeEvidence, SoftwareStartupLocation, discover_software_leftovers,
-        list_startup_entries, plan_startup_toggle, preview_software_leftover_plan,
-        preview_startup_toggle,
+        SoftwareStartupLocation, list_startup_entries, plan_startup_toggle, preview_startup_toggle,
     },
 };
 use sha2::{Digest, Sha256};
@@ -121,11 +126,13 @@ fn success_data(path: &Path, run: &Captured) -> serde_json::Value {
     document["data"].clone()
 }
 
+#[cfg(windows)]
 struct FileMark {
     exists: bool,
     len: u64,
 }
 
+#[cfg(windows)]
 fn mark(path: &Path) -> FileMark {
     match fs::metadata(path) {
         Ok(meta) => FileMark {
@@ -139,12 +146,14 @@ fn mark(path: &Path) -> FileMark {
     }
 }
 
+#[cfg(windows)]
 fn assert_unchanged(path: &Path, before: &FileMark) {
     let after = mark(path);
     assert_eq!(after.exists, before.exists, "{}", path.display());
     assert_eq!(after.len, before.len, "{}", path.display());
 }
 
+#[cfg(windows)]
 fn real_clean_journal() -> PathBuf {
     PathBuf::from(std::env::var_os("LOCALAPPDATA").expect("LOCALAPPDATA"))
         .join("DevSweep")
@@ -153,6 +162,7 @@ fn real_clean_journal() -> PathBuf {
         .join("clean.jsonl")
 }
 
+#[cfg(windows)]
 struct AnalyzeFixture {
     _temp: TempDir,
     file: PathBuf,
@@ -161,6 +171,7 @@ struct AnalyzeFixture {
     digest: String,
 }
 
+#[cfg(windows)]
 fn analyze_fixture() -> AnalyzeFixture {
     let temp = TempDir::new().expect("analyze fixture");
     let root = temp.path().join("root");
@@ -265,6 +276,7 @@ fn assert_cli_refusal(run: &Captured, output: &Path, core_code: &str) {
     assert_eq!(document["error"]["code"], core_code, "{document}");
 }
 
+#[cfg(windows)]
 fn flip_hex_tail(value: &str) -> String {
     let mut chars: Vec<char> = value.chars().collect();
     let last = chars.last_mut().expect("identity hash");
@@ -281,6 +293,7 @@ fn item_identity(item: &serde_json::Value) -> (String, String, String, String) {
     )
 }
 
+#[cfg(windows)]
 #[test]
 fn startup_preview_matches_the_core_service() {
     let _lock = lock_env();
@@ -468,6 +481,7 @@ fn leftover_preview_matches_the_core_service() {
     assert_eq!(data["error"].as_str(), core_value["error"].as_str());
 }
 
+#[cfg(windows)]
 #[test]
 fn analyze_trash_preview_matches_the_core_service() {
     let _lock = lock_env();
@@ -507,6 +521,7 @@ fn analyze_trash_preview_matches_the_core_service() {
     assert_eq!(fs::read(&fixture.file).expect("fixture"), fixture.bytes);
 }
 
+#[cfg(windows)]
 #[test]
 fn analyze_trash_execute_without_confirm_leaves_the_fixture() {
     let _lock = lock_env();
@@ -539,6 +554,7 @@ fn analyze_trash_execute_without_confirm_leaves_the_fixture() {
     assert_unchanged(&journal, &before_journal);
 }
 
+#[cfg(windows)]
 #[test]
 fn analyze_trash_execute_closed_stdout_does_not_move_the_fixture() {
     let _lock = lock_env();
@@ -586,6 +602,7 @@ fn analyze_trash_execute_closed_stdout_does_not_move_the_fixture() {
     assert_unchanged(&journal, &before_journal);
 }
 
+#[cfg(windows)]
 #[test]
 fn startup_preview_refusal_matches_the_core_service() {
     let _lock = lock_env();
@@ -768,6 +785,7 @@ fn leftover_preview_refusal_matches_the_core_service() {
     );
 }
 
+#[cfg(windows)]
 #[test]
 fn analyze_trash_preview_refusal_matches_the_core_service() {
     let _lock = lock_env();

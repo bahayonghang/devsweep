@@ -160,6 +160,10 @@ fn assert_code(error: &AiError, exit: AiExit, code: &str) {
     assert_eq!(error.code, code, "{}", error.message);
 }
 
+// The fixture builds Windows-style absolute paths (`C:\Users\fixture`), which
+// `Path::is_absolute` rejects on POSIX, so the explicit-home branch would report
+// `invalid_home` instead of the `source_unavailable` this test asserts.
+#[cfg(windows)]
 #[test]
 fn default_and_custom_roots_do_not_scan_a_profile() {
     let profile = Path::new(r"C:\Users\fixture");
