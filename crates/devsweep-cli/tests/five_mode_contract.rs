@@ -192,7 +192,7 @@ fn locale_switch_localizes_human_copy_and_leaves_machine_documents_invariant() {
     assert_eq!(rejected.status.code(), Some(2));
     let document = envelope(&machine);
     assert_eq!(document["command"], "optimize.list");
-    assert_eq!(document["data"]["entries"].as_array().unwrap().len(), 8);
+    assert_eq!(document["data"]["entries"].as_array().unwrap().len(), 19);
     let rejected_document = envelope(&rejected);
     assert_eq!(rejected_document["error"]["code"], "invalid_cli");
 }

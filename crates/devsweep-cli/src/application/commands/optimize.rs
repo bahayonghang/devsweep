@@ -4,8 +4,8 @@ use std::{fs, path::Path};
 
 use devsweep_core::optimize::{
     MaintenanceExecutionError, MaintenanceExecutionOutcome, MaintenanceExecutor, MaintenancePlanV1,
-    OPTIMIZE_CATALOGUE_VERSION, OptimizePlanError, catalogue_entries, plan_operation,
-    preview_maintenance_plan_live,
+    OptimizePlanError, observe_disk_health, plan_operation, preview_maintenance_plan_live,
+    published_catalogue_version, published_entries,
 };
 
 use super::super::{
@@ -25,6 +25,7 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
             OptimizeCommand::Plan(command) => run_plan(command),
             OptimizeCommand::Preview(command) => run_preview(command, locale, cli),
             OptimizeCommand::Run(command) => run_run(command, locale, cli),
+            OptimizeCommand::Health(_) => run_health(cli, locale),
         },
         _ => Err(mode_unavailable(cli, locale)),
     }
@@ -39,7 +40,7 @@ fn mode_unavailable(cli: &Cli, locale: Locale) -> ApplicationError {
 }
 
 fn emit_list(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
-    let entries = catalogue_entries();
+    let entries = published_entries();
     match cli.result_format() {
         ResultFormat::Human => {
             let text = presentation::optimize::list(locale, entries).map_err(|error| {
@@ -56,13 +57,31 @@ fn emit_list(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
                     "command": "optimize.list",
                     "outcome": "succeeded",
                     "data": {
-                        "catalogue_version": OPTIMIZE_CATALOGUE_VERSION,
+                        "catalogue_version": published_catalogue_version(entries),
                         "entries": entries,
                     },
                     "warnings": [],
                     "error": null
                 }),
             )
+        }
+    }
+}
+
+fn run_health(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
+    let report = observe_disk_health();
+    match cli.result_format() {
+        ResultFormat::Human => {
+            let text = presentation::optimize::health(locale, &report).map_err(|error| {
+                ApplicationError::failed("catalogue_render_failed", error.to_string())
+            })?;
+            write_human(cli, &text)
+        }
+        _ => {
+            let data = serde_json::to_value(&report).map_err(|error| {
+                ApplicationError::failed("output_serialize_failed", error.to_string())
+            })?;
+            write_envelope(cli, "optimize.health", "succeeded", data)
         }
     }
 }
@@ -223,8 +242,13 @@ pub(super) fn map_plan_error(error: OptimizePlanError) -> ApplicationError {
         | OptimizePlanError::DigestMismatch => {
             (ExitClass::InvalidAuthority, "invalid_optimize_authority")
         }
-        OptimizePlanError::UnknownOperation(_) | OptimizePlanError::GuidanceNotExecutable(_) => {
+        OptimizePlanError::UnknownOperation(_)
+        | OptimizePlanError::GuidanceNotExecutable(_)
+        | OptimizePlanError::ObserveNotPlanable(_) => {
             (ExitClass::Failed, "invalid_optimize_selection")
+        }
+        OptimizePlanError::PrecheckRefused { reason, .. } => {
+            (ExitClass::Unavailable, reason.code())
         }
         OptimizePlanError::PlatformUnsupported
         | OptimizePlanError::OsBuildUnavailable
@@ -262,7 +286,7 @@ mod tests {
     use clap::Parser;
     use devsweep_core::optimize::{
         MaintenanceActionClass, MaintenanceActionOutcomeV1, MaintenanceExecutionOutcome,
-        MaintenanceExecutionReportV1,
+        MaintenanceExecutionReportV1, PrecheckReason,
     };
     use tempfile::TempDir;
 
@@ -313,11 +337,15 @@ mod tests {
         assert_eq!(en_bytes, fs::read(&zh_path).unwrap());
         let document: serde_json::Value = serde_json::from_slice(&en_bytes).unwrap();
         assert_eq!(document["command"], "optimize.list");
-        assert_eq!(document["data"]["catalogue_version"], 1);
+        assert_eq!(document["data"]["catalogue_version"], 2);
         let entries = document["data"]["entries"].as_array().unwrap();
-        assert_eq!(entries.len(), 8);
+        assert_eq!(entries.len(), 19);
         assert_eq!(entries[0]["id"], "dns.flush");
         assert_eq!(entries[0]["action_class"], "execute");
+        assert_eq!(entries[14]["id"], "maintenance.disk_health");
+        assert_eq!(entries[14]["action_class"], "observe");
+        assert_eq!(entries[15]["id"], "maintenance.update_cache");
+        assert_eq!(entries[15]["action_class"], "guidance");
         let hostile = serde_json::to_string(&entries).unwrap();
         assert!(!hostile.contains("program"));
         assert!(!hostile.contains("argv"));
@@ -354,6 +382,38 @@ mod tests {
         let error = run_plan(&guidance).expect_err("guidance never plans");
         assert_eq!(error.code, "invalid_optimize_selection");
         assert!(!temp.path().join("guidance.json").exists());
+
+        let v2_path = temp.path().join("update-cache.json");
+        run_plan(&super::super::super::cli::OptimizePlanCommand {
+            operation: "maintenance.update_cache".to_string(),
+            output: v2_path.clone(),
+        })
+        .unwrap();
+        let v2: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&v2_path).unwrap()).unwrap();
+        assert_eq!(v2["catalogue_version"], 2);
+        assert_eq!(v2["operation_id"], "maintenance.update_cache");
+        assert_eq!(v2["action_class"], "guidance");
+        let preview = parse(&[
+            "devsweep",
+            "optimize",
+            "preview",
+            "--plan",
+            v2_path.to_str().unwrap(),
+            "--format",
+            "json",
+        ]);
+        let error = run(&preview, Locale::En).expect_err("guidance plan does not launch");
+        assert_eq!(error.code, "invalid_optimize_selection");
+
+        let health_path = temp.path().join("disk-health.json");
+        let refused = run_plan(&super::super::super::cli::OptimizePlanCommand {
+            operation: "maintenance.disk_health".to_string(),
+            output: health_path.clone(),
+        })
+        .expect_err("observe is not planable");
+        assert_eq!(refused.code, "invalid_optimize_selection");
+        assert!(!health_path.exists());
     }
 
     #[test]
@@ -459,6 +519,11 @@ mod tests {
             OptimizePlanError::DigestMismatch,
             OptimizePlanError::UnknownOperation("x".to_string()),
             OptimizePlanError::GuidanceNotExecutable("x".to_string()),
+            OptimizePlanError::ObserveNotPlanable("maintenance.disk_health".to_string()),
+            OptimizePlanError::PrecheckRefused {
+                operation_id: "maintenance.retrim".to_string(),
+                reason: PrecheckReason::UacDeclined,
+            },
             OptimizePlanError::PlatformUnsupported,
             OptimizePlanError::OsBuildUnavailable,
             OptimizePlanError::BuildUnsupported { build: 1, floor: 2 },
@@ -468,8 +533,12 @@ mod tests {
             let mapped = map_plan_error(error.clone());
             match error {
                 OptimizePlanError::UnknownOperation(_)
-                | OptimizePlanError::GuidanceNotExecutable(_) => {
+                | OptimizePlanError::GuidanceNotExecutable(_)
+                | OptimizePlanError::ObserveNotPlanable(_) => {
                     assert_eq!(mapped.code, "invalid_optimize_selection")
+                }
+                OptimizePlanError::PrecheckRefused { reason, .. } => {
+                    assert_eq!(mapped.code, reason.code())
                 }
                 OptimizePlanError::PlatformUnsupported
                 | OptimizePlanError::OsBuildUnavailable

@@ -3,6 +3,8 @@
 
 //! Reusable scanning, planning, inventory, and cleanup execution logic.
 
+/// Opt-in AI-tool classification, recovery, and confirmed trash moves.
+pub mod ai;
 /// Read-only bounded Analyze traversal and versioned snapshots.
 pub mod analysis;
 

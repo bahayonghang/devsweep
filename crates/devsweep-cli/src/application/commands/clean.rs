@@ -19,6 +19,9 @@ use super::super::{
 };
 use crate::i18n::{Locale, catalogue};
 
+#[path = "clean_ai.rs"]
+mod clean_ai;
+
 #[cfg(test)]
 pub(super) struct Route;
 
@@ -31,6 +34,7 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
             CleanCommand::Execute(command) => run_execute(command, locale, cli),
             CleanCommand::Protect(_) => super::protect::run(cli, locale),
             CleanCommand::Rules(_) => super::rules::run(cli, locale),
+            CleanCommand::Ai(_) => clean_ai::run(cli, locale),
         },
         _ => Err(mode_unavailable(cli, locale)),
     }

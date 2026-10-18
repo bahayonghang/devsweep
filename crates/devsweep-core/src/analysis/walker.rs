@@ -230,6 +230,13 @@ fn volume_from_object_id(value: &str) -> String {
         .unwrap_or_else(|| value.to_string())
 }
 
+/// Volume identity the snapshot walker records for one path.
+///
+/// This opens the path for attributes only. It does not enumerate children.
+pub(crate) fn native_volume_id(path: &Path) -> Result<String, FsFail> {
+    NativeFs::default().volume_id(path)
+}
+
 fn capture_object_id_no_follow(path: &Path) -> std::io::Result<ObjectId> {
     #[cfg(windows)]
     {

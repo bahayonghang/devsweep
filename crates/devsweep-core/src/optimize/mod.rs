@@ -9,6 +9,7 @@
 mod audit;
 mod catalogue;
 mod execution;
+mod maintenance;
 mod plan;
 #[cfg(test)]
 mod tests;
@@ -23,15 +24,20 @@ pub use catalogue::{
     GUIDANCE_NETWORK_RESET_ID, GUIDANCE_SYSTEM_INTEGRITY_ID, MaintenanceActionClass,
     MaintenanceCatalogueEntryV1, OPTIMIZE_CATALOGUE_VERSION, SETTINGS_ENERGY_RECOMMENDATIONS_ID,
     SETTINGS_SEARCH_ID, SETTINGS_STORAGE_RECOMMENDATIONS_ID, catalogue_entries, catalogue_entry,
+    published_catalogue_version, published_entries,
 };
 pub use execution::{
     DNS_FLUSH_TIMEOUT, MaintenanceActionOutcomeV1, MaintenanceExecutionError,
     MaintenanceExecutionOutcome, MaintenanceExecutionReportV1, MaintenanceExecutionRequest,
     MaintenanceExecutor, OPTIMIZE_EXECUTION_VERSION,
 };
+pub use maintenance::{
+    DiskHealthDeviceV1, DiskHealthReportV1, DiskHealthStatus, observe_disk_health,
+};
 pub use plan::{
     MaintenancePlanV1, MaintenancePreviewV1, OPTIMIZE_PLAN_VERSION, OPTIMIZE_PREVIEW_VERSION,
-    OptimizePlanError, ValidatedMaintenanceAction, plan_operation, validate_preview_digest,
+    OptimizePlanError, PrecheckReason, ValidatedMaintenanceAction, plan_operation,
+    validate_preview_digest,
 };
 
 pub(super) use plan::ResolvedMaintenanceAction;

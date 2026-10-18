@@ -16,6 +16,9 @@ mod capture;
 mod executable;
 mod provider_dispatch;
 mod tree;
+mod windows_action;
+
+pub(crate) use windows_action::{FAULT_ENV, GATE_ENV, HelperRun, run_helper};
 
 pub(crate) use executable::resolve_executable;
 pub(crate) use provider_dispatch::{provider_file_digest, resolve_provider_dispatch};

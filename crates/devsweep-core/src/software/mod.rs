@@ -16,6 +16,7 @@ mod arp;
 #[path = "execution/audit.rs"]
 mod audit;
 mod execution;
+mod launch;
 mod leftovers;
 mod model;
 mod msi;
@@ -26,44 +27,59 @@ mod updates;
 
 pub use audit::SoftwareSupportAuditRecordV1;
 pub use execution::{
-    MSIX_CANCEL_GRACE, MSIX_MONITOR_TIMEOUT, MSIX_REQUERY_OFFSETS, SOFTWARE_AUDIT_VERSION,
-    SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1, SoftwareAuditError,
-    SoftwareAuditErrorCode, SoftwareAuditRecordV1, SoftwareAuditRequeryResult,
+    AdapterOutcome, MSIX_CANCEL_GRACE, MSIX_MONITOR_TIMEOUT, MSIX_REQUERY_OFFSETS,
+    SOFTWARE_AUDIT_VERSION, SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1,
+    SoftwareAuditError, SoftwareAuditErrorCode, SoftwareAuditRecordV1, SoftwareAuditRequeryResult,
     SoftwareAuditStatusCode, SoftwareAuditTransition, SoftwareExecutionError,
     SoftwareExecutionOutcome, SoftwareExecutionReportV1, SoftwareExecutionRequest,
     SoftwareExecutor, SoftwareInstalledState, SoftwareRebootEvidence, ValidatedSoftwareAction,
     software_audit_v1_path,
 };
 pub use leftovers::{
-    SOFTWARE_LEFTOVER_VERSION, SoftwareLeftoverAppV1, SoftwareLeftoverCandidateV1,
-    SoftwareLeftoverCertainty, SoftwareLeftoverError, SoftwareLeftoverExecutionRequest,
+    REGISTRY_RESIDUE_KEY_NAME, REGISTRY_RESIDUE_VERSION, SOFTWARE_LEFTOVER_VERSION,
+    SoftwareLeftoverAppV1, SoftwareLeftoverCandidateV1, SoftwareLeftoverCertainty,
+    SoftwareLeftoverError, SoftwareLeftoverExecutionRequest, SoftwareLeftoverLabelTrust,
     SoftwareLeftoverOrigin, SoftwareLeftoverOutcomeV1, SoftwareLeftoverPlanPreviewV1,
     SoftwareLeftoverPlanV1, SoftwareLeftoverPreviewV1, SoftwareLeftoverReportV1,
-    SoftwareLeftoverSelectionV1, discover_software_leftovers, execute_software_leftovers,
-    plan_software_leftovers,
+    SoftwareLeftoverSelectionV1, SoftwareLeftoverStrictOutcome, SoftwareLeftoverStrictPreviewV1,
+    SoftwareLeftoverStrictReportV1, SoftwareRegistryResiduePlanV1,
+    SoftwareRegistryResiduePreviewV1, SoftwareRegistryResidueReportV1,
+    SoftwareRegistryResidueRestorePlanV1, SoftwareRegistryResidueRestorePreviewV1,
+    discover_software_leftovers, execute_registry_residue, execute_registry_residue_restore,
+    execute_software_leftover_plan, execute_software_leftovers, plan_registry_residue,
+    plan_registry_residue_restore, plan_software_leftovers, preview_registry_residue,
+    preview_registry_residue_restore, preview_software_leftover_plan,
 };
 pub use model::{
-    MsiContext, RegistryHive, RegistryView, SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION,
-    SOFTWARE_PREVIEW_VERSION, SoftwareActionClass, SoftwareEligibility, SoftwareEligibilityReason,
-    SoftwareEligibilityState, SoftwareEntryV1, SoftwareIdentity, SoftwareInventorySource,
-    SoftwareInventoryV1, SoftwareLastUsedEvidence, SoftwareLastUsedReason, SoftwarePreviewItemV1,
-    SoftwarePreviewV1, SoftwareScope, SoftwareSelectionPlanV1, SoftwareSizeBasis,
-    SoftwareSizeEvidence, SoftwareSizeSourceCode, SoftwareSourceEvidence, SoftwareSourceId,
-    SoftwareSourceState,
+    FixtureLaunch, FixtureLaunchKind, MsiContext, RegistryHive, RegistryView,
+    SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION, SOFTWARE_PREVIEW_VERSION,
+    SoftwareActionClass, SoftwareEligibility, SoftwareEligibilityReason, SoftwareEligibilityState,
+    SoftwareEntryV1, SoftwareIdentity, SoftwareInventorySource, SoftwareInventoryV1,
+    SoftwareLastUsedEvidence, SoftwareLastUsedReason, SoftwarePreviewItemV1, SoftwarePreviewV1,
+    SoftwareScope, SoftwareSelectionPlanV1, SoftwareSizeBasis, SoftwareSizeEvidence,
+    SoftwareSizeSourceCode, SoftwareSourceEvidence, SoftwareSourceId, SoftwareSourceState,
 };
 pub use plan::{
     SOFTWARE_INVENTORY_TTL_MS, SoftwarePlanError, build_selection_plan, preview_selection_plan,
     preview_selection_plan_live, validate_preview_digest,
 };
 pub use startup::{
-    SOFTWARE_STARTUP_VERSION, SoftwareStartupEntryV1, SoftwareStartupError, SoftwareStartupListV1,
-    SoftwareStartupLocation, SoftwareStartupSourceV1, SoftwareStartupState, SoftwareStartupToggle,
+    SOFTWARE_STARTUP_VERSION, STARTUP_FIXTURE_HIVE_VERSION, STARTUP_TOGGLE_PLAN_VERSION,
+    SoftwareStartupEntryV1, SoftwareStartupError, SoftwareStartupListV1, SoftwareStartupLocation,
+    SoftwareStartupSourceV1, SoftwareStartupState, SoftwareStartupToggle,
     SoftwareStartupToggleReportV1, SoftwareSupportErrorCode, SoftwareSupportOutcomeCode,
-    list_startup_entries, set_startup_enabled,
+    StartupBackupV1, StartupFixtureClass, StartupFixtureEntryV1, StartupFixtureHiveV1,
+    StartupHiveExecuteReportV1, StartupRestorePlanV1, StartupRestorePreviewV1,
+    StartupStrictOutcome, StartupTogglePlanV1, StartupTogglePreviewV1, StartupToggleStrictReportV1,
+    execute_startup_hive, execute_startup_restore, execute_startup_toggle, list_startup_entries,
+    plan_startup_hive, plan_startup_restore, plan_startup_toggle, preview_startup_hive,
+    preview_startup_restore, preview_startup_toggle, set_startup_enabled,
 };
 pub use updates::{
-    SOFTWARE_UPDATES_VERSION, SoftwareUpdateRowV1, SoftwareUpdatesReason, SoftwareUpdatesV1,
-    check_software_updates,
+    SOFTWARE_UPDATE_PLAN_VERSION, SOFTWARE_UPDATES_VERSION, SoftwareUpdateError,
+    SoftwareUpdateOutcome, SoftwareUpdatePlanV1, SoftwareUpdatePreviewV1, SoftwareUpdateReportV1,
+    SoftwareUpdateRowV1, SoftwareUpdatesReason, SoftwareUpdatesV1, check_software_updates,
+    execute_software_update, plan_software_update, preview_software_update,
 };
 
 use model::{EligibilityFlags, SoftwareObservation};
@@ -249,6 +265,7 @@ fn assemble_inventory(
             eligibility,
             size: observation.size,
             last_used: SoftwareLastUsedEvidence::default(),
+            launch: None,
         });
     }
     entries.sort_by(|left, right| left.id.cmp(&right.id));
@@ -264,7 +281,7 @@ fn assemble_inventory(
     Ok(inventory)
 }
 
-fn scope_for_identity(identity: &SoftwareIdentity) -> SoftwareScope {
+pub(crate) fn scope_for_identity(identity: &SoftwareIdentity) -> SoftwareScope {
     match identity {
         SoftwareIdentity::Arp { hive, .. } => {
             if *hive == RegistryHive::CurrentUser {

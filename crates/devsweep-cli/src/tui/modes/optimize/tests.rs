@@ -21,6 +21,7 @@ fn preview_for(
             version: 1,
             catalogue_version: 1,
             operation_id: id.to_string(),
+            action_class: None,
         },
         MaintenancePreviewV1 {
             version: 1,

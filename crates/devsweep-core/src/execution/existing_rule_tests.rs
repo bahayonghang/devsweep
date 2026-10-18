@@ -2,6 +2,7 @@
 mod existing_rule_pipeline {
     use super::*;
     use crate::{
+        filesystem::{path_is_within, paths_equal},
         model::CleanupIntent,
         rules::{KnownCacheAction, ProjectMarker},
         scan::{ScanOptions, Sweeper},
@@ -393,6 +394,147 @@ mod existing_rule_pipeline {
         assert_eq!(
             fs::read_to_string(home.join(".cargo/credentials.toml")).unwrap(),
             "retained secret"
+        );
+    }
+
+    fn plant_protected_ai_home(home: &Path) -> Vec<PathBuf> {
+        let current_version = home.join("versions/2.0/payload.bin");
+        let current_marker = home.join("versions/current.txt");
+        let active_session = home.join("sessions/s1.json");
+        let active_marker = home.join("sessions/active");
+        let credentials = home.join("credentials");
+        let memory = home.join("memory.md");
+        let settings = home.join("settings.json");
+        let skill = home.join("skills/skill.md");
+        let mcp = home.join("mcp/server.json");
+        let models = home.join("models/weights.bin");
+        let project = home.join("projects/code.txt");
+        file(&current_version, "current-version");
+        file(&current_marker, "2.0\n");
+        file(
+            &active_session,
+            r#"{"version":1,"id":"s1","active":true,"body":"live"}"#,
+        );
+        file(&active_marker, "s1\n");
+        file(&credentials, "secret");
+        file(&memory, "memory");
+        file(&settings, "{}");
+        file(&skill, "skill");
+        file(&mcp, "{}");
+        file(&models, "model");
+        file(&project, "project");
+        vec![
+            current_version,
+            current_marker,
+            home.join("versions/2.0"),
+            active_session,
+            active_marker,
+            credentials,
+            memory,
+            settings,
+            skill,
+            home.join("skills"),
+            mcp,
+            home.join("mcp"),
+            models,
+            home.join("models"),
+            project,
+            home.join("projects"),
+        ]
+    }
+
+    #[test]
+    fn generic_clean_scan_does_not_select_protected_ai_paths() {
+        const CHILD: &str = "DEVSWEEP_C15_AC2_GENERIC_SCAN";
+        const TEST: &str = "execution::tests::existing_rule_pipeline::generic_clean_scan_does_not_select_protected_ai_paths";
+        if std::env::var_os(CHILD).is_none() {
+            let fixture = TempDir::new().unwrap();
+            let root = fixture.path();
+            fs::create_dir_all(root.join("home")).unwrap();
+            let mut child = std::process::Command::new(std::env::current_exe().unwrap());
+            child
+                .args(["--exact", TEST, "--nocapture"])
+                .env_clear()
+                .env(CHILD, "1")
+                .env("HOME", root.join("home"))
+                .env("USERPROFILE", root.join("home"))
+                .env("APPDATA", root.join("home/AppData/Roaming"))
+                .env("LOCALAPPDATA", root.join("home/AppData/Local"))
+                .env("PATH", root.join("no-tools"))
+                .env("TEMP", root)
+                .env("TMP", root)
+                .current_dir(root);
+            for key in ["SystemRoot", "WINDIR", "SystemDrive"] {
+                if let Some(value) = std::env::var_os(key) {
+                    child.env(key, value);
+                }
+            }
+            let output = child.output().unwrap();
+            assert!(
+                output.status.success(),
+                "{} {}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
+
+        let home = PathBuf::from(std::env::var_os("HOME").unwrap());
+        let cache_dir = home.join(".gradle/caches");
+        let sentinel = cache_dir.join("generic-cache.bin");
+        file(&sentinel, "selectable generic cache");
+        let mut protected = plant_protected_ai_home(&home.join(".claude"));
+        protected.extend(plant_protected_ai_home(&home.join(".codex")));
+        if let Some(appdata) = std::env::var_os("APPDATA") {
+            protected.extend(plant_protected_ai_home(
+                &PathBuf::from(appdata).join("Cursor"),
+            ));
+        }
+
+        let report = Sweeper::default()
+            .full_scan_report(
+                &ScanOptions {
+                    roots: vec![],
+                    include_projects: false,
+                    include_global: true,
+                },
+                &mut |_| {},
+            )
+            .expect("production generic global scan");
+        let target_paths: Vec<_> = report
+            .plan
+            .targets
+            .iter()
+            .filter_map(|target| target.path.as_ref())
+            .collect();
+        assert!(
+            report.plan.targets.iter().any(|target| {
+                target.rule_id == "gradle.caches"
+                    && target
+                        .path
+                        .as_ref()
+                        .is_some_and(|path| paths_equal(path, &cache_dir))
+            }),
+            "generic cache sentinel must appear so exclusion is not vacuous; targets={target_paths:?}"
+        );
+        for protected in &protected {
+            for path in &target_paths {
+                assert!(
+                    !paths_equal(path, protected) && !path_is_within(path, protected),
+                    "protected {} selected as {}",
+                    protected.display(),
+                    path.display()
+                );
+            }
+            assert!(
+                fs::symlink_metadata(protected).is_ok(),
+                "scan must not delete {}",
+                protected.display()
+            );
+        }
+        assert_eq!(
+            fs::read_to_string(&sentinel).unwrap(),
+            "selectable generic cache"
         );
     }
 }

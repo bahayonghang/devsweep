@@ -15,7 +15,8 @@ pub(crate) use configuration::{
     configured_cache_path, validate_provider_version, yarn_configuration,
 };
 pub(crate) use definitions::{
-    GENERATED_PROJECT_RULES, PYTHON_PROJECT_MARKERS, WINDOWS_CACHE_RULES,
+    GENERATED_PROJECT_RULES, PYTHON_PROJECT_MARKERS, WINDOWS_CACHE_COVERAGE_OMISSIONS,
+    WINDOWS_CACHE_RULES,
 };
 #[cfg(test)]
 pub(crate) use generated::tests::fixture as generated_fixture;

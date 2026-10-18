@@ -303,7 +303,7 @@ pub(super) mod native_registry {
     const ERROR_NO_MORE_ITEMS: i32 = 259;
     const REG_SZ: u32 = 1;
     const REG_EXPAND_SZ: u32 = 2;
-    const REG_BINARY: u32 = 3;
+    pub(in crate::software) const REG_BINARY: u32 = 3;
     const REG_DWORD: u32 = 4;
     const MAX_VALUE_BYTES: u32 = 64 * 1024;
 
@@ -480,6 +480,35 @@ pub(super) mod native_registry {
                 return Err(());
             }
             Ok(Some(bytes))
+        }
+
+        /// Reads one value without collapsing its type or trailing bytes.
+        pub(in crate::software) fn value_raw(
+            &self,
+            name: &str,
+        ) -> Result<Option<(u32, Vec<u8>)>, ()> {
+            self.value(name)
+        }
+
+        /// Writes one typed value. Tests use it to replace a Run value in place.
+        #[cfg(test)]
+        pub(in crate::software) fn set_typed(
+            &self,
+            name: &str,
+            value_type: u32,
+            bytes: &[u8],
+        ) -> Result<(), i32> {
+            let name = wide(name);
+            let len = u32::try_from(bytes.len()).map_err(|_| ERROR_MORE_DATA)?;
+            // SAFETY: `name` is NUL-terminated and `bytes` is readable for `len`.
+            let status = unsafe {
+                RegSetValueExW(self.0, name.as_ptr(), 0, value_type, bytes.as_ptr(), len)
+            };
+            if status == ERROR_SUCCESS {
+                Ok(())
+            } else {
+                Err(status)
+            }
         }
 
         /// Writes one `REG_BINARY` value on a key opened by `create_writable`.

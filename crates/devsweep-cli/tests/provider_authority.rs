@@ -8,7 +8,8 @@ use std::{
 use tempfile::TempDir;
 
 struct Fixture {
-    dir: TempDir,
+    _dir: TempDir,
+    root: PathBuf,
     bin: PathBuf,
     home: PathBuf,
     environment: Vec<(String, std::ffi::OsString)>,
@@ -16,10 +17,16 @@ struct Fixture {
 impl Fixture {
     fn new(name: &str, version: &str, script: Option<&str>) -> Self {
         let dir = TempDir::new().expect("fixture");
-        let bin = dir.path().join("tools 空格");
-        let home = dir.path().join("home");
-        let cache = dir.path().join("cache warning 空格");
-        let build_cache = dir.path().join("build cache 空格");
+        // macOS temp lives under the /var symlink. Walk the resolved directory
+        // so ancestor checks see /private/var, which is not a symlink.
+        #[cfg(unix)]
+        let root = dir.path().canonicalize().expect("canonical fixture");
+        #[cfg(not(unix))]
+        let root = dir.path().to_path_buf();
+        let bin = root.join("tools 空格");
+        let home = root.join("home");
+        let cache = root.join("cache warning 空格");
+        let build_cache = root.join("build cache 空格");
         for path in [&bin, &home, &cache, &build_cache, &cache.join("cache")] {
             fs::create_dir_all(path).expect("directory");
         }
@@ -56,7 +63,8 @@ impl Fixture {
             .expect("native fixture");
         }
         Self {
-            dir,
+            _dir: dir,
+            root,
             bin,
             home,
             environment: vec![],
@@ -86,9 +94,9 @@ impl Fixture {
             .env_remove("yarn_rc_filename")
             .env("XDG_CONFIG_HOME", self.home.join(".config"))
             .env("YARN_RC_FILENAME", "fixture-yarn.yml")
-            .env("TEMP", self.dir.path())
-            .env("TMP", self.dir.path())
-            .env("TMPDIR", self.dir.path())
+            .env("TEMP", &self.root)
+            .env("TMP", &self.root)
+            .env("TMPDIR", &self.root)
             .envs(
                 self.environment
                     .iter()
@@ -110,7 +118,7 @@ impl Fixture {
         serde_json::from_slice(&result.stdout).expect("one JSON document")
     }
     fn plan(&self, rule: &str) -> PathBuf {
-        let observation = self.dir.path().join("observation.json");
+        let observation = self.root.join("observation.json");
         let output = self.run(&["clean", "scan", "--scope", "global", "--format", "json"]);
         assert!(
             output.status.success(),
@@ -126,7 +134,7 @@ impl Fixture {
             .iter()
             .find(|target| target["rule_id"] == rule)
             .expect("provider target");
-        let plan = self.dir.path().join("plan.json");
+        let plan = self.root.join("plan.json");
         let result = self.run(&[
             "clean",
             "plan",
@@ -235,13 +243,7 @@ fn standard_native_providers_roundtrip_and_preserve_cache_sentinels() {
             fixture.bin.join("invoked.json").is_file(),
             "owner command was dispatched"
         );
-        assert!(
-            fixture
-                .dir
-                .path()
-                .join("cache warning 空格/sentinel")
-                .is_file()
-        );
+        assert!(fixture.root.join("cache warning 空格/sentinel").is_file());
     }
 }
 
@@ -280,13 +282,7 @@ fn production_preview_rejects_replaced_shim_script_node_and_configuration() {
             !fixture.bin.join("invoked.json").exists(),
             "no simulated cleanup occurred"
         );
-        assert!(
-            fixture
-                .dir
-                .path()
-                .join("cache warning 空格/sentinel")
-                .is_file()
-        );
+        assert!(fixture.root.join("cache warning 空格/sentinel").is_file());
     }
 }
 
@@ -437,7 +433,7 @@ fn yarn_classic_config_sources_bind_content_and_refuse_delegation_before_queries
             assert!(!fixture.bin.join("invoked.json").exists());
         }
         assert_eq!(
-            fs::read_to_string(fixture.dir.path().join("cache warning 空格/sentinel")).unwrap(),
+            fs::read_to_string(fixture.root.join("cache warning 空格/sentinel")).unwrap(),
             "must remain"
         );
     }

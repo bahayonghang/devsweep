@@ -4,16 +4,40 @@
 use std::{
     env, fs,
     io::{self, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
     thread,
     time::Duration,
 };
 
+fn record_optimize_double() -> bool {
+    let Ok(exe) = env::current_exe() else {
+        return false;
+    };
+    let Some(dir) = exe.parent() else {
+        return false;
+    };
+    let marker = dir.join("optimize-double.json");
+    if !marker.is_file() {
+        return false;
+    }
+    let argv = env::args().skip(1).collect::<Vec<_>>();
+    let bytes = serde_json::to_vec(&argv).expect("optimize double argv");
+    fs::write(dir.join("optimize-calls.json"), bytes).expect("optimize double calls");
+    true
+}
+
 fn main() {
+    if record_optimize_double() {
+        return;
+    }
     let mut args = env::args().skip(1).collect::<Vec<_>>().into_iter();
     let mode = args.next().unwrap_or_default();
     if provider_fixture(&mode, args.clone().collect()) {
+        return;
+    }
+    if mode == "upgrade" {
+        update_double(args.collect());
         return;
     }
     match mode.as_str() {
@@ -89,6 +113,107 @@ fn main() {
     }
 }
 
+/// Command double for software update tests. It is not the installed winget.
+fn update_double(rest: Vec<String>) {
+    let exe = env::current_exe().expect("fixture path");
+    let directory = exe.parent().expect("fixture directory");
+    let mut args = vec!["upgrade".to_string()];
+    args.extend(rest);
+    let mut calls = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(directory.join("update-calls.jsonl"))
+        .expect("update call log");
+    writeln!(
+        calls,
+        "{}",
+        serde_json::to_string(&args).expect("arguments")
+    )
+    .expect("record update call");
+    let config_path = directory.join("update-double.json");
+    let fixture: serde_json::Value =
+        serde_json::from_slice(&fs::read(&config_path).expect("update double"))
+            .expect("double JSON");
+    let network = fixture["network"].as_bool().unwrap_or(false);
+    let upgrade = args.iter().any(|arg| arg == "--id");
+    if !upgrade && network {
+        println!("network_unavailable");
+        std::process::exit(1);
+    }
+    if upgrade {
+        match fixture["upgrade_result"].as_str().unwrap_or("fail") {
+            "restart_required" => {
+                println!("restart_required");
+                std::process::exit(1);
+            }
+            "updated" => {
+                let id = args.iter().skip_while(|arg| *arg != "--id").nth(1);
+                let version = args.iter().skip_while(|arg| *arg != "--version").nth(1);
+                let mut rows = fixture["rows"].as_array().cloned().unwrap_or_default();
+                if let (Some(id), Some(version)) = (id, version) {
+                    for row in &mut rows {
+                        if row["id"].as_str() == Some(id) {
+                            row["installed"] = serde_json::Value::String(version.clone());
+                        }
+                    }
+                }
+                rows.retain(|row| row["installed"] != row["available"]);
+                let mut next = fixture;
+                next["rows"] = serde_json::Value::Array(rows);
+                fs::write(&config_path, serde_json::to_vec(&next).expect("double"))
+                    .expect("rewrite double");
+                println!("No available upgrade found.");
+                return;
+            }
+            _ => {
+                println!("upgrade_failed");
+                std::process::exit(1);
+            }
+        }
+    }
+    let rows = fixture["rows"].as_array().cloned().unwrap_or_default();
+    if rows.is_empty() {
+        println!("No available upgrade found.");
+        return;
+    }
+    let header = "Name                                           Id                         Version                      Available  Source";
+    println!("{header}");
+    println!("{}", "-".repeat(header.len()));
+    let starts = column_starts(header);
+    for row in rows {
+        let fields = [
+            row["name"].as_str().unwrap_or(""),
+            row["id"].as_str().unwrap_or(""),
+            row["installed"].as_str().unwrap_or(""),
+            row["available"].as_str().unwrap_or(""),
+            row["source"].as_str().unwrap_or(""),
+        ];
+        let mut line = vec![' '; header.chars().count()];
+        for (index, field) in fields.iter().enumerate() {
+            for (offset, character) in field.chars().enumerate() {
+                let slot = starts[index] + offset;
+                if slot < line.len() {
+                    line[slot] = character;
+                }
+            }
+        }
+        println!("{}", line.into_iter().collect::<String>());
+    }
+}
+
+fn column_starts(header: &str) -> Vec<usize> {
+    let mut starts = Vec::new();
+    let mut previous_space = true;
+    for (offset, character) in header.chars().enumerate() {
+        let space = character == ' ';
+        if !space && previous_space {
+            starts.push(offset);
+        }
+        previous_space = space;
+    }
+    starts
+}
+
 /// Disposable native provider simulation. The fixture never removes cache files.
 fn provider_fixture(first: &str, rest: Vec<String>) -> bool {
     let exe = env::current_exe().expect("fixture path");
@@ -124,6 +249,9 @@ fn provider_fixture(first: &str, rest: Vec<String>) -> bool {
         serde_json::to_string(&args).expect("arguments")
     )
     .expect("record provider call");
+    if record_disposable_provider_launch(&args, exe.parent().expect("fixture directory")) {
+        return true;
+    }
     let refs: Vec<_> = args.iter().map(String::as_str).collect();
     match refs.as_slice() {
         ["--version"] | ["version"] | ["-m", "pip", "--version"] => {
@@ -157,5 +285,37 @@ fn provider_fixture(first: &str, rest: Vec<String>) -> bool {
             std::process::exit(2);
         }
     }
+    true
+}
+
+/// MSI `/x {code} /qn /norestart`, vendor `/S`, and Scoop `uninstall <app>`.
+/// Success writes one marker under the launch root. It never deletes files.
+fn record_disposable_provider_launch(args: &[String], beside_exe: &Path) -> bool {
+    let refs: Vec<&str> = args.iter().map(String::as_str).collect();
+    let matched = match refs.as_slice() {
+        ["/x", product, "/qn", "/norestart"] => {
+            product.len() == 38 && product.starts_with('{') && product.ends_with('}')
+        }
+        ["/S"] => true,
+        ["uninstall", app] => {
+            !app.is_empty()
+                && app
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+        }
+        _ => false,
+    };
+    if !matched {
+        return false;
+    }
+    let directory = env::current_dir()
+        .ok()
+        .filter(|cwd| beside_exe.starts_with(cwd) || cwd.starts_with(beside_exe))
+        .unwrap_or_else(|| beside_exe.to_path_buf());
+    fs::write(
+        directory.join("provider-launch.marker"),
+        serde_json::to_vec(args).expect("marker argv"),
+    )
+    .expect("write disposable provider marker");
     true
 }

@@ -14,8 +14,9 @@ use std::{
 use super::AnalyzeSnapshotV1;
 use super::{
     ANALYZE_WORKERS, AnalyzeCompleteness, AnalyzeEvidence, AnalyzeNodeKind, AnalyzeProgressV1,
-    AnalyzeWarningClass, Fake250k, MAX_OWNED_BYTES, MAX_STORED_NODES, MapFs, analyze_path,
-    analyze_with_fs_and_stats, dir_entry, file_entry, reparse_entry, walker::analyze_with_fs,
+    AnalyzeWarningClass, Fake250k, MAX_LOGICAL_DEPTH, MAX_OWNED_BYTES, MAX_STORED_NODES, MapFs,
+    analyze_path, analyze_with_fs_and_stats, dir_entry, file_entry, reparse_entry,
+    walker::analyze_with_fs,
 };
 
 fn map_tree() -> (PathBuf, MapFs) {
@@ -187,6 +188,71 @@ fn serial_fallback_matches_two_worker_totals() {
 }
 
 #[test]
+fn deep_chain_stops_at_the_logical_depth_cap_without_reading_past_it() {
+    let mut fs = MapFs {
+        volume: "vol".to_string(),
+        ..MapFs::default()
+    };
+    let mut path = PathBuf::from("deep-root");
+    fs.meta.insert(path.clone(), Ok(dir_entry("dir:root")));
+    for index in 0..MAX_LOGICAL_DEPTH {
+        let child = path.join("d");
+        fs.meta
+            .insert(child.clone(), Ok(dir_entry(&format!("dir:{index}"))));
+        fs.dirs
+            .insert(path.clone(), Ok(vec![super::walker::DirChild::named("d")]));
+        path = child;
+    }
+    fs.dirs.insert(
+        path.clone(),
+        Ok(vec![super::walker::DirChild::named("past")]),
+    );
+    fs.meta
+        .insert(path.join("past"), Ok(file_entry(9, "file:past")));
+    let (outcome, _) =
+        analyze_with_fs_and_stats(&PathBuf::from("deep-root"), &fs, None, None, true)
+            .expect("deep analyze");
+    let snapshot = outcome.snapshot();
+    assert!(snapshot.nodes.len() as u32 <= MAX_STORED_NODES);
+    assert!(snapshot.accounted_owned_bytes <= MAX_OWNED_BYTES);
+    assert!(!snapshot.nodes.iter().any(|node| node.name == "past"));
+    assert_eq!(
+        snapshot.root_node().map(|node| node.evidence),
+        Some(AnalyzeEvidence::Incomplete)
+    );
+    assert_eq!(snapshot.root_node().map(|node| node.bytes), Some(0));
+}
+
+#[test]
+fn unicode_hardlink_temp_tree_counts_shared_bytes_once() {
+    let fixture = tempfile::TempDir::new().expect("temp");
+    let root = fixture.path().join("很长的名字分析目录");
+    std::fs::create_dir_all(&root).expect("unicode root");
+    let original = root.join("文件.bin");
+    std::fs::write(&original, [1, 2, 3, 4]).expect("unicode file");
+    std::fs::hard_link(&original, root.join("链接.bin")).expect("hard link");
+    let outcome = analyze_path(&root, None, None).expect("analyze unicode tree");
+    let snapshot = outcome.snapshot();
+    assert!(snapshot.nodes.iter().any(|node| node.name == "文件.bin"));
+    assert!(snapshot.nodes.iter().any(|node| node.name == "链接.bin"));
+    assert_eq!(snapshot.root_node().map(|node| node.bytes), Some(4));
+    assert_eq!(
+        snapshot
+            .warnings
+            .iter()
+            .filter(|warning| warning.class == AnalyzeWarningClass::DuplicateLink)
+            .count(),
+        1
+    );
+    assert!(snapshot.accounted_owned_bytes <= MAX_OWNED_BYTES);
+    assert!(
+        !serde_json::to_string(snapshot)
+            .expect("json")
+            .contains("CleanupPlan")
+    );
+}
+
+#[test]
 fn cancel_joins_and_marks_canceled() {
     let fs = Fake250k::analysis_250k_v1();
     let cancel = FlagCancelObserver::new();
@@ -321,6 +387,95 @@ fn source_has_no_cleanup_plan_conversion() {
 #[cfg(windows)]
 fn create_dir_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
     std::os::windows::fs::symlink_dir(target, link)
+}
+
+#[cfg(windows)]
+fn create_dir_junction(target: &Path, link: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::{
+        Foundation::{CloseHandle, GENERIC_WRITE, INVALID_HANDLE_VALUE},
+        Storage::FileSystem::{
+            CreateFileW, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+            FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING,
+        },
+        System::{IO::DeviceIoControl, Ioctl::FSCTL_SET_REPARSE_POINT},
+    };
+
+    const IO_REPARSE_TAG_MOUNT_POINT: u32 = 0xA000_0003;
+
+    let canonical = target.canonicalize()?;
+    let raw = canonical.to_string_lossy();
+    let dos = raw
+        .strip_prefix(r"\\?\UNC\")
+        .map(|rest| format!(r"\\{rest}"))
+        .or_else(|| raw.strip_prefix(r"\\?\").map(str::to_string))
+        .unwrap_or_else(|| raw.into_owned());
+    std::fs::create_dir(link)?;
+    let substitute = format!(r"\??\{dos}");
+    let print_name = dos;
+    let mut substitute: Vec<u16> = std::ffi::OsStr::new(&substitute).encode_wide().collect();
+    let mut print: Vec<u16> = std::ffi::OsStr::new(&print_name).encode_wide().collect();
+    substitute.push(0);
+    print.push(0);
+    let substitute_bytes = u16::try_from((substitute.len() - 1) * 2).unwrap();
+    let print_bytes = u16::try_from((print.len() - 1) * 2).unwrap();
+    let path_units = substitute.len() + print.len();
+    let reparse_data_length = u16::try_from(8 + path_units * 2).unwrap();
+    let mut buffer = Vec::with_capacity(8 + usize::from(reparse_data_length));
+    buffer.extend_from_slice(&IO_REPARSE_TAG_MOUNT_POINT.to_le_bytes());
+    buffer.extend_from_slice(&reparse_data_length.to_le_bytes());
+    buffer.extend_from_slice(&0u16.to_le_bytes());
+    buffer.extend_from_slice(&0u16.to_le_bytes());
+    buffer.extend_from_slice(&substitute_bytes.to_le_bytes());
+    buffer.extend_from_slice(&u16::try_from(substitute.len() * 2).unwrap().to_le_bytes());
+    buffer.extend_from_slice(&print_bytes.to_le_bytes());
+    for unit in substitute.into_iter().chain(print) {
+        buffer.extend_from_slice(&unit.to_le_bytes());
+    }
+    let wide: Vec<u16> = link
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let handle = unsafe {
+        CreateFileW(
+            wide.as_ptr(),
+            GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            std::ptr::null_mut(),
+        )
+    };
+    if handle == INVALID_HANDLE_VALUE {
+        return Err(std::io::Error::last_os_error());
+    }
+    let mut returned = 0u32;
+    let ok = unsafe {
+        DeviceIoControl(
+            handle,
+            FSCTL_SET_REPARSE_POINT,
+            buffer.as_ptr().cast(),
+            u32::try_from(buffer.len()).unwrap(),
+            std::ptr::null_mut(),
+            0,
+            &mut returned,
+            std::ptr::null_mut(),
+        )
+    };
+    let error = if ok == 0 {
+        Some(std::io::Error::last_os_error())
+    } else {
+        None
+    };
+    unsafe {
+        CloseHandle(handle);
+    }
+    if let Some(error) = error {
+        return Err(error);
+    }
+    Ok(())
 }
 
 #[cfg(unix)]
@@ -564,6 +719,41 @@ fn native_reparse_is_a_leaf() {
             .nodes
             .iter()
             .any(|node| node.name == "big.bin" && node.parent_id == Some(reparse.id))
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn native_junction_cycle_is_a_reparse_leaf() {
+    let fixture = tempfile::TempDir::new().expect("temp");
+    let root = fixture.path().join("junction-cycle-root");
+    std::fs::create_dir_all(&root).expect("root");
+    std::fs::write(root.join("ancestor.bin"), b"do-not-follow").expect("ancestor file");
+    let link = root.join("cycle");
+    create_dir_junction(&root, &link).unwrap_or_else(|error| {
+        panic!("junction {} -> {}: {error}", link.display(), root.display())
+    });
+
+    let outcome = analyze_path(&root, None, None).expect("analyze returns");
+    let snapshot = outcome.snapshot();
+    let reparse = snapshot
+        .nodes
+        .iter()
+        .find(|node| node.name == "cycle")
+        .expect("junction node");
+    assert_eq!(reparse.kind, AnalyzeNodeKind::Reparse);
+    assert_eq!(reparse.immediate_count, 0);
+    assert!(
+        !snapshot
+            .nodes
+            .iter()
+            .any(|node| node.name == "ancestor.bin" && node.parent_id == Some(reparse.id)),
+        "ancestor file must not be recorded as a child of the junction"
+    );
+    assert!(
+        snapshot.nodes.len() <= 8,
+        "junction cycle must stay a small snapshot, got {}",
+        snapshot.nodes.len()
     );
 }
 

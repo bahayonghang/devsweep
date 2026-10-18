@@ -504,13 +504,23 @@ impl SoftwareAuditJournal {
     }
 
     /// True when `operation_id` reached `removed` or `reboot_required` for
-    /// exactly `identity`.
+    /// exactly `identity`. Leftover execution uses [`Self::uninstall_removed`].
+    #[allow(dead_code)]
     pub(in crate::software) fn uninstall_succeeded(
         &self,
         operation_id: &str,
         identity: &SoftwareIdentity,
     ) -> bool {
         uninstall_succeeded(&self.states, operation_id, identity)
+    }
+
+    /// True when `operation_id` reached exactly `removed` for `identity`.
+    pub(in crate::software) fn uninstall_removed(
+        &self,
+        operation_id: &str,
+        identity: &SoftwareIdentity,
+    ) -> bool {
+        uninstall_removed(&self.states, operation_id, identity)
     }
 
     fn write_line(&mut self, mut line: Vec<u8>) -> Result<(), SoftwareAuditError> {
@@ -586,6 +596,7 @@ fn parse_journal(path: &Path, bytes: &[u8]) -> Result<ParsedJournal, SoftwareAud
     Ok((records, states, support_operation_ids))
 }
 
+#[allow(dead_code)]
 fn uninstall_succeeded(
     states: &BTreeMap<String, OperationState>,
     operation_id: &str,
@@ -596,6 +607,22 @@ fn uninstall_succeeded(
             && matches!(
                 state.last_transition,
                 SoftwareAuditTransition::Terminal { outcome } if outcome.is_success()
+            )
+    })
+}
+
+fn uninstall_removed(
+    states: &BTreeMap<String, OperationState>,
+    operation_id: &str,
+    identity: &SoftwareIdentity,
+) -> bool {
+    states.get(operation_id).is_some_and(|state| {
+        &state.identity == identity
+            && matches!(
+                state.last_transition,
+                SoftwareAuditTransition::Terminal {
+                    outcome: SoftwareExecutionOutcome::Removed
+                }
             )
     })
 }
@@ -656,8 +683,8 @@ fn validate_support_record(
             if candidate_id.is_empty() || !consistent {
                 return Err(invalid("leftover record is inconsistent"));
             }
-            if !uninstall_succeeded(states, uninstall_operation_id, identity) {
-                return Err(invalid("leftover record has no succeeded uninstall"));
+            if !uninstall_removed(states, uninstall_operation_id, identity) {
+                return Err(invalid("leftover record has no removed uninstall"));
             }
         }
     }
@@ -677,16 +704,10 @@ fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditEr
             detail: "record shape is not Software V1",
         });
     }
-    let SoftwareIdentity::Msix { package_full_name } = &record.identity else {
+    if !valid_execution_identity(&record.identity) {
         return Err(SoftwareAuditError::InvalidTransition {
             operation_id: record.operation_id.clone(),
-            detail: "record identity is not current-user MSIX",
-        });
-    };
-    if !super::plan::valid_package_full_name(package_full_name) {
-        return Err(SoftwareAuditError::InvalidTransition {
-            operation_id: record.operation_id.clone(),
-            detail: "record package identity is malformed",
+            detail: "record identity is not an executable software identity",
         });
     }
     let transition_shape_valid = match record.transition {
@@ -802,6 +823,18 @@ fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditEr
         });
     }
     Ok(())
+}
+
+fn valid_execution_identity(identity: &SoftwareIdentity) -> bool {
+    match identity {
+        SoftwareIdentity::Msix { package_full_name } => {
+            super::plan::valid_package_full_name(package_full_name)
+        }
+        SoftwareIdentity::Msi { product_code, .. } => {
+            super::launch::valid_product_code(product_code)
+        }
+        SoftwareIdentity::Arp { subkey, .. } => super::launch::valid_app_id(subkey),
+    }
 }
 
 fn is_sha256(value: &str) -> bool {
@@ -939,6 +972,19 @@ struct SidecarLock {
     _file: File,
 }
 
+#[cfg(unix)]
+impl Drop for SidecarLock {
+    fn drop(&mut self) {
+        use std::os::fd::AsRawFd;
+
+        // A forked child can retain this open file description until exec.
+        // Release the lock explicitly instead of waiting for the last descriptor
+        // to close.
+        // SAFETY: the guard still owns a valid descriptor for its acquired lock.
+        unsafe { libc::flock(self._file.as_raw_fd(), libc::LOCK_UN) };
+    }
+}
+
 impl SidecarLock {
     fn acquire(path: &Path) -> Result<Self, SoftwareAuditError> {
         #[cfg(windows)]
@@ -993,6 +1039,458 @@ impl SidecarLock {
                 .map_err(|error| SoftwareAuditError::LockUnavailable(path.to_path_buf()))?;
             Ok(Self { _file: file })
         }
+    }
+}
+
+pub(in crate::software) const SOFTWARE_SUPPORT_LIFECYCLE_VERSION: u32 = 1;
+const SOFTWARE_SUPPORT_DOMAIN: &str = "software_support";
+
+/// Strict startup and leftover operations. These records never enter
+/// `software.jsonl`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(in crate::software) enum SoftwareSupportOperation {
+    StartupToggle,
+    LeftoverMove,
+}
+
+/// Terminal result of one strict support operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(in crate::software) enum SoftwareSupportTerminalResult {
+    Succeeded,
+    Failed,
+    Unknown,
+    Refused,
+}
+
+/// One strict support lifecycle record. It stores operation, plan, and preview
+/// identity only: no path, registry bytes, or command line.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "phase", rename_all = "snake_case", deny_unknown_fields)]
+pub(in crate::software) enum SoftwareSupportLifecycleRecordV1 {
+    Started {
+        schema_version: u32,
+        domain: String,
+        operation: SoftwareSupportOperation,
+        operation_id: String,
+        timestamp_unix_ms: u64,
+        plan_identity: String,
+        preview_digest: String,
+    },
+    Terminal {
+        schema_version: u32,
+        domain: String,
+        operation: SoftwareSupportOperation,
+        operation_id: String,
+        timestamp_unix_ms: u64,
+        plan_identity: String,
+        preview_digest: String,
+        result: SoftwareSupportTerminalResult,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        error_code: Option<String>,
+    },
+}
+
+impl SoftwareSupportLifecycleRecordV1 {
+    pub(in crate::software) fn started(
+        operation: SoftwareSupportOperation,
+        operation_id: &str,
+        timestamp_unix_ms: u64,
+        plan_identity: &str,
+        preview_digest: &str,
+    ) -> Self {
+        Self::Started {
+            schema_version: SOFTWARE_SUPPORT_LIFECYCLE_VERSION,
+            domain: SOFTWARE_SUPPORT_DOMAIN.to_string(),
+            operation,
+            operation_id: operation_id.to_string(),
+            timestamp_unix_ms,
+            plan_identity: plan_identity.to_string(),
+            preview_digest: preview_digest.to_string(),
+        }
+    }
+
+    pub(in crate::software) fn terminal(
+        operation: SoftwareSupportOperation,
+        operation_id: &str,
+        timestamp_unix_ms: u64,
+        plan_identity: &str,
+        preview_digest: &str,
+        result: SoftwareSupportTerminalResult,
+        error_code: Option<&str>,
+    ) -> Self {
+        Self::Terminal {
+            schema_version: SOFTWARE_SUPPORT_LIFECYCLE_VERSION,
+            domain: SOFTWARE_SUPPORT_DOMAIN.to_string(),
+            operation,
+            operation_id: operation_id.to_string(),
+            timestamp_unix_ms,
+            plan_identity: plan_identity.to_string(),
+            preview_digest: preview_digest.to_string(),
+            result,
+            error_code: error_code.map(str::to_string),
+        }
+    }
+
+    fn operation_id(&self) -> &str {
+        match self {
+            Self::Started { operation_id, .. } | Self::Terminal { operation_id, .. } => {
+                operation_id
+            }
+        }
+    }
+}
+
+/// Read-only view of a Software V1 journal. It does not create the directory,
+/// the lock, or the append file.
+pub(in crate::software) struct SoftwareAuditInspection {
+    states: BTreeMap<String, OperationState>,
+}
+
+impl SoftwareAuditInspection {
+    pub(in crate::software) fn read(path: &Path) -> Result<Self, SoftwareAuditError> {
+        if path.as_os_str().is_empty() {
+            return Err(SoftwareAuditError::InvalidPath(path.to_path_buf()));
+        }
+        let exists = path
+            .try_exists()
+            .map_err(|error| io_error("probe", path, error))?;
+        if !exists {
+            return Ok(Self {
+                states: BTreeMap::new(),
+            });
+        }
+        let bytes = fs::read(path).map_err(|error| io_error("read", path, error))?;
+        let (_, states, _) = parse_journal(path, &bytes)?;
+        Ok(Self { states })
+    }
+
+    #[allow(dead_code)]
+    pub(in crate::software) fn uninstall_succeeded(
+        &self,
+        operation_id: &str,
+        identity: &SoftwareIdentity,
+    ) -> bool {
+        uninstall_succeeded(&self.states, operation_id, identity)
+    }
+
+    pub(in crate::software) fn uninstall_removed(
+        &self,
+        operation_id: &str,
+        identity: &SoftwareIdentity,
+    ) -> bool {
+        uninstall_removed(&self.states, operation_id, identity)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct SupportState {
+    operation: SoftwareSupportOperation,
+    plan_identity: String,
+    preview_digest: String,
+    finished: bool,
+}
+
+/// Test-only injected append failures. Production passes [`SupportAppendFault::NONE`].
+#[derive(Debug, Clone, Copy, Default)]
+pub(in crate::software) struct SupportAppendFault {
+    pub fail_started: bool,
+    pub fail_terminal: bool,
+}
+
+impl SupportAppendFault {
+    pub(in crate::software) const NONE: Self = Self {
+        fail_started: false,
+        fail_terminal: false,
+    };
+}
+
+/// Holds `software.lock` and appends strict lifecycle records to
+/// `software-support.jsonl`.
+pub(in crate::software) struct SoftwareSupportJournal {
+    v1: SoftwareAuditJournal,
+    support_path: PathBuf,
+    support_file: File,
+    states: BTreeMap<String, SupportState>,
+}
+
+impl SoftwareSupportJournal {
+    pub(in crate::software) fn open(v1_path: &Path) -> Result<Self, SoftwareAuditError> {
+        let v1 = SoftwareAuditJournal::open(v1_path)?;
+        let support_path = v1_path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .map(|parent| parent.join("software-support.jsonl"))
+            .ok_or_else(|| SoftwareAuditError::InvalidPath(v1_path.to_path_buf()))?;
+        let bytes = if support_path
+            .try_exists()
+            .map_err(|error| io_error("probe", &support_path, error))?
+        {
+            fs::read(&support_path).map_err(|error| io_error("read", &support_path, error))?
+        } else {
+            Vec::new()
+        };
+        let states = parse_support_journal(&support_path, &bytes)?;
+        let support_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .read(true)
+            .open(&support_path)
+            .map_err(|error| io_error("open", &support_path, error))?;
+        Ok(Self {
+            v1,
+            support_path,
+            support_file,
+            states,
+        })
+    }
+
+    #[allow(dead_code)]
+    pub(in crate::software) fn uninstall_succeeded(
+        &self,
+        operation_id: &str,
+        identity: &SoftwareIdentity,
+    ) -> bool {
+        self.v1.uninstall_succeeded(operation_id, identity)
+    }
+
+    pub(in crate::software) fn uninstall_removed(
+        &self,
+        operation_id: &str,
+        identity: &SoftwareIdentity,
+    ) -> bool {
+        self.v1.uninstall_removed(operation_id, identity)
+    }
+
+    pub(in crate::software) fn append_lifecycle(
+        &mut self,
+        record: SoftwareSupportLifecycleRecordV1,
+        fault: SupportAppendFault,
+    ) -> Result<(), SoftwareAuditError> {
+        validate_support_lifecycle(&self.states, &record)?;
+        let fail = match &record {
+            SoftwareSupportLifecycleRecordV1::Started { .. } => fault.fail_started,
+            SoftwareSupportLifecycleRecordV1::Terminal { .. } => fault.fail_terminal,
+        };
+        if fail {
+            return Err(io_error(
+                "append",
+                &self.support_path,
+                io::Error::other("injected support append failure"),
+            ));
+        }
+        let mut next = self.states.clone();
+        apply_support_lifecycle(&mut next, &record)?;
+        let line = serde_json::to_vec(&record)
+            .map_err(|_| SoftwareAuditError::Corrupt(self.support_path.clone()))?;
+        self.write_support_line(line)?;
+        self.states = next;
+        Ok(())
+    }
+
+    fn write_support_line(&mut self, mut line: Vec<u8>) -> Result<(), SoftwareAuditError> {
+        line.push(b'\n');
+        self.support_file
+            .write_all(&line)
+            .map_err(|error| io_error("append", &self.support_path, error))?;
+        self.support_file
+            .flush()
+            .map_err(|error| io_error("flush", &self.support_path, error))?;
+        self.support_file
+            .sync_all()
+            .map_err(|error| io_error("sync", &self.support_path, error))?;
+        Ok(())
+    }
+}
+
+fn parse_support_journal(
+    path: &Path,
+    bytes: &[u8],
+) -> Result<BTreeMap<String, SupportState>, SoftwareAuditError> {
+    if bytes.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let text =
+        std::str::from_utf8(bytes).map_err(|_| SoftwareAuditError::Corrupt(path.to_path_buf()))?;
+    if !text.ends_with('\n') {
+        return Err(SoftwareAuditError::Corrupt(path.to_path_buf()));
+    }
+    let mut states = BTreeMap::new();
+    for line in text.lines() {
+        let record: SoftwareSupportLifecycleRecordV1 = serde_json::from_str(line)
+            .map_err(|_| SoftwareAuditError::Corrupt(path.to_path_buf()))?;
+        apply_support_lifecycle(&mut states, &record)?;
+    }
+    Ok(states)
+}
+
+fn apply_support_lifecycle(
+    states: &mut BTreeMap<String, SupportState>,
+    record: &SoftwareSupportLifecycleRecordV1,
+) -> Result<(), SoftwareAuditError> {
+    validate_support_lifecycle(states, record)?;
+    match record {
+        SoftwareSupportLifecycleRecordV1::Started {
+            operation,
+            operation_id,
+            plan_identity,
+            preview_digest,
+            ..
+        } => {
+            states.insert(
+                operation_id.clone(),
+                SupportState {
+                    operation: *operation,
+                    plan_identity: plan_identity.clone(),
+                    preview_digest: preview_digest.clone(),
+                    finished: false,
+                },
+            );
+        }
+        SoftwareSupportLifecycleRecordV1::Terminal { operation_id, .. } => {
+            let state = states
+                .get_mut(operation_id)
+                .expect("validate_support_lifecycle accepts only a known start");
+            state.finished = true;
+        }
+    }
+    Ok(())
+}
+
+fn validate_support_lifecycle(
+    states: &BTreeMap<String, SupportState>,
+    record: &SoftwareSupportLifecycleRecordV1,
+) -> Result<(), SoftwareAuditError> {
+    let invalid = |detail| SoftwareAuditError::InvalidTransition {
+        operation_id: record.operation_id().to_string(),
+        detail,
+    };
+    let (schema_version, domain, operation_id, plan_identity, preview_digest) = match record {
+        SoftwareSupportLifecycleRecordV1::Started {
+            schema_version,
+            domain,
+            operation_id,
+            plan_identity,
+            preview_digest,
+            ..
+        }
+        | SoftwareSupportLifecycleRecordV1::Terminal {
+            schema_version,
+            domain,
+            operation_id,
+            plan_identity,
+            preview_digest,
+            ..
+        } => (
+            *schema_version,
+            domain.as_str(),
+            operation_id.as_str(),
+            plan_identity.as_str(),
+            preview_digest.as_str(),
+        ),
+    };
+    if schema_version != SOFTWARE_SUPPORT_LIFECYCLE_VERSION
+        || domain != SOFTWARE_SUPPORT_DOMAIN
+        || !valid_support_id(operation_id)
+        || !is_sha256_digest(plan_identity)
+        || !is_sha256_digest(preview_digest)
+    {
+        return Err(invalid("support lifecycle shape is not V1"));
+    }
+    match record {
+        SoftwareSupportLifecycleRecordV1::Started { .. } => {
+            if states.contains_key(operation_id) {
+                return Err(invalid("support operation already started"));
+            }
+        }
+        SoftwareSupportLifecycleRecordV1::Terminal {
+            operation: terminal_operation,
+            plan_identity,
+            preview_digest,
+            error_code,
+            ..
+        } => {
+            let Some(state) = states.get(operation_id) else {
+                return Err(invalid("support terminal has no start"));
+            };
+            if state.finished
+                || state.operation != *terminal_operation
+                || state.plan_identity != *plan_identity
+                || state.preview_digest != *preview_digest
+            {
+                return Err(invalid("support terminal does not match its start"));
+            }
+            if let Some(code) = error_code.as_deref()
+                && !valid_support_code(code)
+            {
+                return Err(invalid("support error code is not a stable token"));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn valid_support_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 160
+        && value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || character == '-' || character == '_'
+        })
+}
+
+fn valid_support_code(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value.chars().all(|character| {
+            character.is_ascii_lowercase() || character.is_ascii_digit() || character == '_'
+        })
+}
+
+pub(in crate::software) fn is_sha256_digest(value: &str) -> bool {
+    let Some(hex) = value.strip_prefix("sha256:") else {
+        return false;
+    };
+    hex.len() == 64
+        && hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+pub(in crate::software) fn is_sha256_hex(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+#[cfg(all(test, unix))]
+mod lock_tests {
+    use super::{SidecarLock, SoftwareAuditError};
+
+    #[test]
+    fn owner_drop_unlocks_while_an_inherited_description_remains_open() {
+        let directory = tempfile::TempDir::new().expect("isolated lock directory");
+        let path = directory.path().join("software.lock");
+        let owner = SidecarLock::acquire(&path).expect("first lock owner");
+        // dup shares the open file description, just like fork inheritance,
+        // without a timing-dependent child or unsafe post-fork test code.
+        let inherited = owner._file.try_clone().expect("retained description");
+        assert!(matches!(
+            SidecarLock::acquire(&path),
+            Err(SoftwareAuditError::LockUnavailable(_))
+        ));
+
+        drop(owner);
+        let replacement = SidecarLock::acquire(&path)
+            .expect("owner release unlocks even while the duplicate is alive");
+        drop(inherited);
+        assert!(matches!(
+            SidecarLock::acquire(&path),
+            Err(SoftwareAuditError::LockUnavailable(_))
+        ));
+        drop(replacement);
+        SidecarLock::acquire(&path).expect("replacement owner releases its lock");
     }
 }
 

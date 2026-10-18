@@ -42,6 +42,7 @@ fn plan(operation_id: &str) -> MaintenancePlanV1 {
         version: OPTIMIZE_PLAN_VERSION,
         catalogue_version: OPTIMIZE_CATALOGUE_VERSION,
         operation_id: operation_id.to_string(),
+        action_class: None,
     })
 }
 
@@ -542,6 +543,7 @@ mod authorizer {
             version: OPTIMIZE_PLAN_VERSION,
             catalogue_version: OPTIMIZE_CATALOGUE_VERSION,
             operation_id: "no.such.id".to_string(),
+            action_class: None,
         };
         assert_eq!(
             preview_maintenance_plan(&unknown, &FakePreflight::dns("C:/x/ipconfig.exe")),
@@ -1065,8 +1067,9 @@ mod execution {
         let temp = TempDir::new().unwrap();
         let stale = MaintenancePlanV1 {
             version: OPTIMIZE_PLAN_VERSION,
-            catalogue_version: OPTIMIZE_CATALOGUE_VERSION + 1,
+            catalogue_version: 99,
             operation_id: DNS_FLUSH_ID.to_string(),
+            action_class: None,
         };
         let dispatch = Arc::new(FakeDispatch::success());
         let (executor, audit_path) = executor(

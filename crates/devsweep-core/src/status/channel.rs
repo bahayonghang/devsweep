@@ -179,6 +179,56 @@ mod tests {
     }
 
     #[test]
+    fn slow_ndjson_reader_disconnect_cancellation_and_full_queue_join_keep_sequence_and_terminal() {
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let (tx, rx) = channel(cancel.clone());
+        for sequence in 0..CAPACITY as u64 {
+            tx.send(record(sequence)).unwrap();
+        }
+        assert_eq!(rx.0.state.lock().unwrap().records.len(), CAPACITY);
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let join = std::thread::spawn(move || {
+            tx.send(record(CAPACITY as u64)).unwrap();
+            tx.send(StatusEventV1::Terminal {
+                schema_version: 1,
+                operation_id: "bounded-test".into(),
+                sequence: CAPACITY as u64 + 1,
+                emitted_at_unix_ms: 1,
+                data: StatusTerminalV1 {
+                    reason: TerminalReason::Canceled,
+                    error_code: None,
+                },
+            })
+            .unwrap();
+            done_tx.send(()).unwrap();
+        });
+        assert!(done_rx.recv_timeout(Duration::from_millis(30)).is_err());
+        cancel.request_cancel();
+        done_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        join.join().unwrap();
+        for sequence in 0..(CAPACITY + 2) as u64 {
+            let event = rx.recv_timeout(Duration::ZERO).unwrap();
+            assert_eq!(event.sequence(), sequence);
+            assert_eq!(event.is_terminal(), sequence == CAPACITY as u64 + 1);
+        }
+        drop(rx);
+        let (tx, rx) = channel(Arc::new(FlagCancelObserver::new()));
+        for sequence in 0..CAPACITY as u64 {
+            tx.send(record(sequence)).unwrap();
+        }
+        let (closed_tx, closed_rx) = std::sync::mpsc::channel();
+        let blocked = std::thread::spawn(move || {
+            closed_tx.send(tx.send(record(CAPACITY as u64))).unwrap();
+        });
+        drop(rx);
+        assert_eq!(
+            closed_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            Err(StatusError::ChannelClosed)
+        );
+        blocked.join().unwrap();
+    }
+
+    #[test]
     fn closing_stalled_receiver_unblocks_pending_send() {
         let (tx, rx) = channel(Arc::new(FlagCancelObserver::new()));
         for sequence in 0..CAPACITY as u64 {

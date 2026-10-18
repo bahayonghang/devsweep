@@ -9,9 +9,12 @@ use serde::{Deserialize, Serialize};
 use crate::process::{CancelObserver, FlagCancelObserver};
 
 mod channel;
+mod health;
+mod keep_awake;
 mod network;
 mod pdh;
 mod process;
+mod process_action;
 mod sampler;
 mod system;
 
@@ -19,6 +22,19 @@ mod system;
 mod tests;
 
 pub use channel::StatusEventReceiver;
+pub use health::{HealthEvidenceV1, HealthExplanationV1, STALE_SAMPLE_AGE_MS, explain_health};
+pub use keep_awake::{
+    AwakeBackend, BackendCall, FakeClock, KeepAwakeClock, KeepAwakeError, KeepAwakeOwner,
+    KeepAwakeService, KeepAwakeStatusV1, MAX_KEEP_AWAKE_MS, NoopBackend, RecordingBackend,
+    SystemClock,
+};
+pub use process_action::{
+    HostProcessControl, ObservedProcess, PROCESS_TERMINATION_DATA_LOSS_TEXT,
+    PROCESS_TERMINATION_PLAN_VERSION, ProcessActionError, ProcessKiller, ProcessProbe,
+    ProcessTerminationPlanV1, ProcessTerminationPreviewV1, ProcessTerminationReportV1,
+    ProtectedClass, bind_process_termination_plan, preview_bound_process, protected_process_names,
+    terminate_bound_process,
+};
 pub use sampler::{LiveControl, StatusError, StatusSampler, spawn_live};
 pub use system::{cpu_utilization_basis_points, memory_from_physical};
 

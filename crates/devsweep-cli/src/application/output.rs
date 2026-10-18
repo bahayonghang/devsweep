@@ -68,6 +68,181 @@ impl ApplicationError {
     }
 }
 
+pub(super) fn from_domain_code(code: &'static str, message: impl Into<String>) -> ApplicationError {
+    let exit = match code {
+        "confirmation_required"
+        | "unsupported_plan_version"
+        | "unsupported_snapshot_version"
+        | "invalid_plan"
+        | "invalid_snapshot"
+        | "empty_selection"
+        | "duplicate_selection"
+        | "duplicate_node_id"
+        | "snapshot_limit_exceeded"
+        | "snapshot_root_mismatch"
+        | "path_outside_root"
+        | "incomplete_observation" => ExitClass::Usage,
+        "unknown_entry"
+        | "unknown_selection"
+        | "stale_confirmation"
+        | "startup_entry_changed"
+        | "startup_state_changed"
+        | "changed_since_snapshot"
+        | "candidate_changed"
+        | "digest_mismatch"
+        | "stale_candidate"
+        | "invalid_identity"
+        | "uninstall_not_succeeded"
+        | "ambiguous_package"
+        | "version_changed"
+        | "provider_changed"
+        | "package_not_found"
+        | "residue_changed" => ExitClass::InvalidAuthority,
+        "requires_administrator"
+        | "unsupported_platform"
+        | "startup_source_unavailable"
+        | "startup_identity_unavailable"
+        | "identity_unavailable"
+        | "audit_unavailable"
+        | "protection_unavailable"
+        | "reveal_unavailable"
+        | "unsupported_source"
+        | "network_unavailable"
+        | "protected" => ExitClass::Unavailable,
+        "canceled" => ExitClass::CanceledBeforeDispatch,
+        _ => ExitClass::Failed,
+    };
+    ApplicationError::new(exit, code, message)
+}
+
+pub(super) fn ensure_output_absent(path: Option<&Path>) -> Result<(), ApplicationError> {
+    let Some(path) = path else {
+        return Ok(());
+    };
+    match path.try_exists() {
+        Ok(true) => Err(ApplicationError::failed(
+            "output_exists",
+            format!("output already exists: {}", path.display()),
+        )),
+        Ok(false) => Ok(()),
+        Err(error) => Err(ApplicationError::failed(
+            "output_open_failed",
+            format!("failed to inspect output {}: {error}", path.display()),
+        )),
+    }
+}
+
+/// Refuses a stdout result when the pipe's read end is already closed.
+/// A console or file fails the probe for another reason and stays writable.
+pub(super) fn refuse_closed_stdout(path: Option<&Path>) -> Result<(), ApplicationError> {
+    if path.is_some() || !stdout_pipe_is_closed() {
+        return Ok(());
+    }
+    Err(ApplicationError::new(
+        ExitClass::Success,
+        "broken_pipe",
+        "output pipe closed",
+    ))
+}
+
+#[cfg(windows)]
+fn stdout_pipe_is_closed() -> bool {
+    use std::os::windows::io::AsRawHandle;
+
+    const ERROR_BROKEN_PIPE: u32 = 109;
+    const ERROR_NO_DATA: u32 = 232;
+    const ERROR_PIPE_NOT_CONNECTED: u32 = 233;
+    const FILE_PIPE_LOCAL_INFORMATION: u32 = 24;
+    const FILE_PIPE_DISCONNECTED_STATE: u32 = 1;
+    const FILE_PIPE_CLOSING_STATE: u32 = 4;
+
+    #[repr(C)]
+    struct IoStatusBlock {
+        _status: isize,
+        _information: usize,
+    }
+
+    #[repr(C)]
+    struct FilePipeLocalInformation {
+        _named_pipe_type: u32,
+        _named_pipe_configuration: u32,
+        _maximum_instances: u32,
+        _current_instances: u32,
+        _inbound_quota: u32,
+        _read_data_available: u32,
+        _outbound_quota: u32,
+        _write_quota_available: u32,
+        named_pipe_state: u32,
+        _named_pipe_end: u32,
+    }
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn PeekNamedPipe(
+            handle: *mut std::ffi::c_void,
+            buffer: *mut u8,
+            buffer_size: u32,
+            bytes_read: *mut u32,
+            bytes_avail: *mut u32,
+            bytes_left: *mut u32,
+        ) -> i32;
+        fn GetLastError() -> u32;
+    }
+
+    #[link(name = "ntdll")]
+    unsafe extern "system" {
+        fn NtQueryInformationFile(
+            handle: *mut std::ffi::c_void,
+            io_status: *mut IoStatusBlock,
+            info: *mut FilePipeLocalInformation,
+            length: u32,
+            class: u32,
+        ) -> i32;
+    }
+
+    let handle = std::io::stdout().as_raw_handle();
+    // SAFETY: stdout is a process-owned handle. The peek uses a null buffer
+    // and a zero size. The query writes only into `info` and `io_status`.
+    let (open, error, pipe_state) = unsafe {
+        let open = PeekNamedPipe(
+            handle.cast(),
+            std::ptr::null_mut(),
+            0,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        );
+        let error = if open == 0 { GetLastError() } else { 0 };
+        let mut info = std::mem::zeroed::<FilePipeLocalInformation>();
+        let mut io_status = std::mem::zeroed::<IoStatusBlock>();
+        let status = NtQueryInformationFile(
+            handle.cast(),
+            &mut io_status,
+            &mut info,
+            u32::try_from(std::mem::size_of::<FilePipeLocalInformation>())
+                .expect("pipe information size fits u32"),
+            FILE_PIPE_LOCAL_INFORMATION,
+        );
+        let pipe_state = (status >= 0).then_some(info.named_pipe_state);
+        (open, error, pipe_state)
+    };
+    let peek_closed = open == 0
+        && matches!(
+            error,
+            ERROR_BROKEN_PIPE | ERROR_NO_DATA | ERROR_PIPE_NOT_CONNECTED
+        );
+    let state_closed = matches!(
+        pipe_state,
+        Some(FILE_PIPE_DISCONNECTED_STATE | FILE_PIPE_CLOSING_STATE)
+    );
+    peek_closed || state_closed
+}
+
+#[cfg(not(windows))]
+fn stdout_pipe_is_closed() -> bool {
+    false
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ResultFormat {
     Human,

@@ -441,9 +441,10 @@ pub(super) fn classify_terminal(
         (MaintenanceActionClass::SettingsHandoff, AdapterOutcome::Success) => {
             MaintenanceExecutionOutcome::Launched
         }
-        // Guidance never dispatches, so this arm is unreachable; it stays
-        // closed and conservative instead of panicking.
-        (MaintenanceActionClass::Guidance, _) => MaintenanceExecutionOutcome::UnknownAfterDispatch,
+        // Guidance and observe never dispatch. The arm stays closed.
+        (MaintenanceActionClass::Guidance | MaintenanceActionClass::Observe, _) => {
+            MaintenanceExecutionOutcome::UnknownAfterDispatch
+        }
         (_, AdapterOutcome::Failure) => MaintenanceExecutionOutcome::Failed,
         (_, AdapterOutcome::Unfinished) => MaintenanceExecutionOutcome::UnknownAfterDispatch,
     }

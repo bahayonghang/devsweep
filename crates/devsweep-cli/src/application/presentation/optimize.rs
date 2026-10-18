@@ -1,8 +1,9 @@
 //! Bilingual Optimize V1 human renderers.
 
 use devsweep_core::optimize::{
-    MaintenanceActionClass, MaintenanceCatalogueEntryV1, MaintenanceExecutionOutcome,
-    MaintenanceExecutionReportV1, MaintenancePreviewV1, OPTIMIZE_CATALOGUE_VERSION,
+    DNS_FLUSH_ID, DiskHealthReportV1, MaintenanceActionClass, MaintenanceCatalogueEntryV1,
+    MaintenanceExecutionOutcome, MaintenanceExecutionReportV1, MaintenancePreviewV1,
+    published_catalogue_version,
 };
 
 use super::render;
@@ -18,7 +19,7 @@ pub(crate) fn list(
     entries: &[MaintenanceCatalogueEntryV1],
 ) -> Result<String, CatalogueError> {
     let count = entries.len().to_string();
-    let version = OPTIMIZE_CATALOGUE_VERSION.to_string();
+    let version = published_catalogue_version(entries).to_string();
     let mut lines = vec![render(
         locale,
         "optimize.v1.list.summary",
@@ -37,8 +38,14 @@ pub(crate) fn list(
                     None,
                 )?
             }
-            MaintenanceActionClass::Execute => {
+            MaintenanceActionClass::Execute if entry.id == DNS_FLUSH_ID => {
                 static_text(locale, "optimize.v1.predicate.dns_flush")?
+            }
+            MaintenanceActionClass::Execute => {
+                static_text(locale, "optimize.v1.predicate.maintenance")?
+            }
+            MaintenanceActionClass::Observe => {
+                static_text(locale, "optimize.v1.predicate.observe")?
             }
             MaintenanceActionClass::Guidance => {
                 static_text(locale, "optimize.v1.predicate.guidance")?
@@ -127,7 +134,33 @@ fn action_key(action_class: MaintenanceActionClass) -> &'static str {
         MaintenanceActionClass::Execute => "optimize.v1.action.execute",
         MaintenanceActionClass::SettingsHandoff => "optimize.v1.action.settings",
         MaintenanceActionClass::Guidance => "optimize.v1.action.guidance",
+        MaintenanceActionClass::Observe => "optimize.v1.action.observe",
     }
+}
+
+pub(crate) fn health(
+    locale: crate::i18n::Locale,
+    report: &DiskHealthReportV1,
+) -> Result<String, CatalogueError> {
+    let count = report.devices.len().to_string();
+    let mut lines = vec![render(
+        locale,
+        "optimize.v1.health.summary",
+        &[("count", &count)],
+        None,
+    )?];
+    for device in &report.devices {
+        lines.push(render(
+            locale,
+            "optimize.v1.health.device",
+            &[
+                ("id", device.device_id.as_str()),
+                ("status", device.health_status.as_str()),
+            ],
+            None,
+        )?);
+    }
+    Ok(lines.join("\n"))
 }
 
 fn outcome_key(outcome: MaintenanceExecutionOutcome) -> &'static str {

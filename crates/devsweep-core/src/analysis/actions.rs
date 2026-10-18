@@ -280,24 +280,24 @@ fn reveal_with(
 }
 
 /// Snapshot lookup with the rebuilt root path.
-struct NodeIndex<'a> {
+pub(super) struct NodeIndex<'a> {
     base: PathBuf,
     nodes: HashMap<u32, &'a AnalyzeNodeV1>,
 }
 
 impl<'a> NodeIndex<'a> {
-    fn new(snapshot: &'a AnalyzeSnapshotV1) -> Result<Self, AnalyzeActionError> {
+    pub(super) fn new(snapshot: &'a AnalyzeSnapshotV1) -> Result<Self, AnalyzeActionError> {
         Ok(Self {
             base: snapshot_base(snapshot)?,
             nodes: snapshot.nodes.iter().map(|node| (node.id, node)).collect(),
         })
     }
 
-    fn node(&self, node_id: u32) -> Option<&'a AnalyzeNodeV1> {
+    pub(super) fn node(&self, node_id: u32) -> Option<&'a AnalyzeNodeV1> {
         self.nodes.get(&node_id).copied()
     }
 
-    fn path(&self, node_id: u32) -> Result<PathBuf, AnalyzeActionError> {
+    pub(super) fn path(&self, node_id: u32) -> Result<PathBuf, AnalyzeActionError> {
         let mut names = Vec::new();
         let mut seen = HashSet::new();
         let mut cursor = node_id;
@@ -328,7 +328,7 @@ impl<'a> NodeIndex<'a> {
     }
 
     /// True when a strict ancestor of `node_id` is in `ids`.
-    fn has_ancestor_in(&self, node_id: u32, ids: &HashSet<u32>) -> bool {
+    pub(super) fn has_ancestor_in(&self, node_id: u32, ids: &HashSet<u32>) -> bool {
         let mut seen = HashSet::new();
         let mut cursor = self.node(node_id).and_then(|node| node.parent_id);
         while let Some(id) = cursor {
@@ -371,14 +371,14 @@ fn plain_name(name: &str) -> bool {
 
 /// Exclusion inputs for one run.
 #[derive(Debug, Clone, Default)]
-struct TrashEnvironment {
-    system_locations: Vec<PathBuf>,
-    profile: Option<PathBuf>,
-    protections: Vec<PathBuf>,
+pub(super) struct TrashEnvironment {
+    pub(super) system_locations: Vec<PathBuf>,
+    pub(super) profile: Option<PathBuf>,
+    pub(super) protections: Vec<PathBuf>,
 }
 
 impl TrashEnvironment {
-    fn production() -> Result<Self, AnalyzeActionError> {
+    pub(super) fn production() -> Result<Self, AnalyzeActionError> {
         let mut protections = UserProtectionList::load()
             .map_err(|_| AnalyzeActionError::ProtectionUnavailable)?
             .list()
@@ -492,12 +492,12 @@ fn live_refusal(path: &Path, node: &AnalyzeNodeV1) -> Option<AnalyzeTrashRefusal
 }
 
 /// One accepted node with its rebuilt path.
-struct Accepted<'a> {
-    node: &'a AnalyzeNodeV1,
-    path: PathBuf,
+pub(super) struct Accepted<'a> {
+    pub(super) node: &'a AnalyzeNodeV1,
+    pub(super) path: PathBuf,
 }
 
-fn select<'a>(
+pub(super) fn select<'a>(
     environment: &TrashEnvironment,
     snapshot: &'a AnalyzeSnapshotV1,
     node_ids: &[u32],
@@ -541,13 +541,13 @@ fn select<'a>(
     Ok((accepted, refused))
 }
 
-fn target_id(operation_id: &str, node_id: u32) -> TargetId {
+pub(super) fn target_id(operation_id: &str, node_id: u32) -> TargetId {
     TargetId::new(format!("{ANALYZE_TRASH_RULE_ID}:{operation_id}:{node_id}"))
 }
 
 /// Builds the trusted in-memory plan. `kind` is a required Clean field; the
 /// value never leaves core and carries no meaning for `analyze.trash`.
-fn build_plan(
+pub(super) fn build_plan(
     operation_id: &str,
     accepted: &[Accepted<'_>],
 ) -> Result<(ValidatedPlan, Vec<TargetId>), AnalyzeActionError> {
@@ -840,6 +840,62 @@ mod tests {
                 (999_999, AnalyzeTrashRefusalCode::NotFound),
             ]
         );
+    }
+
+    #[test]
+    fn shared_public_file_is_refused_as_profile_root() {
+        let fixture = fixture();
+        let shared = fixture.root.join("users").join("Public").join("shared.txt");
+        let bytes = b"named-shared-location";
+        fs::create_dir_all(shared.parent().unwrap()).unwrap();
+        fs::write(&shared, bytes).unwrap();
+        assert!(
+            !fixture
+                .environment
+                .protections
+                .iter()
+                .any(|path| path_is_within(path, &shared) || path_is_within(&shared, path))
+        );
+
+        let snapshot = analyze_path(&fixture.root, None, None)
+            .unwrap()
+            .snapshot()
+            .clone();
+        let node = id_of(&snapshot, "users/Public/shared.txt");
+        let preview = preview_with(&fixture.environment, "op", &snapshot, &[node]).unwrap();
+        assert!(preview.items.is_empty());
+        assert_eq!(
+            refusals(&preview),
+            vec![(node, AnalyzeTrashRefusalCode::ProfileRoot)]
+        );
+
+        let trash = RecordingTrash::default();
+        let executor = Executor::new(ProcessCommandRunner::new(), trash.clone());
+        assert!(matches!(
+            execute_with(
+                &fixture.environment,
+                &executor,
+                None,
+                AnalyzeTrashExecutionRequest {
+                    operation_id: "op",
+                    snapshot: &snapshot,
+                    node_ids: &[node],
+                    expected_digest: preview.digest.as_str(),
+                    confirmed: true,
+                    cancel: None,
+                },
+            ),
+            Err(AnalyzeActionError::NothingToMove)
+        ));
+        assert!(
+            !trash
+                .moved
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|path| paths_equal(path, &shared))
+        );
+        assert_eq!(fs::read(&shared).unwrap(), bytes);
     }
 
     #[test]

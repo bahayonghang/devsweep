@@ -73,6 +73,8 @@ pub(super) enum CleanCommand {
     Protect(CommandGroup<ProtectCommand>),
     /// Inspect cleanup rules.
     Rules(CommandGroup<RulesCommand>),
+    /// Inspect and plan opt-in AI-tool cleanup.
+    Ai(CommandGroup<CleanAiCommand>),
 }
 
 #[derive(Debug, Args)]
@@ -174,6 +176,93 @@ pub(super) struct RulesShowCommand {
 }
 
 #[derive(Debug, Subcommand)]
+pub(super) enum CleanAiCommand {
+    /// Observe one AI home or the production defaults.
+    Scan(CleanAiScanCommand),
+    /// Create a saved AI plan for one class.
+    Plan(CleanAiPlanCommand),
+    /// Preview a saved AI plan and calculate its live digest.
+    Preview(PlanPresentationCommand),
+    /// Move confirmed AI targets to the Recycle Bin after a recovery bundle.
+    Execute(PlanExecutionCommand),
+    /// List recovery bundles without restoring them.
+    RecoveryList(CleanAiRecoveryListCommand),
+    /// Create a restore plan for one recovery bundle.
+    RestorePlan(CleanAiRestorePlanCommand),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(super) enum AiProviderArg {
+    #[value(name = "claude-code")]
+    ClaudeCode,
+    #[value(name = "codex")]
+    Codex,
+    #[value(name = "cursor")]
+    Cursor,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub(super) enum AiClassArg {
+    #[value(name = "regenerable_cache")]
+    RegenerableCache,
+    #[value(name = "superseded_version")]
+    SupersededVersion,
+    #[value(name = "session_archive")]
+    SessionArchive,
+    #[value(name = "worktree")]
+    Worktree,
+    #[value(name = "installed_tool")]
+    InstalledTool,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct CleanAiScanCommand {
+    /// AI provider. Omit with `--home` to observe every production default.
+    #[arg(long, value_enum, value_name = "PROVIDER")]
+    pub(super) provider: Option<AiProviderArg>,
+    /// Absolute provider home. Omit to use the production default.
+    #[arg(long, value_name = "PATH", value_parser = parse_regular_path)]
+    pub(super) home: Option<PathBuf>,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct CleanAiPlanCommand {
+    /// Saved AI observation JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) scan: PathBuf,
+    /// Data class to select.
+    #[arg(long, value_enum, value_name = "CLASS")]
+    pub(super) class: AiClassArg,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct CleanAiRecoveryListCommand {
+    /// Absolute provider home.
+    #[arg(long, value_name = "PATH", value_parser = parse_regular_path)]
+    pub(super) home: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct CleanAiRestorePlanCommand {
+    /// Absolute provider home.
+    #[arg(long, value_name = "PATH", value_parser = parse_regular_path)]
+    pub(super) home: PathBuf,
+    /// Recovery bundle id.
+    #[arg(long, value_name = "ID")]
+    pub(super) bundle: String,
+    /// New JSON restore plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Subcommand)]
 pub(super) enum SoftwareCommand {
     /// Inventory installed software without creating executable authority.
     Inventory(SoftwareInventoryCommand),
@@ -183,6 +272,411 @@ pub(super) enum SoftwareCommand {
     Preview(PlanPresentationCommand),
     /// Dispatch a confirmed current-user MSIX uninstall plan.
     Uninstall(PlanExecutionCommand),
+    /// Check package updates and apply one explicit package plan.
+    Updates(CommandGroup<SoftwareUpdatesCommand>),
+    /// List startup entries and toggle current-user or offline-hive approval.
+    Startup(CommandGroup<SoftwareStartupCommand>),
+    /// Review leftover folders and one closed registry-residue key.
+    Leftovers(CommandGroup<SoftwareLeftoversCommand>),
+}
+
+#[derive(Debug, Subcommand)]
+pub(super) enum SoftwareUpdatesCommand {
+    /// Read available package updates.
+    Check(SoftwareUpdatesCheckCommand),
+    /// Create a saved plan for one package, source, and version.
+    Plan(SoftwareUpdatesPlanCommand),
+    /// Preview a saved package update plan.
+    Preview(SoftwareUpdatesPreviewCommand),
+    /// Apply one confirmed package update plan.
+    Execute(SoftwareUpdatesExecuteCommand),
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareUpdatesCheckCommand {
+    /// Saved software-inventory JSON file. Omit to skip name matching.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) inventory: Option<PathBuf>,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareUpdatesPlanCommand {
+    /// Update provider program. Tests pass a command double, not installed winget.
+    #[arg(
+        long,
+        id = "update_provider",
+        value_name = "PROGRAM",
+        default_value = "winget",
+        value_parser = parse_regular_path
+    )]
+    pub(super) provider: PathBuf,
+    /// Package id from the update table.
+    #[arg(long = "package-id", id = "package_id", value_name = "PACKAGE_ID")]
+    pub(super) package_id: String,
+    /// Package source. Only `winget` is supported.
+    #[arg(long, id = "update_source", value_name = "SOURCE")]
+    pub(super) source: String,
+    /// Exact available version to plan.
+    #[arg(
+        long = "available-version",
+        id = "available_version",
+        value_name = "VERSION"
+    )]
+    pub(super) version: String,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareUpdatesPreviewCommand {
+    /// Update provider program. Tests pass a command double, not installed winget.
+    #[arg(
+        long,
+        id = "update_provider",
+        value_name = "PROGRAM",
+        default_value = "winget",
+        value_parser = parse_regular_path
+    )]
+    pub(super) provider: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareUpdatesExecuteCommand {
+    /// Update provider program. Tests pass a command double, not installed winget.
+    #[arg(
+        long,
+        id = "update_provider",
+        value_name = "PROGRAM",
+        default_value = "winget",
+        value_parser = parse_regular_path
+    )]
+    pub(super) provider: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    /// Digest printed by the immediately preceding live preview.
+    #[arg(long, value_name = "DIGEST", value_parser = parse_preview_digest)]
+    pub(super) preview_digest: String,
+    /// Confirm non-interactive execution of exactly the saved plan.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Subcommand)]
+pub(super) enum SoftwareStartupCommand {
+    /// List startup entries.
+    List(SnapshotOutputArgs),
+    /// Create a saved startup toggle plan.
+    Plan(SoftwareStartupPlanCommand),
+    /// Preview a saved startup toggle plan.
+    Preview(PlanPresentationCommand),
+    /// Apply a confirmed startup toggle plan.
+    Execute(PlanExecutionCommand),
+    /// Create a startup toggle plan from an offline fixture hive.
+    HivePlan(SoftwareStartupHivePlanCommand),
+    /// Preview a saved offline-hive startup plan.
+    HivePreview(SoftwareStartupHivePreviewCommand),
+    /// Apply a confirmed offline-hive startup plan.
+    HiveExecute(SoftwareStartupHiveExecuteCommand),
+    /// Create a restore plan from a hive execute report.
+    RestorePlan(SoftwareStartupRestorePlanCommand),
+    /// Preview a saved offline-hive restore plan.
+    RestorePreview(SoftwareStartupRestorePreviewCommand),
+    /// Restore one offline-hive startup entry when its identity still matches.
+    RestoreExecute(SoftwareStartupRestoreExecuteCommand),
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupPlanCommand {
+    /// Stable startup entry identity.
+    #[arg(long, value_name = "ENTRY_ID")]
+    pub(super) entry: String,
+    /// Requested enabled state, `true` or `false`.
+    #[arg(
+        long,
+        value_name = "ENABLED",
+        action = clap::ArgAction::Set,
+        value_parser = parse_enabled
+    )]
+    pub(super) enabled: bool,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupHivePlanCommand {
+    /// Offline startup fixture hive. This is not host HKCU or HKLM.
+    #[arg(long, id = "hive", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) hive: PathBuf,
+    /// Stable startup entry identity.
+    #[arg(long, value_name = "ENTRY_ID")]
+    pub(super) entry: String,
+    /// Requested enabled state, `true` or `false`.
+    #[arg(
+        long,
+        value_name = "ENABLED",
+        action = clap::ArgAction::Set,
+        value_parser = parse_enabled
+    )]
+    pub(super) enabled: bool,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupHivePreviewCommand {
+    /// Offline startup fixture hive. This is not host HKCU or HKLM.
+    #[arg(long, id = "hive", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) hive: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupHiveExecuteCommand {
+    /// Offline startup fixture hive. This is not host HKCU or HKLM.
+    #[arg(long, id = "hive", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) hive: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    /// Digest printed by the immediately preceding live preview.
+    #[arg(long, value_name = "DIGEST", value_parser = parse_preview_digest)]
+    pub(super) preview_digest: String,
+    /// Confirm non-interactive execution of exactly the saved plan.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupRestorePlanCommand {
+    /// Hive execute report that contains a backup.
+    #[arg(long, id = "startup_report", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) report: PathBuf,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupRestorePreviewCommand {
+    /// Offline startup fixture hive. This is not host HKCU or HKLM.
+    #[arg(long, id = "hive", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) hive: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareStartupRestoreExecuteCommand {
+    /// Offline startup fixture hive. This is not host HKCU or HKLM.
+    #[arg(long, id = "hive", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) hive: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    /// Digest printed by the immediately preceding live preview.
+    #[arg(long, value_name = "DIGEST", value_parser = parse_preview_digest)]
+    pub(super) preview_digest: String,
+    /// Confirm non-interactive execution of exactly the saved plan.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Subcommand)]
+pub(super) enum SoftwareLeftoversCommand {
+    /// Scan leftover candidates from an inventory.
+    Scan(SoftwareLeftoversScanCommand),
+    /// Create a saved leftover removal plan.
+    Plan(SoftwareLeftoversPlanCommand),
+    /// Preview a saved leftover plan.
+    Preview(SoftwareLeftoversPreviewCommand),
+    /// Move confirmed leftover directories to the Recycle Bin.
+    Execute(SoftwareLeftoversExecuteCommand),
+    /// Plan removal of one closed registry-residue fixture key.
+    RegistryPlan(SoftwareLeftoverRegistryPlanCommand),
+    /// Preview one closed registry-residue plan.
+    RegistryPreview(SoftwareLeftoverRegistryPreviewCommand),
+    /// Back up and change one closed registry-residue fixture key.
+    RegistryExecute(SoftwareLeftoverRegistryExecuteCommand),
+    /// Create a restore plan from a residue execute report.
+    RegistryRestorePlan(SoftwareLeftoverRegistryRestorePlanCommand),
+    /// Preview a residue restore against the live fixture bytes.
+    RegistryRestorePreview(SoftwareLeftoverRegistryRestorePreviewCommand),
+    /// Restore one residue key when its bytes still match the backup.
+    RegistryRestoreExecute(SoftwareLeftoverRegistryRestoreExecuteCommand),
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoversScanCommand {
+    /// Saved software-inventory JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) inventory: PathBuf,
+    /// Stable software identity to scan. Supply one or more values.
+    #[arg(long, value_name = "SOFTWARE_ID", required = true, num_args = 1..)]
+    pub(super) select: Vec<String>,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoversPlanCommand {
+    /// Saved software-inventory JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) inventory: PathBuf,
+    /// Stable software identity.
+    #[arg(long, value_name = "SOFTWARE_ID")]
+    pub(super) software_id: String,
+    /// Succeeded uninstall operation identity.
+    #[arg(long, value_name = "OPERATION_ID")]
+    pub(super) uninstall_operation: String,
+    /// Leftover candidate identity. Supply one or more values.
+    #[arg(long, value_name = "CANDIDATE_ID", required = true, num_args = 1..)]
+    pub(super) select: Vec<String>,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoversPreviewCommand {
+    /// Saved software-inventory JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) inventory: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoversExecuteCommand {
+    /// Saved software-inventory JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) inventory: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    /// Digest printed by the immediately preceding live preview.
+    #[arg(long, value_name = "DIGEST", value_parser = parse_preview_digest)]
+    pub(super) preview_digest: String,
+    /// Confirm non-interactive execution of exactly the saved plan.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoverRegistryPlanCommand {
+    /// Closed registry-residue fixture key. The file name must be DevSweepResidue.
+    #[arg(long, id = "residue_key", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) key: PathBuf,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoverRegistryPreviewCommand {
+    /// Closed registry-residue fixture key. The file name must be DevSweepResidue.
+    #[arg(long, id = "residue_key", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) key: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoverRegistryExecuteCommand {
+    /// Closed registry-residue fixture key. The file name must be DevSweepResidue.
+    #[arg(long, id = "residue_key", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) key: PathBuf,
+    /// Exact-byte backup written before the key changes.
+    #[arg(long, id = "backup", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) backup: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    /// Digest printed by the immediately preceding live preview.
+    #[arg(long, value_name = "DIGEST", value_parser = parse_preview_digest)]
+    pub(super) preview_digest: String,
+    /// Confirm non-interactive execution of exactly the saved plan.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoverRegistryRestorePlanCommand {
+    /// Residue execute report that contains the backup digest.
+    #[arg(long, id = "residue", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) report: PathBuf,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoverRegistryRestorePreviewCommand {
+    /// Closed registry-residue fixture key. The file name must be DevSweepResidue.
+    #[arg(long, id = "residue_key", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) key: PathBuf,
+    /// Exact-byte backup written before the key changes.
+    #[arg(long, id = "backup", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) backup: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct SoftwareLeftoverRegistryRestoreExecuteCommand {
+    /// Closed registry-residue fixture key. The file name must be DevSweepResidue.
+    #[arg(long, id = "residue_key", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) key: PathBuf,
+    /// Exact-byte backup written before the key changes.
+    #[arg(long, id = "backup", value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) backup: PathBuf,
+    /// Saved versioned plan JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) plan: PathBuf,
+    /// Digest printed by the immediately preceding live preview.
+    #[arg(long, value_name = "DIGEST", value_parser = parse_preview_digest)]
+    pub(super) preview_digest: String,
+    /// Confirm non-interactive execution of exactly the saved plan.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
 }
 
 #[derive(Debug, Args)]
@@ -225,6 +719,8 @@ pub(super) enum OptimizeCommand {
     Preview(PlanPresentationCommand),
     /// Run a confirmed saved optimization plan.
     Run(PlanExecutionCommand),
+    /// Print read-only disk health. This command does not repair.
+    Health(SnapshotOutputArgs),
 }
 
 #[derive(Debug, Args)]
@@ -241,6 +737,95 @@ pub(super) struct OptimizePlanCommand {
 pub(super) enum AnalyzeCommand {
     /// Scan one analysis root.
     Scan(AnalyzeScanCommand),
+    /// List volumes the snapshot source can see.
+    Roots(AnalyzeRootsCommand),
+    /// List bounded children of one snapshot node.
+    List(AnalyzeListCommand),
+    /// Explain one snapshot node. This command does not create a cleanup plan.
+    Explain(AnalyzeExplainCommand),
+    /// Show one snapshot node in Explorer.
+    Reveal(AnalyzeRevealCommand),
+    /// Create a saved Recycle Bin plan from a snapshot.
+    TrashPlan(AnalyzeTrashPlanCommand),
+    /// Preview a saved Analyze Recycle Bin plan.
+    TrashPreview(PlanPresentationCommand),
+    /// Move confirmed snapshot nodes to the Recycle Bin.
+    TrashExecute(PlanExecutionCommand),
+}
+
+#[derive(Debug, Args)]
+pub(super) struct AnalyzeRootsCommand {
+    /// Root to observe. Repeat to observe more than one. A missing root is an error for that root.
+    #[arg(long, value_name = "PATH")]
+    pub(super) root: Vec<PathBuf>,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct AnalyzeListCommand {
+    /// Saved analysis snapshot JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) snapshot: PathBuf,
+    /// Snapshot node identity.
+    #[arg(long, value_name = "NODE_ID")]
+    pub(super) node: u32,
+    /// Child rows to skip.
+    #[arg(
+        id = "child_offset",
+        long = "offset",
+        value_name = "OFFSET",
+        default_value_t = 0
+    )]
+    pub(super) offset: u32,
+    /// Maximum child rows.
+    #[arg(
+        id = "child_limit",
+        long = "limit",
+        value_name = "LIMIT",
+        value_parser = clap::value_parser!(u32).range(1..=1000),
+        default_value_t = 100
+    )]
+    pub(super) limit: u32,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct AnalyzeExplainCommand {
+    /// Saved analysis snapshot JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) snapshot: PathBuf,
+    /// Snapshot node identity.
+    #[arg(long, value_name = "NODE_ID")]
+    pub(super) node: u32,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct AnalyzeRevealCommand {
+    /// Saved analysis snapshot JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) snapshot: PathBuf,
+    /// Snapshot node identity.
+    #[arg(long, value_name = "NODE_ID")]
+    pub(super) node: u32,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct AnalyzeTrashPlanCommand {
+    /// Saved analysis snapshot JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) snapshot: PathBuf,
+    /// Snapshot node identity to select. Supply one or more values.
+    #[arg(long, value_name = "NODE_ID", required = true, num_args = 1..)]
+    pub(super) select: Vec<u32>,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
 }
 
 #[derive(Debug, Args)]
@@ -258,6 +843,12 @@ pub(super) enum StatusCommand {
     Snapshot(StatusSnapshotCommand),
     /// Stream status snapshots until canceled.
     Live(StatusLiveCommand),
+    /// Explain one snapshot as named evidence. This command does not score the host.
+    Health(StatusHealthCommand),
+    /// Review one process termination.
+    Process(CommandGroup<StatusProcessCommand>),
+    /// Hold one finite in-memory keep-awake lease.
+    KeepAwake(CommandGroup<StatusKeepAwakeCommand>),
 }
 
 #[derive(Debug, Args)]
@@ -283,6 +874,81 @@ pub(super) struct StatusLiveCommand {
     /// New output file. Human live output cannot use this option.
     #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
     pub(super) output: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct StatusHealthCommand {
+    /// Maximum process rows.
+    #[arg(long, value_parser = clap::value_parser!(u32).range(1..=100), default_value_t = 15)]
+    pub(super) process_limit: u32,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Subcommand)]
+pub(super) enum StatusProcessCommand {
+    /// Bind a PID and creation time into a saved plan.
+    Plan(StatusProcessPlanCommand),
+    /// Preview a process plan, including data-loss text.
+    Preview(PlanPresentationCommand),
+    /// Terminate one reviewed process after confirmation.
+    Terminate(PlanExecutionCommand),
+}
+
+#[derive(Debug, Args)]
+pub(super) struct StatusProcessPlanCommand {
+    /// Process id bound by the plan.
+    #[arg(long, value_name = "PID")]
+    pub(super) pid: u32,
+    /// Windows process creation FILETIME bound by the plan.
+    #[arg(long, value_name = "FILETIME")]
+    pub(super) creation_time: u64,
+    /// Process file name bound by the plan.
+    #[arg(long, value_name = "NAME")]
+    pub(super) name: String,
+    /// New JSON plan file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) output: PathBuf,
+}
+
+#[derive(Debug, Subcommand)]
+pub(super) enum StatusKeepAwakeCommand {
+    /// Start one finite in-memory lease.
+    Run(StatusKeepAwakeRunCommand),
+    /// Read one lease by owner and token.
+    Status(StatusKeepAwakeTokenCommand),
+    /// Release one lease by owner and token.
+    Stop(StatusKeepAwakeTokenCommand),
+}
+
+#[derive(Debug, Args)]
+pub(super) struct StatusKeepAwakeRunCommand {
+    /// Lease length in milliseconds. The value is required, finite, and at most 12 hours.
+    #[arg(long, value_name = "DURATION_MS", value_parser = clap::value_parser!(u64).range(1..=43_200_000))]
+    pub(super) duration_ms: u64,
+    /// Lease owner. Stop and exit release only this owner.
+    #[arg(long, value_name = "OWNER")]
+    pub(super) owner: String,
+    /// Confirm the finite keep-awake request.
+    #[arg(long, required = true, action = clap::ArgAction::SetTrue)]
+    pub(super) confirm: bool,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct StatusKeepAwakeTokenCommand {
+    /// Session token printed by keep-awake run.
+    #[arg(long, value_name = "TOKEN")]
+    pub(super) token: String,
+    /// Owner that received the token.
+    #[arg(long, value_name = "OWNER")]
+    pub(super) owner: String,
+    /// Loopback endpoint printed by the owning run process.
+    #[arg(long, value_name = "ENDPOINT")]
+    pub(super) endpoint: String,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
 }
 
 #[derive(Debug, Subcommand)]
@@ -364,6 +1030,34 @@ impl Cli {
                 CleanCommand::Preview(command) => validate_plan_output(command)?,
                 CleanCommand::Execute(command) => validate_execution_output(command)?,
                 CleanCommand::Protect(_) | CleanCommand::Rules(_) => {}
+                CleanCommand::Ai(group) => match &group.command {
+                    CleanAiCommand::Scan(command) => {
+                        if command.home.is_some() && command.provider.is_none() {
+                            return Err("--home requires --provider".to_string());
+                        }
+                        if let Some(home) = &command.home
+                            && !home.is_absolute()
+                        {
+                            return Err("--home must be absolute".to_string());
+                        }
+                    }
+                    CleanAiCommand::Plan(command) => {
+                        reject_same_path(&command.scan, &command.output)?;
+                    }
+                    CleanAiCommand::Preview(command) => validate_plan_output(command)?,
+                    CleanAiCommand::Execute(command) => validate_execution_output(command)?,
+                    CleanAiCommand::RecoveryList(command) => {
+                        if !command.home.is_absolute() {
+                            return Err("--home must be absolute".to_string());
+                        }
+                    }
+                    CleanAiCommand::RestorePlan(command) => {
+                        if !command.home.is_absolute() {
+                            return Err("--home must be absolute".to_string());
+                        }
+                        reject_same_path(&command.home, &command.output)?;
+                    }
+                },
             },
             Some(Command::Software(group)) => match &group.command {
                 SoftwareCommand::Plan(command) => {
@@ -372,24 +1066,158 @@ impl Cli {
                 SoftwareCommand::Preview(command) => validate_plan_output(command)?,
                 SoftwareCommand::Uninstall(command) => validate_execution_output(command)?,
                 SoftwareCommand::Inventory(_) => {}
+                SoftwareCommand::Updates(group) => match &group.command {
+                    SoftwareUpdatesCommand::Check(_) => {}
+                    SoftwareUpdatesCommand::Plan(command) => {
+                        reject_same_path(&command.provider, &command.output)?
+                    }
+                    SoftwareUpdatesCommand::Preview(command) => {
+                        reject_same_path(&command.provider, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.plan, output)?;
+                            reject_same_path(&command.provider, output)?;
+                        }
+                    }
+                    SoftwareUpdatesCommand::Execute(command) => {
+                        reject_same_path(&command.provider, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.plan, output)?;
+                            reject_same_path(&command.provider, output)?;
+                        }
+                    }
+                },
+                SoftwareCommand::Startup(group) => match &group.command {
+                    SoftwareStartupCommand::Plan(_) | SoftwareStartupCommand::List(_) => {}
+                    SoftwareStartupCommand::Preview(command) => validate_plan_output(command)?,
+                    SoftwareStartupCommand::Execute(command) => validate_execution_output(command)?,
+                    SoftwareStartupCommand::HivePlan(command) => {
+                        reject_same_path(&command.hive, &command.output)?
+                    }
+                    SoftwareStartupCommand::HivePreview(command) => reject_distinct_output(
+                        &command.hive,
+                        &command.plan,
+                        command.output.output.as_deref(),
+                    )?,
+                    SoftwareStartupCommand::HiveExecute(command) => reject_distinct_output(
+                        &command.hive,
+                        &command.plan,
+                        command.output.output.as_deref(),
+                    )?,
+                    SoftwareStartupCommand::RestorePlan(command) => {
+                        reject_same_path(&command.report, &command.output)?
+                    }
+                    SoftwareStartupCommand::RestorePreview(command) => reject_distinct_output(
+                        &command.hive,
+                        &command.plan,
+                        command.output.output.as_deref(),
+                    )?,
+                    SoftwareStartupCommand::RestoreExecute(command) => reject_distinct_output(
+                        &command.hive,
+                        &command.plan,
+                        command.output.output.as_deref(),
+                    )?,
+                },
+                SoftwareCommand::Leftovers(group) => match &group.command {
+                    SoftwareLeftoversCommand::Scan(_) => {}
+                    SoftwareLeftoversCommand::Plan(command) => {
+                        reject_same_path(&command.inventory, &command.output)?
+                    }
+                    SoftwareLeftoversCommand::Preview(command) => {
+                        reject_same_path(&command.inventory, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.plan, output)?;
+                            reject_same_path(&command.inventory, output)?;
+                        }
+                    }
+                    SoftwareLeftoversCommand::Execute(command) => {
+                        reject_same_path(&command.inventory, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.plan, output)?;
+                            reject_same_path(&command.inventory, output)?;
+                        }
+                    }
+                    SoftwareLeftoversCommand::RegistryPlan(command) => {
+                        reject_same_path(&command.key, &command.output)?
+                    }
+                    SoftwareLeftoversCommand::RegistryPreview(command) => reject_distinct_output(
+                        &command.key,
+                        &command.plan,
+                        command.output.output.as_deref(),
+                    )?,
+                    SoftwareLeftoversCommand::RegistryExecute(command) => {
+                        reject_same_path(&command.key, &command.backup)?;
+                        reject_same_path(&command.key, &command.plan)?;
+                        reject_same_path(&command.backup, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.key, output)?;
+                            reject_same_path(&command.backup, output)?;
+                            reject_same_path(&command.plan, output)?;
+                        }
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePlan(command) => {
+                        reject_same_path(&command.report, &command.output)?
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePreview(command) => {
+                        reject_same_path(&command.key, &command.backup)?;
+                        reject_same_path(&command.key, &command.plan)?;
+                        reject_same_path(&command.backup, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.key, output)?;
+                            reject_same_path(&command.backup, output)?;
+                            reject_same_path(&command.plan, output)?;
+                        }
+                    }
+                    SoftwareLeftoversCommand::RegistryRestoreExecute(command) => {
+                        reject_same_path(&command.key, &command.backup)?;
+                        reject_same_path(&command.key, &command.plan)?;
+                        reject_same_path(&command.backup, &command.plan)?;
+                        if let Some(output) = command.output.output.as_deref() {
+                            reject_same_path(&command.key, output)?;
+                            reject_same_path(&command.backup, output)?;
+                            reject_same_path(&command.plan, output)?;
+                        }
+                    }
+                },
             },
             Some(Command::Optimize(group)) => match &group.command {
                 OptimizeCommand::Preview(command) => validate_plan_output(command)?,
                 OptimizeCommand::Run(command) => validate_execution_output(command)?,
-                OptimizeCommand::List(_) | OptimizeCommand::Plan(_) => {}
+                OptimizeCommand::List(_)
+                | OptimizeCommand::Plan(_)
+                | OptimizeCommand::Health(_) => {}
             },
-            Some(Command::Status(group)) => {
-                if let StatusCommand::Live(command) = &group.command
-                    && command.format == StreamFormat::Human
-                    && command.output.is_some()
+            Some(Command::Status(group)) => match &group.command {
+                StatusCommand::Live(command)
+                    if command.format == StreamFormat::Human && command.output.is_some() =>
                 {
                     return Err(
                         "status live --format human conflicts with --output; use --format ndjson"
                             .to_string(),
                     );
                 }
-            }
-            Some(Command::Analyze(_)) | Some(Command::History(_)) | None => {}
+                StatusCommand::Process(group) => match &group.command {
+                    StatusProcessCommand::Plan(_) => {}
+                    StatusProcessCommand::Preview(command) => validate_plan_output(command)?,
+                    StatusProcessCommand::Terminate(command) => validate_execution_output(command)?,
+                },
+                StatusCommand::Snapshot(_)
+                | StatusCommand::Live(_)
+                | StatusCommand::Health(_)
+                | StatusCommand::KeepAwake(_) => {}
+            },
+            Some(Command::Analyze(group)) => match &group.command {
+                AnalyzeCommand::Scan(_)
+                | AnalyzeCommand::Roots(_)
+                | AnalyzeCommand::List(_)
+                | AnalyzeCommand::Explain(_)
+                | AnalyzeCommand::Reveal(_) => {}
+                AnalyzeCommand::TrashPlan(command) => {
+                    reject_same_path(&command.snapshot, &command.output)?
+                }
+                AnalyzeCommand::TrashPreview(command) => validate_plan_output(command)?,
+                AnalyzeCommand::TrashExecute(command) => validate_execution_output(command)?,
+            },
+            Some(Command::History(_)) | None => {}
         }
 
         Ok(())
@@ -431,25 +1259,92 @@ impl Cli {
                     RulesCommand::List(_) => "clean.rules.list",
                     RulesCommand::Show(_) => "clean.rules.show",
                 },
+                CleanCommand::Ai(group) => match &group.command {
+                    CleanAiCommand::Scan(_) => "clean.ai.scan",
+                    CleanAiCommand::Plan(_) => "clean.ai.plan",
+                    CleanAiCommand::Preview(_) => "clean.ai.preview",
+                    CleanAiCommand::Execute(_) => "clean.ai.execute",
+                    CleanAiCommand::RecoveryList(_) => "clean.ai.recovery-list",
+                    CleanAiCommand::RestorePlan(_) => "clean.ai.restore-plan",
+                },
             }),
             Command::Software(group) => Some(match &group.command {
                 SoftwareCommand::Inventory(_) => "software.inventory",
                 SoftwareCommand::Plan(_) => "software.plan",
                 SoftwareCommand::Preview(_) => "software.preview",
                 SoftwareCommand::Uninstall(_) => "software.uninstall",
+                SoftwareCommand::Updates(group) => match &group.command {
+                    SoftwareUpdatesCommand::Check(_) => "software.updates.check",
+                    SoftwareUpdatesCommand::Plan(_) => "software.updates.plan",
+                    SoftwareUpdatesCommand::Preview(_) => "software.updates.preview",
+                    SoftwareUpdatesCommand::Execute(_) => "software.updates.execute",
+                },
+                SoftwareCommand::Startup(group) => match &group.command {
+                    SoftwareStartupCommand::List(_) => "software.startup.list",
+                    SoftwareStartupCommand::Plan(_) => "software.startup.plan",
+                    SoftwareStartupCommand::Preview(_) => "software.startup.preview",
+                    SoftwareStartupCommand::Execute(_) => "software.startup.execute",
+                    SoftwareStartupCommand::HivePlan(_) => "software.startup.hive-plan",
+                    SoftwareStartupCommand::HivePreview(_) => "software.startup.hive-preview",
+                    SoftwareStartupCommand::HiveExecute(_) => "software.startup.hive-execute",
+                    SoftwareStartupCommand::RestorePlan(_) => "software.startup.restore-plan",
+                    SoftwareStartupCommand::RestorePreview(_) => "software.startup.restore-preview",
+                    SoftwareStartupCommand::RestoreExecute(_) => "software.startup.restore-execute",
+                },
+                SoftwareCommand::Leftovers(group) => match &group.command {
+                    SoftwareLeftoversCommand::Scan(_) => "software.leftovers.scan",
+                    SoftwareLeftoversCommand::Plan(_) => "software.leftovers.plan",
+                    SoftwareLeftoversCommand::Preview(_) => "software.leftovers.preview",
+                    SoftwareLeftoversCommand::Execute(_) => "software.leftovers.execute",
+                    SoftwareLeftoversCommand::RegistryPlan(_) => "software.leftovers.registry-plan",
+                    SoftwareLeftoversCommand::RegistryPreview(_) => {
+                        "software.leftovers.registry-preview"
+                    }
+                    SoftwareLeftoversCommand::RegistryExecute(_) => {
+                        "software.leftovers.registry-execute"
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePlan(_) => {
+                        "software.leftovers.registry-restore-plan"
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePreview(_) => {
+                        "software.leftovers.registry-restore-preview"
+                    }
+                    SoftwareLeftoversCommand::RegistryRestoreExecute(_) => {
+                        "software.leftovers.registry-restore-execute"
+                    }
+                },
             }),
             Command::Optimize(group) => Some(match &group.command {
                 OptimizeCommand::List(_) => "optimize.list",
                 OptimizeCommand::Plan(_) => "optimize.plan",
                 OptimizeCommand::Preview(_) => "optimize.preview",
                 OptimizeCommand::Run(_) => "optimize.run",
+                OptimizeCommand::Health(_) => "optimize.health",
             }),
             Command::Analyze(group) => Some(match &group.command {
                 AnalyzeCommand::Scan(_) => "analyze.scan",
+                AnalyzeCommand::Roots(_) => "analyze.roots",
+                AnalyzeCommand::List(_) => "analyze.list",
+                AnalyzeCommand::Explain(_) => "analyze.explain",
+                AnalyzeCommand::Reveal(_) => "analyze.reveal",
+                AnalyzeCommand::TrashPlan(_) => "analyze.trash-plan",
+                AnalyzeCommand::TrashPreview(_) => "analyze.trash-preview",
+                AnalyzeCommand::TrashExecute(_) => "analyze.trash-execute",
             }),
             Command::Status(group) => Some(match &group.command {
                 StatusCommand::Snapshot(_) => "status.snapshot",
                 StatusCommand::Live(_) => "status.live",
+                StatusCommand::Health(_) => "status.health",
+                StatusCommand::Process(group) => match &group.command {
+                    StatusProcessCommand::Plan(_) => "status.process.plan",
+                    StatusProcessCommand::Preview(_) => "status.process.preview",
+                    StatusProcessCommand::Terminate(_) => "status.process.terminate",
+                },
+                StatusCommand::KeepAwake(group) => match &group.command {
+                    StatusKeepAwakeCommand::Run(_) => "status.keep-awake.run",
+                    StatusKeepAwakeCommand::Status(_) => "status.keep-awake.status",
+                    StatusKeepAwakeCommand::Stop(_) => "status.keep-awake.stop",
+                },
             }),
             Command::History(group) => Some(match &group.command {
                 HistoryCommand::List(_) => "history.list",
@@ -476,27 +1371,93 @@ impl Cli {
                     RulesCommand::List(output) => output.format.into(),
                     RulesCommand::Show(command) => command.output.format.into(),
                 },
+                CleanCommand::Ai(group) => match &group.command {
+                    CleanAiCommand::Scan(command) => command.output.format.into(),
+                    CleanAiCommand::Plan(_) | CleanAiCommand::RestorePlan(_) => {
+                        ResultFormat::PlanJson
+                    }
+                    CleanAiCommand::Preview(command) => command.output.format.into(),
+                    CleanAiCommand::Execute(command) => command.output.format.into(),
+                    CleanAiCommand::RecoveryList(command) => command.output.format.into(),
+                },
             },
             Some(Command::Software(group)) => match &group.command {
                 SoftwareCommand::Inventory(command) => command.output.format.into(),
                 SoftwareCommand::Plan(_) => ResultFormat::PlanJson,
                 SoftwareCommand::Preview(command) => command.output.format.into(),
                 SoftwareCommand::Uninstall(command) => command.output.format.into(),
+                SoftwareCommand::Updates(group) => match &group.command {
+                    SoftwareUpdatesCommand::Check(command) => command.output.format.into(),
+                    SoftwareUpdatesCommand::Plan(_) => ResultFormat::PlanJson,
+                    SoftwareUpdatesCommand::Preview(command) => command.output.format.into(),
+                    SoftwareUpdatesCommand::Execute(command) => command.output.format.into(),
+                },
+                SoftwareCommand::Startup(group) => match &group.command {
+                    SoftwareStartupCommand::List(output) => output.format.into(),
+                    SoftwareStartupCommand::Plan(_)
+                    | SoftwareStartupCommand::HivePlan(_)
+                    | SoftwareStartupCommand::RestorePlan(_) => ResultFormat::PlanJson,
+                    SoftwareStartupCommand::Preview(command) => command.output.format.into(),
+                    SoftwareStartupCommand::Execute(command) => command.output.format.into(),
+                    SoftwareStartupCommand::HivePreview(command) => command.output.format.into(),
+                    SoftwareStartupCommand::HiveExecute(command) => command.output.format.into(),
+                    SoftwareStartupCommand::RestorePreview(command) => command.output.format.into(),
+                    SoftwareStartupCommand::RestoreExecute(command) => command.output.format.into(),
+                },
+                SoftwareCommand::Leftovers(group) => match &group.command {
+                    SoftwareLeftoversCommand::Scan(command) => command.output.format.into(),
+                    SoftwareLeftoversCommand::Plan(_)
+                    | SoftwareLeftoversCommand::RegistryPlan(_)
+                    | SoftwareLeftoversCommand::RegistryRestorePlan(_) => ResultFormat::PlanJson,
+                    SoftwareLeftoversCommand::Preview(command) => command.output.format.into(),
+                    SoftwareLeftoversCommand::Execute(command) => command.output.format.into(),
+                    SoftwareLeftoversCommand::RegistryPreview(command) => {
+                        command.output.format.into()
+                    }
+                    SoftwareLeftoversCommand::RegistryExecute(command) => {
+                        command.output.format.into()
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePreview(command) => {
+                        command.output.format.into()
+                    }
+                    SoftwareLeftoversCommand::RegistryRestoreExecute(command) => {
+                        command.output.format.into()
+                    }
+                },
             },
             Some(Command::Optimize(group)) => match &group.command {
                 OptimizeCommand::List(output) => output.format.into(),
                 OptimizeCommand::Plan(_) => ResultFormat::PlanJson,
                 OptimizeCommand::Preview(command) => command.output.format.into(),
                 OptimizeCommand::Run(command) => command.output.format.into(),
+                OptimizeCommand::Health(output) => output.format.into(),
             },
             Some(Command::Analyze(group)) => match &group.command {
                 AnalyzeCommand::Scan(command) => command.output.format.into(),
+                AnalyzeCommand::Roots(command) => command.output.format.into(),
+                AnalyzeCommand::List(command) => command.output.format.into(),
+                AnalyzeCommand::Explain(command) => command.output.format.into(),
+                AnalyzeCommand::Reveal(command) => command.output.format.into(),
+                AnalyzeCommand::TrashPlan(_) => ResultFormat::PlanJson,
+                AnalyzeCommand::TrashPreview(command) => command.output.format.into(),
+                AnalyzeCommand::TrashExecute(command) => command.output.format.into(),
             },
             Some(Command::Status(group)) => match &group.command {
                 StatusCommand::Snapshot(command) => command.output.format.into(),
                 StatusCommand::Live(command) => match command.format {
                     StreamFormat::Human => ResultFormat::Human,
                     StreamFormat::Ndjson => ResultFormat::Ndjson,
+                },
+                StatusCommand::Health(command) => command.output.format.into(),
+                StatusCommand::Process(group) => match &group.command {
+                    StatusProcessCommand::Plan(_) => ResultFormat::PlanJson,
+                    StatusProcessCommand::Preview(command) => command.output.format.into(),
+                    StatusProcessCommand::Terminate(command) => command.output.format.into(),
+                },
+                StatusCommand::KeepAwake(group) => match &group.command {
+                    StatusKeepAwakeCommand::Run(command) => command.output.format.into(),
+                    StatusKeepAwakeCommand::Status(command)
+                    | StatusKeepAwakeCommand::Stop(command) => command.output.format.into(),
                 },
             },
             Some(Command::History(group)) => match &group.command {
@@ -523,25 +1484,102 @@ impl Cli {
                     RulesCommand::List(output) => output.output.as_deref(),
                     RulesCommand::Show(command) => command.output.output.as_deref(),
                 },
+                CleanCommand::Ai(group) => match &group.command {
+                    CleanAiCommand::Scan(command) => command.output.output.as_deref(),
+                    CleanAiCommand::Plan(command) => Some(command.output.as_path()),
+                    CleanAiCommand::Preview(command) => command.output.output.as_deref(),
+                    CleanAiCommand::Execute(command) => command.output.output.as_deref(),
+                    CleanAiCommand::RecoveryList(command) => command.output.output.as_deref(),
+                    CleanAiCommand::RestorePlan(command) => Some(command.output.as_path()),
+                },
             },
             Command::Software(group) => match &group.command {
                 SoftwareCommand::Inventory(command) => command.output.output.as_deref(),
                 SoftwareCommand::Plan(command) => Some(command.output.as_path()),
                 SoftwareCommand::Preview(command) => command.output.output.as_deref(),
                 SoftwareCommand::Uninstall(command) => command.output.output.as_deref(),
+                SoftwareCommand::Updates(group) => match &group.command {
+                    SoftwareUpdatesCommand::Check(command) => command.output.output.as_deref(),
+                    SoftwareUpdatesCommand::Plan(command) => Some(command.output.as_path()),
+                    SoftwareUpdatesCommand::Preview(command) => command.output.output.as_deref(),
+                    SoftwareUpdatesCommand::Execute(command) => command.output.output.as_deref(),
+                },
+                SoftwareCommand::Startup(group) => match &group.command {
+                    SoftwareStartupCommand::List(output) => output.output.as_deref(),
+                    SoftwareStartupCommand::Plan(command) => Some(command.output.as_path()),
+                    SoftwareStartupCommand::Preview(command) => command.output.output.as_deref(),
+                    SoftwareStartupCommand::Execute(command) => command.output.output.as_deref(),
+                    SoftwareStartupCommand::HivePlan(command) => Some(command.output.as_path()),
+                    SoftwareStartupCommand::HivePreview(command) => {
+                        command.output.output.as_deref()
+                    }
+                    SoftwareStartupCommand::HiveExecute(command) => {
+                        command.output.output.as_deref()
+                    }
+                    SoftwareStartupCommand::RestorePlan(command) => Some(command.output.as_path()),
+                    SoftwareStartupCommand::RestorePreview(command) => {
+                        command.output.output.as_deref()
+                    }
+                    SoftwareStartupCommand::RestoreExecute(command) => {
+                        command.output.output.as_deref()
+                    }
+                },
+                SoftwareCommand::Leftovers(group) => match &group.command {
+                    SoftwareLeftoversCommand::Scan(command) => command.output.output.as_deref(),
+                    SoftwareLeftoversCommand::Plan(command) => Some(command.output.as_path()),
+                    SoftwareLeftoversCommand::Preview(command) => command.output.output.as_deref(),
+                    SoftwareLeftoversCommand::Execute(command) => command.output.output.as_deref(),
+                    SoftwareLeftoversCommand::RegistryPlan(command) => {
+                        Some(command.output.as_path())
+                    }
+                    SoftwareLeftoversCommand::RegistryPreview(command) => {
+                        command.output.output.as_deref()
+                    }
+                    SoftwareLeftoversCommand::RegistryExecute(command) => {
+                        command.output.output.as_deref()
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePlan(command) => {
+                        Some(command.output.as_path())
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePreview(command) => {
+                        command.output.output.as_deref()
+                    }
+                    SoftwareLeftoversCommand::RegistryRestoreExecute(command) => {
+                        command.output.output.as_deref()
+                    }
+                },
             },
             Command::Optimize(group) => match &group.command {
                 OptimizeCommand::List(output) => output.output.as_deref(),
                 OptimizeCommand::Plan(command) => Some(command.output.as_path()),
                 OptimizeCommand::Preview(command) => command.output.output.as_deref(),
                 OptimizeCommand::Run(command) => command.output.output.as_deref(),
+                OptimizeCommand::Health(output) => output.output.as_deref(),
             },
             Command::Analyze(group) => match &group.command {
                 AnalyzeCommand::Scan(command) => command.output.output.as_deref(),
+                AnalyzeCommand::Roots(command) => command.output.output.as_deref(),
+                AnalyzeCommand::List(command) => command.output.output.as_deref(),
+                AnalyzeCommand::Explain(command) => command.output.output.as_deref(),
+                AnalyzeCommand::Reveal(command) => command.output.output.as_deref(),
+                AnalyzeCommand::TrashPlan(command) => Some(command.output.as_path()),
+                AnalyzeCommand::TrashPreview(command) => command.output.output.as_deref(),
+                AnalyzeCommand::TrashExecute(command) => command.output.output.as_deref(),
             },
             Command::Status(group) => match &group.command {
                 StatusCommand::Snapshot(command) => command.output.output.as_deref(),
                 StatusCommand::Live(command) => command.output.as_deref(),
+                StatusCommand::Health(command) => command.output.output.as_deref(),
+                StatusCommand::Process(group) => match &group.command {
+                    StatusProcessCommand::Plan(command) => Some(command.output.as_path()),
+                    StatusProcessCommand::Preview(command) => command.output.output.as_deref(),
+                    StatusProcessCommand::Terminate(command) => command.output.output.as_deref(),
+                },
+                StatusCommand::KeepAwake(group) => match &group.command {
+                    StatusKeepAwakeCommand::Run(command) => command.output.output.as_deref(),
+                    StatusKeepAwakeCommand::Status(command)
+                    | StatusKeepAwakeCommand::Stop(command) => command.output.output.as_deref(),
+                },
             },
             Command::History(group) => match &group.command {
                 HistoryCommand::List(command) => command.output.output.as_deref(),
@@ -568,6 +1606,19 @@ impl Cli {
                     RulesCommand::Show(command) => command.output.format == SnapshotFormat::Human,
                 },
                 CleanCommand::Plan(_) => false,
+                CleanCommand::Ai(group) => match &group.command {
+                    CleanAiCommand::Plan(_) | CleanAiCommand::RestorePlan(_) => false,
+                    CleanAiCommand::Scan(command) => command.output.format == SnapshotFormat::Human,
+                    CleanAiCommand::Preview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    CleanAiCommand::Execute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    CleanAiCommand::RecoveryList(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                },
             },
             Some(Command::Software(group)) => match &group.command {
                 SoftwareCommand::Inventory(command) => {
@@ -578,19 +1629,112 @@ impl Cli {
                     command.output.format == SnapshotFormat::Human
                 }
                 SoftwareCommand::Plan(_) => false,
+                SoftwareCommand::Updates(group) => match &group.command {
+                    SoftwareUpdatesCommand::Check(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareUpdatesCommand::Plan(_) => false,
+                    SoftwareUpdatesCommand::Preview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareUpdatesCommand::Execute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                },
+                SoftwareCommand::Startup(group) => match &group.command {
+                    SoftwareStartupCommand::List(output) => output.format == SnapshotFormat::Human,
+                    SoftwareStartupCommand::Preview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareStartupCommand::Execute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareStartupCommand::Plan(_)
+                    | SoftwareStartupCommand::HivePlan(_)
+                    | SoftwareStartupCommand::RestorePlan(_) => false,
+                    SoftwareStartupCommand::HivePreview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareStartupCommand::RestorePreview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareStartupCommand::HiveExecute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareStartupCommand::RestoreExecute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                },
+                SoftwareCommand::Leftovers(group) => match &group.command {
+                    SoftwareLeftoversCommand::Scan(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareLeftoversCommand::Preview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareLeftoversCommand::Execute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareLeftoversCommand::Plan(_)
+                    | SoftwareLeftoversCommand::RegistryPlan(_)
+                    | SoftwareLeftoversCommand::RegistryRestorePlan(_) => false,
+                    SoftwareLeftoversCommand::RegistryPreview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareLeftoversCommand::RegistryRestorePreview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareLeftoversCommand::RegistryExecute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    SoftwareLeftoversCommand::RegistryRestoreExecute(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                },
             },
             Some(Command::Optimize(group)) => match &group.command {
                 OptimizeCommand::List(output) => output.format == SnapshotFormat::Human,
                 OptimizeCommand::Preview(command) => command.output.format == SnapshotFormat::Human,
                 OptimizeCommand::Run(command) => command.output.format == SnapshotFormat::Human,
+                OptimizeCommand::Health(output) => output.format == SnapshotFormat::Human,
                 OptimizeCommand::Plan(_) => false,
             },
             Some(Command::Analyze(group)) => match &group.command {
                 AnalyzeCommand::Scan(command) => command.output.format == SnapshotFormat::Human,
+                AnalyzeCommand::Roots(command) => command.output.format == SnapshotFormat::Human,
+                AnalyzeCommand::List(command) => command.output.format == SnapshotFormat::Human,
+                AnalyzeCommand::Explain(command) => command.output.format == SnapshotFormat::Human,
+                AnalyzeCommand::Reveal(command) => command.output.format == SnapshotFormat::Human,
+                AnalyzeCommand::TrashPreview(command) => {
+                    command.output.format == SnapshotFormat::Human
+                }
+                AnalyzeCommand::TrashExecute(command) => {
+                    command.output.format == SnapshotFormat::Human
+                }
+                AnalyzeCommand::TrashPlan(_) => false,
             },
             Some(Command::Status(group)) => match &group.command {
                 StatusCommand::Snapshot(command) => command.output.format == SnapshotFormat::Human,
                 StatusCommand::Live(command) => command.format == StreamFormat::Human,
+                StatusCommand::Health(command) => command.output.format == SnapshotFormat::Human,
+                StatusCommand::Process(group) => match &group.command {
+                    StatusProcessCommand::Plan(_) => false,
+                    StatusProcessCommand::Preview(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    StatusProcessCommand::Terminate(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                },
+                StatusCommand::KeepAwake(group) => match &group.command {
+                    StatusKeepAwakeCommand::Run(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                    StatusKeepAwakeCommand::Status(command)
+                    | StatusKeepAwakeCommand::Stop(command) => {
+                        command.output.format == SnapshotFormat::Human
+                    }
+                },
             },
             Some(Command::History(group)) => match &group.command {
                 HistoryCommand::List(command) => command.output.format == SnapshotFormat::Human,
@@ -775,21 +1919,74 @@ fn chinese_command_description(path: &[String]) -> &'static str {
         "clean rules" => "检查清理规则。",
         "clean rules list" => "列出清理规则。",
         "clean rules show" => "显示一条清理规则。",
-        "software" => "盘点软件并规划当前用户 MSIX 移除。",
+        "clean ai" => "检查并规划可选的 AI 工具数据清理。",
+        "clean ai scan" => "观察一个 AI 主目录，或在省略 --home 时观察生产默认目录。",
+        "clean ai plan" => "按数据类从观察文档创建保存的 AI 计划。",
+        "clean ai preview" => "实时预览保存的 AI 计划并计算摘要。",
+        "clean ai execute" => "写入恢复包后，把已确认的目标移入回收站。",
+        "clean ai recovery-list" => "列出恢复包，不执行恢复。",
+        "clean ai restore-plan" => "为一个恢复包创建恢复计划。",
+        "software" => "盘点软件、检查更新，并规划当前用户维护。",
         "software inventory" => "只读盘点已安装软件。",
         "software plan" => "根据软件盘点创建保存的计划。",
         "software preview" => "实时预览保存的软件计划并计算摘要。",
         "software uninstall" => "派发已确认的当前用户 MSIX 卸载计划。",
+        "software updates" => "检查可用更新，并在明确确认后更新一个软件包。",
+        "software updates check" => "只读检查可用更新。",
+        "software updates plan" => "为一个软件包、来源和版本创建保存的更新计划。",
+        "software updates preview" => "实时预览保存的软件包更新计划。",
+        "software updates execute" => {
+            "在明确确认后应用一个软件包更新计划。需要重启时不记为已更新。"
+        }
+        "software startup" => "列出启动项，并切换当前用户或离线夹具的批准状态。",
+        "software startup list" => "列出启动项。",
+        "software startup plan" => "创建保存的启动项切换计划。",
+        "software startup preview" => "实时预览保存的启动项切换计划。",
+        "software startup execute" => "在明确确认后应用启动项切换计划。",
+        "software startup hive-plan" => "从离线夹具配置单元创建启动项切换计划。",
+        "software startup hive-preview" => "实时预览离线夹具中的启动项切换计划。",
+        "software startup hive-execute" => "在明确确认后切换离线夹具中的一个启动项。",
+        "software startup restore-plan" => "根据配置单元执行报告创建恢复计划。",
+        "software startup restore-preview" => "实时预览离线夹具的启动项恢复计划。",
+        "software startup restore-execute" => "仅当现场身份仍匹配时恢复一个离线启动项。",
+        "software leftovers" => "在卸载结果为已移除后审查残留，并处理一个关闭的注册表残留键。",
+        "software leftovers scan" => "从软件盘点扫描残留候选。",
+        "software leftovers plan" => "创建保存的残留目录移除计划。",
+        "software leftovers preview" => "实时预览保存的残留计划。",
+        "software leftovers execute" => "在明确确认后把残留目录移入回收站。",
+        "software leftovers registry-plan" => "为一个关闭的注册表残留夹具键创建计划。",
+        "software leftovers registry-preview" => "实时预览一个关闭的注册表残留计划。",
+        "software leftovers registry-execute" => "先做精确字节备份，再修改一个关闭的注册表残留键。",
+        "software leftovers registry-restore-plan" => "根据残留执行报告创建恢复计划。",
+        "software leftovers registry-restore-preview" => "对照现场字节预览残留恢复。",
+        "software leftovers registry-restore-execute" => "仅当现场字节仍匹配时恢复一个残留键。",
         "optimize" => "检查和规划一个受限 Windows 优化。",
         "optimize list" => "列出冻结的优化目录。",
         "optimize plan" => "为一个精确操作创建保存的计划。",
         "optimize preview" => "实时预览保存的优化计划并计算摘要。",
         "optimize run" => "运行已确认的优化计划。",
-        "analyze" => "分析磁盘占用，不创建可执行计划。",
+        "optimize health" => "打印只读磁盘健康。此命令不修复。",
+        "analyze" => "分析磁盘占用，并在明确确认后把选定节点移入回收站。",
         "analyze scan" => "分析一个磁盘根目录。",
+        "analyze roots" => "列出现有快照来源能看到的卷。缺失的根只记为该根的错误。",
+        "analyze list" => "列出一个快照节点的有界子项。",
+        "analyze explain" => "解释一个快照节点。此命令不创建清理计划。",
+        "analyze reveal" => "在资源管理器中显示一个快照节点。",
+        "analyze trash-plan" => "根据快照创建保存的回收站计划。",
+        "analyze trash-preview" => "实时预览保存的分析回收站计划。",
+        "analyze trash-execute" => "在明确确认后把快照节点移入回收站。",
         "status" => "检查当前系统状态。",
         "status snapshot" => "采集一次有界状态快照。",
         "status live" => "持续输出状态快照，直到取消。",
+        "status health" => "用证据说明一次状态快照。此命令不打分。",
+        "status process" => "审查一次进程终止。",
+        "status process plan" => "把 PID 和创建时间绑定到保存的计划。",
+        "status process preview" => "预览进程计划，并包含数据丢失说明。",
+        "status process terminate" => "在明确确认后终止一个已审查的进程。",
+        "status keep-awake" => "持有一个有限的内存租约，不修改持久电源计划。",
+        "status keep-awake run" => "开始一个有限的内存保活租约。",
+        "status keep-awake status" => "按所有者和令牌读取一个租约。",
+        "status keep-awake stop" => "按所有者和令牌释放一个租约。",
         "history" => "读取固定的 DevSweep 审计存储。",
         "history list" => "列出审计操作。",
         "history show" => "显示一条审计操作。",
@@ -814,14 +2011,43 @@ fn chinese_argument_description(id: &str) -> &'static str {
         "id" => "稳定规则 ID",
         "source" => "软件盘点来源",
         "inventory" => "保存的软件盘点 JSON 文件",
+        "entry" => "稳定启动项 ID",
+        "enabled" => "请求的启用状态，true 或 false",
+        "software_id" => "稳定软件 ID",
+        "uninstall_operation" => "已成功卸载的操作 ID",
+        "snapshot" => "保存的分析快照 JSON 文件",
+        "node" => "快照节点 ID",
+        "child_offset" => "跳过的子节点行数",
+        "child_limit" => "最大子节点行数",
         "operation" => "稳定优化操作 ID",
         "process_limit" => "最大进程行数",
         "interval" => "采样间隔秒数",
+        "pid" => "计划绑定的进程 ID",
+        "creation_time" => "计划绑定的进程创建 FILETIME",
+        "name" => "计划绑定的进程文件名",
+        "duration_ms" => "租约毫秒数，必须显式且有限",
+        "owner" => "租约所有者",
+        "token" => "保活会话令牌",
+        "endpoint" => "运行进程打印的环回地址",
         "domain" => "固定审计域",
         "limit" => "最大审计行数",
         "operation_id" => "稳定操作 ID",
+        "provider" => "AI 提供方",
+        "home" => "AI 主目录的绝对路径",
+        "class" => "AI 数据类",
+        "scan" => "保存的 AI 观察 JSON 文件",
+        "bundle" => "恢复包 ID",
         "help" => "显示当前上下文帮助",
         "version" => "显示版本",
+        "update_provider" => "更新提供程序。测试传入命令替身，不使用已安装的 winget。",
+        "package_id" => "更新表中的软件包 ID",
+        "update_source" => "软件包来源。仅支持 winget。",
+        "available_version" => "要规划的确切可用版本",
+        "hive" => "离线启动项夹具配置单元。不是本机 HKCU 或 HKLM。",
+        "startup_report" => "包含备份的配置单元执行报告",
+        "residue_key" => "关闭的注册表残留夹具键",
+        "backup" => "残留键的精确字节备份",
+        "residue" => "残留执行报告",
         _ => "命令参数",
     }
 }
@@ -830,7 +2056,8 @@ fn chinese_numeric_range(id: &str) -> Option<&'static str> {
     match id {
         "process_limit" => Some("1..100"),
         "interval" => Some("1..60"),
-        "limit" => Some("1..1000"),
+        "duration_ms" => Some("1..43200000"),
+        "limit" | "child_limit" => Some("1..1000"),
         _ => None,
     }
 }
@@ -839,13 +2066,48 @@ fn chinese_context_constraints(path: &[String]) -> &'static [&'static str] {
     match path.join(" ").as_str() {
         "" => &["直接运行 devsweep 仅在标准输入与标准输出都是 TTY 时打开 TUI。"],
         "clean scan" => &["--rescan-target 要求恰好一个 --root，且 scope 必须包含 projects。"],
-        "clean plan" | "software plan" | "optimize plan" => {
+        "clean plan"
+        | "software plan"
+        | "optimize plan"
+        | "software startup plan"
+        | "software leftovers plan"
+        | "software updates plan"
+        | "software startup hive-plan"
+        | "software startup restore-plan"
+        | "software leftovers registry-plan"
+        | "software leftovers registry-restore-plan"
+        | "analyze trash-plan"
+        | "clean ai plan"
+        | "clean ai restore-plan"
+        | "status process plan" => {
             &["计划命令不接受 --format 或 --language，只写版本化 JSON 计划。"]
         }
-        "clean preview" | "software preview" | "optimize preview" => {
-            &["计划输入与可选输出路径必须不同。"]
-        }
-        "clean execute" | "software uninstall" | "optimize run" => &[
+        "clean preview"
+        | "software preview"
+        | "optimize preview"
+        | "software startup preview"
+        | "software leftovers preview"
+        | "software updates preview"
+        | "software startup hive-preview"
+        | "software startup restore-preview"
+        | "software leftovers registry-preview"
+        | "software leftovers registry-restore-preview"
+        | "analyze trash-preview"
+        | "clean ai preview"
+        | "status process preview" => &["计划输入与可选输出路径必须不同。"],
+        "clean execute"
+        | "software uninstall"
+        | "optimize run"
+        | "software startup execute"
+        | "software leftovers execute"
+        | "software updates execute"
+        | "software startup hive-execute"
+        | "software startup restore-execute"
+        | "software leftovers registry-execute"
+        | "software leftovers registry-restore-execute"
+        | "analyze trash-execute"
+        | "clean ai execute"
+        | "status process terminate" => &[
             "必须同时提供保存计划、sha256: 加 64 位小写十六进制摘要和 --confirm。",
             "计划输入与可选输出路径必须不同；命令不会从 stdin 提示。",
         ],
@@ -857,7 +2119,16 @@ fn chinese_context_constraints(path: &[String]) -> &'static [&'static str] {
             "NDJSON interval 范围 1..60，process-limit 范围 1..100。",
         ],
         "status snapshot" => &["process-limit 范围 1..100，默认 15。"],
+        "status health" => &["只解释一次快照。CPU 负载不是系统故障，也不生成单一分数。"],
+        "status keep-awake run" => {
+            &["必须提供有限的 --duration-ms、所有者和 --confirm。此命令不修改持久电源计划。"]
+        }
         "history list" => &["limit 范围 1..1000，默认 100。"],
+        "clean ai scan" => &[
+            "--home 必须是绝对路径；只有省略 --home 时才使用提供方默认目录。",
+            "显式 --home 必须同时给出 --provider。",
+        ],
+        "clean ai recovery-list" => &["--home 必须是绝对路径。此命令不恢复文件。"],
         _ => &[],
     }
 }
@@ -876,6 +2147,15 @@ fn validate_execution_output(command: &PlanExecutionCommand) -> Result<(), Strin
     Ok(())
 }
 
+fn reject_distinct_output(left: &Path, right: &Path, output: Option<&Path>) -> Result<(), String> {
+    reject_same_path(left, right)?;
+    if let Some(output) = output {
+        reject_same_path(left, output)?;
+        reject_same_path(right, output)?;
+    }
+    Ok(())
+}
+
 fn reject_same_path(input: &Path, output: &Path) -> Result<(), String> {
     let input = std::path::absolute(input).unwrap_or_else(|_| input.to_path_buf());
     let output = std::path::absolute(output).unwrap_or_else(|_| output.to_path_buf());
@@ -883,6 +2163,14 @@ fn reject_same_path(input: &Path, output: &Path) -> Result<(), String> {
         return Err("input and output paths must differ".to_string());
     }
     Ok(())
+}
+
+fn parse_enabled(value: &str) -> Result<bool, String> {
+    match value {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => Err("enabled must be true or false".to_string()),
+    }
 }
 
 fn parse_regular_path(value: &str) -> Result<PathBuf, String> {
@@ -998,6 +2286,83 @@ mod tests {
                 &digest,
                 "--confirm",
             ],
+            vec!["devsweep", "software", "updates", "check"],
+            vec!["devsweep", "software", "startup", "list"],
+            vec![
+                "devsweep",
+                "software",
+                "startup",
+                "plan",
+                "--entry",
+                "startup:v1:example",
+                "--enabled",
+                "false",
+                "--output",
+                "p.json",
+            ],
+            vec![
+                "devsweep", "software", "startup", "preview", "--plan", "p.json",
+            ],
+            vec![
+                "devsweep",
+                "software",
+                "startup",
+                "execute",
+                "--plan",
+                "p.json",
+                "--preview-digest",
+                &digest,
+                "--confirm",
+            ],
+            vec![
+                "devsweep",
+                "software",
+                "leftovers",
+                "scan",
+                "--inventory",
+                "i.json",
+                "--select",
+                "software:v1:example",
+            ],
+            vec![
+                "devsweep",
+                "software",
+                "leftovers",
+                "plan",
+                "--inventory",
+                "i.json",
+                "--software-id",
+                "software:v1:example",
+                "--uninstall-operation",
+                "op-1",
+                "--select",
+                "candidate-1",
+                "--output",
+                "p.json",
+            ],
+            vec![
+                "devsweep",
+                "software",
+                "leftovers",
+                "preview",
+                "--inventory",
+                "i.json",
+                "--plan",
+                "p.json",
+            ],
+            vec![
+                "devsweep",
+                "software",
+                "leftovers",
+                "execute",
+                "--inventory",
+                "i.json",
+                "--plan",
+                "p.json",
+                "--preview-digest",
+                &digest,
+                "--confirm",
+            ],
             vec!["devsweep", "optimize", "list"],
             vec![
                 "devsweep",
@@ -1020,6 +2385,37 @@ mod tests {
                 "--confirm",
             ],
             vec!["devsweep", "analyze", "scan", "--root", "C:/code"],
+            vec![
+                "devsweep",
+                "analyze",
+                "reveal",
+                "--snapshot",
+                "s.json",
+                "--node",
+                "1",
+            ],
+            vec![
+                "devsweep",
+                "analyze",
+                "trash-plan",
+                "--snapshot",
+                "s.json",
+                "--select",
+                "1",
+                "--output",
+                "p.json",
+            ],
+            vec!["devsweep", "analyze", "trash-preview", "--plan", "p.json"],
+            vec![
+                "devsweep",
+                "analyze",
+                "trash-execute",
+                "--plan",
+                "p.json",
+                "--preview-digest",
+                &digest,
+                "--confirm",
+            ],
             vec!["devsweep", "status", "snapshot"],
             vec!["devsweep", "status", "live", "--format", "ndjson"],
             vec!["devsweep", "history", "list"],
@@ -1274,6 +2670,130 @@ mod tests {
                 vec![
                     "--plan".to_string(),
                     "optimize-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "startup", "execute"],
+                vec![
+                    "--plan".to_string(),
+                    "startup-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "leftovers", "execute"],
+                vec![
+                    "--inventory".to_string(),
+                    "inventory.json".to_string(),
+                    "--plan".to_string(),
+                    "leftover-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "updates", "execute"],
+                vec![
+                    "--plan".to_string(),
+                    "update-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "startup", "hive-execute"],
+                vec![
+                    "--hive".to_string(),
+                    "hive.json".to_string(),
+                    "--plan".to_string(),
+                    "hive-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "startup", "restore-execute"],
+                vec![
+                    "--hive".to_string(),
+                    "hive.json".to_string(),
+                    "--plan".to_string(),
+                    "restore-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "leftovers", "registry-execute"],
+                vec![
+                    "--key".to_string(),
+                    "DevSweepResidue".to_string(),
+                    "--backup".to_string(),
+                    "backup.bin".to_string(),
+                    "--plan".to_string(),
+                    "residue-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["software", "leftovers", "registry-restore-execute"],
+                vec![
+                    "--key".to_string(),
+                    "DevSweepResidue".to_string(),
+                    "--backup".to_string(),
+                    "backup.bin".to_string(),
+                    "--plan".to_string(),
+                    "residue-restore-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["clean", "ai", "execute"],
+                vec![
+                    "--plan".to_string(),
+                    "ai-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["status", "process", "terminate"],
+                vec![
+                    "--plan".to_string(),
+                    "process-plan.json".to_string(),
+                    "--preview-digest".to_string(),
+                    digest.clone(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["status", "keep-awake", "run"],
+                vec![
+                    "--duration-ms".to_string(),
+                    "1000".to_string(),
+                    "--owner".to_string(),
+                    "owner-a".to_string(),
+                    "--confirm".to_string(),
+                ],
+            ),
+            (
+                vec!["analyze", "trash-execute"],
+                vec![
+                    "--plan".to_string(),
+                    "analyze-plan.json".to_string(),
                     "--preview-digest".to_string(),
                     digest,
                     "--confirm".to_string(),
@@ -1626,16 +3146,53 @@ mod tests {
         fn context_constraint_codes(path: &str) -> &'static str {
             match path.strip_prefix("devsweep ").unwrap_or("") {
                 "clean scan" => "language_human,create_new,rescan_single_project_root",
-                "clean plan" | "software plan" | "optimize plan" => {
+                "clean plan"
+                | "software plan"
+                | "optimize plan"
+                | "software startup plan"
+                | "software leftovers plan"
+                | "software updates plan"
+                | "software startup hive-plan"
+                | "software startup restore-plan"
+                | "software leftovers registry-plan"
+                | "software leftovers registry-restore-plan"
+                | "analyze trash-plan"
+                | "clean ai plan"
+                | "clean ai restore-plan" => {
                     "plan_only,no_language,no_format,create_new,input_output_distinct"
                 }
-                "clean preview" | "software preview" | "optimize preview" => {
-                    "language_human,create_new,input_output_distinct"
-                }
-                "clean execute" | "software uninstall" | "optimize run" => {
+                "status process plan" => "plan_only,no_language,no_format,create_new",
+                "clean preview"
+                | "software preview"
+                | "optimize preview"
+                | "software startup preview"
+                | "software leftovers preview"
+                | "software updates preview"
+                | "software startup hive-preview"
+                | "software startup restore-preview"
+                | "software leftovers registry-preview"
+                | "software leftovers registry-restore-preview"
+                | "analyze trash-preview"
+                | "clean ai preview"
+                | "status process preview" => "language_human,create_new,input_output_distinct",
+                "clean execute"
+                | "software uninstall"
+                | "optimize run"
+                | "software startup execute"
+                | "software leftovers execute"
+                | "software updates execute"
+                | "software startup hive-execute"
+                | "software startup restore-execute"
+                | "software leftovers registry-execute"
+                | "software leftovers registry-restore-execute"
+                | "analyze trash-execute"
+                | "clean ai execute"
+                | "status process terminate" => {
                     "language_human,create_new,input_output_distinct,digest_confirm,no_prompt"
                 }
-                "clean protect add" | "clean protect remove" => "language_human,create_new,confirm",
+                "clean protect add" | "clean protect remove" | "status keep-awake run" => {
+                    "language_human,create_new,confirm"
+                }
                 "status live" => "language_human,create_new,human_tty_output_conflict",
                 "" => "bare_stdin_stdout_tty,language_session_only",
                 _ => "language_human,create_new",

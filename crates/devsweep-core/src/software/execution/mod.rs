@@ -20,6 +20,7 @@ use super::{
 use crate::process::{CancelObserver, FlagCancelObserver};
 
 mod msix;
+mod provider;
 
 pub use super::audit::{
     SOFTWARE_AUDIT_VERSION, SoftwareAuditError, SoftwareAuditErrorCode, SoftwareAuditRecordV1,
@@ -170,6 +171,15 @@ trait MsixRemovalAdapter: Send + Sync {
     ) -> AdapterEvidence;
 }
 
+trait FixtureRemovalAdapter: Send + Sync {
+    fn start(
+        &self,
+        action: &ValidatedSoftwareAction,
+        cancel: Option<&Arc<FlagCancelObserver>>,
+        timing: RemovalTiming,
+    ) -> AdapterEvidence;
+}
+
 trait InstalledStateRequery: Send + Sync {
     fn query(&self, package_full_name: &str) -> RequeryObservation;
 }
@@ -219,14 +229,19 @@ impl LiveSoftwareInventory for RealLiveSoftwareInventory {
 pub struct ValidatedSoftwareAction {
     id: String,
     identity: SoftwareIdentity,
-    package_full_name: String,
+    requery_key: String,
     inventory_fingerprint: String,
     preview_digest: String,
+    launch: Option<super::FixtureLaunch>,
 }
 
 impl ValidatedSoftwareAction {
     fn package_full_name(&self) -> &str {
-        &self.package_full_name
+        &self.requery_key
+    }
+
+    fn launch(&self) -> Option<&super::FixtureLaunch> {
+        self.launch.as_ref()
     }
 }
 
@@ -234,7 +249,7 @@ impl ValidatedSoftwareAction {
 struct AuditActionContext<'a> {
     software_id: &'a str,
     identity: &'a SoftwareIdentity,
-    package_full_name: &'a str,
+    requery_key: &'a str,
     inventory_fingerprint: &'a str,
     preview_digest: &'a str,
 }
@@ -244,7 +259,7 @@ impl<'a> From<&'a ValidatedSoftwareAction> for AuditActionContext<'a> {
         Self {
             software_id: &action.id,
             identity: &action.identity,
-            package_full_name: &action.package_full_name,
+            requery_key: &action.requery_key,
             inventory_fingerprint: &action.inventory_fingerprint,
             preview_digest: &action.preview_digest,
         }
@@ -353,6 +368,7 @@ enum CrashPoint {
 #[derive(Clone)]
 pub struct SoftwareExecutor {
     adapter: Arc<dyn MsixRemovalAdapter>,
+    fixture_adapter: Arc<dyn FixtureRemovalAdapter>,
     requery: Arc<dyn InstalledStateRequery>,
     live_inventory: Arc<dyn LiveSoftwareInventory>,
     audit_path: Option<PathBuf>,
@@ -365,6 +381,7 @@ impl Default for SoftwareExecutor {
     fn default() -> Self {
         Self {
             adapter: Arc::new(RealMsixAdapter),
+            fixture_adapter: Arc::new(provider::RealFixtureAdapter),
             requery: Arc::new(RealInstalledStateRequery),
             live_inventory: Arc::new(RealLiveSoftwareInventory),
             audit_path: None,
@@ -505,7 +522,11 @@ impl SoftwareExecutor {
             ));
         }
 
-        let adapter = self.adapter.remove(action, cancel, self.timing);
+        let adapter = if action.launch.is_some() {
+            self.fixture_adapter.start(action, cancel, self.timing)
+        } else {
+            self.adapter.remove(action, cancel, self.timing)
+        };
         if adapter.outcome != AdapterOutcome::Unfinished {
             journal.append(record(
                 &operation_id,
@@ -558,12 +579,10 @@ impl SoftwareExecutor {
         let pending = journal.pending_operations();
         let mut recovered = Vec::with_capacity(pending.len());
         for pending in pending {
-            let SoftwareIdentity::Msix { package_full_name } = &pending.identity else {
-                return Err(SoftwareAuditError::InvalidTransition {
-                    operation_id: pending.operation_id,
-                    detail: "non-MSIX recovery identity",
-                }
-                .into());
+            let requery_key = match &pending.identity {
+                SoftwareIdentity::Msix { package_full_name } => package_full_name.as_str(),
+                SoftwareIdentity::Msi { product_code, .. } => product_code.as_str(),
+                SoftwareIdentity::Arp { subkey, .. } => subkey.as_str(),
             };
             let software_id = super::software_id(&pending.identity).map_err(|_| {
                 SoftwareAuditError::InvalidTransition {
@@ -574,7 +593,7 @@ impl SoftwareExecutor {
             let context = AuditActionContext {
                 software_id: &software_id,
                 identity: &pending.identity,
-                package_full_name,
+                requery_key,
                 inventory_fingerprint: &pending.inventory_fingerprint,
                 preview_digest: &pending.preview_digest,
             };
@@ -655,7 +674,7 @@ impl SoftwareExecutor {
             if offset > elapsed {
                 std::thread::sleep(offset - elapsed);
             }
-            let observation = self.requery.query(context.package_full_name);
+            let observation = self.requery.query(context.requery_key);
             if merge_requery_state(Some(final_observation.state), observation.state)
                 == observation.state
             {
@@ -686,6 +705,7 @@ impl SoftwareExecutor {
     ) -> Self {
         Self {
             adapter,
+            fixture_adapter: Arc::new(provider::RealFixtureAdapter),
             requery,
             live_inventory,
             audit_path: Some(path),
@@ -697,6 +717,12 @@ impl SoftwareExecutor {
             requery_offsets: [Duration::ZERO; 3],
             crash_point: CrashPoint::None,
         }
+    }
+
+    #[cfg(test)]
+    fn with_fixture_adapter(mut self, adapter: Arc<dyn FixtureRemovalAdapter>) -> Self {
+        self.fixture_adapter = adapter;
+        self
     }
 }
 
@@ -729,33 +755,60 @@ fn construct_validated_actions(
         .selected
         .iter()
         .map(|item| {
-            if item.action_class != SoftwareActionClass::RemoveCurrentUserMsix
-                || item.scope != SoftwareScope::CurrentUser
-                || item.eligibility != SoftwareEligibilityReason::EligibleCurrentUserMsix
-            {
-                return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
-            }
             let live = live_inventory
                 .entries
                 .iter()
                 .find(|entry| entry.id == item.id)
                 .ok_or_else(|| SoftwarePlanError::StaleSelection(item.id.clone()))?;
-            let SoftwareIdentity::Msix { package_full_name } = &live.identity else {
-                return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
-            };
             if item.identity != live.identity {
                 return Err(SoftwarePlanError::StaleSelection(item.id.clone()));
             }
-            if !super::plan::valid_package_full_name(package_full_name) {
-                return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
+            match item.action_class {
+                SoftwareActionClass::RemoveCurrentUserMsix => {
+                    if item.scope != SoftwareScope::CurrentUser
+                        || item.eligibility != SoftwareEligibilityReason::EligibleCurrentUserMsix
+                    {
+                        return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
+                    }
+                    let SoftwareIdentity::Msix { package_full_name } = &live.identity else {
+                        return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
+                    };
+                    if !super::plan::valid_package_full_name(package_full_name) {
+                        return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
+                    }
+                    Ok(ValidatedSoftwareAction {
+                        id: item.id.clone(),
+                        identity: live.identity.clone(),
+                        requery_key: package_full_name.clone(),
+                        inventory_fingerprint: preview.inventory_fingerprint.clone(),
+                        preview_digest: preview.digest.clone(),
+                        launch: None,
+                    })
+                }
+                SoftwareActionClass::RemoveMsiProduct
+                | SoftwareActionClass::RemoveVendorUninstaller
+                | SoftwareActionClass::RemoveScoopApp => {
+                    let launch = live.launch.clone().ok_or_else(|| {
+                        SoftwarePlanError::InvalidSelectedIdentity(item.id.clone())
+                    })?;
+                    if item.scope != super::scope_for_identity(&live.identity)
+                        || item.eligibility != super::launch::eligibility_reason(launch.kind)
+                        || item.action_class != super::launch::action_class(launch.kind)
+                        || super::launch::validate_fixture_launch(&launch).is_err()
+                        || !super::launch::launch_matches_identity(&live.identity, &launch)
+                    {
+                        return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
+                    }
+                    Ok(ValidatedSoftwareAction {
+                        id: item.id.clone(),
+                        identity: live.identity.clone(),
+                        requery_key: launch.target_id.clone(),
+                        inventory_fingerprint: preview.inventory_fingerprint.clone(),
+                        preview_digest: preview.digest.clone(),
+                        launch: Some(launch),
+                    })
+                }
             }
-            Ok(ValidatedSoftwareAction {
-                id: item.id.clone(),
-                identity: live.identity.clone(),
-                package_full_name: package_full_name.clone(),
-                inventory_fingerprint: preview.inventory_fingerprint.clone(),
-                preview_digest: preview.digest.clone(),
-            })
         })
         .collect()
 }

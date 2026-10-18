@@ -25,15 +25,19 @@ use super::{
     SoftwareAuditError, SoftwareIdentity, SoftwareInventoryV1, SoftwareSizeBasis,
     SoftwareSizeEvidence, SoftwareSizeSourceCode, SoftwareSupportErrorCode,
     SoftwareSupportOutcomeCode,
-    audit::{SoftwareAuditJournal, SoftwareSupportAuditRecordV1},
+    audit::{
+        SoftwareAuditInspection, SoftwareAuditJournal, SoftwareSupportAuditRecordV1,
+        SoftwareSupportJournal, SoftwareSupportLifecycleRecordV1, SoftwareSupportOperation,
+        SoftwareSupportTerminalResult, SupportAppendFault,
+    },
     software_audit_v1_path, software_id, unix_ms,
 };
 use crate::{
     execution::{SystemTrashRunner, TrashRunner, UserProtectionList},
     filesystem::{
         DEFAULT_SIZE_ENTRY_BUDGET, PathSafety, SizeEstimate, SystemPathReparseProbe,
-        estimate_trees_with_budget_and_cancel, inspect_entry_no_follow, normalize_absolute_path,
-        path_is_within,
+        capture_path_identity, estimate_trees_with_budget_and_cancel, inspect_entry_no_follow,
+        normalize_absolute_path, path_is_within,
     },
     process::{CancelObserver, FlagCancelObserver},
 };
@@ -63,6 +67,8 @@ pub enum SoftwareLeftoverOrigin {
     RoamingAppData,
     LocalAppData,
     ProgramData,
+    /// A directory under a personal-data root. It starts unselected.
+    PersonalData,
 }
 
 /// `certain` candidates come from the product's own `InstallLocation`;
@@ -166,6 +172,50 @@ pub struct SoftwareLeftoverOutcomeV1 {
     pub error_code: Option<SoftwareSupportErrorCode>,
 }
 
+/// Name and publisher matches are untrusted hints. A succeeded uninstall does
+/// not raise certainty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SoftwareLeftoverLabelTrust {
+    UntrustedHint,
+}
+
+/// Strict leftover preview. `digest` binds the unchanged V1 digest and identities.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareLeftoverStrictPreviewV1 {
+    pub version: u32,
+    pub items: Vec<SoftwareLeftoverCandidateV1>,
+    pub v1_digest: String,
+    pub digest: String,
+    pub label_trust: SoftwareLeftoverLabelTrust,
+}
+
+/// Strict leftover result. `unknown` means the terminal audit did not complete.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SoftwareLeftoverStrictOutcome {
+    Succeeded,
+    Failed,
+    Unknown,
+    Refused,
+}
+
+/// Strict leftover removal report. It does not rewrite `software.jsonl`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareLeftoverStrictReportV1 {
+    pub version: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation_id: Option<String>,
+    pub outcome: SoftwareLeftoverStrictOutcome,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_code: Option<String>,
+    pub outcomes: Vec<SoftwareLeftoverOutcomeV1>,
+    pub moved_known_bytes: u64,
+    pub lower_bound: bool,
+}
+
 /// Leftover removal report. Bytes are "moved to the Recycle Bin".
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -195,6 +245,11 @@ pub enum SoftwareLeftoverError {
     DigestMismatch,
     ProtectionUnavailable,
     SerializationFailed,
+    CandidateChanged(String),
+    IdentityUnavailable(String),
+    AuditUnavailable,
+    Canceled,
+    ResidueChanged,
     Audit(SoftwareAuditError),
 }
 
@@ -218,7 +273,7 @@ impl fmt::Display for SoftwareLeftoverError {
             }
             Self::UninstallNotSucceeded(id) => write!(
                 formatter,
-                "Software audit has no succeeded uninstall for operation {id}"
+                "Software audit has no removed uninstall for operation {id}"
             ),
             Self::DigestMismatch => formatter.write_str("leftover preview digest mismatch"),
             Self::ProtectionUnavailable => {
@@ -226,6 +281,17 @@ impl fmt::Display for SoftwareLeftoverError {
             }
             Self::SerializationFailed => {
                 formatter.write_str("leftover canonical serialization failed")
+            }
+            Self::CandidateChanged(id) => {
+                write!(formatter, "leftover candidate {id} changed")
+            }
+            Self::IdentityUnavailable(id) => {
+                write!(formatter, "leftover candidate {id} has no path identity")
+            }
+            Self::AuditUnavailable => formatter.write_str("leftover support audit is unavailable"),
+            Self::Canceled => formatter.write_str("leftover removal was canceled before dispatch"),
+            Self::ResidueChanged => {
+                formatter.write_str("registry residue bytes changed since the backup")
             }
             Self::Audit(error) => error.fmt(formatter),
         }
@@ -247,12 +313,39 @@ impl From<SoftwareAuditError> for SoftwareLeftoverError {
     }
 }
 
+impl SoftwareLeftoverError {
+    /// Stable machine code.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::ConfirmationRequired => "confirmation_required",
+            Self::UnsupportedPlanVersion(_) => "unsupported_plan_version",
+            Self::UnknownSelection(_) => "unknown_selection",
+            Self::InvalidIdentity(_) => "invalid_identity",
+            Self::EmptySelection => "empty_selection",
+            Self::DuplicateSelection(_) => "duplicate_selection",
+            Self::StaleCandidate(_) => "stale_candidate",
+            Self::UninstallNotSucceeded(_) => "uninstall_not_succeeded",
+            Self::DigestMismatch => "digest_mismatch",
+            Self::ProtectionUnavailable => "protection_unavailable",
+            Self::SerializationFailed => "serialization_failed",
+            Self::CandidateChanged(_) => "candidate_changed",
+            Self::IdentityUnavailable(_) => "identity_unavailable",
+            Self::AuditUnavailable | Self::Audit(_) => "audit_unavailable",
+            Self::Canceled => "canceled",
+            Self::ResidueChanged => "residue_changed",
+        }
+    }
+}
+
 /// Candidate roots and exclusions for one run.
 #[derive(Debug, Clone)]
 struct LeftoverEnvironment {
     roaming: Option<PathBuf>,
     local: Option<PathBuf>,
     program_data: Option<PathBuf>,
+    /// Documents, Desktop, Downloads, Pictures, Music, and Videos when present.
+    personal: Vec<PathBuf>,
     /// A candidate may not equal or contain any of these paths.
     system_roots: Vec<PathBuf>,
     /// A candidate may not sit inside any of these trees.
@@ -305,6 +398,7 @@ impl LeftoverEnvironment {
             roaming: var("APPDATA"),
             local: var("LOCALAPPDATA"),
             program_data: var("ProgramData"),
+            personal: personal_roots(var("USERPROFILE")),
             system_roots,
             system_trees,
             protections,
@@ -319,7 +413,18 @@ impl LeftoverEnvironment {
         ]
         .into_iter()
         .filter_map(|(root, origin)| root.as_deref().map(|root| (root, origin)))
+        .chain(
+            self.personal
+                .iter()
+                .map(|root| (root.as_path(), SoftwareLeftoverOrigin::PersonalData)),
+        )
         .collect()
+    }
+
+    fn personal_candidate(&self, path: &Path) -> bool {
+        self.personal
+            .iter()
+            .any(|root| path != root.as_path() && path_is_within(root, path))
     }
 
     /// Returns why `path` can never be a candidate, if it cannot.
@@ -333,6 +438,7 @@ impl LeftoverEnvironment {
                 .chain(self.roaming.iter())
                 .chain(self.local.iter())
                 .chain(self.program_data.iter())
+                .chain(self.personal.iter())
         };
         for root in roots() {
             // The candidate equals or contains a system or candidate root.
@@ -645,7 +751,7 @@ fn require_succeeded_uninstall(
     operation_id: &str,
     identity: &SoftwareIdentity,
 ) -> Result<(), SoftwareLeftoverError> {
-    if journal.uninstall_succeeded(operation_id, identity) {
+    if journal.uninstall_removed(operation_id, identity) {
         Ok(())
     } else {
         Err(SoftwareLeftoverError::UninstallNotSucceeded(
@@ -749,16 +855,22 @@ fn discover_candidates(
     accepted
         .into_iter()
         .zip(sizes)
-        .map(
-            |((key, path, origin, certainty), size)| SoftwareLeftoverCandidateV1 {
+        .map(|((key, path, origin, certainty), size)| {
+            let origin = if environment.personal_candidate(&path) {
+                SoftwareLeftoverOrigin::PersonalData
+            } else {
+                origin
+            };
+            SoftwareLeftoverCandidateV1 {
                 id: candidate_id(subject.software_id, origin, &key),
+                selected_by_default: origin != SoftwareLeftoverOrigin::PersonalData
+                    && certainty == SoftwareLeftoverCertainty::Certain,
+                size: size_evidence(&size, observed_at_unix_ms),
                 path,
                 origin,
                 certainty,
-                selected_by_default: certainty == SoftwareLeftoverCertainty::Certain,
-                size: size_evidence(&size, observed_at_unix_ms),
-            },
-        )
+            }
+        })
         .collect()
 }
 
@@ -776,6 +888,24 @@ fn live_refusal(
         Ok(_) => Some(SoftwareSupportErrorCode::UnsafePath),
         Err(_) => Some(SoftwareSupportErrorCode::NotPresent),
     }
+}
+
+fn personal_roots(profile: Option<PathBuf>) -> Vec<PathBuf> {
+    let Some(profile) = profile else {
+        return Vec::new();
+    };
+    [
+        "Desktop",
+        "Documents",
+        "Downloads",
+        "Music",
+        "Pictures",
+        "Videos",
+    ]
+    .into_iter()
+    .map(|name| profile.join(name))
+    .filter(|path| path.is_dir())
+    .collect()
 }
 
 /// Accepts one plain directory name: no separators, drive, or dot segments.
@@ -856,6 +986,648 @@ fn next_operation_id() -> String {
     )
 }
 
+/// Read-only strict preview. It does not create the audit directory, lock, or file.
+pub fn preview_software_leftover_plan(
+    inventory: &SoftwareInventoryV1,
+    plan: &SoftwareLeftoverPlanV1,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Result<SoftwareLeftoverStrictPreviewV1, SoftwareLeftoverError> {
+    preview_strict_with(
+        &LeftoverEnvironment::production()?,
+        &software_audit_v1_path()?,
+        inventory,
+        plan,
+        install_location,
+        cancel,
+    )
+}
+
+/// Strict leftover removal. The public entry does not accept an audit path.
+pub fn execute_software_leftover_plan(
+    inventory: &SoftwareInventoryV1,
+    plan: &SoftwareLeftoverPlanV1,
+    expected_preview_digest: &str,
+    confirmed: bool,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Result<SoftwareLeftoverStrictReportV1, SoftwareLeftoverError> {
+    execute_strict_with(StrictLeftoverExecute {
+        environment: &LeftoverEnvironment::production()?,
+        audit_path: &software_audit_v1_path()?,
+        trash: &SystemTrashRunner,
+        locate: install_location,
+        inventory,
+        plan,
+        expected_preview_digest,
+        confirmed,
+        cancel,
+        fault: SupportAppendFault::NONE,
+    })
+}
+
+struct StrictLeftoverExecute<'a> {
+    environment: &'a LeftoverEnvironment,
+    audit_path: &'a Path,
+    trash: &'a dyn TrashRunner,
+    locate: fn(&SoftwareIdentity) -> Option<PathBuf>,
+    inventory: &'a SoftwareInventoryV1,
+    plan: &'a SoftwareLeftoverPlanV1,
+    expected_preview_digest: &'a str,
+    confirmed: bool,
+    cancel: Option<&'a Arc<FlagCancelObserver>>,
+    fault: SupportAppendFault,
+}
+
+struct BoundLeftovers {
+    items: Vec<SoftwareLeftoverCandidateV1>,
+    v1_digest: String,
+    identities: Vec<(String, String)>,
+}
+
+fn preview_strict_with(
+    environment: &LeftoverEnvironment,
+    audit_path: &Path,
+    inventory: &SoftwareInventoryV1,
+    plan: &SoftwareLeftoverPlanV1,
+    locate: fn(&SoftwareIdentity) -> Option<PathBuf>,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Result<SoftwareLeftoverStrictPreviewV1, SoftwareLeftoverError> {
+    let bound = strict_candidates(environment, audit_path, inventory, plan, locate, cancel)?;
+    Ok(SoftwareLeftoverStrictPreviewV1 {
+        version: SOFTWARE_LEFTOVER_VERSION,
+        digest: strict_digest(&bound.v1_digest, &bound.identities)?,
+        v1_digest: bound.v1_digest,
+        label_trust: SoftwareLeftoverLabelTrust::UntrustedHint,
+        items: bound.items,
+    })
+}
+
+fn execute_strict_with(
+    request: StrictLeftoverExecute<'_>,
+) -> Result<SoftwareLeftoverStrictReportV1, SoftwareLeftoverError> {
+    let StrictLeftoverExecute {
+        environment,
+        audit_path,
+        trash,
+        locate,
+        inventory,
+        plan,
+        expected_preview_digest,
+        confirmed,
+        cancel,
+        fault,
+    } = request;
+    if !confirmed {
+        return Err(SoftwareLeftoverError::ConfirmationRequired);
+    }
+    if cancel
+        .as_ref()
+        .is_some_and(|flag| flag.is_cancel_requested())
+    {
+        return Err(SoftwareLeftoverError::Canceled);
+    }
+    let bound = strict_candidates(environment, audit_path, inventory, plan, locate, cancel)?;
+    let digest = strict_digest(&bound.v1_digest, &bound.identities)?;
+    if digest != expected_preview_digest {
+        if expected_preview_digest == bound.v1_digest {
+            return Err(SoftwareLeftoverError::DigestMismatch);
+        }
+        return Err(SoftwareLeftoverError::CandidateChanged(
+            bound
+                .items
+                .first()
+                .map(|item| item.id.clone())
+                .unwrap_or_default(),
+        ));
+    }
+    let mut journal = SoftwareSupportJournal::open(audit_path).map_err(map_leftover_audit)?;
+    if !journal.uninstall_removed(&plan.uninstall_operation_id, &plan.identity) {
+        return Err(SoftwareLeftoverError::UninstallNotSucceeded(
+            plan.uninstall_operation_id.clone(),
+        ));
+    }
+    let rebound = bind_candidates(environment, plan, locate, cancel)?;
+    if rebound.v1_digest != bound.v1_digest || rebound.identities != bound.identities {
+        return Err(SoftwareLeftoverError::CandidateChanged(
+            rebound
+                .items
+                .first()
+                .map(|item| item.id.clone())
+                .unwrap_or_default(),
+        ));
+    }
+    let operation_id = next_operation_id();
+    let plan_identity = leftover_plan_identity(plan)?;
+    journal
+        .append_lifecycle(
+            SoftwareSupportLifecycleRecordV1::started(
+                SoftwareSupportOperation::LeftoverMove,
+                &operation_id,
+                unix_ms(SystemTime::now()),
+                &plan_identity,
+                &digest,
+            ),
+            fault,
+        )
+        .map_err(|_| SoftwareLeftoverError::AuditUnavailable)?;
+    let rechecked = match bind_candidates(environment, plan, locate, cancel) {
+        Ok(value) => value,
+        Err(error) => {
+            return finish_leftover_refused(
+                &mut journal,
+                fault,
+                &operation_id,
+                &plan_identity,
+                &digest,
+                error,
+            );
+        }
+    };
+    let items = rechecked.items;
+    if rechecked.v1_digest != bound.v1_digest || rechecked.identities != bound.identities {
+        return finish_leftover_refused(
+            &mut journal,
+            fault,
+            &operation_id,
+            &plan_identity,
+            &digest,
+            SoftwareLeftoverError::CandidateChanged(
+                items
+                    .first()
+                    .map(|item| item.id.clone())
+                    .unwrap_or_default(),
+            ),
+        );
+    }
+    let mut outcomes = Vec::with_capacity(items.len());
+    let mut moved_known_bytes = 0_u64;
+    let mut lower_bound = false;
+    let mut any_failed = false;
+    for item in &items {
+        let (outcome, estimated_bytes, error_code) =
+            if let Some(code) = live_refusal(environment, &item.path) {
+                (SoftwareSupportOutcomeCode::Skipped, None, Some(code))
+            } else {
+                match trash.move_to_trash(&item.path) {
+                    Ok(()) => {
+                        let (bytes, partial) = size_bytes(&item.size);
+                        if let Some(bytes) = bytes {
+                            moved_known_bytes = moved_known_bytes.saturating_add(bytes);
+                        }
+                        lower_bound |= partial || bytes.is_none();
+                        (SoftwareSupportOutcomeCode::Succeeded, bytes, None)
+                    }
+                    Err(_) => {
+                        any_failed = true;
+                        (
+                            SoftwareSupportOutcomeCode::Failed,
+                            None,
+                            Some(SoftwareSupportErrorCode::TrashFailed),
+                        )
+                    }
+                }
+            };
+        outcomes.push(SoftwareLeftoverOutcomeV1 {
+            candidate_id: item.id.clone(),
+            certainty: item.certainty,
+            outcome,
+            estimated_bytes,
+            error_code,
+        });
+    }
+    let (terminal, outcome, error_code) = if any_failed {
+        (
+            SoftwareSupportTerminalResult::Failed,
+            SoftwareLeftoverStrictOutcome::Failed,
+            Some("trash_failed"),
+        )
+    } else {
+        (
+            SoftwareSupportTerminalResult::Succeeded,
+            SoftwareLeftoverStrictOutcome::Succeeded,
+            None,
+        )
+    };
+    if journal
+        .append_lifecycle(
+            SoftwareSupportLifecycleRecordV1::terminal(
+                SoftwareSupportOperation::LeftoverMove,
+                &operation_id,
+                unix_ms(SystemTime::now()),
+                &plan_identity,
+                &digest,
+                terminal,
+                error_code,
+            ),
+            fault,
+        )
+        .is_err()
+    {
+        return Ok(SoftwareLeftoverStrictReportV1 {
+            version: SOFTWARE_LEFTOVER_VERSION,
+            operation_id: Some(operation_id),
+            outcome: SoftwareLeftoverStrictOutcome::Unknown,
+            error_code: Some("audit_unavailable".to_string()),
+            outcomes,
+            moved_known_bytes,
+            lower_bound,
+        });
+    }
+    Ok(SoftwareLeftoverStrictReportV1 {
+        version: SOFTWARE_LEFTOVER_VERSION,
+        operation_id: Some(operation_id),
+        outcome,
+        error_code: error_code.map(str::to_string),
+        outcomes,
+        moved_known_bytes,
+        lower_bound,
+    })
+}
+
+fn finish_leftover_refused(
+    journal: &mut SoftwareSupportJournal,
+    fault: SupportAppendFault,
+    operation_id: &str,
+    plan_identity: &str,
+    digest: &str,
+    error: SoftwareLeftoverError,
+) -> Result<SoftwareLeftoverStrictReportV1, SoftwareLeftoverError> {
+    let recorded = journal.append_lifecycle(
+        SoftwareSupportLifecycleRecordV1::terminal(
+            SoftwareSupportOperation::LeftoverMove,
+            operation_id,
+            unix_ms(SystemTime::now()),
+            plan_identity,
+            digest,
+            SoftwareSupportTerminalResult::Refused,
+            Some(error.code()),
+        ),
+        fault,
+    );
+    if recorded.is_err() {
+        return Ok(SoftwareLeftoverStrictReportV1 {
+            version: SOFTWARE_LEFTOVER_VERSION,
+            operation_id: Some(operation_id.to_string()),
+            outcome: SoftwareLeftoverStrictOutcome::Unknown,
+            error_code: Some("audit_unavailable".to_string()),
+            outcomes: Vec::new(),
+            moved_known_bytes: 0,
+            lower_bound: false,
+        });
+    }
+    Err(error)
+}
+
+fn strict_candidates(
+    environment: &LeftoverEnvironment,
+    audit_path: &Path,
+    inventory: &SoftwareInventoryV1,
+    plan: &SoftwareLeftoverPlanV1,
+    locate: fn(&SoftwareIdentity) -> Option<PathBuf>,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Result<BoundLeftovers, SoftwareLeftoverError> {
+    if plan.version != SOFTWARE_LEFTOVER_VERSION {
+        return Err(SoftwareLeftoverError::UnsupportedPlanVersion(plan.version));
+    }
+    verify_software_id(&plan.software_id, &plan.identity)?;
+    let entry = inventory
+        .entries
+        .iter()
+        .find(|entry| entry.id == plan.software_id)
+        .ok_or_else(|| SoftwareLeftoverError::UnknownSelection(plan.software_id.clone()))?;
+    if entry.identity != plan.identity {
+        return Err(SoftwareLeftoverError::InvalidIdentity(
+            plan.software_id.clone(),
+        ));
+    }
+    let removed = SoftwareAuditInspection::read(audit_path)
+        .map_err(map_leftover_audit)?
+        .uninstall_removed(&plan.uninstall_operation_id, &plan.identity);
+    if !removed {
+        return Err(SoftwareLeftoverError::UninstallNotSucceeded(
+            plan.uninstall_operation_id.clone(),
+        ));
+    }
+    bind_candidates(environment, plan, locate, cancel)
+}
+
+fn bind_candidates(
+    environment: &LeftoverEnvironment,
+    plan: &SoftwareLeftoverPlanV1,
+    locate: fn(&SoftwareIdentity) -> Option<PathBuf>,
+    cancel: Option<&Arc<FlagCancelObserver>>,
+) -> Result<BoundLeftovers, SoftwareLeftoverError> {
+    let candidates = discover_candidates(
+        environment,
+        &LeftoverSubject {
+            software_id: &plan.software_id,
+            display_name: plan.display_name.as_deref(),
+            publisher: plan.publisher.as_deref(),
+            install_location: locate(&plan.identity),
+        },
+        cancel,
+    );
+    let items = select_candidates(&candidates, &plan.selected_candidate_ids)?;
+    let v1_digest = plan_digest(plan, &items)?;
+    let mut identities = Vec::with_capacity(items.len());
+    for item in &items {
+        identities.push((
+            item.id.clone(),
+            capture_candidate_identity(&item.id, &item.path)?,
+        ));
+    }
+    Ok(BoundLeftovers {
+        items,
+        v1_digest,
+        identities,
+    })
+}
+
+fn capture_candidate_identity(id: &str, path: &Path) -> Result<String, SoftwareLeftoverError> {
+    let entry = inspect_entry_no_follow(path, &SystemPathReparseProbe)
+        .map_err(|_| SoftwareLeftoverError::IdentityUnavailable(id.to_string()))?;
+    if !entry.is_dir || entry.safety != PathSafety::Safe {
+        return Err(SoftwareLeftoverError::IdentityUnavailable(id.to_string()));
+    }
+    let identity = capture_path_identity(path)
+        .map_err(|_| SoftwareLeftoverError::IdentityUnavailable(id.to_string()))?;
+    let kind = serde_json::to_string(&identity.kind)
+        .map_err(|_| SoftwareLeftoverError::SerializationFailed)?;
+    let mut hasher = Sha256::new();
+    hasher.update(b"devsweep.software.leftover.identity.v1");
+    hasher.update([0]);
+    hasher.update(kind.as_bytes());
+    hasher.update([0]);
+    hasher.update(identity.value.as_bytes());
+    Ok(hex_digest(hasher.finalize()))
+}
+
+fn strict_digest(
+    v1_digest: &str,
+    identities: &[(String, String)],
+) -> Result<String, SoftwareLeftoverError> {
+    let canonical = serde_json::to_vec(&(
+        "devsweep.software.leftover.strict.v1",
+        v1_digest,
+        identities,
+    ))
+    .map_err(|_| SoftwareLeftoverError::SerializationFailed)?;
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
+}
+
+fn leftover_plan_identity(plan: &SoftwareLeftoverPlanV1) -> Result<String, SoftwareLeftoverError> {
+    let canonical = serde_json::to_vec(&("devsweep.software.leftover.plan-identity.v1", plan))
+        .map_err(|_| SoftwareLeftoverError::SerializationFailed)?;
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
+}
+
+/// File name of the one approved registry-residue fixture key.
+pub const REGISTRY_RESIDUE_KEY_NAME: &str = "DevSweepResidue";
+
+/// Registry-residue plan wire version.
+pub const REGISTRY_RESIDUE_VERSION: u32 = 1;
+
+const RESIDUE_POST_CHANGE: &[u8] = b"removed\n";
+
+/// Saved residue plan. It names the closed key, not a vendor prefix.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareRegistryResiduePlanV1 {
+    pub version: u32,
+    pub key_name: String,
+    pub before_sha256: String,
+}
+
+/// Live preview of one residue plan.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareRegistryResiduePreviewV1 {
+    pub version: u32,
+    pub key_name: String,
+    pub before_sha256: String,
+    pub digest: String,
+}
+
+/// Result of one residue change. `backup_sha256` is the exact pre-change bytes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareRegistryResidueReportV1 {
+    pub version: u32,
+    pub key_name: String,
+    pub backup_sha256: String,
+    pub post_change_sha256: String,
+}
+
+/// Conditional restore of one residue key.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareRegistryResidueRestorePlanV1 {
+    pub version: u32,
+    pub key_name: String,
+    pub backup_sha256: String,
+    pub post_change_sha256: String,
+}
+
+/// Live preview of one residue restore.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareRegistryResidueRestorePreviewV1 {
+    pub version: u32,
+    pub digest: String,
+}
+
+/// Reads one closed fixture key. It does not scan names or vendor prefixes.
+pub fn plan_registry_residue(
+    key_path: &Path,
+) -> Result<SoftwareRegistryResiduePlanV1, SoftwareLeftoverError> {
+    let bytes = read_closed_residue(key_path)?;
+    Ok(SoftwareRegistryResiduePlanV1 {
+        version: REGISTRY_RESIDUE_VERSION,
+        key_name: REGISTRY_RESIDUE_KEY_NAME.to_string(),
+        before_sha256: sha256_prefixed(&bytes),
+    })
+}
+
+/// Re-reads the key and binds its current bytes to `plan`.
+pub fn preview_registry_residue(
+    key_path: &Path,
+    plan: &SoftwareRegistryResiduePlanV1,
+) -> Result<SoftwareRegistryResiduePreviewV1, SoftwareLeftoverError> {
+    let bytes = read_closed_residue(key_path)?;
+    validate_residue_plan(plan, &sha256_prefixed(&bytes))?;
+    let digest = residue_digest(
+        "devsweep.software.residue.preview.v1",
+        &[&plan.key_name, &plan.before_sha256],
+    )?;
+    Ok(SoftwareRegistryResiduePreviewV1 {
+        version: REGISTRY_RESIDUE_VERSION,
+        key_name: plan.key_name.clone(),
+        before_sha256: plan.before_sha256.clone(),
+        digest,
+    })
+}
+
+/// Writes the exact key bytes to `backup_path`, then changes the key.
+pub fn execute_registry_residue(
+    key_path: &Path,
+    backup_path: &Path,
+    plan: &SoftwareRegistryResiduePlanV1,
+    expected_preview_digest: &str,
+    confirmed: bool,
+) -> Result<SoftwareRegistryResidueReportV1, SoftwareLeftoverError> {
+    if !confirmed {
+        return Err(SoftwareLeftoverError::ConfirmationRequired);
+    }
+    if key_path == backup_path {
+        return Err(SoftwareLeftoverError::InvalidIdentity(
+            REGISTRY_RESIDUE_KEY_NAME.to_string(),
+        ));
+    }
+    let preview = preview_registry_residue(key_path, plan)?;
+    if preview.digest != expected_preview_digest {
+        return Err(SoftwareLeftoverError::DigestMismatch);
+    }
+    let bytes = read_closed_residue(key_path)?;
+    if sha256_prefixed(&bytes) != plan.before_sha256 {
+        return Err(SoftwareLeftoverError::ResidueChanged);
+    }
+    fs::write(backup_path, &bytes).map_err(|_| SoftwareLeftoverError::AuditUnavailable)?;
+    if fs::read(backup_path).ok().as_deref() != Some(bytes.as_slice()) {
+        return Err(SoftwareLeftoverError::AuditUnavailable);
+    }
+    fs::write(key_path, RESIDUE_POST_CHANGE)
+        .map_err(|_| SoftwareLeftoverError::AuditUnavailable)?;
+    Ok(SoftwareRegistryResidueReportV1 {
+        version: REGISTRY_RESIDUE_VERSION,
+        key_name: REGISTRY_RESIDUE_KEY_NAME.to_string(),
+        backup_sha256: sha256_prefixed(&bytes),
+        post_change_sha256: sha256_prefixed(RESIDUE_POST_CHANGE),
+    })
+}
+
+/// Copies the execute report into a restore plan. It does not write the key.
+pub fn plan_registry_residue_restore(
+    report: &SoftwareRegistryResidueReportV1,
+) -> Result<SoftwareRegistryResidueRestorePlanV1, SoftwareLeftoverError> {
+    if report.version != REGISTRY_RESIDUE_VERSION
+        || report.key_name != REGISTRY_RESIDUE_KEY_NAME
+        || !super::audit::is_sha256_digest(&report.backup_sha256)
+        || !super::audit::is_sha256_digest(&report.post_change_sha256)
+    {
+        return Err(SoftwareLeftoverError::InvalidIdentity(
+            report.key_name.clone(),
+        ));
+    }
+    Ok(SoftwareRegistryResidueRestorePlanV1 {
+        version: REGISTRY_RESIDUE_VERSION,
+        key_name: report.key_name.clone(),
+        backup_sha256: report.backup_sha256.clone(),
+        post_change_sha256: report.post_change_sha256.clone(),
+    })
+}
+
+/// Re-reads the key and the backup. A byte change is a refusal, not a write.
+pub fn preview_registry_residue_restore(
+    key_path: &Path,
+    backup_path: &Path,
+    plan: &SoftwareRegistryResidueRestorePlanV1,
+) -> Result<SoftwareRegistryResidueRestorePreviewV1, SoftwareLeftoverError> {
+    bind_residue_restore(key_path, backup_path, plan)?;
+    Ok(SoftwareRegistryResidueRestorePreviewV1 {
+        version: REGISTRY_RESIDUE_VERSION,
+        digest: residue_digest(
+            "devsweep.software.residue.restore.preview.v1",
+            &[
+                &plan.key_name,
+                &plan.backup_sha256,
+                &plan.post_change_sha256,
+            ],
+        )?,
+    })
+}
+
+/// Restores the backup only when the live key still matches the post-change bytes.
+pub fn execute_registry_residue_restore(
+    key_path: &Path,
+    backup_path: &Path,
+    plan: &SoftwareRegistryResidueRestorePlanV1,
+    expected_preview_digest: &str,
+    confirmed: bool,
+) -> Result<(), SoftwareLeftoverError> {
+    if !confirmed {
+        return Err(SoftwareLeftoverError::ConfirmationRequired);
+    }
+    let preview = preview_registry_residue_restore(key_path, backup_path, plan)?;
+    if preview.digest != expected_preview_digest {
+        return Err(SoftwareLeftoverError::DigestMismatch);
+    }
+    let backup = bind_residue_restore(key_path, backup_path, plan)?;
+    fs::write(key_path, backup).map_err(|_| SoftwareLeftoverError::AuditUnavailable)
+}
+
+fn bind_residue_restore(
+    key_path: &Path,
+    backup_path: &Path,
+    plan: &SoftwareRegistryResidueRestorePlanV1,
+) -> Result<Vec<u8>, SoftwareLeftoverError> {
+    if plan.version != REGISTRY_RESIDUE_VERSION || plan.key_name != REGISTRY_RESIDUE_KEY_NAME {
+        return Err(SoftwareLeftoverError::InvalidIdentity(
+            plan.key_name.clone(),
+        ));
+    }
+    let live = read_closed_residue(key_path)?;
+    if sha256_prefixed(&live) != plan.post_change_sha256 {
+        return Err(SoftwareLeftoverError::ResidueChanged);
+    }
+    let backup = fs::read(backup_path)
+        .map_err(|_| SoftwareLeftoverError::StaleCandidate(plan.key_name.clone()))?;
+    if sha256_prefixed(&backup) != plan.backup_sha256 {
+        return Err(SoftwareLeftoverError::ResidueChanged);
+    }
+    Ok(backup)
+}
+
+fn read_closed_residue(key_path: &Path) -> Result<Vec<u8>, SoftwareLeftoverError> {
+    let name = key_path.file_name().and_then(|value| value.to_str());
+    if name != Some(REGISTRY_RESIDUE_KEY_NAME) {
+        return Err(SoftwareLeftoverError::InvalidIdentity(
+            REGISTRY_RESIDUE_KEY_NAME.to_string(),
+        ));
+    }
+    fs::read(key_path)
+        .map_err(|_| SoftwareLeftoverError::StaleCandidate(REGISTRY_RESIDUE_KEY_NAME.to_string()))
+}
+
+fn validate_residue_plan(
+    plan: &SoftwareRegistryResiduePlanV1,
+    before_sha256: &str,
+) -> Result<(), SoftwareLeftoverError> {
+    if plan.version != REGISTRY_RESIDUE_VERSION
+        || plan.key_name != REGISTRY_RESIDUE_KEY_NAME
+        || plan.before_sha256 != before_sha256
+        || !super::audit::is_sha256_digest(&plan.before_sha256)
+    {
+        return Err(SoftwareLeftoverError::ResidueChanged);
+    }
+    Ok(())
+}
+
+fn residue_digest(label: &str, parts: &[&str]) -> Result<String, SoftwareLeftoverError> {
+    let canonical = serde_json::to_vec(&(label, parts))
+        .map_err(|_| SoftwareLeftoverError::SerializationFailed)?;
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
+}
+
+fn sha256_prefixed(bytes: &[u8]) -> String {
+    format!("sha256:{}", hex_digest(Sha256::digest(bytes)))
+}
+
+fn map_leftover_audit(error: SoftwareAuditError) -> SoftwareLeftoverError {
+    match error {
+        SoftwareAuditError::LocalAppDataUnavailable => SoftwareLeftoverError::Audit(error),
+        _ => SoftwareLeftoverError::AuditUnavailable,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
@@ -891,6 +1663,7 @@ mod tests {
                 roaming: Some(roaming),
                 local: Some(local),
                 program_data: Some(program_data),
+                personal: Vec::new(),
                 system_roots: vec![root.clone()],
                 system_trees: vec![root.join("Windows")],
                 protections: Vec::new(),
@@ -1393,5 +2166,553 @@ mod tests {
             ),
             Err(SoftwareLeftoverError::StaleCandidate(_))
         ));
+    }
+
+    fn name_plan(
+        fixture: &Fixture,
+    ) -> (
+        SoftwareInventoryV1,
+        SoftwareLeftoverPlanV1,
+        SoftwareLeftoverCandidateV1,
+    ) {
+        let local = fixture.environment.local.clone().unwrap();
+        write(&local.join("Contoso Tools").join("cache.bin"), 8);
+        let stored = inventory(msix_identity(), "Contoso Tools", "Contoso");
+        record_uninstall(&fixture.audit_path, "software-op-removed", true);
+        let selection = SoftwareLeftoverSelectionV1 {
+            software_id: stored.entries[0].id.clone(),
+            uninstall_operation_id: "software-op-removed".to_string(),
+            selected_candidate_ids: Vec::new(),
+        };
+        let discovered = discover_with(
+            &fixture.environment,
+            &stored,
+            &[stored.entries[0].id.clone()],
+            no_location,
+            None,
+        )
+        .unwrap();
+        let candidate = discovered.apps[0].candidates[0].clone();
+        assert_eq!(candidate.certainty, SoftwareLeftoverCertainty::Uncertain);
+        assert!(!candidate.selected_by_default);
+        let mut selection = selection;
+        selection.selected_candidate_ids = vec![candidate.id.clone()];
+        let (plan, _) = plan_with(
+            &fixture.environment,
+            &fixture.audit_path,
+            &stored,
+            &selection,
+            no_location,
+            None,
+        )
+        .unwrap();
+        (stored, plan, candidate)
+    }
+
+    #[test]
+    fn strict_preview_does_not_create_an_audit_store() {
+        let fixture = fixture();
+        let missing = fixture.root.join("absent").join("software.jsonl");
+        let stored = inventory(msix_identity(), "Contoso Tools", "Contoso");
+        let plan = SoftwareLeftoverPlanV1 {
+            version: SOFTWARE_LEFTOVER_VERSION,
+            software_id: stored.entries[0].id.clone(),
+            identity: msix_identity(),
+            display_name: Some("Contoso Tools".to_string()),
+            publisher: Some("Contoso".to_string()),
+            uninstall_operation_id: "software-op-removed".to_string(),
+            selected_candidate_ids: vec!["leftover:v1:missing".to_string()],
+        };
+        let error = preview_strict_with(
+            &fixture.environment,
+            &missing,
+            &stored,
+            &plan,
+            no_location,
+            None,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            SoftwareLeftoverError::UninstallNotSucceeded(_)
+        ));
+        assert!(!fixture.root.join("absent").exists());
+
+        let (stored, plan, _) = name_plan(&fixture);
+        let lock = fixture.audit_path.parent().unwrap().join("software.lock");
+        assert!(lock.exists());
+        fs::remove_file(&lock).unwrap();
+        let preview = preview_strict_with(
+            &fixture.environment,
+            &fixture.audit_path,
+            &stored,
+            &plan,
+            no_location,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            preview.label_trust,
+            SoftwareLeftoverLabelTrust::UntrustedHint
+        );
+        assert!(
+            preview
+                .items
+                .iter()
+                .all(|item| item.certainty == SoftwareLeftoverCertainty::Uncertain)
+        );
+        assert!(!lock.exists());
+        assert!(
+            !fixture
+                .audit_path
+                .parent()
+                .unwrap()
+                .join("software-support.jsonl")
+                .exists()
+        );
+    }
+
+    #[test]
+    fn strict_execute_refuses_a_replaced_directory_and_keeps_v1_digest() {
+        let fixture = fixture();
+        let (stored, plan, candidate) = name_plan(&fixture);
+        let preview = preview_strict_with(
+            &fixture.environment,
+            &fixture.audit_path,
+            &stored,
+            &plan,
+            no_location,
+            None,
+        )
+        .unwrap();
+        let (v1_plan, v1_preview) = plan_with(
+            &fixture.environment,
+            &fixture.audit_path,
+            &stored,
+            &SoftwareLeftoverSelectionV1 {
+                software_id: plan.software_id.clone(),
+                uninstall_operation_id: plan.uninstall_operation_id.clone(),
+                selected_candidate_ids: plan.selected_candidate_ids.clone(),
+            },
+            no_location,
+            None,
+        )
+        .unwrap();
+        assert_eq!(preview.v1_digest, v1_preview.digest);
+        assert_eq!(v1_plan.selected_candidate_ids, plan.selected_candidate_ids);
+        fs::remove_dir_all(&candidate.path).unwrap();
+        fs::create_dir_all(&candidate.path).unwrap();
+        let trash = RecordingTrash::default();
+        let error = execute_strict_with(StrictLeftoverExecute {
+            environment: &fixture.environment,
+            audit_path: &fixture.audit_path,
+            trash: &trash,
+            locate: no_location,
+            inventory: &stored,
+            plan: &plan,
+            expected_preview_digest: &preview.digest,
+            confirmed: true,
+            cancel: None,
+            fault: SupportAppendFault::NONE,
+        })
+        .unwrap_err();
+        assert!(
+            matches!(error, SoftwareLeftoverError::CandidateChanged(_)),
+            "{error}"
+        );
+        assert!(trash.moved.lock().unwrap().is_empty());
+        assert!(candidate.path.exists());
+        let journal = fs::read_to_string(&fixture.audit_path).unwrap();
+        assert!(!journal.contains("leftover_moved"));
+    }
+
+    #[test]
+    fn strict_execute_moves_once_and_records_support_lifecycle() {
+        let fixture = fixture();
+        let (stored, plan, candidate) = name_plan(&fixture);
+        let preview = preview_strict_with(
+            &fixture.environment,
+            &fixture.audit_path,
+            &stored,
+            &plan,
+            no_location,
+            None,
+        )
+        .unwrap();
+        let trash = RecordingTrash::default();
+        let fault = SupportAppendFault {
+            fail_started: true,
+            fail_terminal: false,
+        };
+        let error = execute_strict_with(StrictLeftoverExecute {
+            environment: &fixture.environment,
+            audit_path: &fixture.audit_path,
+            trash: &trash,
+            locate: no_location,
+            inventory: &stored,
+            plan: &plan,
+            expected_preview_digest: &preview.digest,
+            confirmed: true,
+            cancel: None,
+            fault,
+        })
+        .unwrap_err();
+        assert!(matches!(error, SoftwareLeftoverError::AuditUnavailable));
+        assert!(trash.moved.lock().unwrap().is_empty());
+        assert!(candidate.path.exists());
+
+        let report = execute_strict_with(StrictLeftoverExecute {
+            environment: &fixture.environment,
+            audit_path: &fixture.audit_path,
+            trash: &trash,
+            locate: no_location,
+            inventory: &stored,
+            plan: &plan,
+            expected_preview_digest: &preview.digest,
+            confirmed: true,
+            cancel: None,
+            fault: SupportAppendFault::NONE,
+        })
+        .unwrap();
+        assert_eq!(report.outcome, SoftwareLeftoverStrictOutcome::Succeeded);
+        assert_eq!(trash.moved.lock().unwrap().len(), 1);
+        let support = fs::read_to_string(
+            fixture
+                .audit_path
+                .parent()
+                .unwrap()
+                .join("software-support.jsonl"),
+        )
+        .unwrap();
+        assert!(
+            support.contains("\"phase\":\"started\"") || support.contains("\"phase\": \"started\"")
+        );
+        assert!(support.contains("leftover_move"));
+        assert!(!support.contains(&candidate.path.display().to_string()));
+        let v1 = fs::read_to_string(&fixture.audit_path).unwrap();
+        assert!(!v1.contains("leftover_moved"));
+
+        let terminal_fault = SupportAppendFault {
+            fail_started: false,
+            fail_terminal: true,
+        };
+        let again = fixture.root.join("Local").join("Contoso Tools");
+        fs::create_dir_all(&again).unwrap();
+        let second_digest = preview_strict_with(
+            &fixture.environment,
+            &fixture.audit_path,
+            &stored,
+            &plan,
+            no_location,
+            None,
+        )
+        .unwrap()
+        .digest;
+        let second = execute_strict_with(StrictLeftoverExecute {
+            environment: &fixture.environment,
+            audit_path: &fixture.audit_path,
+            trash: &trash,
+            locate: no_location,
+            inventory: &stored,
+            plan: &plan,
+            expected_preview_digest: &second_digest,
+            confirmed: true,
+            cancel: None,
+            fault: terminal_fault,
+        })
+        .unwrap();
+        assert_eq!(second.outcome, SoftwareLeftoverStrictOutcome::Unknown);
+        assert_eq!(trash.moved.lock().unwrap().len(), 2);
+    }
+
+    fn record_outcome(path: &Path, operation_id: &str, outcome: SoftwareExecutionOutcome) {
+        let identity = msix_identity();
+        let mut journal = SoftwareAuditJournal::open(path).unwrap();
+        let append =
+            |journal: &mut SoftwareAuditJournal, transition, status, reboot, installed, adapter| {
+                journal
+                    .append(SoftwareAuditRecordV1::new(
+                        operation_id,
+                        1,
+                        &identity,
+                        &format!("sha256:{}", "1".repeat(64)),
+                        &format!("sha256:{}", "2".repeat(64)),
+                        SoftwareAuditEvent {
+                            transition,
+                            status_code: status,
+                            error_code: None,
+                            reboot_evidence: reboot,
+                            installed_state: installed,
+                            adapter_outcome: adapter,
+                        },
+                    ))
+                    .unwrap();
+            };
+        append(
+            &mut journal,
+            SoftwareAuditTransition::Validated,
+            SoftwareAuditStatusCode::Validated,
+            SoftwareRebootEvidence::None,
+            None,
+            None,
+        );
+        if outcome == SoftwareExecutionOutcome::CanceledBeforeStart {
+            append(
+                &mut journal,
+                SoftwareAuditTransition::Terminal { outcome },
+                SoftwareAuditStatusCode::CanceledBeforeStart,
+                SoftwareRebootEvidence::None,
+                None,
+                None,
+            );
+            return;
+        }
+        append(
+            &mut journal,
+            SoftwareAuditTransition::DispatchStarted,
+            SoftwareAuditStatusCode::DispatchStarted,
+            SoftwareRebootEvidence::None,
+            None,
+            None,
+        );
+        match outcome {
+            SoftwareExecutionOutcome::Failed => {
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::AdapterCompleted,
+                    SoftwareAuditStatusCode::AdapterFailed,
+                    SoftwareRebootEvidence::None,
+                    None,
+                    Some(AdapterOutcome::Failure),
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::RequeryObserved,
+                    SoftwareAuditStatusCode::RequeryPresent,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Present),
+                    None,
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::Terminal { outcome },
+                    SoftwareAuditStatusCode::Failed,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Present),
+                    Some(AdapterOutcome::Failure),
+                );
+            }
+            SoftwareExecutionOutcome::StillPresent => {
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::AdapterCompleted,
+                    SoftwareAuditStatusCode::AdapterSucceeded,
+                    SoftwareRebootEvidence::None,
+                    None,
+                    Some(AdapterOutcome::Success),
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::RequeryObserved,
+                    SoftwareAuditStatusCode::RequeryPresent,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Present),
+                    None,
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::Terminal { outcome },
+                    SoftwareAuditStatusCode::StillPresent,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Present),
+                    Some(AdapterOutcome::Success),
+                );
+            }
+            SoftwareExecutionOutcome::RebootRequired => {
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::AdapterCompleted,
+                    SoftwareAuditStatusCode::AdapterRebootRequired,
+                    SoftwareRebootEvidence::Required,
+                    None,
+                    Some(AdapterOutcome::RebootRequired),
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::RequeryObserved,
+                    SoftwareAuditStatusCode::RequeryAbsent,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Absent),
+                    None,
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::Terminal { outcome },
+                    SoftwareAuditStatusCode::RebootRequired,
+                    SoftwareRebootEvidence::Required,
+                    Some(SoftwareInstalledState::Absent),
+                    Some(AdapterOutcome::RebootRequired),
+                );
+            }
+            SoftwareExecutionOutcome::UnknownAfterDispatch => {
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::RequeryObserved,
+                    SoftwareAuditStatusCode::RequeryPresent,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Present),
+                    None,
+                );
+                append(
+                    &mut journal,
+                    SoftwareAuditTransition::Terminal { outcome },
+                    SoftwareAuditStatusCode::UnknownAfterDispatch,
+                    SoftwareRebootEvidence::None,
+                    Some(SoftwareInstalledState::Present),
+                    Some(AdapterOutcome::Unfinished),
+                );
+            }
+            SoftwareExecutionOutcome::Removed | SoftwareExecutionOutcome::CanceledBeforeStart => {}
+        }
+    }
+
+    #[test]
+    fn ac3_non_removed_uninstall_does_not_execute_leftovers() {
+        for (operation_id, outcome) in [
+            ("software-op-failed", SoftwareExecutionOutcome::Failed),
+            (
+                "software-op-cancel",
+                SoftwareExecutionOutcome::CanceledBeforeStart,
+            ),
+            ("software-op-still", SoftwareExecutionOutcome::StillPresent),
+            (
+                "software-op-reboot",
+                SoftwareExecutionOutcome::RebootRequired,
+            ),
+            (
+                "software-op-unknown",
+                SoftwareExecutionOutcome::UnknownAfterDispatch,
+            ),
+        ] {
+            let fixture = fixture();
+            let local = fixture.environment.local.clone().unwrap();
+            let dir = local.join("Contoso Tools");
+            write(&dir.join("keep.bin"), 4);
+            let marker = fs::read(dir.join("keep.bin")).unwrap();
+            record_outcome(&fixture.audit_path, operation_id, outcome);
+            let stored = inventory(msix_identity(), "Contoso Tools", "Contoso");
+            let plan = SoftwareLeftoverPlanV1 {
+                version: SOFTWARE_LEFTOVER_VERSION,
+                software_id: stored.entries[0].id.clone(),
+                identity: stored.entries[0].identity.clone(),
+                display_name: stored.entries[0].display_name.clone(),
+                publisher: stored.entries[0].publisher.clone(),
+                uninstall_operation_id: operation_id.to_string(),
+                selected_candidate_ids: vec!["leftover:v1:unused".to_string()],
+            };
+            let trash = RecordingTrash::default();
+            let error = execute_strict_with(StrictLeftoverExecute {
+                environment: &fixture.environment,
+                audit_path: &fixture.audit_path,
+                trash: &trash,
+                locate: no_location,
+                inventory: &stored,
+                plan: &plan,
+                expected_preview_digest: &format!("sha256:{}", "9".repeat(64)),
+                confirmed: true,
+                cancel: None,
+                fault: SupportAppendFault::NONE,
+            })
+            .unwrap_err();
+            assert!(matches!(
+                error,
+                SoftwareLeftoverError::UninstallNotSucceeded(_)
+            ));
+            assert!(trash.moved.lock().unwrap().is_empty());
+            assert_eq!(fs::read(dir.join("keep.bin")).unwrap(), marker);
+        }
+    }
+
+    #[test]
+    fn ac3_personal_rows_start_unselected_and_shared_folder_is_protected() {
+        let mut fixture = fixture();
+        let documents = fixture.root.join("Documents");
+        let personal = documents.join("ContosoTools");
+        let named = documents.join("Contoso Tools");
+        let shared = documents.join("Programs");
+        write(&personal.join("note.txt"), 3);
+        write(&named.join("a.bin"), 3);
+        write(&shared.join("secret.bin"), 3);
+        fixture.environment.personal = vec![documents];
+        let candidates = discover_candidates(
+            &fixture.environment,
+            &LeftoverSubject {
+                software_id: "software:v1:msix:fixture",
+                display_name: Some("Contoso Tools"),
+                publisher: None,
+                install_location: Some(personal.clone()),
+            },
+            None,
+        );
+        let install = candidates
+            .iter()
+            .find(|candidate| candidate.path == personal)
+            .expect("personal install location");
+        assert_eq!(install.origin, SoftwareLeftoverOrigin::PersonalData);
+        assert_eq!(install.certainty, SoftwareLeftoverCertainty::Certain);
+        assert!(!install.selected_by_default);
+        let name_match = candidates
+            .iter()
+            .find(|candidate| candidate.path == named)
+            .expect("personal name match");
+        assert_eq!(name_match.origin, SoftwareLeftoverOrigin::PersonalData);
+        assert!(!name_match.selected_by_default);
+        assert!(candidates.iter().all(|candidate| candidate.path != shared));
+    }
+
+    #[test]
+    fn ac3_registry_residue_backup_and_conditional_restore() {
+        let temp = TempDir::new().unwrap();
+        let key = temp.path().join(REGISTRY_RESIDUE_KEY_NAME);
+        let original = b"before\n".to_vec();
+        fs::write(&key, &original).unwrap();
+        let other = temp.path().join("VendorPrefix");
+        fs::write(&other, b"vendor").unwrap();
+        assert!(matches!(
+            plan_registry_residue(&other),
+            Err(SoftwareLeftoverError::InvalidIdentity(_))
+        ));
+        assert_eq!(fs::read(&other).unwrap(), b"vendor");
+        let backup = temp.path().join("backup.bin");
+        let plan = plan_registry_residue(&key).unwrap();
+        assert_eq!(plan.key_name, REGISTRY_RESIDUE_KEY_NAME);
+        let preview = preview_registry_residue(&key, &plan).unwrap();
+        assert!(matches!(
+            execute_registry_residue(&key, &key, &plan, &preview.digest, true),
+            Err(SoftwareLeftoverError::InvalidIdentity(_))
+        ));
+        assert_eq!(fs::read(&key).unwrap(), original);
+        let report = execute_registry_residue(&key, &backup, &plan, &preview.digest, true).unwrap();
+        assert_eq!(fs::read(&backup).unwrap(), original);
+        assert_eq!(fs::read(&key).unwrap(), b"removed\n");
+        assert_eq!(report.backup_sha256, plan.before_sha256);
+        let restore = plan_registry_residue_restore(&report).unwrap();
+        let restore_preview = preview_registry_residue_restore(&key, &backup, &restore).unwrap();
+        execute_registry_residue_restore(&key, &backup, &restore, &restore_preview.digest, true)
+            .unwrap();
+        assert_eq!(fs::read(&key).unwrap(), original);
+        let external = b"external\n".to_vec();
+        fs::write(&key, &external).unwrap();
+        let error = execute_registry_residue_restore(
+            &key,
+            &backup,
+            &restore,
+            &restore_preview.digest,
+            true,
+        )
+        .unwrap_err();
+        assert!(matches!(error, SoftwareLeftoverError::ResidueChanged));
+        assert_eq!(fs::read(&key).unwrap(), external);
+        assert_eq!(fs::read(&backup).unwrap(), original);
     }
 }

@@ -13,12 +13,55 @@ use sha2::{Digest, Sha256};
 use crate::digest_encoding::hex_digest;
 
 use super::LivePreflight;
-use super::catalogue::{MaintenanceActionClass, OPTIMIZE_CATALOGUE_VERSION};
+use super::catalogue::{
+    MaintenanceActionClass, OPTIMIZE_CATALOGUE_V2, OPTIMIZE_CATALOGUE_VERSION, catalogue_generation,
+};
 
 /// Saved Optimize plan schema generation.
 pub const OPTIMIZE_PLAN_VERSION: u32 = 1;
 /// Live Optimize preview schema generation.
 pub const OPTIMIZE_PREVIEW_VERSION: u32 = 1;
+
+/// Stable preflight refusal. The affected operation is the only row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrecheckReason {
+    /// Elevation was declined. No UAC prompt is shown.
+    UacDeclined,
+    /// The volume is not a ready fixed SSD.
+    NotSsd,
+    /// The machine is on battery and the charge is low.
+    LowBattery,
+    /// The volume reported a disk problem.
+    DiskProblem,
+    /// Windows reports a reboot is pending.
+    RebootPending,
+    /// The same operation succeeded inside the cooldown window.
+    Cooldown,
+    /// The fixed program file is not present.
+    ProgramMissing,
+    /// Image repair has no repairable health result.
+    ImageNotRepairable,
+    /// The `.reg` backup could not be written.
+    BackupWriteFailed,
+}
+
+impl PrecheckReason {
+    /// Stable machine token. Display text is not a contract.
+    #[must_use]
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::UacDeclined => "uac_declined",
+            Self::NotSsd => "not_ssd",
+            Self::LowBattery => "low_battery",
+            Self::DiskProblem => "disk_problem",
+            Self::RebootPending => "reboot_pending",
+            Self::Cooldown => "cooldown",
+            Self::ProgramMissing => "program_missing",
+            Self::ImageNotRepairable => "image_not_repairable",
+            Self::BackupWriteFailed => "backup_write_failed",
+        }
+    }
+}
 
 /// Caller-correctable Optimize plan and preflight failures.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,8 +72,17 @@ pub enum OptimizePlanError {
     UnsupportedCatalogueVersion(u32),
     /// The id does not exist in the closed catalogue.
     UnknownOperation(String),
-    /// The id is a guidance row and can never be planned or dispatched.
+    /// The id is a guidance row and can never be dispatched.
     GuidanceNotExecutable(String),
+    /// The id is an observe row. `optimize plan` refuses it.
+    ObserveNotPlanable(String),
+    /// One preflight fact refused this operation id.
+    PrecheckRefused {
+        /// The only operation the refusal applies to.
+        operation_id: String,
+        /// Stable reason token.
+        reason: PrecheckReason,
+    },
     /// The confirmed digest does not match the live preview digest.
     DigestMismatch,
     /// Canonical digest serialization failed.
@@ -61,6 +113,17 @@ impl std::fmt::Display for OptimizePlanError {
             Self::GuidanceNotExecutable(id) => {
                 write!(formatter, "guidance entry {id} is never dispatched")
             }
+            Self::ObserveNotPlanable(id) => {
+                write!(formatter, "observe entry {id} cannot be planned")
+            }
+            Self::PrecheckRefused {
+                operation_id,
+                reason,
+            } => write!(
+                formatter,
+                "optimize operation {operation_id} skipped: {}",
+                reason.code()
+            ),
             Self::DigestMismatch => formatter.write_str("optimize preview digest mismatch"),
             Self::SerializationFailed => {
                 formatter.write_str("optimize canonical serialization failed")
@@ -97,6 +160,9 @@ pub struct MaintenancePlanV1 {
     pub catalogue_version: u32,
     /// Exactly one closed catalogue id.
     pub operation_id: String,
+    /// Present when a guidance plan returns its class. Absent on V1 plans.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_class: Option<MaintenanceActionClass>,
 }
 
 /// A live preview of one resolved maintenance operation. It never contains the
@@ -165,6 +231,15 @@ pub(crate) enum ResolvedMaintenanceAction {
         uri: &'static str,
         observed_build: u32,
     },
+    /// One fixed program and a separate argv. No shell string.
+    NativeCommand { program: PathBuf, argv: Vec<String> },
+    /// Dead-startup deletions. Dispatch writes the backup before any delete.
+    DeadStartup {
+        backup_path: PathBuf,
+        backup_body: String,
+        deletions: Vec<super::maintenance::DeadStartupDeletion>,
+        skip_names: Vec<String>,
+    },
 }
 
 /// Creates an untrusted exact-id plan from the closed catalogue. Guidance rows
@@ -172,15 +247,34 @@ pub(crate) enum ResolvedMaintenanceAction {
 pub fn plan_operation(operation_id: &str) -> Result<MaintenancePlanV1, OptimizePlanError> {
     let entry = super::catalogue::catalogue_entry(operation_id)
         .ok_or_else(|| OptimizePlanError::UnknownOperation(operation_id.to_string()))?;
-    if entry.action_class == MaintenanceActionClass::Guidance {
-        return Err(OptimizePlanError::GuidanceNotExecutable(
-            operation_id.to_string(),
-        ));
+    let generation = catalogue_generation(entry.id)
+        .ok_or_else(|| OptimizePlanError::UnknownOperation(operation_id.to_string()))?;
+    match entry.action_class {
+        MaintenanceActionClass::Guidance if generation == OPTIMIZE_CATALOGUE_VERSION => {
+            return Err(OptimizePlanError::GuidanceNotExecutable(
+                operation_id.to_string(),
+            ));
+        }
+        MaintenanceActionClass::Observe => {
+            return Err(OptimizePlanError::ObserveNotPlanable(
+                operation_id.to_string(),
+            ));
+        }
+        MaintenanceActionClass::Guidance => {
+            return Ok(MaintenancePlanV1 {
+                version: OPTIMIZE_PLAN_VERSION,
+                catalogue_version: generation,
+                operation_id: entry.id.to_string(),
+                action_class: Some(MaintenanceActionClass::Guidance),
+            });
+        }
+        MaintenanceActionClass::Execute | MaintenanceActionClass::SettingsHandoff => {}
     }
     Ok(MaintenancePlanV1 {
         version: OPTIMIZE_PLAN_VERSION,
-        catalogue_version: OPTIMIZE_CATALOGUE_VERSION,
+        catalogue_version: generation,
         operation_id: entry.id.to_string(),
+        action_class: None,
     })
 }
 
@@ -222,27 +316,48 @@ pub(super) fn construct_validated_action(
     if plan.version != OPTIMIZE_PLAN_VERSION {
         return Err(OptimizePlanError::UnsupportedPlanVersion(plan.version));
     }
-    if plan.catalogue_version != OPTIMIZE_CATALOGUE_VERSION {
+    if plan.catalogue_version != OPTIMIZE_CATALOGUE_VERSION
+        && plan.catalogue_version != OPTIMIZE_CATALOGUE_V2
+    {
         return Err(OptimizePlanError::UnsupportedCatalogueVersion(
             plan.catalogue_version,
         ));
     }
     let entry = super::catalogue::catalogue_entry(&plan.operation_id)
         .ok_or_else(|| OptimizePlanError::UnknownOperation(plan.operation_id.clone()))?;
-    if entry.action_class == MaintenanceActionClass::Guidance {
-        return Err(OptimizePlanError::GuidanceNotExecutable(
+    let generation = catalogue_generation(entry.id)
+        .ok_or_else(|| OptimizePlanError::UnknownOperation(plan.operation_id.clone()))?;
+    // A V1 plan resolves only its original id. A V2 id needs generation 2.
+    if plan.catalogue_version != generation {
+        return Err(OptimizePlanError::UnknownOperation(
             plan.operation_id.clone(),
         ));
     }
+    if plan
+        .action_class
+        .is_some_and(|class| class != entry.action_class)
+    {
+        return Err(OptimizePlanError::UnknownOperation(
+            plan.operation_id.clone(),
+        ));
+    }
+    match entry.action_class {
+        MaintenanceActionClass::Guidance => {
+            return Err(OptimizePlanError::GuidanceNotExecutable(
+                plan.operation_id.clone(),
+            ));
+        }
+        MaintenanceActionClass::Observe => {
+            return Err(OptimizePlanError::ObserveNotPlanable(
+                plan.operation_id.clone(),
+            ));
+        }
+        MaintenanceActionClass::Execute | MaintenanceActionClass::SettingsHandoff => {}
+    }
     let resolved = preflight.resolve(entry)?;
-    let preview_digest = preview_digest(
-        OPTIMIZE_CATALOGUE_VERSION,
-        entry.id,
-        entry.action_class,
-        &resolved,
-    )?;
+    let preview_digest = preview_digest(generation, entry.id, entry.action_class, &resolved)?;
     Ok(ValidatedMaintenanceAction {
-        catalogue_version: OPTIMIZE_CATALOGUE_VERSION,
+        catalogue_version: generation,
         operation_id: entry.id.to_string(),
         action_class: entry.action_class,
         resolved,
@@ -262,6 +377,15 @@ enum ResolvedIdentityLiterals<'a> {
         uri: &'static str,
         observed_build: u32,
     },
+    NativeCommand {
+        program: &'a str,
+        argv: &'a [String],
+    },
+    DeadStartup {
+        backup: &'a str,
+        delete_names: &'a [String],
+        skip_names: &'a [String],
+    },
 }
 
 fn preview_digest(
@@ -270,6 +394,13 @@ fn preview_digest(
     action_class: MaintenanceActionClass,
     resolved: &ResolvedMaintenanceAction,
 ) -> Result<String, OptimizePlanError> {
+    let dead_names = match resolved {
+        ResolvedMaintenanceAction::DeadStartup { deletions, .. } => deletions
+            .iter()
+            .map(|deletion| deletion.name.clone())
+            .collect::<Vec<_>>(),
+        _ => Vec::new(),
+    };
     let literals = match resolved {
         ResolvedMaintenanceAction::DnsFlush { program } => {
             let program = program
@@ -287,6 +418,26 @@ fn preview_digest(
             uri,
             observed_build: *observed_build,
         },
+        ResolvedMaintenanceAction::NativeCommand { program, argv } => {
+            let program = program
+                .to_str()
+                .ok_or(OptimizePlanError::SerializationFailed)?;
+            ResolvedIdentityLiterals::NativeCommand { program, argv }
+        }
+        ResolvedMaintenanceAction::DeadStartup {
+            backup_path,
+            skip_names,
+            ..
+        } => {
+            let backup = backup_path
+                .to_str()
+                .ok_or(OptimizePlanError::SerializationFailed)?;
+            ResolvedIdentityLiterals::DeadStartup {
+                backup,
+                delete_names: &dead_names,
+                skip_names,
+            }
+        }
     };
     let canonical = serde_json::to_vec(&(
         "devsweep.optimize.preview.v1",

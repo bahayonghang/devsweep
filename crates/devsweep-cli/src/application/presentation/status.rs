@@ -1,8 +1,9 @@
 //! Bilingual Status V1 human renderer over the frozen snapshot DTO.
 
 use devsweep_core::status::{
-    AcState, AvailabilityV1, GpuV1, PowerV1, ProcessesV1, StatusEventV1, StatusSnapshotV1,
-    TerminalReason, ThermalV1,
+    AcState, AvailabilityV1, GpuV1, HealthExplanationV1, KeepAwakeStatusV1, PowerV1,
+    ProcessTerminationPreviewV1, ProcessTerminationReportV1, ProcessesV1, StatusEventV1,
+    StatusSnapshotV1, TerminalReason, ThermalV1,
 };
 
 use super::render;
@@ -66,6 +67,78 @@ pub(crate) fn live_stopped(
         locale,
         "status.v1.live.stopped",
         &[("reason", reason)],
+        None,
+    )
+}
+
+pub(crate) fn health(
+    locale: Locale,
+    explanation: &HealthExplanationV1,
+) -> Result<String, CatalogueError> {
+    let mut lines = vec![render(locale, "status.v1.health.title", &[], None)?];
+    for evidence in &explanation.evidence {
+        let reason = evidence.reason_code.as_deref().unwrap_or("-");
+        lines.push(render(
+            locale,
+            "status.v1.health.line",
+            &[
+                ("reason", reason),
+                ("state", evidence.state.as_str()),
+                ("subject", evidence.subject.as_str()),
+                ("text", evidence.text.as_str()),
+            ],
+            None,
+        )?);
+    }
+    Ok(lines.join("\n"))
+}
+
+pub(crate) fn process_preview(
+    locale: Locale,
+    preview: &ProcessTerminationPreviewV1,
+) -> Result<String, CatalogueError> {
+    let pid = preview.pid.to_string();
+    render(
+        locale,
+        "status.v1.process.preview",
+        &[
+            ("created", preview.creation_time_filetime.as_str()),
+            ("data_loss", preview.data_loss_text.as_str()),
+            ("pid", pid.as_str()),
+        ],
+        None,
+    )
+}
+
+pub(crate) fn process_report(
+    locale: Locale,
+    report: &ProcessTerminationReportV1,
+) -> Result<String, CatalogueError> {
+    let pid = report.pid.to_string();
+    render(
+        locale,
+        "status.v1.process.report",
+        &[("outcome", report.outcome.as_str()), ("pid", pid.as_str())],
+        None,
+    )
+}
+
+pub(crate) fn keep_awake(
+    locale: Locale,
+    endpoint: &str,
+    lease: &KeepAwakeStatusV1,
+) -> Result<String, CatalogueError> {
+    let remaining = lease.remaining_ms.to_string();
+    render(
+        locale,
+        "status.v1.keep_awake.lease",
+        &[
+            ("endpoint", endpoint),
+            ("owner", lease.owner.as_str()),
+            ("remaining", remaining.as_str()),
+            ("state", lease.state.as_str()),
+            ("token", lease.token.as_str()),
+        ],
         None,
     )
 }

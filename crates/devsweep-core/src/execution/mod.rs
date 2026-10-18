@@ -10,6 +10,13 @@ mod audit;
 mod command;
 mod provider;
 mod safety;
+mod windows_action;
+
+pub use windows_action::{
+    ActionCapability, HelperFault, InjectedElevation, PreparedFixture, RefuseReason, RejectReason,
+    UnknownKind, WindowsActionDispatch, WindowsActionOutcome, WindowsActionReport,
+    execute_windows_action, prepare_windows_fixture, run_windows_action_helper,
+};
 
 use audit::default_audit_log_path;
 pub use audit::{

@@ -206,7 +206,9 @@ fn render_footer(frame: &mut Frame<'_>, area: Rect, app: &App) {
     {
         Some(MaintenanceActionClass::Execute) => copy(locale, "optimize.v1.action.run"),
         Some(MaintenanceActionClass::SettingsHandoff) => copy(locale, "optimize.v1.action.open"),
-        Some(MaintenanceActionClass::Guidance) => copy(locale, "optimize.v1.guidance.no_run"),
+        Some(MaintenanceActionClass::Guidance | MaintenanceActionClass::Observe) => {
+            copy(locale, "optimize.v1.guidance.no_run")
+        }
         None => copy(locale, "optimize.v1.summary.catalogue"),
     };
     frame.render_widget(Paragraph::new(action).alignment(Alignment::Left), area);
@@ -350,6 +352,7 @@ fn action_key(action_class: MaintenanceActionClass) -> &'static str {
         MaintenanceActionClass::Execute => "optimize.v1.action.execute",
         MaintenanceActionClass::SettingsHandoff => "optimize.v1.action.settings",
         MaintenanceActionClass::Guidance => "optimize.v1.action.guidance",
+        MaintenanceActionClass::Observe => "optimize.v1.action.observe",
     }
 }
 
@@ -371,7 +374,9 @@ fn effect_key(entry: &MaintenanceCatalogueEntryV1) -> &'static str {
     match entry.action_class {
         MaintenanceActionClass::Execute => "optimize.v1.effect.dns.flush",
         MaintenanceActionClass::SettingsHandoff => "optimize.v1.effect.settings",
-        MaintenanceActionClass::Guidance => "optimize.v1.effect.guidance",
+        MaintenanceActionClass::Guidance | MaintenanceActionClass::Observe => {
+            "optimize.v1.effect.guidance"
+        }
     }
 }
 
@@ -379,7 +384,9 @@ fn risk_key(action_class: MaintenanceActionClass) -> &'static str {
     match action_class {
         MaintenanceActionClass::Execute => "optimize.v1.risk.dns.flush",
         MaintenanceActionClass::SettingsHandoff => "optimize.v1.risk.settings",
-        MaintenanceActionClass::Guidance => "optimize.v1.risk.guidance",
+        MaintenanceActionClass::Guidance | MaintenanceActionClass::Observe => {
+            "optimize.v1.risk.guidance"
+        }
     }
 }
 

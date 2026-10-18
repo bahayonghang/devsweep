@@ -495,6 +495,12 @@ fn reason_label(reason: SoftwareEligibilityReason, zh: bool) -> &'static str {
         (UnsupportedSource, true) => "不支持的来源",
         (EligibleCurrentUserMsix, false) => "eligible current-user MSIX",
         (EligibleCurrentUserMsix, true) => "符合条件的当前用户 MSIX",
+        (EligibleMsiQuiet, false) => "eligible quiet MSI removal",
+        (EligibleMsiQuiet, true) => "符合条件的 MSI 静默卸载",
+        (EligibleVendorUninstaller, false) => "eligible vendor uninstaller",
+        (EligibleVendorUninstaller, true) => "符合条件的厂商卸载程序",
+        (EligibleScoopApp, false) => "eligible Scoop app",
+        (EligibleScoopApp, true) => "符合条件的 Scoop 应用",
     }
 }
 

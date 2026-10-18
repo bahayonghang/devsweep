@@ -3,8 +3,14 @@
 use devsweep_core::software::{
     SoftwareActionOutcomeV1, SoftwareEligibilityReason, SoftwareEligibilityState,
     SoftwareExecutionOutcome, SoftwareExecutionReportV1, SoftwareIdentity, SoftwareInventoryV1,
-    SoftwareLastUsedEvidence, SoftwarePreviewV1, SoftwareScope, SoftwareSizeBasis,
-    SoftwareSizeEvidence, SoftwareSourceState,
+    SoftwareLastUsedEvidence, SoftwareLeftoverCertainty, SoftwareLeftoverOrigin,
+    SoftwareLeftoverPreviewV1, SoftwareLeftoverStrictOutcome, SoftwareLeftoverStrictPreviewV1,
+    SoftwareLeftoverStrictReportV1, SoftwarePreviewV1, SoftwareRegistryResiduePreviewV1,
+    SoftwareRegistryResidueReportV1, SoftwareScope, SoftwareSizeBasis, SoftwareSizeEvidence,
+    SoftwareSourceState, SoftwareStartupListV1, SoftwareStartupLocation, SoftwareStartupState,
+    SoftwareUpdateOutcome, SoftwareUpdatePreviewV1, SoftwareUpdateReportV1, SoftwareUpdatesReason,
+    SoftwareUpdatesV1, StartupHiveExecuteReportV1, StartupRestorePreviewV1, StartupStrictOutcome,
+    StartupTogglePreviewV1, StartupToggleStrictReportV1,
 };
 
 use super::render;
@@ -254,6 +260,363 @@ fn eligibility_key(reason: SoftwareEligibilityReason) -> &'static str {
         SoftwareEligibilityReason::EligibleCurrentUserMsix => {
             "software.v1.eligibility.eligible_current_user_msix"
         }
+        SoftwareEligibilityReason::EligibleMsiQuiet => "software.v1.eligibility.eligible_msi_quiet",
+        SoftwareEligibilityReason::EligibleVendorUninstaller => {
+            "software.v1.eligibility.eligible_vendor_uninstaller"
+        }
+        SoftwareEligibilityReason::EligibleScoopApp => "software.v1.eligibility.eligible_scoop_app",
+    }
+}
+
+pub(crate) fn updates(
+    locale: Locale,
+    report: &SoftwareUpdatesV1,
+) -> Result<String, CatalogueError> {
+    match report {
+        SoftwareUpdatesV1::Available { rows, .. } => {
+            let count = rows.len().to_string();
+            let mut lines = vec![render(
+                locale,
+                "software.v1.updates.summary",
+                &[("count", &count)],
+                None,
+            )?];
+            for row in rows {
+                let installed = row.installed_version.as_str();
+                let available = row.available_version.as_str();
+                lines.push(render(
+                    locale,
+                    "software.cli.updates.row",
+                    &[
+                        ("name", row.name.as_str()),
+                        ("id", row.id.as_str()),
+                        ("installed", installed),
+                        ("available", available),
+                        ("source", row.source.as_str()),
+                    ],
+                    None,
+                )?);
+            }
+            Ok(lines.join("\n"))
+        }
+        SoftwareUpdatesV1::Unavailable { reason_code, .. } => Ok([
+            render(locale, "software.v1.updates.unavailable", &[], None)?,
+            render(locale, updates_reason_key(*reason_code), &[], None)?,
+        ]
+        .join("\n")),
+    }
+}
+
+pub(crate) fn startup_list(
+    locale: Locale,
+    list: &SoftwareStartupListV1,
+) -> Result<String, CatalogueError> {
+    let count = list.entries.len().to_string();
+    let mut lines = vec![render(
+        locale,
+        "software.cli.startup.summary",
+        &[("count", &count)],
+        None,
+    )?];
+    for entry in &list.entries {
+        let location = static_text(locale, startup_location_key(entry.location))?;
+        let state = static_text(locale, startup_state_key(entry.state))?;
+        lines.push(render(
+            locale,
+            "software.cli.startup.entry",
+            &[
+                ("name", entry.name.as_str()),
+                ("location", &location),
+                ("state", &state),
+                ("id", entry.id.as_str()),
+            ],
+            None,
+        )?);
+    }
+    Ok(lines.join("\n"))
+}
+
+pub(crate) fn startup_preview(
+    locale: Locale,
+    preview: &StartupTogglePreviewV1,
+) -> Result<String, CatalogueError> {
+    let before = static_text(locale, startup_state_key(preview.before_state))?;
+    let after = static_text(locale, startup_state_key(preview.after_state))?;
+    render(
+        locale,
+        "software.cli.startup.preview",
+        &[
+            ("digest", preview.digest.as_str()),
+            ("before", &before),
+            ("after", &after),
+        ],
+        None,
+    )
+}
+
+pub(crate) fn update_preview(
+    locale: Locale,
+    preview: &SoftwareUpdatePreviewV1,
+) -> Result<String, CatalogueError> {
+    render(
+        locale,
+        "software.cli.updates.preview",
+        &[
+            ("package_id", preview.package_id.as_str()),
+            ("source", preview.source.as_str()),
+            ("installed_version", preview.installed_version.as_str()),
+            ("available_version", preview.available_version.as_str()),
+            ("digest", preview.digest.as_str()),
+        ],
+        None,
+    )
+}
+
+pub(crate) fn update_report(
+    locale: Locale,
+    report: &SoftwareUpdateReportV1,
+) -> Result<String, CatalogueError> {
+    let outcome = match report.outcome {
+        SoftwareUpdateOutcome::Updated => "updated",
+        SoftwareUpdateOutcome::RestartRequired => "restart_required",
+        SoftwareUpdateOutcome::Failed => "failed",
+        SoftwareUpdateOutcome::Unknown => "unknown",
+    };
+    let updated = if report.updated { "true" } else { "false" };
+    render(
+        locale,
+        "software.cli.updates.execute",
+        &[
+            ("package_id", report.package_id.as_str()),
+            ("outcome", outcome),
+            ("updated", updated),
+        ],
+        None,
+    )
+}
+
+pub(crate) fn startup_hive_execute(
+    locale: Locale,
+    report: &StartupHiveExecuteReportV1,
+) -> Result<String, CatalogueError> {
+    let toggle = startup_execute(locale, &report.toggle)?;
+    let outcome = match report.toggle.outcome {
+        StartupStrictOutcome::Succeeded => "succeeded",
+        StartupStrictOutcome::Failed => "failed",
+        StartupStrictOutcome::Unknown => "unknown",
+        StartupStrictOutcome::AlreadyInState => "already_in_state",
+    };
+    let line = render(
+        locale,
+        "software.cli.startup.hive",
+        &[
+            ("entry_id", report.toggle.entry.id.as_str()),
+            ("outcome", outcome),
+        ],
+        None,
+    )?;
+    Ok(format!("{toggle}\n{line}"))
+}
+
+pub(crate) fn startup_restore_preview(
+    locale: Locale,
+    preview: &StartupRestorePreviewV1,
+) -> Result<String, CatalogueError> {
+    render(
+        locale,
+        "software.cli.startup.restore",
+        &[("digest", preview.digest.as_str())],
+        None,
+    )
+}
+
+pub(crate) fn startup_restore_succeeded(locale: Locale) -> Result<String, CatalogueError> {
+    static_text(locale, "software.cli.startup.restore.succeeded")
+}
+
+pub(crate) fn residue_preview(
+    locale: Locale,
+    preview: &SoftwareRegistryResiduePreviewV1,
+) -> Result<String, CatalogueError> {
+    render(
+        locale,
+        "software.cli.leftovers.residue",
+        &[
+            ("key_name", preview.key_name.as_str()),
+            ("detail", preview.digest.as_str()),
+        ],
+        None,
+    )
+}
+
+pub(crate) fn residue_report(
+    locale: Locale,
+    report: &SoftwareRegistryResidueReportV1,
+) -> Result<String, CatalogueError> {
+    render(
+        locale,
+        "software.cli.leftovers.residue",
+        &[
+            ("key_name", report.key_name.as_str()),
+            ("detail", report.backup_sha256.as_str()),
+        ],
+        None,
+    )
+}
+
+pub(crate) fn residue_restored(locale: Locale) -> Result<String, CatalogueError> {
+    static_text(locale, "software.cli.leftovers.residue.restored")
+}
+
+pub(crate) fn startup_execute(
+    locale: Locale,
+    report: &StartupToggleStrictReportV1,
+) -> Result<String, CatalogueError> {
+    let key = match report.outcome {
+        StartupStrictOutcome::Succeeded => "software.cli.startup.execute.succeeded",
+        StartupStrictOutcome::Failed => "software.cli.startup.execute.failed",
+        StartupStrictOutcome::Unknown => "software.cli.startup.execute.unknown",
+        StartupStrictOutcome::AlreadyInState => "software.cli.startup.execute.already_in_state",
+    };
+    with_code(locale, key, report.error_code.as_deref())
+}
+
+pub(crate) fn leftovers_scan(
+    locale: Locale,
+    preview: &SoftwareLeftoverPreviewV1,
+) -> Result<String, CatalogueError> {
+    let count = preview.apps.len().to_string();
+    let mut lines = vec![
+        render(
+            locale,
+            "software.cli.leftovers.summary",
+            &[("count", &count)],
+            None,
+        )?,
+        render(locale, "software.cli.leftovers.untrusted", &[], None)?,
+    ];
+    for app in &preview.apps {
+        for candidate in &app.candidates {
+            lines.push(leftover_candidate(locale, candidate)?);
+        }
+    }
+    Ok(lines.join("\n"))
+}
+
+pub(crate) fn leftovers_preview(
+    locale: Locale,
+    preview: &SoftwareLeftoverStrictPreviewV1,
+) -> Result<String, CatalogueError> {
+    let count = preview.items.len().to_string();
+    let mut lines = vec![
+        render(locale, "software.cli.leftovers.untrusted", &[], None)?,
+        render(
+            locale,
+            "software.cli.leftovers.preview",
+            &[("digest", preview.digest.as_str()), ("count", &count)],
+            None,
+        )?,
+    ];
+    for candidate in &preview.items {
+        lines.push(leftover_candidate(locale, candidate)?);
+    }
+    Ok(lines.join("\n"))
+}
+
+pub(crate) fn leftovers_execute(
+    locale: Locale,
+    report: &SoftwareLeftoverStrictReportV1,
+) -> Result<String, CatalogueError> {
+    let key = match report.outcome {
+        SoftwareLeftoverStrictOutcome::Succeeded => "software.cli.leftovers.execute.succeeded",
+        SoftwareLeftoverStrictOutcome::Failed => "software.cli.leftovers.execute.failed",
+        SoftwareLeftoverStrictOutcome::Unknown => "software.cli.leftovers.execute.unknown",
+        SoftwareLeftoverStrictOutcome::Refused => "software.cli.leftovers.execute.refused",
+    };
+    with_code(locale, key, report.error_code.as_deref())
+}
+
+fn leftover_candidate(
+    locale: Locale,
+    candidate: &devsweep_core::software::SoftwareLeftoverCandidateV1,
+) -> Result<String, CatalogueError> {
+    let certainty = static_text(locale, leftover_certainty_key(candidate.certainty))?;
+    let origin = static_text(locale, leftover_origin_key(candidate.origin))?;
+    render(
+        locale,
+        "software.cli.leftovers.candidate",
+        &[
+            ("id", candidate.id.as_str()),
+            ("certainty", &certainty),
+            ("origin", &origin),
+        ],
+        None,
+    )
+}
+
+fn with_code(locale: Locale, key: &str, code: Option<&str>) -> Result<String, CatalogueError> {
+    let mut lines = vec![render(locale, key, &[], None)?];
+    if let Some(code) = code {
+        lines.push(render(
+            locale,
+            "software.cli.result.code",
+            &[("code", code)],
+            None,
+        )?);
+    }
+    Ok(lines.join("\n"))
+}
+
+fn updates_reason_key(reason: SoftwareUpdatesReason) -> &'static str {
+    match reason {
+        SoftwareUpdatesReason::WingetMissing => "software.v1.updates.reason.winget_missing",
+        SoftwareUpdatesReason::SourceAgreementPending => {
+            "software.v1.updates.reason.source_agreement_pending"
+        }
+        SoftwareUpdatesReason::NonZeroExit => "software.v1.updates.reason.non_zero_exit",
+        SoftwareUpdatesReason::TimedOut => "software.v1.updates.reason.timed_out",
+        SoftwareUpdatesReason::Canceled => "software.v1.updates.reason.canceled",
+        SoftwareUpdatesReason::OutputTruncated => "software.v1.updates.reason.output_truncated",
+        SoftwareUpdatesReason::UnrecognizedOutput => {
+            "software.v1.updates.reason.unrecognized_output"
+        }
+        SoftwareUpdatesReason::ProcessFailed => "software.v1.updates.reason.process_failed",
+    }
+}
+
+fn startup_location_key(location: SoftwareStartupLocation) -> &'static str {
+    match location {
+        SoftwareStartupLocation::CurrentUserRun => "software.v1.startup.location.current_user_run",
+        SoftwareStartupLocation::MachineRun => "software.v1.startup.location.machine_run",
+        SoftwareStartupLocation::MachineRun32 => "software.v1.startup.location.machine_run32",
+        SoftwareStartupLocation::CurrentUserStartupFolder => {
+            "software.v1.startup.location.current_user_startup_folder"
+        }
+    }
+}
+
+fn startup_state_key(state: SoftwareStartupState) -> &'static str {
+    match state {
+        SoftwareStartupState::Enabled => "software.v1.startup.state.enabled",
+        SoftwareStartupState::Disabled => "software.v1.startup.state.disabled",
+        SoftwareStartupState::Unknown => "software.v1.startup.state.unknown",
+    }
+}
+
+fn leftover_certainty_key(certainty: SoftwareLeftoverCertainty) -> &'static str {
+    match certainty {
+        SoftwareLeftoverCertainty::Certain => "software.v1.leftovers.certainty.certain",
+        SoftwareLeftoverCertainty::Uncertain => "software.v1.leftovers.certainty.uncertain",
+    }
+}
+
+fn leftover_origin_key(origin: SoftwareLeftoverOrigin) -> &'static str {
+    match origin {
+        SoftwareLeftoverOrigin::InstallLocation => "software.v1.leftovers.origin.install_location",
+        SoftwareLeftoverOrigin::RoamingAppData => "software.v1.leftovers.origin.roaming_app_data",
+        SoftwareLeftoverOrigin::LocalAppData => "software.v1.leftovers.origin.local_app_data",
+        SoftwareLeftoverOrigin::ProgramData => "software.v1.leftovers.origin.program_data",
+        SoftwareLeftoverOrigin::PersonalData => "software.v1.leftovers.origin.personal_data",
     }
 }
 

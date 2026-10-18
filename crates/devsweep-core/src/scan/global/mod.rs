@@ -212,6 +212,20 @@ fn add_windows_cache_targets(
             on_target(target);
         }
     }
+    record_windows_cache_omissions(&mut outcome.health);
+}
+
+fn record_windows_cache_omissions(health: &mut ScanHealth) {
+    for (id, detail) in crate::rules::WINDOWS_CACHE_COVERAGE_OMISSIONS {
+        health.record_coverage(ScanCoverage {
+            id: (*id).to_string(),
+            scope: ScanCoverageScope::Provider,
+            path: None,
+            status: ScanCoverageStatus::Unsupported,
+            target_count: 0,
+            detail: (*detail).to_string(),
+        });
+    }
 }
 
 fn scan_outcome_with_probe(

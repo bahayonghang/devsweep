@@ -1,11 +1,20 @@
-//! Read-only `winget upgrade` probe and column-position table parser.
+//! `winget upgrade` probe and one-package update execution.
 //!
-//! The probe runs through [`ProcessRunner`] with program and argv separate. It
-//! never accepts source or package agreements and never runs an upgrade.
+//! The check probe is read-only. Plan, preview, and execute keep program and
+//! argv separate. They never accept source or package agreements. Refusals
+//! return before the upgrade process starts.
 
-use std::{ffi::OsString, sync::Arc, time::SystemTime};
+use std::{
+    ffi::{OsStr, OsString},
+    fmt,
+    sync::Arc,
+    time::SystemTime,
+};
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+
+use crate::digest_encoding::hex_digest;
 
 use super::{SoftwareInventoryV1, unix_ms};
 use crate::process::{
@@ -74,6 +83,438 @@ pub enum SoftwareUpdatesReason {
     OutputTruncated,
     UnrecognizedOutput,
     ProcessFailed,
+}
+
+/// Update plan wire version.
+pub const SOFTWARE_UPDATE_PLAN_VERSION: u32 = 1;
+
+const SUPPORTED_UPDATE_SOURCE: &str = "winget";
+
+/// One explicit package update. It stores no installer argv.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareUpdatePlanV1 {
+    pub version: u32,
+    pub package_id: String,
+    pub source: String,
+    pub installed_version: String,
+    pub available_version: String,
+    pub provider_fingerprint: String,
+}
+
+/// Live preview of one update plan.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareUpdatePreviewV1 {
+    pub version: u32,
+    pub package_id: String,
+    pub source: String,
+    pub installed_version: String,
+    pub available_version: String,
+    pub digest: String,
+}
+
+/// Provider result. `updated` is true only for [`SoftwareUpdateOutcome::Updated`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SoftwareUpdateOutcome {
+    Updated,
+    RestartRequired,
+    Failed,
+    Unknown,
+}
+
+/// Result of one update execute.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SoftwareUpdateReportV1 {
+    pub version: u32,
+    pub package_id: String,
+    pub source: String,
+    pub available_version: String,
+    pub outcome: SoftwareUpdateOutcome,
+    pub updated: bool,
+}
+
+/// Failures before the upgrade process starts, plus a failed upgrade.
+#[derive(Debug)]
+pub enum SoftwareUpdateError {
+    ConfirmationRequired,
+    UnsupportedPlanVersion(u32),
+    InvalidPlan,
+    AmbiguousPackage,
+    UnsupportedSource,
+    NetworkUnavailable,
+    VersionChanged,
+    PackageNotFound,
+    StaleConfirmation,
+    ProviderChanged,
+    ProbeFailed,
+}
+
+impl fmt::Display for SoftwareUpdateError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ConfirmationRequired => {
+                formatter.write_str("package update requires explicit confirmation")
+            }
+            Self::UnsupportedPlanVersion(version) => {
+                write!(formatter, "unsupported update plan version {version}")
+            }
+            Self::InvalidPlan => formatter.write_str("update plan is invalid"),
+            Self::AmbiguousPackage => formatter.write_str("package id matches more than one row"),
+            Self::UnsupportedSource => formatter.write_str("update source is not supported"),
+            Self::NetworkUnavailable => {
+                formatter.write_str("update provider network is unavailable")
+            }
+            Self::VersionChanged => formatter.write_str("offered package version changed"),
+            Self::PackageNotFound => formatter.write_str("package id is not in the update table"),
+            Self::StaleConfirmation => formatter.write_str("update preview digest is stale"),
+            Self::ProviderChanged => formatter.write_str("update provider fingerprint changed"),
+            Self::ProbeFailed => formatter.write_str("update provider probe failed"),
+        }
+    }
+}
+
+impl std::error::Error for SoftwareUpdateError {}
+
+impl SoftwareUpdateError {
+    /// Stable machine code.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::ConfirmationRequired => "confirmation_required",
+            Self::UnsupportedPlanVersion(_) => "unsupported_plan_version",
+            Self::InvalidPlan => "invalid_plan",
+            Self::AmbiguousPackage => "ambiguous_package",
+            Self::UnsupportedSource => "unsupported_source",
+            Self::NetworkUnavailable => "network_unavailable",
+            Self::VersionChanged => "version_changed",
+            Self::PackageNotFound => "package_not_found",
+            Self::StaleConfirmation => "stale_confirmation",
+            Self::ProviderChanged => "provider_changed",
+            Self::ProbeFailed => "probe_failed",
+        }
+    }
+}
+
+/// Selects one package from a read-only provider probe. It does not upgrade.
+pub fn plan_software_update(
+    program: &OsStr,
+    package_id: &str,
+    source: &str,
+    available_version: &str,
+) -> Result<SoftwareUpdatePlanV1, SoftwareUpdateError> {
+    let runner = ProcessRunner::default();
+    plan_software_update_with(
+        |request| runner.run(request),
+        program,
+        package_id,
+        source,
+        available_version,
+    )
+}
+
+/// Re-runs the read-only probe and binds the live row to `plan`.
+pub fn preview_software_update(
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+) -> Result<SoftwareUpdatePreviewV1, SoftwareUpdateError> {
+    let runner = ProcessRunner::default();
+    preview_software_update_with(|request| runner.run(request), program, plan)
+}
+
+/// Upgrades one planned package. Refusals return before the upgrade process.
+pub fn execute_software_update(
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+    expected_preview_digest: &str,
+    confirmed: bool,
+) -> Result<SoftwareUpdateReportV1, SoftwareUpdateError> {
+    let runner = ProcessRunner::default();
+    execute_software_update_with(
+        |request| runner.run(request),
+        program,
+        plan,
+        expected_preview_digest,
+        confirmed,
+    )
+}
+
+fn plan_software_update_with(
+    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+    package_id: &str,
+    source: &str,
+    available_version: &str,
+) -> Result<SoftwareUpdatePlanV1, SoftwareUpdateError> {
+    validate_update_selector(package_id, source, available_version)?;
+    let row = select_update_row(
+        &mut run,
+        program,
+        package_id,
+        source,
+        available_version,
+        None,
+    )?;
+    Ok(SoftwareUpdatePlanV1 {
+        version: SOFTWARE_UPDATE_PLAN_VERSION,
+        package_id: row.id,
+        source: row.source,
+        installed_version: row.installed_version,
+        available_version: row.available_version,
+        provider_fingerprint: provider_fingerprint(program),
+    })
+}
+
+fn preview_software_update_with(
+    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+) -> Result<SoftwareUpdatePreviewV1, SoftwareUpdateError> {
+    let row = bound_update_row(&mut run, program, plan)?;
+    Ok(SoftwareUpdatePreviewV1 {
+        version: SOFTWARE_UPDATE_PLAN_VERSION,
+        digest: update_digest(plan, &row)?,
+        package_id: row.id,
+        source: row.source,
+        installed_version: row.installed_version,
+        available_version: row.available_version,
+    })
+}
+
+fn execute_software_update_with(
+    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+    expected_preview_digest: &str,
+    confirmed: bool,
+) -> Result<SoftwareUpdateReportV1, SoftwareUpdateError> {
+    if !confirmed {
+        return Err(SoftwareUpdateError::ConfirmationRequired);
+    }
+    if !is_preview_digest(expected_preview_digest) {
+        return Err(SoftwareUpdateError::InvalidPlan);
+    }
+    let row = bound_update_row(&mut run, program, plan)?;
+    let digest = update_digest(plan, &row)?;
+    if digest != expected_preview_digest {
+        return Err(SoftwareUpdateError::StaleConfirmation);
+    }
+    let noop = NoopCancelObserver;
+    let request = upgrade_request(program, plan, &noop);
+    let result = run(&request);
+    let restart_required = output_line(&result, "restart_required");
+    let requery = probe_rows(&mut run, program);
+    let outcome = if restart_required {
+        SoftwareUpdateOutcome::RestartRequired
+    } else if matches!(result.status, ProcessStatus::Success) {
+        match requery {
+            Ok(rows) => {
+                let current = rows.iter().find(|row| row.id == plan.package_id);
+                if current.is_none()
+                    || current.is_some_and(|row| row.installed_version == plan.available_version)
+                {
+                    SoftwareUpdateOutcome::Updated
+                } else {
+                    SoftwareUpdateOutcome::Failed
+                }
+            }
+            Err(_) => SoftwareUpdateOutcome::Unknown,
+        }
+    } else {
+        SoftwareUpdateOutcome::Failed
+    };
+    let updated = outcome == SoftwareUpdateOutcome::Updated;
+    Ok(SoftwareUpdateReportV1 {
+        version: SOFTWARE_UPDATE_PLAN_VERSION,
+        package_id: plan.package_id.clone(),
+        source: plan.source.clone(),
+        available_version: plan.available_version.clone(),
+        outcome,
+        updated,
+    })
+}
+
+fn bound_update_row(
+    run: &mut impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+) -> Result<ParsedRow, SoftwareUpdateError> {
+    validate_update_plan(plan)?;
+    if provider_fingerprint(program) != plan.provider_fingerprint {
+        return Err(SoftwareUpdateError::ProviderChanged);
+    }
+    select_update_row(
+        run,
+        program,
+        &plan.package_id,
+        &plan.source,
+        &plan.available_version,
+        Some(plan.installed_version.as_str()),
+    )
+}
+
+fn select_update_row(
+    run: &mut impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+    package_id: &str,
+    source: &str,
+    available_version: &str,
+    installed_version: Option<&str>,
+) -> Result<ParsedRow, SoftwareUpdateError> {
+    if source != SUPPORTED_UPDATE_SOURCE {
+        return Err(SoftwareUpdateError::UnsupportedSource);
+    }
+    let rows = probe_rows(run, program)?;
+    let matches = rows
+        .into_iter()
+        .filter(|row| row.id == package_id)
+        .collect::<Vec<_>>();
+    if matches.len() > 1 {
+        return Err(SoftwareUpdateError::AmbiguousPackage);
+    }
+    let Some(row) = matches.into_iter().next() else {
+        return Err(SoftwareUpdateError::PackageNotFound);
+    };
+    if row.source != SUPPORTED_UPDATE_SOURCE || row.source != source {
+        return Err(SoftwareUpdateError::UnsupportedSource);
+    }
+    if row.available_version != available_version
+        || installed_version.is_some_and(|installed| row.installed_version != installed)
+    {
+        return Err(SoftwareUpdateError::VersionChanged);
+    }
+    Ok(row)
+}
+
+fn probe_rows(
+    run: &mut impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+) -> Result<Vec<ParsedRow>, SoftwareUpdateError> {
+    let noop = NoopCancelObserver;
+    let request = read_only_request(program, &noop);
+    let result = run(&request);
+    if output_line(&result, "network_unavailable") {
+        return Err(SoftwareUpdateError::NetworkUnavailable);
+    }
+    classify(&result).map_err(|_| SoftwareUpdateError::ProbeFailed)
+}
+
+fn validate_update_selector(
+    package_id: &str,
+    source: &str,
+    available_version: &str,
+) -> Result<(), SoftwareUpdateError> {
+    if !update_token(package_id) || !update_token(source) || !update_token(available_version) {
+        return Err(SoftwareUpdateError::InvalidPlan);
+    }
+    if source != SUPPORTED_UPDATE_SOURCE {
+        return Err(SoftwareUpdateError::UnsupportedSource);
+    }
+    Ok(())
+}
+
+fn validate_update_plan(plan: &SoftwareUpdatePlanV1) -> Result<(), SoftwareUpdateError> {
+    if plan.version != SOFTWARE_UPDATE_PLAN_VERSION {
+        return Err(SoftwareUpdateError::UnsupportedPlanVersion(plan.version));
+    }
+    validate_update_selector(&plan.package_id, &plan.source, &plan.available_version)?;
+    if !update_token(&plan.installed_version) || !is_preview_digest(&plan.provider_fingerprint) {
+        return Err(SoftwareUpdateError::InvalidPlan);
+    }
+    Ok(())
+}
+
+fn update_token(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && !value.starts_with('-')
+        && !value.chars().any(char::is_whitespace)
+}
+
+fn update_digest(
+    plan: &SoftwareUpdatePlanV1,
+    row: &ParsedRow,
+) -> Result<String, SoftwareUpdateError> {
+    let canonical = serde_json::to_vec(&(
+        "devsweep.software.update.preview.v1",
+        plan.version,
+        &plan.package_id,
+        &plan.source,
+        &plan.installed_version,
+        &plan.available_version,
+        &plan.provider_fingerprint,
+        &row.id,
+        &row.source,
+        &row.installed_version,
+        &row.available_version,
+    ))
+    .map_err(|_| SoftwareUpdateError::InvalidPlan)?;
+    Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
+}
+
+fn provider_fingerprint(program: &OsStr) -> String {
+    format!(
+        "sha256:{}",
+        hex_digest(Sha256::digest(program.as_encoded_bytes()))
+    )
+}
+
+fn is_preview_digest(value: &str) -> bool {
+    value.strip_prefix("sha256:").is_some_and(|hex| {
+        hex.len() == 64
+            && hex
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    })
+}
+
+fn output_line(result: &ProcessResult, token: &str) -> bool {
+    let stdout = String::from_utf8_lossy(&result.output.stdout);
+    let stderr = String::from_utf8_lossy(&result.output.stderr);
+    stdout.lines().any(|line| line.trim() == token)
+        || stderr.lines().any(|line| line.trim() == token)
+}
+
+fn read_only_request<'a>(program: &OsStr, cancel: &'a dyn CancelObserver) -> ProcessRequest<'a> {
+    ProcessRequest {
+        program: program.to_os_string(),
+        args: [
+            OsString::from("upgrade"),
+            OsString::from("--disable-interactivity"),
+        ]
+        .into(),
+        cwd: CwdPolicy::Neutral,
+        timeout: Some(DEFAULT_PROVIDER_PHASE_DEADLINE),
+        job_deadline: None,
+        cancel,
+    }
+}
+
+fn upgrade_request<'a>(
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+    cancel: &'a dyn CancelObserver,
+) -> ProcessRequest<'a> {
+    ProcessRequest {
+        program: program.to_os_string(),
+        args: [
+            OsString::from("upgrade"),
+            OsString::from("--id"),
+            OsString::from(&plan.package_id),
+            OsString::from("--version"),
+            OsString::from(&plan.available_version),
+            OsString::from("--source"),
+            OsString::from(&plan.source),
+            OsString::from("--disable-interactivity"),
+        ]
+        .into(),
+        cwd: CwdPolicy::Neutral,
+        timeout: Some(DEFAULT_PROVIDER_PHASE_DEADLINE),
+        job_deadline: None,
+        cancel,
+    }
 }
 
 /// Runs the read-only winget probe and matches rows to `inventory` by name.

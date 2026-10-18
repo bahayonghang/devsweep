@@ -10,7 +10,9 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::catalogue::{MaintenanceActionClass, OPTIMIZE_CATALOGUE_VERSION, catalogue_entry};
+use super::catalogue::{
+    MaintenanceActionClass, OPTIMIZE_CATALOGUE_VERSION, catalogue_entry, catalogue_generation,
+};
 use super::execution::{AdapterOutcome, MaintenanceExecutionOutcome};
 use super::plan::is_sha256;
 
@@ -99,7 +101,8 @@ impl OptimizeAuditRecordV1 {
             domain: OPTIMIZE_AUDIT_DOMAIN.to_string(),
             operation_id: operation_id.to_string(),
             timestamp_unix_ms,
-            catalogue_version: OPTIMIZE_CATALOGUE_VERSION,
+            catalogue_version: catalogue_generation(catalogue_id)
+                .unwrap_or(OPTIMIZE_CATALOGUE_VERSION),
             catalogue_id: catalogue_id.to_string(),
             action_class,
             preview_digest: preview_digest.to_string(),
@@ -205,6 +208,48 @@ fn io_error(stage: &'static str, path: &Path, source: io::Error) -> OptimizeAudi
 /// Resolve the sole supported Optimize V1 journal path.
 pub fn optimize_audit_v1_path() -> Result<PathBuf, OptimizeAuditError> {
     optimize_audit_v1_path_from(std::env::var_os("LOCALAPPDATA"))
+}
+
+/// Latest success timestamp for one catalogue id. A missing journal is no
+/// cooldown. A corrupt line fails closed. This read does not take the
+/// optimize lock, because execution already holds it.
+pub(super) fn last_succeeded_unix_ms(
+    path: &Path,
+    catalogue_id: &str,
+) -> Result<Option<u64>, OptimizeAuditError> {
+    if !path
+        .try_exists()
+        .map_err(|error| io_error("probe", path, error))?
+    {
+        return Ok(None);
+    }
+    let bytes = fs::read(path).map_err(|error| io_error("read", path, error))?;
+    if bytes.is_empty() {
+        return Ok(None);
+    }
+    let text =
+        std::str::from_utf8(&bytes).map_err(|_| OptimizeAuditError::Corrupt(path.to_path_buf()))?;
+    if !text.ends_with('\n') {
+        return Err(OptimizeAuditError::Corrupt(path.to_path_buf()));
+    }
+    let mut latest = None;
+    for line in text.lines() {
+        let record: OptimizeAuditRecordV1 = serde_json::from_str(line)
+            .map_err(|_| OptimizeAuditError::Corrupt(path.to_path_buf()))?;
+        validate_record(&record)?;
+        if record.catalogue_id == catalogue_id
+            && record.status_code == OptimizeAuditStatusCode::Succeeded
+            && matches!(
+                record.transition,
+                OptimizeAuditTransition::Terminal {
+                    outcome: MaintenanceExecutionOutcome::Succeeded,
+                }
+            )
+        {
+            latest = Some(record.timestamp_unix_ms);
+        }
+    }
+    Ok(latest)
 }
 
 pub(super) fn optimize_audit_v1_path_from(
@@ -374,18 +419,25 @@ fn validate_record(record: &OptimizeAuditRecordV1) -> Result<(), OptimizeAuditEr
             detail: "record catalogue id is not in the closed catalogue",
         }
     })?;
-    if entry.action_class != record.action_class
-        || record.catalogue_version != OPTIMIZE_CATALOGUE_VERSION
-    {
+    let generation = catalogue_generation(&record.catalogue_id).ok_or_else(|| {
+        OptimizeAuditError::InvalidTransition {
+            operation_id: record.operation_id.clone(),
+            detail: "record catalogue id is not in the closed catalogue",
+        }
+    })?;
+    if entry.action_class != record.action_class || record.catalogue_version != generation {
         return Err(OptimizeAuditError::InvalidTransition {
             operation_id: record.operation_id.clone(),
             detail: "record catalogue identity is inconsistent",
         });
     }
-    if record.action_class == MaintenanceActionClass::Guidance {
+    if matches!(
+        record.action_class,
+        MaintenanceActionClass::Guidance | MaintenanceActionClass::Observe
+    ) {
         return Err(OptimizeAuditError::InvalidTransition {
             operation_id: record.operation_id.clone(),
-            detail: "guidance rows have no operation journal",
+            detail: "guidance and observe rows have no operation journal",
         });
     }
     let transition_shape_valid = match record.transition {

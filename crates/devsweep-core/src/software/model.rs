@@ -146,6 +146,12 @@ pub enum SoftwareEligibilityReason {
     RegistryOnlyManual,
     UnsupportedSource,
     EligibleCurrentUserMsix,
+    /// Quiet `msiexec.exe /x {product} /qn /norestart` inside a fixture.
+    EligibleMsiQuiet,
+    /// Absolute vendor executable inside a fixture, with a closed argument list.
+    EligibleVendorUninstaller,
+    /// `scoop.exe uninstall <app>` inside a fixture.
+    EligibleScoopApp,
 }
 
 /// Closed selectable/manual state; presentations never infer this value.
@@ -253,6 +259,9 @@ pub struct SoftwareEntryV1 {
     pub eligibility: SoftwareEligibility,
     pub size: SoftwareSizeEvidence,
     pub last_used: SoftwareLastUsedEvidence,
+    /// Fixture launch kept off the inventory wire and out of the fingerprint.
+    #[serde(skip)]
+    pub launch: Option<FixtureLaunch>,
 }
 
 /// Immutable locale-neutral Software V1 inventory.
@@ -306,6 +315,27 @@ pub struct SoftwarePreviewItemV1 {
 #[serde(rename_all = "snake_case")]
 pub enum SoftwareActionClass {
     RemoveCurrentUserMsix,
+    RemoveMsiProduct,
+    RemoveVendorUninstaller,
+    RemoveScoopApp,
+}
+
+/// In-memory fixture launch. It is not serialized on inventory, preview, or audit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FixtureLaunch {
+    pub kind: FixtureLaunchKind,
+    pub root: std::path::PathBuf,
+    pub executable: std::path::PathBuf,
+    pub arguments: Vec<String>,
+    pub target_id: String,
+}
+
+/// Closed fixture provider. Production inventory does not attach one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FixtureLaunchKind {
+    Msi,
+    Vendor,
+    Scoop,
 }
 
 /// Internal source observation before deterministic assembly and fingerprinting.

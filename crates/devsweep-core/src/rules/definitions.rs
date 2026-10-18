@@ -29,6 +29,42 @@ pub(crate) const WINDOWS_CACHE_RULES: &[(&str, super::windows_caches::WindowsCac
     ),
 ];
 
+/// Global-scan coverage only. These ids are not rules and never become targets.
+pub(crate) const WINDOWS_CACHE_COVERAGE_OMISSIONS: &[(&str, &str)] = &[
+    (
+        "windows.shader.cache",
+        "Shader cache has no closed directory in the reviewed catalogue.",
+    ),
+    (
+        "windows.wer.reports",
+        "Windows error reports can contain crash memory and are not a cache target.",
+    ),
+    (
+        "windows.update.download",
+        "Windows Update download cache stays guidance on maintenance.update_cache; this build does not move it.",
+    ),
+    (
+        "windows.delivery_optimization",
+        "Delivery Optimization files stay guidance; pinned files are not a cache target.",
+    ),
+    (
+        "windows.user_downloads",
+        "The profile Downloads folder is personal data and is not a cache target.",
+    ),
+    (
+        "ai.claude.cache",
+        "Claude Code sessions, memory, settings, and credentials are outside generic cache cleanup.",
+    ),
+    (
+        "ai.codex.cache",
+        "Codex sessions, memory, settings, and credentials are outside generic cache cleanup.",
+    ),
+    (
+        "ai.cursor.sessions",
+        "Cursor sessions and workspace storage are outside windows.cursor.cache.",
+    ),
+];
+
 /// Additional generated artifacts require stronger evidence than a directory name.
 pub(crate) const GENERATED_PROJECT_RULES: &[super::GeneratedProjectRule] = &[
     super::GeneratedProjectRule {

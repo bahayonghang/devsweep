@@ -12,13 +12,13 @@ sync-lock:
     cargo update --offline --package devsweep-core --package devsweep-cli
 
 check:
-    cargo check --workspace --locked --all-targets
+    cargo check --workspace --locked --all-targets --target-dir dist/ci-target
 
 test:
-    cargo test --workspace --locked --all-targets
+    cargo test --workspace --locked --all-targets --target-dir dist/ci-target
 
 clippy:
-    cargo clippy --workspace --locked --all-targets -- -D warnings
+    cargo clippy --workspace --locked --all-targets --target-dir dist/ci-target -- -D warnings
 
 build:
     cargo build --locked -p devsweep-cli --bin devsweep

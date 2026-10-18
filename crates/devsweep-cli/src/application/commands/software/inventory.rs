@@ -53,7 +53,7 @@ fn source(source: SoftwareSource) -> SoftwareInventorySource {
     }
 }
 
-fn load_inventory(path: &Path) -> Result<SoftwareInventoryV1, ApplicationError> {
+pub(super) fn load_inventory(path: &Path) -> Result<SoftwareInventoryV1, ApplicationError> {
     let bytes = fs::read(path).map_err(|error| {
         ApplicationError::failed(
             "inventory_read_failed",

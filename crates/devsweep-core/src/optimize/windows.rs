@@ -51,6 +51,20 @@ impl MaintenanceDispatch for RealMaintenanceDispatch {
                 // non-success code. Cancellation is a pre-dispatch boundary.
                 dispatch_settings_handoff(uri)
             }
+            ResolvedMaintenanceAction::NativeCommand { program, argv } => {
+                super::maintenance::dispatch_native(
+                    program,
+                    argv,
+                    cancel,
+                    super::maintenance::native_timeout(&action.operation_id),
+                )
+            }
+            ResolvedMaintenanceAction::DeadStartup { .. } => {
+                super::maintenance::dispatch_dead_startup(
+                    &action.resolved,
+                    &super::maintenance::LiveDeadStartupStore,
+                )
+            }
         }
     }
 }
@@ -63,6 +77,9 @@ pub(super) fn resolve_action(
         MaintenanceActionClass::Guidance => Err(OptimizePlanError::GuidanceNotExecutable(
             entry.id.to_string(),
         )),
+        MaintenanceActionClass::Observe => {
+            Err(OptimizePlanError::ObserveNotPlanable(entry.id.to_string()))
+        }
         MaintenanceActionClass::SettingsHandoff => {
             let (uri, floor) = super::catalogue::settings_handoff(entry.id)
                 .ok_or_else(|| OptimizePlanError::UnknownOperation(entry.id.to_string()))?;
@@ -75,9 +92,13 @@ pub(super) fn resolve_action(
                 observed_build: build,
             })
         }
-        MaintenanceActionClass::Execute => {
+        MaintenanceActionClass::Execute if entry.id == super::catalogue::DNS_FLUSH_ID => {
             let program = resolve_ipconfig()?;
             Ok(ResolvedMaintenanceAction::DnsFlush { program })
+        }
+        MaintenanceActionClass::Execute => {
+            let facts = super::maintenance::live_facts()?;
+            super::maintenance::resolve_with_facts(entry, &facts)
         }
     }
 }
@@ -120,6 +141,22 @@ pub(crate) fn os_build() -> Option<u32> {
 /// 5. The caller passes the path as program and `/flushdns` as the only argv
 ///    element to the bounded runner.
 pub(super) fn resolve_ipconfig() -> Result<PathBuf, OptimizePlanError> {
+    let mut path = system_program_directory()?;
+    path.push("ipconfig.exe");
+    verify_ipconfig_identity(&path)?;
+    Ok(path)
+}
+
+/// Resolves one System32/Sysnative program by exact basename. Callers pass
+/// the path as program and a separate argv. This function does not spawn it.
+pub(super) fn resolve_system_program(file_name: &str) -> Result<PathBuf, OptimizePlanError> {
+    let mut path = system_program_directory()?;
+    path.push(file_name);
+    verify_named_system_file(&path, file_name)?;
+    Ok(path)
+}
+
+fn system_program_directory() -> Result<PathBuf, OptimizePlanError> {
     #[cfg(windows)]
     {
         use windows_sys::Win32::System::SystemInformation::{
@@ -147,17 +184,13 @@ pub(super) fn resolve_ipconfig() -> Result<PathBuf, OptimizePlanError> {
             let len = unsafe { GetWindowsDirectoryW(buffer.as_mut_ptr(), buffer.len() as u32) };
             let windows_dir = directory_string(&buffer, len)?;
             let mut path = PathBuf::from(windows_dir);
-            path.push("Sysnative\\ipconfig.exe");
-            verify_ipconfig_identity(&path)?;
+            path.push("Sysnative");
             Ok(path)
         } else {
             // SAFETY: `buffer` is writable for its full length.
             let len = unsafe { GetSystemDirectoryW(buffer.as_mut_ptr(), buffer.len() as u32) };
             let system_dir = directory_string(&buffer, len)?;
-            let mut path = PathBuf::from(system_dir);
-            path.push("ipconfig.exe");
-            verify_ipconfig_identity(&path)?;
-            Ok(path)
+            Ok(PathBuf::from(system_dir))
         }
     }
     #[cfg(not(windows))]
@@ -178,6 +211,13 @@ fn directory_string(buffer: &[u16], len: u32) -> Result<String, OptimizePlanErro
 /// The closed identity checks of step 4. Everything that cannot be proven
 /// closes with [`OptimizePlanError::ResolverUnavailable`].
 pub(super) fn verify_ipconfig_identity(path: &Path) -> Result<(), OptimizePlanError> {
+    verify_named_system_file(path, "ipconfig.exe")
+}
+
+pub(super) fn verify_named_system_file(
+    path: &Path,
+    file_name: &str,
+) -> Result<(), OptimizePlanError> {
     #[cfg(windows)]
     {
         use std::ffi::OsStr;
@@ -202,7 +242,7 @@ pub(super) fn verify_ipconfig_identity(path: &Path) -> Result<(), OptimizePlanEr
             .file_name()
             .and_then(OsStr::to_str)
             .ok_or(OptimizePlanError::ResolverUnavailable)?;
-        if !name.eq_ignore_ascii_case("ipconfig.exe") {
+        if !name.eq_ignore_ascii_case(file_name) {
             return Err(OptimizePlanError::ResolverUnavailable);
         }
         // `File::open` reaches the exact absolute path through `CreateFileW`
@@ -220,7 +260,7 @@ pub(super) fn verify_ipconfig_identity(path: &Path) -> Result<(), OptimizePlanEr
     }
     #[cfg(not(windows))]
     {
-        let _ = path;
+        let _ = (path, file_name);
         Err(OptimizePlanError::PlatformUnsupported)
     }
 }

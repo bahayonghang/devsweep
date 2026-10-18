@@ -1,0 +1,7 @@
+DevSweep. Packaged offline text. This window does not use a browser.
+Clean, Software, Optimize, Analyze, Status.
+清理、软件、优化、分析、状态。
+Review every Cleanup Target before anything moves.
+清理只来自已保存的预览计划。
+No asset conversion. The beaver icon is the existing DevSweep master PNG, packaged offline.
+

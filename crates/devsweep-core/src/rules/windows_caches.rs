@@ -41,6 +41,7 @@ pub(crate) struct WindowsCacheUnavailable {
 #[derive(Debug, Default)]
 pub(crate) struct WindowsCacheDiscovery {
     /// Recognized exact children, including unavailable observations. Never roots.
+    /// Unproven UserTemp ownership stays coverage-only and is not a candidate.
     pub candidates: Vec<PathBuf>,
     /// Path-specific refusals, or root/provider failures without a candidate.
     pub unavailable: Vec<WindowsCacheUnavailable>,
@@ -260,7 +261,6 @@ fn discover(
             issue(&mut result, path, error);
             continue;
         }
-        result.candidates.push(path.clone());
         let state = if family == WindowsCacheFamily::UserTemp {
             Ok(())
         } else {
@@ -285,7 +285,15 @@ fn discover(
             )
         });
         if let Err(error) = checked {
+            // Unproven UserTemp ownership is coverage-only; it is not a cleanup candidate.
+            if family != WindowsCacheFamily::UserTemp
+                || error.0 != ScanCoverageStatus::OwnershipUnknown
+            {
+                result.candidates.push(path.clone());
+            }
             issue(&mut result, path, error);
+        } else {
+            result.candidates.push(path);
         }
     }
     result
@@ -858,6 +866,12 @@ pub(crate) fn owner_state(names: &[&str]) -> OwnerState {
 #[cfg(test)]
 thread_local! { static TEST_OWNER_STATE: std::cell::Cell<Option<OwnerState>> = const { std::cell::Cell::new(None) }; }
 
+#[cfg(all(test, windows))]
+thread_local! {
+    static TEST_EXPECTED_OWNER_SID: std::cell::RefCell<Option<Vec<u32>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
 /// Test-only observation seam; root, profile, path, content and executor checks remain real.
 #[cfg(test)]
 pub(crate) fn with_owner_state_for_test<T>(state: OwnerState, f: impl FnOnce() -> T) -> T {
@@ -868,6 +882,28 @@ pub(crate) fn with_owner_state_for_test<T>(state: OwnerState, f: impl FnOnce() -
         }
     }
     let _restore = Restore(TEST_OWNER_STATE.with(|value| value.replace(Some(state))));
+    f()
+}
+
+/// Replaces only the expected SID argument to EqualSid. GetKernelObjectSecurity still runs.
+#[cfg(all(test, windows))]
+fn with_expected_owner_sid_for_test<T>(sid: &[u8], f: impl FnOnce() -> T) -> T {
+    struct Restore(Option<Vec<u32>>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            TEST_EXPECTED_OWNER_SID.with(|value| {
+                value.replace(self.0.take());
+            });
+        }
+    }
+    let mut words = vec![0u32; sid.len().div_ceil(std::mem::size_of::<u32>())];
+    if !sid.is_empty() {
+        // SAFETY: `words` covers at least `sid.len()` bytes; the buffers do not overlap.
+        unsafe {
+            std::ptr::copy_nonoverlapping(sid.as_ptr(), words.as_mut_ptr().cast(), sid.len());
+        }
+    }
+    let _restore = Restore(TEST_EXPECTED_OWNER_SID.with(|value| value.replace(Some(words))));
     f()
 }
 
@@ -1054,6 +1090,15 @@ fn native_temp_probe(path: &Path, exclusive: bool) -> Check<()> {
         vec![0usize; (security_length as usize).div_ceil(std::mem::size_of::<usize>())];
     let mut owner = ptr::null_mut();
     let mut defaulted = 0;
+    // Exclusive entry proof may substitute a test expected SID. The non-exclusive
+    // root probe still uses the process token so a current-user Temp root can be
+    // listed. GetKernelObjectSecurity and EqualSid still run in both cases.
+    #[cfg(test)]
+    let test_expected_sid = if exclusive {
+        TEST_EXPECTED_OWNER_SID.with(|value| value.borrow().clone())
+    } else {
+        None
+    };
     // SAFETY: descriptor output is aligned/bounded; returned SID pointers stay within
     // live buffers until comparison. Never dereference an unsuccessful API result.
     let same_owner = unsafe {
@@ -1069,7 +1114,18 @@ fn native_temp_probe(path: &Path, exclusive: bool) -> Check<()> {
             && !owner.is_null()
             && IsValidSid(owner) != 0
             && {
-                let sid = (*(user.as_ptr().cast::<TOKEN_USER>())).User.Sid;
+                let sid = {
+                    #[cfg(test)]
+                    if let Some(expected) = test_expected_sid.as_ref() {
+                        expected.as_ptr().cast::<core::ffi::c_void>().cast_mut()
+                    } else {
+                        (*(user.as_ptr().cast::<TOKEN_USER>())).User.Sid
+                    }
+                    #[cfg(not(test))]
+                    {
+                        (*(user.as_ptr().cast::<TOKEN_USER>())).User.Sid
+                    }
+                };
                 !sid.is_null() && IsValidSid(sid) != 0 && EqualSid(owner, sid) != 0
             }
     };
@@ -1520,6 +1576,71 @@ mod tests {
             .is_empty()
         );
         assert!(root.join("old.tmp").exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn user_temp_foreign_sid_is_ownership_unknown() {
+        use windows_sys::Win32::Security::{
+            CreateWellKnownSid, IsValidSid, SECURITY_MAX_SID_SIZE, WinLocalSystemSid,
+        };
+        let (_directory, roots) = fixture();
+        let root = roots.root(WindowsCacheFamily::UserTemp).unwrap();
+        let stale = root.join("old.tmp");
+        file(&stale, "stale owned fixture");
+        age(
+            &stale,
+            SystemTime::now() - Duration::from_secs(9 * 24 * 60 * 60),
+        );
+        let mut sid = vec![0u8; SECURITY_MAX_SID_SIZE as usize];
+        let mut sid_size = SECURITY_MAX_SID_SIZE;
+        // SAFETY: LocalSystem is a well-known SID; the buffer is SECURITY_MAX_SID_SIZE.
+        unsafe {
+            assert_ne!(
+                CreateWellKnownSid(
+                    WinLocalSystemSid,
+                    std::ptr::null_mut(),
+                    sid.as_mut_ptr().cast(),
+                    &mut sid_size,
+                ),
+                0
+            );
+            sid.truncate(sid_size as usize);
+            assert_ne!(IsValidSid(sid.as_mut_ptr().cast()), 0);
+        }
+        let result = with_expected_owner_sid_for_test(&sid, || {
+            discover(
+                &roots,
+                WindowsCacheFamily::UserTemp,
+                OwnerState::Unknown,
+                None,
+            )
+        });
+        assert!(
+            !result.candidates.contains(&stale),
+            "candidates={:?} unavailable={:?}",
+            result.candidates,
+            result.unavailable
+        );
+        assert!(
+            result.unavailable.iter().any(|issue| issue.path == stale
+                && issue.status == ScanCoverageStatus::OwnershipUnknown
+                && issue.detail == "temporary entry is not proven owned by the current user"),
+            "{:?}",
+            result.unavailable
+        );
+        let owned = discover(
+            &roots,
+            WindowsCacheFamily::UserTemp,
+            OwnerState::Unknown,
+            None,
+        );
+        assert!(owned.candidates.contains(&stale), "{:?}", owned.unavailable);
+        assert!(
+            !owned.unavailable.iter().any(|issue| issue.path == stale),
+            "{:?}",
+            owned.unavailable
+        );
     }
 
     #[cfg(windows)]

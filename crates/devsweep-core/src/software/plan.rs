@@ -6,8 +6,9 @@ use sha2::{Digest, Sha256};
 
 use crate::digest_encoding::hex_digest;
 
+use super::launch::{self, action_class, eligibility_reason};
 use super::model::{
-    SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION, SOFTWARE_PREVIEW_VERSION,
+    FixtureLaunch, SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION, SOFTWARE_PREVIEW_VERSION,
     SoftwareActionClass, SoftwareEligibilityReason, SoftwareIdentity, SoftwareInventoryV1,
     SoftwarePreviewItemV1, SoftwarePreviewV1, SoftwareScope, SoftwareSelectionPlanV1,
 };
@@ -120,16 +121,10 @@ pub fn preview_selection_plan(
             .ok_or_else(|| SoftwarePlanError::StaleSelection(id.clone()))?;
         if live.identity != saved.identity
             || live.version != saved.version
+            || live.launch != saved.launch
             || !live.eligibility.is_selectable()
-            || live.eligibility.reason != SoftwareEligibilityReason::EligibleCurrentUserMsix
         {
             return Err(SoftwarePlanError::StaleSelection(id.clone()));
-        }
-        let SoftwareIdentity::Msix { .. } = &live.identity else {
-            return Err(SoftwarePlanError::InvalidSelectedIdentity(id.clone()));
-        };
-        if live.scope != SoftwareScope::CurrentUser {
-            return Err(SoftwarePlanError::InvalidSelectedIdentity(id.clone()));
         }
         selected.push(preview_item(live)?);
     }
@@ -243,10 +238,22 @@ fn validate_live_plan_header(
 fn preview_item(
     live: &super::model::SoftwareEntryV1,
 ) -> Result<SoftwarePreviewItemV1, SoftwarePlanError> {
-    if !live.eligibility.is_selectable()
-        || live.eligibility.reason != SoftwareEligibilityReason::EligibleCurrentUserMsix
-        || live.scope != SoftwareScope::CurrentUser
-    {
+    if !live.eligibility.is_selectable() {
+        return Err(SoftwarePlanError::ManualSelection(live.id.clone()));
+    }
+    match live.eligibility.reason {
+        SoftwareEligibilityReason::EligibleCurrentUserMsix => preview_msix(live),
+        SoftwareEligibilityReason::EligibleMsiQuiet
+        | SoftwareEligibilityReason::EligibleVendorUninstaller
+        | SoftwareEligibilityReason::EligibleScoopApp => preview_fixture(live),
+        _ => Err(SoftwarePlanError::ManualSelection(live.id.clone())),
+    }
+}
+
+fn preview_msix(
+    live: &super::model::SoftwareEntryV1,
+) -> Result<SoftwarePreviewItemV1, SoftwarePlanError> {
+    if live.scope != SoftwareScope::CurrentUser || live.launch.is_some() {
         return Err(SoftwarePlanError::ManualSelection(live.id.clone()));
     }
     let SoftwareIdentity::Msix { package_full_name } = &live.identity else {
@@ -261,7 +268,31 @@ fn preview_item(
         action_class: SoftwareActionClass::RemoveCurrentUserMsix,
         scope: SoftwareScope::CurrentUser,
         eligibility: SoftwareEligibilityReason::EligibleCurrentUserMsix,
-        strategy_token: strategy_token(&live.identity, live.version.as_deref())?,
+        strategy_token: strategy_token(&live.identity, live.version.as_deref(), None)?,
+    })
+}
+
+fn preview_fixture(
+    live: &super::model::SoftwareEntryV1,
+) -> Result<SoftwarePreviewItemV1, SoftwarePlanError> {
+    let launch = live
+        .launch
+        .as_ref()
+        .ok_or_else(|| SoftwarePlanError::InvalidSelectedIdentity(live.id.clone()))?;
+    if launch::validate_fixture_launch(launch).is_err()
+        || !launch::launch_matches_identity(&live.identity, launch)
+        || live.eligibility.reason != eligibility_reason(launch.kind)
+        || live.scope != super::scope_for_identity(&live.identity)
+    {
+        return Err(SoftwarePlanError::InvalidSelectedIdentity(live.id.clone()));
+    }
+    Ok(SoftwarePreviewItemV1 {
+        id: live.id.clone(),
+        identity: live.identity.clone(),
+        action_class: action_class(launch.kind),
+        scope: live.scope,
+        eligibility: live.eligibility.reason,
+        strategy_token: strategy_token(&live.identity, live.version.as_deref(), Some(launch))?,
     })
 }
 
@@ -343,10 +374,30 @@ fn validate_selections(
 fn strategy_token(
     identity: &SoftwareIdentity,
     version: Option<&str>,
+    launch: Option<&FixtureLaunch>,
 ) -> Result<String, SoftwarePlanError> {
-    let canonical = serde_json::to_vec(&("devsweep.software.strategy.v1", identity, version))
-        .map_err(|_| SoftwarePlanError::SerializationFailed)?;
+    let canonical = match launch {
+        None => serde_json::to_vec(&("devsweep.software.strategy.v1", identity, version)),
+        Some(launch) => serde_json::to_vec(&(
+            "devsweep.software.strategy.v1",
+            identity,
+            version,
+            launch_kind_token(launch.kind),
+            &launch.target_id,
+            &launch.arguments,
+            launch.executable.to_string_lossy().into_owned(),
+        )),
+    }
+    .map_err(|_| SoftwarePlanError::SerializationFailed)?;
     Ok(format!("software-token:sha256:{}", hex_sha256(&canonical)))
+}
+
+fn launch_kind_token(kind: super::model::FixtureLaunchKind) -> &'static str {
+    match kind {
+        super::model::FixtureLaunchKind::Msi => "msi",
+        super::model::FixtureLaunchKind::Vendor => "vendor",
+        super::model::FixtureLaunchKind::Scoop => "scoop",
+    }
 }
 
 fn preview_digest(
@@ -408,6 +459,7 @@ mod tests {
                     reason_code: "not_measured".to_string(),
                 },
                 last_used: SoftwareLastUsedEvidence::default(),
+                launch: None,
             }],
             fingerprint: String::new(),
         };

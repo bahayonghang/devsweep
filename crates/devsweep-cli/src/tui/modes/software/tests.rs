@@ -50,6 +50,7 @@ fn entry(id: &str, selectable_entry: bool) -> SoftwareEntryV1 {
         last_used: SoftwareLastUsedEvidence::Unknown {
             reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
         },
+        launch: None,
     }
 }
 
