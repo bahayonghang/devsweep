@@ -1,0 +1,8 @@
+binary_sha256=DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34
+pid=69220 hwnd=4786996
+foreground=True baseline selected=清理
+after_DOWN selected=软件
+after_DOWN2 selected=优化
+after_RIGHT selected=优化
+edit_after_type_xy_LEFT_Z='xZy'  (if 'xZy' the LEFT was consumed by the text field)
+shutdown_exit=0

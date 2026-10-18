@@ -1,0 +1,10 @@
+binary_sha256=DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34
+pid=50652 hwnd=11669454
+foreground=True
+baseline selected=清理 edit=''
+after_RIGHT_only selected=清理
+after_ALT_DOWN_only selected=清理
+after_F10 menuitems=[System; 设置; 保护; 规则; 历史] count=5
+after_ESC_LEFT selected=清理
+edit_after_typing='abc'
+shutdown_exit=0
