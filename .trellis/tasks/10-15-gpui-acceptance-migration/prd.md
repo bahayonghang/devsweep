@@ -38,17 +38,42 @@ C14-R4. Prepare isolated Windows packaging and compatible settings migration; sw
   sample against an otherwise idle median of zero. It is a defect to fix, not a
   threshold to lower.
 
-  Every **relative** clause (`<= 80 % of a fresh Tauri baseline` for startup,
-  `<= 70 %` for memory) is **NOT_RUN**: no fresh Tauri baseline was built in
-  this round, so no ratio is claimed. Warm-window, navigation/preview response,
-  10k-row frame interval, hidden-decoration frames, software-inventory p95,
-  core-scan non-regression and cooperative cancel/close are also **NOT_RUN**.
+  **Round 4: the relative clauses now have a real fresh-Tauri baseline.**
+  A baseline was built this round with
+  `cargo build --locked --release -p devsweep-desktop --target-dir dist/tauri-baseline-target`
+  (exit 0), SHA-256 `5A64470D5C334F19AF07DB7F7C58CE56094231ABAF4C5611493C8B180D71FBC4`,
+  13306880 bytes. Measured across the **whole owned process tree** as the
+  protocol requires. A first same-round attempt summed only the root process and
+  is retained, annotated as superseded, because it wrongly reported Tauri at
+  5 MiB / 116 ms.
+
+  | Budget | Threshold | Tauri baseline | GPUI spike | Result |
+  | --- | --- | --- | --- | --- |
+  | Startup to settled usable tree, relative | <= 80 % | 1140 ms | 814 ms (71.4 %) | **PASS** |
+  | Idle private memory, relative | <= 70 % | 171 MiB (7 processes) | 112 MiB (1 process) | **PASS** |
+  | Startup absolute | <= 1500 ms | — | 814 ms | PASS |
+  | Idle private absolute | <= 200 MiB | — | 112 MiB | PASS |
+
+  Both sides left **0 processes** alive 2 s after close. Evidence:
+  `evidence/c14-tree-comparison-round4.md`.
+
+  **The equivalence caveat is not waived.** The GPUI side is the single-window
+  spike (12 UIA descendants, 1 process); the Tauri side is the full five-mode
+  application (23 descendants, 7 processes including the WebView2 tree). The
+  protocol requires equal scopes, and these are not feature-equivalent, so these
+  ratios are real whole-tree measurements but they are **not** the
+  equivalence-gated acceptance C14 ultimately needs. The idle-CPU p95 FAIL
+  (7.4405 % against a 1.0 % budget) still stands.
+
+  Still **NOT_RUN**: warm-window, navigation/preview response, 10k-row frame
+  interval, hidden-decoration frames, software-inventory p95, core-scan
+  non-regression, cooperative cancel/close, and any five-mode GPUI measurement.
 
   A first run in this round reported idle CPU as 3.542 % from a single
   undivided 30 s window. That figure was not the protocol's median/p95 over
   200 ms samples and is superseded by the table above; both are retained rather
   than the earlier one being deleted.
-- [ ] C14-AC2: Canonical Rust checks, CLI contract fixtures and separate GPUI build/test/native gates pass; unchanged legacy baseline remains reproducible. On 2026-10-18 `just ci` exited 0 (918 passed, 0 failed, 5 ignored, `ci complete`) and the separate `desktop-gpui` gate exited 0 for fmt, check, clippy `-D warnings`, 59 tests and a locked release build. The unchanged legacy baseline is NOT_RUN: no fresh Tauri build was made this round.
+- [ ] C14-AC2: Canonical Rust checks, CLI contract fixtures and separate GPUI build/test/native gates pass; unchanged legacy baseline remains reproducible. On 2026-10-18 `just ci` exited 0 (918 passed, 0 failed, 5 ignored, `ci complete`) and the separate `desktop-gpui` gate exited 0 for fmt, check, clippy `-D warnings`, 59 tests and a locked release build. The unchanged legacy baseline is now reproducible: `cargo build --locked --release -p devsweep-desktop --target-dir dist/tauri-baseline-target` exited 0 this round, so the legacy Tauri app still builds from the current tree.
 - [ ] C14-AC3: Packaged GPUI launches offline/from unrelated CWD with correct assets, native actions and normal owned-process shutdown without WebView/Node runtime. The current release binary SHA-256 `D1E778D32CAE1E7D0AB99BD8FFCEAEA1090A4AB2CA2F6CDE424C7D20E90EE061`, 14179328 bytes, launched from an empty temp directory, showed the DevSweep window, exited 0 after `WM_CLOSE`, and did not load WebView, Node, or Tauri. A packaged installer and a native action beyond launch remain NOT_RUN.
 - [x] C14-AC4: Tauri removal/publishing/install/signing/commit are separate approval actions; planning or build completion does not perform them. `desktop/` remains. `just tdev` is still `cd desktop; npm run tauri -- dev`. This session did not remove Tauri, publish, install, or sign a package, and did not commit a retirement.
 
