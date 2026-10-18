@@ -433,6 +433,7 @@ impl Render for ShellView {
                     .children(lines.into_iter().enumerate().map(|(index, line)| {
                         div()
                             .id(gpui::ElementId::named_usize("panel-line", index))
+                            .aria_label(SharedString::from(line.clone()))
                             .child(SharedString::from(line))
                     })),
             )
@@ -1214,6 +1215,24 @@ mod tests {
             "second RowDown must mark row-b: {lines:?}"
         );
         assert_eq!(session.shell().mode(), Mode::Clean);
+    }
+
+    #[test]
+    fn panel_lines_use_their_text_as_accessible_names() {
+        let source = include_str!("view.rs");
+        let marker = r#".id(gpui::ElementId::named_usize("panel-line", index))"#;
+        let start = source.find(marker).expect("panel-line row div must exist");
+        let snippet = &source[start..];
+        let aria = snippet
+            .find(".aria_label(SharedString::from(line.clone()))")
+            .expect("panel-line div must set aria_label from line.clone()");
+        let child = snippet
+            .find(".child(SharedString::from(line))")
+            .expect("panel-line div must still paint line as the child");
+        assert!(
+            aria < child,
+            "aria_label from line.clone() must come before the child"
+        );
     }
 
     #[test]
