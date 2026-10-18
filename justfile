@@ -196,6 +196,21 @@ desktop-web-check:
 desktop-test:
     cargo test --locked -p devsweep-desktop
 
+# GPUI native gate. `desktop-gpui` is a standalone workspace, so the root
+# `ci` recipe does not build it. `/Brepro` makes the MSVC link deterministic:
+# without it the Rich header and PE timestamp vary between identical builds.
+gpui-check:
+    cd desktop-gpui; $env:RUSTFLAGS='-C link-arg=/Brepro'; cargo fmt --all -- --check; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; cargo clippy --locked --all-targets --target-dir dist/goal-gpui-check -- -D warnings
+
+gpui-test:
+    cd desktop-gpui; $env:RUSTFLAGS='-C link-arg=/Brepro'; cargo test --locked --target-dir dist/goal-gpui-test
+
+gpui-build:
+    cd desktop-gpui; $env:RUSTFLAGS='-C link-arg=/Brepro'; cargo build --locked --release --target-dir dist/goal-gpui-release
+
+gpui: gpui-check gpui-test gpui-build
+    @echo "gpui gate complete"
+
 desktop-build:
     cd desktop; npm run tauri -- build
 
