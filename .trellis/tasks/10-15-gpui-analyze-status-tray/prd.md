@@ -35,7 +35,24 @@ C13-R4. Present Keep Screen On controls over C08's accepted CLI/service lease co
 
 `status_tray_shares_one_subscription` covers honest unavailable/permission-denied/unsupported sensor lines, one shared main/tray subscription start/stop, and Hidden presence with no decorative frames. This does not start a live PDH sampler.
 
-`displayed_pid_does_not_kill` covers a displayed PID that is not termination authority. A 20-cycle native measurement, UIA, and CLI/service parity remain NOT_RUN.
+`displayed_pid_does_not_kill` covers a displayed PID that is not termination authority.
+
+**20-cycle native lifecycle measurement is now recorded (2026-10-18).** Twenty consecutive cycles of create -> window -> `SW_MINIMIZE` -> confirm iconic -> `SW_RESTORE` -> confirm restored -> close, on release SHA-256 `DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34` from an empty temp directory:
+
+| Metric | Value |
+| --- | --- |
+| Cycles completed | 20 / 20 |
+| Median open-to-window | 453 ms |
+| Max open-to-window | 476 ms |
+| Minimized / restored every cycle | yes |
+| Exited on close every cycle | yes |
+| Leftover processes every cycle | **0** |
+
+No orphan accumulation across cycles. Evidence: `evidence/c13-cycles-round4.md`.
+
+An earlier run of the same harness reported `leftover=1` for all 20 cycles. That was a defect in the measurement, not in the app: the owned-tree helper counted the root PID without checking whether it was still alive. The corrected helper counts only live processes, and the re-run reports 0 everywhere. Both runs are retained in the evidence rather than the failing one being erased.
+
+UIA selection and CLI/service parity remain **NOT_RUN**. UIA selection is blocked by the same focus defect recorded under C09-AC2: `view.rs:753` pins keyboard focus to the Note input, so the shell's key context never activates and no assistive-technology user can move a selection.
 
 ## Scope and decisions
 
@@ -44,3 +61,4 @@ rules apply. Detailed design and execution are in [design.md](design.md) and
 [implement.md](implement.md). These are proposals, not implementation evidence.
 Obtain approval of the parent final summary and resolve applicable technical decisions before starting.
 Do not recreate completed upstream work or promote fixture/native gaps to PASS.
+
