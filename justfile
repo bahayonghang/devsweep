@@ -17,6 +17,13 @@ check:
 test:
     cargo test --workspace --locked --all-targets --target-dir dist/ci-target
 
+# Same tests with bounded parallelism. Several core tests assert on wall-clock
+# timing of spawned child processes; on a loaded host the default thread count
+# makes them flake. Four threads keeps the suite deterministic without
+# weakening any assertion or skipping a test.
+test-stable:
+    cargo test --workspace --locked --all-targets --target-dir dist/ci-target -- --test-threads=4
+
 clippy:
     cargo clippy --workspace --locked --all-targets --target-dir dist/ci-target -- -D warnings
 
