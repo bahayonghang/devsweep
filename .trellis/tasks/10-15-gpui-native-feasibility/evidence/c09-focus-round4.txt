@@ -1,0 +1,12 @@
+binary_sha256=DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34
+pid=58488 hwnd=9180860
+foreground_at_start=9246064
+strategy1_alt_then_setforeground=True
+after_alt_trick : foreground=9180860 uiaFocused=[] count=0
+final_foreground=9180860 target=9180860 match=True
+guiThreadInfo=1 hwndActive=9180860 hwndFocus=9180860 hwndCaret=0
+ImmGetContext(9180860)=NULL
+ImmGetContext(9180860)=NULL
+after_tab_and_typing : foreground=9180860 uiaFocused=[] count=0
+edit_value=kbd
+shutdown_exit=0

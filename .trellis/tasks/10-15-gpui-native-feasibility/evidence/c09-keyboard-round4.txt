@@ -1,0 +1,17 @@
+binary_sha256=DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34
+pid=49196 hwnd=5773080
+foreground_achieved=True
+status_initial=
+edit_value_after_typing=kbdonly
+status_after_enter=
+button_name=DevSweep 菜单
+hwndFocus=5773080 hwndCaret=0
+ImmGetContext(5773080)=NULL
+ImmCreateContext=159258379
+ImmAssociateContext(5773080) prev=0
+ImmGetContext_after_assoc(5773080)=0
+ImmGetContext(5773080)=NULL
+ImmCreateContext=135796315
+ImmAssociateContext(5773080) prev=0
+ImmGetContext_after_assoc(5773080)=0
+shutdown_exit=0

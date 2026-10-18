@@ -1,0 +1,37 @@
+binary_sha256=DEF83167353380A4F6380CD6EC168B62C1FAD401E85D731AADB1A824C6128B34
+pid=61188 hwnd=7738938
+foreground_achieved=True
+--- initial ---
+  DevSweep|ControlType.Pane|sel=
+  DevSweep 菜单|ControlType.Button|sel=
+  模式|ControlType.Tab|sel=
+  清理|ControlType.TabItem|sel=True
+  软件|ControlType.TabItem|sel=False
+  优化|ControlType.TabItem|sel=False
+  分析|ControlType.TabItem|sel=False
+  状态|ControlType.TabItem|sel=False
+  清理|ControlType.Pane|sel=
+  清理|ControlType.ListItem|sel=
+  先审查每个清理目标，再移动任何内容。|ControlType.ListItem|sel=
+  Note|ControlType.Edit|sel=
+selected_tab_initial=清理
+after_tab1 selected=清理
+after_tab2 selected=清理
+after_tab3 selected=清理
+after_RIGHT selected=清理
+after_RIGHT2 selected=清理
+after_ALT_DOWN selected=清理
+--- after keyboard navigation ---
+  DevSweep|ControlType.Pane|sel=
+  DevSweep 菜单|ControlType.Button|sel=
+  模式|ControlType.Tab|sel=
+  清理|ControlType.TabItem|sel=True
+  软件|ControlType.TabItem|sel=False
+  优化|ControlType.TabItem|sel=False
+  分析|ControlType.TabItem|sel=False
+  状态|ControlType.TabItem|sel=False
+  清理|ControlType.Pane|sel=
+  清理|ControlType.ListItem|sel=
+  先审查每个清理目标，再移动任何内容。|ControlType.ListItem|sel=
+  Note|ControlType.Edit|sel=
+shutdown_exit=0
