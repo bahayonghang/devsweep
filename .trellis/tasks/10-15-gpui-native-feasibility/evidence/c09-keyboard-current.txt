@@ -1,0 +1,15 @@
+binary_sha256=D1E778D32CAE1E7D0AB99BD8FFCEAEA1090A4AB2CA2F6CDE424C7D20E90EE061
+pid=63932
+SetForegroundWindow=False foreground=528268 target=530102
+after: name=DevSweep type=ControlType.Pane focus=False
+after: name=DevSweep 菜单 type=ControlType.Button focus=False
+after: name=模式 type=ControlType.Tab focus=False
+after: name=清理 type=ControlType.TabItem focus=False
+after: name=软件 type=ControlType.TabItem focus=False
+after: name=优化 type=ControlType.TabItem focus=False
+after: name=分析 type=ControlType.TabItem focus=False
+after: name=状态 type=ControlType.TabItem focus=False
+after: name=清理 type=ControlType.Pane focus=False
+after: name=清理 type=ControlType.ListItem focus=False
+after: name=先审查每个清理目标，再移动任何内容。 type=ControlType.ListItem focus=False
+after: name=Note type=ControlType.Edit focus=False

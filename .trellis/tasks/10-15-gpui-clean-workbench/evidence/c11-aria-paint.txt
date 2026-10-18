@@ -1,0 +1,7 @@
+sha256=8DBEF9254DB55809BE22C8383E0BBF382B2A311887B8803E26E3B87A3200A975
+length=14100480
+pid=54516
+python.pytest_cache_painted=true
+python.mypy_cache_painted=true
+line_begins_with_gt_space=true
+exit=0

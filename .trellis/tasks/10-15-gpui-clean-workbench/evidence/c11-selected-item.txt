@@ -1,0 +1,9 @@
+sha256: 6302E6365A050BDEEAC60175824323E74937387A42DBDD6829AE10BE1D71101C
+length: 14104576
+pid: 111368
+list_item_count: 4
+prefix_count: 1
+prefixed_contains_python.mypy_cache: true
+other_contains_python.pytest_cache_without_prefix: true
+exit: 0
+keys: f9_alt_down_alt_down

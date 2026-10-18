@@ -1,0 +1,11 @@
+build_exit=0
+incremental=true
+sha256=8DBEF9254DB55809BE22C8383E0BBF382B2A311887B8803E26E3B87A3200A975
+length=14100480
+pid=55284
+python.pytest_cache=false
+python.mypy_cache=false
+exit=0
+foreground=DevSweep
+keys_sent=true
+NOT observed

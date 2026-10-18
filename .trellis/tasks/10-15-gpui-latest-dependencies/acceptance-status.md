@@ -165,3 +165,48 @@ flag is not accepted. That run did not evaluate policy. `cargo deny check all`
 then exited 0. The log ends with `advisories ok, bans ok, licenses ok, sources ok`
 (`C:\Users\lyh\AppData\Local\Temp\devsweep-cargo-deny-all.txt`). This does not
 accept C16-AC3.
+
+## 2026-10-18 exact declared-MSRV execution on Linux
+
+The declared core/CLI MSRV is `workspace.package.rust-version = "1.88.0"`. That
+exact compiler had never been executed. The installed WSL Ubuntu-24.04 distro
+carries `~/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu`, but that install
+has `rustc`/`rustfmt` and **no `cargo` binary**, so it cannot drive a build by
+itself. `research/toolchain-decision.md` explicitly permits existing Linux WSL
+tools as separate portability evidence without any new installation, so no
+toolchain was downloaded.
+
+Method: pin `RUSTC` to the 1.88.0 `rustc` and drive it with the installed
+cargo 1.98.0. This was verified rather than assumed — a `cargo check -v` shows
+the invoked compiler is literally
+`/home/lyh/.rustup/toolchains/1.88.0-x86_64-unknown-linux-gnu/bin/rustc`.
+
+| Gate (repo root, `--target-dir /tmp/dsw-msrv-verify`) | Exit | Result |
+| --- | --- | --- |
+| `cargo check -p devsweep-core -p devsweep-cli --locked --all-targets` | **0** | finished clean |
+| `cargo test -p devsweep-core -p devsweep-cli --locked --all-targets` | **0** | 770 passed, 0 failed, 0 ignored |
+
+Core lib alone: 521 passed, 0 failed. CLI integration targets: 13 + 8 + 2 + 2 +
+12 + 4 passed.
+
+Before the platform gating landed, the same command exited **101** with 6
+failures in `devsweep-core` and 6 in `c01_shipped_parity`. Those were tests that
+assumed Windows semantics (offline registry hives, volume identity, `C:\`
+paths, Startup registry entries). They are now `#[cfg(windows)]`-gated, so they
+still run on Windows and are compiled out on Linux. The gating changed no
+assertion.
+
+### What this does and does not prove
+
+- **Does prove**: the declared 1.88.0 compiler accepts and passes the core and
+  CLI code on Linux, and the hosted `Rust (ubuntu-latest)` and `MSRV
+  (ubuntu-latest)` jobs can now run to completion instead of failing on
+  Windows-only tests.
+- **Does not prove**: 1.88.0 on Windows or macOS, or any hosted run. No
+  `cargo fmt`/`clippy`/`deny`/`audit` gate was run under 1.88.0. Hosted CI
+  remains NOT_RUN because `ci.yml` triggers only on `pull_request` and
+  `workflow_dispatch`, and pushing is outside this task's authorization.
+
+C16-AC3 therefore stays open on its matrix clause, but the "any declared
+core/CLI MSRV is actually tested" clause now has a real, reproducible receipt
+for Linux.

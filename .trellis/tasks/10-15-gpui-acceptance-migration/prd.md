@@ -21,8 +21,35 @@ C14-R4. Prepare isolated Windows packaging and compatible settings migration; sw
 ## Acceptance criteria
 
 - [ ] C14-AC1: Every parent criterion is PASS or explicitly FAIL/NOT_RUN/UNVERIFIED with evidence; no aggregate complete claim while a mandatory gate remains unmet.
-- [ ] C14-AC2: Canonical Rust checks, CLI contract fixtures and separate GPUI build/test/native gates pass; unchanged legacy baseline remains reproducible.
-- [ ] C14-AC3: Packaged GPUI launches offline/from unrelated CWD with correct assets, native actions and normal owned-process shutdown without WebView/Node runtime. The current release binary SHA-256 `095f51d77da5da5729c2341d24c726d460ca1a44ede2204789c13227e521fe62` launched from an empty temp directory, showed the DevSweep window, exited 0 after `WM_CLOSE`, and did not load WebView, Node, or Tauri. A packaged installer and a native action beyond launch remain NOT_RUN.
+
+  Round-3 measurements against `research/performance-protocol.md` on the single-window spike, release SHA-256 `D1E778D32CAE1E7D0AB99BD8FFCEAEA1090A4AB2CA2F6CDE424C7D20E90EE061`, 14179328 bytes, on a quiet host (12 percent load, no concurrent builds). Evidence: `evidence/c14-perf-round3.md` and `evidence/c14-idle-cpu-round3.md`.
+
+  | Protocol metric | Budget | Measured | Result |
+  | --- | --- | --- | --- |
+  | Process-cold first usable window p95 | <= 1500 ms | 616 ms (n=20, raw retained) | **PASS** on the absolute limit |
+  | Idle private bytes | <= 200 MiB | 113 MiB settled | **PASS** on the absolute limit |
+  | Idle CPU median | <= 0.5 % of one core | 0 % (150 samples @ 200 ms) | **PASS** |
+  | Idle CPU p95 | <= 1.0 % of one core | 7.4405 % | **FAIL** |
+  | Lifecycle: clean exits over 20 open/close cycles | no orphan / no growth | 20/20 clean, 0 orphans | **PASS** |
+
+  The idle-CPU p95 failure is real and is not relaxed, retried away, or
+  reclassified. The raw 150-sample array is retained in the evidence file and
+  shows intermittent spikes of one or two 15 ms scheduling quanta per 200 ms
+  sample against an otherwise idle median of zero. It is a defect to fix, not a
+  threshold to lower.
+
+  Every **relative** clause (`<= 80 % of a fresh Tauri baseline` for startup,
+  `<= 70 %` for memory) is **NOT_RUN**: no fresh Tauri baseline was built in
+  this round, so no ratio is claimed. Warm-window, navigation/preview response,
+  10k-row frame interval, hidden-decoration frames, software-inventory p95,
+  core-scan non-regression and cooperative cancel/close are also **NOT_RUN**.
+
+  A first run in this round reported idle CPU as 3.542 % from a single
+  undivided 30 s window. That figure was not the protocol's median/p95 over
+  200 ms samples and is superseded by the table above; both are retained rather
+  than the earlier one being deleted.
+- [ ] C14-AC2: Canonical Rust checks, CLI contract fixtures and separate GPUI build/test/native gates pass; unchanged legacy baseline remains reproducible. On 2026-10-18 `just ci` exited 0 (918 passed, 0 failed, 5 ignored, `ci complete`) and the separate `desktop-gpui` gate exited 0 for fmt, check, clippy `-D warnings`, 59 tests and a locked release build. The unchanged legacy baseline is NOT_RUN: no fresh Tauri build was made this round.
+- [ ] C14-AC3: Packaged GPUI launches offline/from unrelated CWD with correct assets, native actions and normal owned-process shutdown without WebView/Node runtime. The current release binary SHA-256 `D1E778D32CAE1E7D0AB99BD8FFCEAEA1090A4AB2CA2F6CDE424C7D20E90EE061`, 14179328 bytes, launched from an empty temp directory, showed the DevSweep window, exited 0 after `WM_CLOSE`, and did not load WebView, Node, or Tauri. A packaged installer and a native action beyond launch remain NOT_RUN.
 - [x] C14-AC4: Tauri removal/publishing/install/signing/commit are separate approval actions; planning or build completion does not perform them. `desktop/` remains. `just tdev` is still `cd desktop; npm run tauri -- dev`. This session did not remove Tauri, publish, install, or sign a package, and did not commit a retirement.
 
 ## Scope and decisions

@@ -1,0 +1,20 @@
+binary_sha256=D1E778D32CAE1E7D0AB99BD8FFCEAEA1090A4AB2CA2F6CDE424C7D20E90EE061
+binary_bytes=14179328
+pid=63932
+creation=2026-10-18T05:33:05.3206660-04:00
+window_name=DevSweep
+window_class=Zed::Window
+name=DevSweep type=ControlType.Window id= focus=False offscreen=False enabled=True
+name=DevSweep type=ControlType.Pane id= focus=False offscreen=False enabled=True
+name=DevSweep 菜单 type=ControlType.Button id= focus=False offscreen=False enabled=True
+name=模式 type=ControlType.Tab id= focus=False offscreen=False enabled=True
+name=清理 type=ControlType.Pane id= focus=False offscreen=False enabled=True
+name=Note type=ControlType.Edit id= focus=False offscreen=False enabled=True
+name=清理 type=ControlType.TabItem id= focus=False offscreen=False enabled=True
+name=软件 type=ControlType.TabItem id= focus=False offscreen=False enabled=True
+name=优化 type=ControlType.TabItem id= focus=False offscreen=False enabled=True
+name=分析 type=ControlType.TabItem id= focus=False offscreen=False enabled=True
+name=状态 type=ControlType.TabItem id= focus=False offscreen=False enabled=True
+name=清理 type=ControlType.ListItem id= focus=False offscreen=False enabled=True
+name=先审查每个清理目标，再移动任何内容。 type=ControlType.ListItem id= focus=False offscreen=False enabled=True
+nodes=13
