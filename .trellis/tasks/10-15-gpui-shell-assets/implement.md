@@ -1,6 +1,6 @@
 # C10 Implementation and verification
 
-Status: planning; dependencies: C01, C09.
+Status: 2026-10-19 `just gpui-test` exited 0 on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C10-AC1, C10-AC2, and C10-AC4 stay checked. C10-AC3 stays unchecked. Narrator utterance and the DevSweep frame interval stay NOT_RUN. They are not PASS. Dependencies C01 and C09 are archived. This child is not archived.
 
 ## Sequence
 
