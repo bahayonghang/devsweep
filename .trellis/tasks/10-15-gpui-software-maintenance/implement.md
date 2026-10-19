@@ -1,6 +1,6 @@
 # C05 Implementation and verification
 
-Status: planning; dependencies: C01, C02, C04.
+Status: 2026-10-19 checks passed on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C05-AC1 through C05-AC4 are checked. GPUI parity stays NOT_RUN with C12 and is not PASS. Dependencies C01, C02, and C04 are archived.
 
 ## Sequence
 
