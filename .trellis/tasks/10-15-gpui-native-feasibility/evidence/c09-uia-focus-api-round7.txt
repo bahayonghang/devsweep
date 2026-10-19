@@ -1,0 +1,21 @@
+binary_sha256=8A77746AED29A368068C52BA1D43ABF574329E6A09AAB6092C98E12A3DA5EC77
+pid=216240 hwnd=2885914
+foreground=True
+GetFocusedElement: name='DevSweep' type=ControlType.Window pid=216240 belongs_to_app=True hasKeyboardFocus=False isKeyboardFocusable=False
+window LegacyIAccessible: Unable to find type [System.Windows.Automation.LegacyIAccessiblePattern].
+--- per-node focus flags (n=13) ---
+  DevSweep                                             type=ControlType.Pane           hasFocus=False focusable=True
+  DevSweep 菜单                                          type=ControlType.Button         hasFocus=False focusable=False
+  模式                                                   type=ControlType.Tab            hasFocus=False focusable=False
+  清理                                                   type=ControlType.TabItem        hasFocus=False focusable=False
+  软件                                                   type=ControlType.TabItem        hasFocus=False focusable=False
+  优化                                                   type=ControlType.TabItem        hasFocus=False focusable=False
+  分析                                                   type=ControlType.TabItem        hasFocus=False focusable=False
+  状态                                                   type=ControlType.TabItem        hasFocus=False focusable=False
+  清理                                                   type=ControlType.Pane           hasFocus=False focusable=False
+  键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。                     type=ControlType.ListItem       hasFocus=False focusable=False
+  清理                                                   type=ControlType.ListItem       hasFocus=False focusable=False
+  先审查每个清理目标，再移动任何内容。                                   type=ControlType.ListItem       hasFocus=False focusable=False
+  Note                                                 type=ControlType.Edit           hasFocus=False focusable=True
+after_TAB GetFocusedElement: name='DevSweep' type=ControlType.Window belongs=True hasFocus=False
+shutdown_exit=0

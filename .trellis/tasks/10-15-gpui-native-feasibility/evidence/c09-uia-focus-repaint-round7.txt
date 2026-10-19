@@ -1,0 +1,15 @@
+binary_sha256=8A77746AED29A368068C52BA1D43ABF574329E6A09AAB6092C98E12A3DA5EC77
+pid=99292 hwnd=10095966
+foreground=True
+after_activation                   focused='DevSweep' type=ControlType.Window belongs=True hasFocus=False
+focused_nodes=0 of 13
+after_alt_right_repaint            focused='DevSweep' type=ControlType.Window belongs=True hasFocus=False
+focused_nodes=0 of 13
+after_alt_right2_repaint           focused='DevSweep' type=ControlType.Window belongs=True hasFocus=False
+focused_nodes=0 of 13
+after_click_note                   focused='DevSweep' type=ControlType.Window belongs=True hasFocus=False
+focused_nodes=0 of 13
+edit_value=q
+after_typing                       focused='DevSweep' type=ControlType.Window belongs=True hasFocus=False
+focused_nodes=0 of 13
+shutdown_exit=0
