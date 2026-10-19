@@ -2,6 +2,8 @@
 
 Status: technical freeze recorded in design.md on 2026-10-17. C02 checks passed and `just ci` exited 0. Implementation is dispatched inside `desktop-gpui/` and this task directory. C09-AC4 launch evidence is recorded for SHA-256 `7C1A82CD42F6E071624DFAAD8B1E70AD21C822FCBE833FC6764D54B73230669D`. UIA focus and IME composition stay NOT_RUN.
 
+Waiver 2026-10-19, same form as the C16 waiver: IME composition, hosted native CI, and native rustc 1.88.0 stay NOT_RUN. They are not PASS. They do not block C09. The C09-AC2 and C09-AC3 checkboxes stay unchecked. Focus after a real foreground cycle is already recorded as PASS in prd.md.
+
 ## Sequence
 
 1. Verify approval of the parent final-review.md; platform scope is already confirmed.
