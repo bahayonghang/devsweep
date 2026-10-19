@@ -1,0 +1,17 @@
+binary_sha256=8A77746AED29A368068C52BA1D43ABF574329E6A09AAB6092C98E12A3DA5EC77
+pid=62064 hwnd=10686558
+foreground=True
+start selected=清理
+rows_start=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 清理 || 先审查每个清理目标，再移动任何内容。]
+after_ALT_RIGHT selected=软件
+rows_software=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 软件 || 审查当前用户软件清单后再卸载。]
+rows_after_alt_down=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 软件 || 审查当前用户软件清单后再卸载。]
+after_ALT_RIGHT2 selected=优化
+rows_optimize=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 优化 || 审查目录中的操作后再运行。]
+after_ALT_RIGHT3 selected=分析
+rows_analyze=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 分析 || 映射磁盘占用。此模式只读。]
+after_ALT_RIGHT4 selected=状态
+rows_status=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 状态 || 来自采集器的主机事实。无评分。]
+after_ALT_LEFT_x4 selected=清理
+rows_clean=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 清理 || 先审查每个清理目标，再移动任何内容。]
+shutdown_exit=0
