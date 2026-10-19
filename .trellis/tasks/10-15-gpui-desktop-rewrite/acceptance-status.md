@@ -15,7 +15,7 @@ real user cleanup, uninstall or maintenance is authorized as a validation shortc
 | C06 | C06-AC1, C06-AC2, C06-AC3 checked; C06-AC4 open | NOT_ACCEPTED | Native defrag/dism/w32tm evidence remains NOT_RUN. The `dead_startup` `.lnk` path now moves the shortcut to the Recycle Bin through `SystemTrashRunner` instead of `fs::remove_file`, and the `.reg` backup records each moved link as a `;` comment. |
 | C07 | C07-AC1 through C07-AC4 | CHECKED_NOT_ACCEPTED | All four boxes checked. Not archived. |
 | C08 | C08-AC1 through C08-AC5 | CHECKED_NOT_ACCEPTED | All five boxes checked. Not archived. |
-| C09 | C09-AC1, C09-AC4 checked; C09-AC2, C09-AC3 open | NOT_ACCEPTED | Keyboard-only mode switching now **PASSES**: `alt-right` moved `清理`→`软件`→`优化` and `alt-left` back, on release SHA-256 `8A77746AED29A368068C52BA1D43ABF574329E6A09AAB6092C98E12A3DA5EC77` (14182400 bytes), with the Note focused and no TAB pressed; plain arrows still move the caret. Root cause was proven: `left`/`right` were shadowed by the `SpikeInput` caret bindings. Still open: UIA `HasKeyboardFocus` is False on every node, and IME composition is NOT_RUN because this session gives no IME context even to Notepad. Reproducibility holds with `/Brepro`; `justfile` has `gpui-check`/`gpui-test`/`gpui-build`/`gpui`. Hosted native CI remains NOT_RUN. |
+| C09 | C09-AC1, C09-AC4 checked; C09-AC2, C09-AC3 open | NOT_ACCEPTED | C09-AC2 is now four-of-five PASS: labels/roles PASS, keyboard-only operation PASS (alt-left/alt-right while the Note holds focus), UIA selection PASS (`IsSelected` tracked 清理→软件→优化), and UIA focus **PASS after a real foreground cycle** (`FocusedElement` = `Note`/Edit with `hasFocus=True`, 1 of 13 nodes) with a documented upstream first-activation gap in AccessKit seeding. IME stays NOT_RUN because this session gives no IME context even to Notepad. C09-AC3 still needs hosted native CI, which requires a push. |
 | C10 | C10-AC1, C10-AC2, C10-AC4 checked; C10-AC3 open | NOT_ACCEPTED | Text scale, overflow tray, UI Automation names, zh-CN copy, and a Settings page showing the word `reduced` were sampled. `SPI_GETHIGHCONTRAST` returned `dwFlags` `0x0000007E` with high contrast off, so no high-contrast window was launched. Narrator was not run. No frame interval was measured. |
 | C11 | C11-AC1 through C11-AC4 | NOT_ACCEPTED | Isolated digest, recovery, search, and first-launch evidence exists. Keyboard and ListItem names show the `>` marker on the isolated mypy row after two Alt+Down chords. A preview in that review flow remains NOT_RUN. Real Recycle Bin and the performance protocol remain NOT_RUN. |
 | C12 | C12-AC1, C12-AC2 checked; C12-AC3, C12-AC4 open | NOT_ACCEPTED | Native list virtualization, screenshots, and UIA remain NOT_RUN. |
@@ -27,6 +27,7 @@ real user cleanup, uninstall or maintenance is authorized as a validation shortc
 Historic C3 Software failure remains in the archived evidence described in
 research/repository-audit.md. No GPUI measurement is inferred from it.
 Planning validation is recorded separately in planning-validation.md.
+
 
 
 

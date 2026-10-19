@@ -210,3 +210,27 @@ assertion.
 C16-AC3 therefore stays open on its matrix clause, but the "any declared
 core/CLI MSRV is actually tested" clause now has a real, reproducible receipt
 for Linux.
+
+## 2026-10-19 MSRV toolchain coverage, item by item
+
+The declared core/CLI MSRV is 1.88.0. Round 3 proved `check` and `test` pass
+under it on Linux. This round established which of the other gate stages can and
+cannot run on that exact compiler.
+
+| Stage | Under rustc 1.88.0 | Evidence |
+| --- | --- | --- |
+| `cargo check -p devsweep-core -p devsweep-cli --locked --all-targets` | **exit 0** | 770-test run in round 3 |
+| `cargo test  -p devsweep-core -p devsweep-cli --locked --all-targets` | **exit 0** | 770 passed, 0 failed |
+| `cargo fmt --all -- --check` | **exit 0** | `rustfmt 1.8.0-stable (6b00bc3880 2025-06-23)`, driven by cargo 1.98.0 |
+| `cargo clippy` | **cannot run** | the 1.88.0 toolchain ships **no clippy driver** (`bin/` has only `cargo-fmt`, `rust-gdb`, `rust-gdbgui`, `rust-lldb`, `rustc`, `rustdoc`, `rustfmt`). The only installed clippy is 0.1.95 for rustc 1.95, and pairing it with the 1.88 rustc fails with 331 errors (`E0220`, `E0432`, `E0514`) — a driver/compiler version mismatch, not a defect in this repository. |
+| `cargo deny` / `cargo audit` | **not run** | separate tools, not installed for this toolchain |
+
+So the "any declared core/CLI MSRV is actually tested" clause is satisfied for
+**check, test and fmt** on Linux, and is **NOT_RUN for clippy** because the exact
+toolchain has no clippy component and none was downloaded (the standing
+constraint forbids installing Rust 1.88 tooling). This is recorded as a toolchain
+gap, not waived.
+
+Still NOT_RUN for C16-AC3 overall: the hosted Windows/macOS matrix, and 1.88.0 on
+Windows or macOS. `ci.yml` triggers only on `pull_request` and
+`workflow_dispatch`, and pushing is outside this task's authorization.

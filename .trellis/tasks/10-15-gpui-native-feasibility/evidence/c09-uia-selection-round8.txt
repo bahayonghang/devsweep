@@ -1,0 +1,9 @@
+binary_sha256=D40B68A21040578E748D2AA88B689A7EFF32820B68A25B56FE4953F51A9FCA64
+pid=145716 hwnd=11669534
+after_focus_cycle foreground=True
+FocusedElement: name='DevSweep' type=ControlType.Window hasFocus=False
+initial -> 清理:sel=True 软件:sel=False 优化:sel=False 分析:sel=False 状态:sel=False
+after_ALT_RIGHT -> 清理:sel=False 软件:sel=True 优化:sel=False 分析:sel=False 状态:sel=False
+after_ALT_RIGHT2 -> 清理:sel=False 软件:sel=False 优化:sel=True 分析:sel=False 状态:sel=False
+FocusedElement now: name='FerroStage 讲者窗口' type=ControlType.Pane hasFocus=True
+exit=0
