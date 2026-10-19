@@ -29,7 +29,7 @@ C09-R4. Measure empty-shell startup, idle resources and normal close; no WebView
   | --- | --- | --- |
   | Native UIA exposes labels and roles | **PASS** | 13-node tree: Window/Pane/Button(`DevSweep 菜单`)/Tab(`模式`)/5x TabItem(`清理`,`软件`,`优化`,`分析`,`状态`)/Edit(`Note`)/2x ListItem carrying their own text. |
   | Keyboard-only operation reaches all spike controls | **PASS** | Window activated with real OS keystrokes; `alt-right` moved `清理`→`软件`→`优化` and `alt-left` back, with the Note holding focus and no TAB pressed first. Plain arrows still move the caret (`xy`+`LEFT`+`Z` → `xZy`). `down`/`F10`/`Escape` unchanged. |
-  | UIA exposes focus | **FAIL** | `HasKeyboardFocus` is False on every node even while real keystrokes are being delivered. Not fixed. |
+  | UIA exposes focus | **FAIL** | Proven an app defect, not the environment: in the same session Notepad reports `FocusedElement` = `Text editor` with `hasFocus=True` and 5 of 37 focused nodes, while the GPUI app reports the root window with `hasFocus=False` and **0 of 13**. Ruled out stale tree (repaints, a real click on the Note, and real typing all leave it unchanged), missing role/id (the Note node is present as `ControlType.Edit`), and accessibility being off (13 nodes published). Code path located in GPUI `div.rs:2326-2336` → `a11y.rs:233-250` → `window.rs:3786-3810`: the tree update only sets accesskit focus when `focus_handle.is_focused(window)` is true at prepaint, so it stays at `ROOT_NODE_ID`. Two repair attempts did not land. Evidence: `evidence/c09-uia-focus-defect-round7.md`. |
   | IME composition works | **NOT_RUN** | Environment limitation, not an app defect: Notepad with a native edit control and a real focused child HWND also returns a NULL `ImmGetContext` in this session, while both installed layouts report `ImmIsIME=True`. See `evidence/c09-ime-environment-round5.md`. |
 
   The keyboard clause was previously a **FAIL**. Root cause was proven experimentally: `left`/`right` were bound both globally to `ModePrev`/`ModeNext` and to `input::Left`/`input::Right` under the `SpikeInput` predicate, and the focused Note's more specific context won. Fixed by adding `SpikeInput`-scoped `alt-left`/`alt-right` bindings that bubble to the existing shell handlers, with a bilingual visible hint. Evidence: `evidence/c09-keyboard-rootcause-round5.md` and `evidence/c09-alt-chord-round6.md`.
@@ -49,4 +49,5 @@ rules apply. Detailed design and execution are in [design.md](design.md) and
 [implement.md](implement.md). These are proposals, not implementation evidence.
 Obtain approval of the parent final summary and resolve applicable technical decisions before starting.
 Do not recreate completed upstream work or promote fixture/native gaps to PASS.
+
 
