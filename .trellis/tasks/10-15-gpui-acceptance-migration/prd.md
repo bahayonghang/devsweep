@@ -29,7 +29,7 @@ C14-R4. Prepare isolated Windows packaging and compatible settings migration; sw
   | Process-cold first usable window p95 | <= 1500 ms | 616 ms (n=20, raw retained) | **PASS** on the absolute limit |
   | Idle private bytes | <= 200 MiB | 113 MiB settled | **PASS** on the absolute limit |
   | Idle CPU median | <= 0.5 % of one core | 0 % (150 samples @ 200 ms) | **PASS** |
-  | Idle CPU p95 | <= 1.0 % of one core | 7.4405 % | **FAIL** |
+  | Idle CPU p95 | <= 1.0 % of one core | **7.4405 %** (round 3) and **7.7351 %** (round 10 re-measure, 38 of 150 samples above 1 %, median 0 %) | **FAIL, reproduced** |
   | Lifecycle: clean exits over 20 open/close cycles | no orphan / no growth | 20/20 clean, 0 orphans | **PASS** |
 
   The idle-CPU p95 failure is real and is not relaxed, retried away, or
@@ -84,3 +84,19 @@ rules apply. Detailed design and execution are in [design.md](design.md) and
 [implement.md](implement.md). These are proposals, not implementation evidence.
 Obtain approval of the parent final summary and resolve applicable technical decisions before starting.
 Do not recreate completed upstream work or promote fixture/native gaps to PASS.
+
+
+  **Round-10 re-measurement of idle CPU.** The p95 failure is reproducible, not a
+  one-off: 7.4405 % in round 3 and **7.7351 %** in round 10, with a median of
+  exactly 0 % both times. 38 of 150 samples exceeded 1.0 %, and essentially every
+  non-zero sample is one or two 15 ms scheduler quanta. Gaps between spikes were
+  1, 2, 3, 4 and 8 samples, so there is no single fixed cadence. Total CPU over
+  the 30 s window was only ~60 ms, so the process is idle in absolute terms, but
+  the protocol is a distribution budget and p95 fails it regardless.
+
+  The shell schedules **no recurring timer on the idle landing** (`view.rs:4`,
+  `shell.rs:829`; the only poll loop is `request_project_rows` at
+  `view.rs:251-278`, gated behind an explicit F9 request and bounded to 10 s), so
+  the bursts are not shell logic. The plausible source is the windowing/graphics
+  stack, but that was not instrumented, so it remains a hypothesis. Evidence:
+  `evidence/c14-idle-cpu-round10.md`.
