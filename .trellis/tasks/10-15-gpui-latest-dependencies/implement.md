@@ -4,8 +4,11 @@ Status: implementation approved and active; dependency audit/API adaptation are
 implemented and independently reviewed. Local `just ci` on rustc 1.99.0 exited 0
 on 2026-10-17 with `--target-dir dist/ci-target`. Hosted run 39001489521 on
 `b0b5ce62` concluded failure, and that SHA does not contain the later working-tree
-fixes. Declared MSRV 1.88.0 was not executed locally. C16-AC3 remains
-NOT_YET_ACCEPTED, so C01 has not started.
+fixes. Declared MSRV 1.88.0 check, test, and fmt later exited 0 on Linux.
+On 2026-10-19 the user waived the still-NOT_RUN hosted matrix,
+Windows and macOS rustc 1.88.0, and clippy under rustc 1.88.0.
+Those results stay NOT_RUN and do not block C16. The C16-AC3
+checkbox stays unchecked.
 See acceptance-status.md and research/toolchain-decision.md.
 
 ## Sequence

@@ -15,7 +15,7 @@ aggregate `a12e191faecba39fd8cec3d3af1069834f20d94bb3fd9affc884935a2ebd3485`.
 | --- | --- | --- |
 | C16-AC1 | PASS | research/dependency-ledger.md: 32 Rust direct edges, 24 retained npm edges, 550 resolved packages, latest/selected versions, sources, compatibility exceptions and licenses. |
 | C16-AC2 | PASS on tested platforms | Shared-core/CLI versions resolve and pass Windows 1.99/Linux 1.98 checks and semantic suites. GPUI candidate constraints are recorded; final native pin/build belongs to C09. |
-| C16-AC3 | NOT_YET_ACCEPTED | 2026-10-17 local `just ci` EXIT=0 on rustc 1.99.0 with `--target-dir dist/ci-target` (fmt, check, test, clippy). Hosted run 39001489521 on `b0b5ce62` conclusion=failure: MSRV windows, Rust ubuntu, Rust macos, Rust windows, secret-scan. MSRV ubuntu on that SHA succeeded. The SHA does not include the uncommitted lock, fixture, justfile, or borrow edits. Local 1.88.0 was not executed. |
+| C16-AC3 | WAIVED_NOT_RUN | Hosted matrix, Windows rustc 1.88.0, macOS rustc 1.88.0, and clippy under rustc 1.88.0 stay NOT_RUN. On 2026-10-19 the user waived those results. They do not block C16 and they are not PASS. Linux 1.88.0 check, test, and fmt exited 0. See the 2026-10-19 waiver section. |
 | C16-AC4 | Baseline identity and tested functional contracts PASS | research/baseline-receipt.json preserves clean baseline manifests/locks; reviewed digest encoding and shared schema/authority regressions pass. This is not runtime performance acceptance. |
 
 ## Reviewer fixes and final Windows evidence
@@ -234,3 +234,24 @@ gap, not waived.
 Still NOT_RUN for C16-AC3 overall: the hosted Windows/macOS matrix, and 1.88.0 on
 Windows or macOS. `ci.yml` triggers only on `pull_request` and
 `workflow_dispatch`, and pushing is outside this task's authorization.
+
+## 2026-10-19 user waiver
+
+The user waived four NOT_RUN results. They stay NOT_RUN. They are not PASS.
+They do not block C16.
+
+- Hosted matrix, including the failed run 39001489521 on `b0b5ce62`.
+- rustc 1.88.0 on Windows.
+- rustc 1.88.0 on macOS.
+- clippy under rustc 1.88.0. That toolchain has no clippy driver. None was installed.
+
+Linux rustc 1.88.0 `cargo check`, `cargo test` (770 passed, 0 failed), and
+`cargo fmt --all -- --check` stay exit 0. `cargo deny` and `cargo audit` were
+not run under rustc 1.88.0.
+
+On rustc 1.99.0, `just ci` exited 0 with `ci complete` (916 passed, 0 failed,
+5 ignored). `git diff --stat 090249a HEAD -- crates desktop justfile Cargo.lock Cargo.toml .github`
+was empty, so that workspace tree is the tree at `8b173e6`. `cargo audit` exited 0
+(7 allowed warnings, no vulnerability failure). `cargo deny check all` exited 0
+(`advisories ok, bans ok, licenses ok, sources ok`). These 1.99.0 receipts are
+not an MSRV 1.88.0 pass. The C16-AC3 checkbox stays unchecked.
