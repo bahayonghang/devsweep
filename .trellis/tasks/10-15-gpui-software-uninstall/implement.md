@@ -1,6 +1,6 @@
 # C04 Implementation and verification
 
-Status: technical freeze recorded 2026-10-17 in design.md. Isolated MSI, vendor, and Scoop `process_fixture` launches passed. Host-installed MSI, vendor, and Scoop products were not used. Real current-user MSIX removal remains NOT_RUN.
+Status: 2026-10-19 checks passed on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C04-AC1 through C04-AC3 are checked. Real MSIX removal stays NOT_RUN inside C04-AC3 and is not PASS. Host-installed MSI, vendor, and Scoop products were not used. Dependencies C01 and C02 are archived.
 
 ## Sequence
 
