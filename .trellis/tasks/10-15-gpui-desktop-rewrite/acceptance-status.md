@@ -7,7 +7,7 @@ real user cleanup, uninstall or maintenance is authorized as a validation shortc
 | Item | Criteria | State | Evidence |
 | --- | --- | --- | --- |
 | Parent | P-AC01 through P-AC12 | NOT_RUN | Mandatory gates remain open: hosted matrix, the performance protocol's relative baselines, UIA focus/IME, real Recycle Bin, and native defrag/dism/w32tm. Rust 1.88.0 is now actually executed on Linux (see C16) but not on Windows. No aggregate completion claim. |
-| C01 | C01-AC1, C01-AC2, C01-AC3 | CHECKED_NOT_ACCEPTED | All three boxes checked in the child prd. Not archived. C16-AC3 is still open. The file's Windows-only tests are now `#[cfg(windows)]`-gated so the hosted Linux jobs can run. |
+| C01 | C01-AC1, C01-AC2, C01-AC3 | ARCHIVED | All three boxes checked. Archived at `05d66f6` under `.trellis/tasks/archive/2026-10/10-15-gpui-cli-contracts`. On rustc 1.99.0, `cli_contract` exited 0 (13 passed) and `five_mode_contract` exited 0 (8 passed). `cargo test --locked -p devsweep-core --target-dir dist/ci-target` then exited 0 (564 passed, 0 failed, 3 ignored) after one earlier live-churn failure on that target. Not an MSRV pass. |
 | C02 | C02-AC1, C02-AC2, C02-AC3 | CHECKED_NOT_ACCEPTED | All three boxes checked. Real Windows UAC prompt remains NOT_RUN inside C02-AC2. Not archived. |
 | C03 | C03-AC1 through C03-AC4 | CHECKED_NOT_ACCEPTED | All four boxes checked. The Recycle Bin clause is now measured for real: the production scan -> plan -> preview -> execute flow exited 0, the source path was gone, and the shell Recycle Bin count rose 201 -> 202. A real cloud-files reparse tag remains NOT_RUN. Not archived. |
 | C04 | C04-AC1, C04-AC2, C04-AC3 | CHECKED_NOT_ACCEPTED | All three boxes checked. Real MSIX removal remains NOT_RUN inside C04-AC3. Not archived. |
