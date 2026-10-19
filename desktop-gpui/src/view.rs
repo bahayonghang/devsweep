@@ -9,9 +9,9 @@ use std::{
 };
 
 use gpui::{
-    App, AssetSource, Bounds, Context, Entity, FocusHandle, Focusable, KeyBinding, SharedString,
-    TitlebarOptions, Window, WindowBounds, WindowOptions, actions, div, img, prelude::*, px, rgb,
-    size,
+    Action, App, AssetSource, Bounds, Context, Entity, FocusHandle, Focusable, KeyBinding,
+    SharedString, TitlebarOptions, Window, WindowBounds, WindowOptions, actions, div, img,
+    prelude::*, px, rgb, size,
 };
 use gpui_platform::application;
 #[cfg(windows)]
@@ -189,14 +189,32 @@ pub struct ShellView {
     note: Entity<TextInput>,
 }
 
+/// Route a resolved mode action to the session.
+///
+/// The shell root owns the `ModePrev`/`ModeNext` listeners, and it sits on the
+/// Note's action dispatch path, so the Note's `alt-left`/`alt-right` chord
+/// arrives here through the same bubbling path `down`/`up` already use. Keeping
+/// the decision on the action (not the keystroke) is what lets a test drive a
+/// resolved keystroke through the real handler.
+fn route_mode_action(action: &dyn Action, session: &mut Session) -> bool {
+    if action.partial_eq(&ModePrev) {
+        session.apply_key(crate::shell::NavKey::Left);
+    } else if action.partial_eq(&ModeNext) {
+        session.apply_key(crate::shell::NavKey::Right);
+    } else {
+        return false;
+    }
+    true
+}
+
 impl ShellView {
-    fn prev(&mut self, _: &ModePrev, _: &mut Window, cx: &mut Context<Self>) {
-        self.session.apply_key(crate::shell::NavKey::Left);
+    fn prev(&mut self, action: &ModePrev, _: &mut Window, cx: &mut Context<Self>) {
+        route_mode_action(action, &mut self.session);
         cx.notify();
     }
 
-    fn next(&mut self, _: &ModeNext, _: &mut Window, cx: &mut Context<Self>) {
-        self.session.apply_key(crate::shell::NavKey::Right);
+    fn next(&mut self, action: &ModeNext, _: &mut Window, cx: &mut Context<Self>) {
+        route_mode_action(action, &mut self.session);
         cx.notify();
     }
 
@@ -575,7 +593,9 @@ fn clean_outcome_line(locale: copy::Locale, notice: CleanOutcomeNotice) -> &'sta
 pub(crate) fn panel_lines(session: &Session, save_error: Option<&str>) -> Vec<String> {
     let locale = session.locale();
     let shell = session.shell();
-    let mut lines = Vec::new();
+    // The chord line stays at the top so `lines.last()` keeps meaning "newest
+    // notice", and so the hint survives any surface or notice state.
+    let mut lines = vec![copy::mode_keys_hint(locale).to_string()];
     for notice in session.notices() {
         lines.push(copy::preserved(locale, copy::store_name(locale, *notice)));
     }
@@ -708,6 +728,8 @@ pub fn run(session: Session) {
                 KeyBinding::new("delete", input::Delete, Some("SpikeInput")),
                 KeyBinding::new("left", input::Left, Some("SpikeInput")),
                 KeyBinding::new("right", input::Right, Some("SpikeInput")),
+                KeyBinding::new("alt-left", ModePrev, Some("SpikeInput")),
+                KeyBinding::new("alt-right", ModeNext, Some("SpikeInput")),
                 KeyBinding::new("home", input::Home, Some("SpikeInput")),
                 KeyBinding::new("end", input::End, Some("SpikeInput")),
             ]);
@@ -1267,6 +1289,143 @@ mod tests {
         assert_eq!(session.shell().mode(), Mode::Clean);
         session.apply_key(NavKey::Down);
         assert_eq!(session.shell().mode(), Mode::Software);
+    }
+
+    #[test]
+    fn mode_chord_routes_to_the_mode_action_while_the_note_owns_the_caret() {
+        let mut session = Session::unbacked();
+        assert_eq!(session.shell().mode(), Mode::Clean);
+
+        // The Note's SpikeInput context keeps plain `left`/`right` for the caret,
+        // so the mode chord must be a different keystroke that still resolves to
+        // ModeNext/ModePrev on the shell's dispatch path.
+        assert!(
+            route_mode_action(&ModeNext, &mut session),
+            "ModeNext must be a mode action"
+        );
+        assert_eq!(session.shell().mode(), Mode::Software);
+        assert!(route_mode_action(&ModeNext, &mut session));
+        assert_eq!(session.shell().mode(), Mode::Optimize);
+        assert!(
+            route_mode_action(&ModePrev, &mut session),
+            "ModePrev must be a mode action"
+        );
+        assert_eq!(session.shell().mode(), Mode::Software);
+        assert!(route_mode_action(&ModePrev, &mut session));
+        assert_eq!(session.shell().mode(), Mode::Clean);
+
+        // An unrelated shell action is not a mode action and must not move mode.
+        let before = session.shell().mode();
+        assert!(
+            !route_mode_action(&MenuToggle, &mut session),
+            "MenuToggle must not route as a mode action"
+        );
+        assert_eq!(session.shell().mode(), before);
+        assert!(
+            !session.shell().menu_open(),
+            "routing must not toggle the menu"
+        );
+        assert!(!route_mode_action(&RowDown, &mut session));
+        assert_eq!(session.shell().mode(), before);
+        assert!(!route_mode_action(&Back, &mut session));
+        assert_eq!(session.shell().mode(), before);
+    }
+
+    #[test]
+    fn mode_chord_is_bound_in_the_note_context_and_reaches_the_shell_handlers() {
+        let source = include_str!("view.rs");
+        for binding in [
+            r#"KeyBinding::new("alt-left", ModePrev, Some("SpikeInput"))"#,
+            r#"KeyBinding::new("alt-right", ModeNext, Some("SpikeInput"))"#,
+        ] {
+            assert!(source.contains(binding), "missing chord binding: {binding}");
+        }
+        // The caret keeps the bare arrows inside the Note.
+        for binding in [
+            r#"KeyBinding::new("left", input::Left, Some("SpikeInput"))"#,
+            r#"KeyBinding::new("right", input::Right, Some("SpikeInput"))"#,
+        ] {
+            assert!(source.contains(binding), "caret binding lost: {binding}");
+        }
+
+        // The chord resolves to ModePrev/ModeNext, which no Note element handles.
+        // They bubble to the shell root, so the Note must be rendered as a
+        // descendant of the element that carries the prev/next listeners.
+        let root = source
+            .find(r#".id("shell-root")"#)
+            .expect("shell root element must exist");
+        let note = source
+            .find(".child(self.note.clone())")
+            .expect("shell root must render the Note as a child");
+        assert!(root < note, "the Note must sit inside the shell root");
+        for handler in [
+            ".on_action(cx.listener(Self::prev))",
+            ".on_action(cx.listener(Self::next))",
+        ] {
+            let at = source
+                .find(handler)
+                .unwrap_or_else(|| panic!("shell root must register {handler}"));
+            assert!(
+                root < at && at < note,
+                "{handler} must be on the shell root above the Note"
+            );
+        }
+        // The Note must not swallow the chord on its own element.
+        let note_source = include_str!("input.rs");
+        let note_start = note_source
+            .find(r#".id("note-input")"#)
+            .expect("note element must exist");
+        let note_element = &note_source[note_start..];
+        let note_end = note_element
+            .find(".on_mouse_down")
+            .expect("note element must end at its mouse handler");
+        assert!(
+            !note_element[..note_end].contains("ModePrev")
+                && !note_element[..note_end].contains("ModeNext"),
+            "the Note must not claim the mode chord"
+        );
+    }
+
+    #[test]
+    fn mode_keys_hint_renders_in_every_panel() {
+        let mut session = Session::unbacked();
+        assert_eq!(session.locale(), Locale::En);
+        let hint = copy::mode_keys_hint(Locale::En);
+        assert!(hint.contains("Alt+Left"));
+        assert!(hint.contains("Alt+Right"));
+        for surface in [Surface::Mode, Surface::Settings, Surface::Protection] {
+            session.show_mode(Mode::Clean);
+            match surface {
+                Surface::Mode => {}
+                other => {
+                    let index = MENU
+                        .iter()
+                        .position(|item| *item == other)
+                        .expect("surface is in MENU");
+                    session.toggle_menu();
+                    session.open_menu_item(index);
+                }
+            }
+            assert_eq!(session.shell().surface(), surface);
+            let lines = panel_lines(&session, None);
+            assert_eq!(
+                lines.first(),
+                Some(&hint.to_string()),
+                "the chord hint must lead the {surface:?} panel: {lines:?}"
+            );
+            assert_eq!(
+                lines.iter().filter(|line| *line == hint).count(),
+                1,
+                "the chord hint must appear once in {surface:?}: {lines:?}"
+            );
+        }
+
+        session.cycle_language();
+        assert_eq!(session.locale(), Locale::ZhCn);
+        let zh = copy::mode_keys_hint(Locale::ZhCn);
+        assert_ne!(zh, hint);
+        assert!(zh.contains("Alt+"));
+        assert_eq!(panel_lines(&session, None).first(), Some(&zh.to_string()));
     }
 
     #[test]

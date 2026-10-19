@@ -54,6 +54,15 @@ pub fn mode_subtitle(locale: Locale, name: &'static str) -> &'static str {
     }
 }
 
+/// The mode chord. `left` and `right` alone stay with the Note's caret, so the
+/// shell needs its own chord that the text field does not claim.
+pub fn mode_keys_hint(locale: Locale) -> &'static str {
+    match locale {
+        Locale::En => "Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.",
+        Locale::ZhCn => "键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。",
+    }
+}
+
 pub fn settings_title(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Settings",
