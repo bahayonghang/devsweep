@@ -319,6 +319,7 @@ impl Render for ShellView {
                     .role(gpui::Role::Tab)
                     .aria_label(label)
                     .aria_selected(active)
+                    .when(active, |tab| tab.aria_active_descendant())
                     .px_3()
                     .py_2()
                     .rounded_md()
