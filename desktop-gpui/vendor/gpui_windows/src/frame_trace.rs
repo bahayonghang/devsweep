@@ -6,13 +6,12 @@ use std::{
 };
 
 const FRAME_TRACE_ENV: &str = "DEVSWEEP_FRAME_TRACE";
-const FLUSH_EVERY: u8 = 8;
 
 /// Opt-in present timestamps. The env path is read once, in [`FrameTrace::from_env`].
+/// Each line is one integer microsecond from the first `Present` return, not `SyncQPCTime`.
 pub(crate) struct FrameTrace {
     file: Option<BufWriter<std::fs::File>>,
     origin: Option<Instant>,
-    pending_lines: u8,
 }
 
 impl FrameTrace {
@@ -29,7 +28,6 @@ impl FrameTrace {
         Self {
             file,
             origin: None,
-            pending_lines: 0,
         }
     }
 
@@ -39,11 +37,8 @@ impl FrameTrace {
         };
         let origin = *self.origin.get_or_insert(now);
         let micros = now.saturating_duration_since(origin).as_micros();
-        let _ = writeln!(file, "{micros}");
-        self.pending_lines = self.pending_lines.saturating_add(1);
-        if self.pending_lines >= FLUSH_EVERY {
+        if writeln!(file, "{micros}").is_ok() {
             let _ = file.flush();
-            self.pending_lines = 0;
         }
     }
 }

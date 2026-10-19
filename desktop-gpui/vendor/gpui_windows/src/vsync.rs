@@ -7,15 +7,9 @@ use anyhow::{Context, Result};
 use gpui::FrameRequestSource;
 use gpui_util::ResultExt;
 use windows::Win32::{
-    Foundation::{CloseHandle, HANDLE, HWND, WAIT_OBJECT_0},
+    Foundation::HWND,
     Graphics::Dwm::{DWM_TIMING_INFO, DwmGetCompositionTimingInfo},
-    System::{
-        Performance::QueryPerformanceFrequency,
-        Threading::{
-            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, CreateWaitableTimerExW, INFINITE,
-            SetWaitableTimer, TIMER_ALL_ACCESS, WaitForSingleObject,
-        },
-    },
+    System::Performance::QueryPerformanceFrequency,
 };
 
 static QPC_TICKS_PER_SECOND: LazyLock<u64> = LazyLock::new(|| {
@@ -28,8 +22,7 @@ static QPC_TICKS_PER_SECOND: LazyLock<u64> = LazyLock::new(|| {
 
 const VSYNC_INTERVAL_THRESHOLD: Duration = Duration::from_millis(1);
 const DEFAULT_VSYNC_INTERVAL: Duration = Duration::from_micros(16_666); // ~60Hz
-// Relative due time is negative 100 ns units. 16 ms keeps the measured fallback
-// at or under 16.7 ms without raising the system timer resolution.
+// Deadline step for idle-gap detection. Not a sleep. Present(1) paces queued frames.
 const FALLBACK_WAIT_MICROS: i64 = 16_000;
 const POST_WAIT_RESERVE_MAX: Duration = Duration::from_micros(1_500);
 
@@ -37,9 +30,6 @@ pub(crate) struct VSyncProvider {
     #[allow(dead_code)]
     interval: Duration,
     next_deadline: Option<Instant>,
-    // One high-resolution timer for every queued-frame remainder. Created on
-    // the first wait and closed in Drop. Idle gaps do not start it.
-    timer: Option<HANDLE>,
     /// Clamped post-wait duration from the last Present. The wait does not read it.
     #[allow(dead_code)]
     post_wait_reserve: Duration,
@@ -54,7 +44,6 @@ impl VSyncProvider {
         Self {
             interval,
             next_deadline: None,
-            timer: None,
             post_wait_reserve: Duration::ZERO,
         }
     }
@@ -65,27 +54,26 @@ impl VSyncProvider {
         self.post_wait_reserve = reserve.min(POST_WAIT_RESERVE_MAX);
     }
 
-    /// Wait before present. The deadline carries across queued frames so work
-    /// after this call reduces the next remainder. Never waits after present.
+    /// Advance the queued-frame deadline. This does not sleep. `Present(1)` is
+    /// the only queued-frame pacer. The 16 ms budget still moves `next_deadline`
+    /// so an idle gap is detected.
     pub(crate) fn wait_before_present(&mut self, now: Instant) -> FrameRequestSource {
         let budget = Duration::from_micros(FALLBACK_WAIT_MICROS as u64);
         match self.next_deadline {
             None => {
-                // Arm only. Do not wait, and do not start the timer while no
-                // deadline exists yet.
+                // Arm only. Do not wait.
                 self.next_deadline = Some(now + budget);
             }
             Some(deadline) if now < deadline => {
-                // Fixed 16 ms cadence. Do not subtract `post_wait_reserve`.
-                let remainder = deadline.saturating_duration_since(now);
-                self.wait_remainder(remainder);
+                // Present(1) paces this frame. Advance the deadline and do not sleep.
+                // Do not subtract `post_wait_reserve`.
                 self.next_deadline = Some(deadline + budget);
             }
             Some(deadline) => {
                 let late = now.saturating_duration_since(deadline);
                 if late > budget {
                     // Idle gap after the frame-request wait blocked. Re-arm
-                    // with the 16 ms budget and do not start the timer.
+                    // with the 16 ms budget and do not sleep.
                     self.next_deadline = Some(now + budget);
                 } else {
                     let mut next = deadline + budget;
@@ -97,49 +85,6 @@ impl VSyncProvider {
             }
         }
         FrameRequestSource::LocalSchedule
-    }
-
-    fn wait_remainder(&mut self, remainder: Duration) {
-        // Due time is negative 100 ns units. A zero remainder must not call
-        // SetWaitableTimer. DwmFlush is not used: a successful flush measured
-        // 16.8 ms median and misses the 16.7 ms budget.
-        let Ok(micros) = i64::try_from(remainder.as_micros()) else {
-            return;
-        };
-        if micros == 0 {
-            return;
-        }
-        let due_100ns = -(micros * 10);
-        let timer = if let Some(timer) = self.timer {
-            timer
-        } else {
-            let timer = unsafe {
-                CreateWaitableTimerExW(
-                    None,
-                    windows::core::PCWSTR(std::ptr::null()),
-                    CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                    TIMER_ALL_ACCESS.0,
-                )
-                .expect("CreateWaitableTimerExW")
-            };
-            self.timer = Some(timer);
-            timer
-        };
-        unsafe {
-            SetWaitableTimer(timer, &due_100ns, 0, None, None, false).expect("SetWaitableTimer");
-            let status = WaitForSingleObject(timer, INFINITE);
-            assert_eq!(status, WAIT_OBJECT_0, "WaitForSingleObject");
-        }
-    }
-}
-
-impl Drop for VSyncProvider {
-    fn drop(&mut self) {
-        if let Some(timer) = self.timer.take() {
-            unsafe {
-                CloseHandle(timer).expect("CloseHandle");
-            }
-        }
     }
 }
 
@@ -175,30 +120,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn fallback_wait_p95_stays_at_or_under_16_7ms() {
+    fn successive_queued_waits_each_return_under_8ms() {
         let mut provider = VSyncProvider::new();
-        let mut samples = Vec::with_capacity(30);
         for _ in 0..30 {
             let started = Instant::now();
             assert_eq!(
                 provider.wait_before_present(Instant::now()),
                 FrameRequestSource::LocalSchedule
             );
-            samples.push(started.elapsed());
+            let elapsed = started.elapsed();
+            assert!(
+                elapsed < Duration::from_micros(8_000),
+                "queued wait {elapsed:?} was not under 8 ms"
+            );
         }
-        samples.sort();
-        let n = samples.len();
-        // Nearest-rank p95: ceil(0.95 * n) - 1.
-        let index = (n * 95).div_ceil(100) - 1;
-        let p95 = samples[index];
-        assert!(
-            p95 <= Duration::from_micros(16_700),
-            "p95 {p95:?} exceeded 16.7 ms"
-        );
     }
 
     #[test]
-    fn carried_deadline_shortens_the_next_wait() {
+    fn early_branch_does_not_sleep() {
         let mut provider = VSyncProvider::new();
         let t0 = Instant::now();
         let started = Instant::now();
@@ -219,12 +158,8 @@ mod tests {
         );
         let waited = started.elapsed();
         assert!(
-            waited >= Duration::from_micros(8_000),
-            "carried wait {waited:?} was under 8 ms"
-        );
-        assert!(
-            waited < Duration::from_micros(15_000),
-            "carried wait {waited:?} was not under 15 ms"
+            waited < Duration::from_micros(8_000),
+            "early branch waited {waited:?}"
         );
     }
 
@@ -249,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn queued_second_wait_stays_between_8ms_and_16_7ms() {
+    fn queued_second_wait_returns_under_8ms() {
         let mut provider = VSyncProvider::new();
         let t0 = Instant::now();
         assert_eq!(
@@ -264,12 +199,8 @@ mod tests {
         );
         let waited = started.elapsed();
         assert!(
-            waited >= Duration::from_micros(8_000),
-            "second wait {waited:?} was under 8 ms"
-        );
-        assert!(
-            waited <= Duration::from_micros(16_700),
-            "second wait {waited:?} exceeded 16.7 ms"
+            waited < Duration::from_micros(8_000),
+            "second wait {waited:?} was not under 8 ms"
         );
     }
 }
