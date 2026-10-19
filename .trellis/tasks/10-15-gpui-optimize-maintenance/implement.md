@@ -1,6 +1,6 @@
 # C06 Implementation and verification
 
-Status: planning; dependencies: C01, C02.
+Status: 2026-10-19 optimize tests passed on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C06-AC1 through C06-AC3 stay checked. C06-AC4 stays unchecked. Disposable native defrag and dism stay NOT_RUN. They are not PASS. Dependencies C01 and C02 are archived. This child is not archived.
 
 ## Sequence
 
