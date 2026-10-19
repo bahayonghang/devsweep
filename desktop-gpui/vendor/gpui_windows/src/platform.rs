@@ -450,13 +450,14 @@ impl WindowsPlatform {
         std::thread::Builder::new()
             .name("VSyncProvider".to_owned())
             .spawn(move || {
-                let vsync_provider = VSyncProvider::new();
+                let mut vsync_provider = VSyncProvider::new();
                 loop {
                     // Wait here while idle. Do not call DwmFlush or RedrawWindow until a window asks.
                     let Some(batch) = pump.wait_for_frame_requests() else {
                         break;
                     };
-                    let signal_source = vsync_provider.wait_for_vsync();
+                    let signal_source =
+                        vsync_provider.wait_before_present(std::time::Instant::now());
                     let signal_at = PlatformFrameSignal::capture(scheduler::Instant::now);
                     if pump.is_stopped() {
                         break;
