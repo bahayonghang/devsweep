@@ -1,0 +1,7 @@
+=== system IME inventory ===
+keyboard_layout_count=2
+  layout[0] hkl=0x08040804 langid=0x0804 ImmIsIME=True
+  layout[1] hkl=0x04090409 langid=0x0409 ImmIsIME=True
+
+=== baseline: does a plain Win32 app get an IME context? ===
+notepad window not found via UIA
