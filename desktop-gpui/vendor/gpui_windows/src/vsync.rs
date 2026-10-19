@@ -31,6 +31,7 @@ const DEFAULT_VSYNC_INTERVAL: Duration = Duration::from_micros(16_666); // ~60Hz
 // Relative due time is negative 100 ns units. 16 ms keeps the measured fallback
 // at or under 16.7 ms without raising the system timer resolution.
 const FALLBACK_WAIT_MICROS: i64 = 16_000;
+const POST_WAIT_RESERVE_MAX: Duration = Duration::from_micros(1_500);
 
 pub(crate) struct VSyncProvider {
     #[allow(dead_code)]
@@ -39,6 +40,8 @@ pub(crate) struct VSyncProvider {
     // One high-resolution timer for every queued-frame remainder. Created on
     // the first wait and closed in Drop. Idle gaps do not start it.
     timer: Option<HANDLE>,
+    /// Post-wait work measured after the previous Present, clamped to 1500 µs.
+    post_wait_reserve: Duration,
 }
 
 impl VSyncProvider {
@@ -51,7 +54,14 @@ impl VSyncProvider {
             interval,
             next_deadline: None,
             timer: None,
+            post_wait_reserve: Duration::ZERO,
         }
+    }
+
+    /// `reserve` is the clamped post-wait duration from the last Present.
+    /// Values above 1500 µs are clamped. The idle path does not read it.
+    pub(crate) fn set_post_wait_reserve(&mut self, reserve: Duration) {
+        self.post_wait_reserve = reserve.min(POST_WAIT_RESERVE_MAX);
     }
 
     /// Wait before present. The deadline carries across queued frames so work
@@ -65,7 +75,10 @@ impl VSyncProvider {
                 self.next_deadline = Some(now + budget);
             }
             Some(deadline) if now < deadline => {
-                self.wait_remainder(deadline - now);
+                // Shorten the sleep by the last post-wait cost. The deadline
+                // still advances by a full budget, so Present lands on it.
+                let remainder = deadline.saturating_duration_since(now);
+                self.wait_remainder(remainder.saturating_sub(self.post_wait_reserve));
                 self.next_deadline = Some(deadline + budget);
             }
             Some(deadline) => {
@@ -232,6 +245,45 @@ mod tests {
         assert!(
             elapsed < Duration::from_micros(8_000),
             "idle gap waited {elapsed:?}"
+        );
+    }
+
+    #[test]
+    fn post_wait_reserve_returns_sooner_than_zero_reserve() {
+        let mut reserved_total = Duration::ZERO;
+        let mut plain_total = Duration::ZERO;
+        for _ in 0..4 {
+            let mut reserved = VSyncProvider::new();
+            let mut plain = VSyncProvider::new();
+            let t0 = Instant::now();
+            assert_eq!(
+                reserved.wait_before_present(t0),
+                FrameRequestSource::LocalSchedule
+            );
+            assert_eq!(
+                plain.wait_before_present(t0),
+                FrameRequestSource::LocalSchedule
+            );
+            reserved.set_post_wait_reserve(Duration::from_micros(1_500));
+
+            let now = t0 + Duration::from_micros(1_000);
+            let started = Instant::now();
+            assert_eq!(
+                plain.wait_before_present(now),
+                FrameRequestSource::LocalSchedule
+            );
+            plain_total += started.elapsed();
+
+            let started = Instant::now();
+            assert_eq!(
+                reserved.wait_before_present(now),
+                FrameRequestSource::LocalSchedule
+            );
+            reserved_total += started.elapsed();
+        }
+        assert!(
+            reserved_total + Duration::from_millis(2) < plain_total,
+            "reserve wait {reserved_total:?} was not sooner than {plain_total:?}"
         );
     }
 }

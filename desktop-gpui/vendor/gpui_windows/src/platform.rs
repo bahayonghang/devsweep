@@ -456,8 +456,12 @@ impl WindowsPlatform {
                     let Some(batch) = pump.wait_for_frame_requests() else {
                         break;
                     };
+                    // The window thread overwrites this after Present. A missing
+                    // timestamp there stores a zero reserve.
+                    vsync_provider.set_post_wait_reserve(pump.post_wait_reserve());
                     let signal_source =
                         vsync_provider.wait_before_present(std::time::Instant::now());
+                    pump.record_wait_returned(std::time::Instant::now());
                     let signal_at = PlatformFrameSignal::capture(scheduler::Instant::now);
                     if pump.is_stopped() {
                         break;

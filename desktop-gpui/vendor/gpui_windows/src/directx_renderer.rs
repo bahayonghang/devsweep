@@ -55,6 +55,8 @@ pub(crate) struct DirectXRenderer {
     /// meaning we lost all the allocated gpu textures and scene resources.
     skip_draws: bool,
     frame_trace: crate::frame_trace::FrameTrace,
+    frame_stats: crate::frame_stats::FrameStats,
+    frame_pump: Option<Arc<crate::FramePump>>,
 }
 
 /// Direct3D objects
@@ -196,7 +198,13 @@ impl DirectXRenderer {
             height: 1,
             skip_draws: false,
             frame_trace: crate::frame_trace::FrameTrace::from_env(),
+            frame_stats: crate::frame_stats::FrameStats::from_env(),
+            frame_pump: None,
         })
+    }
+
+    pub(crate) fn set_frame_pump(&mut self, pump: Arc<crate::FramePump>) {
+        self.frame_pump = Some(pump);
     }
 
     pub(crate) fn sprite_atlas(&self) -> Arc<dyn PlatformAtlas> {
@@ -253,7 +261,24 @@ impl DirectXRenderer {
                 .Present(0, DXGI_PRESENT(0))
         };
         if result.is_ok() {
-            self.frame_trace.record_at(std::time::Instant::now());
+            let presented_at = std::time::Instant::now();
+            self.frame_trace.record_at(presented_at);
+            // Unset DEVSWEEP_FRAME_STATS does not call GetFrameStatistics.
+            let qpc = self.frame_stats.is_enabled().then(|| {
+                crate::frame_stats::sync_qpc_time(
+                    &self
+                        .resources
+                        .as_ref()
+                        .expect("resources missing")
+                        .swap_chain,
+                )
+            });
+            if let Some(qpc) = qpc {
+                self.frame_stats.record_qpc(qpc);
+            }
+            if let Some(pump) = &self.frame_pump {
+                pump.record_present(presented_at);
+            }
         }
         result.ok().context("Presenting swap chain failed")
     }

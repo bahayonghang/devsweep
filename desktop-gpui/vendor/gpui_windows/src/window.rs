@@ -288,6 +288,9 @@ impl WindowsWindowInner {
             context.invalidate_devices.clone(),
             context.draw_coordinator.clone(),
         )?;
+        if let Some(pump) = &context.frame_pump {
+            state.renderer.borrow_mut().set_frame_pump(Arc::clone(pump));
+        }
 
         Ok(Rc::new(Self {
             hwnd,
@@ -1145,9 +1148,21 @@ impl PlatformWindow for WindowsWindow {
         }
         // Do not send from `handle_wm_getobject`. That call is already inside
         // the message, and a nested send would re-enter it.
-        if deliver {
-            send_uia_root_getobject(self.hwnd);
+        if !deliver {
+            return;
         }
+        send_uia_root_getobject(self.hwnd);
+        // The adapter is Active only after `SendMessageW` returns. Raising
+        // here, not inside `handle_wm_getobject`, is what moves UIA focus off
+        // the HWND. The activation snapshot itself focuses a different node.
+        let focus_events = {
+            let mut a11y = self.state.a11y.borrow_mut();
+            let Some(a11y) = a11y.as_mut() else {
+                return;
+            };
+            note_focus_after_activation(&mut a11y.adapter, &mut a11y.activation_handler)
+        };
+        focus_events.raise();
     }
 
     fn a11y_update_window_bounds(&self) {
@@ -1168,6 +1183,8 @@ pub(crate) struct A11yActivationHandler {
     primed: bool,
     delivered: bool,
     #[cfg(test)]
+    activation_focus_id: Option<String>,
+    #[cfg(test)]
     activated_id: Option<String>,
 }
 
@@ -1178,6 +1195,8 @@ impl A11yActivationHandler {
             note_tree: None,
             primed: false,
             delivered: false,
+            #[cfg(test)]
+            activation_focus_id: None,
             #[cfg(test)]
             activated_id: None,
         }
@@ -1204,8 +1223,9 @@ impl A11yActivationHandler {
         }
     }
 
-    /// True only when `request_initial_tree` would return the note tree.
-    /// A `None` tree must not be delivered: AccessKit would install a placeholder root.
+    /// True only when activation can publish a non-note snapshot and a later
+    /// update can move focus to `note-input`. A missing note tree is not
+    /// delivered: AccessKit would install a placeholder root.
     fn begin_uia_delivery(&mut self) -> bool {
         if self.delivered {
             return false;
@@ -1213,11 +1233,35 @@ impl A11yActivationHandler {
         let Some(tree) = self.note_tree.as_ref() else {
             return false;
         };
-        if focused_accessibility_id(tree) != Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+        if focus_other_than_note(tree).is_none() {
             return false;
         }
         self.delivered = true;
         true
+    }
+
+    fn follow_up_note_update(&self) -> Option<accesskit::TreeUpdate> {
+        let tree = self.note_tree.clone()?;
+        if focused_accessibility_id(&tree) != Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+            return None;
+        }
+        Some(tree)
+    }
+
+    fn note_activated(&mut self, author: Option<String>) {
+        #[cfg(test)]
+        if author.as_deref() == Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+            self.activated_id = author;
+        }
+        #[cfg(not(test))]
+        {
+            let _ = author;
+        }
+    }
+
+    #[cfg(test)]
+    fn activation_focus_id(&self) -> Option<&str> {
+        self.activation_focus_id.as_deref()
     }
 
     #[cfg(test)]
@@ -1232,6 +1276,70 @@ fn focused_accessibility_id(update: &accesskit::TreeUpdate) -> Option<&str> {
         .iter()
         .find(|(id, _)| *id == update.focus)
         .and_then(|(_, node)| node.author_id())
+}
+
+/// Activation must not already focus `note-input`. A follow-up update is the
+/// only focus change, so AccessKit raises `UIA_AutomationFocusChangedEventId`.
+fn focus_other_than_note(update: &accesskit::TreeUpdate) -> Option<accesskit::TreeUpdate> {
+    if focused_accessibility_id(update) != Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+        return None;
+    }
+    let root = update.tree.as_ref().map(|tree| tree.root)?;
+    let note_id = update
+        .nodes
+        .iter()
+        .find(|(_, node)| node.author_id() == Some(NOTE_INPUT_ACCESSIBILITY_ID))
+        .map(|(id, _)| *id)?;
+    let mut snapshot = update.clone();
+    if root != note_id {
+        snapshot.focus = root;
+    } else {
+        let other = update
+            .nodes
+            .iter()
+            .find(|(id, _)| *id != note_id)
+            .map(|(id, _)| *id)?;
+        snapshot.focus = other;
+    }
+    if focused_accessibility_id(&snapshot) == Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+        return None;
+    }
+    Some(snapshot)
+}
+
+struct NoteFocusEvents {
+    host_focus: Option<accesskit_windows::QueuedEvents>,
+    note_focus: Option<accesskit_windows::QueuedEvents>,
+}
+
+impl NoteFocusEvents {
+    fn raise(self) {
+        if let Some(events) = self.host_focus {
+            events.raise();
+        }
+        if let Some(events) = self.note_focus {
+            events.raise();
+        }
+    }
+}
+
+fn note_focus_after_activation(
+    adapter: &mut accesskit_windows::Adapter,
+    handler: &mut A11yActivationHandler,
+) -> NoteFocusEvents {
+    let host_focus = adapter.update_window_focus_state(true);
+    let note_focus = handler.follow_up_note_update().and_then(|update| {
+        let author = focused_accessibility_id(&update).map(str::to_owned);
+        let events = adapter.update_if_active(|| update);
+        if events.is_some() {
+            handler.note_activated(author);
+        }
+        events
+    });
+    NoteFocusEvents {
+        host_focus,
+        note_focus,
+    }
 }
 
 fn send_uia_root_getobject(hwnd: HWND) {
@@ -1255,16 +1363,16 @@ impl WindowsWindowInner {
 
 impl accesskit::ActivationHandler for A11yActivationHandler {
     fn request_initial_tree(&mut self) -> Option<accesskit::TreeUpdate> {
-        let tree = self.note_tree.clone()?;
-        let id = focused_accessibility_id(&tree)?;
-        if id != NOTE_INPUT_ACCESSIBILITY_ID {
-            return None;
-        }
+        let snapshot = focus_other_than_note(self.note_tree.as_ref()?)?;
         #[cfg(test)]
         {
-            self.activated_id = Some(id.to_string());
+            self.activation_focus_id = Some(
+                focused_accessibility_id(&snapshot)
+                    .unwrap_or("")
+                    .to_string(),
+            );
         }
-        Some(tree)
+        Some(snapshot)
     }
 }
 
@@ -2049,10 +2157,40 @@ mod tests {
         assert!(deliver);
         super::send_uia_root_getobject(hwnd);
 
+        let (gets, activation_focus, activated_before) = UIA_HOST.with(|slot| {
+            let host = slot.borrow();
+            let host = host.as_ref().expect("host");
+            (
+                host.gets,
+                host.handler.activation_focus_id().map(str::to_string),
+                host.handler.activated_accessibility_id().map(str::to_string),
+            )
+        });
+        assert!(gets >= 1, "WM_GETOBJECT was not delivered");
+        assert!(
+            activation_focus.is_some(),
+            "activation snapshot was not requested"
+        );
+        assert_ne!(
+            activation_focus.as_deref(),
+            Some(super::NOTE_INPUT_ACCESSIBILITY_ID),
+            "activation snapshot counted as note focus"
+        );
+        assert_ne!(
+            activated_before.as_deref(),
+            Some(super::NOTE_INPUT_ACCESSIBILITY_ID)
+        );
+
+        let focus_events = UIA_HOST.with(|slot| {
+            let mut host = slot.borrow_mut();
+            let host = host.as_mut().expect("host");
+            super::note_focus_after_activation(&mut host.adapter, &mut host.handler)
+        });
+        focus_events.raise();
+
         UIA_HOST.with(|slot| {
             let mut host = slot.borrow_mut();
             let host = host.as_mut().expect("host");
-            assert!(host.gets >= 1, "WM_GETOBJECT was not delivered");
             assert_eq!(
                 host.handler.activated_accessibility_id(),
                 Some(super::NOTE_INPUT_ACCESSIBILITY_ID)
