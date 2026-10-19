@@ -1,6 +1,6 @@
 # C07 Implementation and verification
 
-Status: planning; dependencies: C01.
+Status: 2026-10-19 checks passed on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C07-AC1 through C07-AC4 are checked. Dependency C01 is archived.
 
 ## Sequence
 
