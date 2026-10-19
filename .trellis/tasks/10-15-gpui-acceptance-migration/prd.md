@@ -62,8 +62,11 @@ C14-R4. Prepare isolated Windows packaging and compatible settings migration; sw
   application (23 descendants, 7 processes including the WebView2 tree). The
   protocol requires equal scopes, and these are not feature-equivalent, so these
   ratios are real whole-tree measurements but they are **not** the
-  equivalence-gated acceptance C14 ultimately needs. The idle-CPU p95 FAIL
-  (7.4405 % against a 1.0 % budget) still stands.
+  equivalence-gated acceptance C14 ultimately needs. The idle-CPU p95 of
+  7.4405 % is the pre-pump failure and stays in the round-3 evidence. On
+  2026-10-19 the vendored demand-driven pump, commit `0d691dd`, measured
+  whole-tree nearest-rank median 0 and p95 0 (see
+  evidence/c14-idle-cpu-round13.md). This box stays open.
 
   Still **NOT_RUN**: warm-window, navigation/preview response, 10k-row frame
   interval, hidden-decoration frames, software-inventory p95, core-scan
