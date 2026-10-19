@@ -22,7 +22,8 @@ static QPC_TICKS_PER_SECOND: LazyLock<u64> = LazyLock::new(|| {
 
 const VSYNC_INTERVAL_THRESHOLD: Duration = Duration::from_millis(1);
 const DEFAULT_VSYNC_INTERVAL: Duration = Duration::from_micros(16_666); // ~60Hz
-// Deadline step for idle-gap detection. Not a sleep. Present(1) paces queued frames.
+// Deadline step for idle-gap detection. The queued path does not sleep.
+// Present uses sync interval 0.
 const FALLBACK_WAIT_MICROS: i64 = 16_000;
 const POST_WAIT_RESERVE_MAX: Duration = Duration::from_micros(1_500);
 
@@ -54,9 +55,9 @@ impl VSyncProvider {
         self.post_wait_reserve = reserve.min(POST_WAIT_RESERVE_MAX);
     }
 
-    /// Advance the queued-frame deadline. This does not sleep. `Present(1)` is
-    /// the only queued-frame pacer. The 16 ms budget still moves `next_deadline`
-    /// so an idle gap is detected.
+    /// Advance the queued-frame deadline. The queued path does not sleep.
+    /// Present uses sync interval 0. The 16 ms budget still moves
+    /// `next_deadline` so an idle gap is detected.
     pub(crate) fn wait_before_present(&mut self, now: Instant) -> FrameRequestSource {
         let budget = Duration::from_micros(FALLBACK_WAIT_MICROS as u64);
         match self.next_deadline {
@@ -65,7 +66,7 @@ impl VSyncProvider {
                 self.next_deadline = Some(now + budget);
             }
             Some(deadline) if now < deadline => {
-                // Present(1) paces this frame. Advance the deadline and do not sleep.
+                // The queued path does not sleep. Present uses sync interval 0.
                 // Do not subtract `post_wait_reserve`.
                 self.next_deadline = Some(deadline + budget);
             }

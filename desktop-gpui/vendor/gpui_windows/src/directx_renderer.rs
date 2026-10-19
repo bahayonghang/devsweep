@@ -258,7 +258,7 @@ impl DirectXRenderer {
                 .as_ref()
                 .expect("resources missing")
                 .swap_chain
-                .Present(1, DXGI_PRESENT(0))
+                .Present(0, DXGI_PRESENT(0))
         };
         if result.is_ok() {
             let presented_at = std::time::Instant::now();
