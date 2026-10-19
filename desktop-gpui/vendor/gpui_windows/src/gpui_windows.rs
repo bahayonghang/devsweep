@@ -12,6 +12,7 @@ mod dispatcher;
 mod display;
 mod events;
 mod frame_pump;
+mod frame_trace;
 mod keyboard;
 mod platform;
 mod system_notifications;

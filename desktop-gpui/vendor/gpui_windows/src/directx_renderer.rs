@@ -54,6 +54,7 @@ pub(crate) struct DirectXRenderer {
     /// In that case we want to discard the first frame that we draw as we got reset in the middle of a frame
     /// meaning we lost all the allocated gpu textures and scene resources.
     skip_draws: bool,
+    frame_trace: crate::frame_trace::FrameTrace,
 }
 
 /// Direct3D objects
@@ -194,6 +195,7 @@ impl DirectXRenderer {
             width: 1,
             height: 1,
             skip_draws: false,
+            frame_trace: crate::frame_trace::FrameTrace::from_env(),
         })
     }
 
@@ -250,6 +252,9 @@ impl DirectXRenderer {
                 .swap_chain
                 .Present(0, DXGI_PRESENT(0))
         };
+        if result.is_ok() {
+            self.frame_trace.record_at(std::time::Instant::now());
+        }
         result.ok().context("Presenting swap chain failed")
     }
 

@@ -23,7 +23,10 @@ use windows::{
         System::{
             Com::*, Diagnostics::Debug::MessageBeep, LibraryLoader::*, Ole::*, SystemServices::*,
         },
-        UI::{Controls::*, HiDpi::*, Input::KeyboardAndMouse::*, Shell::*, WindowsAndMessaging::*},
+        UI::{
+            Accessibility::UiaRootObjectId, Controls::*, HiDpi::*, Input::KeyboardAndMouse::*,
+            Shell::*, WindowsAndMessaging::*,
+        },
     },
     core::*,
 };
@@ -61,6 +64,8 @@ pub struct WindowsWindowState {
     pub last_reported_modifiers: Cell<Option<Modifiers>>,
     pub last_reported_capslock: Cell<Option<Capslock>>,
     pub hovered: Cell<bool>,
+    /// Set only from mouse-move, mouse-wheel, and key-down handlers.
+    pub last_interaction: Cell<Option<Instant>>,
     pub last_visibility: Cell<Option<WindowVisibility>>,
     pub direct_manipulation: DirectManipulationHandler,
 
@@ -177,6 +182,7 @@ impl WindowsWindowState {
             last_reported_modifiers: Cell::new(last_reported_modifiers),
             last_reported_capslock: Cell::new(last_reported_capslock),
             hovered: Cell::new(hovered),
+            last_interaction: Cell::new(None),
             last_visibility: Cell::new(None),
             renderer: RefCell::new(renderer),
             force_render_pending: Cell::new(false),
@@ -1106,9 +1112,11 @@ impl PlatformWindow for WindowsWindow {
             action_handler,
         );
 
-        let activation_handler = A11yActivationHandler {
-            callback: callbacks.activation,
-        };
+        let mut activation_handler = A11yActivationHandler::new(callbacks.activation);
+        // GPUI builds the real tree only after this flag is set. The callback's
+        // window tree does not focus the note, so discard it and leave the
+        // adapter Inactive until a note-focused tree is ready.
+        activation_handler.prime_active_flag();
 
         *self.state.a11y.borrow_mut() = Some(A11yState {
             adapter,
@@ -1117,10 +1125,15 @@ impl PlatformWindow for WindowsWindow {
     }
 
     fn a11y_tree_update(&self, tree_update: accesskit::TreeUpdate) {
-        let events = {
+        let (events, deliver) = {
             let mut a11y = self.state.a11y.borrow_mut();
-            a11y.as_mut()
-                .and_then(|a11y| a11y.adapter.update_if_active(|| tree_update))
+            let Some(a11y) = a11y.as_mut() else {
+                return;
+            };
+            a11y.activation_handler.remember_tree(&tree_update);
+            let events = a11y.adapter.update_if_active(|| tree_update);
+            let deliver = a11y.activation_handler.begin_uia_delivery();
+            (events, deliver)
         };
         // The borrow must be dropped before raising events, because
         // `events.raise()` calls `UiaRaiseAutomationPropertyChangedEvent`
@@ -1129,6 +1142,11 @@ impl PlatformWindow for WindowsWindow {
         // `self.state.a11y`.
         if let Some(events) = events {
             events.raise();
+        }
+        // Do not send from `handle_wm_getobject`. That call is already inside
+        // the message, and a nested send would re-enter it.
+        if deliver {
+            send_uia_root_getobject(self.hwnd);
         }
     }
 
@@ -1142,13 +1160,111 @@ pub(crate) struct A11yState {
     pub(crate) activation_handler: A11yActivationHandler,
 }
 
+const NOTE_INPUT_ACCESSIBILITY_ID: &str = "note-input";
+
 pub(crate) struct A11yActivationHandler {
     callback: Box<dyn Fn() -> Option<accesskit::TreeUpdate> + Send + 'static>,
+    note_tree: Option<accesskit::TreeUpdate>,
+    primed: bool,
+    delivered: bool,
+    #[cfg(test)]
+    activated_id: Option<String>,
+}
+
+impl A11yActivationHandler {
+    fn new(callback: Box<dyn Fn() -> Option<accesskit::TreeUpdate> + Send + 'static>) -> Self {
+        Self {
+            callback,
+            note_tree: None,
+            primed: false,
+            delivered: false,
+            #[cfg(test)]
+            activated_id: None,
+        }
+    }
+
+    fn prime_active_flag(&mut self) {
+        if self.primed {
+            return;
+        }
+        self.primed = true;
+        let _ = (self.callback)();
+    }
+
+    fn remember_tree(&mut self, update: &accesskit::TreeUpdate) -> bool {
+        if self.delivered {
+            return false;
+        }
+        if focused_accessibility_id(update) == Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+            self.note_tree = Some(update.clone());
+            true
+        } else {
+            self.note_tree = None;
+            false
+        }
+    }
+
+    /// True only when `request_initial_tree` would return the note tree.
+    /// A `None` tree must not be delivered: AccessKit would install a placeholder root.
+    fn begin_uia_delivery(&mut self) -> bool {
+        if self.delivered {
+            return false;
+        }
+        let Some(tree) = self.note_tree.as_ref() else {
+            return false;
+        };
+        if focused_accessibility_id(tree) != Some(NOTE_INPUT_ACCESSIBILITY_ID) {
+            return false;
+        }
+        self.delivered = true;
+        true
+    }
+
+    #[cfg(test)]
+    fn activated_accessibility_id(&self) -> Option<&str> {
+        self.activated_id.as_deref()
+    }
+}
+
+fn focused_accessibility_id(update: &accesskit::TreeUpdate) -> Option<&str> {
+    update
+        .nodes
+        .iter()
+        .find(|(id, _)| *id == update.focus)
+        .and_then(|(_, node)| node.author_id())
+}
+
+fn send_uia_root_getobject(hwnd: HWND) {
+    unsafe {
+        let _ = SendMessageW(
+            hwnd,
+            WM_GETOBJECT,
+            Some(WPARAM(0)),
+            Some(LPARAM(UiaRootObjectId as isize)),
+        );
+    }
+}
+
+impl WindowsWindowInner {
+    pub(crate) fn enqueue_frame(&self, hwnd: HWND) {
+        if let Some(pump) = &self.frame_pump {
+            pump.enqueue(hwnd);
+        }
+    }
 }
 
 impl accesskit::ActivationHandler for A11yActivationHandler {
     fn request_initial_tree(&mut self) -> Option<accesskit::TreeUpdate> {
-        (self.callback)()
+        let tree = self.note_tree.clone()?;
+        let id = focused_accessibility_id(&tree)?;
+        if id != NOTE_INPUT_ACCESSIBILITY_ID {
+            return None;
+        }
+        #[cfg(test)]
+        {
+            self.activated_id = Some(id.to_string());
+        }
+        Some(tree)
     }
 }
 
@@ -1755,5 +1871,199 @@ mod tests {
             state.update(MouseButton::Right, point(DevicePixels(10), DevicePixels(0))),
             1
         );
+    }
+
+    use std::cell::RefCell;
+    use std::sync::Once;
+
+    use accesskit::ActivationHandler;
+
+    use windows::{
+        Win32::{
+            Foundation::{HWND, LPARAM, LRESULT, WPARAM},
+            System::LibraryLoader::GetModuleHandleW,
+            UI::WindowsAndMessaging::{
+                CreateWindowExW, DefWindowProcW, DestroyWindow, RegisterClassW, WINDOW_EX_STYLE,
+                WINDOW_STYLE, WM_GETOBJECT, WNDCLASSW,
+            },
+        },
+        core::PCWSTR,
+    };
+
+    struct UiaHost {
+        adapter: accesskit_windows::Adapter,
+        handler: super::A11yActivationHandler,
+        gets: u32,
+    }
+
+    thread_local! {
+        static UIA_HOST: RefCell<Option<UiaHost>> = const { RefCell::new(None) };
+    }
+
+    struct NopActionHandler;
+
+    impl accesskit::ActionHandler for NopActionHandler {
+        fn do_action(&mut self, _request: accesskit::ActionRequest) {}
+    }
+
+    unsafe extern "system" fn uia_root_wndproc(
+        window: HWND,
+        message: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> LRESULT {
+        if message == WM_GETOBJECT {
+            let result = UIA_HOST.with(|slot| {
+                let mut host = slot.borrow_mut();
+                let host = host.as_mut()?;
+                host.gets += 1;
+                host.adapter.handle_wm_getobject(
+                    accesskit_windows::WPARAM(wparam.0),
+                    accesskit_windows::LPARAM(lparam.0),
+                    &mut host.handler,
+                )
+            });
+            if let Some(result) = result {
+                let lresult: accesskit_windows::LRESULT = result.into();
+                return LRESULT(lresult.0);
+            }
+        }
+        unsafe { DefWindowProcW(window, message, wparam, lparam) }
+    }
+
+    fn utf16(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    fn uia_test_window() -> HWND {
+        static REGISTER: Once = Once::new();
+        let class_name = utf16("GpuiWindowsUiaRootGetObject");
+        REGISTER.call_once(|| {
+            let class = WNDCLASSW {
+                lpfnWndProc: Some(uia_root_wndproc),
+                hInstance: unsafe { GetModuleHandleW(None).unwrap().into() },
+                lpszClassName: PCWSTR(class_name.as_ptr()),
+                ..Default::default()
+            };
+            let atom = unsafe { RegisterClassW(&class) };
+            assert_ne!(atom, 0, "RegisterClassW failed");
+        });
+        let title = utf16("uia-root");
+        unsafe {
+            CreateWindowExW(
+                WINDOW_EX_STYLE::default(),
+                PCWSTR(class_name.as_ptr()),
+                PCWSTR(title.as_ptr()),
+                WINDOW_STYLE::default(),
+                0,
+                0,
+                0,
+                0,
+                None,
+                None,
+                Some(GetModuleHandleW(None).unwrap().into()),
+                None,
+            )
+        }
+        .expect("CreateWindowExW")
+    }
+
+    fn tree_focused_on(author_id: &str) -> accesskit::TreeUpdate {
+        let root_id = accesskit::NodeId(0);
+        let child_id = accesskit::NodeId(1);
+        let mut root = accesskit::Node::new(accesskit::Role::Window);
+        root.push_child(child_id);
+        let mut child = accesskit::Node::new(accesskit::Role::TextInput);
+        child.set_author_id(author_id);
+        accesskit::TreeUpdate {
+            nodes: vec![(root_id, root), (child_id, child)],
+            tree: Some(accesskit::Tree::new(root_id)),
+            tree_id: accesskit::TreeId::ROOT,
+            focus: child_id,
+        }
+    }
+
+    struct HostGuard(HWND);
+
+    impl Drop for HostGuard {
+        fn drop(&mut self) {
+            UIA_HOST.with(|slot| {
+                slot.borrow_mut().take();
+            });
+            unsafe {
+                DestroyWindow(self.0).ok();
+            }
+        }
+    }
+
+    #[test]
+    fn uia_self_activation_focuses_note_input() {
+        let hwnd = uia_test_window();
+        let _guard = HostGuard(hwnd);
+        let handler =
+            super::A11yActivationHandler::new(Box::new(|| Some(tree_focused_on("shell-root"))));
+        UIA_HOST.with(|slot| {
+            *slot.borrow_mut() = Some(UiaHost {
+                adapter: accesskit_windows::Adapter::new(
+                    accesskit_windows::HWND(hwnd.0),
+                    false,
+                    NopActionHandler,
+                ),
+                handler,
+                gets: 0,
+            });
+        });
+
+        let deliver = UIA_HOST.with(|slot| {
+            let mut host = slot.borrow_mut();
+            let host = host.as_mut().expect("host");
+            assert!(!host.handler.remember_tree(&tree_focused_on("shell-root")));
+            assert!(host.handler.request_initial_tree().is_none());
+            host.handler.begin_uia_delivery()
+        });
+        assert!(!deliver);
+        let (gets, still_inactive) = UIA_HOST.with(|slot| {
+            let mut host = slot.borrow_mut();
+            let host = host.as_mut().expect("host");
+            let still_inactive = host
+                .adapter
+                .update_if_active(|| tree_focused_on(super::NOTE_INPUT_ACCESSIBILITY_ID))
+                .is_none();
+            (host.gets, still_inactive)
+        });
+        assert_eq!(gets, 0);
+        assert!(still_inactive);
+
+        let note_tree = tree_focused_on(super::NOTE_INPUT_ACCESSIBILITY_ID);
+        assert_eq!(
+            super::focused_accessibility_id(&note_tree),
+            Some(super::NOTE_INPUT_ACCESSIBILITY_ID)
+        );
+        assert_eq!(super::NOTE_INPUT_ACCESSIBILITY_ID, "note-input");
+        let deliver = UIA_HOST.with(|slot| {
+            let mut host = slot.borrow_mut();
+            let host = host.as_mut().expect("host");
+            assert!(host.handler.remember_tree(&note_tree));
+            host.handler.begin_uia_delivery()
+        });
+        assert!(deliver);
+        super::send_uia_root_getobject(hwnd);
+
+        UIA_HOST.with(|slot| {
+            let mut host = slot.borrow_mut();
+            let host = host.as_mut().expect("host");
+            assert!(host.gets >= 1, "WM_GETOBJECT was not delivered");
+            assert_eq!(
+                host.handler.activated_accessibility_id(),
+                Some(super::NOTE_INPUT_ACCESSIBILITY_ID)
+            );
+            assert!(
+                host.adapter
+                    .update_if_active(|| tree_focused_on(super::NOTE_INPUT_ACCESSIBILITY_ID))
+                    .is_some(),
+                "adapter stayed Inactive"
+            );
+            assert!(!host.handler.begin_uia_delivery());
+        });
     }
 }

@@ -1,4 +1,9 @@
-use std::{cell::Cell, rc::Rc, sync::atomic::Ordering};
+use std::{
+    cell::Cell,
+    rc::Rc,
+    sync::atomic::Ordering,
+    time::{Duration, Instant},
+};
 
 use anyhow::Context as _;
 use gpui_util::ResultExt;
@@ -65,6 +70,44 @@ impl DrawCoordinator {
             Some(DrawWindowGuard { coordinator: self })
         }
     }
+
+    fn is_drawing(&self) -> bool {
+        self.drawing.get()
+    }
+}
+
+const INTERACTION_FOLLOWUP: Duration = Duration::from_millis(32);
+
+/// Enqueue only after the draw guard is dropped. An enqueue while the guard is
+/// held makes the next `try_begin_draw` fail, and `ValidateRect` then drops the paint.
+fn enqueue_if_interaction_fresh(
+    coordinator: &DrawCoordinator,
+    interaction_at: Option<Instant>,
+    now: Instant,
+    enqueue: impl FnOnce(),
+) -> bool {
+    if coordinator.is_drawing() {
+        return false;
+    }
+    let Some(at) = interaction_at else {
+        return false;
+    };
+    if now.saturating_duration_since(at) > INTERACTION_FOLLOWUP {
+        return false;
+    }
+    enqueue();
+    true
+}
+
+fn follow_up_after_draw(
+    guard: DrawWindowGuard<'_>,
+    coordinator: &DrawCoordinator,
+    interaction_at: Option<Instant>,
+    now: Instant,
+    enqueue: impl FnOnce(),
+) -> bool {
+    drop(guard);
+    enqueue_if_interaction_fresh(coordinator, interaction_at, now, enqueue)
 }
 
 struct DrawWindowGuard<'a> {
@@ -358,6 +401,7 @@ impl WindowsWindowInner {
     }
 
     fn handle_mouse_move_msg(&self, handle: HWND, lparam: LPARAM, wparam: WPARAM) -> Option<isize> {
+        self.record_interaction();
         self.start_tracking_mouse(handle, TME_LEAVE);
         self.restore_cursor_after_hide();
 
@@ -423,6 +467,7 @@ impl WindowsWindowInner {
     // It's a known bug that you can't trigger `ctrl-shift-0`. See:
     // https://superuser.com/questions/1455762/ctrl-shift-number-key-combination-has-stopped-working-for-a-few-numbers
     pub(crate) fn handle_keydown_msg(&self, wparam: WPARAM, lparam: LPARAM) -> Option<isize> {
+        self.record_interaction();
         let Some(input) = handle_key_event(
             wparam,
             lparam,
@@ -554,6 +599,7 @@ impl WindowsWindowInner {
         wparam: WPARAM,
         lparam: LPARAM,
     ) -> Option<isize> {
+        self.record_interaction();
         let modifiers = current_modifiers();
 
         let Some(mut func) = self.state.callbacks.input.take() else {
@@ -607,6 +653,7 @@ impl WindowsWindowInner {
         wparam: WPARAM,
         lparam: LPARAM,
     ) -> Option<isize> {
+        self.record_interaction();
         let Some(mut func) = self.state.callbacks.input.take() else {
             return Some(1);
         };
@@ -1042,6 +1089,7 @@ impl WindowsWindowInner {
     }
 
     fn handle_nc_mouse_move_msg(&self, handle: HWND, lparam: LPARAM) -> Option<isize> {
+        self.record_interaction();
         self.start_tracking_mouse(handle, TME_LEAVE | TME_NONCLIENT);
         self.restore_cursor_after_hide();
 
@@ -1361,7 +1409,7 @@ impl WindowsWindowInner {
 
     #[inline]
     fn draw_window(&self, handle: HWND, force_render: bool) -> Option<isize> {
-        let Some(_guard) = self.state.draw_coordinator.try_begin_draw() else {
+        let Some(guard) = self.state.draw_coordinator.try_begin_draw() else {
             log::debug!("deferring re-entrant draw of window {handle:?}");
             if force_render {
                 self.state.force_render_pending.set(true);
@@ -1410,7 +1458,20 @@ impl WindowsWindowInner {
         self.update_ime_enabled(handle);
         unsafe { ValidateRect(Some(handle), None).ok().log_err() };
 
+        let interaction_at = self.state.last_interaction.get();
+        follow_up_after_draw(
+            guard,
+            &self.state.draw_coordinator,
+            interaction_at,
+            Instant::now(),
+            || self.enqueue_frame(handle),
+        );
+
         Some(0)
+    }
+
+    fn record_interaction(&self) {
+        self.state.last_interaction.set(Some(Instant::now()));
     }
 
     #[inline]
@@ -1824,7 +1885,14 @@ fn get_frame_thicknessy(dpi: u32) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::RefCell, sync::Once};
+    use std::{
+        cell::RefCell,
+        sync::Once,
+        time::{Duration, Instant},
+    };
+
+    use super::{DrawCoordinator, enqueue_if_interaction_fresh, follow_up_after_draw};
+    use crate::FramePump;
 
     use windows::{
         Win32::{
@@ -1910,6 +1978,76 @@ mod tests {
         }
         drop(slot);
         unsafe { DestroyWindow(hwnd).expect("DestroyWindow") };
+    }
+
+    fn test_hwnd(value: usize) -> HWND {
+        HWND(value as *mut std::ffi::c_void)
+    }
+
+    #[test]
+    fn fresh_interaction_enqueues_only_after_draw_guard_drops() {
+        let coordinator = DrawCoordinator::new();
+        let pump = FramePump::new();
+        let hwnd = test_hwnd(0x11);
+        let now = Instant::now();
+        let mut calls = 0;
+        let guard = coordinator.try_begin_draw().expect("draw guard");
+
+        let enqueued = enqueue_if_interaction_fresh(&coordinator, Some(now), now, || {
+            calls += 1;
+            pump.enqueue(hwnd);
+        });
+        assert!(!enqueued);
+        assert_eq!(calls, 0);
+        assert!(coordinator.is_drawing());
+        assert!(pump.take_invalidate_list().is_empty());
+
+        let enqueued = follow_up_after_draw(
+            guard,
+            &coordinator,
+            Some(now),
+            now + Duration::from_millis(32),
+            || {
+                calls += 1;
+                pump.enqueue(hwnd);
+            },
+        );
+        assert!(enqueued);
+        assert_eq!(calls, 1);
+        assert!(!coordinator.is_drawing());
+        assert_eq!(pump.take_invalidate_list(), vec![hwnd]);
+    }
+
+    #[test]
+    fn stale_interaction_does_not_enqueue() {
+        let coordinator = DrawCoordinator::new();
+        let pump = FramePump::new();
+        let hwnd = test_hwnd(0x12);
+        let at = Instant::now();
+        let mut calls = 0;
+        let guard = coordinator.try_begin_draw().expect("draw guard");
+
+        let enqueued = follow_up_after_draw(
+            guard,
+            &coordinator,
+            Some(at),
+            at + Duration::from_millis(32) + Duration::from_micros(1),
+            || {
+                calls += 1;
+                pump.enqueue(hwnd);
+            },
+        );
+        assert!(!enqueued);
+        assert_eq!(calls, 0);
+        assert!(!coordinator.is_drawing());
+
+        let enqueued = enqueue_if_interaction_fresh(&coordinator, None, at, || {
+            calls += 1;
+            pump.enqueue(hwnd);
+        });
+        assert!(!enqueued);
+        assert_eq!(calls, 0);
+        assert!(pump.take_invalidate_list().is_empty());
     }
 }
 
