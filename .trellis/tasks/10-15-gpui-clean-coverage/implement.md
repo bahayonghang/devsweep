@@ -1,6 +1,6 @@
 # C03 Implementation and verification
 
-Status: implementation recorded, not accepted. C03-AC1 is checked. C03-AC3 remains open. C16-AC3 remains NOT_YET_ACCEPTED. Dependencies C01 and C02 are implemented and checked, not archived.
+Status: 2026-10-19 checks passed on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C03-AC1 through C03-AC4 are checked. A real cloud-files reparse tag stays NOT_RUN inside C03-AC1 and is not PASS. Dependencies C01 and C02 are archived. The 2026-10-17 section below is historical. Its "AC3 stays open" and "Recycle Bin was not used" sentences are superseded by `evidence/c03-recycle-round3.md`.
 
 ## Sequence
 
@@ -55,3 +55,11 @@ AC3 stays open. The distinct case still keeps estimated bytes, scan `verified_by
 AC4 is checked because `coverage-manifest.md` lists the same six trash ids and eight omission ids the passing omission case asserts. It does not claim a Mole rule count.
 
 AC1 is checked. Positive, adjacent personal data, busy, reparse, hardlink, and stale-preview cases passed for all six trash ids. Unknown owner passed for the five application families in scenario `unknown`. `user_temp_foreign_sid_is_ownership_unknown` exited 0: `discover` for `UserTemp` with an expected LocalSystem SID left the stale file out of candidates and recorded `ScanCoverageStatus::OwnershipUnknown` with `temporary entry is not proven owned by the current user`; dropping the override still allowed that owned file as a candidate. Passing `OwnerState::Unknown` is not this proof. A real cloud-files reparse tag was not created; the junction and hardlink cases cover the required reparse/hardlink alternative. The Recycle Bin stays NOT_RUN.
+
+## Recorded checks (2026-10-19)
+
+`cargo test --locked -p devsweep-core --target-dir dist/ci-target` exited 0. Lib result: 564 passed, 0 failed, 3 ignored. Public API 2 passed. Doc-tests 4 passed. The four named tests `verified_freed_bytes_after_isolated_rename`, `user_temp_foreign_sid_is_ownership_unknown`, `real_scan_saved_plan_preview_and_recorded_execution`, and `catalogue_omissions_links_and_distinct_totals` are ok. rustc 1.99.0. This is not an MSRV 1.88.0 pass.
+
+`just ci` was not rerun. It exited 0 on 2026-10-19 on this crate tree, recorded before commit `3b20b49`. `git diff --stat 3b20b49 HEAD -- crates` is empty.
+
+The real Recycle Bin measurement remains `evidence/c03-recycle-round3.md` (scan, plan, preview, and execute each exited 0; shell count 201 to 202). A real cloud-files reparse tag stays NOT_RUN.
