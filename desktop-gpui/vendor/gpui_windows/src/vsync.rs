@@ -7,9 +7,15 @@ use anyhow::{Context, Result};
 use gpui::FrameRequestSource;
 use gpui_util::ResultExt;
 use windows::Win32::{
-    Foundation::HWND,
+    Foundation::{CloseHandle, HWND, WAIT_OBJECT_0},
     Graphics::Dwm::{DWM_TIMING_INFO, DwmFlush, DwmGetCompositionTimingInfo},
-    System::Performance::QueryPerformanceFrequency,
+    System::{
+        Performance::QueryPerformanceFrequency,
+        Threading::{
+            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, CreateWaitableTimerExW, INFINITE,
+            SetWaitableTimer, TIMER_ALL_ACCESS, WaitForSingleObject,
+        },
+    },
 };
 
 static QPC_TICKS_PER_SECOND: LazyLock<u64> = LazyLock::new(|| {
@@ -22,8 +28,12 @@ static QPC_TICKS_PER_SECOND: LazyLock<u64> = LazyLock::new(|| {
 
 const VSYNC_INTERVAL_THRESHOLD: Duration = Duration::from_millis(1);
 const DEFAULT_VSYNC_INTERVAL: Duration = Duration::from_micros(16_666); // ~60Hz
+// Relative due time is negative 100 ns units. 16 ms keeps the measured fallback
+// at or under 16.7 ms without raising the system timer resolution.
+const FALLBACK_WAIT_MICROS: i64 = 16_000;
 
 pub(crate) struct VSyncProvider {
+    #[allow(dead_code)]
     interval: Duration,
     f: Box<dyn Fn() -> bool>,
 }
@@ -45,17 +55,34 @@ impl VSyncProvider {
         // DwmFlush and DCompositionWaitForCompositorClock returns very early
         // instead of waiting until vblank when the monitor goes to sleep or is
         // unplugged (nothing to present due to desktop occlusion). We use 1ms as
-        // a threshold for the duration of the wait functions and fallback to
-        // Sleep() if it returns before that. This could happen during normal
-        // operation for the first call after the vsync thread becomes non-idle,
-        // but it shouldn't happen often.
+        // a threshold for the duration of the wait functions and fallback to a
+        // high-resolution waitable timer if it returns before that. This could
+        // happen during normal operation for the first call after the vsync
+        // thread becomes non-idle, but it shouldn't happen often.
         if !wait_succeeded || elapsed < VSYNC_INTERVAL_THRESHOLD {
             log::trace!("VSyncProvider::wait_for_vsync() took less time than expected");
-            std::thread::sleep(self.interval);
+            wait_high_resolution_fallback();
             FrameRequestSource::LocalSchedule
         } else {
             FrameRequestSource::NativeCallback
         }
+    }
+}
+
+fn wait_high_resolution_fallback() {
+    let due_100ns = -(FALLBACK_WAIT_MICROS * 10);
+    unsafe {
+        let timer = CreateWaitableTimerExW(
+            None,
+            windows::core::PCWSTR(std::ptr::null()),
+            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+            TIMER_ALL_ACCESS.0,
+        )
+        .expect("CreateWaitableTimerExW");
+        SetWaitableTimer(timer, &due_100ns, 0, None, None, false).expect("SetWaitableTimer");
+        let status = WaitForSingleObject(timer, INFINITE);
+        CloseHandle(timer).expect("CloseHandle");
+        assert_eq!(status, WAIT_OBJECT_0, "WaitForSingleObject");
     }
 }
 
@@ -115,5 +142,28 @@ mod tests {
         };
 
         assert_eq!(provider.wait_for_vsync(), FrameRequestSource::LocalSchedule);
+    }
+
+    #[test]
+    fn fallback_wait_p95_stays_at_or_under_16_7ms() {
+        let provider = VSyncProvider {
+            interval: Duration::from_micros(16_000),
+            f: Box::new(|| false),
+        };
+        let mut samples = Vec::with_capacity(30);
+        for _ in 0..30 {
+            let started = Instant::now();
+            assert_eq!(provider.wait_for_vsync(), FrameRequestSource::LocalSchedule);
+            samples.push(started.elapsed());
+        }
+        samples.sort();
+        let n = samples.len();
+        // Nearest-rank p95: ceil(0.95 * n) - 1.
+        let index = (n * 95).div_ceil(100) - 1;
+        let p95 = samples[index];
+        assert!(
+            p95 <= Duration::from_micros(16_700),
+            "p95 {p95:?} exceeded 16.7 ms"
+        );
     }
 }

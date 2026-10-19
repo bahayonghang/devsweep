@@ -94,6 +94,14 @@ impl WindowsWindowInner {
             // So, let's eagerly activate the window.
             WM_MOUSEACTIVATE => Some(MA_ACTIVATE as isize),
             WM_ACTIVATE => self.handle_activate_msg(wparam),
+            WM_SETFOCUS => {
+                self.sync_a11y_host_focus(true);
+                None
+            }
+            WM_KILLFOCUS => {
+                self.sync_a11y_host_focus(false);
+                None
+            }
             WM_CREATE => self.handle_create_msg(handle),
             WM_MOVE => self.handle_move_msg(handle, lparam),
             WM_SIZE => self.handle_size_msg(wparam, lparam),
@@ -275,6 +283,7 @@ impl WindowsWindowInner {
     }
 
     fn handle_size_move_loop(&self, handle: HWND) -> Option<isize> {
+        self.sync_a11y_host_focus(false);
         unsafe {
             let ret = SetTimer(
                 Some(handle),
@@ -293,6 +302,7 @@ impl WindowsWindowInner {
     }
 
     fn handle_size_move_loop_exit(&self, handle: HWND) -> Option<isize> {
+        self.sync_a11y_host_focus(true);
         unsafe {
             KillTimer(Some(handle), SIZE_MOVE_LOOP_TIMER_ID).log_err();
         }
@@ -779,6 +789,19 @@ impl WindowsWindowInner {
                 (*params).rgrc[0].top += get_frame_thicknessx(dpi);
             }
             Some(result.0 as isize)
+        }
+    }
+
+    fn sync_a11y_host_focus(&self, is_focused: bool) {
+        let events = {
+            let mut slot = self.state.a11y.borrow_mut();
+            let Some(state) = slot.as_mut() else {
+                return;
+            };
+            state.adapter.update_window_focus_state(is_focused)
+        };
+        if let Some(events) = events {
+            events.raise();
         }
     }
 
@@ -1797,6 +1820,97 @@ fn get_frame_thicknessy(dpi: u32) -> i32 {
     let resize_frame_thickness = unsafe { GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) };
     let padding_thickness = unsafe { GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi) };
     resize_frame_thickness + padding_thickness
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, sync::Once};
+
+    use windows::{
+        Win32::{
+            Foundation::{HWND, LPARAM, LRESULT, WPARAM},
+            System::LibraryLoader::GetModuleHandleW,
+            UI::WindowsAndMessaging::{
+                CreateWindowExW, DefWindowProcW, DestroyWindow, HWND_MESSAGE, RegisterClassW,
+                WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSW,
+            },
+        },
+        core::PCWSTR,
+    };
+
+    struct NopActionHandler;
+
+    impl accesskit::ActionHandler for NopActionHandler {
+        fn do_action(&mut self, _request: accesskit::ActionRequest) {}
+    }
+
+    unsafe extern "system" fn focus_test_wndproc(
+        window: HWND,
+        message: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> LRESULT {
+        unsafe { DefWindowProcW(window, message, wparam, lparam) }
+    }
+
+    fn utf16(text: &str) -> Vec<u16> {
+        text.encode_utf16().chain(std::iter::once(0)).collect()
+    }
+
+    fn message_only_window() -> HWND {
+        static REGISTER: Once = Once::new();
+        let class_name = utf16("GpuiWindowsA11yFocusTest");
+        REGISTER.call_once(|| {
+            let class = WNDCLASSW {
+                lpfnWndProc: Some(focus_test_wndproc),
+                hInstance: unsafe { GetModuleHandleW(None).unwrap().into() },
+                lpszClassName: PCWSTR(class_name.as_ptr()),
+                ..Default::default()
+            };
+            let atom = unsafe { RegisterClassW(&class) };
+            assert_ne!(atom, 0, "RegisterClassW failed");
+        });
+        let title = utf16("a11y-focus");
+        unsafe {
+            CreateWindowExW(
+                WINDOW_EX_STYLE::default(),
+                PCWSTR(class_name.as_ptr()),
+                PCWSTR(title.as_ptr()),
+                WINDOW_STYLE::default(),
+                0,
+                0,
+                0,
+                0,
+                Some(HWND_MESSAGE),
+                None,
+                Some(GetModuleHandleW(None).unwrap().into()),
+                None,
+            )
+        }
+        .expect("CreateWindowExW")
+    }
+
+    #[test]
+    fn sync_a11y_host_focus_updates_window_focus_state() {
+        let hwnd = message_only_window();
+        let slot = RefCell::new(Some(accesskit_windows::Adapter::new(
+            accesskit_windows::HWND(hwnd.0),
+            false,
+            NopActionHandler,
+        )));
+        for is_focused in [true, false] {
+            let events = {
+                let mut slot = slot.borrow_mut();
+                let state = slot.as_mut().expect("adapter");
+                state.update_window_focus_state(is_focused)
+            };
+            if let Some(events) = events {
+                events.raise();
+            }
+        }
+        drop(slot);
+        unsafe { DestroyWindow(hwnd).expect("DestroyWindow") };
+    }
 }
 
 fn notify_frame_changed(handle: HWND) {
