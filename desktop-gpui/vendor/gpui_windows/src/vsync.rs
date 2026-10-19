@@ -31,8 +31,6 @@ const DEFAULT_VSYNC_INTERVAL: Duration = Duration::from_micros(16_666); // ~60Hz
 // Relative due time is negative 100 ns units. 16 ms keeps the measured fallback
 // at or under 16.7 ms without raising the system timer resolution.
 const FALLBACK_WAIT_MICROS: i64 = 16_000;
-// Queued arm and advance. 16 ms minus 1.5 ms, not a per-frame subtraction.
-const QUEUED_CADENCE_MICROS: i64 = 14_500;
 const POST_WAIT_RESERVE_MAX: Duration = Duration::from_micros(1_500);
 
 pub(crate) struct VSyncProvider {
@@ -71,18 +69,17 @@ impl VSyncProvider {
     /// after this call reduces the next remainder. Never waits after present.
     pub(crate) fn wait_before_present(&mut self, now: Instant) -> FrameRequestSource {
         let budget = Duration::from_micros(FALLBACK_WAIT_MICROS as u64);
-        let cadence = Duration::from_micros(QUEUED_CADENCE_MICROS as u64);
         match self.next_deadline {
             None => {
                 // Arm only. Do not wait, and do not start the timer while no
                 // deadline exists yet.
-                self.next_deadline = Some(now + cadence);
+                self.next_deadline = Some(now + budget);
             }
             Some(deadline) if now < deadline => {
-                // Fixed cadence. Do not subtract `post_wait_reserve`.
+                // Fixed 16 ms cadence. Do not subtract `post_wait_reserve`.
                 let remainder = deadline.saturating_duration_since(now);
                 self.wait_remainder(remainder);
-                self.next_deadline = Some(deadline + cadence);
+                self.next_deadline = Some(deadline + budget);
             }
             Some(deadline) => {
                 let late = now.saturating_duration_since(deadline);
@@ -91,9 +88,9 @@ impl VSyncProvider {
                     // with the 16 ms budget and do not start the timer.
                     self.next_deadline = Some(now + budget);
                 } else {
-                    let mut next = deadline + cadence;
+                    let mut next = deadline + budget;
                     if next < now {
-                        next = now + cadence;
+                        next = now + budget;
                     }
                     self.next_deadline = Some(next);
                 }
@@ -252,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn queued_cadence_second_wait_is_shorter_than_16ms() {
+    fn queued_second_wait_stays_between_8ms_and_16_7ms() {
         let mut provider = VSyncProvider::new();
         let t0 = Instant::now();
         assert_eq!(
@@ -266,10 +263,6 @@ mod tests {
             FrameRequestSource::LocalSchedule
         );
         let waited = started.elapsed();
-        assert!(
-            waited + Duration::from_micros(1_000) <= Duration::from_micros(16_000),
-            "second wait {waited:?} was not at least 1 ms shorter than 16 ms"
-        );
         assert!(
             waited >= Duration::from_micros(8_000),
             "second wait {waited:?} was under 8 ms"
