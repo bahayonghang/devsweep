@@ -1,14 +1,11 @@
-use std::{
-    sync::LazyLock,
-    time::{Duration, Instant},
-};
+use std::{sync::LazyLock, time::Duration};
 
 use anyhow::{Context, Result};
 use gpui::FrameRequestSource;
 use gpui_util::ResultExt;
 use windows::Win32::{
     Foundation::{CloseHandle, HWND, WAIT_OBJECT_0},
-    Graphics::Dwm::{DWM_TIMING_INFO, DwmFlush, DwmGetCompositionTimingInfo},
+    Graphics::Dwm::{DWM_TIMING_INFO, DwmGetCompositionTimingInfo},
     System::{
         Performance::QueryPerformanceFrequency,
         Threading::{
@@ -35,7 +32,6 @@ const FALLBACK_WAIT_MICROS: i64 = 16_000;
 pub(crate) struct VSyncProvider {
     #[allow(dead_code)]
     interval: Duration,
-    f: Box<dyn Fn() -> bool>,
 }
 
 impl VSyncProvider {
@@ -44,28 +40,15 @@ impl VSyncProvider {
             .context("Failed to get DWM interval")
             .log_err()
             .unwrap_or(DEFAULT_VSYNC_INTERVAL);
-        let f = Box::new(|| unsafe { DwmFlush().is_ok() });
-        Self { interval, f }
+        Self { interval }
     }
 
     pub(crate) fn wait_for_vsync(&self) -> FrameRequestSource {
-        let vsync_start = Instant::now();
-        let wait_succeeded = (self.f)();
-        let elapsed = vsync_start.elapsed();
-        // DwmFlush and DCompositionWaitForCompositorClock returns very early
-        // instead of waiting until vblank when the monitor goes to sleep or is
-        // unplugged (nothing to present due to desktop occlusion). We use 1ms as
-        // a threshold for the duration of the wait functions and fallback to a
-        // high-resolution waitable timer if it returns before that. This could
-        // happen during normal operation for the first call after the vsync
-        // thread becomes non-idle, but it shouldn't happen often.
-        if !wait_succeeded || elapsed < VSYNC_INTERVAL_THRESHOLD {
-            log::trace!("VSyncProvider::wait_for_vsync() took less time than expected");
-            wait_high_resolution_fallback();
-            FrameRequestSource::LocalSchedule
-        } else {
-            FrameRequestSource::NativeCallback
-        }
+        // DwmFlush success waits for a compositor refresh. That path measured
+        // 16.8 ms median and misses the 16.7 ms budget, so every queued frame
+        // waits on the high-resolution timer instead.
+        wait_high_resolution_fallback();
+        FrameRequestSource::LocalSchedule
     }
 }
 
@@ -113,42 +96,14 @@ fn retrieve_duration(counts: u64, ticks_per_second: u64) -> Duration {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Instant;
+
     use super::*;
-
-    #[test]
-    fn successful_compositor_wait_reports_native_callback() {
-        let provider = VSyncProvider {
-            interval: Duration::ZERO,
-            f: Box::new(|| {
-                std::thread::sleep(VSYNC_INTERVAL_THRESHOLD * 2);
-                true
-            }),
-        };
-
-        assert_eq!(
-            provider.wait_for_vsync(),
-            FrameRequestSource::NativeCallback
-        );
-    }
-
-    #[test]
-    fn failed_compositor_wait_reports_local_schedule_even_after_threshold() {
-        let provider = VSyncProvider {
-            interval: Duration::ZERO,
-            f: Box::new(|| {
-                std::thread::sleep(VSYNC_INTERVAL_THRESHOLD * 2);
-                false
-            }),
-        };
-
-        assert_eq!(provider.wait_for_vsync(), FrameRequestSource::LocalSchedule);
-    }
 
     #[test]
     fn fallback_wait_p95_stays_at_or_under_16_7ms() {
         let provider = VSyncProvider {
             interval: Duration::from_micros(16_000),
-            f: Box::new(|| false),
         };
         let mut samples = Vec::with_capacity(30);
         for _ in 0..30 {
