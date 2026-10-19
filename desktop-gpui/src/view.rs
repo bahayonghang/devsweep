@@ -312,12 +312,13 @@ impl Render for ShellView {
         let tabs = Mode::ORDER
             .into_iter()
             .map(|mode| {
-                let label = copy::mode_name(locale, mode.id());
+                let access = accessible_control(locale, AccessibleSlot::Mode(mode));
                 let active = mode == selected && surface == Surface::Mode;
                 div()
                     .id(mode.element_id())
                     .role(gpui::Role::Tab)
-                    .aria_label(label)
+                    .accessibility_id(access.id)
+                    .aria_label(access.label)
                     .aria_selected(active)
                     .when(active, |tab| tab.aria_active_descendant())
                     .px_3()
@@ -332,18 +333,19 @@ impl Render for ShellView {
                         this.session.show_mode(mode);
                         cx.notify();
                     }))
-                    .child(label)
+                    .child(access.label)
             })
             .collect::<Vec<_>>();
         let menu_items = MENU
             .into_iter()
             .enumerate()
             .map(|(index, item)| {
-                let label = surface_title(locale, item);
+                let access = accessible_control(locale, AccessibleSlot::Menu(item));
                 div()
                     .id(surface_element_id(item))
                     .role(gpui::Role::MenuItem)
-                    .aria_label(label)
+                    .accessibility_id(access.id)
+                    .aria_label(access.label)
                     .px_3()
                     .py_2()
                     .cursor_pointer()
@@ -355,15 +357,17 @@ impl Render for ShellView {
                         this.session.open_menu_item(index);
                         cx.notify();
                     }))
-                    .child(label)
+                    .child(access.label)
             })
             .collect::<Vec<_>>();
         let lines = panel_lines(&self.session, self.save_error.as_deref());
+        let shell_access = accessible_control(locale, AccessibleSlot::Shell);
 
         div()
             .id("shell-root")
             .role(gpui::Role::Application)
-            .aria_label(WINDOW_TITLE)
+            .accessibility_id(shell_access.id)
+            .aria_label(shell_access.label)
             .track_focus(&self.focus_handle)
             .key_context(if menu_open { "ShellMenu" } else { "ShellRoot" })
             .on_action(cx.listener(Self::prev))
@@ -558,6 +562,42 @@ fn surface_element_id(surface: Surface) -> &'static str {
         Surface::Protection => "menu-protection",
         Surface::Rules => "menu-rules",
         Surface::History => "menu-history",
+    }
+}
+
+/// AccessKit author id and name. GPUI `.id` stays inside the process.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct AccessibleControl {
+    pub id: &'static str,
+    pub label: &'static str,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum AccessibleSlot {
+    Shell,
+    Note,
+    Mode(Mode),
+    Menu(Surface),
+}
+
+pub(crate) fn accessible_control(locale: copy::Locale, slot: AccessibleSlot) -> AccessibleControl {
+    match slot {
+        AccessibleSlot::Shell => AccessibleControl {
+            id: "shell-root",
+            label: WINDOW_TITLE,
+        },
+        AccessibleSlot::Note => AccessibleControl {
+            id: "note-input",
+            label: "Note",
+        },
+        AccessibleSlot::Mode(mode) => AccessibleControl {
+            id: mode.element_id(),
+            label: copy::mode_name(locale, mode.id()),
+        },
+        AccessibleSlot::Menu(item) => AccessibleControl {
+            id: surface_element_id(item),
+            label: surface_title(locale, item),
+        },
     }
 }
 
@@ -1239,6 +1279,25 @@ mod tests {
             "second RowDown must mark row-b: {lines:?}"
         );
         assert_eq!(session.shell().mode(), Mode::Clean);
+    }
+
+    #[test]
+    fn accessible_control_ids_and_labels() {
+        let english_clean = accessible_control(Locale::En, AccessibleSlot::Mode(Mode::Clean));
+        assert_eq!(english_clean.id, "mode-clean");
+        assert_eq!(english_clean.label, "Clean");
+
+        let chinese_clean = accessible_control(Locale::ZhCn, AccessibleSlot::Mode(Mode::Clean));
+        assert_eq!(chinese_clean.id, "mode-clean");
+        assert_eq!(chinese_clean.label, "清理");
+
+        let shell = accessible_control(Locale::En, AccessibleSlot::Shell);
+        assert_eq!(shell.id, "shell-root");
+        assert_eq!(shell.label, "DevSweep");
+
+        let note = accessible_control(Locale::En, AccessibleSlot::Note);
+        assert_eq!(note.id, "note-input");
+        assert_eq!(note.label, "Note");
     }
 
     #[test]

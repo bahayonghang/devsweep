@@ -8,6 +8,8 @@ use gpui::{
 };
 
 use crate::buffer::{BufferError, TextBuffer};
+use crate::copy::Locale;
+use crate::view::{AccessibleSlot, accessible_control};
 
 actions!(spike_input, [Backspace, Delete, Left, Right, Home, End]);
 
@@ -479,10 +481,12 @@ impl Focusable for TextInput {
 
 impl Render for TextInput {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let note = accessible_control(Locale::En, AccessibleSlot::Note);
         div()
             .id("note-input")
             .role(gpui::Role::TextInput)
-            .aria_label("Note")
+            .accessibility_id(note.id)
+            .aria_label(note.label)
             .aria_value(self.content())
             .aria_placeholder(self.placeholder)
             .key_context("SpikeInput")
