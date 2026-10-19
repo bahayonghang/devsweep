@@ -1,6 +1,6 @@
 # C08 Implementation and verification
 
-Status: planning; dependencies: C01, C02.
+Status: 2026-10-19 checks passed on rustc 1.99.0. This is not an MSRV 1.88.0 pass. C08-AC1 through C08-AC5 are checked. Native GPUI controls stay with C13 and are not PASS for this child. Dependencies C01 and C02 are archived.
 
 ## Sequence
 
