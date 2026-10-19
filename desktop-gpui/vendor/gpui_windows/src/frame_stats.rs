@@ -11,7 +11,6 @@ use windows::Win32::{
 };
 
 const FRAME_STATS_ENV: &str = "DEVSWEEP_FRAME_STATS";
-const FLUSH_EVERY: u8 = 8;
 
 /// Opt-in DXGI `GetFrameStatistics` clock. This is not the `Present()` return
 /// timestamp written by [`crate::frame_trace::FrameTrace`].
@@ -19,7 +18,6 @@ pub(crate) struct FrameStats {
     file: Option<BufWriter<std::fs::File>>,
     origin_qpc: Option<i64>,
     last_written_qpc: Option<i64>,
-    pending_lines: u8,
 }
 
 impl FrameStats {
@@ -37,7 +35,6 @@ impl FrameStats {
             file,
             origin_qpc: None,
             last_written_qpc: None,
-            pending_lines: 0,
         }
     }
 
@@ -66,11 +63,7 @@ impl FrameStats {
         let micros = qpc_delta_micros(origin, qpc, frequency);
         let _ = writeln!(file, "{micros}");
         self.last_written_qpc = Some(qpc);
-        self.pending_lines = self.pending_lines.saturating_add(1);
-        if self.pending_lines >= FLUSH_EVERY {
-            let _ = file.flush();
-            self.pending_lines = 0;
-        }
+        let _ = file.flush();
     }
 }
 
