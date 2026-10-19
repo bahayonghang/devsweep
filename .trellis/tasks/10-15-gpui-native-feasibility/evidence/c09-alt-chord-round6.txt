@@ -1,0 +1,12 @@
+binary_sha256=8A77746AED29A368068C52BA1D43ABF574329E6A09AAB6092C98E12A3DA5EC77
+pid=141532 hwnd=4267306
+foreground=True
+baseline selected=清理
+panel_listitems_before=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 清理 || 先审查每个清理目标，再移动任何内容。]
+after_ALT_RIGHT selected=软件
+after_ALT_RIGHT2 selected=优化
+after_ALT_LEFT selected=软件
+edit_after_xy_LEFT_Z='xZy'  (expect xZy: caret moved, mode unchanged)
+selected_after_plain_arrows=软件
+panel_listitems_after=[键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 || 软件 || 审查当前用户软件清单后再卸载。]
+shutdown_exit=0
