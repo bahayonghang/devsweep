@@ -136,7 +136,7 @@ impl WindowsWindowInner {
             // press, `DefWindowProc` never sees it, so the window is never activated at all.
             // So, let's eagerly activate the window.
             WM_MOUSEACTIVATE => Some(MA_ACTIVATE as isize),
-            WM_ACTIVATE => self.handle_activate_msg(wparam),
+            WM_ACTIVATE => self.handle_activate_msg(wparam, lparam),
             WM_SETFOCUS => {
                 self.sync_a11y_host_focus(true);
                 None
@@ -852,7 +852,7 @@ impl WindowsWindowInner {
         }
     }
 
-    fn handle_activate_msg(self: &Rc<Self>, wparam: WPARAM) -> Option<isize> {
+    fn handle_activate_msg(self: &Rc<Self>, wparam: WPARAM, lparam: LPARAM) -> Option<isize> {
         let activated = wparam.loword() > 0;
 
         let events = self
@@ -869,10 +869,10 @@ impl WindowsWindowInner {
 
         if !activated {
             this.state.cursor_visible.store(true, Ordering::Relaxed);
-            // Window thread. The latch is set before SetForegroundWindow, so a
-            // nested WM_ACTIVATE cannot reclaim a second time. Alt-Tab does
-            // not match Narrator.exe or NarratorQuickStart.exe.
-            self.reclaim_narrator_note();
+            // lParam is the other top-level HWND. GetForegroundWindow can
+            // still be this window during WA_INACTIVE. A null lParam does
+            // not set the latch. The latch is set before SetForegroundWindow.
+            self.reclaim_narrator_note(HWND(lparam.0 as _));
         }
 
         // When the window is activated (gains focus), reset the modifier tracking state.

@@ -1418,8 +1418,7 @@ pub(crate) fn claim_narrator_note_reclaim(
         .is_ok()
 }
 
-fn foreground_process_image() -> Option<String> {
-    let hwnd = unsafe { GetForegroundWindow() };
+fn window_process_image(hwnd: HWND) -> Option<String> {
     if hwnd.is_invalid() {
         return None;
     }
@@ -1465,13 +1464,13 @@ impl WindowsWindowInner {
     }
 
     /// One Narrator or Narrator QuickStart deactivate reclaims this HWND.
-    /// The latch is set before `SetForegroundWindow`. Host focus is raised
-    /// and the Assertive note update is pushed whether or not that call
-    /// returns true.
-    pub(crate) fn reclaim_narrator_note(&self) {
+    /// `other` is the WM_ACTIVATE lParam. The latch is set before
+    /// `SetForegroundWindow`. Host focus is raised and the Assertive note
+    /// update is pushed whether or not that call returns true.
+    pub(crate) fn reclaim_narrator_note(&self, other: HWND) {
         if !claim_narrator_note_reclaim(
             &self.state.narrator_reclaim_claimed,
-            foreground_process_image().as_deref(),
+            window_process_image(other).as_deref(),
         ) {
             return;
         }
@@ -2110,7 +2109,7 @@ mod tests {
 
     use std::cell::RefCell;
     use std::sync::Once;
-    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     use accesskit::ActivationHandler;
 
@@ -2432,5 +2431,14 @@ mod tests {
             &claimed,
             Some("NarratorQuickStart.exe")
         ));
+    }
+
+    #[test]
+    fn narrator_note_reclaim_null_image_does_not_set_latch() {
+        let claimed = AtomicBool::new(false);
+        assert!(!super::claim_narrator_note_reclaim(&claimed, None));
+        assert!(!claimed.load(Ordering::Relaxed));
+        assert!(!super::claim_narrator_note_reclaim(&claimed, Some("")));
+        assert!(!claimed.load(Ordering::Relaxed));
     }
 }
