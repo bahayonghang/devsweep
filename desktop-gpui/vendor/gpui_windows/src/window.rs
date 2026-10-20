@@ -30,8 +30,8 @@ use windows::{
             Ole::*,
             SystemServices::*,
             Threading::{
-                OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
-                QueryFullProcessImageNameW,
+                AttachThreadInput, GetCurrentThreadId, OpenProcess, PROCESS_NAME_WIN32,
+                PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
             },
         },
         UI::{
@@ -1349,18 +1349,79 @@ fn note_focus_after_activation(
     }
 }
 
-fn note_reclaim_after_narrator(
+struct NarratorNoteReset {
+    off: Option<accesskit_windows::QueuedEvents>,
+    focus: NoteFocusEvents,
+    assertive_label: Option<String>,
+}
+
+fn note_focus_label(update: &accesskit::TreeUpdate) -> Option<String> {
+    update
+        .nodes
+        .iter()
+        .find(|(id, _)| *id == update.focus)
+        .and_then(|(_, node)| node.label().map(str::to_owned))
+}
+
+fn narrator_off_note_events(
     adapter: &mut accesskit_windows::Adapter,
     handler: &A11yActivationHandler,
-) -> NoteFocusEvents {
+) -> Option<accesskit_windows::QueuedEvents> {
+    handler
+        .note_update_with_live(accesskit::Live::Off)
+        .and_then(|update| adapter.update_if_active(|| update))
+}
+
+fn narrator_assertive_note_events(
+    adapter: &mut accesskit_windows::Adapter,
+    handler: &A11yActivationHandler,
+) -> (NoteFocusEvents, Option<String>) {
     let host_focus = adapter.update_window_focus_state(true);
-    let note_focus = handler
-        .reclaim_note_update()
-        .and_then(|update| adapter.update_if_active(|| update));
-    NoteFocusEvents {
-        host_focus,
-        note_focus,
+    let update = handler.reclaim_note_update();
+    let assertive_label = update.as_ref().and_then(note_focus_label);
+    let note_focus = update.and_then(|update| adapter.update_if_active(|| update));
+    (
+        NoteFocusEvents {
+            host_focus,
+            note_focus,
+        },
+        assertive_label,
+    )
+}
+
+/// Polite is already on the adapter. Off, then Assertive, makes LiveSetting change.
+/// Both clones come from the stored tree. The stored tree is not mutated.
+fn narrator_note_off_then_assertive(
+    adapter: &mut accesskit_windows::Adapter,
+    handler: &A11yActivationHandler,
+) -> NarratorNoteReset {
+    let off = narrator_off_note_events(adapter, handler);
+    let (focus, assertive_label) = narrator_assertive_note_events(adapter, handler);
+    NarratorNoteReset {
+        off,
+        focus,
+        assertive_label,
     }
+}
+
+fn try_attach_narrator_thread(other: HWND) -> Option<u32> {
+    if !unsafe { IsWindow(Some(other)) }.as_bool() {
+        return None;
+    }
+    let other_thread = unsafe { GetWindowThreadProcessId(other, None) };
+    if other_thread == 0 {
+        return None;
+    }
+    let current = unsafe { GetCurrentThreadId() };
+    if !unsafe { AttachThreadInput(current, other_thread, true) }.as_bool() {
+        return None;
+    }
+    Some(other_thread)
+}
+
+fn detach_narrator_thread(other_thread: u32) {
+    let current = unsafe { GetCurrentThreadId() };
+    let _ = unsafe { AttachThreadInput(current, other_thread, false) }.as_bool();
 }
 
 fn send_alt_key_tap() {
@@ -1502,10 +1563,9 @@ impl WindowsWindowInner {
     }
 
     /// One Narrator deactivate reclaims this HWND. `other` is the WM_ACTIVATE
-    /// lParam. The latch is set before the deferred `SetForegroundWindow`.
-    /// The Alt tap, foreground call, host focus, and Assertive note update run
-    /// on the window thread after this message returns. The Assertive update
-    /// is pushed whether or not `SetForegroundWindow` returns true.
+    /// lParam. The latch is set before this task is spawned. `AttachThreadInput`
+    /// runs only in the task, after `WM_ACTIVATE` returns. A failed attach still
+    /// pushes the note updates. The `a11y` borrow is dropped before each raise.
     pub(crate) fn reclaim_narrator_note(self: &Rc<Self>, other: HWND) {
         if other.is_invalid() {
             return;
@@ -1524,16 +1584,23 @@ impl WindowsWindowInner {
         let this = Rc::clone(self);
         self.executor
             .spawn(async move {
+                let attached = try_attach_narrator_thread(other);
                 send_alt_key_tap();
                 let _ = unsafe { SetForegroundWindow(this.hwnd).as_bool() };
-                let events = {
+                if let Some(thread) = attached {
+                    detach_narrator_thread(thread);
+                }
+                let reset = {
                     let mut a11y = this.state.a11y.borrow_mut();
                     let Some(a11y) = a11y.as_mut() else {
                         return;
                     };
-                    note_reclaim_after_narrator(&mut a11y.adapter, &mut a11y.activation_handler)
+                    narrator_note_off_then_assertive(&mut a11y.adapter, &a11y.activation_handler)
                 };
-                events.raise();
+                if let Some(events) = reset.off {
+                    events.raise();
+                }
+                reset.focus.raise();
             })
             .detach();
     }
@@ -2321,7 +2388,17 @@ mod tests {
         assert_eq!(gets, 0);
         assert!(still_inactive);
 
-        let note_tree = tree_focused_on(super::NOTE_INPUT_ACCESSIBILITY_ID);
+        let mut note_tree = tree_focused_on(super::NOTE_INPUT_ACCESSIBILITY_ID);
+        {
+            let focus = note_tree.focus;
+            note_tree
+                .nodes
+                .iter_mut()
+                .find(|(id, _)| *id == focus)
+                .expect("note node")
+                .1
+                .set_label("Note");
+        }
         assert_eq!(
             super::focused_accessibility_id(&note_tree),
             Some(super::NOTE_INPUT_ACCESSIBILITY_ID)
@@ -2367,9 +2444,27 @@ mod tests {
         });
         focus_events.raise();
 
+        let reset = UIA_HOST.with(|slot| {
+            let mut host = slot.borrow_mut();
+            let host = host.as_mut().expect("host");
+            super::narrator_note_off_then_assertive(&mut host.adapter, &host.handler)
+        });
+        assert!(reset.off.is_some(), "Off note update was not queued");
+        assert!(
+            reset.focus.note_focus.is_some(),
+            "Assertive note update was not queued"
+        );
+        assert_eq!(reset.assertive_label.as_deref(), Some("Note"));
+        if let Some(events) = reset.off {
+            events.raise();
+        }
+        reset.focus.raise();
+
         UIA_HOST.with(|slot| {
             let mut host = slot.borrow_mut();
             let host = host.as_mut().expect("host");
+            let stored = host.handler.note_tree.as_ref().expect("stored");
+            assert_eq!(note_live(stored), accesskit::Live::Off);
             assert_eq!(
                 host.handler.activated_accessibility_id(),
                 Some(super::NOTE_INPUT_ACCESSIBILITY_ID)
