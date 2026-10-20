@@ -6,7 +6,10 @@ use std::{
     path::PathBuf,
     rc::{Rc, Weak},
     str::FromStr,
-    sync::{Arc, Once, atomic::AtomicBool},
+    sync::{
+        Arc, Once,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant},
 };
 
@@ -21,7 +24,15 @@ use windows::{
         Graphics::Dwm::*,
         Graphics::Gdi::*,
         System::{
-            Com::*, Diagnostics::Debug::MessageBeep, LibraryLoader::*, Ole::*, SystemServices::*,
+            Com::*,
+            Diagnostics::Debug::MessageBeep,
+            LibraryLoader::*,
+            Ole::*,
+            SystemServices::*,
+            Threading::{
+                OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
+                QueryFullProcessImageNameW,
+            },
         },
         UI::{
             Accessibility::UiaRootObjectId, Controls::*, HiDpi::*, Input::KeyboardAndMouse::*,
@@ -83,6 +94,8 @@ pub struct WindowsWindowState {
     pub current_cursor: Cell<Option<HCURSOR>>,
     /// Shared with [`WindowsPlatformState::cursor_visible`].
     pub cursor_visible: Arc<AtomicBool>,
+    /// One-shot latch for a Narrator or Narrator QuickStart focus reclaim.
+    pub(crate) narrator_reclaim_claimed: AtomicBool,
     pub nc_button_pressed: Cell<Option<u32>>,
 
     pub display: Cell<WindowsDisplay>,
@@ -189,6 +202,7 @@ impl WindowsWindowState {
             click_state,
             current_cursor: Cell::new(current_cursor),
             cursor_visible,
+            narrator_reclaim_claimed: AtomicBool::new(false),
             nc_button_pressed: Cell::new(nc_button_pressed),
             display: Cell::new(display),
             fullscreen: Cell::new(fullscreen),
@@ -849,29 +863,7 @@ impl PlatformWindow for WindowsWindow {
                 // so let's just simulate user input as that seems to be the most reliable way
                 // some more info: https://gist.github.com/Aetopia/1581b40f00cc0cadc93a0e8ccb65dc8c
                 // bonus: this bug also doesn't manifest if you have vs attached to the process
-                let inputs = [
-                    INPUT {
-                        r#type: INPUT_KEYBOARD,
-                        Anonymous: INPUT_0 {
-                            ki: KEYBDINPUT {
-                                wVk: VK_MENU,
-                                dwFlags: KEYBD_EVENT_FLAGS(0),
-                                ..Default::default()
-                            },
-                        },
-                    },
-                    INPUT {
-                        r#type: INPUT_KEYBOARD,
-                        Anonymous: INPUT_0 {
-                            ki: KEYBDINPUT {
-                                wVk: VK_MENU,
-                                dwFlags: KEYEVENTF_KEYUP,
-                                ..Default::default()
-                            },
-                        },
-                    },
-                ];
-                unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
+                send_alt_key_tap();
 
                 // todo(windows)
                 // crate `windows 0.56` reports true as Err
@@ -1241,10 +1233,25 @@ impl A11yActivationHandler {
     }
 
     fn follow_up_note_update(&self) -> Option<accesskit::TreeUpdate> {
-        let tree = self.note_tree.clone()?;
+        // Polite only on this clone. The stored tree stays Live::Off so the
+        // activation snapshot does not raise LiveRegionChanged.
+        self.note_update_with_live(accesskit::Live::Polite)
+    }
+
+    fn reclaim_note_update(&self) -> Option<accesskit::TreeUpdate> {
+        // The adapter already holds Polite. A second Polite update does not
+        // raise LiveRegionChanged. Assertive changes live; the name stays.
+        self.note_update_with_live(accesskit::Live::Assertive)
+    }
+
+    fn note_update_with_live(&self, live: accesskit::Live) -> Option<accesskit::TreeUpdate> {
+        let mut tree = self.note_tree.clone()?;
         if focused_accessibility_id(&tree) != Some(NOTE_INPUT_ACCESSIBILITY_ID) {
             return None;
         }
+        let focus = tree.focus;
+        let (_, node) = tree.nodes.iter_mut().find(|(id, _)| *id == focus)?;
+        node.set_live(live);
         Some(tree)
     }
 
@@ -1342,6 +1349,103 @@ fn note_focus_after_activation(
     }
 }
 
+fn note_reclaim_after_narrator(
+    adapter: &mut accesskit_windows::Adapter,
+    handler: &A11yActivationHandler,
+) -> NoteFocusEvents {
+    let host_focus = adapter.update_window_focus_state(true);
+    let note_focus = handler
+        .reclaim_note_update()
+        .and_then(|update| adapter.update_if_active(|| update));
+    NoteFocusEvents {
+        host_focus,
+        note_focus,
+    }
+}
+
+fn send_alt_key_tap() {
+    let inputs = [
+        INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: VK_MENU,
+                    dwFlags: KEYBD_EVENT_FLAGS(0),
+                    ..Default::default()
+                },
+            },
+        },
+        INPUT {
+            r#type: INPUT_KEYBOARD,
+            Anonymous: INPUT_0 {
+                ki: KEYBDINPUT {
+                    wVk: VK_MENU,
+                    dwFlags: KEYEVENTF_KEYUP,
+                    ..Default::default()
+                },
+            },
+        },
+    ];
+    unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
+}
+
+/// `Narrator.exe` or `NarratorQuickStart.exe`, file name only, ASCII case-insensitive.
+pub(crate) fn foreground_image_is_narrator(image: &str) -> bool {
+    let Some(file_name) = std::path::Path::new(image)
+        .file_name()
+        .and_then(|name| name.to_str())
+    else {
+        return false;
+    };
+    file_name.eq_ignore_ascii_case("Narrator.exe")
+        || file_name.eq_ignore_ascii_case("NarratorQuickStart.exe")
+}
+
+/// Accepts the first Narrator image. A failed query or any other name does
+/// not set the latch.
+pub(crate) fn claim_narrator_note_reclaim(
+    claimed: &AtomicBool,
+    foreground_image: Option<&str>,
+) -> bool {
+    let Some(image) = foreground_image else {
+        return false;
+    };
+    if !foreground_image_is_narrator(image) {
+        return false;
+    }
+    claimed
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok()
+}
+
+fn foreground_process_image() -> Option<String> {
+    let hwnd = unsafe { GetForegroundWindow() };
+    if hwnd.is_invalid() {
+        return None;
+    }
+    let mut pid = 0u32;
+    if unsafe { GetWindowThreadProcessId(hwnd, Some(&raw mut pid)) } == 0 || pid == 0 {
+        return None;
+    }
+    let process = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }.ok()?;
+    let mut buffer = [0u16; 1024];
+    let mut len = buffer.len() as u32;
+    let query = unsafe {
+        QueryFullProcessImageNameW(
+            process,
+            PROCESS_NAME_WIN32,
+            PWSTR(buffer.as_mut_ptr()),
+            &mut len,
+        )
+    };
+    let _ = unsafe { CloseHandle(process) };
+    query.ok()?;
+    if len == 0 || len as usize > buffer.len() {
+        return None;
+    }
+    String::from_utf16(&buffer[..len as usize]).ok()
+}
+
 fn send_uia_root_getobject(hwnd: HWND) {
     unsafe {
         let _ = SendMessageW(
@@ -1358,6 +1462,29 @@ impl WindowsWindowInner {
         if let Some(pump) = &self.frame_pump {
             pump.enqueue(hwnd);
         }
+    }
+
+    /// One Narrator or Narrator QuickStart deactivate reclaims this HWND.
+    /// The latch is set before `SetForegroundWindow`. Host focus is raised
+    /// and the Assertive note update is pushed whether or not that call
+    /// returns true.
+    pub(crate) fn reclaim_narrator_note(&self) {
+        if !claim_narrator_note_reclaim(
+            &self.state.narrator_reclaim_claimed,
+            foreground_process_image().as_deref(),
+        ) {
+            return;
+        }
+        send_alt_key_tap();
+        let _ = unsafe { SetForegroundWindow(self.hwnd).as_bool() };
+        let events = {
+            let mut a11y = self.state.a11y.borrow_mut();
+            let Some(a11y) = a11y.as_mut() else {
+                return;
+            };
+            note_reclaim_after_narrator(&mut a11y.adapter, &mut a11y.activation_handler)
+        };
+        events.raise();
     }
 }
 
@@ -1983,6 +2110,7 @@ mod tests {
 
     use std::cell::RefCell;
     use std::sync::Once;
+    use std::sync::atomic::AtomicBool;
 
     use accesskit::ActivationHandler;
 
@@ -2203,5 +2331,106 @@ mod tests {
             );
             assert!(!host.handler.begin_uia_delivery());
         });
+    }
+
+    fn focused_note(update: &accesskit::TreeUpdate) -> &accesskit::Node {
+        let (_, node) = update
+            .nodes
+            .iter()
+            .find(|(id, _)| *id == update.focus)
+            .expect("focus node");
+        assert_eq!(node.author_id(), Some(super::NOTE_INPUT_ACCESSIBILITY_ID));
+        node
+    }
+
+    fn note_live(update: &accesskit::TreeUpdate) -> accesskit::Live {
+        update
+            .nodes
+            .iter()
+            .find(|(_, node)| node.author_id() == Some(super::NOTE_INPUT_ACCESSIBILITY_ID))
+            .map(|(_, node)| node.live().unwrap_or(accesskit::Live::Off))
+            .expect("note node")
+    }
+
+    #[test]
+    fn follow_up_note_update_sets_polite_live() {
+        let mut handler = super::A11yActivationHandler::new(Box::new(|| None));
+        let mut note_tree = tree_focused_on(super::NOTE_INPUT_ACCESSIBILITY_ID);
+        let focus = note_tree.focus;
+        note_tree
+            .nodes
+            .iter_mut()
+            .find(|(id, _)| *id == focus)
+            .expect("note node")
+            .1
+            .set_label("Note");
+        assert!(handler.remember_tree(&note_tree));
+
+        let follow_up = handler.follow_up_note_update().expect("follow-up");
+        let note = focused_note(&follow_up);
+        assert_eq!(note.live(), Some(accesskit::Live::Polite));
+        assert_eq!(note.author_id(), Some("note-input"));
+        assert_eq!(note.label(), Some("Note"));
+
+        let stored = handler.note_tree.as_ref().expect("stored");
+        assert_eq!(stored, &note_tree);
+        let snapshot = super::focus_other_than_note(stored).expect("snapshot");
+        assert_eq!(note_live(&snapshot), accesskit::Live::Off);
+
+        let reclaim = handler.reclaim_note_update().expect("reclaim");
+        let reclaim_note = focused_note(&reclaim);
+        assert_eq!(reclaim_note.live(), Some(accesskit::Live::Assertive));
+        assert_eq!(reclaim_note.author_id(), Some("note-input"));
+        assert_eq!(reclaim_note.label(), Some("Note"));
+
+        let stored = handler.note_tree.as_ref().expect("stored");
+        assert_eq!(stored, &note_tree);
+        let snapshot = super::focus_other_than_note(stored).expect("snapshot after reclaim");
+        assert_eq!(note_live(&snapshot), accesskit::Live::Off);
+    }
+
+    #[test]
+    fn narrator_note_reclaim_image_is_one_shot() {
+        assert!(super::foreground_image_is_narrator("Narrator.exe"));
+        assert!(super::foreground_image_is_narrator(
+            "NarratorQuickStart.exe"
+        ));
+        assert!(super::foreground_image_is_narrator(
+            r"C:\Windows\System32\Narrator.exe"
+        ));
+        assert!(super::foreground_image_is_narrator(
+            r"C:\Windows\System32\NarratorQuickStart.exe"
+        ));
+        assert!(super::foreground_image_is_narrator(
+            r"C:\Windows\System32\narrator.exe"
+        ));
+        assert!(super::foreground_image_is_narrator(
+            r"C:\Windows\System32\NARRATORQUICKSTART.EXE"
+        ));
+        assert!(!super::foreground_image_is_narrator("explorer.exe"));
+        assert!(!super::foreground_image_is_narrator(
+            r"C:\Windows\explorer.exe"
+        ));
+        assert!(!super::foreground_image_is_narrator(""));
+        assert!(!super::foreground_image_is_narrator(
+            r"C:\Narrator.exe\explorer.exe"
+        ));
+        assert!(!super::foreground_image_is_narrator("MyNarrator.exe"));
+
+        let claimed = AtomicBool::new(false);
+        assert!(!super::claim_narrator_note_reclaim(&claimed, None));
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            Some("explorer.exe")
+        ));
+        assert!(!super::claim_narrator_note_reclaim(&claimed, Some("")));
+        assert!(super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\System32\Narrator.exe")
+        ));
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            Some("NarratorQuickStart.exe")
+        ));
     }
 }

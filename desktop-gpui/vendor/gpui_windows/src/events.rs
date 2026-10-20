@@ -869,6 +869,10 @@ impl WindowsWindowInner {
 
         if !activated {
             this.state.cursor_visible.store(true, Ordering::Relaxed);
+            // Window thread. The latch is set before SetForegroundWindow, so a
+            // nested WM_ACTIVATE cannot reclaim a second time. Alt-Tab does
+            // not match Narrator.exe or NarratorQuickStart.exe.
+            self.reclaim_narrator_note();
         }
 
         // When the window is activated (gains focus), reset the modifier tracking state.
