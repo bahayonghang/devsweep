@@ -1401,16 +1401,31 @@ pub(crate) fn foreground_image_is_narrator(image: &str) -> bool {
         || file_name.eq_ignore_ascii_case("NarratorQuickStart.exe")
 }
 
-/// Accepts the first Narrator image. A failed query or any other name does
-/// not set the latch.
+/// Narrator exe name, exact title `Narrator`, or class `NarratorHelperWindow`.
+/// `ApplicationFrameHost.exe` and `Windows.UI.Core.CoreWindow` do not match alone.
+pub(crate) fn narrator_reclaim_identity(
+    image: Option<&str>,
+    class_name: &str,
+    title: &str,
+) -> bool {
+    if class_name == "NarratorHelperWindow" {
+        return true;
+    }
+    if title.eq_ignore_ascii_case("Narrator") {
+        return true;
+    }
+    image.is_some_and(foreground_image_is_narrator)
+}
+
+/// Accepts the first matching identity. A null image, an empty title, and any
+/// other class do not set the latch. Class `NarratorHelperWindow` does.
 pub(crate) fn claim_narrator_note_reclaim(
     claimed: &AtomicBool,
-    foreground_image: Option<&str>,
+    image: Option<&str>,
+    class_name: &str,
+    title: &str,
 ) -> bool {
-    let Some(image) = foreground_image else {
-        return false;
-    };
-    if !foreground_image_is_narrator(image) {
+    if !narrator_reclaim_identity(image, class_name, title) {
         return false;
     }
     claimed
@@ -1445,6 +1460,29 @@ fn window_process_image(hwnd: HWND) -> Option<String> {
     String::from_utf16(&buffer[..len as usize]).ok()
 }
 
+fn wide_window_string(len: i32, buffer: &[u16]) -> String {
+    if len <= 0 {
+        return String::new();
+    }
+    let len = len as usize;
+    if len > buffer.len() {
+        return String::new();
+    }
+    String::from_utf16(&buffer[..len]).unwrap_or_default()
+}
+
+fn window_title(hwnd: HWND) -> String {
+    let mut buffer = [0u16; 512];
+    let len = unsafe { GetWindowTextW(hwnd, &mut buffer) };
+    wide_window_string(len, &buffer)
+}
+
+fn window_class_name(hwnd: HWND) -> String {
+    let mut buffer = [0u16; 256];
+    let len = unsafe { GetClassNameW(hwnd, &mut buffer) };
+    wide_window_string(len, &buffer)
+}
+
 fn send_uia_root_getobject(hwnd: HWND) {
     unsafe {
         let _ = SendMessageW(
@@ -1463,27 +1501,41 @@ impl WindowsWindowInner {
         }
     }
 
-    /// One Narrator or Narrator QuickStart deactivate reclaims this HWND.
-    /// `other` is the WM_ACTIVATE lParam. The latch is set before
-    /// `SetForegroundWindow`. Host focus is raised and the Assertive note
-    /// update is pushed whether or not that call returns true.
-    pub(crate) fn reclaim_narrator_note(&self, other: HWND) {
+    /// One Narrator deactivate reclaims this HWND. `other` is the WM_ACTIVATE
+    /// lParam. The latch is set before the deferred `SetForegroundWindow`.
+    /// The Alt tap, foreground call, host focus, and Assertive note update run
+    /// on the window thread after this message returns. The Assertive update
+    /// is pushed whether or not `SetForegroundWindow` returns true.
+    pub(crate) fn reclaim_narrator_note(self: &Rc<Self>, other: HWND) {
+        if other.is_invalid() {
+            return;
+        }
+        let image = window_process_image(other);
+        let class_name = window_class_name(other);
+        let title = window_title(other);
         if !claim_narrator_note_reclaim(
             &self.state.narrator_reclaim_claimed,
-            window_process_image(other).as_deref(),
+            image.as_deref(),
+            &class_name,
+            &title,
         ) {
             return;
         }
-        send_alt_key_tap();
-        let _ = unsafe { SetForegroundWindow(self.hwnd).as_bool() };
-        let events = {
-            let mut a11y = self.state.a11y.borrow_mut();
-            let Some(a11y) = a11y.as_mut() else {
-                return;
-            };
-            note_reclaim_after_narrator(&mut a11y.adapter, &mut a11y.activation_handler)
-        };
-        events.raise();
+        let this = Rc::clone(self);
+        self.executor
+            .spawn(async move {
+                send_alt_key_tap();
+                let _ = unsafe { SetForegroundWindow(this.hwnd).as_bool() };
+                let events = {
+                    let mut a11y = this.state.a11y.borrow_mut();
+                    let Some(a11y) = a11y.as_mut() else {
+                        return;
+                    };
+                    note_reclaim_after_narrator(&mut a11y.adapter, &mut a11y.activation_handler)
+                };
+                events.raise();
+            })
+            .detach();
     }
 }
 
@@ -2417,28 +2469,97 @@ mod tests {
         assert!(!super::foreground_image_is_narrator("MyNarrator.exe"));
 
         let claimed = AtomicBool::new(false);
-        assert!(!super::claim_narrator_note_reclaim(&claimed, None));
-        assert!(!super::claim_narrator_note_reclaim(
-            &claimed,
-            Some("explorer.exe")
-        ));
-        assert!(!super::claim_narrator_note_reclaim(&claimed, Some("")));
         assert!(super::claim_narrator_note_reclaim(
             &claimed,
-            Some(r"C:\Windows\System32\Narrator.exe")
+            Some(r"C:\Windows\System32\Narrator.exe"),
+            "",
+            "",
         ));
         assert!(!super::claim_narrator_note_reclaim(
             &claimed,
-            Some("NarratorQuickStart.exe")
+            Some(r"C:\Windows\System32\ApplicationFrameHost.exe"),
+            "ApplicationFrameWindow",
+            "Narrator",
         ));
+        assert!(claimed.load(Ordering::Relaxed));
+
+        let claimed = AtomicBool::new(false);
+        assert!(super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\System32\NarratorQuickStart.exe"),
+            "",
+            "",
+        ));
+        let claimed = AtomicBool::new(false);
+        assert!(super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\System32\ApplicationFrameHost.exe"),
+            "ApplicationFrameWindow",
+            "Narrator",
+        ));
+        let claimed = AtomicBool::new(false);
+        assert!(super::claim_narrator_note_reclaim(
+            &claimed,
+            None,
+            "Windows.UI.Core.CoreWindow",
+            "Narrator",
+        ));
+        let claimed = AtomicBool::new(false);
+        assert!(super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\System32\svchost.exe"),
+            "NarratorHelperWindow",
+            "",
+        ));
+
+        let claimed = AtomicBool::new(false);
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\explorer.exe"),
+            "CabinetWClass",
+            "Home",
+        ));
+        assert!(!claimed.load(Ordering::Relaxed));
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\System32\ApplicationFrameHost.exe"),
+            "Windows.UI.Core.CoreWindow",
+            "QuickStart",
+        ));
+        assert!(!claimed.load(Ordering::Relaxed));
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(r"C:\Windows\System32\ApplicationFrameHost.exe"),
+            "ApplicationFrameWindow",
+            "",
+        ));
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            None,
+            "Windows.UI.Core.CoreWindow",
+            "",
+        ));
+        assert!(!claimed.load(Ordering::Relaxed));
     }
 
     #[test]
     fn narrator_note_reclaim_null_image_does_not_set_latch() {
         let claimed = AtomicBool::new(false);
-        assert!(!super::claim_narrator_note_reclaim(&claimed, None));
+        assert!(!super::claim_narrator_note_reclaim(&claimed, None, "", ""));
         assert!(!claimed.load(Ordering::Relaxed));
-        assert!(!super::claim_narrator_note_reclaim(&claimed, Some("")));
+        assert!(!super::claim_narrator_note_reclaim(
+            &claimed,
+            Some(""),
+            "",
+            "",
+        ));
         assert!(!claimed.load(Ordering::Relaxed));
+        assert!(super::claim_narrator_note_reclaim(
+            &claimed,
+            None,
+            "NarratorHelperWindow",
+            "",
+        ));
+        assert!(claimed.load(Ordering::Relaxed));
     }
 }
