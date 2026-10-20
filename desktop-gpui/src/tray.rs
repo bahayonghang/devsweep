@@ -72,7 +72,16 @@ impl TraySink for RecordingTray {
 #[cfg(windows)]
 pub struct RealTray {
     hwnd: Option<windows::Win32::Foundation::HWND>,
+    icon: Option<TrayIcon>,
     added: bool,
+}
+
+#[cfg(windows)]
+struct TrayIcon {
+    handle: windows::Win32::UI::WindowsAndMessaging::HICON,
+    /// `CreateIconFromResourceEx` handles are ours to destroy; shared system
+    /// icons from `LoadIconW` are not.
+    owned: bool,
 }
 
 #[cfg(windows)]
@@ -80,8 +89,16 @@ impl RealTray {
     pub fn new() -> Self {
         Self {
             hwnd: None,
+            icon: None,
             added: false,
         }
+    }
+
+    fn icon(&mut self) -> Option<windows::Win32::UI::WindowsAndMessaging::HICON> {
+        if self.icon.is_none() {
+            self.icon = TrayIcon::load();
+        }
+        self.icon.as_ref().map(|icon| icon.handle)
     }
 
     fn destroy_hwnd(&mut self) {
@@ -89,6 +106,40 @@ impl RealTray {
             let _ = unsafe { windows::Win32::UI::WindowsAndMessaging::DestroyWindow(hwnd) };
         }
     }
+}
+
+#[cfg(windows)]
+impl TrayIcon {
+    fn load() -> Option<Self> {
+        use windows::Win32::UI::WindowsAndMessaging::{HICON, IDI_APPLICATION, LoadIconW};
+
+        if let Some(handle) = crate::icon::load_hicon(small_icon_size()) {
+            return Some(Self {
+                handle,
+                owned: true,
+            });
+        }
+        // Last resort for a malformed embedded icon: the generic application
+        // icon. Shared by the system, so it is never destroyed here.
+        unsafe { LoadIconW(None, IDI_APPLICATION) }
+            .ok()
+            .filter(|icon: &HICON| !icon.is_invalid())
+            .map(|handle| Self {
+                handle,
+                owned: false,
+            })
+    }
+}
+
+#[cfg(windows)]
+fn small_icon_size() -> u32 {
+    use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSMICON};
+
+    let value = unsafe { GetSystemMetrics(SM_CXSMICON) };
+    u32::try_from(value)
+        .ok()
+        .filter(|value| *value > 0)
+        .unwrap_or(16)
 }
 
 #[cfg(windows)]
@@ -108,7 +159,7 @@ impl TraySink for RealTray {
             return false;
         };
         self.hwnd = Some(hwnd);
-        let data = notify_data(hwnd, tip);
+        let data = notify_data(hwnd, tip, self.icon());
         let ok = unsafe {
             windows::Win32::UI::Shell::Shell_NotifyIconW(windows::Win32::UI::Shell::NIM_ADD, &data)
         }
@@ -125,7 +176,7 @@ impl TraySink for RealTray {
     fn remove(&mut self) {
         if self.added {
             if let Some(hwnd) = self.hwnd {
-                let data = notify_data(hwnd, "");
+                let data = notify_data(hwnd, "", self.icon.as_ref().map(|icon| icon.handle));
                 let _ = unsafe {
                     windows::Win32::UI::Shell::Shell_NotifyIconW(
                         windows::Win32::UI::Shell::NIM_DELETE,
@@ -144,6 +195,11 @@ impl Drop for RealTray {
     fn drop(&mut self) {
         if self.added || self.hwnd.is_some() {
             self.remove();
+        }
+        if let Some(icon) = self.icon.take()
+            && icon.owned
+        {
+            let _ = unsafe { windows::Win32::UI::WindowsAndMessaging::DestroyIcon(icon.handle) };
         }
     }
 }
@@ -173,9 +229,9 @@ fn create_message_hwnd() -> Option<windows::Win32::Foundation::HWND> {
 fn notify_data(
     hwnd: windows::Win32::Foundation::HWND,
     tip: &str,
+    icon: Option<windows::Win32::UI::WindowsAndMessaging::HICON>,
 ) -> windows::Win32::UI::Shell::NOTIFYICONDATAW {
     use windows::Win32::UI::Shell::{NIF_ICON, NIF_TIP, NOTIFYICONDATAW};
-    use windows::Win32::UI::WindowsAndMessaging::{HICON, IDI_APPLICATION, LoadIconW};
 
     let mut data = NOTIFYICONDATAW {
         cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
@@ -183,7 +239,7 @@ fn notify_data(
         uID: 1,
         ..Default::default()
     };
-    let icon = unsafe { LoadIconW(None, IDI_APPLICATION) }.unwrap_or_else(|_| HICON::default());
+    let icon = icon.unwrap_or_default();
     data.hIcon = icon;
     write_tip(&mut data.szTip, tip);
     data.uFlags = if icon.is_invalid() {

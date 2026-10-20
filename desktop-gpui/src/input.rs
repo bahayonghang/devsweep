@@ -13,25 +13,53 @@ use crate::view::{AccessibleSlot, accessible_control};
 
 actions!(spike_input, [Backspace, Delete, Left, Right, Home, End]);
 
+/// Note text metrics at 100 percent scale.
+const NOTE_FONT_PX: f32 = 20.0;
+const NOTE_LINE_HEIGHT_PX: f32 = 28.0;
+
+/// Note font and line height in pixels for the app text scale. The helper is
+/// pure so the 100/110/125 percent cases are testable without a window.
+pub(crate) fn scaled_text_metrics(text_scale_percent: u8) -> (f32, f32) {
+    let scale = f32::from(text_scale_percent) / 100.0;
+    (NOTE_FONT_PX * scale, NOTE_LINE_HEIGHT_PX * scale)
+}
+
 pub struct TextInput {
     focus_handle: FocusHandle,
     buffer: TextBuffer,
     placeholder: &'static str,
+    text_scale_percent: u8,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
 }
 
 impl TextInput {
-    pub fn new(window: &mut Window, cx: &mut Context<Self>, placeholder: &'static str) -> Self {
+    pub fn new(
+        window: &mut Window,
+        cx: &mut Context<Self>,
+        placeholder: &'static str,
+        text_scale_percent: u8,
+    ) -> Self {
         let focus_handle = cx.focus_handle().tab_index(1).tab_stop(true);
         window.focus(&focus_handle, cx);
         Self {
             focus_handle,
             buffer: TextBuffer::new(),
             placeholder,
+            text_scale_percent,
             last_layout: None,
             last_bounds: None,
         }
+    }
+
+    /// Follow the app text scale. Notifies only when the value changes, so a
+    /// render-time sync cannot schedule itself forever.
+    pub fn set_text_scale_percent(&mut self, text_scale_percent: u8, cx: &mut Context<Self>) {
+        if self.text_scale_percent == text_scale_percent {
+            return;
+        }
+        self.text_scale_percent = text_scale_percent;
+        cx.notify();
     }
 
     pub fn content(&self) -> &str {
@@ -482,6 +510,7 @@ impl Focusable for TextInput {
 impl Render for TextInput {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let note = accessible_control(Locale::En, AccessibleSlot::Note);
+        let (font_px, line_px) = scaled_text_metrics(self.text_scale_percent);
         div()
             .id("note-input")
             .role(gpui::Role::TextInput)
@@ -507,9 +536,35 @@ impl Render for TextInput {
             .border_1()
             .border_color(rgb(0xc8c2b4))
             .rounded_md()
-            .text_size(px(20.))
-            .line_height(px(28.))
+            .text_size(px(font_px))
+            .line_height(px(line_px))
             .focus(|style| style.border_2().border_color(rgb(0x1d4e89)))
             .child(TextElement { input: cx.entity() })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_close(actual: f32, expected: f32) {
+        assert!(
+            (actual - expected).abs() < 0.001,
+            "expected {expected}, got {actual}"
+        );
+    }
+
+    #[test]
+    fn note_text_metrics_follow_the_app_scale() {
+        let (font, line) = scaled_text_metrics(100);
+        assert_eq!((font, line), (20.0, 28.0), "100% stays 20/28 px");
+
+        let (font, line) = scaled_text_metrics(110);
+        assert_close(font, 22.0);
+        assert_close(line, 30.8);
+
+        let (font, line) = scaled_text_metrics(125);
+        assert_close(font, 25.0);
+        assert_close(line, 35.0);
     }
 }

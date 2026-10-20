@@ -7,6 +7,7 @@ mod buffer;
 mod clean;
 #[cfg_attr(not(test), allow(dead_code))]
 mod copy;
+mod icon;
 mod input;
 #[cfg_attr(not(test), allow(dead_code))]
 mod preferences;

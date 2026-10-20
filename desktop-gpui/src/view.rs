@@ -1,7 +1,8 @@
 //! One native window. The capsule order is Clean, Software, Optimize, Analyze, Status.
 //!
-//! The beaver control uses the packaged DevSweep master PNG. No asset conversion
-//! and no Mole artwork. Render does not request an animation frame.
+//! The in-window beaver control uses the packaged DevSweep master PNG. The
+//! window and notification-area glyph use the offline-derived multi-size ICO
+//! from `icon.rs`. Render does not request an animation frame.
 
 use std::{
     borrow::Cow,
@@ -289,6 +290,14 @@ impl ShellView {
         };
         cx.notify();
     }
+
+    /// Keep the Note at the app text scale. The setter notifies only on a real
+    /// change, so this render-time sync settles after one pass.
+    fn sync_note_text_scale(&self, cx: &mut Context<Self>) {
+        let percent = self.session.text_scale();
+        self.note
+            .update(cx, |note, cx| note.set_text_scale_percent(percent, cx));
+    }
 }
 
 impl Focusable for ShellView {
@@ -299,6 +308,7 @@ impl Focusable for ShellView {
 
 impl Render for ShellView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.sync_note_text_scale(cx);
         // The beaver PNG is one still frame. Do not request a decorative animation frame.
         let _ = self.session.shell().decorative_deadline();
         let locale = self.session.locale();
@@ -752,6 +762,9 @@ pub fn run(session: Session) {
     // Unit tests do not call `run`, so they do not create a notification-area icon.
     #[cfg(windows)]
     let _tray = crate::tray::install_tray(crate::tray::RealTray::new());
+    // Window HICONs also live for the whole run; `WM_SETICON` does not copy.
+    #[cfg(windows)]
+    let window_icons = crate::icon::WindowIcons::load();
     application()
         .with_assets(PackagedAssets)
         .run(move |cx: &mut App| {
@@ -798,7 +811,9 @@ pub fn run(session: Session) {
                     },
                     move |window, cx| {
                         let placeholder = copy::note_placeholder(session.locale());
-                        let note = cx.new(|cx| TextInput::new(window, cx, placeholder));
+                        let text_scale_percent = session.text_scale();
+                        let note = cx
+                            .new(|cx| TextInput::new(window, cx, placeholder, text_scale_percent));
                         cx.new(|cx| ShellView {
                             focus_handle: cx.focus_handle(),
                             session,
@@ -810,6 +825,10 @@ pub fn run(session: Session) {
                 .expect("open native window");
             window
                 .update(cx, |view, window, cx| {
+                    // The titlebar and taskbar read these HICONs from the real
+                    // HWND; the handles are kept alive by `window_icons`.
+                    #[cfg(windows)]
+                    let _ = window_icons.apply(window);
                     // EntityInputHandler only receives characters while the Note
                     // control keeps keyboard focus. Do not retarget this to the
                     // shell root.
