@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<C10NarratorSpeech binary_sha256="CC4C2F03BC4437523C5699DBC43FC78508F5E4F4693FF2D5177A9E1730D7F56A" provider_guid="{835B79E2-E76A-44C4-9885-26AD122D3B4D}" keyword="0x8000000000010000" spoken_events_total="43" devsweep_events="4">
+  <Event provider="Microsoft-Windows-Narrator" event_id="5" time="2026-10-19T22:26:27.526869300-04:00">
+    <SpokenText>DevSweep region, Note, edit, 在此输入, </SpokenText>
+  </Event>
+  <Event provider="Microsoft-Windows-Narrator" event_id="6" time="2026-10-19T22:26:27.540268600-04:00">
+    <SpokenText>DevSweep region, Note, edit, 在此输入, </SpokenText>
+  </Event>
+  <Event provider="Microsoft-Windows-Narrator" event_id="5" time="2026-10-19T22:26:29.623412300-04:00">
+    <SpokenText>DevSweep region, Note, edit, 在此输入, </SpokenText>
+  </Event>
+  <Event provider="Microsoft-Windows-Narrator" event_id="6" time="2026-10-19T22:26:30.512106600-04:00">
+    <SpokenText>DevSweep region, Note, edit, 在此输入, </SpokenText>
+  </Event>
+</C10NarratorSpeech>

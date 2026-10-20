@@ -1,0 +1,52 @@
+C10-AC3 round 33 zh-CN UIA evidence (raw harness lines, UTF-8)
+Binary SHA-256 4B1365123FA7E7361A7CF72C92DE6B9A2EBF19FE4F0DDF5AFCC1D9C0BE94D514
+Isolated store: presentation-v1.json language zh-CN, text_scale_percent 100, theme dark.
+Run 2026-10-20T03:02:39.237Z .. 03:02:44.875Z; PID 119748; HWND 44440076; class Zed::Window.
+
+Main surface (19 nodes), name | AutomationId | ControlType | size:
+DevSweep | id=TitleBar | ControlType.TitleBar | 1300x29
+System Menu Bar | id=SystemMenuBar | ControlType.MenuBar | 28x28
+System | id=Item 1 | ControlType.MenuItem | 28x28
+Minimize | id=Minimize | ControlType.Button | 60x37
+Maximize | id=Maximize | ControlType.Button | 59x37
+Close | id=Close | ControlType.Button | 60x37
+DevSweep | id=shell-root | ControlType.Pane | 1300x900
+DevSweep 菜单 | id= | ControlType.Button | 35x35
+模式 | id= | ControlType.Tab | 410x51
+清理 | id=mode-clean | ControlType.TabItem | 70x51
+软件 | id=mode-software | ControlType.TabItem | 70x51
+优化 | id=mode-optimize | ControlType.TabItem | 70x51
+分析 | id=mode-analyze | ControlType.TabItem | 70x51
+状态 | id=mode-status | ControlType.TabItem | 70x51
+清理 | id= | ControlType.Pane | 502x126
+键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。 | id= | ControlType.ListItem | 502x32
+清理 | id= | ControlType.ListItem | 502x32
+先审查每个清理目标，再移动任何内容。 | id= | ControlType.ListItem | 502x32
+Note | id=note-input | ControlType.Edit | 1260x59
+note_name='Note' help='在此输入' autoid='note-input'
+
+Settings surface after F10 then Enter (29 nodes), added names:
+设置 | id= | ControlType.Pane | 648x408
+设置 | id= | ControlType.ListItem | 648x32
+外观、语言和采样配置。 | id= | ControlType.ListItem | 648x32
+语言: 简体中文 | id= | ControlType.ListItem | 648x32
+主题: dark | id= | ControlType.ListItem | 648x32
+100% | id= | ControlType.ListItem | 648x32
+system | id= | ControlType.ListItem | 648x32
+项目文件夹 | id= | ControlType.ListItem | 648x32
+移除选择不会排除仍被所选上级目录覆盖的文件夹。清理保护需单独设置。 | id= | ControlType.ListItem | 648x32
+语言 | id= | ControlType.Button | 70x51
+主题 | id= | ControlType.Button | 70x51
+保存 | id= | ControlType.Button | 70x51
+返回 | id= | ControlType.Button | 70x52
+
+Required names observed: 清理, 软件, 优化, 分析, 状态, 模式, DevSweep 菜单, 在此输入
+(note HelpText), 设置, 语言, 主题, 项目文件夹, 保存, 返回. All 14 present as UTF-8.
+Screenshots: c10-ac3-round33-zh-100.png (main), c10-ac3-round33-zh-settings.png (settings).
+wm_close_exit=0 exited=True process_remaining=False.
+
+Method note: F10 then Enter was sent with the Note focused; the harness probe for
+the settings container by AutomationId returned nothing because the container
+element carries no accesskit id, so a fallback click on the DevSweep 菜单 button
+followed. The retained tree and screenshot show the Settings surface with the
+brand menu closed, so the surfaced state is the Settings panel, not the menu.

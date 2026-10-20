@@ -1,0 +1,33 @@
+C10-AC3 round 33 text scale evidence (raw harness lines)
+Binary SHA-256 4B1365123FA7E7361A7CF72C92DE6B9A2EBF19FE4F0DDF5AFCC1D9C0BE94D514
+Isolated stores: <temp>\devsweep-c10-r33\stores\scale-100 and scale-125
+Store text_scale_percent 100 / 125, presentation-v1.json language zh-CN, theme dark
+UIA bounds are physical pixels. Window DPI 120 (125 percent); window 1318x947.
+
+utc_start=2026-10-20T02:59:42.937Z utc_end=2026-10-20T02:59:48.909Z
+
+100: pid=128292 hwnd=17831814 dpi=120 text_scale=100
+100: note_name='Note' note_id='note-input' note=1260x59
+100: hint_name='键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。' hint=502x32
+100: printwindow=True png_size=1318x947
+100: wm_close_exit=0
+100: process_remaining=False
+
+125: pid=210336 hwnd=3939928 dpi=120 text_scale=125
+125: note_name='Note' note_id='note-input' note=1260x68
+125: hint_name='键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。' hint=627x40
+125: printwindow=True png_size=1318x947
+125: wm_close_exit=0
+125: process_remaining=False
+
+HINT_WIDTH_RATIO=1.249 NOTE_HEIGHT_100=59 NOTE_HEIGHT_125=68 NOTE_HEIGHT_DELTA=9
+NOTE_WIDTH_100=1260 NOTE_WIDTH_125=1260 HINT_HEIGHT_100=32 HINT_HEIGHT_125=40
+
+Saved files: c10-ac3-round33-scale-100.png, c10-ac3-round33-scale-125.png (PrintWindow).
+
+Round 32 measured the same zh-CN hint item at 502 px (100) and 627 px (125),
+ratio 1.249, while the Note input stayed 1260x59 at both scales. At round 33 the
+hint ratio reproduces and the Note input now grows 59 -> 68 px, so both the
+shell copy and the Note follow the text-scale preference. Runtime values come
+from desktop-gpui/src/input.rs `scaled_text_metrics` (20/28 px at 100 percent,
+multiplied by text_scale_percent/100) and `ShellView::sync_note_text_scale`.

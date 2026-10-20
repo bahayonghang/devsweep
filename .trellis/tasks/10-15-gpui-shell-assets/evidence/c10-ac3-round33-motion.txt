@@ -1,0 +1,55 @@
+C10-AC3 round 33 reduced motion evidence (raw harness lines)
+Binary SHA-256 4B1365123FA7E7361A7CF72C92DE6B9A2EBF19FE4F0DDF5AFCC1D9C0BE94D514
+Store motion 'reduced', text_scale_percent 100, language en, theme dark, isolated roots.
+Harness: DEVSWEEP_FRAME_TRACE appends one line per Present() return (microseconds
+from the first present). Counts below are line deltas measured after the window
+settled; the frame trace does not measure frame intervals.
+
+Run motion.ps1 (2026-10-20T03:03:24.296Z .. 03:03:44.570Z, PID 92656):
+  settled_frames=2
+  idle1_4s_frames=10        (window had just been activated; event-driven repaints)
+  f10_frames=5 enter_frames=1
+  motion_row_name=reduced id= type=ControlType.ListItem
+  settings_shown=True reduced_row=True
+  settings_png=True size=1318x947  (c10-ac3-round33-reduced-settings.png)
+  f10_close_frames=1
+  idle2_4s_frames=4         (started 0.5 s after the F10 key event)
+  idle3_3s_frames=5
+  tab_switch selected_before=False selected_after=True switch_frames=3
+  idle4_3s_frames=1
+  tab_switch_total_lines=36
+  wm_close_exit=0 exited=True process_remaining=False
+
+Run motion2.ps1 (2026-10-20T03:06:40.221Z .. 03:07:04.739Z, PID 31936):
+  foreground=True focus=System Menu Bar[SystemMenuBar], Note[note-input]
+  idleA_6s_frames=0 focus_after=... Note[note-input] foreground_after=True
+  idleA_timestamps=
+  after_click focus=System Menu Bar[SystemMenuBar], Clean[mode-clean]
+  idleB_6s_frames=0
+  idleB_timestamps=
+  idleC_minimized_6s_frames=0
+  idleC_timestamps=
+  all_frame_timestamps=0 3128 9757968 9851952 23234874 23238124
+  total_frames=6
+  wm_close_exit=0 process_remaining=False
+
+Run motion3.ps1 (2026-10-20T03:07:31.561Z .. 03:07:45.770Z, PID 95320):
+  settled_idle_4s_frames=0
+  tab_switch_frames=1 selected_before=False selected_after=True
+  tab_switch_timestamps=8106085
+  settled_idle_after_switch_4s_frames=0
+  all_frames=0 8106085
+  wm_close_exit=0 exited=True process_remaining=False
+
+Conclusion: with the window settled and untouched, two consecutive 6 s idle
+windows and a minimized 6 s window produced 0 presents, and a UIA
+SelectionItemPattern.Select() tab switch produced exactly 1 present with 0
+presents in the 4 s before and the 4 s after. Windows started immediately after
+activation or key events contain event-driven presents (5 for F10, 1 for Enter,
+1 for F10 close, 3 for the UIA selection in the first run); those are responses
+to input or focus, not a recurring decorative animation. No 16.7 ms interval
+sample was taken in round 33; round 21's nearest-rank p95 8300 us remains the
+interval sample and is not restated as a new measurement.
+
+Trace files: c10-ac3-round33-frame-trace.txt (36 lines, first run),
+c10-ac3-round33-frame-trace-idle.txt, c10-ac3-round33-frame-trace-tabswitch.txt.

@@ -1,0 +1,66 @@
+C10-AC3 round 33 icon evidence (raw harness lines)
+Binary: desktop-gpui/dist/goal-gpui-release/release/devsweep-gpui-spike.exe
+SHA-256 4B1365123FA7E7361A7CF72C92DE6B9A2EBF19FE4F0DDF5AFCC1D9C0BE94D514, 14273536 bytes
+Machine display scale: 120 DPI (125 percent). Harness probe process is not DPI aware.
+
+Method: SendMessageW(WM_GETICON, ICON_SMALL/ICON_BIG/ICON_SMALL2) and
+GetClassLongPtr(GCLP_HICON/GCLP_HICONSM) on the real HWND; HICON pixels through
+GetIconInfo + GetDIBits (32 bpp top-down, alpha channel as stored); the
+assets/devsweep-icon-master.png reference was resized with
+System.Drawing HighQualityBicubic; compare = mean absolute RGB difference over
+pixels where either alpha is above 5 percent plus luminance correlation over the
+whole image; screenshots through CopyFromScreen after AttachThreadInput
+force-foreground, tray overflow through the taskbar "Show Hidden Icons" chevron.
+
+Run 1 (icon.ps1, 2026-10-20T02:52:14.638Z .. 02:52:20.155Z, PID 143716):
+  WM_GETICON ICON_SMALL=207555173 ICON_BIG=824250159 ICON_SMALL2=207555173
+  GetClassLongPtr HICON=0 HICONSM=0
+  IDI_APPLICATION handle in probe process = 65579
+  small_null=False equals_idi_application=False
+  big_null=False equals_idi_application=False
+  small2_null=False equals_idi_application=False
+  big_size=48x48 alpha=alpha_channel top_colors=283630x33 293731x28 F3E5CCx26 F2E5CBx15
+  small_size=32x32 alpha=alpha_channel top_colors=FFFFFFx10 293731x9 F2E4CBx7 F3E5CCx7
+  idi-application_size=40x40 alpha=alpha_channel top_colors=FDFDFCx116 8D9297x34 030303x34 696B6Ex34
+  big_vs_master mean_abs_diff=10.21 luminance_corr=0.9895 union_pixels=1048
+  big_vs_idi_application mean_abs_diff=113.38 luminance_corr=0.4276 union_pixels=1702 idi_scaled_from=40
+  small_vs_master mean_abs_diff=14.59 luminance_corr=0.9830 union_pixels=485
+  small_vs_idi_application mean_abs_diff=109.30 luminance_corr=0.4397 union_pixels=749 idi_scaled_from=40
+  taskbar_rect=2560x60 at 0,1380
+  taskbar_button_name=DevSweep - 1 running window autoid=Window: 0x2ba0d86
+  hidden_icons_button=name:Show Hidden Icons Hide autoid:SystemTrayIcon
+  wm_close_exit=0 exited=True process_remaining=False
+
+Run 2 (tray2.ps1, 2026-10-20T02:53:37.043Z .. 02:53:42.752Z, PID 68212):
+  hwnd=24385914 rect=621,217,1939,1164 size=1318x947
+  force_foreground=True foreground_now=True
+  titlebar_crop=360x48 x4 (saved as c10-ac3-round33-icon-titlebar-4x.png)
+  wm_close_exit=0 exited=True process_remaining=False
+
+Run 3 (tray5.ps1, PID 144672 then PID 34268):
+  before_launch_devsweep_icons=0
+  after_hover_devsweep_icons=0
+  app_pid=144672 running_app_devsweep_icons=1 live_at=1978,1158 size=50x50
+  wm_close_exit=0 exited=True process_remaining=False
+  app_pid=34268 running_app_devsweep_icons=1 live_at=1978,1158 size=50x50
+  overflow_glyph_png=90x90 (saved as c10-ac3-round33-icon-tray-overflow.png)
+  wm_close_exit=0 exited=True process_remaining=False
+  after_close_devsweep_icons=0
+
+Harness artifact, not a product defect: an earlier failed harness run left one
+app instance (PID 35552) alive. While two instances ran, the overflow exposed
+two NotifyItemIcon entries named DevSweep (one per process, 1978,1158 and
+2028,1158). After the stray instance was closed, the count returned to 0/1/0.
+Two processes each add one icon with their own message window; uID is 1 for
+both. No duplicate icon is added by a single process.
+
+Saved files:
+  c10-ac3-round33-icon-big-48x48.png           (WM_GETICON ICON_BIG pixels)
+  c10-ac3-round33-icon-big-reference.png       (master PNG resized to 48)
+  c10-ac3-round33-icon-small-32x32.png         (WM_GETICON ICON_SMALL pixels)
+  c10-ac3-round33-icon-small-reference.png     (master PNG resized to 32)
+  c10-ac3-round33-icon-idi-application-40x40.png (LoadIconW IDI_APPLICATION pixels)
+  c10-ac3-round33-icon-titlebar-4x.png         (titlebar corner, 4x nearest-neighbor)
+  c10-ac3-round33-icon-window-titlebar.png     (1318x947 screen capture; body occluded by another window, titlebar visible)
+  c10-ac3-round33-icon-taskbar.png             (taskbar 2560x60; DevSweep button with beaver glyph)
+  c10-ac3-round33-icon-tray-overflow.png       (overflow glyph crop 90x90, single DevSweep)

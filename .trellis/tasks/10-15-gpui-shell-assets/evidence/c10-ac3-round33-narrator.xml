@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Provider Microsoft-Windows-Narrator. Only DevSweep SpokenText, trimmed from tracerpt raw XML. -->
+<DevSweepNarratorEvents provider="Microsoft-Windows-Narrator" keyword="0x8000000000010000">
+  <Event EventID="5" TimeCreated="2026-10-19T23:08:51.922031900-04:00" SpokenText="DevSweep region, Note, edit, vse, 在此输入, " />
+  <Event EventID="68" TimeCreated="2026-10-19T23:08:51.922032800-04:00" SpokenText="DevSweep region, Note, edit, vse, 在此输入, " />
+  <Event EventID="6" TimeCreated="2026-10-19T23:08:51.935996000-04:00" SpokenText="DevSweep region, Note, edit, vse, 在此输入, " />
+  <Event EventID="5" TimeCreated="2026-10-19T23:08:55.921430500-04:00" SpokenText="DevSweep region, Note, edit, vsev, 在此输入, " />
+  <Event EventID="68" TimeCreated="2026-10-19T23:08:55.921431100-04:00" SpokenText="DevSweep region, Note, edit, vsev, 在此输入, " />
+  <Event EventID="6" TimeCreated="2026-10-19T23:08:55.930811200-04:00" SpokenText="DevSweep region, Note, edit, vsev, 在此输入, " />
+</DevSweepNarratorEvents>
