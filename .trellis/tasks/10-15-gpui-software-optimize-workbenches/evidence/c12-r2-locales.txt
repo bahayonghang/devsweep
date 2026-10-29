@@ -1,0 +1,39 @@
+utc_start=2026-10-26T14:07:24.7427902Z
+binary_sha256=23F7D6146BAF66F44A99ABF135CE6CB84E2F665F4A34D4431BA28E8F06104298 length=16434176
+method=isolated LOCALAPPDATA; Alt+Right keyboard; no uninstall
+en_foreground_ok=True procId=73176
+en_software_rows=4
+en_SOFTWARE uninstall | review | argv=software plan | last=not run
+en_SOFTWARE updates | review | argv=software updates check | last=not run
+en_SOFTWARE startup | review | argv=software startup list | last=not run
+en_SOFTWARE leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+en_optimize_rows=19 success_claims=0
+en_OPTIMIZE dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_OPTIMIZE settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_OPTIMIZE settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_OPTIMIZE settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_OPTIMIZE guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run
+en_OPTIMIZE guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_tabs=TAB Clean | TAB Software | TAB Optimize | TAB Analyze | TAB Status
+en_screenshot=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r2-en.png
+en_wm_close=0
+zh_foreground_ok=True procId=71860
+zh_software_rows=4
+zh_SOFTWARE uninstall | review | argv=software plan | last=未运行
+zh_SOFTWARE updates | review | argv=software updates check | last=未运行
+zh_SOFTWARE startup | review | argv=software startup list | last=未运行
+zh_SOFTWARE leftovers | unavailable | 残留项不是软件工作台分段，这里不可用。 | last=未运行
+zh_optimize_rows=19 success_claims=0
+zh_OPTIMIZE dns.flush | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+zh_OPTIMIZE settings.storage_recommendations | class=settings_handoff | privilege=不需要提升 | skip=未运行 | last=未运行
+zh_OPTIMIZE settings.search | class=settings_handoff | privilege=不需要提升 | skip=未运行 | last=未运行
+zh_OPTIMIZE settings.energy_recommendations | class=settings_handoff | privilege=不需要提升 | skip=未运行 | last=未运行
+zh_OPTIMIZE guidance.drive_optimize | class=guidance | privilege=不可调度 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_OPTIMIZE guidance.system_integrity | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_tabs=TAB 清理 | TAB 软件 | TAB 优化 | TAB 分析 | TAB 状态
+zh_screenshot=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r2-zh.png
+zh_wm_close=0
+spike_remaining=0
+utc_end=2026-10-26T14:07:28.6439312Z
+confirmation_error_partial_native=NOT_RUN
+native_list_virtualization=NOT_RUN

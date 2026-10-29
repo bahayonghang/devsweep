@@ -1,0 +1,69 @@
+DevSweep
+DevSweep menu
+Modes
+Clean
+Software
+Optimize
+Analyze
+Status
+Software
+Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+Software
+Review current-user software inventory before uninstall.
+uninstall
+updates
+> startup
+leftovers
+row-0000
+row-0001
+row-0002
+row-0003
+row-0004
+row-0005
+row-0006
+row-0007
+row-0008
+row-0009
+row-0010
+row-0011
+row-0012
+row-0013
+row-0014
+row-0015
+row-0016
+row-0017
+row-0018
+row-0019
+row-0020
+row-0021
+row-0022
+row-0023
+row-0024
+row-0025
+row-0026
+row-0027
+row-0028
+row-0029
+row-0030
+row-0031
+row-0032
+row-0033
+row-0034
+row-0035
+row-0036
+row-0037
+row-0038
+row-0039
+row-0040
+row-0041
+row-0042
+row-0043
+uninstall | review | argv=software plan | last=not run
+updates | review | argv=software updates check | last=not run
+startup | review | argv=software startup list | last=not run
+leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+startup:v1:ae7b9842f26319bcb0d3c388f5a65e47c99aa0b0367f0489bdfaa35d2fec7b2d | sha256:d66cff481b2f85137eca0b3fe7cd63d740198fc539a3f46a0f9d5b50cf976b0e
+protected: startup entry startup:v1:ba8de305fb85af005d422474928fe8781eb6d523cb2d206b113277e46f634a90 is protected
+requires_administrator: startup entry startup:v1:8170807e45e7736513e3cd9089dd472bb3f1e7731249fd03f75acc0b286cf5ff requires administrator
+startup_identity_unavailable: startup entry identity is unavailable
+Note

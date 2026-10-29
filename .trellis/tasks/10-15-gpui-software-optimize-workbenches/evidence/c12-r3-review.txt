@@ -1,0 +1,172 @@
+utc_start=2026-10-29T07:02:48.0879012Z
+binary_sha256=6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69 length=17511936
+rustc_note=cargo 1.99.0 via mbx; RUSTFLAGS=-C link-arg=/Brepro; not an MSRV 1.88.0 pass
+host_maintenance=not run; defrag dism RestoreHealth w32tm resync were not started
+real_uninstall=not run; real startup keys were not written
+en_foreground_ok=True procId=69280 hwnd=10947748
+en_review_UIA uninstall | review | argv=software plan | last=not run
+en_review_UIA updates | review | argv=software updates check | last=not run
+en_review_UIA startup | review | argv=software startup list | last=not run
+en_review_UIA leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+en_review_UIA startup:v1:ae7b9842f26319bcb0d3c388f5a65e47c99aa0b0367f0489bdfaa35d2fec7b2d | sha256:d66cff481b2f85137eca0b3fe7cd63d740198fc539a3f46a0f9d5b50cf976b0e
+en_review_UIA protected: startup entry startup:v1:ba8de305fb85af005d422474928fe8781eb6d523cb2d206b113277e46f634a90 is protected
+en_review_UIA requires_administrator: startup entry startup:v1:8170807e45e7736513e3cd9089dd472bb3f1e7731249fd03f75acc0b286cf5ff requires administrator
+en_review_UIA startup_identity_unavailable: startup entry identity is unavailable
+en_software_names=66 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r3-en-software.png
+en_row0999_hits=0
+en_software_UIA leftovers
+en_software_UIA uninstall | review | argv=software plan | last=not run
+en_software_UIA updates | review | argv=software updates check | last=not run
+en_software_UIA startup | review | argv=software startup list | last=not run
+en_software_UIA leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+en_software_UIA startup hive outcome=succeeded | last=not run
+en_hive_before=2D4C8D6AB55330C926976CE6A31FB46D00DBB2486AA0BF3224D14143D5696559 hive_after=387D003A840E0034378BE8295EC180C5C66B514F0587CDEBD0F9DE38F98DD98F hive_changed=True
+en_optimize_names=54 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r3-en-optimize.png
+en_host_success_claims=0
+en_optimize_UIA guidance.drive_optimize
+en_optimize_UIA guidance.system_integrity
+en_optimize_UIA guidance.filesystem_check
+en_optimize_UIA guidance.network_reset
+en_optimize_UIA > maintenance.retrim
+en_optimize_UIA dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_optimize_UIA settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_optimize_UIA settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_optimize_UIA settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_optimize_UIA guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_optimize_UIA maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_optimize_UIA maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.icon_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.search | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.winget_repair | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_analyze_names=26 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-analyze-status-tray\evidence\c13-r3-en-analyze.png
+en_analyze_UIA 0 present present analyze
+en_analyze_UIA treemap 0 present
+en_analyze_UIA 1 empty empty empty-dir
+en_analyze_UIA treemap 1 empty
+en_analyze_UIA 2 unreadable unreadable denied-dir
+en_analyze_UIA treemap 2 unreadable
+en_analyze_UIA > 3 present present keep.bin
+en_analyze_UIA treemap 3 present
+en_analyze_UIA recycle 3 | sha256:e7f405e846572b4c275d32c872f3fa9bc2781a6963943a525be06fb9021592cb
+en_status_names=23 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-analyze-status-tray\evidence\c13-r3-en-status.png
+en_status_UIA pid 45404
+en_status_UIA displayed PID is not termination authority
+en_displayed_pid_not_used_to_terminate=1
+en_wm_close=0
+en_proc_remaining=0
+zh_foreground_ok=True procId=52884 hwnd=1840292
+zh_review_UIA startup:v1:ae7b9842f26319bcb0d3c388f5a65e47c99aa0b0367f0489bdfaa35d2fec7b2d | sha256:d66cff481b2f85137eca0b3fe7cd63d740198fc539a3f46a0f9d5b50cf976b0e
+zh_review_UIA protected：startup entry startup:v1:ba8de305fb85af005d422474928fe8781eb6d523cb2d206b113277e46f634a90 is protected
+zh_review_UIA requires_administrator：startup entry startup:v1:8170807e45e7736513e3cd9089dd472bb3f1e7731249fd03f75acc0b286cf5ff requires administrator
+zh_review_UIA startup_identity_unavailable：startup entry identity is unavailable
+zh_software_names=66 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r3-zh-software.png
+zh_row0999_hits=0
+zh_software_UIA leftovers
+zh_software_UIA leftovers | unavailable | 残留项不是软件工作台分段，这里不可用。 | last=未运行
+zh_software_UIA startup hive outcome=succeeded | last=未运行
+zh_hive_before=2D4C8D6AB55330C926976CE6A31FB46D00DBB2486AA0BF3224D14143D5696559 hive_after=16D9E539FE14A2A985277E12B9529D95DE89D65C48F8EF5D782CADD27127B95E hive_changed=True
+zh_optimize_names=54 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r3-zh-optimize.png
+zh_host_success_claims=0
+zh_optimize_UIA guidance.drive_optimize
+zh_optimize_UIA guidance.system_integrity
+zh_optimize_UIA guidance.filesystem_check
+zh_optimize_UIA guidance.network_reset
+zh_optimize_UIA > maintenance.retrim
+zh_optimize_UIA guidance.drive_optimize | class=guidance | privilege=不可调度 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA guidance.system_integrity | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA guidance.filesystem_check | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA guidance.network_reset | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.retrim | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA maintenance.update_cache | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.icon_cache | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.search | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.winget_repair | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA uac_declined：optimize operation maintenance.retrim skipped: uac_declined
+zh_analyze_names=26 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-analyze-status-tray\evidence\c13-r3-zh-analyze.png
+zh_analyze_UIA 0 present 存在 analyze
+zh_analyze_UIA treemap 0 present
+zh_analyze_UIA 1 empty 空 empty-dir
+zh_analyze_UIA treemap 1 empty
+zh_analyze_UIA 2 unreadable 不可读 denied-dir
+zh_analyze_UIA treemap 2 unreadable
+zh_analyze_UIA > 3 present 存在 keep.bin
+zh_analyze_UIA treemap 3 present
+zh_analyze_UIA recycle 3 | sha256:f52e10da0026be831fab839363303e3698a9d5ad99b72c64cffb754d9ac97b62
+zh_status_names=23 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-analyze-status-tray\evidence\c13-r3-zh-status.png
+zh_status_UIA pid 45404
+zh_status_UIA displayed PID is not termination authority
+zh_displayed_pid_not_used_to_terminate=1
+zh_wm_close=0
+zh_proc_remaining=0
+stale_foreground_ok=True procId=69544 hwnd=4068748
+stale_review_UIA uninstall | review | argv=software plan | last=not run
+stale_review_UIA updates | review | argv=software updates check | last=not run
+stale_review_UIA startup | review | argv=software startup list | last=not run
+stale_review_UIA leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+stale_review_UIA confirmation_required: Software execution requires explicit confirmation
+stale_software_names=66 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r3-stale-software.png
+stale_row0999_hits=0
+stale_software_UIA leftovers
+stale_software_UIA uninstall | review | argv=software plan | last=not run
+stale_software_UIA updates | review | argv=software updates check | last=not run
+stale_software_UIA startup | review | argv=software startup list | last=not run
+stale_software_UIA leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+stale_software_UIA confirmation_required: Software execution requires explicit confirmation
+stale_hive_before=2D4C8D6AB55330C926976CE6A31FB46D00DBB2486AA0BF3224D14143D5696559 hive_after=2D4C8D6AB55330C926976CE6A31FB46D00DBB2486AA0BF3224D14143D5696559 hive_changed=False
+stale_optimize_names=54 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r3-stale-optimize.png
+stale_host_success_claims=0
+stale_optimize_UIA guidance.drive_optimize
+stale_optimize_UIA guidance.system_integrity
+stale_optimize_UIA guidance.filesystem_check
+stale_optimize_UIA guidance.network_reset
+stale_optimize_UIA > maintenance.retrim
+stale_optimize_UIA dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+stale_optimize_UIA settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+stale_optimize_UIA settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+stale_optimize_UIA settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+stale_optimize_UIA guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run
+stale_optimize_UIA guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+stale_optimize_UIA maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+stale_optimize_UIA maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+stale_optimize_UIA maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+stale_optimize_UIA maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+stale_optimize_UIA maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+stale_optimize_UIA maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA maintenance.icon_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA maintenance.search | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_optimize_UIA maintenance.winget_repair | class=guidance | privilege=no dispatch | skip=not run | last=not run
+stale_analyze_names=26 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-analyze-status-tray\evidence\c13-r3-stale-analyze.png
+stale_analyze_UIA 0 present present analyze
+stale_analyze_UIA treemap 0 present
+stale_analyze_UIA 1 empty empty empty-dir
+stale_analyze_UIA treemap 1 empty
+stale_analyze_UIA 2 unreadable unreadable denied-dir
+stale_analyze_UIA treemap 2 unreadable
+stale_analyze_UIA > 3 present present keep.bin
+stale_analyze_UIA treemap 3 present
+stale_analyze_UIA recycle 3 | sha256:8ce3d29028d4776b1cd5ffdb990e75a612291c92365d5def304f51b1ef142eae
+stale_status_names=23 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-analyze-status-tray\evidence\c13-r3-stale-status.png
+stale_status_UIA pid 45404
+stale_status_UIA displayed PID is not termination authority
+stale_displayed_pid_not_used_to_terminate=1
+stale_wm_close=0
+stale_proc_remaining=0
+spike_remaining=0
+utc_end=2026-10-29T07:03:31.4383313Z
+c06_ac4=NOT_RUN
+c11_checkboxes=unchecked
+os_crash_release=NOT_RUN
+focus_pattern=NOT_PASS

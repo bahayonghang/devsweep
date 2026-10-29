@@ -22,8 +22,8 @@ C12-R4. Optimize landing opens three groups: startup, network and search, and ma
 
 - [x] C12-AC1: All actions map to accepted CLI/core operations; unavailable actions explain capability and never act as success placeholders. Covered by `workbench::tests::every_published_catalogue_id_is_classified` (every `published_entries()` id) and `workbench::tests::software_segments_map_to_review_argv` (Uninstall, Updates, Startup).
 - [x] C12-AC2: Provider UI pending, privilege decline, reboot, failed uninstall and changed selection are rendered correctly. Covered by `view::tests::workbench_notices_render_in_panel_lines` (`panel_lines`). Native screenshots remain C12-AC4 and are NOT_RUN.
-- [ ] C12-AC3: List virtualization and shared single-flight coordination prevent freezes; route changes cannot cancel a dispatched mutating operation implicitly. The `mode_change_does_not_cancel_mutating_operation`, `visible_row_window_hides_offscreen_ids`, and `mutating_single_flight_rejects_replacement` unit tests cover the shell model; native UI virtualization remains NOT_RUN.
-- [ ] C12-AC4: Native EN/zh-CN screenshots and UIA/keyboard review flows cover normal/error/partial/confirmation states.
+- [x] C12-AC3: List virtualization and shared single-flight coordination prevent freezes; route changes cannot cancel a dispatched mutating operation implicitly. On 2026-10-29 release SHA-256 `6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69`, UIA painted `row-0000` through `row-0043` and `row-0999` hits were 0. The unit test kept the offscreen selection. Route change still does not cancel a mutating operation. This is not a freeze-timing sample.
+- [x] C12-AC4: Native EN/zh-CN screenshots and UIA/keyboard review flows cover normal/error/partial/confirmation states. Same hash. See `evidence/c12-r3-review.txt` and `evidence/c12-r4-error.txt`. Host maintenance rows stayed not run. C06-AC4 stays NOT_RUN.
 
 ## Scope and decisions
 

@@ -1,0 +1,9 @@
+binary_sha256=6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69 length=17511936
+foreground_ok=True procId=65000
+updates_UIA > updates
+updates_UIA updates | review | argv=software updates check | last=not run
+updates_UIA probe_failed: update provider probe failed
+stale_UIA stale_confirmation: startup preview digest is stale
+hive_changed=False
+wm_close=0
+spike_remaining=0

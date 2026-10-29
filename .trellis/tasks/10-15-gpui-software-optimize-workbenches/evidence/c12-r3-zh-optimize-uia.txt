@@ -1,0 +1,54 @@
+DevSweep
+DevSweep 菜单
+模式
+清理
+软件
+优化
+分析
+状态
+优化
+键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。F10 打开菜单；Down 移动高亮项；Enter 打开它。
+优化
+审查目录中的操作后再运行。
+dns.flush
+settings.storage_recommendations
+settings.search
+settings.energy_recommendations
+guidance.drive_optimize
+guidance.system_integrity
+guidance.filesystem_check
+guidance.network_reset
+> maintenance.retrim
+maintenance.clock_probe
+maintenance.clock_sync
+maintenance.image_scan
+maintenance.image_repair
+maintenance.dead_startup
+maintenance.disk_health
+maintenance.update_cache
+maintenance.icon_cache
+maintenance.search
+maintenance.winget_repair
+dns.flush | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+settings.storage_recommendations | class=settings_handoff | privilege=不需要提升 | skip=未运行 | last=未运行
+settings.search | class=settings_handoff | privilege=不需要提升 | skip=未运行 | last=未运行
+settings.energy_recommendations | class=settings_handoff | privilege=不需要提升 | skip=未运行 | last=未运行
+guidance.drive_optimize | class=guidance | privilege=不可调度 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+guidance.system_integrity | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+guidance.filesystem_check | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+guidance.network_reset | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+maintenance.retrim | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+maintenance.clock_probe | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+maintenance.clock_sync | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+maintenance.image_scan | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+maintenance.image_repair | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+maintenance.dead_startup | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+maintenance.disk_health | class=observe | privilege=不可调度 | skip=未运行 | last=未运行
+maintenance.update_cache | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+maintenance.icon_cache | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+maintenance.search | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+maintenance.winget_repair | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+uac_declined：optimize operation maintenance.retrim skipped: uac_declined
+last=未运行
+已拒绝提升权限。
+Note

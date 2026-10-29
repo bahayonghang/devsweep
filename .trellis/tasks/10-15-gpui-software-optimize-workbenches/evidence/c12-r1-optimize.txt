@@ -1,0 +1,24 @@
+utc_start=2026-10-26T10:10:57.4834289Z
+binary_sha256=FB2CBCA35D45B81E73D7D29E9796B47908BA3B87B0B633639590CCD9A6D5B549 length=16433664
+rustc_note=cargo 1.99.0 via mbx; not an MSRV 1.88.0 pass
+foreground_ok=True procId=55584
+ROW dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+ROW guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run
+ROW guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run
+ROW guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run
+ROW guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run
+ROW maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+ROW maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+ROW maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+ROW maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+ROW maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+ROW maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+ROW maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run
+ROW maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+ROW maintenance.icon_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+ROW maintenance.search | class=guidance | privilege=no dispatch | skip=not run | last=not run
+ROW maintenance.winget_repair | class=guidance | privilege=no dispatch | skip=not run | last=not run
+optimize_rows=16 success_claims=0
+screenshot=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-software-optimize-workbenches\evidence\c12-r1-optimize.png
+wm_close_exit=0 spike_remaining=0
+utc_end=2026-10-26T10:11:00.0015690Z

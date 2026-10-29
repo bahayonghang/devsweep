@@ -1,0 +1,22 @@
+DevSweep
+DevSweep menu
+Modes
+Clean
+Software
+Optimize
+Analyze
+Status
+Software
+Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+Software
+Review current-user software inventory before uninstall.
+uninstall
+updates
+> startup
+leftovers
+uninstall | review | argv=software plan | last=not run
+updates | review | argv=software updates check | last=not run
+startup | review | argv=software startup list | last=not run
+leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+stale_confirmation: startup preview digest is stale
+Note

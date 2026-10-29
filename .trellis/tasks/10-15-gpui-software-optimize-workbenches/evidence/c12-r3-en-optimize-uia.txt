@@ -1,0 +1,54 @@
+DevSweep
+DevSweep menu
+Modes
+Clean
+Software
+Optimize
+Analyze
+Status
+Optimize
+Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+Optimize
+Review catalogued actions before any run.
+dns.flush
+settings.storage_recommendations
+settings.search
+settings.energy_recommendations
+guidance.drive_optimize
+guidance.system_integrity
+guidance.filesystem_check
+guidance.network_reset
+> maintenance.retrim
+maintenance.clock_probe
+maintenance.clock_sync
+maintenance.image_scan
+maintenance.image_repair
+maintenance.dead_startup
+maintenance.disk_health
+maintenance.update_cache
+maintenance.icon_cache
+maintenance.search
+maintenance.winget_repair
+dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run
+guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run
+guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run
+guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run
+maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run
+maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+maintenance.icon_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+maintenance.search | class=guidance | privilege=no dispatch | skip=not run | last=not run
+maintenance.winget_repair | class=guidance | privilege=no dispatch | skip=not run | last=not run
+uac_declined: optimize operation maintenance.retrim skipped: uac_declined
+last=not run
+Elevation was declined.
+Note
