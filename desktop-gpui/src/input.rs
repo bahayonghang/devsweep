@@ -9,7 +9,7 @@ use gpui::{
 
 use crate::buffer::{BufferError, TextBuffer};
 use crate::copy::Locale;
-use crate::view::{AccessibleSlot, accessible_control};
+use crate::view::{AccessibleControl, AccessibleSlot, accessible_control};
 
 actions!(spike_input, [Backspace, Delete, Left, Right, Home, End]);
 
@@ -29,17 +29,22 @@ pub struct TextInput {
     buffer: TextBuffer,
     placeholder: &'static str,
     text_scale_percent: u8,
+    access: AccessibleControl,
+    element_id: &'static str,
+    tab_index: isize,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
 }
 
 impl TextInput {
+    /// Creates the Note control. The Note keeps startup focus.
     pub fn new(
         window: &mut Window,
         cx: &mut Context<Self>,
         placeholder: &'static str,
         text_scale_percent: u8,
     ) -> Self {
+        let access = accessible_control(Locale::En, AccessibleSlot::Note);
         let focus_handle = cx.focus_handle().tab_index(1).tab_stop(true);
         window.focus(&focus_handle, cx);
         Self {
@@ -47,6 +52,30 @@ impl TextInput {
             buffer: TextBuffer::new(),
             placeholder,
             text_scale_percent,
+            access,
+            element_id: "note-input",
+            tab_index: 1,
+            last_layout: None,
+            last_bounds: None,
+        }
+    }
+
+    /// Creates a secondary field (the Clean row search). It never steals focus.
+    pub fn new_secondary(
+        cx: &mut Context<Self>,
+        placeholder: &'static str,
+        element_id: &'static str,
+        access: AccessibleControl,
+    ) -> Self {
+        let focus_handle = cx.focus_handle().tab_index(2).tab_stop(true);
+        Self {
+            focus_handle,
+            buffer: TextBuffer::new(),
+            placeholder,
+            text_scale_percent: 100,
+            access,
+            element_id,
+            tab_index: 2,
             last_layout: None,
             last_bounds: None,
         }
@@ -59,6 +88,15 @@ impl TextInput {
             return;
         }
         self.text_scale_percent = text_scale_percent;
+        cx.notify();
+    }
+
+    /// Follow the active locale. Notifies only when the value changes.
+    pub fn set_placeholder(&mut self, placeholder: &'static str, cx: &mut Context<Self>) {
+        if self.placeholder == placeholder {
+            return;
+        }
+        self.placeholder = placeholder;
         cx.notify();
     }
 
@@ -108,6 +146,8 @@ impl TextInput {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // The Note already holds focus; a click on any other field moves it.
+        window.focus(&self.focus_handle, cx);
         window.request_virtual_keyboard();
         let offset = self.index_for_mouse_position(event.position);
         if self.buffer.move_to(offset).is_err() {
@@ -509,10 +549,10 @@ impl Focusable for TextInput {
 
 impl Render for TextInput {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let note = accessible_control(Locale::En, AccessibleSlot::Note);
+        let note = self.access;
         let (font_px, line_px) = scaled_text_metrics(self.text_scale_percent);
         div()
-            .id("note-input")
+            .id(self.element_id)
             .role(gpui::Role::TextInput)
             .accessibility_id(note.id)
             .aria_label(note.label)
@@ -520,7 +560,7 @@ impl Render for TextInput {
             .aria_placeholder(self.placeholder)
             .key_context("SpikeInput")
             .track_focus(&self.focus_handle)
-            .tab_index(1)
+            .tab_index(self.tab_index)
             .tab_stop(true)
             .on_action(cx.listener(Self::backspace))
             .on_action(cx.listener(Self::delete))

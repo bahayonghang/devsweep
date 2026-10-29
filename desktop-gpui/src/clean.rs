@@ -2,21 +2,25 @@
 //!
 //! The shell calls shared scan and digest services. It does not hash locally
 //! and it does not scan global caches from this helper. AI preview uses
-//! `preview_ai` on a saved C15 plan and does not execute. Recovery listing and
-//! restore planning wrap `recovery_list` and `restore_plan` and do not restore.
-//! Confirmed AI execute wraps `execute_ai` with a caller-supplied cancel
-//! observer and trash runner. This module does not construct a production
-//! Recycle Bin adapter.
+//! `preview_ai` on a saved C15 plan and does not execute. AI scan and plan wrap
+//! `scan_ai` and `plan_ai` behind an explicit home so neither can fall back to
+//! a production default. Recovery listing and restore planning wrap
+//! `recovery_list` and `restore_plan` and do not restore. Confirmed AI execute
+//! wraps `execute_ai` with a caller-supplied cancel observer and trash runner.
+//! This module does not construct a production Recycle Bin adapter except in
+//! [`ai_execute_production`], which is reached only from a confirmed user
+//! action.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Result, bail};
 use devsweep_core::{
     ai::{
-        AiExecuteReportV1, AiPlanV1, AiRecoveryListV1, execute_ai, preview_ai, recovery_list,
-        restore_plan,
+        AiClass, AiError, AiExecuteReportV1, AiObservationV1, AiPlanV1, AiProvider,
+        AiRecoveryListV1, AiScanRequest, execute_ai, plan_ai, preview_ai, recovery_list,
+        restore_plan, scan_ai,
     },
-    execution::{TrashRunner, confirmation_digest},
+    execution::{SystemTrashRunner, TrashRunner, confirmation_digest},
     model::{ScanCoverageScope, ScanReport, Scope, TargetId, UntrustedPlan},
     plan::{ValidatedPlan, validate_plan},
     process::CancelObserver,
@@ -125,6 +129,119 @@ pub struct AiPreviewDigest {
     pub digest: String,
 }
 
+/// One provider home from the shared core resolver.
+///
+/// This wraps `devsweep_core::ai::default_home_path`; it never invents a path
+/// and it never reads the environment itself. `userprofile` stands in for
+/// `USERPROFILE` (or `HOME`) and `appdata` for `APPDATA`, so an isolated test
+/// environment resolves the same way the production environment does.
+pub fn ai_provider_home(
+    provider: AiProvider,
+    userprofile: Option<&Path>,
+    appdata: Option<&Path>,
+) -> Option<PathBuf> {
+    devsweep_core::ai::default_home_path(provider, userprofile, appdata)
+}
+
+/// Production environment resolution for one provider home.
+///
+/// Reads `USERPROFILE` (falling back to `HOME`) and `APPDATA`, then delegates
+/// to [`ai_provider_home`]. Only the shell's explicit user action calls this;
+/// tests pass an isolated home to [`ai_scan_home`] instead.
+pub fn ai_provider_home_from_env(provider: AiProvider) -> Option<PathBuf> {
+    let userprofile = std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from);
+    let appdata = std::env::var_os("APPDATA").map(PathBuf::from);
+    ai_provider_home(provider, userprofile.as_deref(), appdata.as_deref())
+}
+
+/// Why an explicit AI review home was refused. A refusal never falls back to
+/// `USERPROFILE`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExplicitAiHomeRefusal {
+    Empty,
+    NotAbsolute,
+    OutsideTemp,
+    MissingPrefix,
+    NotADirectory,
+}
+
+/// An explicit isolated AI home, or the instruction to use production resolution.
+///
+/// `Isolated` is the only path a native review probe may scan. `Refused` means
+/// the override was set and must not be replaced by a real profile.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ExplicitAiHome {
+    Unset,
+    Isolated(PathBuf),
+    Refused(ExplicitAiHomeRefusal),
+}
+
+const AI_REVIEW_HOME_ENV: &str = "DEVSWEEP_AI_REVIEW_HOME";
+const AI_REVIEW_HOME_PREFIX: &str = "devsweep-gpui-c11-";
+
+/// Reads `DEVSWEEP_AI_REVIEW_HOME`. Unset keeps production resolution. A set
+/// value is accepted only when it is an absolute directory under the temp root
+/// whose path contains the isolated-fixture prefix.
+pub fn explicit_ai_review_home() -> ExplicitAiHome {
+    classify_explicit_ai_review_home(std::env::var_os(AI_REVIEW_HOME_ENV).as_deref(), &std::env::temp_dir())
+}
+
+/// Pure classifier for [`explicit_ai_review_home`]. Does not read the environment.
+pub fn classify_explicit_ai_review_home(value: Option<&std::ffi::OsStr>, temp: &Path) -> ExplicitAiHome {
+    let Some(value) = value else {
+        return ExplicitAiHome::Unset;
+    };
+    if value.is_empty() {
+        return ExplicitAiHome::Refused(ExplicitAiHomeRefusal::Empty);
+    }
+    let path = PathBuf::from(value);
+    if !path.is_absolute() {
+        return ExplicitAiHome::Refused(ExplicitAiHomeRefusal::NotAbsolute);
+    }
+    if !path.starts_with(temp) {
+        return ExplicitAiHome::Refused(ExplicitAiHomeRefusal::OutsideTemp);
+    }
+    let prefixed = path.components().any(|component| {
+        component
+            .as_os_str()
+            .to_str()
+            .is_some_and(|name| name.starts_with(AI_REVIEW_HOME_PREFIX))
+    });
+    if !prefixed {
+        return ExplicitAiHome::Refused(ExplicitAiHomeRefusal::MissingPrefix);
+    }
+    if !path.is_dir() {
+        return ExplicitAiHome::Refused(ExplicitAiHomeRefusal::NotADirectory);
+    }
+    ExplicitAiHome::Isolated(path)
+}
+
+/// Scan one explicit AI provider home. Never falls back to a production
+/// default and never mutates the home.
+pub fn ai_scan_home(
+    provider: AiProvider,
+    home: &Path,
+    cancel: &dyn CancelObserver,
+) -> std::result::Result<AiObservationV1, AiError> {
+    scan_ai(
+        &AiScanRequest {
+            provider: Some(provider),
+            home: Some(home.to_path_buf()),
+        },
+        cancel,
+    )
+}
+
+/// Build one cleanup plan for one class from an accepted observation.
+pub fn ai_plan(
+    observation: &AiObservationV1,
+    class: AiClass,
+) -> std::result::Result<AiPlanV1, AiError> {
+    plan_ai(observation, class)
+}
+
 /// Recompute the live C15 AI preview digest from a saved plan.
 ///
 /// The shell does not hash locally. This does not mutate the home and does not
@@ -164,15 +281,35 @@ pub fn ai_execute(
     Ok(execute_ai(plan, preview_digest, confirmed, cancel, trash)?)
 }
 
+/// Confirmed C15 AI execute with the shared production Recycle Bin runner.
+///
+/// This is the only entry that owns the real move, and only the shell's
+/// confirmed user action reaches it. A stale digest or a missing confirmation
+/// returns before the runner is touched.
+pub fn ai_execute_production(
+    plan: &AiPlanV1,
+    preview_digest: &str,
+    confirmed: bool,
+    cancel: &dyn CancelObserver,
+) -> Result<AiExecuteReportV1> {
+    Ok(execute_ai(
+        plan,
+        preview_digest,
+        confirmed,
+        cancel,
+        &SystemTrashRunner,
+    )?)
+}
+
 #[cfg(test)]
-pub(crate) use tests::{cleanup, isolated_pytest_project};
+pub(crate) use tests::{IsolatedRenameTrash, cleanup, isolated_pytest_project};
 
 #[cfg(test)]
 mod tests {
     use std::{
         env, fs,
         path::PathBuf,
-        process::{Command, Output, Stdio},
+        process::{Output, Stdio},
         sync::atomic::{AtomicU64, Ordering},
     };
 
@@ -192,13 +329,13 @@ mod tests {
     use crate::shell::{CleanOutcomeNotice, Mode, Session};
     use crate::view::panel_lines;
 
-    struct IsolatedRenameTrash {
+    pub(crate) struct IsolatedRenameTrash {
         home: PathBuf,
         calls: AtomicU64,
     }
 
     impl IsolatedRenameTrash {
-        fn new(home: impl Into<PathBuf>) -> Self {
+        pub(crate) fn new(home: impl Into<PathBuf>) -> Self {
             let home = home.into();
             assert!(
                 home.file_name()
@@ -212,7 +349,7 @@ mod tests {
             }
         }
 
-        fn call_count(&self) -> u64 {
+        pub(crate) fn call_count(&self) -> u64 {
             self.calls.load(Ordering::SeqCst)
         }
     }
@@ -247,8 +384,18 @@ mod tests {
         if path.starts_with(home) {
             return true;
         }
-        match (fs::canonicalize(path), fs::canonicalize(home)) {
-            (Ok(path), Ok(home)) => path.starts_with(home),
+        // The trash destination does not exist yet, so canonicalizing the
+        // whole path fails. Resolve the canonical parent and keep the final
+        // name, which is what `fs::rename` will address.
+        let canonical = |value: &Path| -> Option<PathBuf> {
+            if let Ok(resolved) = fs::canonicalize(value) {
+                return Some(resolved);
+            }
+            let parent = fs::canonicalize(value.parent()?).ok()?;
+            Some(parent.join(value.file_name()?))
+        };
+        match (canonical(path), canonical(home)) {
+            (Some(path), Some(home)) => path.starts_with(home),
             _ => false,
         }
     }
@@ -284,6 +431,40 @@ mod tests {
                 .is_some_and(|value| value.starts_with("devsweep-gpui-c11-"))
         );
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn explicit_ai_review_home_refuses_a_real_profile_and_accepts_only_an_isolated_dir() {
+        let temp = env::temp_dir();
+        assert_eq!(
+            classify_explicit_ai_review_home(None, &temp),
+            ExplicitAiHome::Unset
+        );
+        let real = PathBuf::from(r"C:\Users\lyh\.codex");
+        assert_eq!(
+            classify_explicit_ai_review_home(Some(real.as_os_str()), &temp),
+            ExplicitAiHome::Refused(ExplicitAiHomeRefusal::OutsideTemp)
+        );
+        let missing_prefix = temp.join("not-the-fixture");
+        assert_eq!(
+            classify_explicit_ai_review_home(Some(missing_prefix.as_os_str()), &temp),
+            ExplicitAiHome::Refused(ExplicitAiHomeRefusal::MissingPrefix)
+        );
+        let isolated = temp.join(format!(
+            "devsweep-gpui-c11-explicit-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&isolated);
+        fs::create_dir_all(&isolated).unwrap();
+        assert_eq!(
+            classify_explicit_ai_review_home(Some(isolated.as_os_str()), &temp),
+            ExplicitAiHome::Isolated(isolated.clone())
+        );
+        let _ = fs::remove_dir_all(&isolated);
+        assert!(matches!(
+            classify_explicit_ai_review_home(Some(isolated.as_os_str()), &temp),
+            ExplicitAiHome::Refused(ExplicitAiHomeRefusal::NotADirectory)
+        ));
     }
 
     #[test]
@@ -853,7 +1034,7 @@ mod tests {
         root
     }
 
-    fn isolated_ai_home() -> (PathBuf, Vec<(PathBuf, Vec<u8>)>) {
+    pub(crate) fn isolated_ai_home() -> (PathBuf, Vec<(PathBuf, Vec<u8>)>) {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let root = env::temp_dir().join(format!(
             "devsweep-gpui-c11-{}-{}-ai-home",
@@ -947,7 +1128,7 @@ mod tests {
 
     fn ensure_devsweep_cli() -> PathBuf {
         let repo = repo_root();
-        let output = Command::new("cargo")
+        let output = crate::process_spawn::command_without_window("cargo")
             .args([
                 "build",
                 "--locked",
@@ -976,7 +1157,7 @@ mod tests {
 
     fn run_devsweep(bin: &Path, args: &[&str], config_dir: &Path) -> Output {
         assert_avoids_global_scope(args);
-        Command::new(bin)
+        crate::process_spawn::command_without_window(bin)
             .args(args)
             .env("LOCALAPPDATA", config_dir)
             .env("APPDATA", config_dir)
@@ -990,7 +1171,7 @@ mod tests {
 
     fn run_devsweep_ai(bin: &Path, args: &[&str], config_dir: &Path) -> Output {
         assert_ai_non_mutating(args);
-        Command::new(bin)
+        crate::process_spawn::command_without_window(bin)
             .args(args)
             .env("LOCALAPPDATA", config_dir)
             .env("APPDATA", config_dir)
@@ -1045,7 +1226,7 @@ mod tests {
             digest, live_digest,
             "stale execute must not pass the live digest"
         );
-        Command::new(bin)
+        crate::process_spawn::command_without_window(bin)
             .args(args)
             .env("LOCALAPPDATA", config_dir)
             .env("APPDATA", config_dir)

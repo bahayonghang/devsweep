@@ -5,6 +5,8 @@
 
 use devsweep_core::optimize::{MaintenanceActionClass, published_entries};
 
+use crate::copy::{self, Locale};
+
 /// Software workbench segment. Leftovers is requestable only so it can be refused.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SoftwareSegment {
@@ -112,6 +114,69 @@ fn resolve_software(segment: SoftwareSegment) -> WorkbenchDecision {
 
 fn optimize_plan_review_argv(id: &'static str) -> Vec<&'static str> {
     vec!["optimize", "plan", "--operation", id]
+}
+
+/// Host maintenance that this session must not present as a successful run.
+///
+/// Retrim is the drive-optimize/defrag class. Image scan and repair are the
+/// DISM rows. Clock sync is `w32tm /resync`. None of these has a disposable
+/// elevated target on the development host.
+const HOST_NOT_DISPOSABLE: &[&str] = &[
+    "guidance.drive_optimize",
+    "maintenance.retrim",
+    "maintenance.image_scan",
+    "maintenance.image_repair",
+    "maintenance.clock_sync",
+];
+
+/// One Optimize catalogue row as display facts. This does not plan or run.
+pub fn optimize_row_line(locale: Locale, id: &str, class: MaintenanceActionClass) -> String {
+    let class_name = match class {
+        MaintenanceActionClass::Execute => "execute",
+        MaintenanceActionClass::SettingsHandoff => "settings_handoff",
+        MaintenanceActionClass::Guidance => "guidance",
+        MaintenanceActionClass::Observe => "observe",
+    };
+    let privilege_id = match class {
+        MaintenanceActionClass::Guidance | MaintenanceActionClass::Observe => "no_dispatch",
+        MaintenanceActionClass::SettingsHandoff => "no_elevation",
+        MaintenanceActionClass::Execute => "plan_time",
+    };
+    let privilege = copy::workbench_privilege(locale, privilege_id);
+    let skip_reason = if HOST_NOT_DISPOSABLE.contains(&id) {
+        copy::workbench_host_skip(locale)
+    } else {
+        copy::workbench_not_run(locale)
+    };
+    let last_result = copy::workbench_not_run(locale);
+    format!(
+        "{id} | class={class_name} | privilege={privilege} | skip={skip_reason} | last={last_result}"
+    )
+}
+
+/// Every published Optimize row. None of these lines is an execution result.
+pub fn optimize_row_lines(locale: Locale) -> Vec<String> {
+    published_entries()
+        .iter()
+        .map(|entry| optimize_row_line(locale, entry.id, entry.action_class))
+        .collect()
+}
+
+/// Software landing identities as display lines. Leftovers stays unavailable.
+pub fn software_row_lines(locale: Locale) -> Vec<String> {
+    let last = copy::workbench_not_run(locale);
+    software_landing()
+        .into_iter()
+        .map(|decision| match decision {
+            WorkbenchDecision::Review { id, argv } => {
+                format!("{id} | review | argv={} | last={last}", argv.join(" "))
+            }
+            WorkbenchDecision::Unavailable { .. } => {
+                let explanation = copy::software_leftovers_unavailable(locale);
+                format!("leftovers | unavailable | {explanation} | last={last}")
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -236,6 +301,61 @@ mod tests {
         let leftovers_explanation = unavailable_explanation(&leftovers);
         assert!(!leftovers_explanation.is_empty());
         assert!(!claims_operation_succeeded(leftovers_explanation));
+    }
+
+    #[test]
+    fn optimize_rows_name_class_privilege_skip_and_last_result_without_success() {
+        let lines = optimize_row_lines(Locale::En);
+        let zh = optimize_row_lines(Locale::ZhCn);
+        assert!(!lines.is_empty());
+        for line in &lines {
+            assert!(line.contains("class="));
+            assert!(line.contains("privilege="));
+            assert!(line.contains("skip="));
+            assert!(line.contains("last="));
+            assert!(
+                !claims_operation_succeeded(line),
+                "optimize row claims success: {line}"
+            );
+        }
+        for id in [
+            "guidance.drive_optimize",
+            "maintenance.retrim",
+            "maintenance.image_scan",
+            "maintenance.image_repair",
+            "maintenance.clock_sync",
+        ] {
+            let line = lines
+                .iter()
+                .find(|line| line.starts_with(id))
+                .unwrap_or_else(|| panic!("missing {id}"));
+            assert!(
+                line.contains("not disposable"),
+                "{id} must explain the host skip: {line}"
+            );
+            assert!(line.contains("last=not run"));
+        }
+        let host = zh
+            .iter()
+            .find(|line| line.starts_with("maintenance.image_repair"))
+            .expect("zh image repair");
+        assert!(host.contains("未运行"));
+        assert!(host.contains("不是可丢弃目标"));
+        assert!(!host.contains("成功"));
+    }
+
+    #[test]
+    fn software_rows_do_not_claim_an_uninstall_succeeded() {
+        let lines = software_row_lines(Locale::En);
+        let zh = software_row_lines(Locale::ZhCn);
+        assert!(lines.iter().any(|line| line.starts_with("uninstall | review")));
+        assert!(lines.iter().any(|line| line.contains("Leftovers")));
+        for line in &lines {
+            assert!(!claims_operation_succeeded(line), "{line}");
+            assert!(line.contains("last=not run"));
+        }
+        assert!(zh.iter().any(|line| line.contains("last=未运行")));
+        assert!(zh.iter().all(|line| !line.contains("成功")));
     }
 
     #[test]

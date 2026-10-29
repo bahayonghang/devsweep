@@ -137,6 +137,99 @@ pub fn bind_recycle_digest(
     Ok(digest.to_string())
 }
 
+/// One treemap rectangle. The id is the snapshot node id, not a display index.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TreemapRect {
+    pub id: u32,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+pub const TREEMAP_WIDTH: f32 = 560.0;
+pub const TREEMAP_HEIGHT: f32 = 220.0;
+
+/// Lays every snapshot node into a rectangle. List ids and these ids match.
+#[must_use]
+pub fn treemap_rects(nodes: &[AnalyzeNodeV1]) -> Vec<TreemapRect> {
+    let mut rects = Vec::new();
+    if nodes.is_empty() {
+        return rects;
+    }
+    let root = nodes.iter().find(|node| node.parent_id.is_none()).unwrap_or(&nodes[0]);
+    layout_node(
+        nodes,
+        root.id,
+        0.0,
+        0.0,
+        TREEMAP_WIDTH,
+        TREEMAP_HEIGHT,
+        &mut rects,
+    );
+    for node in nodes {
+        if !rects.iter().any(|rect| rect.id == node.id) {
+            rects.push(TreemapRect {
+                id: node.id,
+                x: 0.0,
+                y: 0.0,
+                width: 1.0,
+                height: 1.0,
+            });
+        }
+    }
+    rects.sort_by_key(|rect| rect.id);
+    rects
+}
+
+fn layout_node(
+    nodes: &[AnalyzeNodeV1],
+    id: u32,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    rects: &mut Vec<TreemapRect>,
+) {
+    let width = width.max(1.0);
+    let height = height.max(1.0);
+    rects.push(TreemapRect {
+        id,
+        x,
+        y,
+        width,
+        height,
+    });
+    let children = nodes
+        .iter()
+        .filter(|node| node.parent_id == Some(id))
+        .collect::<Vec<_>>();
+    if children.is_empty() {
+        return;
+    }
+    let total = children
+        .iter()
+        .map(|node| node.bytes.max(1))
+        .sum::<u64>()
+        .max(1) as f32;
+    let inset = 4.0_f32.min(width / 8.0).min(height / 8.0);
+    let inner_x = x + inset;
+    let inner_y = y + inset;
+    let inner_w = (width - inset * 2.0).max(1.0);
+    let inner_h = (height - inset * 2.0).max(1.0);
+    let mut cursor = inner_x;
+    for (index, child) in children.iter().enumerate() {
+        let share = child.bytes.max(1) as f32 / total;
+        let child_w = if index + 1 == children.len() {
+            (inner_x + inner_w - cursor).max(1.0)
+        } else {
+            (inner_w * share).max(1.0)
+        };
+        layout_node(nodes, child.id, cursor, inner_y, child_w, inner_h, rects);
+        cursor += child_w;
+    }
+}
+
 fn sha256_wire_digest(value: &str) -> bool {
     let Some(hex) = value.strip_prefix("sha256:") else {
         return false;
@@ -152,7 +245,7 @@ mod tests {
     use std::{
         env, fs,
         path::{Path, PathBuf},
-        process::{Command, Output, Stdio},
+        process::{Output, Stdio},
         sync::atomic::{AtomicU64, Ordering},
     };
 
@@ -184,6 +277,53 @@ mod tests {
             warnings,
             mtime_ms: None,
         }
+    }
+
+    #[test]
+    fn treemap_rects_share_node_ids_and_keep_positive_area() {
+        let mut root = node(
+            0,
+            AnalyzeNodeKind::Directory,
+            100,
+            2,
+            AnalyzeEvidence::Complete,
+            Vec::new(),
+        );
+        root.name = "root".to_string();
+        let mut empty = node(
+            1,
+            AnalyzeNodeKind::Directory,
+            0,
+            0,
+            AnalyzeEvidence::Complete,
+            Vec::new(),
+        );
+        empty.parent_id = Some(0);
+        empty.name = "empty".to_string();
+        let mut present = node(
+            2,
+            AnalyzeNodeKind::File,
+            80,
+            0,
+            AnalyzeEvidence::Complete,
+            Vec::new(),
+        );
+        present.parent_id = Some(0);
+        present.name = "keep.bin".to_string();
+        let nodes = vec![root, empty, present];
+        let rects = treemap_rects(&nodes);
+        assert_eq!(
+            rects.iter().map(|rect| rect.id).collect::<Vec<_>>(),
+            vec![0, 1, 2]
+        );
+        for rect in &rects {
+            assert!(rect.width > 0.0 && rect.height > 0.0, "{rect:?}");
+        }
+        let child = rects.iter().find(|rect| rect.id == 2).expect("file");
+        let parent = rects.iter().find(|rect| rect.id == 0).expect("root");
+        assert!(child.x >= parent.x);
+        assert!(child.y >= parent.y);
+        assert!(child.x + child.width <= parent.x + parent.width + 1.0);
     }
 
     #[test]
@@ -502,7 +642,7 @@ mod tests {
 
     fn ensure_devsweep_cli() -> PathBuf {
         let repo = repo_root();
-        let output = Command::new("cargo")
+        let output = crate::process_spawn::command_without_window("cargo")
             .args([
                 "build",
                 "--locked",
@@ -531,7 +671,7 @@ mod tests {
 
     fn run_devsweep(bin: &Path, args: &[&str], config_dir: &Path) -> Output {
         assert_no_trash_mutation_argv(args);
-        Command::new(bin)
+        crate::process_spawn::command_without_window(bin)
             .args(args)
             .env("LOCALAPPDATA", config_dir)
             .env("APPDATA", config_dir)
@@ -568,7 +708,7 @@ mod tests {
             !args.iter().any(|arg| arg.contains("trash-execute")),
             "argv must not contain trash-execute: {args:?}"
         );
-        Command::new(bin)
+        crate::process_spawn::command_without_window(bin)
             .args(args)
             .env("USERPROFILE", profile)
             .env("APPDATA", appdata)
