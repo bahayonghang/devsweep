@@ -159,6 +159,15 @@ impl ProcessRunner {
         command.stdin(Stdio::null());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        // Spawn console children (git included) without a console window or
+        // GUI error dialog. Stdio stays explicitly redirected, so no child
+        // console is needed for output or input.
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
 
         let mut tree = ProcessTreeBackend::default();
         tree.configure_command(&mut command);
