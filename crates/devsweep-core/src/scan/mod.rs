@@ -299,8 +299,9 @@ impl ScanPublisher<'_> {
         {
             return;
         }
-        // Observation ranking must not latch freshness/selection changes into
-        // the accumulator before the shared final boundary.
+        // The clone is deduped and ranked. The accumulator is not. The cooldown
+        // starts when that snapshot finishes, so a slow canonicalize cannot
+        // schedule another one on the next target.
         let mut snapshot = plan.clone();
         merge_and_rank_targets(&mut snapshot, []);
         let count = snapshot.targets.len();
@@ -313,7 +314,7 @@ impl ScanPublisher<'_> {
             message,
             partial: Some(snapshot),
         });
-        self.last_discovery = Some(now);
+        self.last_discovery = Some(Instant::now());
     }
 }
 
