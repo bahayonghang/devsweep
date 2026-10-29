@@ -1,0 +1,54 @@
+﻿C11-R7 keyboard flow; utc_start=2026-10-20T05:54:34Z
+binary_sha256=02A4CA0CD78581CD52E9A8AAABE1E428656BF03DED1F49817F67B3D87BD06AC4 length=16117248
+fixture_root=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a
+scan_roots_store={"roots":["C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-gpui-c11-r7\\proj-a"],"schema_version":1}
+fixture_baseline_hashes=
+launch utc=2026-10-20T06:15:59Z pid=58788
+hwnd=30740620 foreground=True
+landing_rows=
+landing_listitems=[
+landing_buttons=[
+landing_total_cpu_ms=625
+fixture_unchanged_before_scan=True
+sent F9 utc=2026-10-20T06:16:03Z
+rows_after_f9_reached=True after_ms=273
+row id=
+row id=
+found_total_cpu_ms=750 (delta=125)
+after_alt_down_1 focused=[
+after_alt_down_2 focused=[
+after_alt_up focused=[
+after_space_selected=[
+selection_summary=[
+after_tab_plus_mypy row_count=2 search_value=[''] note_value=['mypy']
+keyboard_tab_did_not_focus_search (note kept the text: 'mypy')
+uia_focus_fallback_failed=Unable to find type [System.Windows.Automation.FocusPattern].
+filtered_row name=
+filtered_row name=
+after_clear row_count=2
+sort_keyboard_attempt before='Sort: report order' after_tab_space='Sort: report order' changed=False
+keyboard_sort_not_reachable: no key binding reaches the sort button; using UIA Invoke (recorded as UIA, not keyboard)
+sort_after='Sort: name'
+row_order_after_sort=[
+preview_digest_line='' seen=False
+gpui_digest=
+cli_binary=D:\Documents\Code\Rust\Exp\devsweep\dist\c11-r7-cli\debug\devsweep.exe present=True
+cli_scan_exit=0
+cli_pytest_target_id=python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.pytest_cache
+cli_plan_exit=0
+cli_preview_exit=0
+cli_digest=sha256:08f0673e0950e05d87299c91c49cf1e85e51734305fee8c35c370662a1f8db78
+digest_match=False
+fixture_unchanged_after_cli_preview=True
+gpui_pytest_row_ids=[
+recycle_bin_count_before=287
+completed=False notice=[
+recycle_bin_count_after=287 delta=0
+pytest_dir_exists_after=True
+mypy_dir_exists_after=True
+tox_ini_exists_after=True
+audit_log_exists=False
+history_lines=[
+wm_close_exit=0 utc=2026-10-20T06:17:32Z
+own_process_remaining=0
+any_spike_processes_remaining=0

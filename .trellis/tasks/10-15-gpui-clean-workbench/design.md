@@ -53,3 +53,20 @@ rule to generic clean scan. Tests compare GPUI state or the service digest to
 the CLI digest on a temp fixture. C11-AC4 stays unchecked until a real keyboard
 and UIA pass is saved. Do not edit `desktop/`. Do not commit. Do not run
 `clean execute` on this machine.
+
+## Disk map display (2026-10-25)
+
+After a Clean scan with rows, Found, Cleaning, and Completed show a read-only
+disk map of those rows. The map is a presentation of the accepted report, not
+a second scan and not a home-folder walk. Tiles are sized by estimated bytes
+and colored by content class: build output, regenerable cache, agent history,
+AI models, Docker, system/apps, and other. Parent folders nest the artifacts
+found under them. Counts above the cap fold into Other without dropping bytes.
+
+The right column lists the bounded visible window as recommendation cards.
+Clicking a tile or a card uses the existing row selection. Recommended,
+needs-review, and not-selectable are labels for `selected_by_default` and
+selectability. They are not a claim that space was freed, and they are not a
+license to copy a shell script. Preview, digest, and confirm stay the only
+execution gate. Inspect-only, protected, and ignored rows stay visible and
+unselected. The map does not invent free disk space or unmapped personal files.

@@ -1,0 +1,19 @@
+utc_start=2026-10-26T09:57:22.9141147Z
+binary_sha256=9F1F6D1CD113AC21E7C743FC4CF95DA62E9DC60A3159938F57151E5A2EC93355 length=16704512
+method=release binary; isolated 10000 pytest caches; nearest-rank p95; UIA upper bound includes one observer read after a 20 ms gap
+foreground_ok=True
+scan_wall_ms=7931.105
+ten_k_present=True
+visible_rows=48 first=clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r10-perf\scan-root\p00000\.pytest_cache
+search_field_present=True
+search_n=100 timeouts=0 nearest_rank_p95_ms=52.764
+select_n=0 timeouts=105 nearest_rank_p95_ms=NA
+scroll_n=0 timeouts=105 nearest_rank_p95_ms=NA
+frame_n=104 nearest_rank_p95_us=439632 over_16_7ms=104
+FRAME_RESULT=NOT_PASS
+CANCEL_RESULT=NOT_RUN
+FOCUS_PATTERN_RESULT=NOT_PASS
+focus_reason=pinned AccessKit Windows adapter does not expose UIA FocusPattern
+wm_close_exit=0
+spike_remaining=0
+utc_end=2026-10-26T09:59:25.6334493Z

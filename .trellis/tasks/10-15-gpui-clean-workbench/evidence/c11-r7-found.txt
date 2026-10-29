@@ -1,0 +1,35 @@
+﻿# found
+# utc=2026-10-20T06:16:04Z
+TitleBar | id=TitleBar | name=DevSweep | enabled=True | patterns=
+MenuBar | id=SystemMenuBar | name=System Menu Bar | enabled=True | patterns=
+MenuItem | id=Item 1 | name=System | enabled=True | patterns=
+Button | id=Minimize | name=Minimize | enabled=True | patterns=Invoke
+Button | id=Maximize | name=Maximize | enabled=True | patterns=Invoke
+Button | id=Close | name=Close | enabled=True | patterns=Invoke
+Pane | id=shell-root | name=DevSweep | enabled=True | patterns=
+Button | id= | name=DevSweep menu | enabled=True | patterns=
+Tab | id= | name=Modes | enabled=True | patterns=
+TabItem | id=mode-clean | name=Clean | enabled=True | patterns=SelectionItem
+TabItem | id=mode-software | name=Software | enabled=True | patterns=SelectionItem
+TabItem | id=mode-optimize | name=Optimize | enabled=True | patterns=SelectionItem
+TabItem | id=mode-analyze | name=Analyze | enabled=True | patterns=SelectionItem
+TabItem | id=mode-status | name=Status | enabled=True | patterns=SelectionItem
+Group | id= | name=Clean | enabled=True | patterns=
+Edit | id=clean-search-input | name=Search rows | enabled=True | patterns=Value
+Button | id= | name=Sort: report order | enabled=True | patterns=Invoke
+Button | id= | name=Select recommended | enabled=True | patterns=Invoke
+Button | id= | name=Clear selection | enabled=True | patterns=Invoke
+Button | id= | name=Preview digest | enabled=True | patterns=Invoke
+Button | id= | name=Confirm move · 0 of 2 targets selected. | enabled=True | patterns=Invoke
+Button | id= | name=AI tools | enabled=True | patterns=Invoke
+Pane | id= | name=Clean | enabled=True | patterns=
+ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. | enabled=True | patterns=
+ListItem | id= | name=Keyboard: F9 scans the saved project folders; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window. | enabled=True | patterns=
+ListItem | id= | name=Clean | enabled=True | patterns=
+ListItem | id= | name=Review every Cleanup Target before anything moves. | enabled=True | patterns=
+ListItem | id= | name=Scan finished. 2 targets found. | enabled=True | patterns=
+ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a | enabled=True | patterns=
+ListItem | id= | name=0 of 2 targets selected. | enabled=True | patterns=
+ListItem | id=clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.pytest_cache | name=[ ] python.pytest_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.pytest_cache · 25 B · verified size · rebuild: pytest recreates it on the next test run. | enabled=True | patterns=SelectionItem
+ListItem | id=clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.mypy_cache | name=[ ] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.mypy_cache · 23 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check. | enabled=True | patterns=SelectionItem
+Edit | id=note-input | name=Note | enabled=True | patterns=Value

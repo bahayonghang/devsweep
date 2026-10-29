@@ -1,0 +1,251 @@
+﻿C11-R8 keyboard flow; utc_start=2026-10-26T04:55:48.4507317Z
+binary=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\dist\goal-gpui-test\debug\devsweep-gpui-spike.exe
+binary_sha256=0EB528F718E1F0D12A47164A9CF00AC7C2B0E4EAFAFF9E6177D4A75A68E794BA length=34966016
+fixture_root=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+scan_roots_store={"schema_version":1,"roots":["C:\\Users\\lyh\\AppData\\Local\\Temp\\devsweep-gpui-c11-r8\\proj-a"]}
+pytest_exists_before=True
+mypy_exists_before=True
+pid=11116
+hwnd=28380228
+foreground_ok=True foreground_hwnd=28380228
+DUMP landing title=DevSweep
+ControlType.Window | id= | name=DevSweep
+  ControlType.MenuBar | id=SystemMenuBar | name=System Menu Bar
+    ControlType.MenuItem | id=Item 1 | name=System
+  ControlType.Pane | id=shell-root | name=DevSweep
+    ControlType.Button | id= | name=DevSweep menu
+    ControlType.Tab | id= | name=Modes
+      ControlType.TabItem | id=mode-clean | name=Clean
+      ControlType.TabItem | id=mode-software | name=Software
+      ControlType.TabItem | id=mode-optimize | name=Optimize
+      ControlType.TabItem | id=mode-analyze | name=Analyze
+      ControlType.TabItem | id=mode-status | name=Status
+    ControlType.Group | id= | name=Clean
+      ControlType.Button | id= | name=Start a Clean scan
+      ControlType.Button | id= | name=AI tools
+    ControlType.Pane | id= | name=Clean
+      ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.
+      ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F9 scans the saved project folders; Enter previews, then confirms.
+      ControlType.ListItem | id= | name=Clean
+      ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves.
+      ControlType.ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+    ControlType.Edit | id=note-input | name=Note
+focus_ok=True foreground=28380228
+rows_after_f9=True
+DUMP found title=DevSweep
+ControlType.Window | id= | name=DevSweep
+  ControlType.TitleBar | id=TitleBar | name=DevSweep
+    ControlType.MenuBar | id=SystemMenuBar | name=System Menu Bar
+      ControlType.MenuItem | id=Item 1 | name=System
+    ControlType.Button | id=Minimize | name=Minimize
+    ControlType.Button | id=Maximize | name=Maximize
+    ControlType.Button | id=Close | name=Close
+  ControlType.Pane | id=shell-root | name=DevSweep
+    ControlType.Button | id= | name=DevSweep menu
+    ControlType.Tab | id= | name=Modes
+      ControlType.TabItem | id=mode-clean | name=Clean
+      ControlType.TabItem | id=mode-software | name=Software
+      ControlType.TabItem | id=mode-optimize | name=Optimize
+      ControlType.TabItem | id=mode-analyze | name=Analyze
+      ControlType.TabItem | id=mode-status | name=Status
+    ControlType.Group | id= | name=Clean
+      ControlType.Edit | id=clean-search-input | name=Search rows
+      ControlType.Button | id= | name=Sort: report order
+      ControlType.Button | id= | name=Select recommended
+      ControlType.Button | id= | name=Clear selection
+      ControlType.Button | id= | name=Preview digest
+      ControlType.Button | id= | name=Confirm move · 0 of 2 targets selected.
+      ControlType.Button | id= | name=AI tools
+    ControlType.Pane | id= | name=Clean
+      ControlType.Group | id= | name=Disk map
+        ControlType.Button | id= | name=Safe to clear .pytest_cache 14 B Needs review [ ]
+        ControlType.Button | id= | name=Safe to clear .mypy_cache 12 B Needs review [ ]
+        ControlType.Group | id= | name=Recommendations
+          ControlType.ListItem | id=clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache | name=[ ] python.pytest_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache · 14 B · verified size · rebuild: pytest recreates it on the next test run.
+          ControlType.ListItem | id=clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache | name=[ ] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache · 12 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check.
+      ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.
+      ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F9 scans the saved project folders; Enter previews, then confirms.
+      ControlType.ListItem | id= | name=Clean
+      ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves.
+      ControlType.ListItem | id= | name=Scan finished. 2 targets found.
+      ControlType.ListItem | id= | name=Disk map: 26 B mapped across 2 targets. 0 recommended, 2 to review, 0 not selectable.
+      ControlType.ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+      ControlType.ListItem | id= | name=0 of 2 targets selected.
+    ControlType.Edit | id=note-input | name=Note
+focus_ok=True foreground=28380228
+DUMP selected title=DevSweep
+ControlType.Window | id= | name=DevSweep
+  ControlType.TitleBar | id=TitleBar | name=DevSweep
+    ControlType.MenuBar | id=SystemMenuBar | name=System Menu Bar
+      ControlType.MenuItem | id=Item 1 | name=System
+    ControlType.Button | id=Minimize | name=Minimize
+    ControlType.Button | id=Maximize | name=Maximize
+    ControlType.Button | id=Close | name=Close
+  ControlType.Pane | id=shell-root | name=DevSweep
+    ControlType.Button | id= | name=DevSweep menu
+    ControlType.Tab | id= | name=Modes
+      ControlType.TabItem | id=mode-clean | name=Clean
+      ControlType.TabItem | id=mode-software | name=Software
+      ControlType.TabItem | id=mode-optimize | name=Optimize
+      ControlType.TabItem | id=mode-analyze | name=Analyze
+      ControlType.TabItem | id=mode-status | name=Status
+    ControlType.Group | id= | name=Clean
+      ControlType.Edit | id=clean-search-input | name=Search rows
+      ControlType.Button | id= | name=Sort: report order
+      ControlType.Button | id= | name=Select recommended
+      ControlType.Button | id= | name=Clear selection
+      ControlType.Button | id= | name=Preview digest
+      ControlType.Button | id= | name=Confirm move · 1 of 2 targets selected.
+      ControlType.Button | id= | name=AI tools
+      ControlType.Button | id= | name=Protect row
+      ControlType.Button | id= | name=Ignore row
+    ControlType.Pane | id= | name=Clean
+      ControlType.Group | id= | name=Disk map
+        ControlType.Button | id= | name=Safe to clear .pytest_cache 14 B Needs review [ ]
+        ControlType.Button | id= | name=Safe to clear .mypy_cache 12 B Needs review [x]
+        ControlType.Group | id= | name=Recommendations
+          ControlType.ListItem | id=clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache | name=[ ] python.pytest_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache · 14 B · verified size · rebuild: pytest recreates it on the next test run.
+          ControlType.ListItem | id=clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache | name=> [x] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache · 12 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check.
+      ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.
+      ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F9 scans the saved project folders; Enter previews, then confirms.
+      ControlType.ListItem | id= | name=Clean
+      ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves.
+      ControlType.ListItem | id= | name=Scan finished. 2 targets found.
+      ControlType.ListItem | id= | name=Disk map: 26 B mapped across 2 targets. 0 recommended, 2 to review, 0 not selectable.
+      ControlType.ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+      ControlType.ListItem | id= | name=1 of 2 targets selected.
+      ControlType.ListItem | id= | name=Selected: python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache.
+    ControlType.Edit | id=note-input | name=Note
+focus_ok=True foreground=28380228
+DUMP search title=DevSweep
+ControlType.Window | id= | name=DevSweep
+  ControlType.TitleBar | id=TitleBar | name=DevSweep
+    ControlType.MenuBar | id=SystemMenuBar | name=System Menu Bar
+      ControlType.MenuItem | id=Item 1 | name=System
+    ControlType.Button | id=Minimize | name=Minimize
+    ControlType.Button | id=Maximize | name=Maximize
+    ControlType.Button | id=Close | name=Close
+  ControlType.Pane | id=shell-root | name=DevSweep
+    ControlType.Button | id= | name=DevSweep menu
+    ControlType.Tab | id= | name=Modes
+      ControlType.TabItem | id=mode-clean | name=Clean
+      ControlType.TabItem | id=mode-software | name=Software
+      ControlType.TabItem | id=mode-optimize | name=Optimize
+      ControlType.TabItem | id=mode-analyze | name=Analyze
+      ControlType.TabItem | id=mode-status | name=Status
+    ControlType.Group | id= | name=Clean
+      ControlType.Edit | id=clean-search-input | name=Search rows
+      ControlType.Button | id= | name=Sort: report order
+      ControlType.Button | id= | name=Select recommended
+      ControlType.Button | id= | name=Clear selection
+      ControlType.Button | id= | name=Preview digest
+      ControlType.Button | id= | name=Confirm move · 1 of 2 targets selected.
+      ControlType.Button | id= | name=AI tools
+      ControlType.Button | id= | name=Protect row
+      ControlType.Button | id= | name=Ignore row
+    ControlType.Pane | id= | name=Clean
+      ControlType.Group | id= | name=Disk map
+        ControlType.Button | id= | name=Safe to clear .mypy_cache 12 B Needs review [x]
+        ControlType.Group | id= | name=Recommendations
+          ControlType.ListItem | id=clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache | name=> [x] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache · 12 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check.
+      ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.
+      ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F9 scans the saved project folders; Enter previews, then confirms.
+      ControlType.ListItem | id= | name=Clean
+      ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves.
+      ControlType.ListItem | id= | name=Scan finished. 2 targets found.
+      ControlType.ListItem | id= | name=Disk map: 12 B mapped across 1 targets. 0 recommended, 1 to review, 0 not selectable.
+      ControlType.ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+      ControlType.ListItem | id= | name=1 of 2 targets selected.
+      ControlType.ListItem | id= | name=Selected: python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache.
+    ControlType.Edit | id=note-input | name=Note
+focus_ok=True foreground=28380228
+DUMP sort title=DevSweep
+ControlType.Window | id= | name=DevSweep
+  ControlType.TitleBar | id=TitleBar | name=DevSweep
+    ControlType.MenuBar | id=SystemMenuBar | name=System Menu Bar
+      ControlType.MenuItem | id=Item 1 | name=System
+    ControlType.Button | id=Minimize | name=Minimize
+    ControlType.Button | id=Maximize | name=Maximize
+    ControlType.Button | id=Close | name=Close
+  ControlType.Pane | id=shell-root | name=DevSweep
+    ControlType.Button | id= | name=DevSweep menu
+    ControlType.Tab | id= | name=Modes
+      ControlType.TabItem | id=mode-clean | name=Clean
+      ControlType.TabItem | id=mode-software | name=Software
+      ControlType.TabItem | id=mode-optimize | name=Optimize
+      ControlType.TabItem | id=mode-analyze | name=Analyze
+      ControlType.TabItem | id=mode-status | name=Status
+    ControlType.Group | id= | name=Clean
+      ControlType.Edit | id=clean-search-input | name=Search rows
+      ControlType.Button | id= | name=Sort: name
+      ControlType.Button | id= | name=Select recommended
+      ControlType.Button | id= | name=Clear selection
+      ControlType.Button | id= | name=Preview digest
+      ControlType.Button | id= | name=Confirm move · 1 of 2 targets selected.
+      ControlType.Button | id= | name=AI tools
+      ControlType.Button | id= | name=Protect row
+      ControlType.Button | id= | name=Ignore row
+    ControlType.Pane | id= | name=Clean
+      ControlType.Group | id= | name=Disk map
+        ControlType.Button | id= | name=Safe to clear .mypy_cache 12 B Needs review [x]
+        ControlType.Group | id= | name=Recommendations
+          ControlType.ListItem | id=clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache | name=> [x] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache · 12 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check.
+      ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.
+      ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F9 scans the saved project folders; Enter previews, then confirms.
+      ControlType.ListItem | id= | name=Clean
+      ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves.
+      ControlType.ListItem | id= | name=Scan finished. 2 targets found.
+      ControlType.ListItem | id= | name=Disk map: 12 B mapped across 1 targets. 0 recommended, 1 to review, 0 not selectable.
+      ControlType.ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+      ControlType.ListItem | id= | name=1 of 2 targets selected.
+      ControlType.ListItem | id= | name=Selected: python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache.
+    ControlType.Edit | id=note-input | name=Note
+focus_ok=True foreground=28380228
+DUMP preview title=DevSweep
+ControlType.Window | id= | name=DevSweep
+  ControlType.TitleBar | id=TitleBar | name=DevSweep
+    ControlType.MenuBar | id=SystemMenuBar | name=System Menu Bar
+      ControlType.MenuItem | id=Item 1 | name=System
+    ControlType.Button | id=Minimize | name=Minimize
+    ControlType.Button | id=Maximize | name=Maximize
+    ControlType.Button | id=Close | name=Close
+  ControlType.Pane | id=shell-root | name=DevSweep
+    ControlType.Button | id= | name=DevSweep menu
+    ControlType.Tab | id= | name=Modes
+      ControlType.TabItem | id=mode-clean | name=Clean
+      ControlType.TabItem | id=mode-software | name=Software
+      ControlType.TabItem | id=mode-optimize | name=Optimize
+      ControlType.TabItem | id=mode-analyze | name=Analyze
+      ControlType.TabItem | id=mode-status | name=Status
+    ControlType.Group | id= | name=Clean
+      ControlType.Edit | id=clean-search-input | name=Search rows
+      ControlType.Button | id= | name=Sort: name
+      ControlType.Button | id= | name=Select recommended
+      ControlType.Button | id= | name=Clear selection
+      ControlType.Button | id= | name=Preview digest
+      ControlType.Button | id= | name=Confirm move · 1 of 2 targets selected.
+      ControlType.Button | id= | name=AI tools
+      ControlType.Button | id= | name=Protect row
+      ControlType.Button | id= | name=Ignore row
+    ControlType.Pane | id= | name=Clean
+      ControlType.Group | id= | name=Disk map
+        ControlType.Button | id= | name=Safe to clear .pytest_cache 14 B Needs review [ ]
+        ControlType.Button | id= | name=Safe to clear .mypy_cache 12 B Needs review [x]
+        ControlType.Group | id= | name=Recommendations
+          ControlType.ListItem | id=clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache | name=> [x] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache · 12 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check.
+          ControlType.ListItem | id=clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache | name=[ ] python.pytest_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache · 14 B · verified size · rebuild: pytest recreates it on the next test run.
+      ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus.
+      ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F9 scans the saved project folders; Enter previews, then confirms.
+      ControlType.ListItem | id= | name=Clean
+      ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves.
+      ControlType.ListItem | id= | name=Scan finished. 2 targets found.
+      ControlType.ListItem | id= | name=Disk map: 26 B mapped across 2 targets. 0 recommended, 2 to review, 0 not selectable.
+      ControlType.ListItem | id= | name=Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+      ControlType.ListItem | id= | name=1 of 2 targets selected.
+      ControlType.ListItem | id= | name=Selected: python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache.
+      ControlType.ListItem | id= | name=Live preview digest: sha256:9b86e68a5764adb2da4555d0ba083f06863e50b2d81c14176b30a29abdffdf7d (1 selected).
+    ControlType.Edit | id=note-input | name=Note
+pytest_exists_after=True
+mypy_exists_after=True
+wm_close_exited=True exit=0
+utc_end=2026-10-26T04:55:54.3446556Z

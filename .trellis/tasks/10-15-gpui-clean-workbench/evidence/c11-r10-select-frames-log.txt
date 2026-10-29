@@ -1,0 +1,8 @@
+foreground_ok=True
+binary_sha256=9F1F6D1CD113AC21E7C743FC4CF95DA62E9DC60A3159938F57151E5A2EC93355
+ten_k_present=True
+select_space_n=100 timeouts=0 nearest_rank_p95_ms=50.42
+frame_burst_n=119 nearest_rank_p95_us=45960 over_16_7ms=119
+FRAME_BURST_RESULT=NOT_PASS
+wm_close_exit=0
+spike_remaining=0

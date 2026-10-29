@@ -1,0 +1,15 @@
+﻿utc=2026-10-26T05:11:45.0920338Z
+operation_id=op-1792990879865
+binary_sha256=36FEC3279737963907C7214CFFEA22B3245641D1F74B234CB4A54D782BAC6F2C
+pid=69336 hwnd=9247256
+foreground_ok=True
+history_menu_found=True
+has_operation=True
+has_unavailable=False
+has_empty=False
+has_no_replay=True
+line=History
+line=History
+line=History is inspect-only. DevSweep cannot execute or replay a listed operation.
+line=clean | op-1792990879865 | succeeded
+utc_end=2026-10-26T05:11:47.5586520Z

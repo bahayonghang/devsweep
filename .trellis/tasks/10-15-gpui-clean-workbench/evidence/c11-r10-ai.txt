@@ -1,0 +1,93 @@
+utc_start=2026-10-26T06:17:25.9801464Z
+mode=ai
+binary=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\dist\goal-gpui-release\release\devsweep-gpui-spike.exe
+binary_sha256=113FFBB71FCA8693DECF6941085CFD49BC82A6D45681EF5A7FAA3C5D39B8C71D length=16708096
+rustc_note=PATH cargo is mbx; this binary was built with cargo 1.99.0, not an MSRV 1.88.0 pass
+explicit_home=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r10-ai\profile\.codex
+overridden_userprofile=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r10-ai
+procId=66620 hwnd=66982714
+foreground_ok=True attach_foreground=True attach_target=True set=True foreground_hwnd=66982714
+DUMP opened
+ControlType.Window | id= | name=DevSweep | FocusPattern=False
+ControlType.Pane | id=shell-root | name=DevSweep | FocusPattern=False
+ControlType.Button | id= | name=DevSweep menu | FocusPattern=False
+ControlType.Tab | id= | name=Modes | FocusPattern=False
+ControlType.TabItem | id=mode-clean | name=Clean | FocusPattern=False
+ControlType.TabItem | id=mode-software | name=Software | FocusPattern=False
+ControlType.TabItem | id=mode-optimize | name=Optimize | FocusPattern=False
+ControlType.TabItem | id=mode-analyze | name=Analyze | FocusPattern=False
+ControlType.TabItem | id=mode-status | name=Status | FocusPattern=False
+ControlType.Group | id= | name=AI tool review | FocusPattern=False
+ControlType.Button | id= | name=Provider: codex | FocusPattern=False
+ControlType.Button | id= | name=Scan AI home | FocusPattern=False
+ControlType.Button | id= | name=Close AI review | FocusPattern=False
+ControlType.Pane | id= | name=Clean | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it. | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F8 opens AI review without scanning; F9 scans the saved project folders; Enter previews, then confirms. | FocusPattern=False
+ControlType.ListItem | id= | name=Clean | FocusPattern=False
+ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves. | FocusPattern=False
+ControlType.ListItem | id= | name=AI tool review | FocusPattern=False
+ControlType.ListItem | id= | name=Review AI-tool caches, versions, sessions, and worktrees. Sensitive paths are never selectable. | FocusPattern=False
+ControlType.ListItem | id= | name=Provider: codex | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: F8 opens AI review without scanning; Enter scans or confirms the active AI category; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; Escape closes the AI review. | FocusPattern=False
+ControlType.ListItem | id= | name=Nothing is scanned until you ask. The scan reads one provider home; every sensitive path stays unselected. | FocusPattern=False
+ControlType.ListItem | id= | name=AI categories: cache 0 · versions 0 · sessions 0 · worktrees 0 · sensitive 0. | FocusPattern=False
+ControlType.ListItem | id= | name=Active AI category: cache (0 selectable). | FocusPattern=False
+ControlType.ListItem | id= | name=Recovery bundles | FocusPattern=False
+ControlType.Edit | id=note-input | name=Note | FocusPattern=False
+opened_without_home_line=True
+focus_pattern_exposed=0 nodes=42
+FOCUS_PATTERN_RESULT=NOT_PASS
+DUMP review
+ControlType.Window | id= | name=DevSweep | FocusPattern=False
+ControlType.Pane | id=shell-root | name=DevSweep | FocusPattern=False
+ControlType.Button | id= | name=DevSweep menu | FocusPattern=False
+ControlType.Tab | id= | name=Modes | FocusPattern=False
+ControlType.TabItem | id=mode-clean | name=Clean | FocusPattern=False
+ControlType.TabItem | id=mode-software | name=Software | FocusPattern=False
+ControlType.TabItem | id=mode-optimize | name=Optimize | FocusPattern=False
+ControlType.TabItem | id=mode-analyze | name=Analyze | FocusPattern=False
+ControlType.TabItem | id=mode-status | name=Status | FocusPattern=False
+ControlType.Group | id= | name=AI tool review | FocusPattern=False
+ControlType.Edit | id=clean-search-input | name=Search rows | FocusPattern=False
+ControlType.Button | id= | name=Provider: codex | FocusPattern=False
+ControlType.Button | id= | name=cache 3 | FocusPattern=False
+ControlType.Button | id= | name=versions 2 | FocusPattern=False
+ControlType.Button | id= | name=sessions 1 | FocusPattern=False
+ControlType.Button | id= | name=worktrees 1 | FocusPattern=False
+ControlType.Button | id= | name=sensitive 7 | FocusPattern=False
+ControlType.Button | id= | name=Clear selection | FocusPattern=False
+ControlType.Button | id= | name=Preview digest | FocusPattern=False
+ControlType.Button | id= | name=Confirm AI move · AI selection: 0 of 2 selectable rows. | FocusPattern=False
+ControlType.Button | id= | name=Refresh recovery list | FocusPattern=False
+ControlType.Button | id= | name=Close AI review | FocusPattern=False
+ControlType.Pane | id= | name=Clean | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it. | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F8 opens AI review without scanning; F9 scans the saved project folders; Enter previews, then confirms. | FocusPattern=False
+ControlType.ListItem | id= | name=Clean | FocusPattern=False
+ControlType.ListItem | id= | name=Review every Cleanup Target before anything moves. | FocusPattern=False
+ControlType.ListItem | id= | name=AI tool review | FocusPattern=False
+ControlType.ListItem | id= | name=Review AI-tool caches, versions, sessions, and worktrees. Sensitive paths are never selectable. | FocusPattern=False
+ControlType.ListItem | id= | name=Provider: codex | FocusPattern=False
+ControlType.ListItem | id= | name=AI home: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r10-ai\profile\.codex | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: F8 opens AI review without scanning; Enter scans or confirms the active AI category; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; Escape closes the AI review. | FocusPattern=False
+ControlType.ListItem | id= | name=AI review: 14 rows observed, 7 sensitive. | FocusPattern=False
+ControlType.ListItem | id= | name=AI categories: cache 3 · versions 2 · sessions 1 · worktrees 1 · sensitive 7. | FocusPattern=False
+ControlType.ListItem | id= | name=Active AI category: cache (2 selectable). | FocusPattern=False
+ControlType.ListItem | id= | name=1 observed tool rows are not cleanup targets. | FocusPattern=False
+ControlType.ListItem | id= | name=AI selection: 0 of 2 selectable rows. | FocusPattern=False
+ControlType.ListItem | id= | name=Recovery bundles | FocusPattern=False
+ControlType.ListItem | id=ai-row-ai:codex:regenerable_cache:cache/other.bin | name=[ ] cache/other.bin · cache · inspect-only (not a regenerable cache) | FocusPattern=False
+ControlType.ListItem | id=ai-row-ai:codex:regenerable_cache:cache/regen-a | name=[ ] cache/regen-a · cache · selectable | FocusPattern=False
+ControlType.ListItem | id=ai-row-ai:codex:regenerable_cache:cache/regen-b | name=[ ] cache/regen-b · cache · selectable | FocusPattern=False
+ControlType.Edit | id=note-input | name=Note | FocusPattern=False
+contains_real[C:\Users\lyh\.codex]=False
+contains_real[C:\Users\lyh\.claude]=False
+contains_real[C:\Users\lyh\AppData\Roaming\Cursor]=False
+contains_explicit_home=True
+contains_review_count=True
+wm_close_begin procId=66620 hwnd=66982714
+wm_close_exited=0
+wm_close_exit=0
+spike_remaining=0
+utc_end=2026-10-26T06:17:28.9914480Z

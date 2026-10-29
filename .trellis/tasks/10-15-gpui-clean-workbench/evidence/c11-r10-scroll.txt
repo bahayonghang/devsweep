@@ -1,0 +1,16 @@
+utc_start=2026-10-26T10:01:03.8191203Z
+binary_sha256=9F1F6D1CD113AC21E7C743FC4CF95DA62E9DC60A3159938F57151E5A2EC93355
+note=select and scroll are measured while the Note still has focus, before Tab
+foreground_ok=True
+cancel_n=6 nearest_rank_p95_ms=36.226
+CANCEL_SAMPLE_COUNT=UNMET
+CANCEL_ACK_BUDGET=WITHIN
+scan_wall_ms=7950.239
+ten_k_present=True
+select_n=0 timeouts=104 nearest_rank_p95_ms=NA
+scroll_n=97 timeouts=3 nearest_rank_p95_ms=59.41
+frame_n=117 nearest_rank_p95_us=222423 over_16_7ms=110
+FRAME_RESULT=NOT_PASS
+wm_close_exit=0
+spike_remaining=0
+utc_end=2026-10-26T10:02:05.7041184Z

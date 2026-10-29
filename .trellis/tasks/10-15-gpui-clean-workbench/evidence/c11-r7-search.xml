@@ -1,0 +1,39 @@
+﻿<uiaSnapshot label="search filter mypy" utc="2026-10-20T06:16:09Z">
+  <node type="TitleBar" automationId="TitleBar" name="DevSweep" patterns=""/>
+  <node type="MenuBar" automationId="SystemMenuBar" name="System Menu Bar" patterns=""/>
+  <node type="MenuItem" automationId="Item 1" name="System" patterns=""/>
+  <node type="Button" automationId="Minimize" name="Minimize" patterns="Invoke"/>
+  <node type="Button" automationId="Maximize" name="Maximize" patterns="Invoke"/>
+  <node type="Button" automationId="Close" name="Close" patterns="Invoke"/>
+  <node type="Pane" automationId="shell-root" name="DevSweep" patterns=""/>
+  <node type="Button" automationId="" name="DevSweep menu" patterns=""/>
+  <node type="Tab" automationId="" name="Modes" patterns=""/>
+  <node type="TabItem" automationId="mode-clean" name="Clean" patterns="SelectionItem"/>
+  <node type="TabItem" automationId="mode-software" name="Software" patterns="SelectionItem"/>
+  <node type="TabItem" automationId="mode-optimize" name="Optimize" patterns="SelectionItem"/>
+  <node type="TabItem" automationId="mode-analyze" name="Analyze" patterns="SelectionItem"/>
+  <node type="TabItem" automationId="mode-status" name="Status" patterns="SelectionItem"/>
+  <node type="Group" automationId="" name="Clean" patterns=""/>
+  <node type="Edit" automationId="clean-search-input" name="Search rows" patterns="Value"/>
+  <node type="Button" automationId="" name="Sort: report order" patterns="Invoke"/>
+  <node type="Button" automationId="" name="Select recommended" patterns="Invoke"/>
+  <node type="Button" automationId="" name="Clear selection" patterns="Invoke"/>
+  <node type="Button" automationId="" name="Preview digest" patterns="Invoke"/>
+  <node type="Button" automationId="" name="Confirm move · 1 of 2 targets selected." patterns="Invoke"/>
+  <node type="Button" automationId="" name="AI tools" patterns="Invoke"/>
+  <node type="Button" automationId="" name="Protect row" patterns="Invoke"/>
+  <node type="Button" automationId="" name="Ignore row" patterns="Invoke"/>
+  <node type="Pane" automationId="" name="Clean" patterns=""/>
+  <node type="ListItem" automationId="" name="Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus." patterns=""/>
+  <node type="ListItem" automationId="" name="Keyboard: F9 scans the saved project folders; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window." patterns=""/>
+  <node type="ListItem" automationId="" name="Clean" patterns=""/>
+  <node type="ListItem" automationId="" name="Review every Cleanup Target before anything moves." patterns=""/>
+  <node type="ListItem" automationId="" name="Scan finished. 2 targets found." patterns=""/>
+  <node type="ListItem" automationId="" name="Scan root: C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a" patterns=""/>
+  <node type="ListItem" automationId="" name="1 of 2 targets selected." patterns=""/>
+  <node type="ListItem" automationId="" name="Selected: python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.pytest_cache." patterns=""/>
+  <node type="ListItem" automationId="clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.pytest_cache" name="&gt; [x] python.pytest_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.pytest_cache · 25 B · verified size · rebuild: pytest recreates it on the next test run." patterns="SelectionItem"/>
+  <node type="ListItem" automationId="clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.mypy_cache" name="[ ] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r7\proj-a\.mypy_cache · 23 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check." patterns="SelectionItem"/>
+  <node type="Edit" automationId="note-input" name="Note" patterns="Value"/>
+</uiaSnapshot>
+

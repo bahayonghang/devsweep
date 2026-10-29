@@ -1,0 +1,39 @@
+utc_start=2026-10-26T06:16:46.4421204Z
+mode=history
+binary=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\dist\goal-gpui-release\release\devsweep-gpui-spike.exe
+binary_sha256=113FFBB71FCA8693DECF6941085CFD49BC82A6D45681EF5A7FAA3C5D39B8C71D length=16708096
+rustc_note=PATH cargo is mbx; this binary was built with cargo 1.99.0, not an MSRV 1.88.0 pass
+audit=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r10-history\local\DevSweep\audit\v1\clean.jsonl
+procId=38100 hwnd=6950534
+foreground_ok=True attach_foreground=True attach_target=True set=True foreground_hwnd=6950534
+focus_pattern_exposed=0 nodes=17
+FOCUS_PATTERN=NOT_EXPOSED_BY_PINNED_ACCESSKIT
+FOCUS_PATTERN_RESULT=NOT_PASS
+DUMP
+ControlType.Window | id= | name=DevSweep | FocusPattern=False
+ControlType.Pane | id=shell-root | name=DevSweep | FocusPattern=False
+ControlType.Button | id= | name=DevSweep menu | FocusPattern=False
+ControlType.Tab | id= | name=Modes | FocusPattern=False
+ControlType.TabItem | id=mode-clean | name=Clean | FocusPattern=False
+ControlType.TabItem | id=mode-software | name=Software | FocusPattern=False
+ControlType.TabItem | id=mode-optimize | name=Optimize | FocusPattern=False
+ControlType.TabItem | id=mode-analyze | name=Analyze | FocusPattern=False
+ControlType.TabItem | id=mode-status | name=Status | FocusPattern=False
+ControlType.Pane | id= | name=History | FocusPattern=False
+ControlType.ListItem | id= | name=Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it. | FocusPattern=False
+ControlType.ListItem | id= | name=History | FocusPattern=False
+ControlType.ListItem | id= | name=Inspect past cleanup records. | FocusPattern=False
+ControlType.ListItem | id= | name=History is inspect-only. DevSweep cannot execute or replay a listed operation. | FocusPattern=False
+ControlType.ListItem | id= | name=clean | op-c11-r10-history | succeeded | FocusPattern=False
+ControlType.Edit | id=note-input | name=Note | FocusPattern=False
+ControlType.Button | id= | name=Back | FocusPattern=False
+has_history_title=True
+has_operation=True
+has_no_replay=True
+has_unavailable=False
+has_empty=False
+wm_close_begin procId=38100 hwnd=6950534
+wm_close_exited=0
+wm_close_exit=0
+spike_remaining=0
+utc_end=2026-10-26T06:16:49.7229067Z

@@ -1,0 +1,34 @@
+﻿C11-R8 execute; utc_start=2026-10-26T05:01:16.6211426Z
+fixture=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a
+recycle_bin_before=59
+pytest_before=True mypy_before=True
+pid=63828 hwnd=26745006
+foreground_ok=True
+rows_after_f9=True
+selection_ok=True
+sel=Confirm move · 1 of 2 targets selected.
+sel=Safe to clear .pytest_cache 14 B Needs review [ ]
+sel=Safe to clear .mypy_cache 12 B Needs review [x]
+sel=[ ] python.pytest_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.pytest_cache · 14 B · verified size · rebuild: pytest recreates it on the next test run.
+sel=> [x] python.mypy_cache · \\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache · 12 B · verified size · rebuild: mypy re-analyses and recreates it on the next type-check.
+sel=1 of 2 targets selected.
+sel=Selected: python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache.
+gpui_digest=sha256:9b86e68a5764adb2da4555d0ba083f06863e50b2d81c14176b30a29abdffdf7d
+digest_match=True
+execute_notice_seen=True
+pytest_after=True
+mypy_after=False
+audit_exists=True
+audit_bytes=832
+audit_line={"record_kind":"execution_transition","schema_version":1,"domain":"clean","operation_id":"op-1792990879865","timestamp_epoch_ms":1792990879875,"transition":1,"outcome_code":"started","error_code":null,"evidence":{"target_identity_sha256":"56c62e6d0ef5b70a71e6f6f10fe6b9e52d133153a03469934cf90301d65650be","action_kind":"move_to_trash","irreversible":false,"capacity_class":"verified","duration_ms":null}}
+audit_line={"record_kind":"execution_transition","schema_version":1,"domain":"clean","operation_id":"op-1792990879865","timestamp_epoch_ms":1792990880076,"transition":2,"outcome_code":"succeeded","error_code":null,"evidence":{"target_identity_sha256":"56c62e6d0ef5b70a71e6f6f10fe6b9e52d133153a03469934cf90301d65650be","action_kind":"move_to_trash","irreversible":false,"capacity_class":"verified","duration_ms":210,"estimated_bytes":12}}
+history_has_executed=False
+notice=1 of 2 targets selected.
+notice=Selected: python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r8\proj-a\.mypy_cache.
+notice=Moved 1 of 1 selected targets.
+notice=The isolated trash move was reported.
+history=History
+history=The isolated trash move was reported.
+recycle_bin_after=60 delta=1
+wm_close_exited=True
+utc_end=2026-10-26T05:01:21.2100596Z
