@@ -1,0 +1,128 @@
+utc_start=2026-10-29T06:22:09.6355793Z
+binary_sha256=5BFE59AFAD66A5198A245A9F5A9C70F2D5E9DF0E0FC8CD0D3BC5B8F2115E0EB9 length=16672768
+rustc_note=cargo 1.99.0 via mbx; RUSTFLAGS=-C link-arg=/Brepro; not an MSRV 1.88.0 pass
+method=isolated LOCALAPPDATA; foreground then Alt+Right; no uninstall, no defrag, no dism, no resync
+en_foreground_ok=True procId=14748 hwnd=1772998
+en_clean_names=17 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-en-clean.png
+en_clean_UIA Clean
+en_clean_UIA Software
+en_clean_UIA Optimize
+en_clean_UIA Analyze
+en_clean_UIA Status
+en_clean_UIA Clean
+en_clean_UIA Start a Clean scan
+en_clean_UIA Clean
+en_clean_UIA Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+en_clean_UIA Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F8 opens AI review without scanning; F9 scans the saved project folders; Enter previews, then confirms.
+en_clean_UIA Clean
+en_clean_UIA Review every Cleanup Target before anything moves.
+en_clean_UIA Note
+en_clean_confirmation_error_partial_hits=0
+en_software_names=17 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-en-software.png
+en_software_UIA Clean
+en_software_UIA Software
+en_software_UIA Optimize
+en_software_UIA Analyze
+en_software_UIA Status
+en_software_UIA Software
+en_software_UIA Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+en_software_UIA Software
+en_software_UIA Review current-user software inventory before uninstall.
+en_software_UIA uninstall | review | argv=software plan | last=not run
+en_software_UIA updates | review | argv=software updates check | last=not run
+en_software_UIA startup | review | argv=software startup list | last=not run
+en_software_UIA leftovers | unavailable | Leftovers is not a software workbench segment. It is unavailable here. | last=not run
+en_software_UIA Note
+en_software_confirmation_error_partial_hits=0
+en_optimize_names=32 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-en-optimize.png
+en_optimize_UIA Clean
+en_optimize_UIA Software
+en_optimize_UIA Optimize
+en_optimize_UIA Analyze
+en_optimize_UIA Status
+en_optimize_UIA Optimize
+en_optimize_UIA Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+en_optimize_UIA Optimize
+en_optimize_UIA dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_optimize_UIA settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_optimize_UIA settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_optimize_UIA settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+en_optimize_UIA guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_optimize_UIA maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run
+en_optimize_UIA maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+en_optimize_UIA maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run
+en_optimize_UIA maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run
+en_optimize_confirmation_error_partial_hits=0
+en_analyze_names=13 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-en-analyze.png
+en_analyze_UIA Clean
+en_analyze_UIA Software
+en_analyze_UIA Optimize
+en_analyze_UIA Analyze
+en_analyze_UIA Status
+en_analyze_UIA Analyze
+en_analyze_UIA Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+en_analyze_UIA Analyze
+en_analyze_UIA Note
+en_analyze_confirmation_error_partial_hits=0
+en_status_names=13 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-en-status.png
+en_status_UIA Clean
+en_status_UIA Software
+en_status_UIA Optimize
+en_status_UIA Analyze
+en_status_UIA Status
+en_status_UIA Status
+en_status_UIA Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+en_status_UIA Status
+en_status_UIA Note
+en_status_confirmation_error_partial_hits=0
+en_wm_close=0
+zh_foreground_ok=True procId=54456 hwnd=5509124
+zh_clean_names=17 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-zh-clean.png
+zh_clean_UIA Note
+zh_clean_confirmation_error_partial_hits=0
+zh_software_names=17 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-zh-software.png
+zh_software_UIA uninstall | review | argv=software plan | last=未运行
+zh_software_UIA updates | review | argv=software updates check | last=未运行
+zh_software_UIA startup | review | argv=software startup list | last=未运行
+zh_software_UIA leftovers | unavailable | 残留项不是软件工作台分段，这里不可用。 | last=未运行
+zh_software_UIA Note
+zh_software_confirmation_error_partial_hits=0
+zh_optimize_names=32 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-zh-optimize.png
+zh_optimize_UIA dns.flush | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+zh_optimize_UIA guidance.drive_optimize | class=guidance | privilege=不可调度 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA guidance.system_integrity | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA guidance.filesystem_check | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA guidance.network_reset | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.retrim | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA maintenance.clock_probe | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.clock_sync | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA maintenance.image_scan | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA maintenance.image_repair | class=execute | privilege=计划时检查提升 | skip=未运行：主机卷和映像不是可丢弃目标 | last=未运行
+zh_optimize_UIA maintenance.dead_startup | class=execute | privilege=计划时检查提升 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.disk_health | class=observe | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.update_cache | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.icon_cache | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.search | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA maintenance.winget_repair | class=guidance | privilege=不可调度 | skip=未运行 | last=未运行
+zh_optimize_UIA Note
+zh_optimize_confirmation_error_partial_hits=0
+zh_analyze_names=13 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-zh-analyze.png
+zh_analyze_UIA Note
+zh_analyze_confirmation_error_partial_hits=0
+zh_status_names=13 screenshot=True path=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-desktop-rewrite\evidence\r3-zh-status.png
+zh_status_UIA Note
+zh_status_confirmation_error_partial_hits=0
+zh_wm_close=0
+spike_remaining=0
+utc_end=2026-10-29T06:22:16.6111000Z
+confirmation_error_partial_native=NOT_RUN
+native_list_virtualization=NOT_RUN
+analyze_uia_selection=NOT_RUN
+c06_ac4=NOT_RUN
