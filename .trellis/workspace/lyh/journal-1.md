@@ -1767,3 +1767,47 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 61: 拆分提交工作台接线并写下实施 Prompt
+<!-- trellis-session: v=2 fp=7d4ea0792103a6ec -->
+
+**Date**: 2026-10-29
+**Task**: 拆分提交工作台接线并写下实施 Prompt
+**Branch**: `codex/gpui-desktop-rewrite`
+
+### Summary
+
+核心与窗口接线已拆分提交。C06、C11、C12、C13、C14 都未达到归档条件。软件验证 Prompt 放在最后。
+
+### Main Changes
+
+- 按文件边界提交扫描去重、Git 标记、无窗口子进程、稳定身份和五个工作台接线。
+- C11、C12、C13 证据和父账本已入账，没有任务归档。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `66e4a84a122a94e41cf124d950563f8e22b27be6` | perf(core): ⚡ 扫描去重只规范化一次路径 |
+| `7cc16b6d8dba4c5f1bf3156467123c078cb090b7` | fix(core): 🐛 无 Git 标记时不启动 git |
+| `2bb5e1e105a9edb0d106b41910045efcdb36f2f7` | fix(core): 🐛 Windows 子进程不再弹出控制台 |
+| `532eff0ed8a72365942773d196779a55a7ab535b` | feat(core): ✨ 暴露清单与启动项的稳定身份 |
+| `c7846e46a2250726a26fbe2d846770f2e23ea4e1` | feat(gpui): ✨ 把五个工作台接到原生窗口 |
+| `8d050f8fa212395bb7f3ef2e6bdd1c3e4661f90d` | docs(trellis): 📝 记录 C11 清理工作台证据 |
+| `47585e082a28d2cf10b809f77ec7098ea4a262b4` | docs(trellis): 📝 记录 C12 软件优化工作台证据 |
+| `deba8d1abc527adda91cb0acc75edc000e7f3e7d` | docs(trellis): 📝 记录 C13 分析状态托盘证据 |
+| `0b80363c834dde6299f7a004b47a59267449e60c` | docs(trellis): 📝 记录父账本未验收的界面接入 |
+| `4d7febd816de83a8fb792607b9f952396a56e78f` | docs(trellis): 📝 按顺序写下未完成任务 Prompt |
+
+### Testing
+
+- [OK] 未重跑原生验收。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 先做 C11 和 C13 的窗口缺口，软件验证放在最后一份 Prompt。
