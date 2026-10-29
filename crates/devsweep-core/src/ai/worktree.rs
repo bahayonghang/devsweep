@@ -1,4 +1,4 @@
-use std::{ffi::OsString, path::Path, time::Duration};
+use std::{ffi::OsString, fs, path::Path, time::Duration};
 
 use super::{
     AiClass, AiDisposition, AiError, AiProvider, AiRow, check_cancel, io_unavailable,
@@ -91,10 +91,25 @@ fn protected_name(name: &str) -> bool {
     protected_component(name)
 }
 
+/// True when the directory carries a Git marker: a `.git` directory in a main
+/// repository or a `.git` file naming a linked worktree's gitdir. Presence
+/// alone does not prove validity; the git checks still judge the marker.
+pub(crate) fn git_marker_present(worktree: &Path) -> bool {
+    fs::metadata(worktree.join(".git"))
+        .map(|metadata| metadata.is_dir() || metadata.is_file())
+        .unwrap_or(false)
+}
+
 /// Empty string means every safety check passed.
 pub(crate) fn worktree_refusal(worktree: &Path, cancel: &dyn CancelObserver) -> &'static str {
     if cancel.is_cancel_requested() {
         return "canceled";
+    }
+    // Without a `.git` marker git could only report that the directory is not
+    // a repository, after an error-reporting console launch on Windows.
+    // Refuse first so no git process is spawned for plain directories.
+    if !git_marker_present(worktree) {
+        return "not_registered";
     }
     let inside = match git(worktree, &["rev-parse", "--is-inside-work-tree"], cancel) {
         GitRead::Missing => return "git_unavailable",

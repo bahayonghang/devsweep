@@ -548,22 +548,96 @@ fn ac3_unregistered_worktree() {
         .find(|row| row.relative_path == "worktrees/orphan")
         .expect("worktree row");
     let refusal = super::worktree::worktree_refusal(&worktree, &NoopCancelObserver);
+    assert_eq!(
+        refusal, "not_registered",
+        "a directory without a .git marker must refuse before spawning git"
+    );
     assert_eq!(row.disposition, AiDisposition::InspectOnly);
     assert_eq!(row.reason, refusal);
-    if refusal == "not_registered" {
-        assert_eq!(row.reason, "not_registered");
-    } else if refusal == "git_unavailable" {
-        assert_eq!(row.reason, "git_unavailable");
-    } else {
-        assert_eq!(
-            row.reason, "not_registered",
-            "production worktree_refusal returned {refusal}"
-        );
-    }
     assert_eq!(fingerprint(&home), before);
     assert_eq!(
         fs::read(worktree.join("file.txt")).unwrap(),
         b"not-a-registered-worktree"
+    );
+}
+
+#[test]
+fn worktree_git_marker_requires_file_or_directory() {
+    let temp = TempDir::new().unwrap();
+    let plain = temp.path().join("plain");
+    fs::create_dir_all(plain.join("nested")).unwrap();
+    assert!(!super::worktree::git_marker_present(&plain));
+    assert!(!super::worktree::git_marker_present(&plain.join("nested")));
+
+    let repo = temp.path().join("repo");
+    fs::create_dir_all(repo.join(".git")).unwrap();
+    assert!(super::worktree::git_marker_present(&repo));
+
+    let linked = temp.path().join("linked");
+    fs::create_dir_all(&linked).unwrap();
+    fs::write(
+        linked.join(".git"),
+        b"gitdir: ../repo/.git/worktrees/linked\n",
+    )
+    .unwrap();
+    assert!(super::worktree::git_marker_present(&linked));
+
+    // Presence alone is enough for the pre-check; validity is git's verdict.
+    let broken = temp.path().join("broken");
+    fs::create_dir_all(&broken).unwrap();
+    fs::write(broken.join(".git"), b"gitdir: does-not-exist\n").unwrap();
+    assert!(super::worktree::git_marker_present(&broken));
+}
+
+#[test]
+fn worktree_without_git_marker_refuses_without_git() {
+    let temp = TempDir::new().unwrap();
+    let worktree = temp.path().join("worktrees/plain");
+    fs::create_dir_all(&worktree).unwrap();
+    fs::write(worktree.join("file.txt"), b"not-a-repo").unwrap();
+    assert!(!super::worktree::git_marker_present(&worktree));
+    assert_eq!(
+        super::worktree::worktree_refusal(&worktree, &NoopCancelObserver),
+        "not_registered",
+        "the marker pre-check must decide before any git process is spawned"
+    );
+}
+
+#[test]
+fn worktree_with_git_marker_still_takes_the_git_path() {
+    let temp = TempDir::new().unwrap();
+    let git_available = Command::new("git")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false);
+
+    // A real repository carries a `.git` directory; git judges it
+    // shared_git_dir (or git_unavailable when git is missing). Either verdict
+    // proves the marker kept the existing git path.
+    let repo = temp.path().join("repo");
+    fs::create_dir_all(&repo).unwrap();
+    if git_available {
+        git_ok(&repo, &["init"]);
+    }
+    assert!(super::worktree::git_marker_present(&repo));
+    let refusal = super::worktree::worktree_refusal(&repo, &NoopCancelObserver);
+    assert!(
+        matches!(refusal, "shared_git_dir" | "git_unavailable"),
+        "a .git directory must take the git path, got {refusal}"
+    );
+
+    // A `.git` file pointing nowhere is still a marker: git fails, so the
+    // verdict is unknown (or git_unavailable without git), never the
+    // pre-check's not_registered.
+    let broken = temp.path().join("broken");
+    fs::create_dir_all(&broken).unwrap();
+    fs::write(broken.join(".git"), b"gitdir: does-not-exist\n").unwrap();
+    assert!(super::worktree::git_marker_present(&broken));
+    let refusal = super::worktree::worktree_refusal(&broken, &NoopCancelObserver);
+    assert!(
+        matches!(refusal, "unknown" | "git_unavailable"),
+        "a .git file must take the git path, got {refusal}"
     );
 }
 
