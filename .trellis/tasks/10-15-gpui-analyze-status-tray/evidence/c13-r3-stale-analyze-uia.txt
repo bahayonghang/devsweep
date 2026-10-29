@@ -1,0 +1,26 @@
+DevSweep
+DevSweep menu
+Modes
+Clean
+Software
+Optimize
+Analyze
+Status
+Analyze
+Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+Analyze
+Map disk use. This mode is read-only.
+0
+1
+2
+> 3
+0 present present analyze
+treemap 0 present
+1 empty empty empty-dir
+treemap 1 empty
+2 unreadable unreadable denied-dir
+treemap 2 unreadable
+> 3 present present keep.bin
+treemap 3 present
+recycle 3 | sha256:8ce3d29028d4776b1cd5ffdb990e75a612291c92365d5def304f51b1ef142eae
+Note

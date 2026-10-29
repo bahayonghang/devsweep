@@ -1,0 +1,29 @@
+utc_start=2026-10-29T07:04:50.1320911Z
+binary_sha256=6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69 length=17511936
+rustc_note=cargo 1.99.0 via mbx; RUSTFLAGS=-C link-arg=/Brepro; not an MSRV 1.88.0 pass
+note=23F7D614 and 5BFE59AF cycles are not reused
+note=displayed PID was not used to terminate any process
+os_crash_release=NOT_RUN
+cycle=1 procId=13556 closed=True leftover=0
+cycle=2 procId=67272 closed=True leftover=0
+cycle=3 procId=35076 closed=True leftover=0
+cycle=4 procId=49424 closed=True leftover=0
+cycle=5 procId=46428 closed=True leftover=0
+cycle=6 procId=54000 closed=True leftover=0
+cycle=7 procId=65980 closed=True leftover=0
+cycle=8 procId=45072 closed=True leftover=0
+cycle=9 procId=60476 closed=True leftover=0
+cycle=10 procId=43368 closed=True leftover=0
+cycle=11 procId=41212 closed=True leftover=0
+cycle=12 procId=63384 closed=True leftover=0
+cycle=13 procId=48200 closed=True leftover=0
+cycle=14 procId=17980 closed=True leftover=0
+cycle=15 procId=63116 closed=True leftover=0
+cycle=16 procId=69604 closed=True leftover=0
+cycle=17 procId=68976 closed=True leftover=0
+cycle=18 procId=43064 closed=True leftover=0
+cycle=19 procId=67372 closed=True leftover=0
+cycle=20 procId=42484 closed=True leftover=0
+clean_exits=20 forced=0
+spike_remaining=0
+utc_end=2026-10-29T07:05:06.7776389Z

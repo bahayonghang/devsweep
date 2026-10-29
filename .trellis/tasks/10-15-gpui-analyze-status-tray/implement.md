@@ -1,6 +1,6 @@
 # C13 Implementation and verification
 
-Status: planning; dependencies: C07, C08, C10.
+Status: in_progress. Dependencies C07, C08, and C10 are archived. C13-AC1 is checked on release SHA-256 `6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69`, 17511936 bytes. The same hash completed 20 create, minimize, restore, and `WM_CLOSE` cycles with `clean_exits=20`, `forced=0`, leftover 0. `23F7D614` and `5BFE59AF` cycles were not reused. OS crash release of the real execution state is NOT_RUN. A displayed PID is not termination authority. A missing sensor stays unavailable; this host's GPU and thermal probes were available, and processes was partial. Large snapshot rendering remains NOT_RUN. C13-AC3 and C13-AC4 stay open. Not archived.
 
 ## Sequence
 

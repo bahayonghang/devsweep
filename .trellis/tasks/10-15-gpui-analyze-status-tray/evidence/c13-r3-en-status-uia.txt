@@ -1,0 +1,23 @@
+DevSweep
+DevSweep menu
+Modes
+Clean
+Software
+Optimize
+Analyze
+Status
+Status
+Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.
+Status
+Host facts from collectors. No score.
+pid 45404
+cpu available
+memory available
+volumes available
+network available
+power available
+gpu available
+thermal available
+processes partial process_limit,process_access_denied
+displayed PID is not termination authority
+Note

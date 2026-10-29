@@ -20,7 +20,7 @@ C13-R4. Present Keep Screen On controls over C08's accepted CLI/service lease co
 
 ## Acceptance criteria
 
-- [ ] C13-AC1: Treemap/list share a stable node identity and accessible selection; unreadable content is distinct from empty and recycle uses the same CLI authority.
+- [x] C13-AC1: Treemap/list share a stable node identity and accessible selection; unreadable content is distinct from empty and recycle uses the same CLI authority. On 2026-10-29 release SHA-256 `6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69`, UIA showed the same ids on list and treemap lines, with empty, unreadable, and present distinct in English and zh-CN. Recycle showed the live `sha256:` digest from the CLI preview function. The probe did not move the file. FocusPattern remains NOT_PASS and is not this checkbox.
 - [x] C13-AC2: Unavailable sensors remain honest; main/tray subscriptions start/stop predictably and hidden panels add no decorative work.
 - [ ] C13-AC3: Owned Keep Screen On state releases on normal exit/crash as supported by OS; Clean Screen always has a tested emergency escape and never locks input permanently.
 - [ ] C13-AC4: Large snapshot rendering, 20 open/close/minimize cycles, native UIA and CLI/service parity pass; no process kill based on displayed PID alone.

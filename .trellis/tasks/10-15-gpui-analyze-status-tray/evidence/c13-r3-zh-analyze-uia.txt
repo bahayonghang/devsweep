@@ -1,0 +1,26 @@
+DevSweep
+DevSweep 菜单
+模式
+清理
+软件
+优化
+分析
+状态
+分析
+键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。F10 打开菜单；Down 移动高亮项；Enter 打开它。
+分析
+映射磁盘占用。此模式只读。
+0
+1
+2
+> 3
+0 present 存在 analyze
+treemap 0 present
+1 empty 空 empty-dir
+treemap 1 empty
+2 unreadable 不可读 denied-dir
+treemap 2 unreadable
+> 3 present 存在 keep.bin
+treemap 3 present
+recycle 3 | sha256:f52e10da0026be831fab839363303e3698a9d5ad99b72c64cffb754d9ac97b62
+Note
