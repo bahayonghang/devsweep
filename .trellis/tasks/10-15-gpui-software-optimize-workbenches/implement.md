@@ -2,6 +2,8 @@
 
 Status: in_progress. Dependencies C04, C05, and C10 are archived. C06 is not accepted. C12-AC3 and C12-AC4 are checked against release SHA-256 `6E827733E649AE9A13E1349AE0565C17F90115C9B5B006ABF66E3F5F1CF37A69`, 17511936 bytes, rustc 1.99.0 via mbx, not an MSRV 1.88.0 pass. Keyboard review used an isolated startup hive and a missing update provider. Host defrag, DISM, and clock-sync rows still say not run. They were not executed. C06-AC4 stays NOT_RUN. Do not uninstall real software or change real startup items. Not archived.
 
+Next prompt: `implement-prompt.md`. This is the software verification prompt and runs last.
+
 ## Sequence
 
 1. Verify approval of the parent final-review.md; platform scope is already confirmed.

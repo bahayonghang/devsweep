@@ -2,6 +2,8 @@
 
 Status: in_progress. Dependencies C03, C10, and C15 are archived. On 2026-10-26 the isolated keyboard review reached preview and execute, and a later release binary completed the F10, Down three times, Enter history path against an isolated store. Native AI review scanned only an explicit temp home. The 10k-row search, select, and scroll upper bounds were within 100 ms. The 16.7 ms frame budget was NOT_PASS at nearest-rank p95 45.960 ms. Cancel acknowledgement was within 100 ms on 6 samples; the 100-sample count is unmet. UIA FocusPattern is not exposed and is not PASS. C11-AC1 through C11-AC4 stay unchecked. Not archived. See `evidence/c11-r10-history.txt`, `c11-r10-ai.txt`, `c11-r10-interact.txt`, `c11-r10-scroll.txt`, and `c11-r10-select-frames-log.txt`.
 
+Next prompt: `implement-prompt.md`. It does not run native verification. Software verification is the last prompt.
+
 ## Sequence
 
 1. Verify approval of the parent final-review.md; platform scope is already confirmed.

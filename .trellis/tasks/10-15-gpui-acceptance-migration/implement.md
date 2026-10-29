@@ -2,6 +2,8 @@
 
 Status: planning; dependencies: C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, C12, C13, C15, C16.
 
+Next prompt: `implement-prompt.md`. Do not start, package, or retire Tauri. Measurements wait until the software verification prompt has a new release hash.
+
 ## Sequence
 
 1. Verify approval of the parent final-review.md; platform scope is already confirmed.

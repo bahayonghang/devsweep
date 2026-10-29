@@ -35,6 +35,13 @@ rustc 1.99.0. That is not an MSRV pass, not a native UIA/frame pass, and not
 C06-AC4. No new release hash was produced. C11, C12, C13, and C14 stay
 NOT_ACCEPTED. OS crash release stays NOT_RUN. Tauri was not removed.
 
+2026-10-29: product wiring is `c7846e4`; evidence and this ledger are `8d050f8`,
+`47585e0`, `deba8d1`, and `0b80363`. No active child is ready to archive.
+C11-AC1 through C11-AC4 stay unchecked. C12 checks still name `6E827733` and
+do not cover `c7846e4`. C13-AC3 and C13-AC4 stay open. C06-AC4 stays NOT_RUN.
+C14 stays planning. Implementation prompts are `implement-prompt.md` in each
+open child. Software verification is the C12 prompt and runs last.
+
 
 
 
