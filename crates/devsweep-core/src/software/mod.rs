@@ -73,7 +73,7 @@ pub use startup::{
     StartupStrictOutcome, StartupTogglePlanV1, StartupTogglePreviewV1, StartupToggleStrictReportV1,
     execute_startup_hive, execute_startup_restore, execute_startup_toggle, list_startup_entries,
     plan_startup_hive, plan_startup_restore, plan_startup_toggle, preview_startup_hive,
-    preview_startup_restore, preview_startup_toggle, set_startup_enabled,
+    preview_startup_restore, preview_startup_toggle, set_startup_enabled, startup_fixture_entry_id,
 };
 pub use updates::{
     SOFTWARE_UPDATE_PLAN_VERSION, SOFTWARE_UPDATES_VERSION, SoftwareUpdateError,
@@ -368,6 +368,16 @@ fn software_id(identity: &SoftwareIdentity) -> Result<String> {
         "software:v1:{family}:{}",
         hex_digest(Sha256::digest(canonical))
     ))
+}
+
+/// Stable selection id for one exact identity. Does not scan or uninstall.
+pub fn software_entry_id(identity: &SoftwareIdentity) -> Result<String> {
+    software_id(identity)
+}
+
+/// Recomputes the inventory fingerprint. Does not scan or uninstall.
+pub fn software_inventory_fingerprint(inventory: &SoftwareInventoryV1) -> Result<String> {
+    inventory_fingerprint(inventory)
 }
 
 fn inventory_fingerprint(inventory: &SoftwareInventoryV1) -> Result<String> {

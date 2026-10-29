@@ -394,6 +394,15 @@ fn startup_id(location: SoftwareStartupLocation, name: &str) -> String {
     format!("startup:v1:{digest}")
 }
 
+/// The id [`plan_startup_hive`] expects for one fixture entry.
+///
+/// This is the same identity the hive planner hashes. It does not read the
+/// host registry and it does not write.
+#[must_use]
+pub fn startup_fixture_entry_id(location: SoftwareStartupLocation, name: &str) -> String {
+    startup_id(location, name)
+}
+
 fn set_with(
     specs: &StartupSpecs,
     audit_path: &std::path::Path,
