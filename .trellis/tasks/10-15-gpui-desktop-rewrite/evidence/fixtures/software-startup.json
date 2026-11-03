@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "OneDrive",
+      "location": "current_user_run",
+      "class": "ordinary",
+      "run_value": [
+        67,
+        58,
+        92,
+        79,
+        110,
+        101,
+        68,
+        114,
+        105,
+        118,
+        101,
+        46,
+        101,
+        120,
+        101
+      ],
+      "approval": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Teams",
+      "location": "current_user_run",
+      "class": "ordinary",
+      "run_value": [
+        67,
+        58,
+        92,
+        84,
+        101,
+        97,
+        109,
+        115,
+        46,
+        101,
+        120,
+        101
+      ],
+      "approval": [
+        3,
+        0,
+        0,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "name": "Defender",
+      "location": "machine_run",
+      "class": "security",
+      "run_value": [
+        67,
+        58,
+        92,
+        68,
+        46,
+        101,
+        120,
+        101
+      ]
+    },
+    {
+      "name": "VPN Client",
+      "location": "machine_run32",
+      "class": "network",
+      "run_value": [
+        67,
+        58,
+        92,
+        86,
+        46,
+        101,
+        120,
+        101
+      ],
+      "approval": [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

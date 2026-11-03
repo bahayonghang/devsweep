@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "observed_at_unix_ms": 1700000000000,
+  "sources": [
+    {
+      "source": {
+        "source": "msix_current_user"
+      },
+      "state": "available",
+      "reason_code": "ok"
+    }
+  ],
+  "entries": [
+    {
+      "id": "software:v1:msix:05b5ff28056b1ca5c58004fc9fe0f431a349a1a50fdc591002d4d67ee93ae690",
+      "identity": {
+        "source": "msix",
+        "package_full_name": "Visual Studio Code_1.0.0.0_x64__publisher"
+      },
+      "scope": "current_user",
+      "display_name": "Visual Studio Code",
+      "publisher": "Fixture",
+      "version": "1.96.2",
+      "provenance": [
+        {
+          "source": "msix_current_user"
+        }
+      ],
+      "eligibility": {
+        "state": "selectable",
+        "reason": "eligible_current_user_msix"
+      },
+      "size": {
+        "state": "available",
+        "value_bytes": 412000000,
+        "basis": "reported_estimate",
+        "source_code": "arp_estimated_size_kib",
+        "observed_at_unix_ms": 1
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    },
+    {
+      "id": "software:v1:msix:ef232f0406d9623edaf97c921d2ea7594f6f217b23da383d6ed8501f66e0aa03",
+      "identity": {
+        "source": "msix",
+        "package_full_name": "Node.js_1.0.0.0_x64__publisher"
+      },
+      "scope": "current_user",
+      "display_name": "Node.js",
+      "publisher": "Fixture",
+      "version": "22.11.0",
+      "provenance": [
+        {
+          "source": "msix_current_user"
+        }
+      ],
+      "eligibility": {
+        "state": "selectable",
+        "reason": "eligible_current_user_msix"
+      },
+      "size": {
+        "state": "available",
+        "value_bytes": 96000000,
+        "basis": "reported_estimate",
+        "source_code": "arp_estimated_size_kib",
+        "observed_at_unix_ms": 1
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    },
+    {
+      "id": "software:v1:msix:b37a5bcaff43d84eeb2e19a844e4d8c43d1ce01f5df4c18df14ee4f570e2d45a",
+      "identity": {
+        "source": "msix",
+        "package_full_name": "Git_1.0.0.0_x64__publisher"
+      },
+      "scope": "current_user",
+      "display_name": "Git",
+      "publisher": "Fixture",
+      "version": "2.47.1",
+      "provenance": [
+        {
+          "source": "msix_current_user"
+        }
+      ],
+      "eligibility": {
+        "state": "selectable",
+        "reason": "eligible_current_user_msix"
+      },
+      "size": {
+        "state": "partial",
+        "lower_bound_bytes": 331000000,
+        "basis": "measured_installed_location",
+        "source_code": "arp_estimated_size_kib",
+        "reason_code": "x",
+        "observed_at_unix_ms": 1
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    },
+    {
+      "id": "software:v1:arp:9052f7e8f910a2aed4a5deab2b3a12c4e41342b3e6a5eb8105a9128a09183031",
+      "identity": {
+        "source": "arp",
+        "hive": "current_user",
+        "view": "registry64",
+        "subkey": "ProtectedApp"
+      },
+      "scope": "current_user",
+      "display_name": "Docker Desktop",
+      "version": "4.37.1",
+      "provenance": [
+        {
+          "source": "arp",
+          "hive": "current_user",
+          "view": "registry64"
+        }
+      ],
+      "eligibility": {
+        "state": "manual",
+        "reason": "protected_product"
+      },
+      "size": {
+        "state": "available",
+        "value_bytes": 2900000000,
+        "basis": "measured_installed_location",
+        "source_code": "arp_estimated_size_kib",
+        "observed_at_unix_ms": 1
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    },
+    {
+      "id": "software:v1:msix:ff8b997bc0c4f8a33e537d39b4a0bcda38db873edc38664ccb40c10e1fb63bc1",
+      "identity": {
+        "source": "msix",
+        "package_full_name": "Python 3.13_1.0.0.0_x64__publisher"
+      },
+      "scope": "current_user",
+      "display_name": "Python 3.13",
+      "publisher": "Fixture",
+      "version": "3.13.1",
+      "provenance": [
+        {
+          "source": "msix_current_user"
+        }
+      ],
+      "eligibility": {
+        "state": "selectable",
+        "reason": "eligible_current_user_msix"
+      },
+      "size": {
+        "state": "unknown",
+        "reason_code": "x"
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    },
+    {
+      "id": "software:v1:msix:c7671cde2725cfcde201976dd8bb52093b3a5141ead291f5677057c0c97eb9ad",
+      "identity": {
+        "source": "msix",
+        "package_full_name": "7-Zip_1.0.0.0_x64__publisher"
+      },
+      "scope": "current_user",
+      "display_name": "7-Zip",
+      "publisher": "Fixture",
+      "version": "24.09",
+      "provenance": [
+        {
+          "source": "msix_current_user"
+        }
+      ],
+      "eligibility": {
+        "state": "selectable",
+        "reason": "eligible_current_user_msix"
+      },
+      "size": {
+        "state": "available",
+        "value_bytes": 5800000,
+        "basis": "reported_estimate",
+        "source_code": "arp_estimated_size_kib",
+        "observed_at_unix_ms": 1
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    }
+  ],
+  "fingerprint": "sha256:903de3237f4c078df7aa24af6dd259c709d221a48827d7835151d88da91a903c"
+}
