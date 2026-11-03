@@ -18,7 +18,7 @@ use std::{
 use gpui::{
     Action, App, AssetSource, Bounds, Context, ElementId, Entity, FocusHandle, Focusable,
     FontWeight, KeyBinding, PathPromptOptions, SharedString, TitlebarOptions, Window, WindowBounds,
-    WindowOptions, actions, div, img, prelude::*, px, rems, rgb, size,
+    WindowControlArea, WindowOptions, actions, div, img, prelude::*, px, rems, rgb, size,
 };
 use gpui_platform::application;
 #[cfg(windows)]
@@ -651,7 +651,8 @@ impl Render for ShellView {
             "ShellRoot"
         };
         let shell_access = accessible_control(locale, AccessibleSlot::Shell);
-        let top_bar = self.top_bar(&t, locale, selected, surface, menu_open, cx);
+        let maximized = window.is_maximized();
+        let top_bar = self.top_bar(&t, locale, selected, surface, menu_open, maximized, cx);
         let page = self.page(&t, cx);
         let busy =
             self.session.shell().activity() == Activity::Busy || self.session.background_busy();
@@ -893,6 +894,7 @@ impl ShellView {
         });
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn top_bar(
         &self,
         t: &Theme,
@@ -900,6 +902,7 @@ impl ShellView {
         selected: Mode,
         surface: Surface,
         menu_open: bool,
+        maximized: bool,
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
         let tabs = Mode::ORDER
@@ -956,6 +959,7 @@ impl ShellView {
             let hover_bg = t.surface_alt;
             div()
                 .id(id)
+                .occlude()
                 .role(gpui::Role::Button)
                 .aria_label(label)
                 .aria_toggled(if on {
@@ -984,14 +988,20 @@ impl ShellView {
             .flex_shrink_0()
             .items_center()
             .h(rems(3.75))
-            .px(rems(1.25))
+            .pl(rems(1.25))
+            .when(!CUSTOM_CAPTION, |bar| bar.pr(rems(1.25)))
             .bg(rgb(t.chrome))
             .border_b_1()
             .border_color(rgb(t.border))
+            // The bar is the custom title bar. Its blank area drags the window
+            // and double-click maximizes (HTCAPTION). Every control inside
+            // occludes it, so clicks on controls never start a drag.
+            .window_control_area(WindowControlArea::Drag)
             .child(
                 div().flex_1().flex().flex_row().items_center().child(
                     div()
                         .id("beaver-menu")
+                        .occlude()
                         .role(gpui::Role::Button)
                         .aria_label(copy::menu_label(locale))
                         .aria_expanded(menu_open)
@@ -1035,6 +1045,7 @@ impl ShellView {
             .child(
                 div()
                     .id("mode-tabs")
+                    .occlude()
                     .role(gpui::Role::TabList)
                     .aria_label(copy::modes_label(locale))
                     .flex()
@@ -1079,7 +1090,10 @@ impl ShellView {
                             this.session.begin_clean_screen();
                             cx.notify();
                         })),
-                    ),
+                    )
+                    .when(CUSTOM_CAPTION, |row| {
+                        row.child(caption_buttons(t, locale, maximized, cx))
+                    }),
             )
             .into_any_element()
     }
@@ -2114,6 +2128,88 @@ fn preview_window_size() -> Option<(f32, f32)> {
     Some((w.parse().ok()?, h.parse().ok()?))
 }
 
+/// The window draws its own caption: the top bar is the title bar and holds
+/// minimize, maximize/restore and close. On Windows the OS still owns those
+/// areas through non-client hit tests, so Snap layouts, double-click and the
+/// close lifecycle stay native. The Linux preview paints the same buttons.
+const CUSTOM_CAPTION: bool = cfg!(any(windows, feature = "linux-preview"));
+
+/// Minimize, maximize/restore and close at the top-right corner.
+///
+/// Each button is a window control area. On Windows the hit test answers
+/// HTMINBUTTON, HTMAXBUTTON or HTCLOSE, so the OS performs the action and a
+/// close goes through the normal `WM_CLOSE` path. The click listeners only
+/// run where no non-client hit test exists (the Linux preview).
+fn caption_buttons(
+    t: &Theme,
+    locale: copy::Locale,
+    maximized: bool,
+    cx: &mut Context<ShellView>,
+) -> gpui::AnyElement {
+    let hover_bg = t.surface_alt;
+    let fg = t.text_muted;
+    let text = t.text;
+    let button = |id: &'static str, icon: &'static str, label: &'static str, area| {
+        let (bg, ink) = if area == WindowControlArea::Close {
+            (0xC42B1C, 0xFFFFFF)
+        } else {
+            (hover_bg, text)
+        };
+        div()
+            .id(id)
+            .group(id)
+            .occlude()
+            .role(gpui::Role::Button)
+            .aria_label(label)
+            .window_control_area(area)
+            .flex()
+            .items_center()
+            .justify_center()
+            .w(px(46.0))
+            .h_full()
+            .hover(move |s| s.bg(rgb(bg)))
+            .child(
+                ui::icon(icon, fg)
+                    .size(px(16.0))
+                    .group_hover(id, move |s| s.text_color(rgb(ink))),
+            )
+    };
+    let (max_icon, max_label) = if maximized {
+        ("window-restore", copy::pick(locale, "Restore", "向下还原"))
+    } else {
+        ("window-max", copy::pick(locale, "Maximize", "最大化"))
+    };
+    div()
+        .id("caption-buttons")
+        .flex()
+        .flex_row()
+        .h_full()
+        .ml(rems(0.75))
+        .child(
+            button(
+                "caption-min",
+                "window-min",
+                copy::pick(locale, "Minimize", "最小化"),
+                WindowControlArea::Min,
+            )
+            .on_click(cx.listener(|_, _, window, _| window.minimize_window())),
+        )
+        .child(
+            button("caption-max", max_icon, max_label, WindowControlArea::Max)
+                .on_click(cx.listener(|_, _, window, _| window.zoom_window())),
+        )
+        .child(
+            button(
+                "caption-close",
+                "x",
+                copy::pick(locale, "Close", "关闭"),
+                WindowControlArea::Close,
+            )
+            .on_click(cx.listener(|_, _, window, _| window.remove_window())),
+        )
+        .into_any_element()
+}
+
 #[cfg(not(feature = "linux-preview"))]
 fn preview_window_size() -> Option<(f32, f32)> {
     None
@@ -2194,7 +2290,9 @@ pub fn run(session: Session) {
                         window_bounds: Some(WindowBounds::Windowed(bounds)),
                         titlebar: Some(TitlebarOptions {
                             title: Some(SharedString::from(WINDOW_TITLE)),
-                            appears_transparent: false,
+                            // Windows hides the system caption; the top bar
+                            // draws it (see `caption_buttons`).
+                            appears_transparent: cfg!(windows),
                             ..Default::default()
                         }),
                         app_id: Some("devsweep".to_string()),
@@ -2842,6 +2940,40 @@ mod tests {
         assert_eq!(session.shell().mode(), Mode::Clean);
         session.apply_key(NavKey::Down);
         assert_eq!(session.shell().mode(), Mode::Software);
+    }
+
+    #[test]
+    fn the_top_bar_is_the_title_bar_and_the_os_owns_its_caption_buttons() {
+        let source = include_str!("view.rs");
+        assert!(source.contains("appears_transparent: cfg!(windows)"));
+        assert!(source.contains(".window_control_area(WindowControlArea::Drag)"));
+        for area in [
+            "WindowControlArea::Min",
+            "WindowControlArea::Max",
+            "WindowControlArea::Close",
+        ] {
+            assert!(source.contains(area), "missing caption area: {area}");
+        }
+        // Controls inside the drag region occlude it, so a click on a tab,
+        // the beaver menu, a toggle or a caption button never starts a drag.
+        let bar_at = source.find("fn top_bar(").expect("top bar");
+        let bar_end = source[bar_at..]
+            .find("fn brand_menu(")
+            .map(|offset| bar_at + offset)
+            .expect("brand menu follows");
+        let bar = &source[bar_at..bar_end];
+        assert!(
+            bar.matches(".occlude()").count() >= 3,
+            "beaver, tabs, toggles"
+        );
+        let captions = &source[source.find("fn caption_buttons(").expect("captions")..];
+        assert!(captions.contains(".occlude()"));
+        for icon in ["window-min", "window-max", "window-restore"] {
+            assert!(
+                ui::icon_bytes(&format!("icons/{icon}.svg")).is_some(),
+                "{icon}"
+            );
+        }
     }
 
     #[test]

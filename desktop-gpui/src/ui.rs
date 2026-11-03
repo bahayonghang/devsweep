@@ -232,6 +232,9 @@ pub const ICONS: &[&str] = &[
     "thermal",
     "trash",
     "wrench",
+    "window-max",
+    "window-min",
+    "window-restore",
     "x",
 ];
 
@@ -287,6 +290,9 @@ pub fn icon_bytes(path: &str) -> Option<&'static [u8]> {
         "thermal",
         "trash",
         "wrench",
+        "window-max",
+        "window-min",
+        "window-restore",
         "x",
     )
 }
