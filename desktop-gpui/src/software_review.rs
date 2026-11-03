@@ -571,7 +571,8 @@ impl SoftwareReview {
             item.last.as_str()
         };
         Some(format!(
-            "{mark}{} | identity={} | count={} | source={} | version={} | permission={} | skip={} | last={last}",
+            "{mark}{} | {} | identity={} | count={} | source={} | version={} | permission={} | skip={} | last={last}",
+            item.name,
             item.id,
             item.identity,
             item.count,
@@ -1610,6 +1611,13 @@ mod tests {
         assert_eq!(seen, digest);
         assert_eq!(review.executor_calls(), 1);
         let painted = review.row_line(&id, Locale::En, true).expect("row");
+        // Screen readers hear the software name first; the focus mark and the
+        // id, identity and last fields stay for the UIA harnesses.
+        let name = review.item(&id).expect("item").name.clone();
+        assert!(
+            painted.starts_with(&format!("> {name} | {id} | ")),
+            "{painted}"
+        );
         assert!(painted.contains("identity="));
         assert!(painted.contains("last=removed"));
         assert!(!painted.to_ascii_lowercase().contains("succeed"));
