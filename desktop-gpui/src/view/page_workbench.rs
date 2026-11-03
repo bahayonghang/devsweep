@@ -102,15 +102,24 @@ impl ShellView {
                 workbench_notice_line(locale, notice),
             ));
         }
-        page = match segment {
-            None => page.child(self.software_landing(t, cx)),
-            Some(_) => page.child(self.software_review_card(t, cx)),
-        };
+        // The landing buttons stay mounted after a segment opens. A UIA
+        // client holds the Uninstall button and Invokes it after selecting
+        // the tab; unmounting that button returns element-not-available.
+        let review_open = segment.is_some();
+        page = page.child(self.software_landing(t, review_open, cx));
+        if review_open {
+            page = page.child(self.software_review_card(t, cx));
+        }
         page = page.children(self.workbench_review_card(t));
         page.into_any_element()
     }
 
-    fn software_landing(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn software_landing(
+        &self,
+        t: &Theme,
+        compact: bool,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
         let locale = self.session.locale();
         let cards = [
             (
@@ -151,30 +160,54 @@ impl ShellView {
                 SoftwareSegment::Updates => "software-card-updates",
                 _ => "software-card-startup",
             };
-            div()
+            let card = div()
                 .id(id)
+                .accessibility_id(id)
                 .role(gpui::Role::Button)
                 .aria_label(title)
-                .flex()
-                .flex_col()
-                .flex_1()
-                .min_w(rems(14.0))
-                .gap(rems(0.6))
-                .p(rems(1.25))
-                .rounded(rems(0.9))
-                .bg(rgb(t.surface))
-                .border_1()
-                .border_color(rgb(t.border))
                 .cursor_pointer()
-                .hover(move |s| s.border_color(rgb(hover)))
+                .border_1()
                 .keyboard_focus(t)
                 .on_click(cx.listener(move |this, _, _, cx| {
                     this.session.software_open_segment(segment);
                     cx.notify();
                 }))
-                .child(ui::icon_tile(t, icon, t.accent))
-                .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
-                .child(ui::muted(t, body))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, move |this, cx| {
+                        this.session.software_open_segment(segment);
+                        cx.notify();
+                    }),
+                );
+            if compact {
+                card.flex()
+                    .flex_row()
+                    .flex_1()
+                    .items_center()
+                    .gap(rems(0.45))
+                    .h(rems(2.1))
+                    .px(rems(0.75))
+                    .rounded(rems(0.5))
+                    .bg(rgb(t.surface))
+                    .border_color(rgb(t.border))
+                    .hover(move |s| s.border_color(rgb(hover)))
+                    .child(ui::icon(icon, t.text_muted).size(rems(0.9)))
+                    .child(div().text_size(rems(0.82)).child(title))
+            } else {
+                card.flex()
+                    .flex_col()
+                    .flex_1()
+                    .min_w(rems(14.0))
+                    .gap(rems(0.6))
+                    .p(rems(1.25))
+                    .rounded(rems(0.9))
+                    .bg(rgb(t.surface))
+                    .border_color(rgb(t.border))
+                    .hover(move |s| s.border_color(rgb(hover)))
+                    .child(ui::icon_tile(t, icon, t.accent))
+                    .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
+                    .child(ui::muted(t, body))
+            }
         });
         div()
             .flex()
@@ -185,24 +218,27 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .flex_wrap()
-                    .gap(rems(1.0))
+                    .gap(if compact { rems(0.5) } else { rems(1.0) })
                     .children(cards),
             )
             // A quiet footnote, not an alert: Leftovers is simply out of scope.
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .gap(rems(0.45))
-                    .child(ui::icon("info", t.text_subtle).size(rems(0.85)))
-                    .child(
-                        div()
-                            .text_size(rems(0.8))
-                            .text_color(rgb(t.text_subtle))
-                            .child(copy::software_leftovers_unavailable(locale)),
-                    ),
-            )
+            // Hidden once a segment is open so the compact cards stay one row.
+            .when(!compact, |landing| {
+                landing.child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .gap(rems(0.45))
+                        .child(ui::icon("info", t.text_subtle).size(rems(0.85)))
+                        .child(
+                            div()
+                                .text_size(rems(0.8))
+                                .text_color(rgb(t.text_subtle))
+                                .child(copy::software_leftovers_unavailable(locale)),
+                        ),
+                )
+            })
             .into_any_element()
     }
 

@@ -165,6 +165,19 @@ fn route_mode_action(action: &dyn Action, session: &mut Session) -> bool {
     true
 }
 
+/// UIA actions arrive as `FnMut(Option<&ActionData>, ...)`, which does not
+/// match [`Context::listener`]. The handler runs on the view after the
+/// platform has queued the action.
+pub(crate) fn on_view_a11y(
+    cx: &mut Context<ShellView>,
+    run: impl Fn(&mut ShellView, &mut Context<ShellView>) + 'static,
+) -> impl FnMut(Option<&gpui::accesskit::ActionData>, &mut Window, &mut App) + 'static {
+    let view = cx.entity().downgrade();
+    move |_data, _window, app| {
+        let _ = view.update(app, |this, cx| run(this, cx));
+    }
+}
+
 impl ShellView {
     fn prev(&mut self, action: &ModePrev, _: &mut Window, cx: &mut Context<Self>) {
         route_mode_action(action, &mut self.session);
@@ -1024,6 +1037,27 @@ impl ShellView {
                             this.session.toggle_menu();
                             cx.notify();
                         }))
+                        // aria-expanded makes this ExpandCollapse, not Invoke.
+                        // AccessKit sends Expand/Collapse, which GPUI does not
+                        // route to on_click.
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Expand,
+                            on_view_a11y(cx, |this, cx| {
+                                if !this.session.shell().menu_open() {
+                                    this.session.toggle_menu();
+                                    cx.notify();
+                                }
+                            }),
+                        )
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Collapse,
+                            on_view_a11y(cx, |this, cx| {
+                                if this.session.shell().menu_open() {
+                                    this.session.toggle_menu();
+                                    cx.notify();
+                                }
+                            }),
+                        )
                         .child(
                             img(ICON_NAME)
                                 .id("beaver-icon")
@@ -1135,10 +1169,18 @@ impl ShellView {
                         this.session.open_menu_item(index);
                         cx.notify();
                     }))
+                    .on_a11y_action(
+                        gpui::AccessibleAction::Click,
+                        on_view_a11y(cx, move |this, cx| {
+                            this.session.open_menu_item(index);
+                            cx.notify();
+                        }),
+                    )
                     .child(ui::icon(surface_icon(item), t.text_muted))
                     .child(div().flex_1().text_size(rems(0.875)).child(access.label))
             })
             .collect::<Vec<_>>();
+        let language = self.menu_language_rows(t, locale, cx);
         div()
             .absolute()
             .top(rems(3.75))
@@ -1174,9 +1216,72 @@ impl ShellView {
                     .border_color(rgb(t.border_strong))
                     .rounded(rems(0.8))
                     .shadow_lg()
-                    .children(items),
+                    .children(items)
+                    .child(ui::divider(t).mt(rems(0.2)))
+                    .child(
+                        div()
+                            .px(rems(0.7))
+                            .pt(rems(0.35))
+                            .text_size(rems(0.72))
+                            .text_color(rgb(t.text_subtle))
+                            .child(copy::language_label(locale)),
+                    )
+                    .children(language),
             )
             .into_any_element()
+    }
+
+    /// English and 简体中文 live in the open menu so a UIA client can switch
+    /// language without a second page. They stay MenuItems: a selected tab
+    /// would hide Invoke.
+    fn menu_language_rows(
+        &self,
+        t: &Theme,
+        locale: copy::Locale,
+        cx: &mut Context<Self>,
+    ) -> Vec<gpui::AnyElement> {
+        [
+            ("menu-language-en", "English", copy::Locale::En),
+            ("menu-language-zh", "简体中文", copy::Locale::ZhCn),
+        ]
+        .into_iter()
+        .map(|(id, label, choice)| {
+            let active = locale == choice;
+            let hover_bg = t.surface_alt;
+            div()
+                .id(id)
+                .accessibility_id(id)
+                .role(gpui::Role::MenuItem)
+                .aria_label(label)
+                .flex()
+                .flex_row()
+                .items_center()
+                .gap(rems(0.65))
+                .px(rems(0.7))
+                .py(rems(0.5))
+                .rounded(rems(0.5))
+                .cursor_pointer()
+                .border_1()
+                .border_color(gpui::transparent_black())
+                .keyboard_focus(t)
+                .hover(move |s| s.bg(rgb(hover_bg)))
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.session.set_locale(choice);
+                    cx.notify();
+                }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, move |this, cx| {
+                        this.session.set_locale(choice);
+                        cx.notify();
+                    }),
+                )
+                .child(ui::icon("globe", t.text_muted))
+                .child(div().flex_1().text_size(rems(0.875)).child(label))
+                .when(active, |row| row.child(ui::icon("check", t.accent)))
+                .into_any_element()
+        })
+        .collect()
     }
 
     /// The page body for the active surface.
@@ -2916,6 +3021,95 @@ mod tests {
         assert!(list_item > 0);
         let ai = crate::source_lf(include_str!("view/page_clean.rs"));
         assert!(ai.contains("let text = view.row_text(locale, id, focused)"));
+    }
+
+    #[test]
+    fn uia_can_open_process_explanations_the_menu_and_uninstall() {
+        // Role::Row is a UIA DataItem. aria-selected suppresses Invoke, and a
+        // DataItem does not expose SelectionItem, so the row would have no
+        // action. Click stays on the row and still opens the local explanation.
+        let status = crate::source_lf(include_str!("view/page_status.rs"));
+        let processes = status
+            .split_once("fn status_processes(")
+            .expect("process table")
+            .1
+            .split_once("fn status_process_detail(")
+            .expect("detail follows the table")
+            .0;
+        assert!(processes.contains(".role(gpui::Role::Row)"));
+        assert!(processes.contains("AccessibleAction::Click"));
+        assert!(processes.contains("status_toggle_process"));
+        assert!(processes.contains("status-process-"));
+        assert!(
+            !processes.contains("aria_selected"),
+            "a selected DataItem exposes neither Invoke nor SelectionItem"
+        );
+
+        // The beaver exposes ExpandCollapse, which GPUI does not route to
+        // on_click. Settings is a menu item. English and 简体中文 are menu
+        // items too, without aria-selected, so Invoke stays available.
+        let view = crate::source_lf(include_str!("view.rs"));
+        let bar = view
+            .split_once("fn top_bar(")
+            .expect("top bar")
+            .1
+            .split_once("fn brand_menu(")
+            .expect("brand menu follows")
+            .0;
+        assert!(bar.contains("AccessibleAction::Expand"));
+        assert!(bar.contains("AccessibleAction::Collapse"));
+        let menu = view
+            .split_once("fn brand_menu(")
+            .expect("brand menu")
+            .1
+            .split_once("fn page(")
+            .expect("page follows the menu")
+            .0;
+        assert!(view.contains("Surface::Settings => \"menu-settings\""));
+        assert!(menu.contains("surface_element_id(item)"));
+        assert!(menu.contains("open_menu_item"));
+        assert!(menu.contains("\"menu-language-en\""));
+        assert!(menu.contains("\"menu-language-zh\""));
+        assert!(menu.contains("\"简体中文\""));
+        assert!(menu.contains("Role::MenuItem"));
+        assert!(menu.contains("AccessibleAction::Click"));
+        let languages = menu
+            .split_once("fn menu_language_rows(")
+            .expect("language rows")
+            .1;
+        assert!(
+            !languages.contains("aria_selected"),
+            "a selected menu item would hide Invoke"
+        );
+        assert!(
+            !languages.contains("toggle_menu"),
+            "switching language must leave the menu item mounted"
+        );
+
+        // The Uninstall landing button stays mounted after the segment opens.
+        // Unmounting it makes a later UIA Invoke return element-not-available.
+        let work = crate::source_lf(include_str!("view/page_workbench.rs"));
+        let page = work
+            .split_once("fn software_page(")
+            .expect("software page")
+            .1
+            .split_once("fn software_landing(")
+            .expect("landing follows")
+            .0;
+        assert!(page.contains("self.software_landing(t, review_open, cx)"));
+        assert!(page.contains("self.software_review_card(t, cx)"));
+        assert!(!page.contains("None =>"));
+        let landing = work
+            .split_once("fn software_landing(")
+            .expect("landing")
+            .1
+            .split_once("fn software_review_card(")
+            .expect("review follows")
+            .0;
+        assert!(landing.contains("\"software-card-uninstall\""));
+        assert!(landing.contains(".accessibility_id(id)"));
+        assert!(landing.contains("AccessibleAction::Click"));
+        assert!(landing.contains("software_open_segment"));
     }
 
     #[test]

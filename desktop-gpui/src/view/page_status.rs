@@ -602,11 +602,16 @@ impl ShellView {
                 .as_ref()
                 .is_some_and(|pick| pick.pid == row.pid && pick.name == row.name);
             let clicked = row.clone();
+            let toggled = clicked.clone();
+            // Role::Row is a UIA DataItem. aria-selected suppresses Invoke,
+            // and DataItem does not expose SelectionItem, so the row would
+            // have no action that opens this explanation.
             let element = div()
                 .id(gpui::ElementId::named_usize(
                     "status-process",
                     row.pid as usize,
                 ))
+                .accessibility_id(SharedString::from(format!("status-process-{}", row.pid)))
                 .role(gpui::Role::Row)
                 .aria_label(SharedString::from(format!(
                     "{} pid {} cpu {cpu:.1}% {}",
@@ -614,7 +619,6 @@ impl ShellView {
                     row.pid,
                     ui::bytes(row.private_bytes)
                 )))
-                .aria_selected(selected)
                 .border_1()
                 .border_color(rgb(if selected { t.accent } else { t.surface }))
                 .when(selected, |row| row.bg(rgb(t.surface_alt)))
@@ -624,6 +628,13 @@ impl ShellView {
                     this.session.status_toggle_process(&clicked);
                     cx.notify();
                 }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, move |this, cx| {
+                        this.session.status_toggle_process(&toggled);
+                        cx.notify();
+                    }),
+                )
                 .flex()
                 .flex_row()
                 .items_center()
