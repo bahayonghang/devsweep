@@ -62,3 +62,10 @@ Windows-target clippy and fmt pass. UIA FocusPattern, a real Recycle Bin move
 from the window, caption behavior and lifecycle cycles are NOT_RUN on Windows
 for these commits. No box changes state. See the follow-up section of
 `evidence/redesign-2026-11-03.md`.
+
+2026-11-03, follow-up 2: the debug launch crash was a main-thread stack
+overflow. `46c790f` reserves an 8 MiB stack for Windows binaries and logs
+panics to `%TEMP%\devsweep-gpui-crash.log`. A relaunch on Windows is NOT_RUN
+here. Software rows now show qualified install sizes, update version changes
+and startup state. These are previewed with fixtures on Linux only. No box
+changes state. See "Follow-up 2" in `evidence/redesign-2026-11-03.md`.
