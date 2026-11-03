@@ -917,7 +917,8 @@ impl ShellView {
                     .accessibility_id(access.id)
                     .aria_label(access.label)
                     .aria_selected(active)
-                    .when(active, |tab| tab.aria_active_descendant())
+                    // Each tab owns real focus; an active-descendant override
+                    // would point back to the focused node and panic in GPUI.
                     .flex()
                     .flex_row()
                     .items_center()
@@ -2990,6 +2991,25 @@ mod tests {
                 "{icon}"
             );
         }
+    }
+
+    #[test]
+    fn mode_tabs_use_real_focus_without_active_descendant_override() {
+        let source = include_str!("view.rs");
+        let tabs = source
+            .split_once("let tabs = Mode::ORDER")
+            .expect("mode tab builder")
+            .1
+            .split_once(".collect::<Vec<_>>()")
+            .expect("end of mode tab builder")
+            .0;
+        assert!(tabs.contains(".role(gpui::Role::Tab)"));
+        assert!(tabs.contains(".aria_selected(active)"));
+        assert!(tabs.contains(".keyboard_focus(t)"));
+        assert!(
+            !tabs.contains(".aria_active_descendant()"),
+            "a mode tab owns real focus; making it its own active descendant panics in GPUI"
+        );
     }
 
     #[test]
