@@ -274,7 +274,7 @@ mod existing_rule_pipeline {
         const TEST: &str = "execution::tests::existing_rule_pipeline::known_global_roots_and_overrides_roundtrip_without_enabling_retained_roots";
         let Some(scenario) = std::env::var_os(CHILD) else {
             for scenario in ["default", "overrides"] {
-                let fixture = TempDir::new().unwrap();
+                let fixture = crate::test_support::tempdir().unwrap();
                 let root = fixture.path();
                 fs::create_dir_all(root.join("home")).unwrap();
                 let mut child = std::process::Command::new(std::env::current_exe().unwrap());

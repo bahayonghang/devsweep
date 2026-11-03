@@ -380,6 +380,8 @@ mod windows_cache_pipeline {
 
     #[test]
     fn real_scan_saved_plan_preview_and_recorded_execution() {
+        // Child processes create fixture files too; own them as the user.
+        crate::test_support::own_new_objects_as_current_user();
         let Some(scenario) = std::env::var_os(CHILD) else {
             // Environment belongs only to each child. Parallel tests never see it.
             for scenario in [
@@ -392,7 +394,7 @@ mod windows_cache_pipeline {
                 "tampered",
                 "unsafe-root",
             ] {
-                let fixture = TempDir::new().unwrap();
+                let fixture = crate::test_support::tempdir().unwrap();
                 let root = fixture.path();
                 fs::create_dir_all(root.join("Local/Temp")).unwrap();
                 fs::create_dir_all(root.join("home")).unwrap();
@@ -677,7 +679,7 @@ mod windows_cache_pipeline {
     }
 
     fn spawn_isolated(test: &str, env_key: &str, scenario: &str) {
-        let fixture = TempDir::new().unwrap();
+        let fixture = crate::test_support::tempdir().unwrap();
         let root = fixture.path();
         fs::create_dir_all(root.join("Local/Temp")).unwrap();
         fs::create_dir_all(root.join("home")).unwrap();
@@ -1188,6 +1190,8 @@ mod windows_cache_pipeline {
 
     #[test]
     fn catalogue_omissions_links_and_distinct_totals() {
+        // Child processes create fixture files too; own them as the user.
+        crate::test_support::own_new_objects_as_current_user();
         let Some(scenario) = std::env::var_os(CASE_ENV) else {
             for scenario in ["omissions", "reparse", "hardlink", "temp-busy", "distinct"] {
                 spawn_case(scenario);
@@ -1240,6 +1244,8 @@ mod windows_cache_pipeline {
 
     #[test]
     fn verified_freed_bytes_after_isolated_rename() {
+        // Child processes create fixture files too; own them as the user.
+        crate::test_support::own_new_objects_as_current_user();
         if std::env::var_os(FREED_ENV).is_none() {
             spawn_isolated(FREED, FREED_ENV, "freed");
             return;

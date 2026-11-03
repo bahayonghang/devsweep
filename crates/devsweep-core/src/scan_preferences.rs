@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn roots_are_explicit_normalized_deduplicated_and_nested_selections_survive() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = crate::test_support::tempdir().unwrap();
         let project = temp.path().join("Project space 测试");
         let nested = project.join("nested");
         fs::create_dir_all(&nested).unwrap();
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn reads_are_nonmutating_and_missing_saved_roots_remain_removable() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = crate::test_support::tempdir().unwrap();
         let path = temp.path().join("settings/clean-scan-roots-v1.json");
         assert!(load_from_path(&path).unwrap().is_empty());
         assert!(!path.exists());
@@ -178,7 +178,7 @@ mod tests {
 
     #[test]
     fn corrupt_future_and_unknown_fields_are_preserved_while_session_validation_works() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = crate::test_support::tempdir().unwrap();
         let path = temp.path().join("clean-scan-roots-v1.json");
         for bytes in [
             b"broken".as_slice(),
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn failed_atomic_replace_preserves_previous_bytes_and_removes_temporary_file() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = crate::test_support::tempdir().unwrap();
         let path = temp.path().join("clean-scan-roots-v1.json");
         let original = br#"{"schema_version":1,"roots":[]}"#;
         fs::write(&path, original).unwrap();
@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     fn concurrent_replacements_produce_one_whole_document_without_affecting_appearance() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = crate::test_support::tempdir().unwrap();
         let path = temp.path().join("clean-scan-roots-v1.json");
         let appearance = temp.path().join("desktop-preferences-v2.json");
         fs::write(&appearance, b"appearance sentinel").unwrap();
@@ -240,7 +240,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn symlink_ancestry_is_rejected_without_following_into_a_selected_directory() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp = crate::test_support::tempdir().unwrap();
         let real = temp.path().join("real");
         fs::create_dir_all(real.join("child")).unwrap();
         let link = temp.path().join("link");

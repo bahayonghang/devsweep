@@ -44,6 +44,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/rules/generated.rs` - marker, generated-content, repository and live-owner proof for new project outputs.
 - `crates/devsweep-core/src/rules/windows_caches.rs` - closed current-user browser/editor cache discovery and temporary-entry eligibility.
 - `crates/devsweep-core/src/scan_preferences.rs` - explicit desktop scan-root validation and atomic persistence.
+- `crates/devsweep-core/src/test_support.rs` - test-only fixture helpers, including a temp dir without symlinked ancestors.
 - `crates/devsweep-core/src/project_footprints.rs` - pure per-owner logical occupancy and overlap projection over completed observations.
 - `crates/devsweep-core/src/clean_advisories/` - pure project capacity advice, confidence-aware subtotals and the separate whole-GiB threshold store.
 - `crates/devsweep-core/src/filesystem/mod.rs` - shared filesystem safety and sizing interface.

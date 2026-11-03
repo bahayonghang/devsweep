@@ -16,8 +16,8 @@ use sha2::{Digest, Sha256};
 
 use super::{
     ANALYZE_SNAPSHOT_VERSION, ANALYZE_TRASH_VERSION, AnalyzeEvidence, AnalyzeNodeKind,
-    AnalyzeNodeV1, AnalyzeSnapshotV1, AnalyzeTrashItemV1, AnalyzeTrashRefusalV1, MAX_LOGICAL_DEPTH,
-    MAX_OWNED_BYTES, MAX_STORED_NODES, MAX_WARNINGS,
+    AnalyzeNodeV1, AnalyzeSnapshotV1, AnalyzeTrashItemV1, AnalyzeTrashRefusalV1,
+    AnalyzeWarningClass, MAX_LOGICAL_DEPTH, MAX_OWNED_BYTES, MAX_STORED_NODES, MAX_WARNINGS,
     actions::{
         Accepted, AnalyzeActionError, NodeIndex, TrashEnvironment, build_plan, select, target_id,
     },
@@ -35,11 +35,21 @@ use crate::{
 };
 
 /// Saved Analyze trash-plan version.
-pub const ANALYZE_TRASH_PLAN_VERSION: u32 = 1;
+///
+/// Version 2 binds the live file length of every selected file node. Version 1
+/// plans carry no length and are refused with `unsupported_plan_version`; they
+/// are never upgraded into executable data.
+pub const ANALYZE_TRASH_PLAN_VERSION: u32 = 2;
 /// Maximum accepted plan document size before deserialize.
 pub const ANALYZE_TRASH_PLAN_MAX_BYTES: u64 = 268_435_456;
 
 /// Frozen identity of one selected node. The hash is private `PathIdentity`.
+///
+/// `file_len` is the live file length observed at plan time. Plan version 2
+/// requires it for file nodes and forbids it for directory nodes. It closes the
+/// gap where an in-place rewrite keeps the file id and lands in the same coarse
+/// mtime tick. A version 1 document decodes with `None` and is then refused by
+/// the version check, so an absent length never weakens the binding.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AnalyzeSelectedBindingV1 {
@@ -47,6 +57,8 @@ pub struct AnalyzeSelectedBindingV1 {
     pub kind: AnalyzeNodeKind,
     pub mtime_ms: u64,
     pub identity_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file_len: Option<u64>,
 }
 
 /// Closed saved Analyze trash plan. It is not a Clean plan.
@@ -271,25 +283,28 @@ fn plan_saved_with(
         let Some(mtime_ms) = node.mtime_ms else {
             return Err(AnalyzeSavedError::IdentityUnavailable(node_id));
         };
-        let identity_sha256 = match capture_live(&index, node_id)? {
+        let (identity_sha256, file_len) = match capture_live(&index, node_id)? {
             LiveIdentity::Missing => {
                 return Err(AnalyzeSavedError::IdentityUnavailable(node_id));
             }
             LiveIdentity::Present {
                 hash,
                 mtime_ms: live_mtime,
+                file_len,
             } => {
                 if live_mtime != mtime_ms {
                     return Err(AnalyzeSavedError::ChangedSinceSnapshot(node_id));
                 }
-                hash
+                (hash, file_len)
             }
         };
+        let file_len = bound_file_len(node, file_len)?;
         selected_bindings.push(AnalyzeSelectedBindingV1 {
             node_id,
             kind: node.kind,
             mtime_ms,
             identity_sha256,
+            file_len,
         });
     }
     Ok(AnalyzeTrashPlanV1 {
@@ -407,7 +422,7 @@ struct PlanView {
     collapsed_node_ids: Vec<u32>,
     clean_digest: Option<String>,
     live_root_identity_sha256: String,
-    live_selected: Vec<(u32, String, u64)>,
+    live_selected: Vec<(u32, String, u64, Option<u64>)>,
 }
 
 fn observe_plan(
@@ -444,15 +459,25 @@ fn observe_plan(
         if node.kind != binding.kind || node.mtime_ms != Some(binding.mtime_ms) {
             return Err(AnalyzeSavedError::ChangedSinceSnapshot(binding.node_id));
         }
+        if snapshot_file_len(node).is_some_and(|observed| binding.file_len != Some(observed)) {
+            return Err(AnalyzeSavedError::ChangedSinceSnapshot(binding.node_id));
+        }
         match capture_live(&index, binding.node_id)? {
             LiveIdentity::Missing => {
-                live_selected.push((binding.node_id, "missing".to_string(), 0));
+                live_selected.push((binding.node_id, "missing".to_string(), 0, None));
             }
-            LiveIdentity::Present { hash, mtime_ms } => {
-                if hash != binding.identity_sha256 || mtime_ms != binding.mtime_ms {
+            LiveIdentity::Present {
+                hash,
+                mtime_ms,
+                file_len,
+            } => {
+                if hash != binding.identity_sha256
+                    || mtime_ms != binding.mtime_ms
+                    || file_len != binding.file_len
+                {
                     return Err(AnalyzeSavedError::ChangedSinceSnapshot(binding.node_id));
                 }
-                live_selected.push((binding.node_id, hash, mtime_ms));
+                live_selected.push((binding.node_id, hash, mtime_ms, file_len));
             }
         }
     }
@@ -689,6 +714,10 @@ fn validate_plan_shape(plan: &AnalyzeTrashPlanV1) -> Result<(), AnalyzeSavedErro
         if binding.node_id != node_id || !is_hex64(&binding.identity_sha256) {
             return Err(AnalyzeSavedError::InvalidPlan);
         }
+        // Every file binding carries its length; no other kind may claim one.
+        if (binding.kind == AnalyzeNodeKind::File) != binding.file_len.is_some() {
+            return Err(AnalyzeSavedError::InvalidPlan);
+        }
     }
     Ok(())
 }
@@ -715,7 +744,44 @@ fn child_name_ok(name: &str) -> bool {
 
 enum LiveIdentity {
     Missing,
-    Present { hash: String, mtime_ms: u64 },
+    Present {
+        hash: String,
+        mtime_ms: u64,
+        /// Live length when the entry is a regular file; `None` otherwise.
+        file_len: Option<u64>,
+    },
+}
+
+/// Length the snapshot observed for a file node, when the node owns it.
+///
+/// The walker records a complete, sole-owner file's `bytes` as its observed
+/// length. A later hard link to an already-counted object keeps `bytes == 0`
+/// with a `DuplicateLink` warning, so its stored bytes are not a length. An
+/// unstable length marks the node incomplete, which the caller already refuses.
+fn snapshot_file_len(node: &AnalyzeNodeV1) -> Option<u64> {
+    (node.kind == AnalyzeNodeKind::File
+        && node.evidence == AnalyzeEvidence::Complete
+        && !node.warnings.contains(&AnalyzeWarningClass::DuplicateLink))
+    .then_some(node.bytes)
+}
+
+/// Checks a live length against the node kind and the snapshot observation.
+fn bound_file_len(
+    node: &AnalyzeNodeV1,
+    live: Option<u64>,
+) -> Result<Option<u64>, AnalyzeSavedError> {
+    match (node.kind, live) {
+        (AnalyzeNodeKind::File, Some(len)) => {
+            if snapshot_file_len(node).is_some_and(|observed| observed != len) {
+                return Err(AnalyzeSavedError::ChangedSinceSnapshot(node.id));
+            }
+            Ok(Some(len))
+        }
+        (AnalyzeNodeKind::File, None) | (_, Some(_)) => {
+            Err(AnalyzeSavedError::ChangedSinceSnapshot(node.id))
+        }
+        (_, None) => Ok(None),
+    }
 }
 
 fn capture_required(index: &NodeIndex<'_>, node_id: u32) -> Result<String, AnalyzeSavedError> {
@@ -753,6 +819,7 @@ fn capture_live(index: &NodeIndex<'_>, node_id: u32) -> Result<LiveIdentity, Ana
     Ok(LiveIdentity::Present {
         hash: hash_identity(&identity),
         mtime_ms,
+        file_len: entry.is_file.then_some(entry.len),
     })
 }
 
@@ -1011,6 +1078,126 @@ mod tests {
         assert!(trash.moved.lock().unwrap().len() == 1);
         assert!(audit.exists());
         assert!(!path.exists());
+    }
+
+    /// Rewrites `path` in place with `bytes` and restores `mtime`, so the file id
+    /// and the millisecond mtime both match the earlier observation.
+    fn rewrite_in_place_keeping_mtime(path: &Path, bytes: &[u8], mtime: SystemTime) {
+        use std::io::Write;
+        let mut file = fs::File::options()
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .unwrap();
+        file.write_all(bytes).unwrap();
+        file.set_modified(mtime).unwrap();
+        file.sync_all().unwrap();
+    }
+
+    #[test]
+    fn same_file_id_and_mtime_with_a_new_length_refuses_before_trash() {
+        let (_temp, root, environment) = fixture();
+        let path = root.join("keep.bin");
+        let stored = snapshot(&root);
+        let keep = id_of(&stored, "keep.bin");
+        let plan = plan_saved_with(&stored, &[keep]).unwrap();
+        let binding = &plan.selected_bindings[0];
+        assert_eq!(binding.file_len, Some(32));
+        let (preview, _) = preview_saved_with(&environment, &plan).unwrap();
+        assert!(preview.refused.is_empty());
+
+        // Same tick on Windows: the rewrite keeps the file id, and the restored
+        // mtime matches to the millisecond. Only the length differs.
+        let identity = capture_path_identity(&path).unwrap();
+        let mtime = fs::metadata(&path).unwrap().modified().unwrap();
+        rewrite_in_place_keeping_mtime(&path, &[9_u8; 48], mtime);
+        assert_eq!(capture_path_identity(&path).unwrap(), identity);
+        assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), mtime);
+
+        let error = preview_saved_with(&environment, &plan).unwrap_err();
+        assert!(
+            matches!(error, AnalyzeSavedError::ChangedSinceSnapshot(id) if id == keep),
+            "{error}"
+        );
+        let trash = RecordingTrash::default();
+        let executor = Executor::new(crate::execution::ProcessCommandRunner::new(), trash.clone());
+        let audit = root.join("clean.jsonl");
+        let error = execute_saved_with(
+            &environment,
+            &executor,
+            Some(audit.clone()),
+            &plan,
+            &preview.digest,
+            true,
+            None,
+        )
+        .unwrap_err();
+        assert!(
+            matches!(error, AnalyzeSavedError::ChangedSinceSnapshot(id) if id == keep),
+            "{error}"
+        );
+        assert!(trash.moved.lock().unwrap().is_empty());
+        assert!(!audit.exists());
+        assert_eq!(fs::read(&path).unwrap(), vec![9_u8; 48]);
+
+        // The same rewrite between the snapshot and the plan refuses the plan.
+        let stored = snapshot(&root);
+        let keep = id_of(&stored, "keep.bin");
+        let mtime = fs::metadata(&path).unwrap().modified().unwrap();
+        rewrite_in_place_keeping_mtime(&path, &[9_u8; 16], mtime);
+        let error = plan_saved_with(&stored, &[keep]).unwrap_err();
+        assert!(
+            matches!(error, AnalyzeSavedError::ChangedSinceSnapshot(id) if id == keep),
+            "{error}"
+        );
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn version_one_plans_and_unbound_file_lengths_fail_closed() {
+        let (_temp, root, environment) = fixture();
+        let stored = snapshot(&root);
+        let keep = id_of(&stored, "keep.bin");
+        let docs = id_of(&stored, "docs");
+        let plan = plan_saved_with(&stored, &[keep, docs]).unwrap();
+        assert_eq!(plan.version, ANALYZE_TRASH_PLAN_VERSION);
+        assert_eq!(plan.selected_bindings[0].file_len, Some(32));
+        assert_eq!(plan.selected_bindings[1].file_len, None);
+        let encoded = serde_json::to_value(&plan).unwrap();
+        assert!(encoded["selected_bindings"][1].get("file_len").is_none());
+
+        // A version 1 document has no length. It decodes, then the version
+        // check refuses it before any live observation.
+        let mut legacy = encoded.clone();
+        legacy["version"] = serde_json::json!(1);
+        legacy["selected_bindings"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("file_len");
+        let legacy = decode_analyze_trash_plan(&serde_json::to_vec(&legacy).unwrap()).unwrap();
+        assert!(matches!(
+            preview_saved_with(&environment, &legacy),
+            Err(AnalyzeSavedError::UnsupportedPlanVersion(1))
+        ));
+
+        let mut unbound = plan.clone();
+        unbound.selected_bindings[0].file_len = None;
+        assert!(matches!(
+            preview_saved_with(&environment, &unbound),
+            Err(AnalyzeSavedError::InvalidPlan)
+        ));
+        let mut claimed = plan.clone();
+        claimed.selected_bindings[1].file_len = Some(0);
+        assert!(matches!(
+            preview_saved_with(&environment, &claimed),
+            Err(AnalyzeSavedError::InvalidPlan)
+        ));
+        let mut forged = plan;
+        forged.selected_bindings[0].file_len = Some(33);
+        assert!(matches!(
+            preview_saved_with(&environment, &forged),
+            Err(AnalyzeSavedError::ChangedSinceSnapshot(id)) if id == keep
+        ));
     }
 
     #[cfg(windows)]

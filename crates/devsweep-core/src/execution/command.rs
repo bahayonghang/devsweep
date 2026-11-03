@@ -130,8 +130,29 @@ pub struct SystemTrashRunner;
 
 impl TrashRunner for SystemTrashRunner {
     fn move_to_trash(&self, path: &Path) -> Result<()> {
-        trash::delete(path).with_context(|| format!("failed to move {} to trash", path.display()))
+        system_trash_context()
+            .delete(path)
+            .with_context(|| format!("failed to move {} to trash", path.display()))
     }
+}
+
+/// Trash context for the production runner.
+///
+/// macOS uses `NSFileManager.trashItemAtURL` rather than the crate default,
+/// which asks Finder through `osascript`. The Finder route needs an
+/// automation permission, plays a sound, and fails without a GUI session,
+/// such as on a headless runner. The trade-off is that Finder's "Put Back"
+/// may be missing on some macOS versions; the item is still in the Trash.
+/// Other platforms keep the default context.
+fn system_trash_context() -> trash::TrashContext {
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
+    let mut context = trash::TrashContext::default();
+    #[cfg(target_os = "macos")]
+    {
+        use trash::macos::{DeleteMethod, TrashContextExtMacos};
+        context.set_delete_method(DeleteMethod::NsFileManager);
+    }
+    context
 }
 
 pub(super) fn command_argv(request: &CommandRequest) -> Vec<String> {

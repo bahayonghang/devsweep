@@ -20,7 +20,10 @@ describe("large read-only scan preview", () => {
     const path = "C:/fixture/目录 with spaces 9999/node_modules";
     expect(screen.getByText(path)).toHaveAttribute("aria-label", path);
     expect(screen.getByText(path)).toHaveAttribute("title", path);
-    await user.type(screen.getByRole("searchbox", { name: "Search" }), "目录 with spaces 9999");
+    // One paste filters the full observation once; typing re-filters all
+    // 10k rows per keystroke and exceeds the default timeout on slow runners.
+    await user.click(screen.getByRole("searchbox", { name: "Search" }));
+    await user.paste("目录 with spaces 9999");
     expect(document.querySelectorAll("tbody tr")).toHaveLength(1);
     expect(screen.getByText(path)).toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();

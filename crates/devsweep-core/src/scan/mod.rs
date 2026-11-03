@@ -699,8 +699,16 @@ mod tests {
                 .push(target(&format!("target-{i}"), i, None, true));
             publisher.discovered(ScanPhase::Projects, &plan, now);
         }
+        // The cooldown starts when the first snapshot finishes, on the real
+        // clock. That start is no earlier than `now` and no later than
+        // `finished`, so these two probes are deterministic.
+        let finished = Instant::now();
         publisher.discovered(ScanPhase::Projects, &plan, now + Duration::from_millis(99));
-        publisher.discovered(ScanPhase::Projects, &plan, now + Duration::from_millis(100));
+        publisher.discovered(
+            ScanPhase::Projects,
+            &plan,
+            finished + Duration::from_millis(100),
+        );
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].partial.as_ref().unwrap().targets.len(), 1);
         assert_eq!(events[1].partial.as_ref().unwrap().targets.len(), 100);
