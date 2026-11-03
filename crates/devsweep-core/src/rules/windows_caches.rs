@@ -1141,7 +1141,8 @@ fn native_temp_probe(path: &Path, exclusive: bool) -> Check<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::{TempDir, tempdir};
+    use crate::test_support::tempdir;
+    use tempfile::TempDir;
 
     fn fixture() -> (TempDir, Roots) {
         let directory = tempdir().unwrap();

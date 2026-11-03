@@ -45,3 +45,5 @@ pub mod services;
 pub mod software;
 /// Bounded read-only Windows Status snapshots and live sampling.
 pub mod status;
+#[cfg(test)]
+mod test_support;
