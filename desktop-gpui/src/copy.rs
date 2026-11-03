@@ -1562,6 +1562,22 @@ pub fn software_updates_summary(locale: Locale, count: usize) -> String {
     }
 }
 
+/// Readable name for a startup location token. Unknown tokens pass through.
+pub fn startup_location_label(locale: Locale, token: &str) -> String {
+    let label = match (locale, token) {
+        (Locale::En, "current_user_run") => "Current user Run key",
+        (Locale::ZhCn, "current_user_run") => "当前用户 Run 键",
+        (Locale::En, "machine_run") => "Machine Run key",
+        (Locale::ZhCn, "machine_run") => "本机 Run 键",
+        (Locale::En, "machine_run32") => "Machine Run key (32-bit)",
+        (Locale::ZhCn, "machine_run32") => "本机 Run 键（32 位）",
+        (Locale::En, "current_user_startup_folder") => "Startup folder",
+        (Locale::ZhCn, "current_user_startup_folder") => "启动文件夹",
+        _ => return token.to_string(),
+    };
+    label.to_string()
+}
+
 pub fn software_startup_title(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Startup items",

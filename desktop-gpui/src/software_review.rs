@@ -66,6 +66,8 @@ pub struct SoftwareItem {
     /// Qualified install size from inventory evidence. `None` when the
     /// source reports no size; it is never painted as zero.
     pub size: Option<SoftwareSize>,
+    /// Updates only: the installed version the available one replaces.
+    pub installed_version: Option<String>,
 }
 
 /// How much an install size can be trusted. The window always shows the
@@ -1012,6 +1014,7 @@ fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareI
                 last: last.to_string(),
                 selectable: entry.eligibility.is_selectable(),
                 size: SoftwareSize::from_evidence(&entry.size),
+                installed_version: None,
             }
         })
         .collect()
@@ -1035,6 +1038,7 @@ fn update_items(rows: &[SoftwareUpdateRowV1], last: &str) -> Vec<SoftwareItem> {
             last: last.to_string(),
             selectable: false,
             size: None,
+            installed_version: Some(row.installed_version.clone()),
         })
         .collect()
 }
@@ -1050,12 +1054,21 @@ fn hive_items(path: &Path, locale: Locale, last: &str) -> Vec<SoftwareItem> {
         .iter()
         .map(|entry| {
             let id = startup_fixture_entry_id(entry.location, &entry.name);
-            let (permission, skip) = match plan_startup_hive(path, &id, false) {
-                Ok(_) => (
+            // Plan and preview only read the fixture. The preview's
+            // before_state is the observed state; a refused entry stays unknown.
+            let (permission, skip, state) = match plan_startup_hive(path, &id, false) {
+                Ok(plan) => (
                     "allowed".to_string(),
                     copy::workbench_not_run(locale).to_string(),
+                    preview_startup_hive(path, &plan)
+                        .map(|preview| preview.before_state)
+                        .unwrap_or(SoftwareStartupState::Unknown),
                 ),
-                Err(error) => (startup_permission(&error), error.code().to_string()),
+                Err(error) => (
+                    startup_permission(&error),
+                    error.code().to_string(),
+                    SoftwareStartupState::Unknown,
+                ),
             };
             SoftwareItem {
                 id,
@@ -1063,13 +1076,14 @@ fn hive_items(path: &Path, locale: Locale, last: &str) -> Vec<SoftwareItem> {
                 identity: format!("{}:{}", location_token(entry.location), entry.name),
                 count: 1,
                 source: location_token(entry.location).to_string(),
-                version: format!("{}", hive.version),
+                version: startup_state_token(state).to_string(),
                 permission,
                 skip,
                 last: last.to_string(),
                 selectable: entry.class == StartupFixtureClass::Ordinary
                     && entry.location == SoftwareStartupLocation::CurrentUserRun,
                 size: None,
+                installed_version: None,
             }
         })
         .collect()
@@ -1079,11 +1093,7 @@ fn startup_items(list: &SoftwareStartupListV1, last: &str) -> Vec<SoftwareItem> 
     list.entries
         .iter()
         .map(|entry| {
-            let state = match entry.state {
-                SoftwareStartupState::Enabled => "enabled",
-                SoftwareStartupState::Disabled => "disabled",
-                SoftwareStartupState::Unknown => "unknown",
-            };
+            let state = startup_state_token(entry.state);
             let permission = match entry.toggle {
                 devsweep_core::software::SoftwareStartupToggle::Allowed => "allowed",
                 devsweep_core::software::SoftwareStartupToggle::RequiresAdministrator => {
@@ -1102,9 +1112,18 @@ fn startup_items(list: &SoftwareStartupListV1, last: &str) -> Vec<SoftwareItem> 
                 last: last.to_string(),
                 selectable: false,
                 size: None,
+                installed_version: None,
             }
         })
         .collect()
+}
+
+fn startup_state_token(state: SoftwareStartupState) -> &'static str {
+    match state {
+        SoftwareStartupState::Enabled => "enabled",
+        SoftwareStartupState::Disabled => "disabled",
+        SoftwareStartupState::Unknown => "unknown",
+    }
 }
 
 fn segment_key(segment: SoftwareSegment) -> &'static str {
@@ -1671,5 +1690,69 @@ mod tests {
                 || unchecked.contains("probe_failed"),
             "{unchecked}"
         );
+    }
+
+    #[test]
+    fn update_rows_keep_the_installed_version_they_replace() {
+        let row = SoftwareUpdateRowV1 {
+            id: "Git.Git".to_string(),
+            name: "Git".to_string(),
+            name_truncated: false,
+            installed_version: "2.46.0".to_string(),
+            available_version: "2.47.1".to_string(),
+            source: "winget".to_string(),
+            matched_software_ids: Vec::new(),
+        };
+        let mut review = SoftwareReview::new();
+        review.open_updates(vec![row], Locale::En);
+        assert_eq!(review.segment(), Some(SoftwareSegment::Updates));
+        let item = review.item("Git.Git").expect("update row");
+        assert_eq!(item.version, "2.47.1");
+        assert_eq!(item.installed_version.as_deref(), Some("2.46.0"));
+        assert!(!item.selectable, "an update row is review-only");
+    }
+
+    #[test]
+    fn fixture_hive_rows_carry_the_observed_startup_state() {
+        let dir =
+            std::env::temp_dir().join(format!("devsweep-gpui-hive-state-{}", std::process::id()));
+        fs::create_dir_all(&dir).expect("temp dir");
+        let path = dir.join("hive.json");
+        let hive = serde_json::json!({
+            "version": 1,
+            "entries": [
+                {"name": "On", "location": "current_user_run", "class": "ordinary",
+                 "run_value": [65], "approval": [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]},
+                {"name": "Off", "location": "current_user_run", "class": "ordinary",
+                 "run_value": [66], "approval": [3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]},
+                {"name": "Guard", "location": "machine_run", "class": "security",
+                 "run_value": [67]}
+            ]
+        });
+        fs::write(&path, serde_json::to_vec(&hive).expect("json")).expect("write hive");
+        let before = fs::read(&path).expect("read hive");
+
+        let mut review = SoftwareReview::new();
+        review.open_hive(&path, Locale::En);
+        let state = |name: &str| {
+            let id = startup_fixture_entry_id(
+                if name == "Guard" {
+                    SoftwareStartupLocation::MachineRun
+                } else {
+                    SoftwareStartupLocation::CurrentUserRun
+                },
+                name,
+            );
+            review.item(&id).expect("hive row").version.clone()
+        };
+        assert_eq!(state("On"), "enabled");
+        assert_eq!(state("Off"), "disabled");
+        assert_eq!(state("Guard"), "unknown", "a refused entry is not guessed");
+        assert_eq!(
+            fs::read(&path).expect("reread"),
+            before,
+            "reading never writes"
+        );
+        let _ = fs::remove_dir_all(&dir);
     }
 }

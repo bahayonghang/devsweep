@@ -293,19 +293,59 @@ impl ShellView {
             any_row = true;
             let focused = cursor.as_deref() == Some(id.as_str());
             let text = review.row_line(id, locale, focused).unwrap_or_default();
-            let (status, tone) = if item.permission.contains("protected") {
-                (copy::pick(locale, "Protected", "受保护"), Tone::Neutral)
-            } else if item.permission.contains("permission")
-                || item.permission.contains("administrator")
-            {
-                (
-                    copy::pick(locale, "Needs admin", "需要管理员"),
-                    Tone::Warning,
-                )
-            } else if item.selectable {
-                (copy::pick(locale, "Removable", "可卸载"), Tone::Success)
-            } else {
-                (copy::pick(locale, "Review only", "仅可审阅"), Tone::Neutral)
+            let needs_admin =
+                item.permission.contains("permission") || item.permission.contains("administrator");
+            // Each segment states what the row is: an app's uninstall
+            // authority, an update's exact versions, or a startup entry's
+            // state and who may change it.
+            let (status, tone, subtitle) = match review.segment() {
+                Some(SoftwareSegment::Updates) => (
+                    copy::pick(locale, "Update available", "有可用更新"),
+                    Tone::Info,
+                    format!(
+                        "{} → {} · {}",
+                        item.installed_version.as_deref().unwrap_or("?"),
+                        item.version,
+                        item.source
+                    ),
+                ),
+                Some(SoftwareSegment::Startup) => {
+                    let (label, tone) = match item.version.as_str() {
+                        "enabled" => (copy::pick(locale, "Enabled", "已启用"), Tone::Success),
+                        "disabled" => (copy::pick(locale, "Disabled", "已禁用"), Tone::Neutral),
+                        _ => (copy::pick(locale, "Unknown", "未知"), Tone::Warning),
+                    };
+                    let authority = if item.permission.contains("protected") {
+                        copy::pick(
+                            locale,
+                            "protected, DevSweep leaves it",
+                            "受保护，DevSweep 不改动",
+                        )
+                    } else if needs_admin {
+                        copy::pick(locale, "needs admin to change", "需要管理员才能更改")
+                    } else if item.permission == "allowed" {
+                        copy::pick(locale, "you can change this", "当前用户可更改")
+                    } else {
+                        copy::pick(locale, "review only", "仅可审阅")
+                    };
+                    let location = copy::startup_location_label(locale, &item.source);
+                    (label, tone, format!("{location} · {authority}"))
+                }
+                _ => {
+                    let (label, tone) = if item.permission.contains("protected") {
+                        (copy::pick(locale, "Protected", "受保护"), Tone::Neutral)
+                    } else if needs_admin {
+                        (
+                            copy::pick(locale, "Needs admin", "需要管理员"),
+                            Tone::Warning,
+                        )
+                    } else if item.selectable {
+                        (copy::pick(locale, "Removable", "可卸载"), Tone::Success)
+                    } else {
+                        (copy::pick(locale, "Review only", "仅可审阅"), Tone::Neutral)
+                    };
+                    (label, tone, format!("{} · {}", item.version, item.source))
+                }
             };
             let element_id = SharedString::from(format!("software-row-{id}"));
             let select_id = id.clone();
@@ -339,11 +379,7 @@ impl ShellView {
                             .font_weight(FontWeight::SEMIBOLD)
                             .child(initial),
                     )
-                    .child(ui::two_line(
-                        t,
-                        item.name.clone(),
-                        format!("{} · {}", item.version, item.source),
-                    ))
+                    .child(ui::two_line(t, item.name.clone(), subtitle))
                     .when_some(item.size, |row, size| {
                         // The qualifier always travels with the number.
                         let (prefix, note) = match size {
