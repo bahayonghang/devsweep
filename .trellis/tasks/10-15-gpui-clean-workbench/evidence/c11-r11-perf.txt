@@ -1,0 +1,16 @@
+utc_start=2026-11-03T13:26:07.0028002Z
+binary=D:\Documents\Code\Rust\Exp\devsweep\desktop-gpui\dist\goal-gpui-release\release\devsweep-gpui-spike.exe
+binary_sha256=B41AC8A9087853FF0E7A01D280CB1792603AF1756834A85744A9B4BC11E01E1E length=18976768
+rustc_note=cargo 1.99.0 via mbx; not an MSRV 1.88.0 pass
+fixture=C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-c11-r11-perf\scan-root
+frame_trace=D:\Documents\Code\Rust\Exp\devsweep\.trellis\tasks\10-15-gpui-clean-workbench\evidence\c11-r11-frames.txt
+procId=44004 hwnd=5640018
+foreground_attempt=1 ok=False attach_foreground=False attach_target=True set=False now=3018540
+foreground_attempt=2 ok=False attach_foreground=False attach_target=True set=False now=3018540
+foreground_attempt=3 ok=False attach_foreground=False attach_target=True set=False now=3018540
+foreground_attempt=4 ok=False attach_foreground=False attach_target=True set=False now=3018540
+foreground_attempt=5 ok=False attach_foreground=False attach_target=True set=False now=3018540
+foreground_ok=False
+keys_sent=false
+wm_close_exit=0
+spike_remaining=0

@@ -1,0 +1,3 @@
+ERROR=foreground failed
+wm_close_exit=0
+spike_remaining=0

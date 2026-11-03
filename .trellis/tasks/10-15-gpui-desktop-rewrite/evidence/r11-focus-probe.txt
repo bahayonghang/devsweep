@@ -1,0 +1,7 @@
+utc_start=2026-11-03T13:26:11.8773884Z
+binary_sha256=B41AC8A9087853FF0E7A01D280CB1792603AF1756834A85744A9B4BC11E01E1E length=18976768
+method=AutomationElement.FocusedElement + HasKeyboardFocus after each key; no control pattern is queried
+foreground_ok=False
+ERROR=foreground failed
+wm_close_clean=True
+utc_end=2026-11-03T13:26:12.7060543Z
