@@ -691,8 +691,15 @@ mod tests {
             .execute_confirmed(Locale::En)
             .expect_err("a changed file must refuse");
         assert!(!refused.contains("Moved"), "{refused}");
+        assert!(refused.contains("changed_since_snapshot"), "{refused}");
         assert!(root.join("keep.bin").is_file());
 
+        // Planning still compares the live file with the snapshot that was
+        // previewed. Rescan so the next preview binds the rewritten file,
+        // then arm a stale digest without moving it.
+        let mut window = AnalyzeWindow::scan(&root).expect("rescan");
+        let file_id = window.first_file_id().expect("file");
+        window.select(file_id);
         window.preview_selected(Locale::En).expect("preview again");
         window.arm_stale();
         let stale = window
