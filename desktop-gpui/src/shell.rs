@@ -6,7 +6,7 @@
 
 use std::{
     collections::VecDeque,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
@@ -1106,6 +1106,7 @@ pub struct Session {
     software_review: SoftwareReview,
     optimize_board: OptimizeBoard,
     analyze_roots: Vec<AnalyzeRootChoice>,
+    analyze_notice: Option<String>,
     analyze_landing_prepared: bool,
     status_phase: StatusPhase,
     status_snapshot: Option<StatusSnapshotV1>,
@@ -1196,6 +1197,7 @@ impl Session {
             software_review: SoftwareReview::new(),
             optimize_board: OptimizeBoard::new(),
             analyze_roots: Vec::new(),
+            analyze_notice: None,
             analyze_landing_prepared: false,
             status_phase: StatusPhase::Landing,
             status_snapshot: None,
@@ -1319,6 +1321,9 @@ impl Session {
                 )
                 && self.slide_workbench_row(key)
             {
+                if self.shell.mode() == Mode::Analyze {
+                    self.sync_analyze_board_selection();
+                }
                 return;
             }
         }
@@ -1462,27 +1467,10 @@ impl Session {
     }
 
     fn analyze_enter(&mut self) {
+        // Landing never reads DEVSWEEP_ANALYZE_ROOT. A listed root or an
+        // explicit folder pick is the only scan.
         if self.analyze_window.is_none() {
-            if self.open_selected_analyze_root() {
-                return;
-            }
-        }
-        if self.analyze_window.is_none()
-            && let Some(root) = crate::analyze_window::env_root()
-        {
-            if let Ok(mut window) = AnalyzeWindow::scan(&root) {
-                let locale = self.locale();
-                let node_ids = window.board().list_ids();
-                let ids: Vec<String> = node_ids.iter().map(|id| id.to_string()).collect();
-                if let Some(file_id) = window.first_file_id() {
-                    window.select(file_id);
-                    let _ = window.preview_selected(locale);
-                    self.shell.select(Mode::Analyze, file_id.to_string());
-                }
-                self.shell.set_row_ids(Mode::Analyze, ids);
-                self.analyze_board = Some(window.board().clone());
-                self.analyze_window = Some(window);
-            }
+            let _ = self.open_selected_analyze_root();
             return;
         }
         let locale = self.locale();
@@ -1625,28 +1613,20 @@ impl Session {
             return;
         }
         self.analyze_landing_prepared = true;
-        let mut paths = self
+        let drives = crate::analyze_window::landing_roots(&[]);
+        let extras = self
             .shell
             .scan_roots()
             .iter()
-            .map(std::path::PathBuf::from)
+            .filter(|root| !root.is_empty())
+            .map(PathBuf::from)
             .collect::<Vec<_>>();
-        if paths.is_empty() {
-            if let Ok(document) = devsweep_core::analysis::list_analyze_roots(&[]) {
-                self.analyze_roots = document
-                    .roots
-                    .into_iter()
-                    .map(|root| AnalyzeRootChoice {
-                        input: root.input,
-                        normalized: root.normalized,
-                        error: root.error.map(|error| format!("{error:?}").to_ascii_lowercase()),
-                    })
-                    .collect();
-            }
+        let extra_choices = if extras.is_empty() {
+            Vec::new()
         } else {
-            self.analyze_roots = crate::analyze_window::landing_roots(&paths);
-        }
-        let _ = &mut paths;
+            crate::analyze_window::landing_roots(&extras)
+        };
+        self.analyze_roots = merge_analyze_roots(drives, extra_choices);
         if self.shell.mode() == Mode::Analyze {
             self.shell
                 .set_row_ids(Mode::Analyze, self.analyze_root_ids());
@@ -1665,26 +1645,99 @@ impl Session {
         let Some(selected) = self.shell.selection(Mode::Analyze) else {
             return false;
         };
-        let Some(index) = selected.strip_prefix("root:").and_then(|value| value.parse::<usize>().ok()) else {
+        let Some(index) = selected
+            .strip_prefix("root:")
+            .and_then(|value| value.parse::<usize>().ok())
+        else {
             return false;
         };
+        self.open_analyze_choice(index)
+    }
+
+    /// Opens one drive or folder the window already listed. Does not read
+    /// `DEVSWEEP_ANALYZE_ROOT`.
+    pub fn analyze_open_listed(&mut self, index: usize) -> bool {
+        if index >= self.analyze_roots.len() {
+            return false;
+        }
+        self.shell
+            .select(Mode::Analyze, format!("root:{index}"));
+        self.open_analyze_choice(index)
+    }
+
+    /// Scans one folder the user picked. The path is the scan root; the
+    /// analyze environment variable is not consulted.
+    pub fn analyze_open_isolated_root(&mut self, root: PathBuf) -> bool {
+        self.install_analyze_scan(&root)
+    }
+
+    /// Selects one snapshot node in both the list and the treemap.
+    pub fn analyze_select(&mut self, id: u32) {
+        self.shell.select(Mode::Analyze, id.to_string());
+        self.sync_analyze_board_selection();
+    }
+
+    pub fn analyze_notice(&self) -> Option<&str> {
+        self.analyze_notice.as_deref()
+    }
+
+    fn open_analyze_choice(&mut self, index: usize) -> bool {
         let Some(choice) = self.analyze_roots.get(index) else {
             return false;
         };
         if choice.error.is_some() {
+            self.analyze_notice = choice.error.clone();
             return true;
         }
         let path = choice
             .normalized
             .clone()
             .unwrap_or_else(|| choice.input.clone());
-        if let Ok(window) = AnalyzeWindow::scan(std::path::Path::new(&path)) {
-            let ids = window.board().list_ids().iter().map(|id| id.to_string()).collect();
-            self.analyze_board = Some(window.board().clone());
-            self.analyze_window = Some(window);
-            self.shell.set_row_ids(Mode::Analyze, ids);
+        let opened = self.install_analyze_scan(Path::new(&path));
+        opened || self.analyze_notice.is_some()
+    }
+
+    fn install_analyze_scan(&mut self, path: &Path) -> bool {
+        match AnalyzeWindow::scan(path) {
+            Ok(window) => {
+                let ids = window
+                    .board()
+                    .list_ids()
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect();
+                self.analyze_board = Some(window.board().clone());
+                self.analyze_window = Some(window);
+                self.analyze_notice = None;
+                self.shell.set_row_ids(Mode::Analyze, ids);
+                true
+            }
+            Err(error) => {
+                self.analyze_notice = Some(error);
+                false
+            }
         }
-        true
+    }
+
+    fn sync_analyze_board_selection(&mut self) {
+        let Some(selected) = self
+            .shell
+            .selection(Mode::Analyze)
+            .and_then(|id| id.parse::<u32>().ok())
+        else {
+            return;
+        };
+        let current = self
+            .analyze_window
+            .as_ref()
+            .and_then(|window| window.board().list_selection());
+        if current == Some(selected) {
+            return;
+        }
+        if let Some(window) = self.analyze_window.as_mut() {
+            window.select(selected);
+            self.analyze_board = Some(window.board().clone());
+        }
     }
 
     pub fn analyze_window(&self) -> Option<&AnalyzeWindow> {
@@ -2892,6 +2945,34 @@ impl Session {
             || self.draft.text_scale_percent != self.draft.committed.text_scale_percent
             || self.draft.motion != self.draft.committed.motion
     }
+}
+
+/// Keeps every listed drive and appends an explicit folder that is not already there.
+fn merge_analyze_roots(
+    mut drives: Vec<AnalyzeRootChoice>,
+    extras: Vec<AnalyzeRootChoice>,
+) -> Vec<AnalyzeRootChoice> {
+    for choice in extras {
+        let key = analyze_choice_key(&choice);
+        if key.is_empty() {
+            continue;
+        }
+        let present = drives
+            .iter()
+            .any(|existing| analyze_choice_key(existing) == key);
+        if !present {
+            drives.push(choice);
+        }
+    }
+    drives
+}
+
+fn analyze_choice_key(choice: &AnalyzeRootChoice) -> String {
+    choice
+        .normalized
+        .clone()
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| choice.input.clone())
 }
 
 #[cfg(test)]
@@ -4287,5 +4368,30 @@ mod tests {
             .is_empty());
         assert!(session.clean_ai().sensitive_count() > 0);
         let _ = fs::remove_dir_all(&home);
+    }
+
+    #[test]
+    fn analyze_roots_keep_a_listed_drive_and_an_isolated_folder() {
+        let drives = vec![AnalyzeRootChoice {
+            input: "C:\\".to_string(),
+            normalized: Some("C:\\".to_string()),
+            error: None,
+        }];
+        let extras = vec![
+            AnalyzeRootChoice {
+                input: "C:\\".to_string(),
+                normalized: Some("C:\\".to_string()),
+                error: None,
+            },
+            AnalyzeRootChoice {
+                input: "D:\\isolated".to_string(),
+                normalized: Some("D:\\isolated".to_string()),
+                error: None,
+            },
+        ];
+        let merged = super::merge_analyze_roots(drives, extras);
+        assert_eq!(merged.len(), 2);
+        assert_eq!(merged[0].input, "C:\\");
+        assert_eq!(merged[1].input, "D:\\isolated");
     }
 }

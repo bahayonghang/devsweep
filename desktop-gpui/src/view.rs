@@ -486,6 +486,29 @@ impl ShellView {
         self.after_clean_action(started, cx);
     }
 
+    fn analyze_pick_root(&mut self, cx: &mut Context<Self>) {
+        let receiver = cx.prompt_for_paths(PathPromptOptions {
+            files: false,
+            directories: true,
+            multiple: false,
+            prompt: None,
+        });
+        cx.spawn(async move |this, cx| {
+            let picked = match receiver.await {
+                Ok(Ok(Some(paths))) => paths.into_iter().next(),
+                _ => None,
+            };
+            let Some(root) = picked else {
+                return;
+            };
+            let _ = this.update(cx, |this, cx| {
+                let _ = this.session.analyze_open_isolated_root(root);
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
     fn clean_retry(&mut self, cx: &mut Context<Self>) {
         let started = self.session.clean_rescan();
         self.after_clean_action(started, cx);
@@ -732,7 +755,9 @@ impl Render for ShellView {
             .collect::<Vec<_>>();
         let entries = panel_entries(&self.session, self.save_error.as_deref());
         let shell_access = accessible_control(locale, AccessibleSlot::Shell);
-        let controls = self.clean_controls(locale, palette, cx);
+        let controls = self
+            .clean_controls(locale, palette, cx)
+            .or_else(|| self.analyze_controls(locale, palette, cx));
         let disk_map =
             show_map.then(|| disk_map_element(&self.session, locale, palette, high_contrast, cx));
 
@@ -840,7 +865,7 @@ impl Render for ShellView {
                     .gap_3()
                     .when_some(disk_map, |panel, map| panel.child(map))
                     .when_some(
-                        analyze_treemap_element(&self.session, locale, palette),
+                        analyze_treemap_element(&self.session, locale, palette, cx),
                         |panel, map| panel.child(map),
                     )
                     .children(
@@ -1476,6 +1501,57 @@ impl ShellView {
         ));
         controls.child(actions).into_any_element()
     }
+
+    /// Listed drives and one folder picker. Neither path reads
+    /// `DEVSWEEP_ANALYZE_ROOT`.
+    fn analyze_controls(
+        &self,
+        locale: copy::Locale,
+        palette: ShellPalette,
+        cx: &mut Context<Self>,
+    ) -> Option<gpui::AnyElement> {
+        if self.session.shell().mode() != Mode::Analyze
+            || self.session.shell().surface() != Surface::Mode
+            || self.session.analyze_window().is_some()
+        {
+            return None;
+        }
+        let mut actions = div()
+            .id("analyze-actions")
+            .role(gpui::Role::Group)
+            .aria_label(copy::mode_name(locale, "analyze"))
+            .flex()
+            .flex_row()
+            .flex_wrap()
+            .gap_3();
+        for (index, choice) in self.session.analyze_roots().iter().enumerate() {
+            let state = choice
+                .error
+                .clone()
+                .unwrap_or_else(|| "ready".to_string());
+            let label = format!("{} | {state}", choice.input);
+            actions = actions.child(clean_button(
+                ElementId::Name(SharedString::from(format!("analyze-root-{index}"))),
+                label,
+                choice.error.is_none(),
+                palette,
+                cx,
+                move |this, _, cx| {
+                    let _ = this.session.analyze_open_listed(index);
+                    cx.notify();
+                },
+            ));
+        }
+        actions = actions.child(clean_button(
+            "analyze-choose-root",
+            copy::clean_root_choose(locale).to_string(),
+            self.session.analyze_roots().is_empty(),
+            palette,
+            cx,
+            |this, _, cx| this.analyze_pick_root(cx),
+        ));
+        Some(actions.into_any_element())
+    }
 }
 
 /// The explicit entry into the AI review subview. Opening never scans.
@@ -1550,6 +1626,7 @@ fn analyze_treemap_element(
     session: &Session,
     locale: copy::Locale,
     palette: ShellPalette,
+    cx: &mut Context<ShellView>,
 ) -> Option<gpui::AnyElement> {
     let window = session.analyze_window()?;
     let rects = window.treemap();
@@ -1574,9 +1651,10 @@ fn analyze_treemap_element(
         );
     for rect in rects.iter().filter(|rect| rect.id != 0).take(24) {
         let selected = window.board().list_selection() == Some(rect.id);
+        let id = rect.id;
         canvas = canvas.child(
             div()
-                .id(gpui::ElementId::named_usize("analyze-tile", rect.id as usize))
+                .id(gpui::ElementId::named_usize("analyze-tile", id as usize))
                 .absolute()
                 .left(px(rect.x))
                 .top(px(rect.y))
@@ -1585,7 +1663,13 @@ fn analyze_treemap_element(
                 .border_1()
                 .border_color(rgb(palette.capsule_border))
                 .when(selected, |tile| tile.bg(rgb(palette.pill)))
-                .child(format!("{}", rect.id)),
+                .role(gpui::Role::Button)
+                .cursor_pointer()
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.session.analyze_select(id);
+                    cx.notify();
+                }))
+                .child(format!("{id}")),
         );
     }
     Some(canvas.into_any_element())
@@ -2373,6 +2457,9 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
                         for line in analyze_lines {
                             entries.push(PanelEntry::Text(line));
                         }
+                    }
+                    if let Some(notice) = session.analyze_notice() {
+                        entries.push(PanelEntry::Text(notice.to_string()));
                     }
                 }
             } else if mode == Mode::Status {

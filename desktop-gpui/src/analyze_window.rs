@@ -356,7 +356,9 @@ fn recycle_error_line(locale: Locale, error: &AnalyzeSavedError) -> String {
     }
 }
 
+/// Probe-only reader. The window does not scan this path.
 #[must_use]
+#[allow(dead_code)]
 pub fn env_root() -> Option<PathBuf> {
     let value = std::env::var_os(ANALYZE_ROOT_ENV)?;
     if value.is_empty() {
@@ -545,5 +547,90 @@ mod tests {
             "dist/ci-target/debug/devsweep{}",
             std::env::consts::EXE_SUFFIX
         ))
+    }
+
+    #[test]
+    fn listed_root_opens_without_reading_analyze_env() {
+        let root = isolated_root("pick");
+        fs::create_dir_all(root.join("nested")).expect("nested");
+        fs::write(root.join("keep.bin"), b"keep").expect("file");
+        let decoy = root.join("not-the-scan");
+        fs::create_dir_all(&decoy).expect("decoy");
+        let previous = std::env::var_os(ANALYZE_ROOT_ENV);
+        unsafe {
+            std::env::set_var(ANALYZE_ROOT_ENV, &decoy);
+        }
+        assert!(env_root().is_some());
+
+        let mut session = crate::shell::Session::unbacked();
+        session.show_mode(crate::shell::Mode::Analyze);
+        session.offer_analyze_roots(&[root.clone(), root.join("missing-root")]);
+        session.apply_key(crate::shell::NavKey::Enter);
+        assert!(
+            session.analyze_window().is_none(),
+            "Enter without a selected root must not scan DEVSWEEP_ANALYZE_ROOT"
+        );
+
+        assert!(session.analyze_open_listed(0));
+        let window = session.analyze_window().expect("listed root");
+        assert!(
+            window.snapshot().root.input.contains("pick")
+                || window.snapshot().root.normalized.contains("pick"),
+            "{}",
+            window.snapshot().root.input
+        );
+        assert!(!window.snapshot().root.input.contains("not-the-scan"));
+        assert!(!window.snapshot().root.normalized.contains("not-the-scan"));
+
+        session.apply_key(crate::shell::NavKey::RowDown);
+        let selected = session
+            .shell()
+            .selection(crate::shell::Mode::Analyze)
+            .expect("row")
+            .to_string();
+        let selected_id: u32 = selected.parse().expect("node id");
+        assert_eq!(
+            session
+                .analyze_window()
+                .expect("window")
+                .board()
+                .list_selection(),
+            Some(selected_id)
+        );
+        assert!(
+            session
+                .analyze_window()
+                .expect("window")
+                .treemap()
+                .iter()
+                .any(|rect| rect.id == selected_id)
+        );
+
+        let before = session
+            .analyze_window()
+            .expect("window")
+            .snapshot()
+            .root
+            .normalized
+            .clone();
+        assert!(!session.analyze_open_isolated_root(decoy.join("missing")));
+        assert!(session.analyze_notice().is_some());
+        assert_eq!(
+            session
+                .analyze_window()
+                .expect("failed pick must not replace the scan")
+                .snapshot()
+                .root
+                .normalized,
+            before
+        );
+
+        unsafe {
+            match previous {
+                Some(value) => std::env::set_var(ANALYZE_ROOT_ENV, value),
+                None => std::env::remove_var(ANALYZE_ROOT_ENV),
+            }
+        }
+        let _ = fs::remove_dir_all(&root);
     }
 }
