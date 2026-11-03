@@ -45,3 +45,11 @@ open child. Software verification is the C12 prompt and runs last.
 
 
 
+
+2026-11-03: **UI redesign and background reads** (`a8988fb`, `39c7e90`). The
+window now paints designed pages instead of debug text, Software reads the real
+host (read-only, off the UI thread), and Status/Analyze no longer block the UI
+thread. Linux tests, Windows-target clippy `-D warnings` and fmt pass. Native
+Windows checks for these commits are NOT_RUN; earlier native C10/C11/C13 samples
+predate the redesign and do not carry over. No box changes state. See
+`evidence/redesign-2026-11-03.md`.

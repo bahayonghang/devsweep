@@ -183,6 +183,20 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop/public/earth/` and `desktop/public/THIRD_PARTY_NOTICES.txt` - packaged Earth assets and exact redistribution evidence.
 - `desktop/scripts/prepare-earth-assets.py` - offline reproducible Earth asset conversion.
 
+### GPUI desktop (`desktop-gpui/`, standalone workspace)
+
+- `desktop-gpui/src/main.rs` - native entry; loads preferences, then `view::run`.
+- `desktop-gpui/src/ui.rs` - design tokens (dark/light/high contrast), components, packaged icon table.
+- `desktop-gpui/src/view.rs` - `ShellView`: actions, key bindings, top bar, status bar, background-job dispatch; `panel_entries` is a test-only text projection.
+- `desktop-gpui/src/view/page_*.rs` - Clean, Software/Optimize, Analyze, Status, and Settings/support pages.
+- `desktop-gpui/src/shell.rs` - `Session` state machine and the generation-guarded `BackgroundJob` queue.
+- `desktop-gpui/src/clean_workbench.rs`, `clean_ai.rs`, `clean_map.rs` - Clean review, AI subview, disk-map projection.
+- `desktop-gpui/src/software_review.rs`, `optimize_board.rs`, `workbench_review.rs` - Software/Optimize review models; host reads only in `load_host`.
+- `desktop-gpui/src/analyze*.rs`, `status_panel.rs` - Analyze board/window and Status projections.
+- `desktop-gpui/assets/` - beaver master PNG/ICO, licensed Earth still, original `icons/*.svg`.
+- `desktop-gpui/vendor/gpui_windows/` - patched GPUI Windows backend.
+- Linux review build: `cargo build --features linux-preview` (X11 backend, not a delivery target).
+
 ### Performance evidence tools
 
 - `tools/measure-readonly.py` - isolated read-only CLI/native workloads and task-owned process-tree sampling.
