@@ -182,6 +182,10 @@ dev:
 tdev:
     cd desktop; npm run tauri -- dev
 
+# Start the GPUI native desktop window. desktop-gpui is a standalone workspace.
+gpui-dev:
+    cd desktop-gpui; cargo run --locked -p devsweep-gpui-spike
+
 docs:
     npm run docs:dev
 
