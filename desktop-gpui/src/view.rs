@@ -36,7 +36,7 @@ use crate::{
     input::{self, InputStyle, TextInput},
     preferences::DesktopTheme,
     shell::{Activity, CleanOutcomeNotice, MENU, Mode, Session, Surface, WorkbenchNotice},
-    ui::{self, ButtonKind, Theme, Tone},
+    ui::{self, ButtonKind, KeyboardFocus, Theme, Tone},
 };
 
 mod page_analyze;
@@ -106,7 +106,9 @@ actions!(
         CycleCleanSort,
         OpenAiReview,
         ToggleCleanScreen,
-        ToggleKeepScreen
+        ToggleKeepScreen,
+        FocusNextControl,
+        FocusPrevControl
     ]
 );
 
@@ -201,7 +203,7 @@ impl ShellView {
     /// stays text. A real toggle does not propagate, so the Note does not
     /// gain a space.
     fn toggle_row(&mut self, _: &ToggleRow, window: &mut Window, cx: &mut Context<Self>) {
-        if self.search.focus_handle(cx).is_focused(window) {
+        if self.search.focus_handle(cx).is_focused(window) || self.control_focused(window, cx) {
             cx.propagate();
             return;
         }
@@ -213,11 +215,12 @@ impl ShellView {
         cx.notify();
     }
 
-    /// Tab moves between the Note and the Clean search field.
+    /// Tab from the Note jumps to the Clean search field during review.
     ///
     /// The search field is focused only while review is active and the Note
-    /// already has focus. Tab from the search field returns to the Note.
-    /// Startup and a non-review surface never move focus here.
+    /// already has focus. Tab from the search field continues through the
+    /// window tab order, so review rows and actions stay reachable. Startup
+    /// and a non-review surface never move focus here.
     fn tab_clean_review(
         &mut self,
         _: &TabCleanReview,
@@ -228,15 +231,40 @@ impl ShellView {
             cx.propagate();
             return;
         }
-        if self.search.focus_handle(cx).is_focused(window) {
-            window.focus(&self.note.focus_handle(cx), cx);
-            return;
-        }
         if self.note.focus_handle(cx).is_focused(window) {
             window.focus(&self.search.focus_handle(cx), cx);
             return;
         }
         cx.propagate();
+    }
+
+    /// True when keyboard focus sits on a clickable control rather than the
+    /// Note, the search field, or the shell root. Enter and Space then belong
+    /// to that control's keyboard click, not to the shell's chords.
+    fn control_focused(&self, window: &Window, cx: &App) -> bool {
+        window.focused(cx).is_some()
+            && !self.note.focus_handle(cx).is_focused(window)
+            && !self.search.focus_handle(cx).is_focused(window)
+            && !self.focus_handle.is_focused(window)
+    }
+
+    /// Tab walks every control in paint order: top bar, page, then the Note.
+    fn focus_next_control(
+        &mut self,
+        _: &FocusNextControl,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        window.focus_next(cx);
+    }
+
+    fn focus_prev_control(
+        &mut self,
+        _: &FocusPrevControl,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        window.focus_prev(cx);
     }
 
     /// Shift-Tab from the search field returns to the Note during review.
@@ -300,7 +328,12 @@ impl ShellView {
         cx.notify();
     }
 
-    fn activate(&mut self, _: &Activate, _: &mut Window, cx: &mut Context<Self>) {
+    fn activate(&mut self, _: &Activate, window: &mut Window, cx: &mut Context<Self>) {
+        // A focused button, tab, card or row clicks itself on Enter.
+        if self.control_focused(window, cx) {
+            cx.propagate();
+            return;
+        }
         let before_operation = self.session.shell().operation_id();
         self.session.apply_key(crate::shell::NavKey::Enter);
         let started_worker = self.session.shell().operation_id() != before_operation
@@ -651,6 +684,8 @@ impl Render for ShellView {
             .on_action(cx.listener(Self::toggle_clean_screen))
             .on_action(cx.listener(Self::toggle_keep_screen))
             .on_action(cx.listener(Self::request_project_rows))
+            .on_action(cx.listener(Self::focus_next_control))
+            .on_action(cx.listener(Self::focus_prev_control))
             // A click on a non-focusable surface must not strand the keyboard:
             // with nothing focused, return focus to the Note so every chord
             // keeps working. A click on the search field focuses it first.
@@ -890,6 +925,9 @@ impl ShellView {
                     .text_size(rems(0.85))
                     .font_weight(FontWeight::MEDIUM)
                     .cursor_pointer()
+                    .border_1()
+                    .border_color(gpui::transparent_black())
+                    .keyboard_focus(t)
                     .when(active, |tab| {
                         tab.bg(rgb(t.pill)).text_color(rgb(t.pill_text))
                     })
@@ -935,6 +973,7 @@ impl ShellView {
                 .when(on, |b| b.bg(t.tint(t.accent, 0x1E)))
                 .cursor_pointer()
                 .hover(move |s| s.bg(rgb(hover_bg)))
+                .keyboard_focus(t)
                 .tooltip(move |_, cx| cx.new(|_| TooltipText(label.into())).into())
                 .child(ui::icon(icon, color).size(rems(1.0)))
         };
@@ -965,6 +1004,9 @@ impl ShellView {
                         .pr(rems(0.6))
                         .rounded(rems(0.6))
                         .cursor_pointer()
+                        .border_1()
+                        .border_color(gpui::transparent_black())
+                        .keyboard_focus(t)
                         .when(menu_open, |b| b.bg(rgb(t.surface_alt)))
                         .hover(|s| s.bg(rgb(t.surface_alt)))
                         .on_click(cx.listener(|this, _, _, cx| {
@@ -1069,6 +1111,9 @@ impl ShellView {
                     .py(rems(0.5))
                     .rounded(rems(0.5))
                     .cursor_pointer()
+                    .border_1()
+                    .border_color(gpui::transparent_black())
+                    .keyboard_focus(t)
                     .when(highlighted, |row| row.bg(rgb(t.surface_active)))
                     .when(!highlighted, |row| row.hover(move |s| s.bg(rgb(hover_bg))))
                     .on_click(cx.listener(move |this, _, _, cx| {
@@ -2097,10 +2142,15 @@ pub fn run(session: Session) {
                 // The handler propagates when the key must stay text.
                 KeyBinding::new("space", ToggleRow, Some("CleanReview")),
                 KeyBinding::new("space", ToggleRow, Some("SpikeInput")),
-                // Tab reaches the search field only from the focused Note during
+                // Tab reaches the search field from the focused Note during
                 // review. Shift-Tab from that field returns to the Note.
                 KeyBinding::new("tab", TabCleanReview, Some("SpikeInput")),
                 KeyBinding::new("shift-tab", ShiftTabCleanReview, Some("SpikeInput")),
+                // Everywhere else Tab walks the window tab order. Buttons,
+                // tabs, segments, cards and rows are tab stops; Enter and
+                // Space click the focused one.
+                KeyBinding::new("tab", FocusNextControl, None),
+                KeyBinding::new("shift-tab", FocusPrevControl, None),
                 // F7 cycles Found-phase sort and does not change mode.
                 KeyBinding::new("f7", CycleCleanSort, None),
                 KeyBinding::new("pageup", CleanPageUp, None),
@@ -2178,6 +2228,13 @@ pub fn run(session: Session) {
                             search: search.clone(),
                         });
                         view.update(cx, |_view, cx| {
+                            // A keyboard click can remove the focused control
+                            // (a page change). Nothing focused would strand
+                            // every chord, so focus falls back to the Note.
+                            cx.on_focus_lost(window, |this, window, cx| {
+                                window.focus(&this.note.focus_handle(cx), cx);
+                            })
+                            .detach();
                             cx.observe(&search, |this, observed, cx| {
                                 let query = observed.read(cx).content().to_string();
                                 match this.session.shell().mode() {
@@ -2785,6 +2842,55 @@ mod tests {
         assert_eq!(session.shell().mode(), Mode::Clean);
         session.apply_key(NavKey::Down);
         assert_eq!(session.shell().mode(), Mode::Software);
+    }
+
+    #[test]
+    fn every_clickable_surface_is_a_tab_stop_and_enter_clicks_the_focused_one() {
+        let source = include_str!("view.rs");
+        for binding in [
+            r#"KeyBinding::new("tab", FocusNextControl, None)"#,
+            r#"KeyBinding::new("shift-tab", FocusPrevControl, None)"#,
+        ] {
+            assert!(source.contains(binding), "missing binding: {binding}");
+        }
+        // Enter and Space yield to GPUI's keyboard click on a focused control.
+        assert!(
+            source.contains("if self.control_focused(window, cx) {\n            cx.propagate();")
+        );
+        assert!(source.contains(
+            "self.search.focus_handle(cx).is_focused(window) || self.control_focused(window, cx)"
+        ));
+        // A removed control never strands the keyboard.
+        assert!(source.contains("cx.on_focus_lost(window"));
+
+        // The shared builders opt in, so every button, segment and row is
+        // reachable; the custom cards and chrome opt in where they are built.
+        let ui = include_str!("ui.rs");
+        assert!(ui.contains("self.tab_index(0).focus_visible("));
+        assert!(
+            ui.matches(".keyboard_focus(t)").count() >= 3,
+            "button, segment, list_row"
+        );
+        for (file, text) in [
+            ("view.rs", source),
+            ("page_clean.rs", include_str!("view/page_clean.rs")),
+            ("page_workbench.rs", include_str!("view/page_workbench.rs")),
+            ("page_analyze.rs", include_str!("view/page_analyze.rs")),
+        ] {
+            let clickable = text.matches(".cursor_pointer()").count();
+            let reachable = text.matches(".keyboard_focus(t)").count();
+            // Treemap tiles are pointer shortcuts for rows the list already
+            // exposes, so they are the only clickables without a tab stop.
+            let tiles = text.matches("let mut tile = div()").count();
+            assert!(
+                reachable + tiles >= clickable,
+                "{file}: {clickable} clickables, {reachable} tab stops, {tiles} tiles"
+            );
+        }
+
+        // Inputs share tab index 0 so the order follows the painted layout.
+        let input = include_str!("input.rs");
+        assert!(!input.contains(".tab_index(1)") && !input.contains(".tab_index(2)"));
     }
 
     #[test]

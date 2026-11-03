@@ -286,6 +286,7 @@ impl ShellView {
                 .border_color(rgb(t.border))
                 .cursor_pointer()
                 .hover(move |s| s.border_color(rgb(hover_border)))
+                .keyboard_focus(t)
                 .on_click(cx.listener(move |this, _, _, cx| this.clean_scope(scope, cx)))
                 .child(ui::icon_tile(t, icon, t.accent))
                 .child(

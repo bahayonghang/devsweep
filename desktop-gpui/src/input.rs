@@ -79,7 +79,7 @@ impl TextInput {
         text_scale_percent: u8,
     ) -> Self {
         let access = accessible_control(Locale::En, AccessibleSlot::Note);
-        let focus_handle = cx.focus_handle().tab_index(1).tab_stop(true);
+        let focus_handle = cx.focus_handle().tab_index(0).tab_stop(true);
         window.focus(&focus_handle, cx);
         Self {
             style: InputStyle::default(),
@@ -89,7 +89,7 @@ impl TextInput {
             text_scale_percent,
             access,
             element_id: "note-input",
-            tab_index: 1,
+            tab_index: 0,
             last_layout: None,
             last_bounds: None,
         }
@@ -102,7 +102,7 @@ impl TextInput {
         element_id: &'static str,
         access: AccessibleControl,
     ) -> Self {
-        let focus_handle = cx.focus_handle().tab_index(2).tab_stop(true);
+        let focus_handle = cx.focus_handle().tab_index(0).tab_stop(true);
         Self {
             style: InputStyle::default(),
             focus_handle,
@@ -111,7 +111,7 @@ impl TextInput {
             text_scale_percent: 100,
             access,
             element_id,
-            tab_index: 2,
+            tab_index: 0,
             last_layout: None,
             last_bounds: None,
         }

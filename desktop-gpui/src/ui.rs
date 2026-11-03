@@ -10,8 +10,8 @@
 //! stored text scale, so the whole layout scales together.
 
 use gpui::{
-    AnyElement, Div, ElementId, FontWeight, Rgba, SharedString, Stateful, Svg, div, prelude::*, px,
-    rems, rgb, rgba, svg,
+    AnyElement, BoxShadow, Div, ElementId, FontWeight, Rgba, SharedString, Stateful, Svg, div,
+    point, prelude::*, px, rems, rgb, rgba, svg,
 };
 
 use crate::preferences::DesktopTheme;
@@ -301,6 +301,31 @@ pub fn icon(name: &'static str, color: u32) -> Svg {
         .text_color(rgb(color))
 }
 
+/// Keyboard reachability for a clickable surface.
+///
+/// The element joins the window tab order in paint order, Enter and Space
+/// fire its click listeners through GPUI's keyboard click, and a keyboard
+/// focus (not a mouse press) draws an accent border plus an outer ring.
+/// The element must already paint a 1px border, transparent if needed.
+pub trait KeyboardFocus: InteractiveElement + Sized {
+    #[must_use]
+    fn keyboard_focus(self, t: &Theme) -> Self {
+        let ring = t.accent;
+        let halo = t.tint(t.accent, if t.high_contrast { 0xFF } else { 0x55 });
+        self.tab_index(0).focus_visible(move |s| {
+            s.border_color(rgb(ring)).shadow(vec![BoxShadow {
+                color: halo.into(),
+                offset: point(px(0.0), px(0.0)),
+                blur_radius: px(0.0),
+                spread_radius: px(2.0),
+                inset: false,
+            }])
+        })
+    }
+}
+
+impl KeyboardFocus for Stateful<Div> {}
+
 /// Base clickable button. Callers add `.on_click`.
 pub fn button(
     t: &Theme,
@@ -346,6 +371,7 @@ pub fn button(
             }
         })
         .active(|s| s.opacity(0.75))
+        .keyboard_focus(t)
         .child(label)
 }
 
@@ -685,6 +711,9 @@ pub fn segment(
         .font_weight(FontWeight::MEDIUM)
         .whitespace_nowrap()
         .cursor_pointer()
+        .border_1()
+        .border_color(gpui::transparent_black())
+        .keyboard_focus(t)
         .when(active, |s| s.bg(rgb(t.pill)).text_color(rgb(t.pill_text)))
         .when(!active, |s| {
             s.text_color(rgb(t.text_muted))
@@ -743,6 +772,7 @@ pub fn list_row(
         .when(selected, |r| r.bg(rgb(t.surface_active)))
         .when(!selected, |r| r.hover(move |h| h.bg(rgb(hover_bg))))
         .cursor_pointer()
+        .keyboard_focus(t)
 }
 
 /// Thin divider.

@@ -167,6 +167,7 @@ impl ShellView {
                 .border_color(rgb(t.border))
                 .cursor_pointer()
                 .hover(move |s| s.border_color(rgb(hover)))
+                .keyboard_focus(t)
                 .on_click(cx.listener(move |this, _, _, cx| {
                     this.session.software_open_segment(segment);
                     cx.notify();
@@ -187,11 +188,21 @@ impl ShellView {
                     .gap(rems(1.0))
                     .children(cards),
             )
-            .child(ui::banner(
-                t,
-                Tone::Info,
-                copy::software_leftovers_unavailable(locale),
-            ))
+            // A quiet footnote, not an alert: Leftovers is simply out of scope.
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap(rems(0.45))
+                    .child(ui::icon("info", t.text_subtle).size(rems(0.85)))
+                    .child(
+                        div()
+                            .text_size(rems(0.8))
+                            .text_color(rgb(t.text_subtle))
+                            .child(copy::software_leftovers_unavailable(locale)),
+                    ),
+            )
             .into_any_element()
     }
 

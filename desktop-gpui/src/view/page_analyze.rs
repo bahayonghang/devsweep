@@ -153,6 +153,7 @@ impl ShellView {
                 .when(ready, |c| {
                     c.cursor_pointer()
                         .hover(move |s| s.border_color(rgb(hover)))
+                        .keyboard_focus(t)
                 })
                 .when(!ready, |c| c.opacity(0.7))
                 .on_click(cx.listener(move |this, _, _, cx| {
