@@ -11,8 +11,8 @@ use std::{
 };
 
 use devsweep_core::optimize::{
-    MaintenanceActionClass, MaintenancePlanV1, OptimizePlanError, PrecheckReason,
-    catalogue_entry, plan_operation, preview_maintenance_plan_live, published_entries,
+    MaintenanceActionClass, MaintenancePlanV1, OptimizePlanError, PrecheckReason, catalogue_entry,
+    plan_operation, preview_maintenance_plan_live, published_entries,
 };
 use devsweep_core::software::{
     SOFTWARE_PLAN_VERSION, SoftwareExecutionError, SoftwareExecutionRequest, SoftwareExecutor,
@@ -87,7 +87,11 @@ impl WorkbenchReview {
 
     /// Opens or confirms the selected identity. Host tools are not executed.
     pub fn activate(&mut self, id: &str, locale: Locale) {
-        let effect = if self.pending.as_ref().is_some_and(|pending| pending.id == id) {
+        let effect = if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.id == id)
+        {
             confirm(self.pending.as_ref().expect("pending checked"), locale)
         } else {
             open_review(id, locale)
@@ -336,7 +340,11 @@ fn open_optimize(id: &str, locale: Locale) -> ReviewEffect {
         Ok(plan) => plan,
         Err(error) => {
             return ReviewEffect {
-                lines: vec![domain_line(locale, optimize_code(&error), &error.to_string())],
+                lines: vec![domain_line(
+                    locale,
+                    optimize_code(&error),
+                    &error.to_string(),
+                )],
                 precheck: None,
                 pending: None,
             };
@@ -346,7 +354,9 @@ fn open_optimize(id: &str, locale: Locale) -> ReviewEffect {
         Ok(preview) => ReviewEffect {
             lines: vec![format!(
                 "{} | {} | {}",
-                preview.operation_id, preview.digest, host_last(id, locale)
+                preview.operation_id,
+                preview.digest,
+                host_last(id, locale)
             )],
             precheck: None,
             pending: Some(PendingReview {
@@ -595,10 +605,8 @@ mod tests {
     #[test]
     fn isolated_hive_review_confirms_errors_and_does_not_touch_host_startup() {
         let _guard = env_lock().lock().expect("env lock");
-        let root = std::env::temp_dir().join(format!(
-            "devsweep-gpui-c12-hive-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("devsweep-gpui-c12-hive-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).expect("hive root");
         let hive_path = root.join("hive.json");
@@ -607,10 +615,7 @@ mod tests {
         unsafe {
             std::env::set_var(HIVE_ENV, &hive_path);
             std::env::remove_var(STALE_ENV);
-            std::env::set_var(
-                UPDATE_ENV,
-                root.join("missing-update-provider.exe"),
-            );
+            std::env::set_var(UPDATE_ENV, root.join("missing-update-provider.exe"));
         }
 
         let mut review = WorkbenchReview::new();
@@ -632,7 +637,8 @@ mod tests {
         assert!(startup.contains("sha256:"), "{startup}");
         assert!(startup.contains("protected"), "{startup}");
         assert!(
-            startup.contains("requires_administrator") || startup.contains("requires administrator"),
+            startup.contains("requires_administrator")
+                || startup.contains("requires administrator"),
             "{startup}"
         );
         assert!(
@@ -662,10 +668,8 @@ mod tests {
     #[test]
     fn stale_hive_digest_refuses_and_leaves_the_file() {
         let _guard = env_lock().lock().expect("env lock");
-        let root = std::env::temp_dir().join(format!(
-            "devsweep-gpui-c12-stale-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("devsweep-gpui-c12-stale-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).expect("stale root");
         let hive_path = root.join("hive.json");
@@ -707,7 +711,10 @@ mod tests {
 
         review.activate("maintenance.disk_health", Locale::ZhCn);
         let observe_lines = review.lines().join("\n");
-        assert!(observe_lines.contains("cannot be planned"), "{observe_lines}");
+        assert!(
+            observe_lines.contains("cannot be planned"),
+            "{observe_lines}"
+        );
         assert!(!observe_lines.contains("成功"));
 
         review.activate("maintenance.retrim", Locale::En);
@@ -731,6 +738,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn keyboard_enter_writes_the_domain_review_and_privilege_notice() {
         let mut session = Session::unbacked();
         session.show_mode(Mode::Optimize);
@@ -743,7 +754,10 @@ mod tests {
                 || lines.contains("sha256:"),
             "{lines}"
         );
-        assert!(lines.contains("last=not run") || lines.contains("未运行"), "{lines}");
+        assert!(
+            lines.contains("last=not run") || lines.contains("未运行"),
+            "{lines}"
+        );
         assert!(!lines.to_ascii_lowercase().contains("succeed"));
         if lines.contains("uac_declined") {
             assert_eq!(
@@ -777,10 +791,8 @@ mod tests {
 
     #[test]
     fn isolated_row_window_stays_bounded_and_keeps_offscreen_selection() {
-        let root = std::env::temp_dir().join(format!(
-            "devsweep-gpui-c12-rows-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("devsweep-gpui-c12-rows-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).expect("row root");
         for index in 0..1_000 {
@@ -797,7 +809,10 @@ mod tests {
         let visible = session.shell().visible_row_ids(Mode::Software);
         assert!(visible.len() <= VISIBLE_ROW_CAPACITY);
         assert!(!visible.contains(&far));
-        assert_eq!(session.shell().selection(Mode::Software), Some(far.as_str()));
+        assert_eq!(
+            session.shell().selection(Mode::Software),
+            Some(far.as_str())
+        );
         let lines = crate::view::panel_lines(&session, None);
         assert!(
             lines.iter().any(|line| line == &format!("> {far}")),
@@ -810,16 +825,17 @@ mod tests {
         assert!(lines.len() < 1_000);
         session.show_mode(Mode::Optimize);
         session.apply_key(NavKey::Right);
-        assert_eq!(session.shell().selection(Mode::Software), Some(far.as_str()));
+        assert_eq!(
+            session.shell().selection(Mode::Software),
+            Some(far.as_str())
+        );
         let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
     fn direct_hive_execute_stale_matches_the_keyboard_refusal() {
-        let root = std::env::temp_dir().join(format!(
-            "devsweep-gpui-c12-direct-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("devsweep-gpui-c12-direct-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).expect("direct root");
         let hive_path = root.join("hive.json");

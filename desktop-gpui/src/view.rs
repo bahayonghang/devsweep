@@ -396,18 +396,12 @@ impl ShellView {
         cx.notify();
     }
 
-    fn toggle_keep_screen(
-        &mut self,
-        _: &ToggleKeepScreen,
-        _: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn toggle_keep_screen(&mut self, _: &ToggleKeepScreen, _: &mut Window, cx: &mut Context<Self>) {
         if self.session.stored_lease_count() > 0 {
             let _ = self.session.stop_screen_on();
         } else {
-            let service = std::sync::Arc::new(
-                devsweep_core::status::KeepAwakeService::production(),
-            );
+            let service =
+                std::sync::Arc::new(devsweep_core::status::KeepAwakeService::production());
             let _ = self.session.start_screen_on(
                 service,
                 "gpui-window",
@@ -983,7 +977,9 @@ impl ShellView {
         palette: ShellPalette,
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
-        let button = |id: &'static str, label: &'static str, action: fn(&mut ShellView, &mut Context<ShellView>)| {
+        let button = |id: &'static str,
+                      label: &'static str,
+                      action: fn(&mut ShellView, &mut Context<ShellView>)| {
             div()
                 .id(id)
                 .role(gpui::Role::Button)
@@ -1525,10 +1521,7 @@ impl ShellView {
             .flex_wrap()
             .gap_3();
         for (index, choice) in self.session.analyze_roots().iter().enumerate() {
-            let state = choice
-                .error
-                .clone()
-                .unwrap_or_else(|| "ready".to_string());
+            let state = choice.error.clone().unwrap_or_else(|| "ready".to_string());
             let label = format!("{} | {state}", choice.input);
             actions = actions.child(clean_button(
                 ElementId::Name(SharedString::from(format!("analyze-root-{index}"))),
@@ -2407,12 +2400,17 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
                     push_clean_review_lines(session, &mut entries);
                 }
             }
-            if matches!(mode, Mode::Clean | Mode::Software | Mode::Optimize | Mode::Analyze)
-            {
+            if matches!(
+                mode,
+                Mode::Clean | Mode::Software | Mode::Optimize | Mode::Analyze
+            ) {
                 let visible = shell.visible_row_ids(mode);
-                let cursor = matches!(mode, Mode::Clean | Mode::Software | Mode::Optimize | Mode::Analyze)
-                    .then(|| shell.selection(mode))
-                    .flatten();
+                let cursor = matches!(
+                    mode,
+                    Mode::Clean | Mode::Software | Mode::Optimize | Mode::Analyze
+                )
+                .then(|| shell.selection(mode))
+                .flatten();
                 let ai_open = mode == Mode::Clean && session.clean_ai().open();
                 for id in visible {
                     let focused = cursor == Some(id.as_str());
@@ -2495,7 +2493,9 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
                 }
             }
             if mode == Mode::Optimize {
-                entries.push(PanelEntry::Text(session.optimize_board().phase_line(locale)));
+                entries.push(PanelEntry::Text(
+                    session.optimize_board().phase_line(locale),
+                ));
                 for line in session.optimize_board().group_lines(locale) {
                     entries.push(PanelEntry::Text(line));
                 }
@@ -2505,8 +2505,12 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
             }
             if mode == Mode::Analyze && session.analyze_window().is_none() {
                 if session.analyze_roots().is_empty() && session.analyze_landing_prepared() {
-                    entries.push(PanelEntry::Text(copy::analyze_empty_title(locale).to_string()));
-                    entries.push(PanelEntry::Text(copy::analyze_empty_detail(locale).to_string()));
+                    entries.push(PanelEntry::Text(
+                        copy::analyze_empty_title(locale).to_string(),
+                    ));
+                    entries.push(PanelEntry::Text(
+                        copy::analyze_empty_detail(locale).to_string(),
+                    ));
                 }
                 for (index, choice) in session.analyze_roots().iter().enumerate() {
                     let state = choice.error.clone().unwrap_or_else(|| "ready".to_string());

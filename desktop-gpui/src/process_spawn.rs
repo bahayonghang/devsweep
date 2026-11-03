@@ -27,6 +27,10 @@ mod tests {
     use std::process::Stdio;
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn command_without_window_captures_stdout() {
         let output = command_without_window("cmd")
             .args(["/c", "echo", "devsweep-no-window"])

@@ -157,7 +157,10 @@ pub fn treemap_rects(nodes: &[AnalyzeNodeV1]) -> Vec<TreemapRect> {
     if nodes.is_empty() {
         return rects;
     }
-    let root = nodes.iter().find(|node| node.parent_id.is_none()).unwrap_or(&nodes[0]);
+    let root = nodes
+        .iter()
+        .find(|node| node.parent_id.is_none())
+        .unwrap_or(&nodes[0]);
     layout_node(
         nodes,
         root.id,
@@ -413,6 +416,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn analyze_recycle_ids_match_cli_trash_plan() {
         let root = isolated_c13_root();
         let source_file = root.join("keep.bin");
@@ -479,6 +486,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn analyze_trash_preview_digest_binds_recycle_ids() {
         let bucket = isolated_c13_root();
         let profile = bucket.join("home").join("user");

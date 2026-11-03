@@ -1017,6 +1017,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn c10_ac2_concurrent_patches_keep_both_fields_and_leave_other_stores() {
         let (root, files) = isolated("concurrent");
         let scan = br#"{"schema_version":1,"roots":[]}"#;

@@ -58,8 +58,12 @@ pub fn mode_subtitle(locale: Locale, name: &'static str) -> &'static str {
 /// shell needs its own chord that the text field does not claim.
 pub fn mode_keys_hint(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it.",
-        Locale::ZhCn => "键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。F10 打开菜单；Down 移动高亮项；Enter 打开它。",
+        Locale::En => {
+            "Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it."
+        }
+        Locale::ZhCn => {
+            "键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。F10 打开菜单；Down 移动高亮项；Enter 打开它。"
+        }
     }
 }
 
@@ -255,9 +259,7 @@ pub fn workbench_failed_uninstall(locale: Locale) -> &'static str {
 
 pub fn software_leftovers_unavailable(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => {
-            "Leftovers is not a software workbench segment. It is unavailable here."
-        }
+        Locale::En => "Leftovers is not a software workbench segment. It is unavailable here.",
         Locale::ZhCn => "残留项不是软件工作台分段，这里不可用。",
     }
 }

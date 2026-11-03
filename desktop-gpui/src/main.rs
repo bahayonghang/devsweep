@@ -3,8 +3,6 @@
 #[cfg_attr(not(test), allow(dead_code))]
 mod analyze;
 mod analyze_window;
-mod optimize_board;
-mod software_review;
 mod buffer;
 #[cfg_attr(not(test), allow(dead_code))]
 mod clean;
@@ -15,6 +13,7 @@ mod clean_workbench;
 mod copy;
 mod icon;
 mod input;
+mod optimize_board;
 #[cfg_attr(not(test), allow(dead_code))]
 mod preferences;
 #[cfg_attr(not(test), allow(dead_code))]
@@ -23,6 +22,7 @@ mod process_spawn;
 mod screen;
 #[cfg_attr(not(test), allow(dead_code))]
 mod shell;
+mod software_review;
 #[cfg_attr(not(test), allow(dead_code))]
 mod status_panel;
 mod tray;

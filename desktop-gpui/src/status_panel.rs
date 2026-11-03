@@ -137,7 +137,9 @@ pub fn snapshot_lines(snapshot: &devsweep_core::status::StatusSnapshotV1) -> Vec
 
 /// First displayed process id, if the process group has a value.
 #[must_use]
-pub fn displayed_pid_from_snapshot(snapshot: &devsweep_core::status::StatusSnapshotV1) -> Option<u32> {
+pub fn displayed_pid_from_snapshot(
+    snapshot: &devsweep_core::status::StatusSnapshotV1,
+) -> Option<u32> {
     match &snapshot.processes {
         AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
             value.items.first().map(|item| item.pid)
@@ -176,8 +178,8 @@ pub fn group_lines(
 ) -> Vec<String> {
     use crate::copy::{self, Locale};
     use devsweep_core::status::{
-        explain_health, CpuV1, GpuV1, MemoryV1, NetworkV1, PowerV1, ProcessesV1,
-        ThermalV1, VolumesV1,
+        CpuV1, GpuV1, MemoryV1, NetworkV1, PowerV1, ProcessesV1, ThermalV1, VolumesV1,
+        explain_health,
     };
 
     let mut lines = vec![copy::status_health_title(locale).to_string()];
@@ -191,19 +193,30 @@ pub fn group_lines(
             &evidence.text,
         ));
     }
-    lines.push(metric_line(locale, "cpu", &snapshot.cpu, |value: &CpuV1| {
-        format!("{}", value.system_utilization_basis_points / 100)
-    }));
-    lines.push(metric_line(locale, "memory", &snapshot.memory, |value: &MemoryV1| {
-        format!("{} B", value.used_bytes)
-    }));
-    lines.push(metric_line(locale, "gpu", &snapshot.gpu, |value: &GpuV1| {
-        value
-            .adapters
-            .first()
-            .map(|adapter| format!("{}", adapter.utilization_basis_points / 100))
-            .unwrap_or_else(|| "unavailable".to_string())
-    }));
+    lines.push(metric_line(
+        locale,
+        "cpu",
+        &snapshot.cpu,
+        |value: &CpuV1| format!("{}", value.system_utilization_basis_points / 100),
+    ));
+    lines.push(metric_line(
+        locale,
+        "memory",
+        &snapshot.memory,
+        |value: &MemoryV1| format!("{} B", value.used_bytes),
+    ));
+    lines.push(metric_line(
+        locale,
+        "gpu",
+        &snapshot.gpu,
+        |value: &GpuV1| {
+            value
+                .adapters
+                .first()
+                .map(|adapter| format!("{}", adapter.utilization_basis_points / 100))
+                .unwrap_or_else(|| "unavailable".to_string())
+        },
+    ));
     lines.push(metric_line(
         locale,
         "power",
@@ -271,10 +284,18 @@ fn metric_line<T>(
         AvailabilityV1::Unsupported { reason_code, .. } => {
             copy::status_group_unsupported(locale, group, reason_code)
         }
-        AvailabilityV1::Partial { reason_codes, value, .. } => {
+        AvailabilityV1::Partial {
+            reason_codes,
+            value,
+            ..
+        } => {
             let detail = present(value);
-            if detail.split_whitespace().any(|token| token == "0" || token == "0%")
-                && reason_codes.iter().any(|code| code.contains("missing") || code.contains("unavailable"))
+            if detail
+                .split_whitespace()
+                .any(|token| token == "0" || token == "0%")
+                && reason_codes
+                    .iter()
+                    .any(|code| code.contains("missing") || code.contains("unavailable"))
             {
                 return copy::status_group_unavailable(locale, group, &reason_codes.join(","));
             }
@@ -321,10 +342,7 @@ pub fn process_lines(
         .map(|row| {
             format!(
                 "{} pid {}: cpu {} memory {}",
-                row.name,
-                row.pid,
-                row.cpu_basis_points_of_one_logical_core,
-                row.private_bytes
+                row.name, row.pid, row.cpu_basis_points_of_one_logical_core, row.private_bytes
             )
         })
         .collect()
@@ -421,9 +439,7 @@ mod tests {
 
     #[test]
     fn missing_sensors_stay_unavailable_and_processes_can_be_searched() {
-        use devsweep_core::status::{
-            AvailabilityV1, ProcessV1, ProcessesV1, StatusSnapshotV1,
-        };
+        use devsweep_core::status::{AvailabilityV1, ProcessV1, ProcessesV1, StatusSnapshotV1};
 
         let missing = StatusSnapshotV1 {
             snapshot_id: "missing".to_string(),
@@ -441,8 +457,16 @@ mod tests {
             unsupported_capabilities: Vec::new(),
         };
         let lines = group_lines(&missing, crate::copy::Locale::En);
-        assert!(lines.iter().any(|line| line.contains("unavailable") && line.contains("counter_missing")));
-        assert!(lines.iter().any(|line| line.contains("permission denied") || line.contains("permission_denied")));
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("unavailable") && line.contains("counter_missing"))
+        );
+        assert!(
+            lines.iter().any(
+                |line| line.contains("permission denied") || line.contains("permission_denied")
+            )
+        );
         assert!(lines.iter().any(|line| line.contains("unsupported")));
         assert!(
             !lines.iter().any(|line| looks_like_zero_reading(line)),

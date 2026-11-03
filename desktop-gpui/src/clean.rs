@@ -187,11 +187,17 @@ const AI_REVIEW_HOME_PREFIX: &str = "devsweep-gpui-c11-";
 /// is accepted only when it is an absolute directory under the temp root whose
 /// path contains the isolated-fixture prefix.
 pub fn explicit_ai_review_home() -> ExplicitAiHome {
-    classify_explicit_ai_review_home(std::env::var_os(AI_REVIEW_HOME_ENV).as_deref(), &std::env::temp_dir())
+    classify_explicit_ai_review_home(
+        std::env::var_os(AI_REVIEW_HOME_ENV).as_deref(),
+        &std::env::temp_dir(),
+    )
 }
 
 /// Pure classifier for [`explicit_ai_review_home`]. Does not read the environment.
-pub fn classify_explicit_ai_review_home(value: Option<&std::ffi::OsStr>, temp: &Path) -> ExplicitAiHome {
+pub fn classify_explicit_ai_review_home(
+    value: Option<&std::ffi::OsStr>,
+    temp: &Path,
+) -> ExplicitAiHome {
     let Some(value) = value else {
         return ExplicitAiHome::Unset;
     };
@@ -436,6 +442,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn explicit_ai_review_home_refuses_a_real_profile_and_accepts_only_an_isolated_dir() {
         let temp = env::temp_dir();
         assert_eq!(
@@ -452,10 +462,7 @@ mod tests {
             classify_explicit_ai_review_home(Some(missing_prefix.as_os_str()), &temp),
             ExplicitAiHome::Refused(ExplicitAiHomeRefusal::MissingPrefix)
         );
-        let isolated = temp.join(format!(
-            "devsweep-gpui-c11-explicit-{}",
-            std::process::id()
-        ));
+        let isolated = temp.join(format!("devsweep-gpui-c11-explicit-{}", std::process::id()));
         let _ = fs::remove_dir_all(&isolated);
         fs::create_dir_all(&isolated).unwrap();
         assert_eq!(

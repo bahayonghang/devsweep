@@ -348,7 +348,11 @@ mod tests {
     fn software_rows_do_not_claim_an_uninstall_succeeded() {
         let lines = software_row_lines(Locale::En);
         let zh = software_row_lines(Locale::ZhCn);
-        assert!(lines.iter().any(|line| line.starts_with("uninstall | review")));
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.starts_with("uninstall | review"))
+        );
         assert!(lines.iter().any(|line| line.contains("Leftovers")));
         for line in &lines {
             assert!(!claims_operation_succeeded(line), "{line}");

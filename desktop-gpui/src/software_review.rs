@@ -12,10 +12,10 @@ use std::{
 };
 
 use devsweep_core::software::{
-    SOFTWARE_INVENTORY_VERSION, SoftwareEligibilityReason, SoftwareEligibilityState, SoftwareEntryV1,
-    SoftwareIdentity, SoftwareInventoryV1, SoftwarePlanError, SoftwareSelectionPlanV1,
-    SoftwareSourceEvidence, SoftwareSourceState, SoftwareStartupError, SoftwareStartupLocation,
-    SoftwareUpdateError, SoftwareUpdateRowV1, SoftwareUpdatesV1,
+    SOFTWARE_INVENTORY_VERSION, SoftwareEligibilityReason, SoftwareEligibilityState,
+    SoftwareEntryV1, SoftwareIdentity, SoftwareInventoryV1, SoftwarePlanError,
+    SoftwareSelectionPlanV1, SoftwareSourceEvidence, SoftwareSourceState, SoftwareStartupError,
+    SoftwareStartupLocation, SoftwareUpdateError, SoftwareUpdateRowV1, SoftwareUpdatesV1,
     StartupFixtureClass, StartupFixtureHiveV1, build_selection_plan, plan_software_update,
     plan_startup_hive, preview_selection_plan_live, preview_startup_hive, software_entry_id,
     software_inventory_fingerprint, startup_fixture_entry_id,
@@ -68,9 +68,17 @@ struct PendingUninstall {
 #[derive(Clone, Debug)]
 enum ReviewSource {
     None,
-    Inventory { path: Option<PathBuf>, inventory: SoftwareInventoryV1 },
-    Updates { path: Option<PathBuf>, rows: Vec<SoftwareUpdateRowV1> },
-    Hive { path: PathBuf },
+    Inventory {
+        path: Option<PathBuf>,
+        inventory: SoftwareInventoryV1,
+    },
+    Updates {
+        path: Option<PathBuf>,
+        rows: Vec<SoftwareUpdateRowV1>,
+    },
+    Hive {
+        path: PathBuf,
+    },
 }
 
 /// One segment review. The window leaves the executor unset.
@@ -337,7 +345,13 @@ impl SoftwareReview {
         };
         Some(format!(
             "{mark}{} | identity={} | count={} | source={} | version={} | permission={} | skip={} | last={last}",
-            item.id, item.identity, item.count, item.source, item.version, item.permission, item.skip
+            item.id,
+            item.identity,
+            item.count,
+            item.source,
+            item.version,
+            item.permission,
+            item.skip
         ))
     }
 
@@ -365,7 +379,11 @@ impl SoftwareReview {
             ];
             return;
         }
-        if self.pending.as_ref().is_some_and(|pending| pending.id == id) {
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.id == id)
+        {
             self.confirm_uninstall(locale, executor);
             return;
         }
@@ -410,7 +428,9 @@ impl SoftwareReview {
     fn confirm_uninstall(
         &mut self,
         locale: Locale,
-        mut executor: Option<&mut dyn FnMut(&SoftwareSelectionPlanV1, &str) -> Result<String, String>>,
+        mut executor: Option<
+            &mut dyn FnMut(&SoftwareSelectionPlanV1, &str) -> Result<String, String>,
+        >,
     ) {
         let Some(pending) = self.pending.clone() else {
             self.lines = vec![copy::software_digest_missing(locale).to_string()];
@@ -482,7 +502,11 @@ impl SoftwareReview {
         } else {
             preview.digest.clone()
         };
-        if self.pending.as_ref().is_some_and(|pending| pending.id == id) {
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.id == id)
+        {
             match devsweep_core::software::execute_startup_hive(&path, &plan, &expected, true) {
                 Ok(report) => {
                     let outcome = serde_json::to_value(report.toggle.outcome)
@@ -586,7 +610,8 @@ impl SoftwareReview {
                     .filter(|entry| entry.eligibility.is_selectable())
                     .count();
                 let manual = inventory.entries.len().saturating_sub(selectable);
-                let (available, partial, permission, unsupported) = source_counts(&inventory.sources);
+                let (available, partial, permission, unsupported) =
+                    source_counts(&inventory.sources);
                 let mut lines = vec![
                     copy::software_inventory_summary(
                         locale,
@@ -652,9 +677,14 @@ impl SoftwareReview {
             return true;
         }
         let query = self.query.to_lowercase();
-        [item.id.as_str(), item.name.as_str(), item.source.as_str(), item.version.as_str()]
-            .iter()
-            .any(|field| field.to_lowercase().contains(&query))
+        [
+            item.id.as_str(),
+            item.name.as_str(),
+            item.source.as_str(),
+            item.version.as_str(),
+        ]
+        .iter()
+        .any(|field| field.to_lowercase().contains(&query))
     }
 }
 
@@ -671,7 +701,10 @@ fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareI
             };
             SoftwareItem {
                 id: entry.id.clone(),
-                name: entry.display_name.clone().unwrap_or_else(|| entry.id.clone()),
+                name: entry
+                    .display_name
+                    .clone()
+                    .unwrap_or_else(|| entry.id.clone()),
                 identity: identity_token(&entry.identity),
                 count: entry.provenance.len() as u64,
                 source: entry
@@ -679,7 +712,10 @@ fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareI
                     .first()
                     .map(source_token)
                     .unwrap_or_else(|| "unknown".to_string()),
-                version: entry.version.clone().unwrap_or_else(|| "unknown".to_string()),
+                version: entry
+                    .version
+                    .clone()
+                    .unwrap_or_else(|| "unknown".to_string()),
                 permission,
                 skip,
                 last: last.to_string(),
@@ -722,7 +758,10 @@ fn hive_items(path: &Path, locale: Locale, last: &str) -> Vec<SoftwareItem> {
         .map(|entry| {
             let id = startup_fixture_entry_id(entry.location, &entry.name);
             let (permission, skip) = match plan_startup_hive(path, &id, false) {
-                Ok(_) => ("allowed".to_string(), copy::workbench_not_run(locale).to_string()),
+                Ok(_) => (
+                    "allowed".to_string(),
+                    copy::workbench_not_run(locale).to_string(),
+                ),
                 Err(error) => (startup_permission(&error), error.code().to_string()),
             };
             SoftwareItem {
@@ -747,7 +786,10 @@ fn permission_token(entry: &SoftwareEntryV1, sources: &[SoftwareSourceEvidence])
         return "protected".to_string();
     }
     if let Some(evidence) = sources.iter().find(|evidence| {
-        entry.provenance.iter().any(|source| source == &evidence.source)
+        entry
+            .provenance
+            .iter()
+            .any(|source| source == &evidence.source)
             && evidence.state == SoftwareSourceState::Permission
     }) {
         return format!(
@@ -766,7 +808,10 @@ fn source_skip(entry: &SoftwareEntryV1, sources: &[SoftwareSourceEvidence]) -> S
     sources
         .iter()
         .find(|evidence| {
-            entry.provenance.iter().any(|source| source == &evidence.source)
+            entry
+                .provenance
+                .iter()
+                .any(|source| source == &evidence.source)
                 && evidence.state != SoftwareSourceState::Available
         })
         .map(|evidence| {
@@ -808,7 +853,9 @@ fn identity_token(identity: &SoftwareIdentity) -> String {
 
 fn source_token(source: &devsweep_core::software::SoftwareSourceId) -> String {
     match source {
-        devsweep_core::software::SoftwareSourceId::MsixCurrentUser => "msix_current_user".to_string(),
+        devsweep_core::software::SoftwareSourceId::MsixCurrentUser => {
+            "msix_current_user".to_string()
+        }
         devsweep_core::software::SoftwareSourceId::Msi { context } => format!("msi:{context:?}"),
         devsweep_core::software::SoftwareSourceId::Arp { hive, view } => {
             format!("arp:{hive:?}:{view:?}")
@@ -919,7 +966,8 @@ fn unix_now_ms() -> u64 {
 pub fn seal_inventory(inventory: &mut SoftwareInventoryV1) -> Result<(), String> {
     inventory.version = SOFTWARE_INVENTORY_VERSION;
     inventory.fingerprint = String::new();
-    inventory.fingerprint = software_inventory_fingerprint(inventory).map_err(|error| error.to_string())?;
+    inventory.fingerprint =
+        software_inventory_fingerprint(inventory).map_err(|error| error.to_string())?;
     Ok(())
 }
 
@@ -932,8 +980,8 @@ pub fn entry_id(identity: &SoftwareIdentity) -> Result<String, String> {
 mod tests {
     use super::*;
     use devsweep_core::software::{
-        RegistryHive, RegistryView, SoftwareEligibility, SoftwareLastUsedEvidence,
-        SoftwareScope, SoftwareSizeEvidence, SoftwareSourceId,
+        RegistryHive, RegistryView, SoftwareEligibility, SoftwareLastUsedEvidence, SoftwareScope,
+        SoftwareSizeEvidence, SoftwareSourceId,
     };
 
     fn msix(name: &str, version: &str) -> SoftwareEntryV1 {
@@ -991,7 +1039,10 @@ mod tests {
         }
     }
 
-    fn inventory(entries: Vec<SoftwareEntryV1>, sources: Vec<SoftwareSourceEvidence>) -> SoftwareInventoryV1 {
+    fn inventory(
+        entries: Vec<SoftwareEntryV1>,
+        sources: Vec<SoftwareSourceEvidence>,
+    ) -> SoftwareInventoryV1 {
         let mut inventory = SoftwareInventoryV1 {
             version: SOFTWARE_INVENTORY_VERSION,
             observed_at_unix_ms: 1_700_000_000_000,
@@ -1030,7 +1081,11 @@ mod tests {
             .expect("alpha")
             .id
             .clone();
-        let alpha = review.items.iter().find(|item| item.id == alpha_id).expect("alpha");
+        let alpha = review
+            .items
+            .iter()
+            .find(|item| item.id == alpha_id)
+            .expect("alpha");
         assert!(alpha.identity.starts_with("msix:"));
         assert_eq!(alpha.version, "1.2.3");
         assert_eq!(alpha.source, "msix_current_user");
@@ -1064,7 +1119,10 @@ mod tests {
         review.activate(&alpha_id, Locale::En, None);
         review.activate(&alpha_id, Locale::En, None);
         let stale = review.lines().join("\n");
-        assert!(stale.contains("digest_mismatch") || stale.contains("isolated_executor_unavailable"), "{stale}");
+        assert!(
+            stale.contains("digest_mismatch") || stale.contains("isolated_executor_unavailable"),
+            "{stale}"
+        );
         assert_eq!(review.executor_calls(), 0);
 
         let source = include_str!("software_review.rs");
@@ -1077,7 +1135,10 @@ mod tests {
 
     #[test]
     fn isolated_executor_receives_the_live_digest_and_search_stays_local() {
-        let stored = inventory(vec![msix("Alpha", "1.0.0"), msix("Beta", "2.0.0")], Vec::new());
+        let stored = inventory(
+            vec![msix("Alpha", "1.0.0"), msix("Beta", "2.0.0")],
+            Vec::new(),
+        );
         let mut review = SoftwareReview::new();
         review.set_now(stored.observed_at_unix_ms);
         review.open_inventory(stored, Locale::En);
@@ -1086,7 +1147,12 @@ mod tests {
         assert_eq!(ids.len(), 1);
         review.cycle_sort();
         review.cycle_filter();
-        assert!(review.filtered_ids().iter().all(|id| review.items.iter().any(|item| &item.id == id && item.selectable)));
+        assert!(review.filtered_ids().iter().all(|id| {
+            review
+                .items
+                .iter()
+                .any(|item| &item.id == id && item.selectable)
+        }));
         review.set_query("");
         review.cycle_filter();
         review.cycle_filter();
@@ -1155,7 +1221,10 @@ mod tests {
         session.apply_key(NavKey::Enter);
         assert!(session.software_review().is_open());
         let lines = panel_lines(&session, None).join("\n");
-        assert!(lines.contains("No software inventory") || lines.contains("尚无软件清单"), "{lines}");
+        assert!(
+            lines.contains("No software inventory") || lines.contains("尚无软件清单"),
+            "{lines}"
+        );
         assert!(!lines.to_ascii_lowercase().contains("succeed"));
         session.software_cycle_filter();
         session.apply_key(NavKey::Escape);
@@ -1165,11 +1234,17 @@ mod tests {
 
     #[test]
     fn empty_permission_and_updates_do_not_claim_success() {
-        let empty = inventory(Vec::new(), vec![source(SoftwareSourceState::Permission, "access_denied")]);
+        let empty = inventory(
+            Vec::new(),
+            vec![source(SoftwareSourceState::Permission, "access_denied")],
+        );
         let mut review = SoftwareReview::new();
         review.open_inventory(empty, Locale::ZhCn);
         let lines = review.lines().join("\n");
-        assert!(lines.contains("权限受限") || lines.contains("permission"), "{lines}");
+        assert!(
+            lines.contains("权限受限") || lines.contains("permission"),
+            "{lines}"
+        );
         assert!(lines.contains("尚无软件清单") || lines.contains("0"));
         assert!(!lines.contains("成功"));
 
@@ -1180,7 +1255,9 @@ mod tests {
         review.open_segment(SoftwareSegment::Updates, Locale::En);
         let unchecked = review.lines().join("\n");
         assert!(
-            unchecked.contains("not checked") || unchecked.contains("尚未检查") || unchecked.contains("probe_failed"),
+            unchecked.contains("not checked")
+                || unchecked.contains("尚未检查")
+                || unchecked.contains("probe_failed"),
             "{unchecked}"
         );
     }

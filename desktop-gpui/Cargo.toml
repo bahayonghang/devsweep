@@ -15,10 +15,15 @@ anyhow = "1.0.104"
 devsweep-core = { path = "../crates/devsweep-core" }
 gpui = { git = "https://github.com/zed-industries/zed", rev = "322cd509dcccaee1f6bc44725d270598ae8171ad" }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "322cd509dcccaee1f6bc44725d270598ae8171ad" }
-gpui_windows = { git = "https://github.com/zed-industries/zed", rev = "322cd509dcccaee1f6bc44725d270598ae8171ad" }
-raw-window-handle = "0.6.2"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
+
+# Windows x64 is the delivery target. The Win32 backend and bindings are
+# target-scoped so the presentation and state tests also build and run on the
+# Linux/macOS CI hosts; every use site is already `#[cfg(windows)]`.
+[target.'cfg(windows)'.dependencies]
+gpui_windows = { git = "https://github.com/zed-industries/zed", rev = "322cd509dcccaee1f6bc44725d270598ae8171ad" }
+raw-window-handle = "0.6.2"
 windows = { version = "=0.62.2", features = [
     "Win32_UI_Accessibility",
     "Win32_UI_WindowsAndMessaging",
@@ -30,3 +35,8 @@ sha2 = "0.11.1"
 
 [patch."https://github.com/zed-industries/zed"]
 gpui_windows = { path = "vendor/gpui_windows" }
+
+[features]
+# Opt-in X11 backend so the shell can be rendered and screenshotted on a Linux
+# review host (for example under Xvfb). Not a delivery target.
+linux-preview = ["gpui_platform/x11"]

@@ -338,7 +338,9 @@ pub fn landing_roots(paths: &[PathBuf]) -> Vec<AnalyzeRootChoice> {
             .map(|root| AnalyzeRootChoice {
                 input: root.input,
                 normalized: root.normalized,
-                error: root.error.map(|error| format!("{error:?}").to_ascii_lowercase()),
+                error: root
+                    .error
+                    .map(|error| format!("{error:?}").to_ascii_lowercase()),
             })
             .collect(),
         Err(error) => vec![AnalyzeRootChoice {
@@ -375,16 +377,18 @@ mod tests {
     use std::{fs, process::Stdio};
 
     fn isolated_root(name: &str) -> PathBuf {
-        let root = std::env::temp_dir().join(format!(
-            "devsweep-gpui-c13-{name}-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("devsweep-gpui-c13-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).expect("analyze root");
         root
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn scan_distinguishes_empty_unreadable_and_present_and_preview_matches_cli() {
         let root = isolated_root("faces");
         fs::create_dir_all(root.join("empty-dir")).expect("empty dir");
@@ -408,17 +412,20 @@ mod tests {
             .iter()
             .map(|node| (node.id, classify(node), node.name.clone()))
             .collect();
-        let empty = faces.iter().find(|(_, face, name)| {
-            *face == NodeFace::Empty && name.contains("empty-dir")
-        });
-        let present = faces.iter().find(|(_, face, name)| {
-            *face == NodeFace::Present && name == "keep.bin"
-        });
-        assert!(empty.is_some(), "empty directory must be distinct: {faces:?}");
+        let empty = faces
+            .iter()
+            .find(|(_, face, name)| *face == NodeFace::Empty && name.contains("empty-dir"));
+        let present = faces
+            .iter()
+            .find(|(_, face, name)| *face == NodeFace::Present && name == "keep.bin");
+        assert!(
+            empty.is_some(),
+            "empty directory must be distinct: {faces:?}"
+        );
         assert!(present.is_some(), "file must be present: {faces:?}");
-        let unreadable = faces.iter().find(|(_, face, name)| {
-            *face == NodeFace::Unreadable && name.contains("denied")
-        });
+        let unreadable = faces
+            .iter()
+            .find(|(_, face, name)| *face == NodeFace::Unreadable && name.contains("denied"));
         if unreadable.is_none() {
             // The ACL deny may not be visible to the walker. Do not invent the face.
             eprintln!("unreadable face was not produced by the walker: {faces:?}");
@@ -437,7 +444,10 @@ mod tests {
 
         let refused = window.refuse_unconfirmed(Locale::En);
         assert!(refused.contains("confirmation_required"), "{refused}");
-        assert!(root.join("keep.bin").is_file(), "preview must not move the file");
+        assert!(
+            root.join("keep.bin").is_file(),
+            "preview must not move the file"
+        );
 
         let cli = ensure_cli();
         let plan_path = root.join("plan.json");
@@ -468,9 +478,7 @@ mod tests {
         );
         let document: serde_json::Value =
             serde_json::from_slice(&fs::read(&preview_path).expect("preview file")).expect("json");
-        let cli_digest = document["data"]["digest"]
-            .as_str()
-            .expect("cli digest");
+        let cli_digest = document["data"]["digest"].as_str().expect("cli digest");
         assert_eq!(cli_digest, core.digest);
         assert!(root.join("keep.bin").is_file());
 
@@ -481,6 +489,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn landing_detail_reveal_and_stale_digest_do_not_delete() {
         let root = isolated_root("detail");
         fs::create_dir_all(root.join("empty-dir")).expect("empty");
@@ -493,8 +505,15 @@ mod tests {
         let painted = crate::view::panel_lines(&session, None).join("\n");
         assert!(painted.contains("root:0"), "{painted}");
         assert!(painted.contains("root:1"), "{painted}");
-        assert!(choices.iter().any(|choice| choice.error.is_none() && choice.input == root.display().to_string()));
-        assert!(choices.iter().any(|choice| choice.error.is_some()), "{choices:?}");
+        assert!(
+            choices
+                .iter()
+                .any(|choice| choice.error.is_none() && choice.input == root.display().to_string())
+        );
+        assert!(
+            choices.iter().any(|choice| choice.error.is_some()),
+            "{choices:?}"
+        );
 
         let mut window = AnalyzeWindow::scan(&root).expect("scan");
         let file_id = window.first_file_id().expect("file");
@@ -513,7 +532,10 @@ mod tests {
         assert_ne!(program, args.join(" "));
 
         let missing_digest = window.confirm_recycle(Locale::En);
-        assert!(missing_digest.contains("empty_selection") || missing_digest.contains("selection"), "{missing_digest}");
+        assert!(
+            missing_digest.contains("empty_selection") || missing_digest.contains("selection"),
+            "{missing_digest}"
+        );
         window.preview_selected(Locale::En).expect("preview");
         window.arm_stale();
         let stale = window.confirm_recycle(Locale::ZhCn);
@@ -542,7 +564,11 @@ mod tests {
             .current_dir(&repo)
             .output()
             .expect("cargo");
-        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         repo.join(format!(
             "dist/ci-target/debug/devsweep{}",
             std::env::consts::EXE_SUFFIX

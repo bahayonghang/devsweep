@@ -1509,6 +1509,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
     fn execute_worker_accepts_the_live_prefixed_digest_and_refuses_a_stale_one() {
         let root = isolated_multi_cache_project();
         let mut workbench = CleanWorkbench::new();

@@ -17,8 +17,6 @@ use std::{
 use crate::{
     analyze::AnalyzeBoard,
     analyze_window::{AnalyzeRootChoice, AnalyzeWindow},
-    optimize_board::OptimizeBoard,
-    software_review::SoftwareReview,
     clean_ai::{
         AiCategory, AiSubviewPhase, CleanAiExecutePayload, CleanAiRecoveryPayload,
         CleanAiRestorePayload, CleanAiScanPayload, CleanAiView,
@@ -28,10 +26,12 @@ use crate::{
         CleanWorkbench, execute_clean_plan, scan_clean_rows,
     },
     copy::{Locale, StoreName},
+    optimize_board::OptimizeBoard,
     preferences::{
         self, DesktopMotion, DesktopPatch, DesktopPreferences, DesktopTheme, LanguageTag,
         PreferenceFiles, StoreError,
     },
+    software_review::SoftwareReview,
     status_panel::{ProcessSort, StatusPanel, StatusPhase},
     workbench_review::WorkbenchReview,
 };
@@ -42,7 +42,10 @@ use devsweep_core::{
     process::{CancelObserver as _, FlagCancelObserver},
     scan::ScanOptions,
     software::{AdapterOutcome, SoftwareExecutionOutcome, SoftwarePlanError},
-    status::{KeepAwakeError, KeepAwakeOwner, KeepAwakeService, KeepAwakeStatusV1, LiveControl, StatusEventV1, StatusSnapshotV1},
+    status::{
+        KeepAwakeError, KeepAwakeOwner, KeepAwakeService, KeepAwakeStatusV1, LiveControl,
+        StatusEventV1, StatusSnapshotV1,
+    },
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1660,8 +1663,7 @@ impl Session {
         if index >= self.analyze_roots.len() {
             return false;
         }
-        self.shell
-            .select(Mode::Analyze, format!("root:{index}"));
+        self.shell.select(Mode::Analyze, format!("root:{index}"));
         self.open_analyze_choice(index)
     }
 
@@ -1839,10 +1841,7 @@ impl Session {
         }
         let mut start = false;
         let mut stop = false;
-        panel.reconcile(
-            || start = true,
-            || stop = true,
-        );
+        panel.reconcile(|| start = true, || stop = true);
         if start && self.status_live.is_none() {
             self.status_subscription_starts = self.status_subscription_starts.saturating_add(1);
         }
@@ -2314,15 +2313,15 @@ impl Session {
         let home = match crate::clean::explicit_ai_review_home() {
             crate::clean::ExplicitAiHome::Isolated(home) => home,
             crate::clean::ExplicitAiHome::Refused(reason) => {
-                self.clean_ai.on_scan_unavailable(&format!(
-                    "explicit AI review home refused: {reason:?}"
-                ));
+                self.clean_ai
+                    .on_scan_unavailable(&format!("explicit AI review home refused: {reason:?}"));
                 return false;
             }
             crate::clean::ExplicitAiHome::Unset => {
-                self.clean_ai.on_scan_unavailable(
-                    crate::copy::clean_ai_isolated_home_required(self.locale()),
-                );
+                self.clean_ai
+                    .on_scan_unavailable(crate::copy::clean_ai_isolated_home_required(
+                        self.locale(),
+                    ));
                 return false;
             }
         };
@@ -2339,9 +2338,8 @@ impl Session {
             ),
             crate::clean::ExplicitAiHome::Isolated(_)
         ) {
-            self.clean_ai.on_scan_unavailable(
-                crate::copy::clean_ai_isolated_home_required(self.locale()),
-            );
+            self.clean_ai
+                .on_scan_unavailable(crate::copy::clean_ai_isolated_home_required(self.locale()));
             return false;
         }
         if self.shell.operation_id().is_some() || !self.clean_ai.open() {
@@ -4360,12 +4358,24 @@ mod tests {
         if let Some(real) = real {
             assert_ne!(scanned, real);
         }
-        assert!(!session.clean_ai().category_ids(AiCategory::Cache).is_empty());
-        assert!(!session.clean_ai().category_ids(AiCategory::Sessions).is_empty());
-        assert!(!session
-            .clean_ai()
-            .category_ids(AiCategory::Worktrees)
-            .is_empty());
+        assert!(
+            !session
+                .clean_ai()
+                .category_ids(AiCategory::Cache)
+                .is_empty()
+        );
+        assert!(
+            !session
+                .clean_ai()
+                .category_ids(AiCategory::Sessions)
+                .is_empty()
+        );
+        assert!(
+            !session
+                .clean_ai()
+                .category_ids(AiCategory::Worktrees)
+                .is_empty()
+        );
         assert!(session.clean_ai().sensitive_count() > 0);
         let _ = fs::remove_dir_all(&home);
     }
