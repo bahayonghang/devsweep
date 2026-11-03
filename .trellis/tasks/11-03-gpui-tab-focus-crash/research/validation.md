@@ -53,3 +53,35 @@ No unrelated test or tooling repairs were applied.
 The reported navigation crash is fixed and natively verified. The broader test
 gate remains incomplete, so the Trellis task remains unarchived. Changes are
 uncommitted.
+
+## Follow-up: full-suite failures (commit `1031091`)
+
+Linux host only. Windows test run is NOT_RUN.
+
+- Failures 1 and 2 (CRLF needles): confirmed. All `desktop-gpui/src` files
+  were converted to CRLF on Linux. Under that conversion, HEAD `27c91c3`
+  failed exactly
+  `clean_review_keys_are_bound_on_the_note_and_startup_keeps_note_focus` and
+  `every_clickable_surface_is_a_tab_stop_and_enter_clicks_the_focused_one`
+  (147 passed, 2 failed). Source-contract tests now read sources through
+  `source_lf`, which folds CRLF to LF. The same CRLF conversion then passes
+  149 of 149.
+- Failure 3 (`confirm_refuses_a_stale_snapshot_or_a_changed_file_before_any_move`):
+  cause inferred from source, not reproduced on Windows. The live identity in
+  `analysis/saved.rs` is the file id plus millisecond mtime. File size is
+  not part of it. Windows stamps writes from a coarse clock tick. The test
+  rewrote the file in place right after the preview, so the rewrite could
+  keep both values. The digest then matched and the executor went on to a
+  real Recycle Bin move of the temp file. That may also explain the
+  `STATUS_ACCESS_VIOLATION` (a shell recycle call from a test thread), but
+  this is unconfirmed. The test now moves the mtime forward explicitly. If a
+  `devsweep-gpui-analyze-confirm-changed-*` `keep.bin` sits in the Recycle Bin
+  from the earlier run, it is that test file.
+- Product note, not changed here: the same-tick in-place rewrite gap also
+  applies to the CLI Analyze confirm path. Hardening the core identity is
+  separate backend work.
+
+Gates on Linux: `cargo test --features linux-preview` 149 passed, 10 ignored.
+`cargo fmt --all -- --check` is clean. Windows-target clippy
+(`--all-targets -D warnings`) passes. A full suite run on Windows is still
+required before this task can close.
