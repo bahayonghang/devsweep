@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::optimize_board::OptimizeGroup;
-use crate::software_review::{SoftwareFilter, SoftwareSort};
+use crate::software_review::{SoftwareFilter, SoftwareSize, SoftwareSort};
 use crate::workbench::SoftwareSegment;
 
 impl ShellView {
@@ -213,6 +213,13 @@ impl ShellView {
             SoftwareSort::Name => copy::pick(locale, "Sort: name", "排序：名称"),
             SoftwareSort::Source => copy::pick(locale, "Sort: source", "排序：来源"),
             SoftwareSort::Version => copy::pick(locale, "Sort: version", "排序：版本"),
+            SoftwareSort::Size => copy::pick(locale, "Sort: size", "排序：大小"),
+        };
+        let count_label = match locale {
+            copy::Locale::En => format!("{} of {}", review.visible_count(), review.item_count()),
+            copy::Locale::ZhCn => {
+                format!("{} / {} 项", review.visible_count(), review.item_count())
+            }
         };
         let filter_label = match review.filter() {
             SoftwareFilter::All => copy::pick(locale, "All", "全部"),
@@ -237,6 +244,9 @@ impl ShellView {
                     .child(div().flex_1().child(self.search.clone())),
             )
             .child(div().flex_1())
+            .when(review.item_count() > 0, |bar| {
+                bar.child(ui::badge(t, count_label, Tone::Neutral))
+            })
             .child(
                 ui::icon_button(t, "software-sort", "sort", sort_label, ButtonKind::Ghost)
                     .on_click(cx.listener(|this, _, _, cx| {
@@ -334,6 +344,39 @@ impl ShellView {
                         item.name.clone(),
                         format!("{} · {}", item.version, item.source),
                     ))
+                    .when_some(item.size, |row, size| {
+                        // The qualifier always travels with the number.
+                        let (prefix, note) = match size {
+                            SoftwareSize::Estimate(_) => {
+                                ("~", copy::pick(locale, "reported", "安装程序报告"))
+                            }
+                            SoftwareSize::Measured(_) => {
+                                ("", copy::pick(locale, "measured", "实测"))
+                            }
+                            SoftwareSize::AtLeast(_) => {
+                                ("≥ ", copy::pick(locale, "partial", "部分"))
+                            }
+                        };
+                        row.child(
+                            div()
+                                .flex()
+                                .flex_col()
+                                .items_end()
+                                .flex_shrink_0()
+                                .child(
+                                    div()
+                                        .text_size(rems(0.86))
+                                        .font_weight(FontWeight::MEDIUM)
+                                        .child(format!("{prefix}{}", ui::bytes(size.bytes()))),
+                                )
+                                .child(
+                                    div()
+                                        .text_size(rems(0.72))
+                                        .text_color(rgb(t.text_subtle))
+                                        .child(note),
+                                ),
+                        )
+                    })
                     .child(ui::badge(t, status, tone))
                     .when(focused, |row| {
                         row.child(

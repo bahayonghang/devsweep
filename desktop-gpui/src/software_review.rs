@@ -39,6 +39,8 @@ pub enum SoftwareSort {
     Name,
     Source,
     Version,
+    /// Largest qualified size first; rows without a size sort last.
+    Size,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -61,6 +63,47 @@ pub struct SoftwareItem {
     pub skip: String,
     pub last: String,
     pub selectable: bool,
+    /// Qualified install size from inventory evidence. `None` when the
+    /// source reports no size; it is never painted as zero.
+    pub size: Option<SoftwareSize>,
+}
+
+/// How much an install size can be trusted. The window always shows the
+/// qualifier next to the number.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SoftwareSize {
+    /// Reported by the installer (Programs and Features estimate).
+    Estimate(u64),
+    /// Measured from the installed location.
+    Measured(u64),
+    /// A partial walk; the true size is at least this.
+    AtLeast(u64),
+}
+
+impl SoftwareSize {
+    fn from_evidence(evidence: &devsweep_core::software::SoftwareSizeEvidence) -> Option<Self> {
+        use devsweep_core::software::{SoftwareSizeBasis, SoftwareSizeEvidence};
+        match evidence {
+            SoftwareSizeEvidence::Available {
+                value_bytes, basis, ..
+            } => Some(match basis {
+                SoftwareSizeBasis::ReportedEstimate => Self::Estimate(*value_bytes),
+                SoftwareSizeBasis::MeasuredInstalledLocation
+                | SoftwareSizeBasis::MeasuredDirectory => Self::Measured(*value_bytes),
+            }),
+            SoftwareSizeEvidence::Partial {
+                lower_bound_bytes, ..
+            } => Some(Self::AtLeast(*lower_bound_bytes)),
+            SoftwareSizeEvidence::Unknown { .. } => None,
+        }
+    }
+
+    #[must_use]
+    pub fn bytes(self) -> u64 {
+        match self {
+            Self::Estimate(value) | Self::Measured(value) | Self::AtLeast(value) => value,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -450,7 +493,8 @@ impl SoftwareReview {
         self.sort = match self.sort {
             SoftwareSort::Name => SoftwareSort::Source,
             SoftwareSort::Source => SoftwareSort::Version,
-            SoftwareSort::Version => SoftwareSort::Name,
+            SoftwareSort::Version => SoftwareSort::Size,
+            SoftwareSort::Size => SoftwareSort::Name,
         };
     }
 
@@ -483,6 +527,15 @@ impl SoftwareReview {
         }
     }
 
+    /// Rows that pass the current search and filter.
+    #[must_use]
+    pub fn visible_count(&self) -> usize {
+        self.items
+            .iter()
+            .filter(|item| self.filter_matches(item) && self.query_matches(item))
+            .count()
+    }
+
     #[must_use]
     pub fn filtered_ids(&self) -> Vec<String> {
         let mut items = self
@@ -496,6 +549,10 @@ impl SoftwareReview {
                 SoftwareSort::Name => left.name.cmp(&right.name),
                 SoftwareSort::Source => left.source.cmp(&right.source),
                 SoftwareSort::Version => left.version.cmp(&right.version),
+                SoftwareSort::Size => right
+                    .size
+                    .map(SoftwareSize::bytes)
+                    .cmp(&left.size.map(SoftwareSize::bytes)),
             };
             order.then_with(|| left.id.cmp(&right.id))
         });
@@ -954,6 +1011,7 @@ fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareI
                 skip,
                 last: last.to_string(),
                 selectable: entry.eligibility.is_selectable(),
+                size: SoftwareSize::from_evidence(&entry.size),
             }
         })
         .collect()
@@ -976,6 +1034,7 @@ fn update_items(rows: &[SoftwareUpdateRowV1], last: &str) -> Vec<SoftwareItem> {
             skip: copy::workbench_not_run(Locale::En).to_string(),
             last: last.to_string(),
             selectable: false,
+            size: None,
         })
         .collect()
 }
@@ -1010,6 +1069,7 @@ fn hive_items(path: &Path, locale: Locale, last: &str) -> Vec<SoftwareItem> {
                 last: last.to_string(),
                 selectable: entry.class == StartupFixtureClass::Ordinary
                     && entry.location == SoftwareStartupLocation::CurrentUserRun,
+                size: None,
             }
         })
         .collect()
@@ -1041,6 +1101,7 @@ fn startup_items(list: &SoftwareStartupListV1, last: &str) -> Vec<SoftwareItem> 
                 skip: last.to_string(),
                 last: last.to_string(),
                 selectable: false,
+                size: None,
             }
         })
         .collect()
@@ -1333,6 +1394,58 @@ mod tests {
             state,
             reason_code: Some(reason.to_string()),
         }
+    }
+
+    #[test]
+    fn install_sizes_keep_their_qualifier_and_sort_largest_first() {
+        use devsweep_core::software::{SoftwareSizeBasis, SoftwareSizeSourceCode};
+        let mut reported = msix("Reported", "1");
+        reported.size = SoftwareSizeEvidence::Available {
+            value_bytes: 300,
+            basis: SoftwareSizeBasis::ReportedEstimate,
+            source_code: SoftwareSizeSourceCode::ArpEstimatedSizeKib,
+            observed_at_unix_ms: 1,
+        };
+        let mut partial = msix("Partial", "1");
+        partial.size = SoftwareSizeEvidence::Partial {
+            lower_bound_bytes: 900,
+            basis: SoftwareSizeBasis::MeasuredInstalledLocation,
+            source_code: SoftwareSizeSourceCode::ArpEstimatedSizeKib,
+            reason_code: "fixture".to_string(),
+            observed_at_unix_ms: 1,
+        };
+        let unknown = msix("Unknown", "1");
+        let inventory = inventory(
+            vec![reported, partial, unknown],
+            vec![source(SoftwareSourceState::Available, "ok")],
+        );
+        let mut review = SoftwareReview::new();
+        review.set_now(inventory.observed_at_unix_ms);
+        review.open_inventory(inventory, Locale::En);
+        let size_of = |name: &str| {
+            review
+                .items
+                .iter()
+                .find(|item| item.name == name)
+                .expect("item")
+                .size
+        };
+        assert_eq!(size_of("Reported"), Some(SoftwareSize::Estimate(300)));
+        assert_eq!(size_of("Partial"), Some(SoftwareSize::AtLeast(900)));
+        assert_eq!(size_of("Unknown"), None, "unknown is never painted as zero");
+
+        while review.sort() != SoftwareSort::Size {
+            review.cycle_sort();
+        }
+        let names = review
+            .filtered_ids()
+            .iter()
+            .map(|id| review.item(id).expect("item").name.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(names, ["Partial", "Reported", "Unknown"]);
+        assert_eq!(review.visible_count(), 3);
+        review.cycle_sort();
+        assert_eq!(review.sort(), SoftwareSort::Name);
     }
 
     #[test]
