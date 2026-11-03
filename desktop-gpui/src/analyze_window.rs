@@ -671,8 +671,20 @@ mod tests {
         );
 
         // The file changes after the digest was painted. The executor rebuilds
-        // the live digest and refuses before any side effect.
-        fs::write(root.join("keep.bin"), b"after, and longer").expect("rewrite");
+        // the live digest and refuses before any side effect. The live identity
+        // is the file id plus the millisecond mtime, and Windows stamps writes
+        // from a coarse clock tick, so an in-place rewrite within the same tick
+        // keeps both. Move the mtime explicitly so the change is observable.
+        let path = root.join("keep.bin");
+        let written = fs::metadata(&path)
+            .and_then(|meta| meta.modified())
+            .expect("mtime");
+        fs::write(&path, b"after, and longer").expect("rewrite");
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .and_then(|file| file.set_modified(written + std::time::Duration::from_secs(5)))
+            .expect("advance mtime");
         let refused = window
             .execute_confirmed(Locale::En)
             .expect_err("a changed file must refuse");

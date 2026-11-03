@@ -3703,8 +3703,8 @@ mod tests {
 
     #[test]
     fn first_launch_does_not_scan() {
-        let main = include_str!("main.rs");
-        let view = include_str!("view.rs");
+        let main = crate::source_lf(include_str!("main.rs"));
+        let view = crate::source_lf(include_str!("view.rs"));
         let sweeper = format!("{}{}", "Sweep", "er");
         let spawn_live = format!("{}{}", "spawn_", "live");
         let full_scan_report = format!("{}{}", "full_scan_", "report");

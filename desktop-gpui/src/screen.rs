@@ -175,7 +175,7 @@ mod tests {
         assert_eq!(session.stored_lease_count(), 0);
         assert!(!session.input_locked());
 
-        let source = include_str!("screen.rs");
+        let source = crate::source_lf(include_str!("screen.rs"));
         assert!(!source.contains(&["power", "cfg"].concat()));
     }
 }

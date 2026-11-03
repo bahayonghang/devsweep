@@ -574,7 +574,7 @@ mod tests {
             "no other PID line: {lines:?}"
         );
 
-        let source = include_str!("status_panel.rs");
+        let source = crate::source_lf(include_str!("status_panel.rs"));
         assert!(!source.contains(&["terminate", "_bound_process"].concat()));
     }
 }

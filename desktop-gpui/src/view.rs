@@ -2455,7 +2455,7 @@ mod tests {
             "packaged Earth still must stay byte-identical to desktop/public/earth/still.png"
         );
         assert!(!earth.is_empty());
-        let view_source = include_str!("view.rs");
+        let view_source = crate::source_lf(include_str!("view.rs"));
         assert!(
             view_source.contains("desktop/public/earth/still.png"),
             "the earth-still reuse must stay documented in view.rs"
@@ -2898,7 +2898,7 @@ mod tests {
         // The designed rows paint structured cells, but their accessible name
         // stays the full row line (selection, rebuild cost, protection, ignore,
         // confidence), so UIA and the text projection read the same facts.
-        let source = include_str!("view/page_clean.rs");
+        let source = crate::source_lf(include_str!("view/page_clean.rs"));
         let row = source
             .find("fn clean_row(")
             .expect("the Clean row builder must exist");
@@ -2909,18 +2909,18 @@ mod tests {
         let aria = snippet
             .find(".aria_label(SharedString::from(text))")
             .expect("the row must use that text as its accessible name");
-        let list_item = include_str!("ui.rs")
+        let list_item = crate::source_lf(include_str!("ui.rs"))
             .find(".role(gpui::Role::ListItem)")
             .expect("list rows must keep Role::ListItem");
         assert!(text < aria);
         assert!(list_item > 0);
-        let ai = include_str!("view/page_clean.rs");
+        let ai = crate::source_lf(include_str!("view/page_clean.rs"));
         assert!(ai.contains("let text = view.row_text(locale, id, focused)"));
     }
 
     #[test]
     fn alt_down_moves_clean_selection_without_changing_mode() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         assert!(
             source.contains(r#"KeyBinding::new("alt-down", RowDown, None)"#),
             "alt-down must bind RowDown with context None"
@@ -2947,12 +2947,12 @@ mod tests {
     fn the_windows_binary_reserves_a_main_thread_stack_for_debug_frames() {
         // GPUI renders on the main thread. A debug build overflowed the 1 MiB
         // Windows default (silent freeze, then exit), so the bin reserves 8 MiB.
-        let build = include_str!("../build.rs");
+        let build = crate::source_lf(include_str!("../build.rs"));
         assert!(build.contains("const MAIN_STACK_BYTES: u64 = 8 * 1024 * 1024;"));
         assert!(build.contains("/STACK:{MAIN_STACK_BYTES}"));
         assert!(build.contains("cargo:rustc-link-arg-bins="));
         // Debug builds keep a console so the overflow or panic is visible.
-        let main = include_str!("main.rs");
+        let main = crate::source_lf(include_str!("main.rs"));
         assert!(
             main.contains(r#"#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]"#)
         );
@@ -2961,7 +2961,7 @@ mod tests {
 
     #[test]
     fn the_top_bar_is_the_title_bar_and_the_os_owns_its_caption_buttons() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         assert!(source.contains("appears_transparent: cfg!(windows)"));
         assert!(source.contains(".window_control_area(WindowControlArea::Drag)"));
         for area in [
@@ -2995,7 +2995,7 @@ mod tests {
 
     #[test]
     fn mode_tabs_use_real_focus_without_active_descendant_override() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         let tabs = source
             .split_once("let tabs = Mode::ORDER")
             .expect("mode tab builder")
@@ -3014,7 +3014,7 @@ mod tests {
 
     #[test]
     fn every_clickable_surface_is_a_tab_stop_and_enter_clicks_the_focused_one() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         for binding in [
             r#"KeyBinding::new("tab", FocusNextControl, None)"#,
             r#"KeyBinding::new("shift-tab", FocusPrevControl, None)"#,
@@ -3033,7 +3033,7 @@ mod tests {
 
         // The shared builders opt in, so every button, segment and row is
         // reachable; the custom cards and chrome opt in where they are built.
-        let ui = include_str!("ui.rs");
+        let ui = crate::source_lf(include_str!("ui.rs"));
         assert!(ui.contains("self.tab_index(0).focus_visible("));
         assert!(
             ui.matches(".keyboard_focus(t)").count() >= 3,
@@ -3041,9 +3041,18 @@ mod tests {
         );
         for (file, text) in [
             ("view.rs", source),
-            ("page_clean.rs", include_str!("view/page_clean.rs")),
-            ("page_workbench.rs", include_str!("view/page_workbench.rs")),
-            ("page_analyze.rs", include_str!("view/page_analyze.rs")),
+            (
+                "page_clean.rs",
+                crate::source_lf(include_str!("view/page_clean.rs")),
+            ),
+            (
+                "page_workbench.rs",
+                crate::source_lf(include_str!("view/page_workbench.rs")),
+            ),
+            (
+                "page_analyze.rs",
+                crate::source_lf(include_str!("view/page_analyze.rs")),
+            ),
         ] {
             let clickable = text.matches(".cursor_pointer()").count();
             let reachable = text.matches(".keyboard_focus(t)").count();
@@ -3057,13 +3066,13 @@ mod tests {
         }
 
         // Inputs share tab index 0 so the order follows the painted layout.
-        let input = include_str!("input.rs");
+        let input = crate::source_lf(include_str!("input.rs"));
         assert!(!input.contains(".tab_index(1)") && !input.contains(".tab_index(2)"));
     }
 
     #[test]
     fn clean_review_keys_are_bound_on_the_note_and_startup_keeps_note_focus() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         let run_at = source
             .find("pub fn run(session: Session)")
             .expect("run must own the binding list and startup focus");
@@ -3141,7 +3150,7 @@ mod tests {
 
     #[test]
     fn mode_chord_is_bound_in_the_note_context_and_reaches_the_shell_handlers() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         for binding in [
             r#"KeyBinding::new("alt-left", ModePrev, Some("SpikeInput"))"#,
             r#"KeyBinding::new("alt-right", ModeNext, Some("SpikeInput"))"#,
@@ -3181,7 +3190,7 @@ mod tests {
         // The Note must not swallow the chord on its own element. The Note and
         // the Clean search share this render path, and the constructor pins
         // the Note element identity.
-        let note_source = include_str!("input.rs");
+        let note_source = crate::source_lf(include_str!("input.rs"));
         assert!(
             note_source.contains(r#"element_id: "note-input""#),
             "the Note constructor must keep the note-input element identity"
@@ -3244,7 +3253,7 @@ mod tests {
 
     #[test]
     fn f10_then_enter_opens_reduced_motion_settings() {
-        let source = include_str!("view.rs");
+        let source = crate::source_lf(include_str!("view.rs"));
         assert!(
             source.contains(r#"KeyBinding::new("f10", MenuToggle, None)"#),
             "f10 must bind MenuToggle with context None"

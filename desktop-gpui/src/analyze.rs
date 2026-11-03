@@ -410,7 +410,7 @@ mod tests {
             "unselected unreadable node must not appear: {lines:?}"
         );
 
-        let source = include_str!("analyze.rs");
+        let source = crate::source_lf(include_str!("analyze.rs"));
         assert!(!source.contains(&["execute_analyze_trash", "_plan"].concat()));
         assert!(!source.contains(&["preview_analyze_trash", "_plan"].concat()));
     }

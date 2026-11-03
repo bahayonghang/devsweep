@@ -1530,7 +1530,7 @@ mod tests {
         );
         assert_eq!(review.executor_calls(), 0);
 
-        let source = include_str!("software_review.rs");
+        let source = crate::source_lf(include_str!("software_review.rs"));
         let production = source.split("mod tests").next().expect("tests");
         assert!(!production.contains("SoftwareExecutor"));
         // The window may read the host, but only through `load_host`, which a

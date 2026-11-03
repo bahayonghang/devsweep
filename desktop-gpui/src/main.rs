@@ -40,6 +40,14 @@ mod view;
 mod workbench;
 mod workbench_review;
 
+/// Source text for source-contract tests, with CRLF folded to LF. A Windows
+/// checkout with `core.autocrlf=true` writes CRLF files, and `include_str!`
+/// embeds those bytes, so a multi-line needle would otherwise miss.
+#[cfg(test)]
+pub(crate) fn source_lf(text: &str) -> String {
+    text.replace("\r\n", "\n")
+}
+
 use crate::preferences::PreferenceFiles;
 use crate::shell::Session;
 

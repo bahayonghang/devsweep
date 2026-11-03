@@ -1416,7 +1416,7 @@ mod tests {
 
     #[test]
     fn ai_subview_model_never_reads_the_environment_or_scans_by_itself() {
-        let source = include_str!("clean_ai.rs");
+        let source = crate::source_lf(include_str!("clean_ai.rs"));
         let model = source.split("#[cfg(test)]").next().expect("model section");
         assert!(!model.contains("std::env"));
         assert!(!model.contains("USERPROFILE"));

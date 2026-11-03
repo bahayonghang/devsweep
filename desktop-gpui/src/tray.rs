@@ -294,7 +294,7 @@ mod tests {
             "StatusPanel was constructed and not started"
         );
 
-        let source = include_str!("tray.rs");
+        let source = crate::source_lf(include_str!("tray.rs"));
         let recording = source
             .split("impl TraySink for RecordingTray")
             .nth(1)
