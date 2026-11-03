@@ -78,3 +78,20 @@ or limit the blocking pool to reduce an async dispatch thread count.
 
 Correct: measure the actual OS window, bridge presentation state narrowly, and
 keep native operation acceptance separate from decoration and pool configuration.
+
+## GPUI native control focus
+
+In `desktop-gpui`, mode tabs use real per-control keyboard focus through
+`KeyboardFocus::keyboard_focus` (`tab_index(0)`). Keep `Role::Tab`, stable
+accessibility IDs, labels, and `aria_selected(active)` on those controls.
+Do not also apply `aria_active_descendant()` to a directly focusable tab:
+the pinned GPUI prepaint registers real focus first, then rejects an active
+descendant that is the focused node itself. Debug builds panic with
+`set_active_descendant called on the focused node` once accessibility is active.
+
+The active-descendant pattern is for a child of a focused container, not an
+alias for selected state. Preserve real focus rather than disabling accessibility
+or suppressing the assertion. Verify changes with accessibility enabled, mouse
+clicks (including the already-selected tab), Tab/Shift+Tab, and keyboard
+activation in the native debug build. Source guards and state tests do not
+replace that runtime check.
