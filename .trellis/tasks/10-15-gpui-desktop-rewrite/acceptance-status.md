@@ -53,3 +53,12 @@ thread. Linux tests, Windows-target clippy `-D warnings` and fmt pass. Native
 Windows checks for these commits are NOT_RUN; earlier native C10/C11/C13 samples
 predate the redesign and do not carry over. No box changes state. See
 `evidence/redesign-2026-11-03.md`.
+
+2026-11-03 (later): **keyboard focus, Analyze actions, title bar** (`d25a443`,
+`f2951f0`, `c76d4bc`). Controls are tab stops with keyboard-only focus rings;
+Analyze can reveal, preview and confirm a Recycle Bin move through the CLI's
+digest-checked executor; the top bar is the Windows title bar. Linux tests,
+Windows-target clippy and fmt pass. UIA FocusPattern, a real Recycle Bin move
+from the window, caption behavior and lifecycle cycles are NOT_RUN on Windows
+for these commits. No box changes state. See the follow-up section of
+`evidence/redesign-2026-11-03.md`.
