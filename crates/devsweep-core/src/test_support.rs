@@ -5,9 +5,11 @@
 ///
 /// The no-follow checks reject any root reached through a symlink. macOS
 /// links `/var` to `/private/var`, so on Unix the system temp directory is
-/// canonicalized first. Windows paths are left as they are, so tests never see
-/// verbatim `\\?\` paths; there, new fixture objects are made owned by the
-/// current user instead (see [`own_new_objects_as_current_user`]).
+/// canonicalized first. On Windows the temp directory is expanded to its long
+/// form without a verbatim `\\?\` prefix, because `TEMP` often holds an 8.3
+/// short name (`RUNNER~1`) while canonicalized scan results use the long name,
+/// and new fixture objects are made owned by the current user (see
+/// [`own_new_objects_as_current_user`]).
 pub(crate) fn tempdir() -> std::io::Result<tempfile::TempDir> {
     #[cfg(unix)]
     {
@@ -16,12 +18,33 @@ pub(crate) fn tempdir() -> std::io::Result<tempfile::TempDir> {
     #[cfg(windows)]
     {
         own_new_objects_as_current_user();
-        tempfile::tempdir()
+        tempfile::tempdir_in(long_temp_dir())
     }
     #[cfg(not(any(unix, windows)))]
     {
         tempfile::tempdir()
     }
+}
+
+/// The system temp directory with every component in its long form.
+///
+/// Canonicalization yields `\\?\C:\...`; only that plain drive form is
+/// unwrapped. Anything else (UNC, failure) falls back to the original path.
+#[cfg(windows)]
+fn long_temp_dir() -> std::path::PathBuf {
+    let base = std::env::temp_dir();
+    std::fs::canonicalize(&base)
+        .ok()
+        .and_then(|path| {
+            let text = path.to_str()?.strip_prefix(r"\\?\")?;
+            let bytes = text.as_bytes();
+            (bytes.len() >= 3
+                && bytes[0].is_ascii_alphabetic()
+                && bytes[1] == b':'
+                && bytes[2] == b'\\')
+                .then(|| std::path::PathBuf::from(text))
+        })
+        .unwrap_or(base)
 }
 
 /// Makes objects this test process creates from now on owned by its user SID.
