@@ -1,0 +1,32 @@
+FocusPattern=System.Management.Automation.RuntimeException Unable to find type [System.Windows.Automation.FocusPattern].
+FocusedElement=True
+HasKeyboardFocusProperty=True
+hive_before=06D61ADDA1410FE27B6F70E6F4DAFC5F37CD365F7B9E4FF0B6E0295DACE2D4A0
+binary_sha256=B41AC8A9087853FF0E7A01D280CB1792603AF1756834A85744A9B4BC11E01E1E length=18976768
+keys_sent=false foreground_not_requested=true
+hwnd=1380564 exited=False
+tab mode-clean | 清理
+tab mode-software | 软件
+tab mode-optimize | 优化
+tab mode-analyze | 分析
+tab mode-status | 状态
+tab  | 清理
+tab  | 开始清理扫描
+mode=selected
+uninstall=selected
+shot=software-zh-uninstall.png iconic=False rect=496,174,2064,1208
+uninstall_lines=35
+sort=排序：名称
+sort_click=invoked
+sort=排序：来源
+sort_click=invoked
+sort=排序：版本
+sort_click=invoked
+sort=排序：大小
+shot=software-zh-size.png iconic=False rect=496,174,2064,1208
+updates=selected
+shot=software-zh-updates.png iconic=False rect=496,174,2064,1208
+startup=selected
+shot=software-zh-startup.png iconic=False rect=496,174,2064,1208
+wm_close_clean=True hive_after=06D61ADDA1410FE27B6F70E6F4DAFC5F37CD365F7B9E4FF0B6E0295DACE2D4A0 hive_unchanged=True
+spike_remaining=0

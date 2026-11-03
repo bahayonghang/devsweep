@@ -1,0 +1,35 @@
+TitleBar | DevSweep
+SystemMenuBar | System Menu Bar
+Item 1 | System
+Minimize | Minimize
+Maximize | Maximize
+Close | Close
+shell-root | DevSweep
+ | DevSweep 菜单
+ | 模式
+mode-clean | 清理
+mode-software | 软件
+mode-optimize | 优化
+mode-analyze | 分析
+mode-status | 状态
+ | 保持屏幕开启
+ | 清屏
+ | 最小化
+ | 最大化
+ | 关闭
+ | 软件
+ | 刷新
+ | 卸载
+ | 更新
+ | 启动项
+ | 返回
+clean-search-input | 搜索行
+ | 排序：大小
+ | 全部
+software-row-software:v1:arp:9052f7e8f910a2aed4a5deab2b3a12c4e41342b3e6a5eb8105a9128a09183031 | software:v1:arp:9052f7e8f910a2aed4a5deab2b3a12c4e41342b3e6a5eb8105a9128a09183031 | identity=arp:CurrentUser:Registry64:ProtectedApp | count=1 | source=arp:CurrentUser:Registry64 | version=4.37.1 | permission=protected | skip=protected | last=未运行
+software-row-software:v1:msix:05b5ff28056b1ca5c58004fc9fe0f431a349a1a50fdc591002d4d67ee93ae690 | software:v1:msix:05b5ff28056b1ca5c58004fc9fe0f431a349a1a50fdc591002d4d67ee93ae690 | identity=msix:Visual Studio Code_1.0.0.0_x64__publisher | count=1 | source=msix_current_user | version=1.96.2 | permission=selectable | skip=none | last=未运行
+software-row-software:v1:msix:b37a5bcaff43d84eeb2e19a844e4d8c43d1ce01f5df4c18df14ee4f570e2d45a | software:v1:msix:b37a5bcaff43d84eeb2e19a844e4d8c43d1ce01f5df4c18df14ee4f570e2d45a | identity=msix:Git_1.0.0.0_x64__publisher | count=1 | source=msix_current_user | version=2.47.1 | permission=selectable | skip=none | last=未运行
+software-row-software:v1:msix:ef232f0406d9623edaf97c921d2ea7594f6f217b23da383d6ed8501f66e0aa03 | software:v1:msix:ef232f0406d9623edaf97c921d2ea7594f6f217b23da383d6ed8501f66e0aa03 | identity=msix:Node.js_1.0.0.0_x64__publisher | count=1 | source=msix_current_user | version=22.11.0 | permission=selectable | skip=none | last=未运行
+software-row-software:v1:msix:c7671cde2725cfcde201976dd8bb52093b3a5141ead291f5677057c0c97eb9ad | software:v1:msix:c7671cde2725cfcde201976dd8bb52093b3a5141ead291f5677057c0c97eb9ad | identity=msix:7-Zip_1.0.0.0_x64__publisher | count=1 | source=msix_current_user | version=24.09 | permission=selectable | skip=none | last=未运行
+software-row-software:v1:msix:ff8b997bc0c4f8a33e537d39b4a0bcda38db873edc38664ccb40c10e1fb63bc1 | software:v1:msix:ff8b997bc0c4f8a33e537d39b4a0bcda38db873edc38664ccb40c10e1fb63bc1 | identity=msix:Python 3.13_1.0.0.0_x64__publisher | count=1 | source=msix_current_user | version=3.13.1 | permission=selectable | skip=none | last=未运行
+note-input | Note

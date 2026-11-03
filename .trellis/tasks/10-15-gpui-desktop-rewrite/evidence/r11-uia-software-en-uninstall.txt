@@ -1,0 +1,31 @@
+shell-root | ControlType.Pane |  | DevSweep
+ | ControlType.Button | ExpandCollapsePatternIdentifiers.Pattern | DevSweep menu
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | Modes
+mode-clean | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Clean
+mode-software | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Software
+mode-optimize | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Optimize
+mode-analyze | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Analyze
+mode-status | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Status
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Keep Screen On
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Clean Screen
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Minimize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Maximize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Close
+ | ControlType.Pane |  | Software
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Refresh
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | 
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Uninstall
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Updates
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Startup
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Back
+clean-search-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Search rows
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Sort: name
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | All
+ | ControlType.List |  | 
+software-row-software:v1:msix:c7671cde2725cfcde201976dd8bb52093b3a5141ead291f5677057c0c97eb9ad | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | software:v1:msix:c7671cde2725cfcde201976dd8bb52093b3a5141ead291f5677057c0c97eb9ad | identi
+software-row-software:v1:arp:9052f7e8f910a2aed4a5deab2b3a12c4e41342b3e6a5eb8105a9128a09183031 | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | software:v1:arp:9052f7e8f910a2aed4a5deab2b3a12c4e41342b3e6a5eb8105a9128a09183031 | identit
+software-row-software:v1:msix:b37a5bcaff43d84eeb2e19a844e4d8c43d1ce01f5df4c18df14ee4f570e2d45a | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | software:v1:msix:b37a5bcaff43d84eeb2e19a844e4d8c43d1ce01f5df4c18df14ee4f570e2d45a | identi
+software-row-software:v1:msix:ef232f0406d9623edaf97c921d2ea7594f6f217b23da383d6ed8501f66e0aa03 | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | software:v1:msix:ef232f0406d9623edaf97c921d2ea7594f6f217b23da383d6ed8501f66e0aa03 | identi
+software-row-software:v1:msix:ff8b997bc0c4f8a33e537d39b4a0bcda38db873edc38664ccb40c10e1fb63bc1 | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | software:v1:msix:ff8b997bc0c4f8a33e537d39b4a0bcda38db873edc38664ccb40c10e1fb63bc1 | identi
+software-row-software:v1:msix:05b5ff28056b1ca5c58004fc9fe0f431a349a1a50fdc591002d4d67ee93ae690 | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | software:v1:msix:05b5ff28056b1ca5c58004fc9fe0f431a349a1a50fdc591002d4d67ee93ae690 | identi
+note-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Note

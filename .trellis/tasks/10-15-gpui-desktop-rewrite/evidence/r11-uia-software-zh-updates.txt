@@ -1,0 +1,32 @@
+TitleBar | DevSweep
+SystemMenuBar | System Menu Bar
+Item 1 | System
+Minimize | Minimize
+Maximize | Maximize
+Close | Close
+shell-root | DevSweep
+ | DevSweep 菜单
+ | 模式
+mode-clean | 清理
+mode-software | 软件
+mode-optimize | 优化
+mode-analyze | 分析
+mode-status | 状态
+ | 保持屏幕开启
+ | 清屏
+ | 最小化
+ | 最大化
+ | 关闭
+ | 软件
+ | 刷新
+ | 卸载
+ | 更新
+ | 启动项
+ | 返回
+clean-search-input | 搜索行
+ | 排序：名称
+ | 全部
+software-row-Git.Git | Git.Git | identity=Git.Git | count=0 | source=winget | version=2.47.1 | permission=review | skip=not run | last=未运行
+software-row-Microsoft.VisualStudioCode | Microsoft.VisualStudioCode | identity=Microsoft.VisualStudioCode | count=0 | source=winget | version=1.96.2 | permission=review | skip=not run | last=未运行
+software-row-OpenJS.NodeJS.LTS | OpenJS.NodeJS.LTS | identity=OpenJS.NodeJS.LTS | count=0 | source=winget | version=22.11.0 | permission=review | skip=not run | last=未运行
+note-input | Note

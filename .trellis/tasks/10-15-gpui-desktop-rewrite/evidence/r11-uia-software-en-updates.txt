@@ -1,0 +1,28 @@
+shell-root | ControlType.Pane |  | DevSweep
+ | ControlType.Button | ExpandCollapsePatternIdentifiers.Pattern | DevSweep menu
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | Modes
+mode-clean | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Clean
+mode-software | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Software
+mode-optimize | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Optimize
+mode-analyze | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Analyze
+mode-status | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Status
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Keep Screen On
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Clean Screen
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Minimize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Maximize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Close
+ | ControlType.Pane |  | Software
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Refresh
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | 
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Uninstall
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Updates
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Startup
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Back
+clean-search-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Search rows
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Sort: name
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | All
+ | ControlType.List |  | 
+software-row-Git.Git | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | Git.Git | identity=Git.Git | count=0 | source=winget | version=2.47.1 | permission=review 
+software-row-Microsoft.VisualStudioCode | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | Microsoft.VisualStudioCode | identity=Microsoft.VisualStudioCode | count=0 | source=winget
+software-row-OpenJS.NodeJS.LTS | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | OpenJS.NodeJS.LTS | identity=OpenJS.NodeJS.LTS | count=0 | source=winget | version=22.11.0
+note-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Note

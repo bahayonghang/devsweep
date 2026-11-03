@@ -1,0 +1,93 @@
+utc_start=2026-11-03T13:34:34.3401294Z
+binary_sha256=B41AC8A9087853FF0E7A01D280CB1792603AF1756834A85744A9B4BC11E01E1E length=18976768
+method=UIA SelectionItem.Select and InvokePattern while an elevated window stays foreground; no keybd_event
+foreground_during_run='League of Legends (TM) Client'
+keyboard_tab=NOT_RUN reason=SetForegroundWindow blocked by elevated foreground; keys were not sent
+titlebar_drag_snap_hover=NOT_RUN reason=needs pointer on the window; pointer was not moved
+analyze_folder_picker=NOT_RUN reason=native file dialog was not opened over the elevated foreground
+narrator=NOT_RUN reason=system narrator was not toggled during an elevated foreground session
+live_sample_and_close_program=NOT_RUN reason=no user program was closed and no PID was used to end a process
+shell_proc=9580 hwnd=4460802
+rect_initial=496,174,2064,1208 iconic=False
+shot=titlebar-initial.png bytes=168208
+select_mode-clean=selected alive=True rect=496,174,2064,1208
+select_mode-software=selected alive=True rect=496,174,2064,1208
+select_mode-optimize=selected alive=True rect=496,174,2064,1208
+select_mode-analyze=selected alive=True rect=496,174,2064,1208
+select_mode-status=selected alive=True rect=496,174,2064,1208
+select_mode-clean=selected alive=True rect=496,174,2064,1208
+rect_after_tabs=496,174,2064,1208 same=True
+minimize=invoked
+iconic_after_minimize=True
+iconic_after_restore=False rect_restored=496,174,2064,1208
+maximize=invoked
+rect_maximized=-9,-9,2569,1389
+shot=titlebar-maximized.png bytes=185332
+restore=invoked rect_after_restore=-9,-9,2569,1389
+close_button=invoked
+close_process_exited=True
+status_select=selected
+status_refresh=missing
+status_name_count=17
+status_UIA 	Refresh snapshot
+status_end_process_buttons=0
+shot=status-snapshot.png bytes=53575
+status_row=missing
+status_wm_close=True
+hive_before=06D61ADDA1410FE27B6F70E6F4DAFC5F37CD365F7B9E4FF0B6E0295DACE2D4A0
+software_select=selected
+segment_uninstall=missing
+sort_label=
+sort_click=missing
+sort_label=
+sort_click=missing
+sort_label=
+sort_click=missing
+sort_label=
+sort_click=missing
+software_en-uninstall_count=21
+shot=software-en-uninstall.png bytes=66220
+segment_updates=missing
+software_en-updates_count=21
+shot=software-en-updates.png bytes=66220
+segment_startup=missing
+software_en-startup_count=21
+shot=software-en-startup.png bytes=66220
+optimize_select=selected
+optimize_UIA optimize-row-maintenance.dead_startup	maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+optimize_UIA optimize-row-dns.flush	dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+optimize_UIA optimize-row-settings.search	settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+optimize_UIA optimize-row-guidance.network_reset	guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.search	maintenance.search | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-settings.storage_recommendations	settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+optimize_UIA optimize-row-settings.energy_recommendations	settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+optimize_UIA optimize-row-guidance.drive_optimize	guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize_UIA optimize-row-guidance.system_integrity	guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-guidance.filesystem_check	guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.retrim	maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.clock_probe	maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+optimize_UIA optimize-row-maintenance.clock_sync	maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.image_scan	maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.image_repair	maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.disk_health	maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.update_cache	maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.icon_cache	maintenance.icon_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize_UIA optimize-row-maintenance.winget_repair	maintenance.winget_repair | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+shot=optimize-en.png bytes=76340
+menu_expand=expanded
+settings_invoke=missing
+language_zh=missing
+software_zh_select=selected
+segment_uninstall_zh=missing
+software_zh-uninstall_count=21
+shot=software-zh-uninstall.png bytes=66220
+segment_updates_zh=missing
+software_zh-updates_count=21
+shot=software-zh-updates.png bytes=66220
+segment_startup_zh=missing
+software_zh-startup_count=21
+shot=software-zh-startup.png bytes=66220
+software_wm_close=True
+hive_after=06D61ADDA1410FE27B6F70E6F4DAFC5F37CD365F7B9E4FF0B6E0295DACE2D4A0 hive_unchanged=True
+spike_remaining=0
+utc_end=2026-11-03T13:35:25.1875758Z

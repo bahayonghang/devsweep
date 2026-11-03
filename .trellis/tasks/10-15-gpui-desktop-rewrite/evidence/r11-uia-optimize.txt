@@ -1,0 +1,40 @@
+shell-root	DevSweep
+	DevSweep menu
+	Modes
+mode-clean	Clean
+mode-software	Software
+mode-optimize	Optimize
+mode-analyze	Analyze
+mode-status	Status
+	Keep Screen On
+	Clean Screen
+	Minimize
+	Maximize
+	Close
+	Optimize
+	Startup
+	Focus
+optimize-row-maintenance.dead_startup	maintenance.dead_startup | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+	Network and search
+	Focus
+optimize-row-dns.flush	dns.flush | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+optimize-row-settings.search	settings.search | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+optimize-row-guidance.network_reset	guidance.network_reset | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize-row-maintenance.search	maintenance.search | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+	Maintenance
+	Focus
+optimize-row-settings.storage_recommendations	settings.storage_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+optimize-row-settings.energy_recommendations	settings.energy_recommendations | class=settings_handoff | privilege=no elevation | skip=not run | last=not run
+optimize-row-guidance.drive_optimize	guidance.drive_optimize | class=guidance | privilege=no dispatch | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize-row-guidance.system_integrity	guidance.system_integrity | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize-row-guidance.filesystem_check	guidance.filesystem_check | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize-row-maintenance.retrim	maintenance.retrim | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize-row-maintenance.clock_probe	maintenance.clock_probe | class=execute | privilege=elevation checked at plan time | skip=not run | last=not run
+optimize-row-maintenance.clock_sync	maintenance.clock_sync | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize-row-maintenance.image_scan	maintenance.image_scan | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize-row-maintenance.image_repair	maintenance.image_repair | class=execute | privilege=elevation checked at plan time | skip=not run: host volume and image are not disposable targets | last=not run | no schedule button
+optimize-row-maintenance.disk_health	maintenance.disk_health | class=observe | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize-row-maintenance.update_cache	maintenance.update_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize-row-maintenance.icon_cache	maintenance.icon_cache | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+optimize-row-maintenance.winget_repair	maintenance.winget_repair | class=guidance | privilege=no dispatch | skip=not run | last=not run | no schedule button
+note-input	Note

@@ -1,0 +1,29 @@
+shell-root | ControlType.Pane |  | DevSweep
+ | ControlType.Button | ExpandCollapsePatternIdentifiers.Pattern | DevSweep menu
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | Modes
+mode-clean | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Clean
+mode-software | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Software
+mode-optimize | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Optimize
+mode-analyze | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Analyze
+mode-status | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Status
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Keep Screen On
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Clean Screen
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Minimize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Maximize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Close
+ | ControlType.Pane |  | Software
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Refresh
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | 
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Uninstall
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Updates
+ | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Startup
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Back
+clean-search-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Search rows
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Sort: name
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | All
+ | ControlType.List |  | 
+software-row-startup:v1:6543ae5826a3f75f147bf834ecc9f6bf621d0e498e8ac20f2c7f21d41bf48bdd | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | startup:v1:6543ae5826a3f75f147bf834ecc9f6bf621d0e498e8ac20f2c7f21d41bf48bdd | identity=mac
+software-row-startup:v1:01e751f6835a1c973ebc9aad547cc7b7e85534406fbcfecfcf3a9166c050f2a9 | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | startup:v1:01e751f6835a1c973ebc9aad547cc7b7e85534406fbcfecfcf3a9166c050f2a9 | identity=cur
+software-row-startup:v1:0d3705e0b0ab9fc9351bdba251ce7505ef3c7ba6440aa65364131e157cf340ce | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | startup:v1:0d3705e0b0ab9fc9351bdba251ce7505ef3c7ba6440aa65364131e157cf340ce | identity=cur
+software-row-startup:v1:338bb6303dfd165953047cff52761bd59d2daa3637af332ee04297593eee4cee | ControlType.ListItem | SelectionItemPatternIdentifiers.Pattern | startup:v1:338bb6303dfd165953047cff52761bd59d2daa3637af332ee04297593eee4cee | identity=mac
+note-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Note

@@ -1,0 +1,19 @@
+software=selected
+uninstall=selected
+sort=Sort: name
+sort_click=invoked
+sort=Sort: source
+sort_click=invoked
+sort=Sort: version
+sort_click=invoked
+sort=Sort: size
+shot=software-en-size.png
+menu=expanded
+menu_lines=31 has_settings=False
+close=True hive_unchanged=True
+status=selected
+refresh=invoked
+search_value_pattern=True
+search_set=svchost
+shot=status-search.png
+status_close=True

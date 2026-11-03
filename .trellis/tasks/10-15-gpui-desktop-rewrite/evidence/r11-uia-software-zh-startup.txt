@@ -1,0 +1,33 @@
+TitleBar | DevSweep
+SystemMenuBar | System Menu Bar
+Item 1 | System
+Minimize | Minimize
+Maximize | Maximize
+Close | Close
+shell-root | DevSweep
+ | DevSweep 菜单
+ | 模式
+mode-clean | 清理
+mode-software | 软件
+mode-optimize | 优化
+mode-analyze | 分析
+mode-status | 状态
+ | 保持屏幕开启
+ | 清屏
+ | 最小化
+ | 最大化
+ | 关闭
+ | 软件
+ | 刷新
+ | 卸载
+ | 更新
+ | 启动项
+ | 返回
+clean-search-input | 搜索行
+ | 排序：名称
+ | 全部
+software-row-startup:v1:6543ae5826a3f75f147bf834ecc9f6bf621d0e498e8ac20f2c7f21d41bf48bdd | startup:v1:6543ae5826a3f75f147bf834ecc9f6bf621d0e498e8ac20f2c7f21d41bf48bdd | identity=machine_run:Defender | count=1 | source=machine_run | version=unknown | permission=protected | skip=protected | last=未运行
+software-row-startup:v1:01e751f6835a1c973ebc9aad547cc7b7e85534406fbcfecfcf3a9166c050f2a9 | startup:v1:01e751f6835a1c973ebc9aad547cc7b7e85534406fbcfecfcf3a9166c050f2a9 | identity=current_user_run:OneDrive | count=1 | source=current_user_run | version=enabled | permission=allowed | skip=未运行 | last=未运行
+software-row-startup:v1:0d3705e0b0ab9fc9351bdba251ce7505ef3c7ba6440aa65364131e157cf340ce | startup:v1:0d3705e0b0ab9fc9351bdba251ce7505ef3c7ba6440aa65364131e157cf340ce | identity=current_user_run:Teams | count=1 | source=current_user_run | version=disabled | permission=allowed | skip=未运行 | last=未运行
+software-row-startup:v1:338bb6303dfd165953047cff52761bd59d2daa3637af332ee04297593eee4cee | startup:v1:338bb6303dfd165953047cff52761bd59d2daa3637af332ee04297593eee4cee | identity=machine_run32:VPN Client | count=1 | source=machine_run32 | version=unknown | permission=protected | skip=protected | last=未运行
+note-input | Note

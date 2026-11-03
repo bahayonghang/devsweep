@@ -1,0 +1,39 @@
+hive_before=06D61ADDA1410FE27B6F70E6F4DAFC5F37CD365F7B9E4FF0B6E0295DACE2D4A0
+software_tab=selected
+candidates_Uninstall=2
+candidate_Uninstall_0= | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Uninstall
+try_Uninstall_0 select=selected invoke=no-invoke
+candidate_Uninstall_1= | ControlType.Button | InvokePatternIdentifiers.Pattern | Uninstall
+try_Uninstall_1 select=no-selection invoke=invoke:Exception calling "Invoke" with "0" argument(s): "Unrecognized error."
+en_uninstall_has_docker=False has_python=False has_reported=False
+shot=software-en-uninstall.png bytes=92898
+sort_before=Sort: name click=invoked
+sort_after=Sort: source
+shot=software-en-sorted.png bytes=93571
+candidates_Updates=1
+candidate_Updates_0= | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Updates
+try_Updates_0 select=selected invoke=no-invoke
+shot=software-en-updates.png bytes=72663
+en_updates_has_winget=True
+candidates_Startup=1
+candidate_Startup_0= | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Startup
+try_Startup_0 select=selected invoke=no-invoke
+shot=software-en-startup.png bytes=74729
+en_startup_has_onedrive=False has_protected=False
+menu=expanded
+settings=missing select=missing
+candidates_简体中文=0
+software_zh_tab=selected
+candidates_卸载=0
+shot=software-zh-uninstall.png bytes=74729
+zh_has_docker=False has_reported_zh=False
+software_close=True
+hive_after=06D61ADDA1410FE27B6F70E6F4DAFC5F37CD365F7B9E4FF0B6E0295DACE2D4A0 hive_unchanged=True
+status_tab=selected
+refresh_desc= | ControlType.Button | InvokePatternIdentifiers.Pattern | Refresh snapshot
+refresh=invoked
+status_has_explorer=False has_unavailable=False end_process=False
+shot=status-snapshot.png bytes=84797
+explorer_row=missing
+status_close=True
+spike_remaining=0

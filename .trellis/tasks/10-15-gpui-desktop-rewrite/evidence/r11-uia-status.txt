@@ -1,0 +1,28 @@
+shell-root | ControlType.Pane |  | DevSweep
+ | ControlType.Button | ExpandCollapsePatternIdentifiers.Pattern | DevSweep menu
+ | ControlType.Tab | SelectionPatternIdentifiers.Pattern | Modes
+mode-clean | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Clean
+mode-software | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Software
+mode-optimize | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Optimize
+mode-analyze | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Analyze
+mode-status | ControlType.TabItem | SelectionItemPatternIdentifiers.Pattern | Status
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Keep Screen On
+ | ControlType.Button | TogglePatternIdentifiers.Pattern | Clean Screen
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Minimize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Maximize
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Close
+ | ControlType.Pane |  | Status
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Refresh snapshot
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Start live
+ | ControlType.Table |  | Processes
+clean-search-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Search rows
+ | ControlType.Button | InvokePatternIdentifiers.Pattern | Sort: name
+ | ControlType.DataItem |  | League of Legends.exe pid 50720 cpu 171.9% 2.2 GB
+ | ControlType.DataItem |  | LeagueClient.exe pid 47308 cpu 68.8% 1.3 GB
+ | ControlType.DataItem |  | LeagueClientUx.exe pid 21968 cpu 25.0% 99.5 MB
+ | ControlType.DataItem |  | Orca.exe pid 34032 cpu 40.6% 420 MB
+ | ControlType.DataItem |  | Orca.exe pid 34332 cpu 12.5% 158 MB
+ | ControlType.DataItem |  | floorp.exe pid 36744 cpu 9.4% 372 MB
+ | ControlType.DataItem |  | floorp.exe pid 41288 cpu 6.2% 612 MB
+ | ControlType.DataItem |  | pwsh.exe pid 53284 cpu 9.4% 88.3 MB
+note-input | ControlType.Edit | ValuePatternIdentifiers.Pattern | Note
