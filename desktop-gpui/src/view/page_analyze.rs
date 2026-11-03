@@ -1,6 +1,7 @@
 //! Analyze page: root choice, then a treemap and an accessible list of the
-//! current folder that share one node id and one selection. Read-only; the
-//! recycle preview binds a digest and never moves anything by itself.
+//! current folder that share one node id and one selection. The recycle
+//! preview binds a digest; only the explicit confirm button hands that digest
+//! to the CLI's executor, which moves to the Recycle Bin and never deletes.
 
 use super::*;
 use crate::analyze::NodeFace;
@@ -205,6 +206,7 @@ impl ShellView {
         let parent_id = window.parent_id();
         let parent_bytes = node(parent_id).map(|n| n.bytes).unwrap_or(0).max(1);
         let selected = window.board().list_selection();
+        let can_go_up = self.session.analyze_can_go_up();
         let mut children: Vec<&AnalyzeNodeV1> = window
             .child_ids()
             .into_iter()
@@ -410,6 +412,61 @@ impl ShellView {
             let face = window.board().face(chosen.id).unwrap_or(NodeFace::Present);
             let file = chosen.kind == AnalyzeNodeKind::File;
             let chosen_id = chosen.id;
+            let armed = window.recycle_digest().is_some() && !window.stale();
+            // The explanation is a class read, never a cleanup suggestion.
+            let explain = match devsweep_core::analysis::explain_analyze_node(
+                window.snapshot(),
+                chosen_id,
+            ) {
+                Ok(explained) => {
+                    let class = format!("{:?}", explained.class);
+                    let evidence = format!("{:?}", explained.evidence);
+                    let mut lines = vec![format!(
+                        "{} · {}",
+                        copy::analyze_class_label(locale, &class),
+                        if evidence == "None" {
+                            copy::pick(locale, "no class evidence", "无类别证据").to_string()
+                        } else {
+                            evidence
+                        }
+                    )];
+                    if explained.lock.supported && !explained.lock.owners.is_empty() {
+                        lines.push(match locale {
+                            copy::Locale::En => {
+                                format!("In use by {} process(es).", explained.lock.owners.len())
+                            }
+                            copy::Locale::ZhCn => {
+                                format!("被 {} 个进程占用。", explained.lock.owners.len())
+                            }
+                        });
+                    }
+                    lines.push(
+                        copy::pick(
+                            locale,
+                            "A class is not a cleanup suggestion. You decide what moves.",
+                            "类别不代表清理建议。是否移动由你决定。",
+                        )
+                        .to_string(),
+                    );
+                    ui::any(
+                        div()
+                            .flex()
+                            .flex_col()
+                            .gap(rems(0.2))
+                            .children(lines.into_iter().map(|line| ui::muted(t, line))),
+                    )
+                }
+                Err(error) => ui::any(ui::muted(t, error.to_string())),
+            };
+            // Armed: a digest awaits an explicit confirm. Stale: the move ran.
+            // Anything else painted here is a refusal.
+            let recycle_tone = if armed {
+                Tone::Warning
+            } else if window.stale() {
+                Tone::Success
+            } else {
+                Tone::Danger
+            };
             ui::card(t)
                 .id("analyze-selection")
                 .gap(rems(0.6))
@@ -432,38 +489,103 @@ impl ShellView {
                             copy::analyze_face_label(locale, face.as_str()),
                             Tone::Neutral,
                         ))
-                        .child(ui::badge(
-                            t,
-                            match locale {
-                                copy::Locale::En => format!("{} items", chosen.recursive_count),
-                                copy::Locale::ZhCn => format!("{} 项", chosen.recursive_count),
-                            },
-                            Tone::Neutral,
-                        )),
+                        .when(!file, |row| {
+                            row.child(ui::badge(
+                                t,
+                                match locale {
+                                    copy::Locale::En => {
+                                        format!("{} items", chosen.recursive_count)
+                                    }
+                                    copy::Locale::ZhCn => {
+                                        format!("{} 项", chosen.recursive_count)
+                                    }
+                                },
+                                Tone::Neutral,
+                            ))
+                        }),
                 )
-                .child(ui::muted(t, window.explain_line(chosen_id)))
+                .child(explain)
                 .when_some(window.recycle_line(), |c, line| {
-                    c.child(ui::banner(t, Tone::Info, line.to_string()))
+                    c.child(ui::banner(t, recycle_tone, line.to_string()))
                 })
-                .when(file, |c| {
-                    c.child(
-                        div().flex().flex_row().gap(rems(0.5)).child(
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .flex_wrap()
+                        .gap(rems(0.5))
+                        .child(
                             ui::icon_button(
                                 t,
-                                "analyze-preview-recycle",
-                                "eye",
-                                copy::pick(locale, "Preview Recycle Bin move", "预览移到回收站"),
+                                "analyze-reveal",
+                                "external",
+                                copy::pick(locale, "Show in Explorer", "在资源管理器中显示"),
                                 ButtonKind::Secondary,
                             )
-                            .on_click(cx.listener(
-                                move |this, _, _, cx| {
-                                    this.session
-                                        .activate_mode_row(Mode::Analyze, chosen_id.to_string());
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                let _ = this.session.analyze_reveal();
+                                cx.notify();
+                            })),
+                        )
+                        .when(file && !armed, |row| {
+                            row.child(
+                                ui::icon_button(
+                                    t,
+                                    "analyze-preview-recycle",
+                                    "eye",
+                                    copy::pick(
+                                        locale,
+                                        "Preview Recycle Bin move",
+                                        "预览移到回收站",
+                                    ),
+                                    ButtonKind::Secondary,
+                                )
+                                .on_click(cx.listener(
+                                    move |this, _, _, cx| {
+                                        this.session.analyze_select(chosen_id);
+                                        this.session.analyze_preview_recycle();
+                                        cx.notify();
+                                    },
+                                )),
+                            )
+                        })
+                        .when(file && armed, |row| {
+                            row.child(
+                                ui::icon_button(
+                                    t,
+                                    "analyze-confirm-recycle",
+                                    "clean",
+                                    copy::pick(locale, "Move to Recycle Bin", "移到回收站"),
+                                    ButtonKind::Danger,
+                                )
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    let _ = this.session.analyze_confirm_recycle();
                                     cx.notify();
-                                },
-                            )),
+                                })),
+                            )
+                            .child(
+                                ui::button(
+                                    t,
+                                    "analyze-cancel-recycle",
+                                    copy::clean_cancel_action(locale),
+                                    ButtonKind::Ghost,
+                                )
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.session.analyze_cancel_recycle();
+                                    cx.notify();
+                                })),
+                            )
+                        }),
+                )
+                .when(file && armed, |c| {
+                    c.child(ui::muted(
+                        t,
+                        copy::pick(
+                            locale,
+                            "Confirm re-checks this digest against the disk. A changed file refuses; nothing is deleted permanently.",
+                            "确认时会用磁盘重新核对此摘要。文件有变化就拒绝；不会永久删除。",
                         ),
-                    )
+                    ))
                 })
         });
 
@@ -479,6 +601,23 @@ impl ShellView {
                     .flex_wrap()
                     .items_center()
                     .gap(rems(0.5))
+                    .when(can_go_up, |row| {
+                        row.child(
+                            ui::icon_button(
+                                t,
+                                "analyze-up",
+                                "chevron-left",
+                                copy::pick(locale, "Up", "上一级"),
+                                ButtonKind::Ghost,
+                            )
+                            .h(rems(1.9))
+                            .px(rems(0.6))
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.session.analyze_go_up();
+                                cx.notify();
+                            })),
+                        )
+                    })
                     .child(ui::icon("folder", t.text_muted))
                     .child(
                         div()

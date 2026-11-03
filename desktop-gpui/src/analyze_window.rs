@@ -1,8 +1,10 @@
 //! Analyze list and treemap projection for the native window.
 //!
 //! Node ids come from the snapshot the walker stored. Recycle preview calls
-//! the same plan and live digest the CLI uses. This module does not execute a
-//! Recycle Bin move.
+//! the same plan and live digest the CLI uses. The only move is
+//! [`AnalyzeWindow::execute_confirmed`], which hands the plan and the digest
+//! the user saw to the same core executor `analyze trash-execute --confirm`
+//! calls. It never deletes; the executor only moves to the Recycle Bin.
 
 use std::path::{Path, PathBuf};
 
@@ -27,6 +29,9 @@ pub struct AnalyzeWindow {
     parent_id: u32,
     recycle_line: Option<String>,
     recycle_plan: Option<AnalyzeTrashPlanV1>,
+    /// The `sha256:` digest painted with the preview. Confirm passes this,
+    /// not a fresh one, so a changed file refuses.
+    recycle_digest: Option<String>,
     stale: bool,
 }
 
@@ -73,6 +78,7 @@ impl AnalyzeWindow {
             parent_id,
             recycle_line: None,
             recycle_plan: None,
+            recycle_digest: None,
             stale: false,
         })
     }
@@ -89,6 +95,70 @@ impl AnalyzeWindow {
 
     pub fn arm_stale(&mut self) {
         self.stale = true;
+    }
+
+    #[must_use]
+    pub fn stale(&self) -> bool {
+        self.stale
+    }
+
+    /// The digest shown with the current preview, if any.
+    #[must_use]
+    pub fn recycle_digest(&self) -> Option<&str> {
+        self.recycle_digest.as_deref()
+    }
+
+    /// Drops the preview without touching disk.
+    pub fn cancel_recycle(&mut self) {
+        self.recycle_line = None;
+        self.recycle_plan = None;
+        self.recycle_digest = None;
+    }
+
+    /// Moves the previewed node to the Recycle Bin.
+    ///
+    /// Requires a preview plan and the digest painted with it. A stale
+    /// snapshot refuses here; the core executor then rebuilds the live
+    /// digest and refuses on any mismatch before a side effect, exactly as
+    /// the CLI does. A successful move marks the snapshot stale so a second
+    /// confirm cannot reuse it.
+    pub fn execute_confirmed(&mut self, locale: Locale) -> Result<String, String> {
+        let (Some(plan), Some(digest)) = (self.recycle_plan.clone(), self.recycle_digest.clone())
+        else {
+            let error = AnalyzeSavedError::EmptySelection;
+            let line = recycle_error_line(locale, &error);
+            self.recycle_line = Some(line.clone());
+            return Err(line);
+        };
+        if self.stale {
+            let line = recycle_error_line(locale, &AnalyzeSavedError::StaleConfirmation);
+            self.recycle_line = Some(line.clone());
+            return Err(line);
+        }
+        match devsweep_core::analysis::execute_analyze_trash_plan(&plan, &digest, true, None) {
+            Ok(report) => {
+                let failed = report.report.as_ref().map_or(0, |item| item.failed);
+                self.stale = true;
+                self.recycle_plan = None;
+                self.recycle_digest = None;
+                let moved = report.moved_node_ids.len();
+                let line = match locale {
+                    Locale::En => format!(
+                        "Moved {moved} item(s) to the Recycle Bin, {failed} failed. Rescan to refresh sizes."
+                    ),
+                    Locale::ZhCn => {
+                        format!("已移到回收站 {moved} 项，失败 {failed} 项。重新扫描以刷新大小。")
+                    }
+                };
+                self.recycle_line = Some(line.clone());
+                if failed > 0 { Err(line) } else { Ok(line) }
+            }
+            Err(error) => {
+                let line = recycle_error_line(locale, &error);
+                self.recycle_line = Some(line.clone());
+                Err(line)
+            }
+        }
     }
 
     /// Moves the list parent when `id` is a directory. File ids stay selected.
@@ -172,7 +242,9 @@ impl AnalyzeWindow {
         let program = "explorer.exe".to_string();
         let args = vec!["/select,".to_string(), path.display().to_string()];
         if spawn {
-            devsweep_core::analysis::reveal_analyze_node(&self.snapshot, id)
+            // The saved-snapshot entry point validates the node and refuses
+            // off Windows before starting a process.
+            devsweep_core::analysis::reveal_saved_analyze_node(&self.snapshot, id)
                 .map_err(|error| error.to_string())?;
         }
         Ok((program, args))
@@ -206,6 +278,7 @@ impl AnalyzeWindow {
         self.board.select_from_list(id);
         self.recycle_line = None;
         self.recycle_plan = None;
+        self.recycle_digest = None;
     }
 
     #[must_use]
@@ -247,6 +320,7 @@ impl AnalyzeWindow {
         match preview_analyze_trash_plan(&plan) {
             Ok(preview) => {
                 self.recycle_plan = Some(plan);
+                self.recycle_digest = Some(preview.digest.clone());
                 self.recycle_line = Some(format!(
                     "recycle {} | {}",
                     ids.iter()
@@ -549,6 +623,68 @@ mod tests {
         let stale = window.confirm_recycle(Locale::ZhCn);
         assert!(stale.contains("stale_confirmation"), "{stale}");
         assert!(!stale.contains("成功"));
+        assert!(root.join("keep.bin").is_file());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn confirm_without_a_previewed_digest_refuses_and_moves_nothing() {
+        let root = isolated_root("confirm-empty");
+        fs::write(root.join("keep.bin"), b"keep").expect("file");
+        let mut window = AnalyzeWindow::scan(&root).expect("scan");
+        let file_id = window.first_file_id().expect("file");
+        window.select(file_id);
+        let refused = window
+            .execute_confirmed(Locale::En)
+            .expect_err("no preview means no move");
+        assert!(refused.contains("empty_selection"), "{refused}");
+        assert!(window.recycle_digest().is_none());
+        assert!(root.join("keep.bin").is_file());
+
+        // Selecting another node drops any preview, so a confirm can never
+        // reuse a digest painted for a different row.
+        window.select(window.parent_id());
+        assert!(window.recycle_digest().is_none());
+        assert!(window.execute_confirmed(Locale::ZhCn).is_err());
+        assert!(root.join("keep.bin").is_file());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[cfg_attr(
+        not(windows),
+        ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
+    )]
+    fn confirm_refuses_a_stale_snapshot_or_a_changed_file_before_any_move() {
+        let root = isolated_root("confirm-changed");
+        fs::write(root.join("keep.bin"), b"before").expect("file");
+        let mut window = AnalyzeWindow::scan(&root).expect("scan");
+        let file_id = window.first_file_id().expect("file");
+        window.select(file_id);
+        window.preview_selected(Locale::En).expect("preview");
+        let digest = window.recycle_digest().expect("digest").to_string();
+        assert!(digest.starts_with("sha256:"), "{digest}");
+        assert!(
+            window
+                .recycle_line()
+                .is_some_and(|line| line.contains(&digest))
+        );
+
+        // The file changes after the digest was painted. The executor rebuilds
+        // the live digest and refuses before any side effect.
+        fs::write(root.join("keep.bin"), b"after, and longer").expect("rewrite");
+        let refused = window
+            .execute_confirmed(Locale::En)
+            .expect_err("a changed file must refuse");
+        assert!(!refused.contains("Moved"), "{refused}");
+        assert!(root.join("keep.bin").is_file());
+
+        window.preview_selected(Locale::En).expect("preview again");
+        window.arm_stale();
+        let stale = window
+            .execute_confirmed(Locale::En)
+            .expect_err("stale snapshot refuses");
+        assert!(stale.contains("stale_confirmation"), "{stale}");
         assert!(root.join("keep.bin").is_file());
         let _ = fs::remove_dir_all(&root);
     }

@@ -43,12 +43,12 @@ pub fn mode_subtitle(locale: Locale, name: &'static str) -> &'static str {
         (Locale::En, "clean") => "Review every Cleanup Target before anything moves.",
         (Locale::En, "software") => "Review current-user software inventory before uninstall.",
         (Locale::En, "optimize") => "Review catalogued actions before any run.",
-        (Locale::En, "analyze") => "Map disk use. This mode is read-only.",
+        (Locale::En, "analyze") => "Map disk use. Nothing moves unless you confirm it.",
         (Locale::En, "status") => "Host facts from collectors. No score.",
         (Locale::ZhCn, "clean") => "先审查每个清理目标，再移动任何内容。",
         (Locale::ZhCn, "software") => "审查当前用户软件清单后再卸载。",
         (Locale::ZhCn, "optimize") => "审查目录中的操作后再运行。",
-        (Locale::ZhCn, "analyze") => "映射磁盘占用。此模式只读。",
+        (Locale::ZhCn, "analyze") => "映射磁盘占用。未经确认不会移动任何文件。",
         (Locale::ZhCn, "status") => "来自采集器的主机事实。无评分。",
         _ => "",
     }
@@ -254,6 +254,32 @@ pub fn workbench_failed_uninstall(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "The uninstall failed.",
         Locale::ZhCn => "卸载失败。",
+    }
+}
+
+/// Plain-language name for an Analyze class. Unknown is the common case and
+/// reads as "no special class", not as an error.
+#[must_use]
+pub fn analyze_class_label(locale: Locale, class: &str) -> &'static str {
+    match (locale, class) {
+        (Locale::En, "Hibernation") => "Hibernation file",
+        (Locale::En, "PageFile") => "Page or swap file",
+        (Locale::En, "WslDisk") => "WSL virtual disk",
+        (Locale::En, "DockerDisk") => "Docker virtual disk",
+        (Locale::En, "AiModel") => "AI model",
+        (Locale::En, "Backup") => "Backup",
+        (Locale::En, "Game") => "Game install",
+        (Locale::En, "CloudPlaceholder") => "Cloud placeholder",
+        (Locale::En, _) => "No special class",
+        (Locale::ZhCn, "Hibernation") => "休眠文件",
+        (Locale::ZhCn, "PageFile") => "分页或交换文件",
+        (Locale::ZhCn, "WslDisk") => "WSL 虚拟磁盘",
+        (Locale::ZhCn, "DockerDisk") => "Docker 虚拟磁盘",
+        (Locale::ZhCn, "AiModel") => "AI 模型",
+        (Locale::ZhCn, "Backup") => "备份",
+        (Locale::ZhCn, "Game") => "游戏安装",
+        (Locale::ZhCn, "CloudPlaceholder") => "云端占位文件",
+        (Locale::ZhCn, _) => "无特殊类别",
     }
 }
 

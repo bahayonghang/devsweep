@@ -1924,6 +1924,90 @@ impl Session {
         self.analyze_notice.as_deref()
     }
 
+    /// True when the list shows a folder below the scan root.
+    pub fn analyze_can_go_up(&self) -> bool {
+        self.analyze_window.as_ref().is_some_and(|window| {
+            window
+                .snapshot()
+                .nodes
+                .iter()
+                .find(|node| node.id == window.parent_id())
+                .is_some_and(|node| node.parent_id.is_some())
+        })
+    }
+
+    /// Moves the list to the parent folder. Does not rescan.
+    pub fn analyze_go_up(&mut self) -> bool {
+        let Some(window) = self.analyze_window.as_mut() else {
+            return false;
+        };
+        let current = window.parent_id();
+        let Some(up) = window
+            .snapshot()
+            .nodes
+            .iter()
+            .find(|node| node.id == current)
+            .and_then(|node| node.parent_id)
+        else {
+            return false;
+        };
+        window.drill(up);
+        let ids = window.child_ids().iter().map(|id| id.to_string()).collect();
+        self.analyze_board = Some(window.board().clone());
+        self.shell.set_row_ids(Mode::Analyze, ids);
+        self.shell.select(Mode::Analyze, current.to_string());
+        self.sync_analyze_board_selection();
+        true
+    }
+
+    /// Builds the Recycle Bin plan for the selected node and paints its live
+    /// `sha256:` digest. Nothing moves.
+    pub fn analyze_preview_recycle(&mut self) -> bool {
+        let locale = self.locale();
+        let Some(window) = self.analyze_window.as_mut() else {
+            return false;
+        };
+        let ok = window.preview_selected(locale).is_ok();
+        self.analyze_board = Some(window.board().clone());
+        ok
+    }
+
+    /// Drops the preview. Nothing moves.
+    pub fn analyze_cancel_recycle(&mut self) {
+        if let Some(window) = self.analyze_window.as_mut() {
+            window.cancel_recycle();
+        }
+    }
+
+    /// Explicit confirm from the reviewed preview. The digest the user saw
+    /// goes to the same core executor the CLI's `--confirm` path calls; a
+    /// stale snapshot or a changed file refuses before any move.
+    pub fn analyze_confirm_recycle(&mut self) -> Result<String, String> {
+        let locale = self.locale();
+        let Some(window) = self.analyze_window.as_mut() else {
+            return Err("analyze snapshot is not open".to_string());
+        };
+        window.execute_confirmed(locale)
+    }
+
+    /// Shows the selected node in Explorer. Program and argv stay separate;
+    /// off Windows the core refuses before starting a process.
+    pub fn analyze_reveal(&mut self) -> Result<(), String> {
+        let Some(window) = self.analyze_window.as_ref() else {
+            return Err("analyze snapshot is not open".to_string());
+        };
+        match window.reveal_selected(true) {
+            Ok(_) => {
+                self.analyze_notice = None;
+                Ok(())
+            }
+            Err(error) => {
+                self.analyze_notice = Some(error.clone());
+                Err(error)
+            }
+        }
+    }
+
     fn open_analyze_choice(&mut self, index: usize) -> bool {
         let Some(choice) = self.analyze_roots.get(index) else {
             return false;
@@ -3272,6 +3356,43 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn analyze_up_returns_to_the_parent_folder_without_rescanning() {
+        let root =
+            std::env::temp_dir().join(format!("devsweep-gpui-analyze-up-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("inner")).expect("inner");
+        std::fs::write(root.join("inner").join("keep.bin"), b"keep").expect("file");
+
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Analyze);
+        assert!(session.analyze_open_isolated_root(root.clone()));
+        assert!(!session.analyze_can_go_up(), "the scan root has no parent");
+        let inner = session
+            .analyze_window()
+            .expect("window")
+            .snapshot()
+            .nodes
+            .iter()
+            .find(|node| node.name == "inner")
+            .map(|node| node.id)
+            .expect("inner node");
+        session.activate_mode_row(Mode::Analyze, inner.to_string());
+        assert_eq!(session.analyze_window().expect("window").parent_id(), inner);
+        assert!(session.analyze_can_go_up());
+
+        let snapshot_before = session.analyze_window().expect("window").snapshot().clone();
+        assert!(session.analyze_go_up());
+        let window = session.analyze_window().expect("window");
+        assert_ne!(window.parent_id(), inner);
+        assert_eq!(window.snapshot(), &snapshot_before, "Up must not rescan");
+        assert_eq!(window.board().list_selection(), Some(inner));
+        assert!(!session.analyze_can_go_up());
+        assert!(!session.analyze_go_up());
+        assert!(root.join("inner").join("keep.bin").is_file());
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn window_jobs_queue_slow_reads_and_drop_superseded_results() {
