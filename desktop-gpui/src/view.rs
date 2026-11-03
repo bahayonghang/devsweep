@@ -606,6 +606,7 @@ impl Render for ShellView {
         if selected == Mode::Analyze {
             self.session.prepare_analyze_landing();
         }
+        self.dispatch_jobs(cx);
         let status_main = selected == Mode::Status && surface == Surface::Mode;
         self.session.status_set_main_visible(status_main);
         let review_surface = self.clean_review_active();
@@ -619,7 +620,8 @@ impl Render for ShellView {
         let shell_access = accessible_control(locale, AccessibleSlot::Shell);
         let top_bar = self.top_bar(&t, locale, selected, surface, menu_open, cx);
         let page = self.page(&t, cx);
-        let busy = self.session.shell().activity() == Activity::Busy;
+        let busy =
+            self.session.shell().activity() == Activity::Busy || self.session.background_busy();
         let hint = copy::mode_keys_hint(locale);
         let note_label = copy::pick(locale, "Note", "笔记");
 
@@ -783,6 +785,44 @@ impl Render for ShellView {
 }
 
 impl ShellView {
+    /// Runs queued read-only jobs (host software lists, Status snapshots,
+    /// Analyze walks) on worker threads and applies each result back on the
+    /// UI thread. Session generations drop superseded results.
+    fn dispatch_jobs(&mut self, cx: &mut Context<Self>) {
+        for job in self.session.take_jobs() {
+            let slot: std::sync::Arc<std::sync::Mutex<Option<crate::shell::JobResult>>> =
+                std::sync::Arc::default();
+            let writer = slot.clone();
+            let spawned = std::thread::Builder::new()
+                .name("devsweep-gpui-job".to_string())
+                .spawn(move || {
+                    let result = job.run();
+                    if let Ok(mut guard) = writer.lock() {
+                        *guard = Some(result);
+                    }
+                });
+            if spawned.is_err() {
+                continue;
+            }
+            cx.spawn(async move |this, cx| {
+                loop {
+                    let ready = slot.lock().ok().and_then(|mut guard| guard.take());
+                    if let Some(result) = ready {
+                        let _ = this.update(cx, |this, cx| {
+                            this.session.apply_job(result);
+                            cx.notify();
+                        });
+                        break;
+                    }
+                    cx.background_executor()
+                        .timer(Duration::from_millis(40))
+                        .await;
+                }
+            })
+            .detach();
+        }
+    }
+
     /// Keeps both text fields on the app scale, locale, and design tokens.
     fn sync_inputs(&self, t: &Theme, cx: &mut Context<Self>) {
         let percent = self.session.text_scale();
@@ -2127,6 +2167,9 @@ pub fn run(session: Session) {
                                 accessible_control(session.locale(), AccessibleSlot::CleanSearch),
                             )
                         });
+                        let mut session = session;
+                        // The window never blocks its UI thread on host reads.
+                        session.enable_background_jobs();
                         let view = cx.new(|cx| ShellView {
                             focus_handle: cx.focus_handle(),
                             session,

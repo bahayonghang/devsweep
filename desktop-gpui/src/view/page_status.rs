@@ -97,6 +97,17 @@ impl ShellView {
                     .child(ui::muted(t, copy::status_phase_live(locale))),
             );
         }
+        if self.session.status_sampling() {
+            page = page.child(
+                ui::card(t)
+                    .gap(rems(0.6))
+                    .child(ui::muted(
+                        t,
+                        copy::pick(locale, "Sampling host collectors…", "正在采样主机数据…"),
+                    ))
+                    .child(ui::progress_track(t)),
+            );
+        }
         if let Some(line) = self.session.status_sensor_line() {
             page = page.child(ui::banner(t, Tone::Info, line));
         }

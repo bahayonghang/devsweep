@@ -351,7 +351,17 @@ impl ShellView {
                     }),
             );
         }
-        if !any_row && !review.lines().is_empty() {
+        if review.loading() {
+            rows = rows.child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(rems(0.75))
+                    .py(rems(1.5))
+                    .child(ui::muted(t, review.lines().join(" ")))
+                    .child(ui::progress_track(t)),
+            );
+        } else if !any_row && !review.lines().is_empty() {
             let lines = review.lines();
             rows = rows.child(ui::empty_state(
                 t,

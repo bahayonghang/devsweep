@@ -60,6 +60,51 @@ impl ShellView {
         if let Some(notice) = self.session.analyze_notice() {
             page = page.child(ui::banner(t, Tone::Warning, notice.to_string()));
         }
+        if let Some(path) = self.session.analyze_scanning() {
+            let label = path.display().to_string();
+            page = page.child(
+                ui::card(t)
+                    .id("analyze-scanning")
+                    .role(gpui::Role::Status)
+                    .aria_label(SharedString::from(label.clone()))
+                    .gap(rems(0.9))
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .gap(rems(0.9))
+                            .child(ui::icon_tile(t, "search", t.accent))
+                            .child(ui::two_line(
+                                t,
+                                copy::pick(locale, "Mapping folder…", "正在分析文件夹…"),
+                                label,
+                            ))
+                            .child(
+                                ui::icon_button(
+                                    t,
+                                    "analyze-cancel",
+                                    "stop",
+                                    copy::clean_cancel_action(locale),
+                                    ButtonKind::Secondary,
+                                )
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.session.analyze_cancel_scan();
+                                    cx.notify();
+                                })),
+                            ),
+                    )
+                    .child(ui::progress_track(t))
+                    .child(ui::muted(
+                        t,
+                        copy::pick(
+                            locale,
+                            "Read-only walk. Large drives take a while; the window stays responsive.",
+                            "只读遍历。大磁盘需要一些时间，窗口保持可用。",
+                        ),
+                    )),
+            );
+        }
         page = if detail {
             page.child(self.analyze_detail(t, cx))
         } else {

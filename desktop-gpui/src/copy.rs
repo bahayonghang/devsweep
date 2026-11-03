@@ -1803,6 +1803,24 @@ pub enum StoreName {
     Protections,
 }
 
+/// Loading line while a Software segment reads the host.
+#[must_use]
+pub fn software_loading(locale: Locale, segment: &str) -> &'static str {
+    match segment {
+        "updates" => pick(
+            locale,
+            "Checking winget for updates… This is read-only.",
+            "正在通过 winget 检查更新…（只读）",
+        ),
+        "startup" => pick(locale, "Reading startup entries…", "正在读取启动项…"),
+        _ => pick(
+            locale,
+            "Reading installed software… This is read-only.",
+            "正在读取已安装软件…（只读）",
+        ),
+    }
+}
+
 /// Chooses one of two literal strings for the active locale. Used by the
 /// designed GPUI pages for short labels that have no older catalogue entry.
 #[must_use]

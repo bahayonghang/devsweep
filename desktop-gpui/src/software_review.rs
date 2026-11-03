@@ -15,10 +15,11 @@ use devsweep_core::software::{
     SOFTWARE_INVENTORY_VERSION, SoftwareEligibilityReason, SoftwareEligibilityState,
     SoftwareEntryV1, SoftwareIdentity, SoftwareInventoryV1, SoftwarePlanError,
     SoftwareSelectionPlanV1, SoftwareSourceEvidence, SoftwareSourceState, SoftwareStartupError,
-    SoftwareStartupLocation, SoftwareUpdateError, SoftwareUpdateRowV1, SoftwareUpdatesV1,
-    StartupFixtureClass, StartupFixtureHiveV1, build_selection_plan, plan_software_update,
-    plan_startup_hive, preview_selection_plan_live, preview_startup_hive, software_entry_id,
-    software_inventory_fingerprint, startup_fixture_entry_id,
+    SoftwareStartupListV1, SoftwareStartupLocation, SoftwareStartupState, SoftwareUpdateError,
+    SoftwareUpdateRowV1, SoftwareUpdatesV1, StartupFixtureClass, StartupFixtureHiveV1,
+    build_selection_plan, plan_software_update, plan_startup_hive, preview_selection_plan_live,
+    preview_startup_hive, software_entry_id, software_inventory_fingerprint,
+    startup_fixture_entry_id,
 };
 
 use crate::copy::{self, Locale};
@@ -83,6 +84,48 @@ enum ReviewSource {
     Hive {
         path: PathBuf,
     },
+    /// Read-only host startup list. Toggles preview only; the window never writes.
+    Startup {
+        list: SoftwareStartupListV1,
+    },
+}
+
+/// Result of one read-only host load, produced on a worker thread.
+#[derive(Clone, Debug)]
+pub enum SoftwareHostLoad {
+    Inventory(Result<SoftwareInventoryV1, String>),
+    Updates(SoftwareUpdatesV1),
+    Startup(SoftwareStartupListV1),
+}
+
+/// Reads one segment from the host. Read-only: inventory enumerates installed
+/// software, updates runs the bounded `winget upgrade` probe, and startup lists
+/// the four fixed sources. Blocking; never call it on the UI thread.
+#[must_use]
+pub fn load_host(segment: SoftwareSegment) -> Option<SoftwareHostLoad> {
+    match segment {
+        SoftwareSegment::Uninstall => Some(SoftwareHostLoad::Inventory(
+            devsweep_core::software::inventory_software(
+                devsweep_core::software::SoftwareInventorySource::All,
+                None,
+            )
+            .map_err(|error| error.to_string()),
+        )),
+        SoftwareSegment::Updates => {
+            let inventory = devsweep_core::software::inventory_software(
+                devsweep_core::software::SoftwareInventorySource::All,
+                None,
+            )
+            .ok();
+            Some(SoftwareHostLoad::Updates(
+                devsweep_core::software::check_software_updates(inventory.as_ref(), None),
+            ))
+        }
+        SoftwareSegment::Startup => Some(SoftwareHostLoad::Startup(
+            devsweep_core::software::list_startup_entries(),
+        )),
+        SoftwareSegment::Leftovers => None,
+    }
 }
 
 /// One segment review. The window leaves the executor unset.
@@ -97,6 +140,7 @@ pub struct SoftwareReview {
     lines: Vec<String>,
     pending: Option<PendingUninstall>,
     stale: bool,
+    loading: bool,
     now_unix_ms: u64,
     executor_calls: u32,
 }
@@ -120,6 +164,7 @@ impl SoftwareReview {
             lines: Vec::new(),
             pending: None,
             stale: false,
+            loading: false,
             now_unix_ms: unix_now_ms(),
             executor_calls: 0,
         }
@@ -133,6 +178,92 @@ impl SoftwareReview {
     #[must_use]
     pub fn lines(&self) -> &[String] {
         &self.lines
+    }
+
+    /// True while a host load for the open segment is in flight.
+    #[must_use]
+    pub fn loading(&self) -> bool {
+        self.loading
+    }
+
+    /// True when an isolated fixture env var names this segment's source, so
+    /// opening it stays synchronous and never reads the host.
+    #[must_use]
+    pub fn has_fixture(segment: SoftwareSegment) -> bool {
+        match segment {
+            SoftwareSegment::Uninstall => env_path(INVENTORY_ENV).is_some(),
+            SoftwareSegment::Updates => {
+                env_path(UPDATES_FILE_ENV).is_some() || env_path(UPDATE_PROGRAM_ENV).is_some()
+            }
+            SoftwareSegment::Startup => env_path(HIVE_ENV).is_some(),
+            SoftwareSegment::Leftovers => true,
+        }
+    }
+
+    /// Opens `segment` in its loading state before a worker reads the host.
+    pub fn begin_host_load(&mut self, segment: SoftwareSegment, locale: Locale) {
+        self.segment = Some(segment);
+        self.source = ReviewSource::None;
+        self.items.clear();
+        self.pending = None;
+        self.loading = true;
+        self.lines = vec![copy::software_loading(locale, segment_key(segment)).to_string()];
+    }
+
+    /// Installs a finished host load. The caller drops loads for a segment
+    /// that is no longer open before they reach this method.
+    pub fn apply_host_load(&mut self, load: SoftwareHostLoad, locale: Locale) {
+        self.loading = false;
+        self.pending = None;
+        match load {
+            SoftwareHostLoad::Inventory(Ok(inventory)) => {
+                self.segment = Some(SoftwareSegment::Uninstall);
+                self.source = ReviewSource::Inventory {
+                    path: None,
+                    inventory,
+                };
+                self.rebuild_items(locale);
+            }
+            SoftwareHostLoad::Inventory(Err(error)) => {
+                self.segment = Some(SoftwareSegment::Uninstall);
+                self.source = ReviewSource::None;
+                self.items.clear();
+                self.lines = vec![
+                    copy::software_empty_title(locale).to_string(),
+                    format!("inventory_unavailable: {error}"),
+                ];
+            }
+            SoftwareHostLoad::Updates(SoftwareUpdatesV1::Available { rows, .. }) => {
+                self.segment = Some(SoftwareSegment::Updates);
+                self.source = ReviewSource::Updates { path: None, rows };
+                self.rebuild_items(locale);
+            }
+            SoftwareHostLoad::Updates(SoftwareUpdatesV1::Unavailable { reason_code, .. }) => {
+                self.segment = Some(SoftwareSegment::Updates);
+                self.source = ReviewSource::None;
+                self.items.clear();
+                self.lines = vec![
+                    copy::software_updates_unavailable(locale).to_string(),
+                    format!("probe_failed: {reason_code:?}"),
+                ];
+            }
+            SoftwareHostLoad::Startup(list) => {
+                self.segment = Some(SoftwareSegment::Startup);
+                self.source = ReviewSource::Startup { list };
+                self.rebuild_items(locale);
+            }
+        }
+    }
+
+    /// True when the open review came from the host rather than a fixture.
+    #[must_use]
+    pub fn host_backed(&self) -> bool {
+        matches!(
+            self.source,
+            ReviewSource::Inventory { path: None, .. }
+                | ReviewSource::Updates { path: None, .. }
+                | ReviewSource::Startup { .. }
+        )
     }
 
     /// Open segment, when any.
@@ -339,7 +470,7 @@ impl SoftwareReview {
                 path.clone()
             }
             ReviewSource::Hive { path } => Some(path.clone()),
-            ReviewSource::None => None,
+            ReviewSource::Startup { .. } | ReviewSource::None => None,
         };
         let Some(path) = path else {
             return;
@@ -513,6 +644,15 @@ impl SoftwareReview {
     }
 
     fn activate_startup(&mut self, id: &str, locale: Locale) {
+        if let ReviewSource::Startup { list } = &self.source {
+            let enabled = list
+                .entries
+                .iter()
+                .find(|entry| entry.id == id)
+                .map(|entry| entry.state == SoftwareStartupState::Enabled);
+            self.preview_host_startup(id, enabled, locale);
+            return;
+        }
         let ReviewSource::Hive { path } = &self.source else {
             self.startup_missing(locale);
             return;
@@ -580,6 +720,64 @@ impl SoftwareReview {
         });
     }
 
+    /// Plans and previews one host startup toggle. A second activation is
+    /// refused: this window never writes the host approval value.
+    fn preview_host_startup(&mut self, id: &str, enabled: Option<bool>, locale: Locale) {
+        let Some(enabled) = enabled else {
+            self.lines = vec![startup_line(
+                locale,
+                &SoftwareStartupError::StartupSourceUnavailable,
+            )];
+            self.pending = None;
+            return;
+        };
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|pending| pending.id == id)
+        {
+            self.lines = vec![
+                "isolated_executor_unavailable".to_string(),
+                copy::software_isolated_executor_unavailable(locale).to_string(),
+            ];
+            return;
+        }
+        let plan = match devsweep_core::software::plan_startup_toggle(id, !enabled) {
+            Ok(plan) => plan,
+            Err(error) => {
+                self.lines = vec![startup_line(locale, &error)];
+                self.pending = None;
+                return;
+            }
+        };
+        match devsweep_core::software::preview_startup_toggle(&plan) {
+            Ok(preview) => {
+                self.lines = vec![
+                    format!(
+                        "{id} | {:?} -> {:?} | {}",
+                        preview.before_state, preview.after_state, preview.digest
+                    )
+                    .to_ascii_lowercase(),
+                ];
+                self.pending = Some(PendingUninstall {
+                    id: id.to_string(),
+                    plan: SoftwareSelectionPlanV1 {
+                        version: 1,
+                        inventory_fingerprint: preview.digest.clone(),
+                        inventory_observed_at_unix_ms: 0,
+                        expires_at_unix_ms: 0,
+                        selected_ids: vec![id.to_string()],
+                    },
+                    digest: preview.digest,
+                });
+            }
+            Err(error) => {
+                self.lines = vec![startup_line(locale, &error)];
+                self.pending = None;
+            }
+        }
+    }
+
     fn probe_update_program(&mut self, program: &Path, locale: Locale) {
         self.segment = Some(SoftwareSegment::Updates);
         self.items.clear();
@@ -631,6 +829,7 @@ impl SoftwareReview {
             ReviewSource::Inventory { inventory, .. } => inventory_items(inventory, &last),
             ReviewSource::Updates { rows, .. } => update_items(rows, &last),
             ReviewSource::Hive { path } => hive_items(path, locale, &last),
+            ReviewSource::Startup { list } => startup_items(list, &last),
             ReviewSource::None => Vec::new(),
         };
         self.lines = self.summary_lines(locale);
@@ -677,7 +876,7 @@ impl SoftwareReview {
                 }
                 lines
             }
-            ReviewSource::Hive { .. } => {
+            ReviewSource::Hive { .. } | ReviewSource::Startup { .. } => {
                 let mut lines = vec![copy::software_startup_title(locale).to_string()];
                 if self.items.is_empty() {
                     lines.push(copy::software_startup_empty(locale).to_string());
@@ -814,6 +1013,46 @@ fn hive_items(path: &Path, locale: Locale, last: &str) -> Vec<SoftwareItem> {
             }
         })
         .collect()
+}
+
+fn startup_items(list: &SoftwareStartupListV1, last: &str) -> Vec<SoftwareItem> {
+    list.entries
+        .iter()
+        .map(|entry| {
+            let state = match entry.state {
+                SoftwareStartupState::Enabled => "enabled",
+                SoftwareStartupState::Disabled => "disabled",
+                SoftwareStartupState::Unknown => "unknown",
+            };
+            let permission = match entry.toggle {
+                devsweep_core::software::SoftwareStartupToggle::Allowed => "allowed",
+                devsweep_core::software::SoftwareStartupToggle::RequiresAdministrator => {
+                    "requires_administrator"
+                }
+            };
+            SoftwareItem {
+                id: entry.id.clone(),
+                name: entry.name.clone(),
+                identity: format!("{}:{}", location_token(entry.location), entry.name),
+                count: 1,
+                source: location_token(entry.location).to_string(),
+                version: state.to_string(),
+                permission: permission.to_string(),
+                skip: last.to_string(),
+                last: last.to_string(),
+                selectable: false,
+            }
+        })
+        .collect()
+}
+
+fn segment_key(segment: SoftwareSegment) -> &'static str {
+    match segment {
+        SoftwareSegment::Uninstall => "uninstall",
+        SoftwareSegment::Updates => "updates",
+        SoftwareSegment::Startup => "startup",
+        SoftwareSegment::Leftovers => "leftovers",
+    }
 }
 
 fn permission_token(entry: &SoftwareEntryV1, sources: &[SoftwareSourceEvidence]) -> String {
@@ -1162,9 +1401,34 @@ mod tests {
         let source = include_str!("software_review.rs");
         let production = source.split("mod tests").next().expect("tests");
         assert!(!production.contains("SoftwareExecutor"));
-        assert!(!production.contains("inventory_software"));
-        assert!(!production.contains("list_startup_entries"));
-        assert!(!production.contains("check_software_updates"));
+        // The window may read the host, but only through `load_host`, which a
+        // worker runs after an explicit segment open. No host mutation API is
+        // referenced: uninstall, startup writes, and update installs stay in
+        // the CLI's plan/preview/confirm path.
+        let load_host = production
+            .split("pub fn load_host(")
+            .nth(1)
+            .and_then(|rest| rest.split("\n}\n").next())
+            .expect("load_host body");
+        let outside = production.replace(load_host, "");
+        for read in [
+            "inventory_software(",
+            "list_startup_entries(",
+            "check_software_updates(",
+        ] {
+            assert!(load_host.contains(read), "{read} belongs in load_host");
+            assert!(!outside.contains(read), "{read} outside load_host");
+        }
+        for write in [
+            "execute_startup_toggle",
+            "set_startup_enabled",
+            "execute_software_update",
+            "SoftwareExecutionRequest",
+            "ValidatedSoftwareAction",
+            "execute_startup_restore",
+        ] {
+            assert!(!production.contains(write), "window must not call {write}");
+        }
     }
 
     #[test]

@@ -1128,6 +1128,76 @@ pub struct Session {
     clean_progress: Option<Arc<AtomicUsize>>,
     clean_progress_seen: usize,
     protection_session_only: bool,
+    /// When true (the running window), slow read-only work is queued as
+    /// [`BackgroundJob`]s instead of running inline on the UI thread. Tests and
+    /// `Session::unbacked` keep the synchronous behavior.
+    background_jobs: bool,
+    jobs: Vec<BackgroundJob>,
+    job_generation: u64,
+    software_job: Option<u64>,
+    status_job: Option<u64>,
+    analyze_job: Option<(u64, PathBuf, Arc<FlagCancelObserver>)>,
+}
+
+/// One slow, read-only operation the window runs on a worker thread.
+pub enum BackgroundJob {
+    SoftwareHost {
+        generation: u64,
+        segment: crate::workbench::SoftwareSegment,
+    },
+    StatusSnapshot {
+        generation: u64,
+    },
+    AnalyzeScan {
+        generation: u64,
+        path: PathBuf,
+        cancel: Arc<FlagCancelObserver>,
+    },
+}
+
+/// The finished result of one [`BackgroundJob`].
+pub enum JobResult {
+    SoftwareHost {
+        generation: u64,
+        load: Option<crate::software_review::SoftwareHostLoad>,
+    },
+    StatusSnapshot {
+        generation: u64,
+        result: Result<StatusSnapshotV1, String>,
+    },
+    AnalyzeScan {
+        generation: u64,
+        result: Result<AnalyzeWindow, String>,
+    },
+}
+
+impl BackgroundJob {
+    /// Runs the job. Blocking; call it from a worker thread only.
+    #[must_use]
+    pub fn run(self) -> JobResult {
+        match self {
+            Self::SoftwareHost {
+                generation,
+                segment,
+            } => JobResult::SoftwareHost {
+                generation,
+                load: crate::software_review::load_host(segment),
+            },
+            Self::StatusSnapshot { generation } => JobResult::StatusSnapshot {
+                generation,
+                result: devsweep_core::status::capture_snapshot(8, None)
+                    .map_err(|error| error.to_string()),
+            },
+            Self::AnalyzeScan {
+                generation,
+                path,
+                cancel,
+            } => JobResult::AnalyzeScan {
+                generation,
+                result: AnalyzeWindow::scan_with_cancel(&path, Some(cancel.as_ref())),
+            },
+        }
+    }
 }
 
 impl Session {
@@ -1217,6 +1287,89 @@ impl Session {
             clean_progress: None,
             clean_progress_seen: 0,
             protection_session_only: false,
+            background_jobs: false,
+            jobs: Vec::new(),
+            job_generation: 0,
+            software_job: None,
+            status_job: None,
+            analyze_job: None,
+        }
+    }
+
+    /// The window opts in: slow read-only work becomes background jobs.
+    pub fn enable_background_jobs(&mut self) {
+        self.background_jobs = true;
+    }
+
+    /// Drains queued jobs for the window to run off the UI thread.
+    pub fn take_jobs(&mut self) -> Vec<BackgroundJob> {
+        std::mem::take(&mut self.jobs)
+    }
+
+    fn next_generation(&mut self) -> u64 {
+        self.job_generation = self.job_generation.wrapping_add(1);
+        self.job_generation
+    }
+
+    /// True while any background job is outstanding.
+    pub fn background_busy(&self) -> bool {
+        self.software_job.is_some() || self.status_job.is_some() || self.analyze_job.is_some()
+    }
+
+    /// True while a Status snapshot is being sampled off the UI thread.
+    pub fn status_sampling(&self) -> bool {
+        self.status_job.is_some()
+    }
+
+    /// The folder an Analyze walk is reading, while it runs.
+    pub fn analyze_scanning(&self) -> Option<&Path> {
+        self.analyze_job.as_ref().map(|(_, path, _)| path.as_path())
+    }
+
+    /// Requests cooperative cancellation of the running Analyze walk.
+    pub fn analyze_cancel_scan(&mut self) -> bool {
+        let Some((_, _, cancel)) = self.analyze_job.take() else {
+            return false;
+        };
+        cancel.request_cancel();
+        self.analyze_notice = Some(
+            crate::copy::pick(self.locale(), "Analysis canceled.", "已取消分析。").to_string(),
+        );
+        true
+    }
+
+    /// Applies one finished job. Results whose generation no longer matches
+    /// the outstanding request (superseded or canceled) are dropped.
+    pub fn apply_job(&mut self, result: JobResult) -> bool {
+        match result {
+            JobResult::SoftwareHost { generation, load } => {
+                if self.software_job != Some(generation) {
+                    return false;
+                }
+                self.software_job = None;
+                if let Some(load) = load {
+                    let locale = self.locale();
+                    self.software_review.apply_host_load(load, locale);
+                    self.sync_software_rows();
+                }
+                true
+            }
+            JobResult::StatusSnapshot { generation, result } => {
+                if self.status_job != Some(generation) {
+                    return false;
+                }
+                self.status_job = None;
+                self.apply_status_capture(result);
+                true
+            }
+            JobResult::AnalyzeScan { generation, result } => {
+                if self.analyze_job.as_ref().map(|job| job.0) != Some(generation) {
+                    return false;
+                }
+                self.analyze_job = None;
+                self.install_analyze_result(result);
+                true
+            }
         }
     }
 
@@ -1418,6 +1571,10 @@ impl Session {
             _ => None,
         };
         if let Some(segment) = segment {
+            if self.background_jobs && !SoftwareReview::has_fixture(segment) {
+                self.queue_software_load(segment, locale);
+                return;
+            }
             self.software_review.open_segment(segment, locale);
             self.sync_software_rows();
             return;
@@ -1425,8 +1582,23 @@ impl Session {
         self.workbench_review.activate(id, locale);
     }
 
+    fn queue_software_load(&mut self, segment: crate::workbench::SoftwareSegment, locale: Locale) {
+        self.software_review.begin_host_load(segment, locale);
+        self.sync_software_rows();
+        let generation = self.next_generation();
+        self.software_job = Some(generation);
+        self.jobs.push(BackgroundJob::SoftwareHost {
+            generation,
+            segment,
+        });
+    }
+
     fn close_nested_review(&mut self) -> bool {
+        if self.analyze_cancel_scan() {
+            return true;
+        }
         if self.software_review.is_open() {
+            self.software_job = None;
             self.software_review.close();
             self.shell
                 .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
@@ -1524,9 +1696,23 @@ impl Session {
     }
 
     fn status_enter(&mut self) {
+        if self.background_jobs {
+            if self.status_job.is_none() {
+                let generation = self.next_generation();
+                self.status_job = Some(generation);
+                self.jobs.push(BackgroundJob::StatusSnapshot { generation });
+            }
+            return;
+        }
+        let result =
+            devsweep_core::status::capture_snapshot(8, None).map_err(|error| error.to_string());
+        self.apply_status_capture(result);
+    }
+
+    fn apply_status_capture(&mut self, result: Result<StatusSnapshotV1, String>) {
         let mut panel = self.status_panel.take().unwrap_or_default();
         panel.set_main_visible(true);
-        match devsweep_core::status::capture_snapshot(8, None) {
+        match result {
             Ok(snapshot) => {
                 self.status_lines = crate::status_panel::snapshot_lines(&snapshot);
                 self.apply_status_snapshot(snapshot.clone());
@@ -1755,7 +1941,30 @@ impl Session {
     }
 
     fn install_analyze_scan(&mut self, path: &Path) -> bool {
-        match AnalyzeWindow::scan(path) {
+        if self.background_jobs {
+            if !path.exists() {
+                self.analyze_notice = Some("analyze root is missing".to_string());
+                return false;
+            }
+            if let Some((_, _, cancel)) = self.analyze_job.take() {
+                cancel.request_cancel();
+            }
+            let generation = self.next_generation();
+            let cancel = Arc::new(FlagCancelObserver::new());
+            self.analyze_notice = None;
+            self.analyze_job = Some((generation, path.to_path_buf(), cancel.clone()));
+            self.jobs.push(BackgroundJob::AnalyzeScan {
+                generation,
+                path: path.to_path_buf(),
+                cancel,
+            });
+            return true;
+        }
+        self.install_analyze_result(AnalyzeWindow::scan(path))
+    }
+
+    fn install_analyze_result(&mut self, result: Result<AnalyzeWindow, String>) -> bool {
+        match result {
             Ok(window) => {
                 let ids = window
                     .board()
@@ -1831,6 +2040,13 @@ impl Session {
 
     pub fn software_refresh(&mut self) {
         let locale = self.locale();
+        if self.background_jobs
+            && self.software_review.host_backed()
+            && let Some(segment) = self.software_review.segment()
+        {
+            self.queue_software_load(segment, locale);
+            return;
+        }
         self.software_review.refresh(locale);
         self.sync_software_rows();
     }
@@ -3056,6 +3272,106 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn window_jobs_queue_slow_reads_and_drop_superseded_results() {
+        let mut session = Session::unbacked();
+        session.enable_background_jobs();
+
+        // Status: Enter queues one snapshot job instead of sampling inline.
+        session.show_mode(Mode::Status);
+        session.apply_key(NavKey::Enter);
+        assert!(session.status_sampling());
+        assert!(session.status_snapshot().is_none());
+        let jobs = session.take_jobs();
+        assert_eq!(jobs.len(), 1);
+        let BackgroundJob::StatusSnapshot { generation } = jobs[0] else {
+            panic!("expected a status job");
+        };
+        // A second Enter while sampling does not queue a duplicate collector.
+        session.apply_key(NavKey::Enter);
+        assert!(session.take_jobs().is_empty());
+        // A stale generation is dropped; the live one applies.
+        assert!(!session.apply_job(JobResult::StatusSnapshot {
+            generation: generation + 99,
+            result: Err("stale".to_string()),
+        }));
+        assert!(session.status_sampling());
+        assert!(session.apply_job(JobResult::StatusSnapshot {
+            generation,
+            result: Err("snapshot_unavailable".to_string()),
+        }));
+        assert!(!session.status_sampling());
+        assert!(
+            session
+                .status_lines()
+                .iter()
+                .any(|line| line.contains("snapshot_unavailable"))
+        );
+
+        // Analyze: a listed root queues a cancellable walk; Escape cancels it
+        // and a late result installs nothing.
+        let root = std::env::temp_dir();
+        session.show_mode(Mode::Analyze);
+        session.offer_analyze_roots(std::slice::from_ref(&root));
+        assert!(session.analyze_open_listed(0));
+        assert!(session.analyze_window().is_none());
+        assert_eq!(session.analyze_scanning(), Some(root.as_path()));
+        let jobs = session.take_jobs();
+        let Some(BackgroundJob::AnalyzeScan {
+            generation, cancel, ..
+        }) = jobs.into_iter().next()
+        else {
+            panic!("expected an analyze job");
+        };
+        session.apply_key(NavKey::Escape);
+        assert!(session.analyze_scanning().is_none());
+        assert!(devsweep_core::process::CancelObserver::is_cancel_requested(
+            cancel.as_ref()
+        ));
+        assert!(!session.apply_job(JobResult::AnalyzeScan {
+            generation,
+            result: Err("late".to_string()),
+        }));
+        assert!(session.analyze_window().is_none());
+    }
+
+    #[test]
+    fn window_software_segments_load_from_the_host_off_thread() {
+        if crate::software_review::SoftwareReview::has_fixture(
+            crate::workbench::SoftwareSegment::Startup,
+        ) {
+            return;
+        }
+        let mut session = Session::unbacked();
+        session.enable_background_jobs();
+        session.show_mode(Mode::Software);
+        session.software_open_segment(crate::workbench::SoftwareSegment::Startup);
+        assert!(session.software_review().loading());
+        assert!(session.background_busy());
+        let jobs = session.take_jobs();
+        let Some(BackgroundJob::SoftwareHost {
+            generation,
+            segment,
+        }) = jobs.into_iter().next()
+        else {
+            panic!("expected a software job");
+        };
+        assert_eq!(segment, crate::workbench::SoftwareSegment::Startup);
+        let list = devsweep_core::software::SoftwareStartupListV1 {
+            version: 1,
+            observed_at_unix_ms: 0,
+            sources: Vec::new(),
+            entries: Vec::new(),
+        };
+        assert!(session.apply_job(JobResult::SoftwareHost {
+            generation,
+            load: Some(crate::software_review::SoftwareHostLoad::Startup(list)),
+        }));
+        assert!(!session.software_review().loading());
+        assert!(!session.background_busy());
+        assert!(session.software_review().host_backed());
+    }
     use crate::clean::{cleanup, isolated_pytest_project};
     use crate::clean_workbench::{
         CleanSort, cleanup as workbench_cleanup, isolated_multi_cache_project,

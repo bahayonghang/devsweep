@@ -51,11 +51,19 @@ impl AnalyzeWindow {
 
     /// Walks an isolated root. Does not scan when `root` is missing.
     pub fn scan(root: &Path) -> Result<Self, String> {
+        Self::scan_with_cancel(root, None)
+    }
+
+    /// Same walk with cooperative cancellation. The window runs this on a
+    /// worker thread; a canceled walk returns an error and installs nothing.
+    pub fn scan_with_cancel(
+        root: &Path,
+        cancel: Option<&FlagCancelObserver>,
+    ) -> Result<Self, String> {
         if !root.exists() {
             return Err("analyze root is missing".to_string());
         }
-        let outcome = analyze_path(root, None::<&FlagCancelObserver>, None)
-            .map_err(|error| error.to_string())?;
+        let outcome = analyze_path(root, cancel, None).map_err(|error| error.to_string())?;
         let snapshot = outcome.snapshot().clone();
         let board = AnalyzeBoard::new(snapshot.nodes.clone());
         let parent_id = snapshot.root_node().map(|node| node.id).unwrap_or(0);
