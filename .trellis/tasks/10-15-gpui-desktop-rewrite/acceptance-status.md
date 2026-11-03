@@ -69,3 +69,24 @@ panics to `%TEMP%\devsweep-gpui-crash.log`. A relaunch on Windows is NOT_RUN
 here. Software rows now show qualified install sizes, update version changes
 and startup state. These are previewed with fixtures on Linux only. No box
 changes state. See "Follow-up 2" in `evidence/redesign-2026-11-03.md`.
+
+2026-11-03, Windows r11 on release `B41AC8A9087853FF0E7A01D280CB1792603AF1756834A85744A9B4BC11E01E1E`
+(18976768 bytes). The build was at HEAD `82f81c9`, with rustc 1.99.0. That is
+not an MSRV pass. `cargo test --locked` exited 0 with 160 passed.
+
+- C13: 20 create, minimize, restore and `WM_CLOSE` cycles gave
+  `clean_exits=20`, `forced=0` and leftover 0 on this hash. Large snapshot
+  rendering and OS crash release are NOT_RUN, so C13-AC4 stays open.
+- C11: every keyboard sample is NOT_RUN. An elevated foreground window blocked
+  `SetForegroundWindow` (UIPI). Frame, cancel and focus samples stay unmet.
+- `FocusPattern`: the .NET UIA type does not exist. Earlier `FocusPattern
+  NOT_PASS` results measured a missing type. Keyboard focus needs the
+  `FocusedElement` probe, which has not run yet.
+- C06-AC4: stays NOT_RUN.
+- C12 Software and Optimize: fixture display passed in EN and zh-CN. The
+  startup hive was unchanged and Optimize host rows still read `not run`. The
+  confirm, stale and error scripts are NOT_RUN on this hash.
+- Fixes after this hash: `75665c7` (UIA/keyboard restore, software row names).
+  Those fixes need a new hash.
+
+No box changes state. See "Follow-up 4" in `evidence/redesign-2026-11-03.md`.
