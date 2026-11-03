@@ -3437,7 +3437,17 @@ mod tests {
         session.offer_analyze_roots(std::slice::from_ref(&root));
         assert!(session.analyze_open_listed(0));
         assert!(session.analyze_window().is_none());
-        assert_eq!(session.analyze_scanning(), Some(root.as_path()));
+        // The listed root is stored in normalized form: lowercase, forward
+        // slashes, and no trailing separator. `temp_dir()` keeps the raw
+        // Windows spelling, including its trailing separator.
+        let expected = session.analyze_roots[0]
+            .normalized
+            .clone()
+            .expect("normalized temp root");
+        assert_eq!(
+            session.analyze_scanning(),
+            Some(std::path::Path::new(&expected))
+        );
         let jobs = session.take_jobs();
         let Some(BackgroundJob::AnalyzeScan {
             generation, cancel, ..
