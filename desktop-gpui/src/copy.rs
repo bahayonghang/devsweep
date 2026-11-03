@@ -1159,6 +1159,17 @@ pub fn clean_ai_home_unavailable(locale: Locale) -> &'static str {
     }
 }
 
+/// Shown when the window has no explicit temporary AI home. It is a refusal,
+/// not a scan of a real profile.
+pub fn clean_ai_isolated_home_required(locale: Locale) -> &'static str {
+    match locale {
+        Locale::En => {
+            "AI review needs an explicit temporary home. Real .codex, .claude, and Cursor profiles are not read."
+        }
+        Locale::ZhCn => "AI 审阅需要显式临时主目录。不会读取真实的 .codex、.claude 或 Cursor。",
+    }
+}
+
 /// The absolute provider home the last explicit scan used. Not a claim that
 /// the real user profile was read.
 pub fn clean_ai_home_line(locale: Locale, home: &str) -> String {
@@ -1891,6 +1902,7 @@ mod tests {
                 clean_ai_restore_action(locale),
                 clean_ai_restore_refused(locale),
                 clean_ai_home_unavailable(locale),
+                clean_ai_isolated_home_required(locale),
                 clean_ai_keys_hint(locale),
                 clean_keys_hint(locale),
             ] {

@@ -143,11 +143,12 @@ pub fn ai_provider_home(
     devsweep_core::ai::default_home_path(provider, userprofile, appdata)
 }
 
-/// Production environment resolution for one provider home.
+/// Production path the window must not scan.
 ///
 /// Reads `USERPROFILE` (falling back to `HOME`) and `APPDATA`, then delegates
-/// to [`ai_provider_home`]. Only the shell's explicit user action calls this;
-/// tests pass an isolated home to [`ai_scan_home`] instead.
+/// to [`ai_provider_home`]. The Clean AI button does not call this. A test may
+/// compare it to prove the window left the real profile unread.
+#[allow(dead_code)]
 pub fn ai_provider_home_from_env(provider: AiProvider) -> Option<PathBuf> {
     let userprofile = std::env::var_os("USERPROFILE")
         .or_else(|| std::env::var_os("HOME"))
@@ -167,12 +168,13 @@ pub enum ExplicitAiHomeRefusal {
     NotADirectory,
 }
 
-/// An explicit isolated AI home, or the instruction to use production resolution.
+/// An explicit isolated AI home, or the reason none may be scanned.
 ///
-/// `Isolated` is the only path a native review probe may scan. `Refused` means
-/// the override was set and must not be replaced by a real profile.
+/// `Isolated` is the only home the window may scan. `Unset` and `Refused` must
+/// not be replaced by `USERPROFILE`, `APPDATA`, or a real provider profile.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ExplicitAiHome {
+    /// No override was set. This is not permission to read a real profile.
     Unset,
     Isolated(PathBuf),
     Refused(ExplicitAiHomeRefusal),
@@ -181,9 +183,9 @@ pub enum ExplicitAiHome {
 const AI_REVIEW_HOME_ENV: &str = "DEVSWEEP_AI_REVIEW_HOME";
 const AI_REVIEW_HOME_PREFIX: &str = "devsweep-gpui-c11-";
 
-/// Reads `DEVSWEEP_AI_REVIEW_HOME`. Unset keeps production resolution. A set
-/// value is accepted only when it is an absolute directory under the temp root
-/// whose path contains the isolated-fixture prefix.
+/// Reads `DEVSWEEP_AI_REVIEW_HOME`. Unset is not a real profile. A set value
+/// is accepted only when it is an absolute directory under the temp root whose
+/// path contains the isolated-fixture prefix.
 pub fn explicit_ai_review_home() -> ExplicitAiHome {
     classify_explicit_ai_review_home(std::env::var_os(AI_REVIEW_HOME_ENV).as_deref(), &std::env::temp_dir())
 }

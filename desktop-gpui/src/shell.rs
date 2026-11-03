@@ -2255,10 +2255,8 @@ impl Session {
         true
     }
 
-    /// Resolves the provider home from USERPROFILE/HOME and APPDATA through the
-    /// shared core resolver and scans it on a worker. This is the production
-    /// entry behind the explicit user action; unit tests use
-    /// [`Self::clean_ai_scan_home`] with an isolated home instead.
+    /// Scans only an explicit temporary home. Unset and refused overrides do
+    /// not fall back to `USERPROFILE`, `.codex`, `.claude`, or Cursor.
     pub fn clean_ai_scan(&mut self) -> bool {
         let home = match crate::clean::explicit_ai_review_home() {
             crate::clean::ExplicitAiHome::Isolated(home) => home,
@@ -2269,24 +2267,30 @@ impl Session {
                 return false;
             }
             crate::clean::ExplicitAiHome::Unset => {
-                let Some(home) = crate::clean::ai_provider_home_from_env(self.clean_ai.provider())
-                else {
-                    self.clean_ai.on_scan_unavailable(&format!(
-                        "{} ({})",
-                        crate::copy::clean_ai_home_unavailable(Locale::En),
-                        self.clean_ai.provider().as_str()
-                    ));
-                    return false;
-                };
-                home
+                self.clean_ai.on_scan_unavailable(
+                    crate::copy::clean_ai_isolated_home_required(self.locale()),
+                );
+                return false;
             }
         };
         self.clean_ai_scan_home(home)
     }
 
-    /// Scans one explicit AI provider home on a worker. The caller supplies the
-    /// home, so an automated check can never resolve a real user home here.
+    /// Scans one explicit temporary AI home on a worker. A real profile is
+    /// refused before any provider directory is opened.
     pub fn clean_ai_scan_home(&mut self, home: PathBuf) -> bool {
+        if !matches!(
+            crate::clean::classify_explicit_ai_review_home(
+                Some(home.as_os_str()),
+                &std::env::temp_dir(),
+            ),
+            crate::clean::ExplicitAiHome::Isolated(_)
+        ) {
+            self.clean_ai.on_scan_unavailable(
+                crate::copy::clean_ai_isolated_home_required(self.locale()),
+            );
+            return false;
+        }
         if self.shell.operation_id().is_some() || !self.clean_ai.open() {
             return false;
         }
@@ -4180,5 +4184,108 @@ mod tests {
         assert!(!session.clean_ai().open());
         assert!(session.shell().visible_row_ids(Mode::Clean).is_empty());
         ai_cleanup(&home);
+    }
+
+    fn ai_home_env_lock() -> &'static std::sync::Mutex<()> {
+        static LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
+        LOCK.get_or_init(|| std::sync::Mutex::new(()))
+    }
+
+    struct AiHomeEnvGuard {
+        previous: Option<std::ffi::OsString>,
+    }
+
+    impl AiHomeEnvGuard {
+        fn replace(value: Option<&std::ffi::OsStr>) -> Self {
+            let previous = env::var_os("DEVSWEEP_AI_REVIEW_HOME");
+            unsafe {
+                match value {
+                    Some(value) => env::set_var("DEVSWEEP_AI_REVIEW_HOME", value),
+                    None => env::remove_var("DEVSWEEP_AI_REVIEW_HOME"),
+                }
+            }
+            Self { previous }
+        }
+    }
+
+    impl Drop for AiHomeEnvGuard {
+        fn drop(&mut self) {
+            unsafe {
+                match self.previous.take() {
+                    Some(value) => env::set_var("DEVSWEEP_AI_REVIEW_HOME", value),
+                    None => env::remove_var("DEVSWEEP_AI_REVIEW_HOME"),
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn window_ai_scan_does_not_read_a_real_profile_without_a_temp_home() {
+        use devsweep_core::ai::AiProvider;
+
+        let _guard = ai_home_env_lock().lock().expect("ai home env lock");
+        let _restore = AiHomeEnvGuard::replace(None);
+        let real = crate::clean::ai_provider_home_from_env(AiProvider::Codex);
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Clean);
+        assert!(session.clean_ai_open());
+        assert!(!session.clean_ai_scan());
+        assert!(session.clean_ai().home().is_none());
+        assert_eq!(session.shell().activity(), Activity::Idle);
+        assert_eq!(session.shell().operation_id(), None);
+        assert_eq!(
+            session.clean_ai().failure_detail(),
+            Some(crate::copy::clean_ai_isolated_home_required(Locale::En))
+        );
+        if let Some(real) = real {
+            assert!(
+                !session
+                    .clean_ai()
+                    .failure_detail()
+                    .unwrap_or("")
+                    .contains(&real.display().to_string()),
+                "refusal must not name the real profile"
+            );
+            assert!(!session.clean_ai_scan_home(real));
+            assert!(session.clean_ai().home().is_none());
+            assert_eq!(session.shell().activity(), Activity::Idle);
+        }
+        if let Some(profile) = env::var_os("USERPROFILE") {
+            assert!(!session.clean_ai_scan_home(PathBuf::from(profile)));
+            assert!(session.clean_ai().home().is_none());
+        }
+    }
+
+    #[test]
+    fn window_ai_scan_uses_only_the_explicit_temp_home() {
+        use crate::clean_ai::{AiCategory, isolated_ai_review_home};
+        use devsweep_core::ai::AiProvider;
+
+        let _guard = ai_home_env_lock().lock().expect("ai home env lock");
+        let home = isolated_ai_review_home();
+        let _restore = AiHomeEnvGuard::replace(Some(home.as_os_str()));
+        let real = crate::clean::ai_provider_home_from_env(AiProvider::Codex);
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Clean);
+        assert!(session.clean_ai_open());
+        assert!(session.clean_ai_scan());
+        assert!(drain_until_idle(&mut session) > 0);
+        let scanned = session
+            .clean_ai()
+            .home()
+            .expect("explicit home")
+            .to_path_buf();
+        assert_eq!(scanned, home);
+        if let Some(real) = real {
+            assert_ne!(scanned, real);
+        }
+        assert!(!session.clean_ai().category_ids(AiCategory::Cache).is_empty());
+        assert!(!session.clean_ai().category_ids(AiCategory::Sessions).is_empty());
+        assert!(!session
+            .clean_ai()
+            .category_ids(AiCategory::Worktrees)
+            .is_empty());
+        assert!(session.clean_ai().sensitive_count() > 0);
+        let _ = fs::remove_dir_all(&home);
     }
 }
