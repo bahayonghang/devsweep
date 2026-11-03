@@ -85,3 +85,7 @@ Gates on Linux: `cargo test --features linux-preview` 149 passed, 10 ignored.
 `cargo fmt --all -- --check` is clean. Windows-target clippy
 (`--all-targets -D warnings`) passes. A full suite run on Windows is still
 required before this task can close.
+
+User report, 2026-11-03: after `1031091`, `f96feee` and `1e55815`, the full
+GPUI suite passed on the user's Windows host. The run log is not in this
+directory. The task status was left unchanged for the owner to close.
