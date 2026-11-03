@@ -672,9 +672,11 @@ mod tests {
 
         // The file changes after the digest was painted. The executor rebuilds
         // the live digest and refuses before any side effect. The live identity
-        // is the file id plus the millisecond mtime, and Windows stamps writes
-        // from a coarse clock tick, so an in-place rewrite within the same tick
-        // keeps both. Move the mtime explicitly so the change is observable.
+        // binds the file id, the millisecond mtime and the file length. Windows
+        // stamps writes from a coarse clock tick, so an in-place rewrite within
+        // the same tick can keep the mtime; the length binding catches that case
+        // (see the core test `same_file_id_and_mtime_with_a_new_length_refuses_before_trash`).
+        // Move the mtime here too so this test does not depend on clock ticks.
         let path = root.join("keep.bin");
         let written = fs::metadata(&path)
             .and_then(|meta| meta.modified())
