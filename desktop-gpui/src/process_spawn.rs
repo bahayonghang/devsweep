@@ -1,6 +1,7 @@
 //! Spawn a console program without allocating a console.
 //!
-//! This crate is `windows_subsystem = "windows"`. `Command::output` on a
+//! Release builds are `windows_subsystem = "windows"` (debug builds keep a
+//! console for crash output). `Command::output` on a
 //! console binary then hands the child to the default terminal. Windows
 //! Terminal fails that handoff with `0x800700E8` (`ERROR_NO_DATA`, "The pipe
 //! is being closed") and leaves the error window open. `CREATE_NO_WINDOW`

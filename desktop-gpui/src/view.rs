@@ -2943,6 +2943,22 @@ mod tests {
     }
 
     #[test]
+    fn the_windows_binary_reserves_a_main_thread_stack_for_debug_frames() {
+        // GPUI renders on the main thread. A debug build overflowed the 1 MiB
+        // Windows default (silent freeze, then exit), so the bin reserves 8 MiB.
+        let build = include_str!("../build.rs");
+        assert!(build.contains("const MAIN_STACK_BYTES: u64 = 8 * 1024 * 1024;"));
+        assert!(build.contains("/STACK:{MAIN_STACK_BYTES}"));
+        assert!(build.contains("cargo:rustc-link-arg-bins="));
+        // Debug builds keep a console so the overflow or panic is visible.
+        let main = include_str!("main.rs");
+        assert!(
+            main.contains(r#"#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]"#)
+        );
+        assert!(main.contains("install_crash_log();"));
+    }
+
+    #[test]
     fn the_top_bar_is_the_title_bar_and_the_os_owns_its_caption_buttons() {
         let source = include_str!("view.rs");
         assert!(source.contains("appears_transparent: cfg!(windows)"));
