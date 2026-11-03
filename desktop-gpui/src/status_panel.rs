@@ -360,6 +360,200 @@ pub fn process_lines(
         .collect()
 }
 
+/// How many rows the table shows against what the sample enumerated. `None`
+/// when the process group has no value.
+#[must_use]
+pub fn process_count_line(
+    locale: crate::copy::Locale,
+    snapshot: &devsweep_core::status::StatusSnapshotV1,
+    visible: usize,
+) -> Option<String> {
+    use crate::copy::Locale;
+    use devsweep_core::status::AvailabilityV1;
+    let (AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. }) =
+        &snapshot.processes
+    else {
+        return None;
+    };
+    let shown = visible.min(100);
+    let returned = value.returned_count;
+    let enumerated = value.enumerated_count;
+    Some(match locale {
+        Locale::En if value.truncated_by_limit || value.budget_exhausted => format!(
+            "Showing {shown} of {returned} sampled rows. {enumerated} processes were running; the sample kept {returned}."
+        ),
+        Locale::En => format!("Showing {shown} of {returned} sampled processes."),
+        Locale::ZhCn if value.truncated_by_limit || value.budget_exhausted => format!(
+            "显示 {shown} / {returned} 行采样。运行中的进程有 {enumerated} 个，本次采样保留了 {returned} 个。"
+        ),
+        Locale::ZhCn => format!("显示 {shown} / {returned} 个采样进程。"),
+    })
+}
+
+/// Local class of a process name, read from the core's closed protected
+/// list. `Unlisted` says only that the name is not on that list.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProcessClass {
+    Critical,
+    Shared,
+    System,
+    Unlisted,
+}
+
+#[must_use]
+pub fn process_class(name: &str) -> ProcessClass {
+    use devsweep_core::status::{ProtectedClass, protected_process_names};
+    let lower = name.to_lowercase();
+    protected_process_names()
+        .iter()
+        .find(|(protected, _)| *protected == lower)
+        .map_or(ProcessClass::Unlisted, |(_, class)| match class {
+            ProtectedClass::Critical => ProcessClass::Critical,
+            ProtectedClass::Shared => ProcessClass::Shared,
+            ProtectedClass::System => ProcessClass::System,
+        })
+}
+
+/// The row the user picked, keyed by PID and name. A PID can be reused by a
+/// later process, so a sample row with the same PID and another name does not
+/// match.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProcessPick {
+    pub pid: u32,
+    pub name: String,
+}
+
+impl ProcessPick {
+    #[must_use]
+    pub fn of(row: &devsweep_core::status::ProcessV1) -> Self {
+        Self {
+            pid: row.pid,
+            name: row.name.clone(),
+        }
+    }
+
+    /// The same process in a later sample, if it is still listed.
+    #[must_use]
+    pub fn find(
+        &self,
+        snapshot: &devsweep_core::status::StatusSnapshotV1,
+    ) -> Option<devsweep_core::status::ProcessV1> {
+        use devsweep_core::status::AvailabilityV1;
+        let (AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. }) =
+            &snapshot.processes
+        else {
+            return None;
+        };
+        value
+            .items
+            .iter()
+            .find(|row| row.pid == self.pid && row.name == self.name)
+            .cloned()
+    }
+}
+
+/// Plain local explanation of one sampled process. Built only from the row,
+/// the memory total in the same snapshot, and the closed protected list. It
+/// does not look the program up anywhere and offers no action.
+#[must_use]
+pub fn process_explanation(
+    locale: crate::copy::Locale,
+    row: &devsweep_core::status::ProcessV1,
+    snapshot: &devsweep_core::status::StatusSnapshotV1,
+) -> Vec<String> {
+    use crate::copy::{Locale, pick};
+    use crate::ui::bytes;
+    use devsweep_core::status::AvailabilityV1;
+
+    let class = match process_class(&row.name) {
+        ProcessClass::Critical => pick(
+            locale,
+            "Core Windows process. Ending it would crash Windows or sign you out.",
+            "Windows 核心进程。结束它会导致系统崩溃或注销。",
+        ),
+        ProcessClass::Shared => pick(
+            locale,
+            "Shared Windows process. The desktop or many services depend on it.",
+            "Windows 共享进程。桌面或许多服务依赖它。",
+        ),
+        ProcessClass::System => pick(
+            locale,
+            "Kernel or system accounting entry, not an ordinary program.",
+            "内核或系统记账条目，不是普通程序。",
+        ),
+        ProcessClass::Unlisted => pick(
+            locale,
+            "Not on DevSweep's protected list. The name alone does not say what the program does.",
+            "不在 DevSweep 的受保护名单中。仅凭名称无法判断程序用途。",
+        ),
+    };
+
+    let cores = row.cpu_basis_points_of_one_logical_core as f64 / 10_000.0;
+    let cpu = match locale {
+        Locale::En if cores >= 1.0 => {
+            format!("CPU: about {cores:.1} logical cores busy in this sample.")
+        }
+        Locale::En => format!(
+            "CPU: {:.1}% of one logical core in this sample.",
+            cores * 100.0
+        ),
+        Locale::ZhCn if cores >= 1.0 => format!("CPU：本次采样约占 {cores:.1} 个逻辑核心。"),
+        Locale::ZhCn => format!("CPU：本次采样占一个逻辑核心的 {:.1}%。", cores * 100.0),
+    };
+
+    let total = match &snapshot.memory {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. }
+            if value.total_bytes > 0 =>
+        {
+            Some(value.total_bytes)
+        }
+        _ => None,
+    };
+    let private = bytes(row.private_bytes);
+    let memory = match (locale, total) {
+        (Locale::En, Some(total)) => format!(
+            "Memory: {private} private, {:.1}% of {} physical memory. Shared pages are not counted.",
+            row.private_bytes as f64 * 100.0 / total as f64,
+            bytes(total)
+        ),
+        (Locale::En, None) => {
+            format!("Memory: {private} private. Shared pages are not counted.")
+        }
+        (Locale::ZhCn, Some(total)) => format!(
+            "内存：私有 {private}，占物理内存 {} 的 {:.1}%。不含共享页。",
+            bytes(total),
+            row.private_bytes as f64 * 100.0 / total as f64
+        ),
+        (Locale::ZhCn, None) => format!("内存：私有 {private}。不含共享页。"),
+    };
+
+    let io = match locale {
+        Locale::En => format!(
+            "Disk I/O: {}/s read, {}/s written since the previous sample.",
+            bytes(row.read_bytes_per_second),
+            bytes(row.write_bytes_per_second)
+        ),
+        Locale::ZhCn => format!(
+            "磁盘 I/O：自上次采样起读取 {}/s，写入 {}/s。",
+            bytes(row.read_bytes_per_second),
+            bytes(row.write_bytes_per_second)
+        ),
+    };
+
+    let pid = match locale {
+        Locale::En => format!(
+            "PID {} only labels this row in this sample. DevSweep does not end processes from this list.",
+            row.pid
+        ),
+        Locale::ZhCn => format!(
+            "PID {} 只用于标记本次采样中的这一行。DevSweep 不会从此列表结束进程。",
+            row.pid
+        ),
+    };
+
+    vec![class.to_string(), cpu, memory, io, pid]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -576,5 +770,138 @@ mod tests {
 
         let source = crate::source_lf(include_str!("status_panel.rs"));
         assert!(!source.contains(&["terminate", "_bound_process"].concat()));
+    }
+
+    fn snapshot_with_processes(
+        items: Vec<devsweep_core::status::ProcessV1>,
+    ) -> devsweep_core::status::StatusSnapshotV1 {
+        use devsweep_core::status::{MemoryV1, ProcessesV1, StatusSnapshotV1};
+        let count = items.len() as u32;
+        StatusSnapshotV1 {
+            snapshot_id: "explain".to_string(),
+            sampled_at_unix_ms: 1,
+            sample_window_ms: 500,
+            logical_processor_count: 8,
+            cpu: AvailabilityV1::unavailable("counter_missing"),
+            memory: AvailabilityV1::available(
+                1,
+                0,
+                MemoryV1 {
+                    total_bytes: 16 * 1024 * 1024 * 1024,
+                    available_bytes: 8 * 1024 * 1024 * 1024,
+                    used_bytes: 8 * 1024 * 1024 * 1024,
+                },
+            ),
+            volumes: AvailabilityV1::unavailable("counter_missing"),
+            network: AvailabilityV1::unavailable("counter_missing"),
+            power: AvailabilityV1::unavailable("counter_missing"),
+            gpu: AvailabilityV1::unavailable("sensor_missing"),
+            thermal: AvailabilityV1::unsupported("platform_unsupported"),
+            processes: AvailabilityV1::available(
+                1,
+                0,
+                ProcessesV1 {
+                    items,
+                    enumerated_count: count,
+                    returned_count: count,
+                    requested_limit: 8,
+                    enumeration_ceiling: 8,
+                    detail_budget_ms: 150,
+                    truncated_by_limit: false,
+                    budget_exhausted: false,
+                },
+            ),
+            unsupported_capabilities: Vec::new(),
+        }
+    }
+
+    fn process(pid: u32, name: &str, cpu: u32, private: u64) -> devsweep_core::status::ProcessV1 {
+        devsweep_core::status::ProcessV1 {
+            pid,
+            name: name.to_string(),
+            cpu_basis_points_of_one_logical_core: cpu,
+            private_bytes: private,
+            read_bytes_per_second: 2048,
+            write_bytes_per_second: 0,
+        }
+    }
+
+    #[test]
+    fn a_picked_process_is_explained_locally_and_offers_no_action() {
+        use crate::copy::Locale;
+        use crate::shell::Session;
+
+        assert_eq!(process_class("LSASS.EXE"), ProcessClass::Critical);
+        assert_eq!(process_class("explorer.exe"), ProcessClass::Shared);
+        assert_eq!(process_class("System"), ProcessClass::System);
+        assert_eq!(process_class("code.exe"), ProcessClass::Unlisted);
+
+        let snapshot = snapshot_with_processes(vec![
+            process(4, "System", 0, 0),
+            process(812, "lsass.exe", 1_500, 64 * 1024 * 1024),
+            process(4242, "code.exe", 23_000, 1024 * 1024 * 1024),
+        ]);
+        let busy = ProcessPick {
+            pid: 4242,
+            name: "code.exe".to_string(),
+        }
+        .find(&snapshot)
+        .expect("listed");
+        let lines = process_explanation(Locale::En, &busy, &snapshot);
+        let text = lines.join("\n");
+        assert!(text.contains("Not on DevSweep's protected list"), "{text}");
+        assert!(text.contains("about 2.3 logical cores"), "{text}");
+        assert!(
+            text.contains("6.2% of 16.0 GiB") || text.contains("% of 16"),
+            "{text}"
+        );
+        assert!(text.contains("does not end processes"), "{text}");
+        for verb in ["terminate", "kill", "End task"] {
+            assert!(!text.contains(verb), "{verb} in {text}");
+        }
+
+        let core = ProcessPick {
+            pid: 812,
+            name: "lsass.exe".to_string(),
+        }
+        .find(&snapshot)
+        .expect("listed");
+        let zh = process_explanation(Locale::ZhCn, &core, &snapshot).join("\n");
+        assert!(zh.contains("Windows 核心进程"), "{zh}");
+        assert!(zh.contains("一个逻辑核心的 15.0%"), "{zh}");
+
+        // A reused PID under another name is not the picked process.
+        let reused = ProcessPick {
+            pid: 4242,
+            name: "other.exe".to_string(),
+        };
+        assert!(reused.find(&snapshot).is_none());
+
+        assert_eq!(
+            process_count_line(Locale::En, &snapshot, 3).as_deref(),
+            Some("Showing 3 of 3 sampled processes.")
+        );
+        let mut truncated = snapshot.clone();
+        if let AvailabilityV1::Available { value, .. } = &mut truncated.processes {
+            value.enumerated_count = 212;
+            value.truncated_by_limit = true;
+        }
+        let line = process_count_line(Locale::ZhCn, &truncated, 2).expect("count");
+        assert!(
+            line.contains("显示 2 / 3") && line.contains("212"),
+            "{line}"
+        );
+
+        let mut session = Session::unbacked();
+        session.status_toggle_process(&busy);
+        assert_eq!(session.status_picked_process().map(|p| p.pid), Some(4242));
+        session.status_toggle_process(&busy);
+        assert!(
+            session.status_picked_process().is_none(),
+            "a second pick closes"
+        );
+        session.status_toggle_process(&core);
+        session.status_clear_process();
+        assert!(session.status_picked_process().is_none());
     }
 }

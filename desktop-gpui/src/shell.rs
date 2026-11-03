@@ -1115,6 +1115,7 @@ pub struct Session {
     status_snapshot: Option<StatusSnapshotV1>,
     status_query: String,
     status_sort: ProcessSort,
+    status_pick: Option<crate::status_panel::ProcessPick>,
     status_live: Option<LiveControl>,
     status_receiver: Option<devsweep_core::status::StatusEventReceiver>,
     status_subscription_starts: u32,
@@ -1276,6 +1277,7 @@ impl Session {
             status_snapshot: None,
             status_query: String::new(),
             status_sort: ProcessSort::Name,
+            status_pick: None,
             status_live: None,
             status_receiver: None,
             status_subscription_starts: 0,
@@ -1710,6 +1712,13 @@ impl Session {
     }
 
     fn apply_status_capture(&mut self, result: Result<StatusSnapshotV1, String>) {
+        // Linux preview builds have no collectors. A snapshot JSON file stands
+        // in so the Status layout can be reviewed; Windows builds never read it.
+        #[cfg(feature = "linux-preview")]
+        let result = std::env::var_os("DEVSWEEP_PREVIEW_STATUS_FILE")
+            .and_then(|path| std::fs::read(path).ok())
+            .and_then(|bytes| serde_json::from_slice::<StatusSnapshotV1>(&bytes).ok())
+            .map_or(result, Ok);
         let mut panel = self.status_panel.take().unwrap_or_default();
         panel.set_main_visible(true);
         match result {
@@ -2171,6 +2180,25 @@ impl Session {
 
     pub fn status_query(&self) -> &str {
         &self.status_query
+    }
+
+    /// Pick a process row for its local explanation. Picking the same row
+    /// again closes it. A pick is presentation only; no process action reads it.
+    pub fn status_toggle_process(&mut self, row: &devsweep_core::status::ProcessV1) {
+        let pick = crate::status_panel::ProcessPick::of(row);
+        if self.status_pick.as_ref() == Some(&pick) {
+            self.status_pick = None;
+        } else {
+            self.status_pick = Some(pick);
+        }
+    }
+
+    pub fn status_clear_process(&mut self) {
+        self.status_pick = None;
+    }
+
+    pub fn status_picked_process(&self) -> Option<&crate::status_panel::ProcessPick> {
+        self.status_pick.as_ref()
     }
 
     pub fn apply_status_snapshot(&mut self, snapshot: StatusSnapshotV1) {

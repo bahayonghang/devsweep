@@ -108,8 +108,18 @@ impl ShellView {
                     .child(ui::progress_track(t)),
             );
         }
-        if let Some(line) = self.session.status_sensor_line() {
-            page = page.child(ui::banner(t, Tone::Info, line));
+        // The raw sensor line stays in the accessible text projection; the page
+        // says it in words, and each card names its own reason code.
+        if self.session.status_sensor_line().is_some() {
+            page = page.child(ui::banner(
+                t,
+                Tone::Info,
+                copy::pick(
+                    locale,
+                    "Some sensors did not report. Their cards say why; nothing is shown as zero.",
+                    "部分传感器没有上报。对应卡片会说明原因，不会显示为零。",
+                ),
+            ));
         }
         let Some(snapshot) = self.session.status_snapshot() else {
             let error = self
@@ -583,9 +593,16 @@ impl ShellView {
             .max()
             .unwrap_or(1)
             .max(1);
-        let body = rows.iter().take(100).map(|row| {
+        let picked = self.session.status_picked_process().cloned();
+        let mut detail = self.status_process_detail(t, snapshot, cx);
+        let mut body = Vec::new();
+        for row in rows.iter().take(100) {
             let cpu = percent(row.cpu_basis_points_of_one_logical_core);
-            div()
+            let selected = picked
+                .as_ref()
+                .is_some_and(|pick| pick.pid == row.pid && pick.name == row.name);
+            let clicked = row.clone();
+            let element = div()
                 .id(gpui::ElementId::named_usize(
                     "status-process",
                     row.pid as usize,
@@ -597,6 +614,16 @@ impl ShellView {
                     row.pid,
                     ui::bytes(row.private_bytes)
                 )))
+                .aria_selected(selected)
+                .border_1()
+                .border_color(rgb(if selected { t.accent } else { t.surface }))
+                .when(selected, |row| row.bg(rgb(t.surface_alt)))
+                .cursor_pointer()
+                .keyboard_focus(t)
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.session.status_toggle_process(&clicked);
+                    cx.notify();
+                }))
                 .flex()
                 .flex_row()
                 .items_center()
@@ -660,8 +687,16 @@ impl ShellView {
                             "{}/s",
                             ui::bytes(row.read_bytes_per_second + row.write_bytes_per_second)
                         )),
-                )
-        });
+                );
+            body.push(element.into_any_element());
+            // The explanation opens under its row so the table does not jump.
+            if selected && let Some(panel) = detail.take() {
+                body.push(panel);
+            }
+        }
+        // A pick that is filtered out or gone from the sample still explains
+        // itself, above the table.
+        let orphan = detail.take();
         let sort_label = match sort {
             ProcessSort::Name => copy::pick(locale, "Sort: name", "排序：名称"),
             ProcessSort::Cpu => copy::pick(locale, "Sort: CPU", "排序：CPU"),
@@ -702,9 +737,87 @@ impl ShellView {
                     "只读。列出的 PID 只是信息，不是结束进程的依据。",
                 ),
             ))
+            .children(
+                crate::status_panel::process_count_line(locale, snapshot, rows.len())
+                    .map(|line| ui::muted(t, line)),
+            )
+            .children(orphan)
             .child(table_header)
             .child(ui::divider(t))
             .child(div().flex().flex_col().children(body))
             .into_any_element()
+    }
+
+    /// Local explanation for the picked row. Read-only: there is no action
+    /// button, and the PID shown here is never passed to a process action.
+    fn status_process_detail(
+        &self,
+        t: &Theme,
+        snapshot: &StatusSnapshotV1,
+        cx: &mut Context<Self>,
+    ) -> Option<gpui::AnyElement> {
+        let locale = self.session.locale();
+        let pick = self.session.status_picked_process()?;
+        let close = ui::button(
+            t,
+            "status-process-close",
+            copy::pick(locale, "Close", "关闭"),
+            ButtonKind::Ghost,
+        )
+        .on_click(cx.listener(|this, _, _, cx| {
+            this.session.status_clear_process();
+            cx.notify();
+        }));
+        let panel = div()
+            .id("status-process-detail")
+            .role(gpui::Role::Region)
+            .aria_label(SharedString::from(format!(
+                "{} pid {}",
+                pick.name, pick.pid
+            )))
+            .flex()
+            .flex_col()
+            .gap(rems(0.45))
+            .p(rems(0.9))
+            .rounded(rems(0.6))
+            .bg(rgb(t.surface_alt))
+            .border_1()
+            .border_color(rgb(t.border));
+        let header = div()
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(rems(0.6))
+            .child(ui::icon("info", t.accent))
+            .child(
+                div()
+                    .flex_1()
+                    .min_w_0()
+                    .truncate()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .child(format!("{} · PID {}", pick.name, pick.pid)),
+            )
+            .child(close);
+        let lines = match pick.find(snapshot) {
+            Some(row) => crate::status_panel::process_explanation(locale, &row, snapshot),
+            None => vec![
+                copy::pick(
+                    locale,
+                    "This process is no longer in the latest sample. It may have ended, or the list was truncated.",
+                    "最新采样中已没有这个进程。它可能已结束，或列表被截断。",
+                )
+                .to_string(),
+            ],
+        };
+        Some(
+            panel
+                .child(header)
+                .children(
+                    lines
+                        .into_iter()
+                        .map(|line| ui::muted(t, line).into_any_element()),
+                )
+                .into_any_element(),
+        )
     }
 }
