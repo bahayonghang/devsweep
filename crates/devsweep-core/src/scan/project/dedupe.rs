@@ -20,16 +20,15 @@ pub(in crate::scan) fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<Clea
         .collect();
     let mut order: Vec<usize> = (0..targets.len()).collect();
     order.sort_by(|&left, &right| {
-        let left_depth = footprints[left].as_ref().map(|path| path.components().count());
+        let left_depth = footprints[left]
+            .as_ref()
+            .map(|path| path.components().count());
         let right_depth = footprints[right]
             .as_ref()
             .map(|path| path.components().count());
-        left_depth.cmp(&right_depth).then_with(|| {
-            targets[left]
-                .id
-                .as_str()
-                .cmp(targets[right].id.as_str())
-        })
+        left_depth
+            .cmp(&right_depth)
+            .then_with(|| targets[left].id.as_str().cmp(targets[right].id.as_str()))
     });
 
     let mut slots: Vec<Option<CleanTarget>> = targets.into_iter().map(Some).collect();
@@ -50,9 +49,10 @@ pub(in crate::scan) fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<Clea
             merge_unique_evidence(slots[existing].as_mut().expect("kept"), evidence);
             continue;
         }
-        if bucket.iter().any(|&existing| {
-            parent_cached_covers(&footprints[existing], &footprints[index])
-        }) {
+        if bucket
+            .iter()
+            .any(|&existing| parent_cached_covers(&footprints[existing], &footprints[index]))
+        {
             continue;
         }
         bucket.push(index);
@@ -70,14 +70,16 @@ pub(in crate::scan) fn dedupe_targets(mut targets: Vec<CleanTarget>) -> Vec<Clea
 fn action_bucket_key(target: &CleanTarget) -> String {
     let owner = match &target.scope {
         Scope::Global => "global".to_string(),
-        Scope::Project { root } => normalize_absolute_path(root)
-            .unwrap_or_else(|_| root.to_string_lossy().into_owned()),
+        Scope::Project { root } => {
+            normalize_absolute_path(root).unwrap_or_else(|_| root.to_string_lossy().into_owned())
+        }
     };
     let action = match &target.action {
         CleanAction::MoveToTrash { .. } => "trash".to_string(),
         CleanAction::NoopInspectOnly => "noop".to_string(),
         CleanAction::DeletePermanently {
-            requires_explicit_flag, ..
+            requires_explicit_flag,
+            ..
         } => format!("delete:{requires_explicit_flag}"),
         CleanAction::Command {
             program,
@@ -89,10 +91,7 @@ fn action_bucket_key(target: &CleanTarget) -> String {
                 .as_ref()
                 .map(|path| path.to_string_lossy().into_owned())
                 .unwrap_or_default();
-            format!(
-                "cmd\0{program}\0{}\0{cwd}\0{irreversible}",
-                args.join("\0")
-            )
+            format!("cmd\0{program}\0{}\0{cwd}\0{irreversible}", args.join("\0"))
         }
     };
     format!("{owner}\0{action}")
