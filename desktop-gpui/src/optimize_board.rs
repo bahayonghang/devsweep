@@ -210,7 +210,7 @@ impl OptimizeBoard {
 }
 
 impl OptimizeGroup {
-    const ALL: [Self; 3] = [Self::Startup, Self::NetworkAndSearch, Self::Maintenance];
+    pub const ALL: [Self; 3] = [Self::Startup, Self::NetworkAndSearch, Self::Maintenance];
 }
 
 #[must_use]

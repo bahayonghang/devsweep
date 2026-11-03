@@ -4,7 +4,7 @@ use gpui::{
     App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity, EntityInputHandler,
     FocusHandle, Focusable, GlobalElementId, IntoElement, LayoutId, MouseButton, MouseDownEvent,
     PaintQuad, Pixels, ShapedLine, Style, TextAlign, TextRun, UTF16Selection, UnderlineStyle,
-    Window, actions, div, fill, hsla, point, prelude::*, px, relative, rgb, size, white,
+    Window, actions, div, fill, point, prelude::*, px, relative, rgb, size,
 };
 
 use crate::buffer::{BufferError, TextBuffer};
@@ -19,12 +19,46 @@ const NOTE_LINE_HEIGHT_PX: f32 = 28.0;
 
 /// Note font and line height in pixels for the app text scale. The helper is
 /// pure so the 100/110/125 percent cases are testable without a window.
+#[cfg(test)]
 pub(crate) fn scaled_text_metrics(text_scale_percent: u8) -> (f32, f32) {
     let scale = f32::from(text_scale_percent) / 100.0;
     (NOTE_FONT_PX * scale, NOTE_LINE_HEIGHT_PX * scale)
 }
 
+/// Theme colors for one field. The shell passes the active design tokens so
+/// the field follows dark, light, and high-contrast palettes.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct InputStyle {
+    pub background: u32,
+    pub border: u32,
+    pub focus_border: u32,
+    pub text: u32,
+    pub placeholder: u32,
+    pub caret: u32,
+    pub selection: u32,
+    /// Base font and line height in pixels at 100 percent text scale.
+    pub font_px: f32,
+    pub line_px: f32,
+}
+
+impl Default for InputStyle {
+    fn default() -> Self {
+        Self {
+            background: 0xffffff,
+            border: 0xc8c2b4,
+            focus_border: 0x1d4e89,
+            text: 0x192238,
+            placeholder: 0x8a94ab,
+            caret: 0x1d4e89,
+            selection: 0x3366e64d,
+            font_px: NOTE_FONT_PX,
+            line_px: NOTE_LINE_HEIGHT_PX,
+        }
+    }
+}
+
 pub struct TextInput {
+    style: InputStyle,
     focus_handle: FocusHandle,
     buffer: TextBuffer,
     placeholder: &'static str,
@@ -48,6 +82,7 @@ impl TextInput {
         let focus_handle = cx.focus_handle().tab_index(1).tab_stop(true);
         window.focus(&focus_handle, cx);
         Self {
+            style: InputStyle::default(),
             focus_handle,
             buffer: TextBuffer::new(),
             placeholder,
@@ -69,6 +104,7 @@ impl TextInput {
     ) -> Self {
         let focus_handle = cx.focus_handle().tab_index(2).tab_stop(true);
         Self {
+            style: InputStyle::default(),
             focus_handle,
             buffer: TextBuffer::new(),
             placeholder,
@@ -88,6 +124,15 @@ impl TextInput {
             return;
         }
         self.text_scale_percent = text_scale_percent;
+        cx.notify();
+    }
+
+    /// Follow the active design tokens. Notifies only when the value changes.
+    pub fn set_style(&mut self, style: InputStyle, cx: &mut Context<Self>) {
+        if self.style == style {
+            return;
+        }
+        self.style = style;
         cx.notify();
     }
 
@@ -392,6 +437,9 @@ impl Element for TextElement {
         let selected_range = input.buffer.selected_range();
         let cursor = input.buffer.cursor_offset();
         let marked_range = input.buffer.marked_range();
+        let placeholder_color = rgb(input.style.placeholder);
+        let caret_color = rgb(input.style.caret);
+        let selection_color = gpui::rgba(input.style.selection);
         let style = window.text_style();
         let run = TextRun {
             len: content.len(),
@@ -435,7 +483,7 @@ impl Element for TextElement {
             let placeholder_run = TextRun {
                 len: placeholder.len(),
                 font: style.font(),
-                color: hsla(0., 0., 0., 0.45),
+                color: placeholder_color.into(),
                 background_color: None,
                 underline: None,
                 strikethrough: None,
@@ -458,7 +506,7 @@ impl Element for TextElement {
                         point(bounds.left() + cursor_pos, bounds.top()),
                         size(px(2.), bounds.bottom() - bounds.top()),
                     ),
-                    gpui::blue(),
+                    caret_color,
                 )),
             )
         } else {
@@ -474,7 +522,7 @@ impl Element for TextElement {
                             bounds.bottom(),
                         ),
                     ),
-                    rgb(0x3311ff30),
+                    selection_color,
                 )),
                 None,
             )
@@ -550,7 +598,9 @@ impl Focusable for TextInput {
 impl Render for TextInput {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let note = self.access;
-        let (font_px, line_px) = scaled_text_metrics(self.text_scale_percent);
+        let style = self.style;
+        let scale = f32::from(self.text_scale_percent) / 100.0;
+        let (font_px, line_px) = (style.font_px * scale, style.line_px * scale);
         div()
             .id(self.element_id)
             .role(gpui::Role::TextInput)
@@ -570,15 +620,16 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::end))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
             .w_full()
-            .px_3()
-            .py_2()
-            .bg(white())
+            .px(px(12.0 * scale))
+            .py(px(7.0 * scale))
+            .bg(rgb(style.background))
             .border_1()
-            .border_color(rgb(0xc8c2b4))
-            .rounded_md()
+            .border_color(rgb(style.border))
+            .rounded(px(10.0 * scale))
+            .text_color(rgb(style.text))
             .text_size(px(font_px))
             .line_height(px(line_px))
-            .focus(|style| style.border_2().border_color(rgb(0x1d4e89)))
+            .focus(move |focused| focused.border_color(rgb(style.focus_border)))
             .child(TextElement { input: cx.entity() })
     }
 }

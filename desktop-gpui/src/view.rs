@@ -1,5 +1,9 @@
 //! One native window. The capsule order is Clean, Software, Optimize, Analyze, Status.
 //!
+//! Layout: a top bar (beaver menu, centered mode capsule, screen toggles), a
+//! scrollable page built from the `ui` design system, and a status bar that
+//! holds the Note. Each page lives in a `view/page_*.rs` submodule.
+//!
 //! The in-window beaver control uses the packaged DevSweep master PNG. The
 //! window and notification-area glyph use the offline-derived multi-size ICO
 //! from `icon.rs`. The Clean landing shows the packaged licensed Earth still.
@@ -13,8 +17,8 @@ use std::{
 
 use gpui::{
     Action, App, AssetSource, Bounds, Context, ElementId, Entity, FocusHandle, Focusable,
-    KeyBinding, PathPromptOptions, SharedString, TitlebarOptions, Window, WindowBounds,
-    WindowOptions, actions, div, img, prelude::*, px, rgb, size,
+    FontWeight, KeyBinding, PathPromptOptions, SharedString, TitlebarOptions, Window, WindowBounds,
+    WindowOptions, actions, div, img, prelude::*, px, rems, rgb, size,
 };
 use gpui_platform::application;
 #[cfg(windows)]
@@ -29,10 +33,17 @@ use crate::{
     clean_map::{self, MapBounds, MapInput, ReviewBand},
     clean_workbench::{CleanLandingPrompt, CleanPhase, CleanRow, CleanScope, CleanSort},
     copy,
-    input::{self, TextInput},
+    input::{self, InputStyle, TextInput},
     preferences::DesktopTheme,
     shell::{Activity, CleanOutcomeNotice, MENU, Mode, Session, Surface, WorkbenchNotice},
+    ui::{self, ButtonKind, Theme, Tone},
 };
+
+mod page_analyze;
+mod page_clean;
+mod page_status;
+mod page_support;
+mod page_workbench;
 
 const ICON_NAME: &str = "devsweep-icon-master.png";
 const COPY_NAME: &str = "copy.txt";
@@ -44,91 +55,6 @@ const COPY_BYTES: &[u8] = include_bytes!("../assets/copy.txt");
 // Earth public domain; provenance in desktop/public/THIRD_PARTY_NOTICES.txt).
 const EARTH_BYTES: &[u8] = include_bytes!("../assets/earth-still.png");
 const WINDOW_TITLE: &str = "DevSweep";
-
-const CANVAS: u32 = 0x11162a;
-const TEXT: u32 = 0xeef1f7;
-const CAPSULE: u32 = 0x1b2138;
-const CAPSULE_BORDER: u32 = 0x313a5a;
-const PILL: u32 = 0xeef1f7;
-const PILL_TEXT: u32 = 0x12172a;
-const MENU_BG: u32 = 0x1a2035;
-
-const LIGHT_CANVAS: u32 = 0xf3f5fa;
-const LIGHT_TEXT: u32 = 0x192238;
-const LIGHT_CAPSULE: u32 = 0xe4e9f2;
-const LIGHT_CAPSULE_BORDER: u32 = 0xb8c2d4;
-const LIGHT_PILL: u32 = 0x263750;
-const LIGHT_PILL_TEXT: u32 = 0xffffff;
-const LIGHT_MENU_BG: u32 = 0xffffff;
-
-const HIGH_CONTRAST_CANVAS: u32 = 0x000000;
-const HIGH_CONTRAST_TEXT: u32 = 0xffffff;
-const HIGH_CONTRAST_CAPSULE: u32 = 0x000000;
-const HIGH_CONTRAST_CAPSULE_BORDER: u32 = 0xffffff;
-const HIGH_CONTRAST_PILL: u32 = 0xffffff;
-const HIGH_CONTRAST_PILL_TEXT: u32 = 0x000000;
-const HIGH_CONTRAST_MENU_BG: u32 = 0x000000;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct ShellPalette {
-    canvas: u32,
-    text: u32,
-    capsule: u32,
-    capsule_border: u32,
-    pill: u32,
-    pill_text: u32,
-    menu_bg: u32,
-}
-
-const DARK_PALETTE: ShellPalette = ShellPalette {
-    canvas: CANVAS,
-    text: TEXT,
-    capsule: CAPSULE,
-    capsule_border: CAPSULE_BORDER,
-    pill: PILL,
-    pill_text: PILL_TEXT,
-    menu_bg: MENU_BG,
-};
-
-const LIGHT_PALETTE: ShellPalette = ShellPalette {
-    canvas: LIGHT_CANVAS,
-    text: LIGHT_TEXT,
-    capsule: LIGHT_CAPSULE,
-    capsule_border: LIGHT_CAPSULE_BORDER,
-    pill: LIGHT_PILL,
-    pill_text: LIGHT_PILL_TEXT,
-    menu_bg: LIGHT_MENU_BG,
-};
-
-const HIGH_CONTRAST_PALETTE: ShellPalette = ShellPalette {
-    canvas: HIGH_CONTRAST_CANVAS,
-    text: HIGH_CONTRAST_TEXT,
-    capsule: HIGH_CONTRAST_CAPSULE,
-    capsule_border: HIGH_CONTRAST_CAPSULE_BORDER,
-    pill: HIGH_CONTRAST_PILL,
-    pill_text: HIGH_CONTRAST_PILL_TEXT,
-    menu_bg: HIGH_CONTRAST_MENU_BG,
-};
-
-fn shell_palette(theme: DesktopTheme) -> ShellPalette {
-    match theme {
-        DesktopTheme::Light => LIGHT_PALETTE,
-        DesktopTheme::Dark
-        | DesktopTheme::System
-        | DesktopTheme::CatppuccinLatte
-        | DesktopTheme::CatppuccinMocha
-        | DesktopTheme::Codex
-        | DesktopTheme::Claude => DARK_PALETTE,
-    }
-}
-
-fn shell_palette_for(theme: DesktopTheme, high_contrast: bool) -> ShellPalette {
-    if high_contrast {
-        HIGH_CONTRAST_PALETTE
-    } else {
-        shell_palette(theme)
-    }
-}
 
 fn system_high_contrast() -> bool {
     #[cfg(windows)]
@@ -192,16 +118,22 @@ impl AssetSource for PackagedAssets {
             ICON_NAME => Ok(Some(Cow::Borrowed(ICON_BYTES))),
             COPY_NAME => Ok(Some(Cow::Borrowed(COPY_BYTES))),
             EARTH_NAME => Ok(Some(Cow::Borrowed(EARTH_BYTES))),
-            _ => Ok(None),
+            other => Ok(ui::icon_bytes(other).map(Cow::Borrowed)),
         }
     }
 
     fn list(&self, _path: &str) -> gpui::Result<Vec<SharedString>> {
-        Ok(vec![
+        let mut names = vec![
             SharedString::from(ICON_NAME),
             SharedString::from(COPY_NAME),
             SharedString::from(EARTH_NAME),
-        ])
+        ];
+        names.extend(
+            ui::ICONS
+                .iter()
+                .map(|name| SharedString::from(format!("icons/{name}.svg"))),
+        );
+        Ok(names)
     }
 }
 
@@ -626,19 +558,6 @@ impl ShellView {
         };
         cx.notify();
     }
-
-    /// Keep the Note at the app text scale. The setter notifies only on a real
-    /// change, so this render-time sync settles after one pass.
-    fn sync_note_text_scale(&self, cx: &mut Context<Self>) {
-        let percent = self.session.text_scale();
-        self.note
-            .update(cx, |note, cx| note.set_text_scale_percent(percent, cx));
-        let locale = self.session.locale();
-        self.search.update(cx, |search, cx| {
-            search.set_text_scale_percent(percent, cx);
-            search.set_placeholder(copy::clean_search_placeholder(locale), cx);
-        });
-    }
 }
 
 /// True when Tab and Space should operate on the Clean review.
@@ -664,8 +583,13 @@ impl Focusable for ShellView {
 }
 
 impl Render for ShellView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.sync_note_text_scale(cx);
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let high_contrast = system_high_contrast();
+        let t = Theme::for_preferences(self.session.theme(), high_contrast);
+        // Spacing and type are rem based, so the stored text scale scales the
+        // whole layout, not only the root font.
+        window.set_rem_size(px(16.0 * f32::from(self.session.text_scale()) / 100.0));
+        self.sync_inputs(&t, cx);
         // The beaver PNG and the Earth still are single frames. Do not request
         // a decorative animation frame.
         let _ = self.session.shell().decorative_deadline();
@@ -679,15 +603,11 @@ impl Render for ShellView {
                 shell.menu_index(),
             )
         };
-        let text_size = px(16.0 * f32::from(self.session.text_scale()) / 100.0);
-        let high_contrast = system_high_contrast();
-        let palette = shell_palette_for(self.session.theme(), high_contrast);
         if selected == Mode::Analyze {
             self.session.prepare_analyze_landing();
         }
         let status_main = selected == Mode::Status && surface == Surface::Mode;
         self.session.status_set_main_visible(status_main);
-        let show_map = disk_map_active(&self.session);
         let review_surface = self.clean_review_active();
         let key_context = if menu_open {
             "ShellMenu"
@@ -696,64 +616,12 @@ impl Render for ShellView {
         } else {
             "ShellRoot"
         };
-        let tabs = Mode::ORDER
-            .into_iter()
-            .map(|mode| {
-                let access = accessible_control(locale, AccessibleSlot::Mode(mode));
-                let active = mode == selected && surface == Surface::Mode;
-                div()
-                    .id(mode.element_id())
-                    .role(gpui::Role::Tab)
-                    .accessibility_id(access.id)
-                    .aria_label(access.label)
-                    .aria_selected(active)
-                    .when(active, |tab| tab.aria_active_descendant())
-                    .px_3()
-                    .py_2()
-                    .rounded_md()
-                    .cursor_pointer()
-                    .when(active, |tab| {
-                        tab.bg(rgb(palette.pill)).text_color(rgb(palette.pill_text))
-                    })
-                    .when(!active, |tab| tab.text_color(rgb(palette.text)))
-                    .on_click(cx.listener(move |this, _, _, cx| {
-                        this.session.show_mode(mode);
-                        cx.notify();
-                    }))
-                    .child(access.label)
-            })
-            .collect::<Vec<_>>();
-        let menu_items = MENU
-            .into_iter()
-            .enumerate()
-            .map(|(index, item)| {
-                let access = accessible_control(locale, AccessibleSlot::Menu(item));
-                div()
-                    .id(surface_element_id(item))
-                    .role(gpui::Role::MenuItem)
-                    .accessibility_id(access.id)
-                    .aria_label(access.label)
-                    .px_3()
-                    .py_2()
-                    .cursor_pointer()
-                    .when(menu_index == index, |row| {
-                        row.bg(rgb(palette.pill)).text_color(rgb(palette.pill_text))
-                    })
-                    .when(menu_index != index, |row| row.text_color(rgb(palette.text)))
-                    .on_click(cx.listener(move |this, _, _, cx| {
-                        this.session.open_menu_item(index);
-                        cx.notify();
-                    }))
-                    .child(access.label)
-            })
-            .collect::<Vec<_>>();
-        let entries = panel_entries(&self.session, self.save_error.as_deref());
         let shell_access = accessible_control(locale, AccessibleSlot::Shell);
-        let controls = self
-            .clean_controls(locale, palette, cx)
-            .or_else(|| self.analyze_controls(locale, palette, cx));
-        let disk_map =
-            show_map.then(|| disk_map_element(&self.session, locale, palette, high_contrast, cx));
+        let top_bar = self.top_bar(&t, locale, selected, surface, menu_open, cx);
+        let page = self.page(&t, cx);
+        let busy = self.session.shell().activity() == Activity::Busy;
+        let hint = copy::mode_keys_hint(locale);
+        let note_label = copy::pick(locale, "Note", "笔记");
 
         div()
             .id("shell-root")
@@ -781,282 +649,560 @@ impl Render for ShellView {
             .on_action(cx.listener(Self::toggle_clean_screen))
             .on_action(cx.listener(Self::toggle_keep_screen))
             .on_action(cx.listener(Self::request_project_rows))
+            // A click on a non-focusable surface must not strand the keyboard:
+            // with nothing focused, return focus to the Note so every chord
+            // keeps working. A click on the search field focuses it first.
+            .on_mouse_down(
+                gpui::MouseButton::Left,
+                cx.listener(|this, _, window, cx| {
+                    if window.focused(cx).is_none() {
+                        window.focus(&this.note.focus_handle(cx), cx);
+                    }
+                }),
+            )
+            .relative()
             .size_full()
             .flex()
             .flex_col()
-            .items_center()
-            .p_4()
-            .gap_3()
-            .bg(rgb(palette.canvas))
-            .text_color(rgb(palette.text))
-            .text_size(text_size)
+            .bg(rgb(t.canvas))
+            .text_color(rgb(t.text))
+            .text_size(rems(0.9375))
+            .child(top_bar)
             .child(
                 div()
-                    .id("capsule")
+                    .id("page-scroll")
+                    .flex_1()
+                    .min_h_0()
+                    .overflow_y_scroll()
+                    .child(
+                        div().w_full().flex().flex_col().items_center().child(
+                            div()
+                                .id("mode-panel")
+                                .role(gpui::Role::TabPanel)
+                                .aria_label(panel_title(&self.session))
+                                .w_full()
+                                .max_w(rems(76.0))
+                                .px(rems(2.0))
+                                .pt(rems(1.75))
+                                .pb(rems(3.0))
+                                .flex()
+                                .flex_col()
+                                .gap(rems(1.25))
+                                .child(page),
+                        ),
+                    ),
+            )
+            .child(
+                div()
+                    .id("status-bar")
                     .flex()
                     .flex_row()
+                    .flex_shrink_0()
                     .items_center()
-                    .gap_3()
-                    .px_3()
-                    .py_2()
-                    .bg(rgb(palette.capsule))
-                    .border_1()
-                    .border_color(rgb(palette.capsule_border))
-                    .rounded_md()
+                    .gap(rems(1.0))
+                    .h(rems(3.0))
+                    .px(rems(1.25))
+                    .bg(rgb(t.chrome))
+                    .border_t_1()
+                    .border_color(rgb(t.border))
                     .child(
                         div()
-                            .id("beaver-menu")
-                            .role(gpui::Role::Button)
-                            .aria_label(copy::menu_label(locale))
-                            .aria_expanded(menu_open)
-                            .cursor_pointer()
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.session.toggle_menu();
-                                cx.notify();
-                            }))
+                            .flex()
+                            .flex_row()
+                            .flex_shrink_0()
+                            .items_center()
+                            .gap(rems(0.45))
+                            .child(ui::dot(if busy { t.warning } else { t.success }))
                             .child(
-                                img(ICON_NAME)
-                                    .id("beaver-icon")
-                                    .size(px(28.))
-                                    .with_fallback(|| div().child("DevSweep").into_any_element()),
+                                div()
+                                    .text_size(rems(0.78))
+                                    .text_color(rgb(t.text_muted))
+                                    .child(if busy {
+                                        copy::pick(locale, "Working…", "正在处理…")
+                                    } else {
+                                        copy::pick(locale, "Ready", "就绪")
+                                    }),
                             ),
                     )
                     .child(
                         div()
-                            .id("mode-tabs")
-                            .role(gpui::Role::TabList)
-                            .aria_label(copy::modes_label(locale))
+                            .id("keys-hint")
+                            .flex_1()
+                            .min_w_0()
+                            .truncate()
+                            .text_size(rems(0.74))
+                            .text_color(rgb(t.text_subtle))
+                            .aria_label(hint)
+                            .child(hint),
+                    )
+                    .child(
+                        div()
                             .flex()
                             .flex_row()
-                            .gap_3()
-                            .children(tabs),
+                            .flex_shrink_0()
+                            .items_center()
+                            .gap(rems(0.5))
+                            .w(rems(17.0))
+                            .child(ui::icon("history", t.text_subtle).size(rems(0.85)))
+                            .child(
+                                div()
+                                    .text_size(rems(0.74))
+                                    .text_color(rgb(t.text_subtle))
+                                    .child(note_label),
+                            )
+                            .child(div().flex_1().min_w_0().child(self.note.clone())),
                     ),
             )
-            .when(menu_open, move |root| {
-                root.child(
-                    div()
-                        .id("brand-menu")
-                        .role(gpui::Role::Menu)
-                        .aria_label(copy::menu_label(locale))
-                        .flex()
-                        .flex_col()
-                        .bg(rgb(palette.menu_bg))
-                        .border_1()
-                        .border_color(rgb(palette.capsule_border))
-                        .rounded_md()
-                        .children(menu_items),
-                )
+            .when(menu_open, |root| {
+                root.child(self.brand_menu(&t, locale, menu_index, cx))
             })
-            .child(self.utility_row(locale, palette, cx))
-            .children(controls)
-            .child(
-                div()
-                    .id("mode-panel")
-                    .role(gpui::Role::TabPanel)
-                    .aria_label(panel_title(&self.session))
-                    .flex()
-                    .flex_col()
-                    .gap_3()
-                    .when_some(disk_map, |panel, map| panel.child(map))
-                    .when_some(
-                        analyze_treemap_element(&self.session, locale, palette, cx),
-                        |panel, map| panel.child(map),
-                    )
-                    .children(
-                        entries
-                            .into_iter()
-                            .enumerate()
-                            .filter_map(|(index, entry)| {
-                                match entry {
-                                    PanelEntry::Text(line) => Some(
-                                        div()
-                                            .id(gpui::ElementId::named_usize("panel-line", index))
-                                            .role(gpui::Role::ListItem)
-                                            .aria_label(SharedString::from(line.clone()))
-                                            .child(SharedString::from(line))
-                                            .into_any_element(),
-                                    ),
-                                    // The disk map paints these rows in its recommendation column.
-                                    PanelEntry::CleanRow { .. } if show_map => None,
-                                    PanelEntry::CleanRow { id, text, selected } => {
-                                        Some(interactive_row_element(
-                                            "clean-row",
-                                            id,
-                                            text,
-                                            selected,
-                                            cx,
-                                        ))
-                                    }
-                                    PanelEntry::AiRow { id, text, selected } => Some(
-                                        interactive_row_element("ai-row", id, text, selected, cx),
-                                    ),
-                                }
-                            }),
-                    ),
-            )
-            .child(self.note.clone())
-            .when(surface == Surface::Settings, |root| {
+            .when(self.session.screen_covered(), |root| {
                 root.child(
                     div()
-                        .id("settings-actions")
+                        .id("clean-screen-cover")
+                        .role(gpui::Role::Status)
+                        .aria_label(copy::clean_screen_active(locale))
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .bg(rgb(0x000000))
                         .flex()
-                        .flex_row()
-                        .gap_3()
+                        .items_end()
+                        .justify_center()
+                        .pb(rems(2.0))
                         .child(
                             div()
-                                .id("settings-language")
-                                .role(gpui::Role::Button)
-                                .aria_label(copy::language_label(locale))
-                                .px_3()
-                                .py_2()
-                                .rounded_md()
-                                .bg(rgb(palette.capsule))
-                                .cursor_pointer()
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.session.cycle_language();
-                                    cx.notify();
-                                }))
-                                .child(copy::language_label(locale)),
-                        )
-                        .child(
-                            div()
-                                .id("settings-theme")
-                                .role(gpui::Role::Button)
-                                .aria_label(copy::theme_label(locale))
-                                .px_3()
-                                .py_2()
-                                .rounded_md()
-                                .bg(rgb(palette.capsule))
-                                .cursor_pointer()
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.session.cycle_theme();
-                                    cx.notify();
-                                }))
-                                .child(copy::theme_label(locale)),
-                        )
-                        .child(
-                            div()
-                                .id("settings-save")
-                                .role(gpui::Role::Button)
-                                .aria_label(copy::save_label(locale))
-                                .px_3()
-                                .py_2()
-                                .rounded_md()
-                                .bg(rgb(palette.pill))
-                                .text_color(rgb(palette.pill_text))
-                                .cursor_pointer()
-                                .on_click(cx.listener(|this, _, window, cx| this.save(window, cx)))
-                                .child(copy::save_label(locale)),
+                                .text_size(rems(0.8))
+                                .text_color(rgb(0x5A6274))
+                                .child(copy::clean_screen_active(locale)),
                         ),
-                )
-            })
-            .when(surface != Surface::Mode, |root| {
-                root.child(
-                    div()
-                        .id("surface-back")
-                        .role(gpui::Role::Button)
-                        .aria_label(copy::back_label(locale))
-                        .px_3()
-                        .py_2()
-                        .rounded_md()
-                        .cursor_pointer()
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.session.apply_key(crate::shell::NavKey::Escape);
-                            cx.notify();
-                        }))
-                        .child(copy::back_label(locale)),
                 )
             })
     }
 }
 
 impl ShellView {
-    fn utility_row(
+    /// Keeps both text fields on the app scale, locale, and design tokens.
+    fn sync_inputs(&self, t: &Theme, cx: &mut Context<Self>) {
+        let percent = self.session.text_scale();
+        let locale = self.session.locale();
+        let base = InputStyle {
+            background: t.surface_alt,
+            border: t.border,
+            focus_border: t.accent,
+            text: t.text,
+            placeholder: t.text_subtle,
+            caret: t.accent,
+            selection: (t.accent << 8) | 0x55,
+            font_px: 14.0,
+            line_px: 20.0,
+        };
+        self.note.update(cx, |note, cx| {
+            note.set_text_scale_percent(percent, cx);
+            note.set_placeholder(copy::note_placeholder(locale), cx);
+            note.set_style(
+                InputStyle {
+                    background: t.canvas,
+                    font_px: 12.5,
+                    line_px: 17.0,
+                    ..base
+                },
+                cx,
+            );
+        });
+        self.search.update(cx, |search, cx| {
+            search.set_text_scale_percent(percent, cx);
+            search.set_style(base, cx);
+            search.set_placeholder(copy::clean_search_placeholder(locale), cx);
+        });
+    }
+
+    fn top_bar(
         &self,
+        t: &Theme,
         locale: copy::Locale,
-        palette: ShellPalette,
+        selected: Mode,
+        surface: Surface,
+        menu_open: bool,
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
-        let button = |id: &'static str,
-                      label: &'static str,
-                      action: fn(&mut ShellView, &mut Context<ShellView>)| {
+        let tabs = Mode::ORDER
+            .into_iter()
+            .map(|mode| {
+                let access = accessible_control(locale, AccessibleSlot::Mode(mode));
+                let active = mode == selected && surface == Surface::Mode;
+                let hover_text = t.text;
+                div()
+                    .id(mode.element_id())
+                    .role(gpui::Role::Tab)
+                    .accessibility_id(access.id)
+                    .aria_label(access.label)
+                    .aria_selected(active)
+                    .when(active, |tab| tab.aria_active_descendant())
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap(rems(0.45))
+                    .h(rems(2.1))
+                    .px(rems(0.95))
+                    .rounded_full()
+                    .text_size(rems(0.85))
+                    .font_weight(FontWeight::MEDIUM)
+                    .cursor_pointer()
+                    .when(active, |tab| {
+                        tab.bg(rgb(t.pill)).text_color(rgb(t.pill_text))
+                    })
+                    .when(!active, |tab| {
+                        tab.text_color(rgb(t.text_muted))
+                            .hover(move |s| s.text_color(rgb(hover_text)))
+                    })
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.session.show_mode(mode);
+                        cx.notify();
+                    }))
+                    .child(
+                        ui::icon(
+                            mode_icon(mode),
+                            if active { t.pill_text } else { t.text_muted },
+                        )
+                        .size(rems(0.95)),
+                    )
+                    .child(access.label)
+            })
+            .collect::<Vec<_>>();
+        let keep_on = self.session.stored_lease_count() > 0;
+        let toggle = |id: &'static str, icon: &'static str, label: &'static str, on: bool| {
+            let border = if on { t.accent } else { t.border };
+            let color = if on { t.accent } else { t.text_muted };
+            let hover_bg = t.surface_alt;
             div()
                 .id(id)
                 .role(gpui::Role::Button)
                 .aria_label(label)
-                .px_3()
-                .py_2()
-                .rounded_md()
-                .bg(rgb(palette.capsule))
+                .aria_toggled(if on {
+                    gpui::Toggled::True
+                } else {
+                    gpui::Toggled::False
+                })
+                .flex()
+                .items_center()
+                .justify_center()
+                .size(rems(2.2))
+                .rounded_full()
+                .border_1()
+                .border_color(rgb(border))
+                .when(on, |b| b.bg(t.tint(t.accent, 0x1E)))
                 .cursor_pointer()
-                .on_click(cx.listener(move |this, _, _, cx| {
-                    action(this, cx);
-                    cx.notify();
-                }))
-                .child(label)
+                .hover(move |s| s.bg(rgb(hover_bg)))
+                .tooltip(move |_, cx| cx.new(|_| TooltipText(label.into())).into())
+                .child(ui::icon(icon, color).size(rems(1.0)))
         };
         div()
-            .id("utility-row")
+            .id("top-bar")
             .flex()
             .flex_row()
-            .gap_3()
-            .flex_wrap()
-            .child(button(
-                "keep-screen-on",
-                copy::keep_screen_on_label(locale),
-                |this, _| {
-                    if this.session.stored_lease_count() > 0 {
-                        let _ = this.session.stop_screen_on();
-                    } else {
-                        let service = std::sync::Arc::new(
-                            devsweep_core::status::KeepAwakeService::production(),
-                        );
-                        let _ = this.session.start_screen_on(
-                            service,
-                            "gpui-window",
-                            std::time::Duration::from_secs(30 * 60),
-                        );
-                    }
-                },
-            ))
-            .child(button(
-                "clean-screen",
-                copy::clean_screen_label(locale),
-                |this, _| {
-                    if this.session.screen_covered() {
-                        this.session.apply_key(crate::shell::NavKey::Escape);
-                    } else {
-                        this.session.begin_clean_screen();
-                    }
-                },
-            ))
-            .child(button(
-                "software-refresh",
-                copy::status_action_snapshot(locale),
-                |this, _| {
-                    if this.session.shell().mode() == Mode::Software {
-                        this.session.software_refresh();
-                    } else if this.session.shell().mode() == Mode::Status {
-                        this.session.apply_key(crate::shell::NavKey::Enter);
-                    }
-                },
-            ))
-            .child(button(
-                "status-live",
-                if self.session.status_phase() == crate::status_panel::StatusPhase::Live {
-                    copy::status_action_live_stop(locale)
-                } else {
-                    copy::status_action_live_start(locale)
-                },
-                |this, cx| {
-                    if this.session.status_phase() == crate::status_panel::StatusPhase::Live {
-                        this.session.status_stop_live();
-                    } else if this.session.status_start_live().is_ok() {
-                        this.start_status_poll(cx);
-                    }
-                },
-            ))
+            .flex_shrink_0()
+            .items_center()
+            .h(rems(3.75))
+            .px(rems(1.25))
+            .bg(rgb(t.chrome))
+            .border_b_1()
+            .border_color(rgb(t.border))
+            .child(
+                div().flex_1().flex().flex_row().items_center().child(
+                    div()
+                        .id("beaver-menu")
+                        .role(gpui::Role::Button)
+                        .aria_label(copy::menu_label(locale))
+                        .aria_expanded(menu_open)
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .gap(rems(0.55))
+                        .h(rems(2.3))
+                        .pl(rems(0.3))
+                        .pr(rems(0.6))
+                        .rounded(rems(0.6))
+                        .cursor_pointer()
+                        .when(menu_open, |b| b.bg(rgb(t.surface_alt)))
+                        .hover(|s| s.bg(rgb(t.surface_alt)))
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.session.toggle_menu();
+                            cx.notify();
+                        }))
+                        .child(
+                            img(ICON_NAME)
+                                .id("beaver-icon")
+                                .size(rems(1.75))
+                                .with_fallback(|| div().child("DevSweep").into_any_element()),
+                        )
+                        .child(
+                            div()
+                                .text_size(rems(0.95))
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .child(WINDOW_TITLE),
+                        )
+                        .child(
+                            ui::icon("chevron-right", t.text_subtle)
+                                .size(rems(0.8))
+                                .when(menu_open, |i| i.text_color(rgb(t.text))),
+                        ),
+                ),
+            )
+            .child(
+                div()
+                    .id("mode-tabs")
+                    .role(gpui::Role::TabList)
+                    .aria_label(copy::modes_label(locale))
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap(rems(0.15))
+                    .p(rems(0.25))
+                    .rounded_full()
+                    .bg(rgb(t.surface))
+                    .border_1()
+                    .border_color(rgb(t.border))
+                    .children(tabs),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .flex()
+                    .flex_row()
+                    .justify_end()
+                    .items_center()
+                    .gap(rems(0.5))
+                    .child(
+                        toggle(
+                            "keep-screen-on",
+                            "sun",
+                            copy::keep_screen_on_label(locale),
+                            keep_on,
+                        )
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.toggle_keep_screen_on();
+                            cx.notify();
+                        })),
+                    )
+                    .child(
+                        toggle(
+                            "clean-screen",
+                            "monitor",
+                            copy::clean_screen_label(locale),
+                            false,
+                        )
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.session.begin_clean_screen();
+                            cx.notify();
+                        })),
+                    ),
+            )
             .into_any_element()
+    }
+
+    fn brand_menu(
+        &self,
+        t: &Theme,
+        locale: copy::Locale,
+        menu_index: usize,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
+        let items = MENU
+            .into_iter()
+            .enumerate()
+            .map(|(index, item)| {
+                let access = accessible_control(locale, AccessibleSlot::Menu(item));
+                let highlighted = menu_index == index;
+                let hover_bg = t.surface_alt;
+                div()
+                    .id(surface_element_id(item))
+                    .role(gpui::Role::MenuItem)
+                    .accessibility_id(access.id)
+                    .aria_label(access.label)
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .gap(rems(0.65))
+                    .px(rems(0.7))
+                    .py(rems(0.5))
+                    .rounded(rems(0.5))
+                    .cursor_pointer()
+                    .when(highlighted, |row| row.bg(rgb(t.surface_active)))
+                    .when(!highlighted, |row| row.hover(move |s| s.bg(rgb(hover_bg))))
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.session.open_menu_item(index);
+                        cx.notify();
+                    }))
+                    .child(ui::icon(surface_icon(item), t.text_muted))
+                    .child(div().flex_1().text_size(rems(0.875)).child(access.label))
+            })
+            .collect::<Vec<_>>();
+        div()
+            .absolute()
+            .top(rems(3.75))
+            .left_0()
+            .size_full()
+            .child(
+                div()
+                    .id("brand-menu-backdrop")
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full()
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.session.toggle_menu();
+                        cx.notify();
+                    })),
+            )
+            .child(
+                div()
+                    .id("brand-menu")
+                    .role(gpui::Role::Menu)
+                    .aria_label(copy::menu_label(locale))
+                    .absolute()
+                    .top(rems(0.35))
+                    .left(rems(1.0))
+                    .w(rems(15.0))
+                    .flex()
+                    .flex_col()
+                    .gap(rems(0.1))
+                    .p(rems(0.35))
+                    .bg(rgb(t.surface))
+                    .border_1()
+                    .border_color(rgb(t.border_strong))
+                    .rounded(rems(0.8))
+                    .shadow_lg()
+                    .children(items),
+            )
+            .into_any_element()
+    }
+
+    /// The page body for the active surface.
+    fn page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+        match self.session.shell().surface() {
+            Surface::Mode => match self.session.shell().mode() {
+                Mode::Clean => self.clean_page(t, cx),
+                Mode::Software => self.software_page(t, cx),
+                Mode::Optimize => self.optimize_page(t, cx),
+                Mode::Analyze => self.analyze_page(t, cx),
+                Mode::Status => self.status_page(t, cx),
+            },
+            Surface::Settings => self.settings_page(t, cx),
+            Surface::Protection => self.protection_page(t, cx),
+            Surface::Rules => self.rules_page(t, cx),
+            Surface::History => self.history_page(t, cx),
+        }
+    }
+
+    fn toggle_keep_screen_on(&mut self) {
+        if self.session.stored_lease_count() > 0 {
+            let _ = self.session.stop_screen_on();
+        } else {
+            let service =
+                std::sync::Arc::new(devsweep_core::status::KeepAwakeService::production());
+            let _ = self.session.start_screen_on(
+                service,
+                "gpui-window",
+                std::time::Duration::from_secs(30 * 60),
+            );
+        }
+    }
+
+    /// Session-wide banners shared by every page: preserved stores, a save
+    /// error, stale review notices, and the keep-awake lease.
+    fn shared_banners(&self, t: &Theme) -> Vec<gpui::AnyElement> {
+        let locale = self.session.locale();
+        let mut banners = Vec::new();
+        for notice in self.session.notices() {
+            banners.push(ui::any(ui::banner(
+                t,
+                Tone::Warning,
+                copy::preserved(locale, copy::store_name(locale, *notice)),
+            )));
+        }
+        if let Some(error) = self.save_error.as_deref() {
+            banners.push(ui::any(ui::banner(t, Tone::Danger, error.to_string())));
+        }
+        if self.session.shell().surface() == Surface::Mode {
+            let mode = self.session.shell().mode();
+            match self.session.shell().review(mode) {
+                crate::shell::Review::StaleScanRoots => banners.push(ui::any(ui::banner(
+                    t,
+                    Tone::Warning,
+                    copy::stale_scan_roots(locale),
+                ))),
+                crate::shell::Review::StaleProtection => banners.push(ui::any(ui::banner(
+                    t,
+                    Tone::Warning,
+                    copy::stale_protection(locale),
+                ))),
+                crate::shell::Review::Valid => {}
+            }
+            if let Some(report) = self.session.shell().report(mode) {
+                banners.push(ui::any(ui::banner(t, Tone::Info, report.to_string())));
+            }
+        }
+        if let Some(line) = self.session.screen_lease_line(locale) {
+            banners.push(ui::any(ui::banner(t, Tone::Info, line)));
+        }
+        banners
+    }
+
+    /// Standard page header: icon tile, title, subtitle, trailing actions.
+    fn page_header(
+        &self,
+        t: &Theme,
+        icon: &'static str,
+        title: impl Into<SharedString>,
+        subtitle: impl Into<SharedString>,
+        actions: Vec<gpui::AnyElement>,
+    ) -> gpui::AnyElement {
+        div()
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(rems(1.0))
+            .child(ui::icon_tile(t, icon, t.accent).size(rems(2.75)))
+            .child(
+                div()
+                    .flex()
+                    .flex_col()
+                    .flex_1()
+                    .min_w_0()
+                    .gap(rems(0.15))
+                    .child(
+                        div()
+                            .text_size(rems(1.5))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .child(title.into()),
+                    )
+                    .child(
+                        div()
+                            .text_size(rems(0.88))
+                            .text_color(rgb(t.text_muted))
+                            .child(subtitle.into()),
+                    ),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .flex_shrink_0()
+                    .items_center()
+                    .gap(rems(0.5))
+                    .children(actions),
+            )
+            .into_any_element()
+    }
+
+    /// One Status snapshot, the same path as Enter on the Status surface.
+    fn status_refresh(&mut self, cx: &mut Context<Self>) {
+        if self.session.shell().mode() == Mode::Status {
+            self.session.apply_key(crate::shell::NavKey::Enter);
+        }
+        cx.notify();
     }
 
     fn start_status_poll(&mut self, cx: &mut Context<Self>) {
@@ -1082,485 +1228,6 @@ impl ShellView {
         })
         .detach();
     }
-
-    /// Clean controls for the active phase. Clean mode only.
-    fn clean_controls(
-        &self,
-        locale: copy::Locale,
-        palette: ShellPalette,
-        cx: &mut Context<Self>,
-    ) -> Option<gpui::AnyElement> {
-        if self.session.shell().mode() != Mode::Clean
-            || self.session.shell().surface() != Surface::Mode
-        {
-            return None;
-        }
-        if self.session.clean_ai().open() {
-            return Some(self.clean_ai_controls(locale, palette, cx));
-        }
-        let workbench = self.session.clean_workbench();
-        let mut controls = div()
-            .id("clean-controls")
-            .role(gpui::Role::Group)
-            .aria_label(copy::mode_name(locale, "clean"))
-            .flex()
-            .flex_col()
-            .items_start()
-            .gap_3();
-        let mut actions = div()
-            .id("clean-actions")
-            .flex()
-            .flex_row()
-            .flex_wrap()
-            .gap_3();
-        match workbench.phase() {
-            CleanPhase::Landing => {
-                controls = controls.child(
-                    img(EARTH_NAME)
-                        .id("clean-earth")
-                        .w(px(180.))
-                        .h(px(180.))
-                        .with_fallback(|| {
-                            div().child(SharedString::from("Earth")).into_any_element()
-                        }),
-                );
-                match workbench.prompt() {
-                    CleanLandingPrompt::None => {
-                        actions = actions.child(clean_button(
-                            "clean-scan-primary",
-                            copy::clean_scan_primary(locale).to_string(),
-                            true,
-                            palette,
-                            cx,
-                            |this, window, cx| this.clean_open_scope(window, cx),
-                        ));
-                        actions = actions.child(clean_ai_open_button(locale, palette, cx));
-                    }
-                    CleanLandingPrompt::ScopeChoice => {
-                        // The two scope controls derive their element ids from
-                        // the scope identity itself.
-                        for scope in [CleanScope::Project, CleanScope::Global] {
-                            let label = match scope {
-                                CleanScope::Project => copy::clean_scope_project(locale),
-                                CleanScope::Global => copy::clean_scope_global(locale),
-                            };
-                            let filled = scope == CleanScope::Project;
-                            actions = actions.child(clean_button(
-                                ElementId::Name(SharedString::from(format!(
-                                    "clean-scope-{}",
-                                    scope.id()
-                                ))),
-                                label.to_string(),
-                                filled,
-                                palette,
-                                cx,
-                                move |this, _, cx| this.clean_scope(scope, cx),
-                            ));
-                        }
-                        actions = actions.child(clean_button(
-                            "clean-scope-back",
-                            copy::back_label(locale).to_string(),
-                            false,
-                            palette,
-                            cx,
-                            |this, _, cx| {
-                                this.session.clean_cancel_prompt();
-                                cx.notify();
-                            },
-                        ));
-                    }
-                    CleanLandingPrompt::RootRequired => {
-                        for (index, suggestion) in workbench.suggestions().iter().enumerate() {
-                            let label = suggestion.display().to_string();
-                            let root = suggestion.clone();
-                            actions = actions.child(clean_button(
-                                ElementId::Name(SharedString::from(format!(
-                                    "clean-root-suggestion-{index}"
-                                ))),
-                                label,
-                                false,
-                                palette,
-                                cx,
-                                move |this, _, cx| this.clean_pick_suggestion(root.clone(), cx),
-                            ));
-                        }
-                        actions = actions.child(clean_button(
-                            "clean-root-choose",
-                            copy::clean_root_choose(locale).to_string(),
-                            true,
-                            palette,
-                            cx,
-                            |this, _, cx| this.clean_pick_root(cx),
-                        ));
-                        actions = actions.child(clean_button(
-                            "clean-root-back",
-                            copy::back_label(locale).to_string(),
-                            false,
-                            palette,
-                            cx,
-                            |this, _, cx| {
-                                this.session.clean_cancel_prompt();
-                                cx.notify();
-                            },
-                        ));
-                    }
-                    CleanLandingPrompt::ConfirmGlobal => {
-                        actions = actions.child(clean_button(
-                            "clean-global-confirm",
-                            copy::clean_global_scan_action(locale).to_string(),
-                            true,
-                            palette,
-                            cx,
-                            |this, _, cx| this.clean_confirm_global(cx),
-                        ));
-                        actions = actions.child(clean_button(
-                            "clean-global-back",
-                            copy::back_label(locale).to_string(),
-                            false,
-                            palette,
-                            cx,
-                            |this, _, cx| {
-                                this.session.clean_cancel_prompt();
-                                cx.notify();
-                            },
-                        ));
-                    }
-                }
-            }
-            CleanPhase::Scanning | CleanPhase::Cleaning => {
-                let phase_id = workbench.phase().id();
-                actions = actions.child(clean_button(
-                    ElementId::Name(SharedString::from(format!("clean-cancel-{phase_id}"))),
-                    copy::clean_cancel_action(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_cancel(cx),
-                ));
-            }
-            CleanPhase::Found => {
-                controls = controls.child(self.search.clone());
-                let sort_label = match workbench.sort() {
-                    CleanSort::ReportOrder => copy::clean_sort_report_order(locale),
-                    CleanSort::Name => copy::clean_sort_name(locale),
-                    CleanSort::Size => copy::clean_sort_size(locale),
-                };
-                actions = actions.child(clean_button(
-                    "clean-sort",
-                    sort_label.to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_sort(cx),
-                ));
-                actions = actions.child(clean_button(
-                    "clean-select-recommended",
-                    copy::clean_select_recommended(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_select_recommended(cx),
-                ));
-                actions = actions.child(clean_button(
-                    "clean-clear-selection",
-                    copy::clean_clear_selection(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_clear_selection(cx),
-                ));
-                actions = actions.child(clean_button(
-                    "clean-preview",
-                    copy::clean_preview_action(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_preview(cx),
-                ));
-                actions = actions.child(clean_button(
-                    "clean-confirm",
-                    format!(
-                        "{} · {}",
-                        copy::clean_confirm_action(locale),
-                        copy::clean_selection_count(
-                            locale,
-                            workbench.selected_count(),
-                            workbench.rows().len()
-                        )
-                    ),
-                    workbench.preview_matches_current(),
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_confirm_execute(cx),
-                ));
-                actions = actions.child(clean_ai_open_button(locale, palette, cx));
-                if let Some(cursor) = self.session.clean_focused_row_id() {
-                    let protected = workbench.is_protected(&cursor);
-                    let protect_label = if protected {
-                        copy::clean_unprotect_action(locale)
-                    } else {
-                        copy::clean_protect_action(locale)
-                    };
-                    let protect_id = cursor.clone();
-                    actions = actions.child(clean_button(
-                        "clean-protect-row",
-                        protect_label.to_string(),
-                        protected,
-                        palette,
-                        cx,
-                        move |this, _, cx| {
-                            this.session.clean_toggle_row_protection(&protect_id);
-                            cx.notify();
-                        },
-                    ));
-                    let ignored = workbench.is_ignored(&cursor);
-                    let ignore_label = if ignored {
-                        copy::clean_unignore_action(locale)
-                    } else {
-                        copy::clean_ignore_action(locale)
-                    };
-                    let ignore_id = cursor.clone();
-                    actions = actions.child(clean_button(
-                        "clean-ignore-row",
-                        ignore_label.to_string(),
-                        ignored,
-                        palette,
-                        cx,
-                        move |this, _, cx| {
-                            this.session.clean_toggle_row_ignored(&ignore_id);
-                            cx.notify();
-                        },
-                    ));
-                }
-            }
-            CleanPhase::AllClean | CleanPhase::Completed | CleanPhase::Failed => {
-                actions = actions.child(clean_button(
-                    "clean-retry",
-                    copy::clean_retry_action(locale).to_string(),
-                    true,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_retry(cx),
-                ));
-                actions = actions.child(clean_ai_open_button(locale, palette, cx));
-            }
-        }
-        Some(controls.child(actions).into_any_element())
-    }
-
-    /// AI subview controls. The subview replaces the Clean controls while it
-    /// is open; every action here is an explicit user action.
-    fn clean_ai_controls(
-        &self,
-        locale: copy::Locale,
-        palette: ShellPalette,
-        cx: &mut Context<Self>,
-    ) -> gpui::AnyElement {
-        let view = self.session.clean_ai();
-        let mut controls = div()
-            .id("clean-ai-controls")
-            .role(gpui::Role::Group)
-            .aria_label(copy::clean_ai_title(locale))
-            .flex()
-            .flex_col()
-            .items_start()
-            .gap_3();
-        let mut actions = div()
-            .id("clean-ai-actions")
-            .flex()
-            .flex_row()
-            .flex_wrap()
-            .gap_3();
-        if !matches!(
-            view.phase(),
-            AiSubviewPhase::Scanning | AiSubviewPhase::Cleaning
-        ) {
-            actions = actions.child(clean_button(
-                "clean-ai-provider",
-                copy::clean_ai_provider(locale, view.provider().as_str()),
-                false,
-                palette,
-                cx,
-                |this, _, cx| this.clean_ai_provider(cx),
-            ));
-        }
-        match view.phase() {
-            AiSubviewPhase::Landing | AiSubviewPhase::Failed | AiSubviewPhase::Completed => {
-                actions = actions.child(clean_button(
-                    "clean-ai-scan",
-                    copy::clean_ai_scan_action(locale).to_string(),
-                    view.phase() == AiSubviewPhase::Landing,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_ai_scan(cx),
-                ));
-            }
-            AiSubviewPhase::Scanning | AiSubviewPhase::Cleaning => {
-                let phase_id = view.phase().id();
-                actions = actions.child(clean_button(
-                    ElementId::Name(SharedString::from(format!("clean-ai-cancel-{phase_id}"))),
-                    copy::clean_cancel_action(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_cancel(cx),
-                ));
-            }
-            AiSubviewPhase::Review => {
-                controls = controls.child(self.search.clone());
-                for category in AiCategory::ALL {
-                    let label = format!(
-                        "{} {}",
-                        copy::clean_ai_category_name(locale, category.id()),
-                        view.category_count(category)
-                    );
-                    let active = view.category() == category;
-                    actions = actions.child(clean_button(
-                        ElementId::Name(SharedString::from(format!(
-                            "clean-ai-category-{}",
-                            category.id()
-                        ))),
-                        label,
-                        active,
-                        palette,
-                        cx,
-                        move |this, _, cx| this.clean_ai_category(category, cx),
-                    ));
-                }
-                actions = actions.child(clean_button(
-                    "clean-ai-clear-selection",
-                    copy::clean_clear_selection(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_ai_clear_selection(cx),
-                ));
-                actions = actions.child(clean_button(
-                    "clean-ai-preview",
-                    copy::clean_preview_action(locale).to_string(),
-                    false,
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_ai_preview(cx),
-                ));
-                actions = actions.child(clean_button(
-                    "clean-ai-confirm",
-                    format!(
-                        "{} · {}",
-                        copy::clean_ai_confirm_action(locale),
-                        copy::clean_ai_selection_count(
-                            locale,
-                            view.selected_count(),
-                            view.selectable_count()
-                        )
-                    ),
-                    view.preview_matches_current(),
-                    palette,
-                    cx,
-                    |this, _, cx| this.clean_ai_confirm_execute(cx),
-                ));
-            }
-        }
-        if view.home().is_some()
-            && !matches!(
-                view.phase(),
-                AiSubviewPhase::Scanning | AiSubviewPhase::Cleaning
-            )
-        {
-            actions = actions.child(clean_button(
-                "clean-ai-recovery-refresh",
-                copy::clean_ai_recovery_refresh(locale).to_string(),
-                false,
-                palette,
-                cx,
-                |this, _, cx| this.clean_ai_refresh_recovery(cx),
-            ));
-            for bundle in view.recovery() {
-                let bundle_id = bundle.id.clone();
-                actions = actions.child(clean_button(
-                    ElementId::Name(SharedString::from(format!("clean-ai-restore-{bundle_id}"))),
-                    format!("{} · {}", copy::clean_ai_restore_action(locale), bundle.id),
-                    false,
-                    palette,
-                    cx,
-                    move |this, _, cx| this.clean_ai_restore(bundle_id.clone(), cx),
-                ));
-            }
-        }
-        actions = actions.child(clean_button(
-            "clean-ai-close",
-            copy::clean_ai_close_action(locale).to_string(),
-            false,
-            palette,
-            cx,
-            |this, _, cx| this.clean_ai_close(cx),
-        ));
-        controls.child(actions).into_any_element()
-    }
-
-    /// Listed drives and one folder picker. Neither path reads
-    /// `DEVSWEEP_ANALYZE_ROOT`.
-    fn analyze_controls(
-        &self,
-        locale: copy::Locale,
-        palette: ShellPalette,
-        cx: &mut Context<Self>,
-    ) -> Option<gpui::AnyElement> {
-        if self.session.shell().mode() != Mode::Analyze
-            || self.session.shell().surface() != Surface::Mode
-            || self.session.analyze_window().is_some()
-        {
-            return None;
-        }
-        let mut actions = div()
-            .id("analyze-actions")
-            .role(gpui::Role::Group)
-            .aria_label(copy::mode_name(locale, "analyze"))
-            .flex()
-            .flex_row()
-            .flex_wrap()
-            .gap_3();
-        for (index, choice) in self.session.analyze_roots().iter().enumerate() {
-            let state = choice.error.clone().unwrap_or_else(|| "ready".to_string());
-            let label = format!("{} | {state}", choice.input);
-            actions = actions.child(clean_button(
-                ElementId::Name(SharedString::from(format!("analyze-root-{index}"))),
-                label,
-                choice.error.is_none(),
-                palette,
-                cx,
-                move |this, _, cx| {
-                    let _ = this.session.analyze_open_listed(index);
-                    cx.notify();
-                },
-            ));
-        }
-        actions = actions.child(clean_button(
-            "analyze-choose-root",
-            copy::clean_root_choose(locale).to_string(),
-            self.session.analyze_roots().is_empty(),
-            palette,
-            cx,
-            |this, _, cx| this.analyze_pick_root(cx),
-        ));
-        Some(actions.into_any_element())
-    }
-}
-
-/// The explicit entry into the AI review subview. Opening never scans.
-fn clean_ai_open_button(
-    locale: copy::Locale,
-    palette: ShellPalette,
-    cx: &mut Context<ShellView>,
-) -> gpui::AnyElement {
-    clean_button(
-        "clean-ai-open",
-        copy::clean_ai_open_action(locale).to_string(),
-        false,
-        palette,
-        cx,
-        |this, _, cx| this.clean_ai_open(cx),
-    )
 }
 
 /// Found, cleaning, and completed scans with rows show the disk map.
@@ -1598,6 +1265,7 @@ fn map_inputs(session: &Session) -> Vec<MapInput<'_>> {
         .collect()
 }
 
+#[cfg(test)]
 fn disk_map_summary_line(session: &Session) -> String {
     let summary = clean_map::summarize(&map_inputs(session));
     copy::clean_map_summary_line(
@@ -1611,572 +1279,40 @@ fn disk_map_summary_line(session: &Session) -> String {
     )
 }
 
-/// Treemap plus recommendation cards for the accepted scan.
-///
-/// Tiles are a projection of scanned targets. Clicking a tile uses the same
-/// row selection as the list. This view does not compose a cleanup script.
-fn analyze_treemap_element(
-    session: &Session,
-    locale: copy::Locale,
-    palette: ShellPalette,
-    cx: &mut Context<ShellView>,
-) -> Option<gpui::AnyElement> {
-    let window = session.analyze_window()?;
-    let rects = window.treemap();
-    if rects.is_empty() {
-        return None;
-    }
-    let mut canvas = div()
-        .id("analyze-treemap")
-        .relative()
-        .w(px(crate::analyze::TREEMAP_WIDTH))
-        .h(px(crate::analyze::TREEMAP_HEIGHT))
-        .overflow_hidden()
-        .rounded_md()
-        .bg(rgb(palette.capsule))
-        .border_1()
-        .border_color(rgb(palette.capsule_border))
-        .child(
-            div()
-                .p_2()
-                .text_size(px(12.))
-                .child(copy::analyze_treemap_title(locale)),
-        );
-    for rect in rects.iter().filter(|rect| rect.id != 0).take(24) {
-        let selected = window.board().list_selection() == Some(rect.id);
-        let id = rect.id;
-        canvas = canvas.child(
-            div()
-                .id(gpui::ElementId::named_usize("analyze-tile", id as usize))
-                .absolute()
-                .left(px(rect.x))
-                .top(px(rect.y))
-                .w(px(rect.width.max(1.0)))
-                .h(px(rect.height.max(1.0)))
-                .border_1()
-                .border_color(rgb(palette.capsule_border))
-                .when(selected, |tile| tile.bg(rgb(palette.pill)))
-                .role(gpui::Role::Button)
-                .cursor_pointer()
-                .on_click(cx.listener(move |this, _, _, cx| {
-                    this.session.analyze_select(id);
-                    cx.notify();
-                }))
-                .child(format!("{id}")),
-        );
-    }
-    Some(canvas.into_any_element())
-}
+/// Plain tooltip body for icon-only controls.
+struct TooltipText(SharedString);
 
-fn disk_map_element(
-    session: &Session,
-    locale: copy::Locale,
-    palette: ShellPalette,
-    high_contrast: bool,
-    cx: &mut Context<ShellView>,
-) -> gpui::AnyElement {
-    let map = clean_map::project_disk_map(
-        &map_inputs(session),
-        MapBounds {
-            width: clean_map::MAP_CANVAS_WIDTH,
-            height: clean_map::MAP_CANVAS_HEIGHT,
-        },
-    );
-    let workbench = session.clean_workbench();
-    let selected_bytes = workbench.selected_ids().iter().fold(0u64, |total, id| {
-        total.saturating_add(workbench.row(id).map(|row| row.bytes).unwrap_or(0))
-    });
-    let ink = rgb(clean_map::category_ink(high_contrast));
-    let mut canvas = div()
-        .id("clean-disk-map-canvas")
-        .relative()
-        .w(px(clean_map::MAP_CANVAS_WIDTH))
-        .h(px(clean_map::MAP_CANVAS_HEIGHT))
-        .overflow_hidden()
-        .rounded_md()
-        .bg(rgb(palette.capsule))
-        .border_1()
-        .border_color(rgb(palette.capsule_border));
-    if map.groups.is_empty() {
-        canvas = canvas.child(
-            div()
-                .p_3()
-                .text_color(rgb(palette.text))
-                .child(copy::clean_map_empty(locale)),
-        );
-    }
-    for (group_index, group) in map.groups.iter().enumerate() {
-        let (x, y, width, height) = inset_rect(group.x, group.y, group.width, group.height);
-        let title = if group.other {
-            copy::clean_map_other(locale, group.represented)
-        } else {
-            group.title.clone()
-        };
-        let group_label = format!(
-            "{} {} {}",
-            title,
-            copy::clean_bytes_short(group.bytes),
-            copy::clean_map_category(locale, group.category.as_str())
-        );
-        let mut tile = div()
-            .relative()
-            .w(px(width.max(1.0)))
-            .h(px(height.max(1.0)))
-            .overflow_hidden()
-            .rounded_md()
-            .bg(rgb(clean_map::category_fill(group.category, high_contrast)))
-            .border_1()
-            .border_color(rgb(clean_map::category_border(
-                group.category,
-                high_contrast,
-            )))
-            .text_color(ink);
-        if height >= 36.0 && width >= 48.0 {
-            tile = tile.child(
-                div()
-                    .absolute()
-                    .left(px(4.))
-                    .top(px(1.))
-                    .text_size(px(11.))
-                    .child(SharedString::from(format!(
-                        "{title} {}",
-                        copy::clean_bytes_short(group.bytes)
-                    ))),
-            );
-        }
-        for (leaf_index, leaf) in group.leaves.iter().enumerate() {
-            let (leaf_x, leaf_y, leaf_w, leaf_h) =
-                inset_rect(leaf.x, leaf.y, leaf.width, leaf.height);
-            let leaf_title = if leaf.other {
-                copy::clean_map_other(locale, leaf.represented)
-            } else {
-                leaf.title.clone()
-            };
-            let selected = leaf
-                .id
-                .as_deref()
-                .is_some_and(|id| workbench.is_selected(id));
-            let label = format!(
-                "{} {} {} {} {}",
-                copy::clean_map_category(locale, leaf.category.as_str()),
-                leaf_title,
-                copy::clean_bytes_short(leaf.bytes),
-                copy::clean_map_band(locale, leaf.band.as_str()),
-                if selected {
-                    copy::clean_row_selected_marker(locale)
-                } else {
-                    copy::clean_row_unselected_marker(locale)
-                }
-            );
-            let element_id = match leaf.id.as_deref() {
-                Some(id) => format!("clean-map-tile-{id}"),
-                None => format!("clean-map-other-{group_index}-{leaf_index}"),
-            };
-            let mut leaf_tile = div()
-                .id(ElementId::Name(SharedString::from(element_id)))
-                .absolute()
-                .left(px(leaf_x))
-                .top(px(leaf_y))
-                .w(px(leaf_w.max(1.0)))
-                .h(px(leaf_h.max(1.0)))
-                .overflow_hidden()
-                .rounded_md()
-                .px_1()
-                .bg(rgb(clean_map::category_fill(leaf.category, high_contrast)))
-                .border_1()
-                .border_color(rgb(if selected {
-                    0x1D4E89
-                } else {
-                    clean_map::category_border(leaf.category, high_contrast)
-                }))
-                .text_color(ink)
-                .aria_label(SharedString::from(label.clone()));
-            if let Some(id) = leaf.id.clone() {
-                leaf_tile = leaf_tile
-                    .role(gpui::Role::Button)
-                    .cursor_pointer()
-                    .on_click(cx.listener(move |this, _, _, cx| {
-                        this.session.clean_click_row(&id);
-                        cx.notify();
-                    }));
-            }
-            if leaf_w >= 48.0 && leaf_h >= 22.0 {
-                leaf_tile = leaf_tile.child(
-                    div()
-                        .text_size(px(12.))
-                        .child(SharedString::from(leaf_title)),
-                );
-                if leaf_h >= 40.0 {
-                    leaf_tile = leaf_tile.child(
-                        div()
-                            .text_size(px(11.))
-                            .child(SharedString::from(copy::clean_bytes_short(leaf.bytes))),
-                    );
-                }
-            }
-            tile = tile.child(leaf_tile);
-        }
-        canvas = canvas.child(
-            div()
-                .id(ElementId::Name(SharedString::from(format!(
-                    "clean-map-group-{group_index}"
-                ))))
-                .absolute()
-                .left(px(x))
-                .top(px(y))
-                .w(px(width.max(1.0)))
-                .h(px(height.max(1.0)))
-                .aria_label(SharedString::from(group_label))
-                .child(tile),
-        );
-    }
-
-    let mut recommendations = div()
-        .id("clean-map-recommendations")
-        .role(gpui::Role::Group)
-        .aria_label(copy::clean_map_recommendations(locale))
-        .w(px(300.))
-        .flex()
-        .flex_col()
-        .gap_1()
-        .child(
-            div()
-                .text_color(rgb(palette.text))
-                .child(copy::clean_map_recommendations(locale)),
-        )
-        .child(
-            div()
-                .text_size(px(12.))
-                .text_color(rgb(palette.text))
-                .child(copy::clean_map_recommendations_hint(locale)),
-        );
-    let cursor = session.shell().selection(Mode::Clean);
-    for id in session.shell().visible_row_ids(Mode::Clean) {
-        let Some(row) = workbench.row(id) else {
-            continue;
-        };
-        let focused = cursor == Some(id.as_str());
-        let selected = workbench.is_selected(id);
-        let text = crate::clean_workbench::row_text(
-            locale,
-            row,
-            selected,
-            focused,
-            row_protected(session, row),
-            workbench.is_ignored(id),
-        );
-        let band = clean_map::review_band(workbench.row_selectable(row), row.selected_by_default);
-        recommendations = recommendations.child(recommendation_card(
-            locale,
-            palette,
-            high_contrast,
-            row,
-            band,
-            text,
-            selected,
-            focused,
-            cx,
-        ));
-    }
-    recommendations = recommendations.child(
+impl Render for TooltipText {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
         div()
-            .text_size(px(12.))
-            .text_color(rgb(palette.text))
-            .child(SharedString::from(format!(
-                "{} · {}",
-                copy::clean_bytes_short(selected_bytes),
-                copy::clean_selection_count(
-                    locale,
-                    workbench.selected_count(),
-                    workbench.rows().len()
-                )
-            ))),
-    );
-
-    let summary = map.summary;
-    let mut legend = div().flex().flex_row().flex_wrap().gap_2();
-    for category in &map.categories {
-        legend = legend.child(
-            div()
-                .flex()
-                .flex_row()
-                .items_center()
-                .gap_1()
-                .child(
-                    div()
-                        .w(px(10.))
-                        .h(px(10.))
-                        .rounded_md()
-                        .bg(rgb(clean_map::category_fill(*category, high_contrast)))
-                        .border_1()
-                        .border_color(rgb(clean_map::category_border(*category, high_contrast))),
-                )
-                .child(copy::clean_map_category(locale, category.as_str())),
-        );
-    }
-
-    div()
-        .id("clean-disk-map")
-        .role(gpui::Role::Group)
-        .aria_label(copy::clean_map_title(locale))
-        .flex()
-        .flex_col()
-        .gap_2()
-        .p_2()
-        .rounded_md()
-        .bg(rgb(palette.menu_bg))
-        .border_1()
-        .border_color(rgb(palette.capsule_border))
-        .text_color(rgb(palette.text))
-        .child(copy::clean_map_title(locale))
-        .child(
-            div()
-                .text_size(px(12.))
-                .child(copy::clean_map_subtitle(locale)),
-        )
-        .when(
-            !session.shell().row_query(Mode::Clean).is_empty(),
-            |header| {
-                header.child(
-                    div()
-                        .text_size(px(12.))
-                        .child(copy::clean_map_filtered_note(locale)),
-                )
-            },
-        )
-        .child(
-            div()
-                .flex()
-                .flex_row()
-                .flex_wrap()
-                .gap_2()
-                .child(map_stat_card(
-                    "clean-map-mapped",
-                    copy::clean_map_card_mapped(locale),
-                    copy::clean_bytes_short(summary.mapped_bytes),
-                    copy::clean_map_count(locale, summary.mapped_count),
-                    palette,
-                ))
-                .child(map_stat_card(
-                    "clean-map-recommended",
-                    copy::clean_map_card_recommended(locale),
-                    copy::clean_bytes_short(summary.recommended_bytes),
-                    copy::clean_map_count(locale, summary.recommended_count),
-                    palette,
-                ))
-                .child(map_stat_card(
-                    "clean-map-review",
-                    copy::clean_map_card_review(locale),
-                    copy::clean_bytes_short(summary.review_bytes),
-                    copy::clean_map_count(locale, summary.review_count),
-                    palette,
-                ))
-                .child(map_stat_card(
-                    "clean-map-blocked",
-                    copy::clean_map_card_blocked(locale),
-                    copy::clean_bytes_short(summary.blocked_bytes),
-                    copy::clean_map_count(locale, summary.blocked_count),
-                    palette,
-                )),
-        )
-        .child(
-            div()
-                .flex()
-                .flex_row()
-                .flex_wrap()
-                .items_start()
-                .gap_3()
-                .child(div().flex().flex_col().gap_2().child(canvas).child(legend))
-                .child(recommendations),
-        )
-        .into_any_element()
-}
-
-fn map_stat_card(
-    id: &'static str,
-    label: &'static str,
-    value: String,
-    detail: String,
-    palette: ShellPalette,
-) -> gpui::AnyElement {
-    div()
-        .id(id)
-        .flex_1()
-        .min_w(px(120.))
-        .px_2()
-        .py_2()
-        .rounded_md()
-        .bg(rgb(palette.capsule))
-        .border_1()
-        .border_color(rgb(palette.capsule_border))
-        .flex()
-        .flex_col()
-        .gap_1()
-        .child(div().text_size(px(12.)).child(label))
-        .child(div().text_size(px(18.)).child(SharedString::from(value)))
-        .child(div().text_size(px(12.)).child(SharedString::from(detail)))
-        .into_any_element()
-}
-
-fn recommendation_card(
-    locale: copy::Locale,
-    palette: ShellPalette,
-    high_contrast: bool,
-    row: &CleanRow,
-    band: ReviewBand,
-    text: String,
-    selected: bool,
-    focused: bool,
-    cx: &mut Context<ShellView>,
-) -> gpui::AnyElement {
-    let category = clean_map::category_of(&row.rule_id);
-    let title = clean_map::leaf_title(&row.rule_id, row.path.as_deref());
-    let subtitle = match row.path.as_deref() {
-        Some(path) => path.to_string(),
-        None => row.rule_id.clone(),
-    };
-    let element_id = SharedString::from(format!("clean-row-{}", row.id));
-    let clicked = row.id.clone();
-    let visible_row = text.clone();
-    div()
-        .id(ElementId::Name(element_id.clone()))
-        .role(gpui::Role::ListItem)
-        .accessibility_id(element_id)
-        .aria_label(SharedString::from(text))
-        .aria_selected(selected)
-        .cursor_pointer()
-        .on_click(cx.listener(move |this, _, _, cx| {
-            this.session.clean_click_row(&clicked);
-            cx.notify();
-        }))
-        .flex()
-        .flex_row()
-        .flex_wrap()
-        .items_center()
-        .gap_2()
-        .px_2()
-        .py_1()
-        .rounded_md()
-        .border_1()
-        .border_color(rgb(if focused {
-            palette.pill
-        } else {
-            palette.capsule_border
-        }))
-        .bg(rgb(if selected {
-            palette.capsule
-        } else {
-            palette.menu_bg
-        }))
-        .text_color(rgb(palette.text))
-        .child(
-            div()
-                .w(px(8.))
-                .h(px(28.))
-                .rounded_md()
-                .bg(rgb(clean_map::category_fill(category, high_contrast))),
-        )
-        .child(if selected {
-            copy::clean_row_selected_marker(locale)
-        } else {
-            copy::clean_row_unselected_marker(locale)
-        })
-        .child(
-            div()
-                .flex()
-                .flex_col()
-                .flex_1()
-                .overflow_hidden()
-                .child(SharedString::from(format!(
-                    "{title} · {}",
-                    copy::clean_map_band(locale, band.as_str())
-                )))
-                .child(
-                    div()
-                        .text_size(px(12.))
-                        .overflow_hidden()
-                        .child(SharedString::from(subtitle)),
-                ),
-        )
-        .child(SharedString::from(copy::clean_bytes_short(row.bytes)))
-        // The map replaces the row list. This is the same row line, so rebuild
-        // cost, protection, ignore, partial confidence, and inspect-only stay
-        // visible instead of living only in the accessible name.
-        .child(
-            div()
-                .w(px(276.))
-                .text_size(px(12.))
-                .child(SharedString::from(visible_row)),
-        )
-        .into_any_element()
-}
-
-fn inset_rect(x: f32, y: f32, width: f32, height: f32) -> (f32, f32, f32, f32) {
-    if width > 4.0 && height > 4.0 {
-        (x + 1.0, y + 1.0, width - 2.0, height - 2.0)
-    } else {
-        (x, y, width.max(1.0), height.max(1.0))
+            .px(rems(0.5))
+            .py(rems(0.25))
+            .rounded(rems(0.4))
+            .bg(rgb(0x232D4A))
+            .text_color(rgb(0xEEF1F7))
+            .text_size(rems(0.75))
+            .child(self.0.clone())
     }
 }
 
-/// One interactive row. Clean rows keep their established `clean-row-` element
-/// and accessibility ids; AI rows use their own prefix so no existing
-/// accessible id changes.
-fn interactive_row_element(
-    prefix: &'static str,
-    id: String,
-    text: String,
-    selected: bool,
-    cx: &mut Context<ShellView>,
-) -> gpui::AnyElement {
-    let element_id = SharedString::from(format!("{prefix}-{id}"));
-    let clicked = id;
-    div()
-        .id(ElementId::Name(element_id.clone()))
-        .role(gpui::Role::ListItem)
-        .accessibility_id(element_id)
-        .aria_label(SharedString::from(text.clone()))
-        .aria_selected(selected)
-        .cursor_pointer()
-        .on_click(cx.listener(move |this, _, _, cx| {
-            this.session.clean_click_row(&clicked);
-            cx.notify();
-        }))
-        .child(SharedString::from(text))
-        .into_any_element()
+fn mode_icon(mode: Mode) -> &'static str {
+    match mode {
+        Mode::Clean => "clean",
+        Mode::Software => "software",
+        Mode::Optimize => "optimize",
+        Mode::Analyze => "analyze",
+        Mode::Status => "status",
+    }
 }
 
-/// One interactive Clean control. Rendered as a role=Button with an accessible
-/// name and a stable id.
-fn clean_button(
-    id: impl Into<ElementId>,
-    label: String,
-    filled: bool,
-    palette: ShellPalette,
-    cx: &mut Context<ShellView>,
-    on_click: impl Fn(&mut ShellView, &mut Window, &mut Context<ShellView>) + 'static,
-) -> gpui::AnyElement {
-    div()
-        .id(id)
-        .role(gpui::Role::Button)
-        .aria_label(SharedString::from(label.clone()))
-        .px_3()
-        .py_2()
-        .rounded_md()
-        .cursor_pointer()
-        .when(filled, |button| {
-            button
-                .bg(rgb(palette.pill))
-                .text_color(rgb(palette.pill_text))
-        })
-        .when(!filled, |button| {
-            button
-                .bg(rgb(palette.capsule))
-                .text_color(rgb(palette.text))
-        })
-        .on_click(cx.listener(move |this, _, window, cx| on_click(this, window, cx)))
-        .child(SharedString::from(label))
-        .into_any_element()
+fn surface_icon(surface: Surface) -> &'static str {
+    match surface {
+        Surface::Mode => "clean",
+        Surface::Settings => "settings",
+        Surface::Protection => "shield",
+        Surface::Rules => "rules",
+        Surface::History => "history",
+    }
 }
 
 /// True when a session protection covers the row ownership path.
@@ -2283,8 +1419,9 @@ fn clean_outcome_line(locale: copy::Locale, notice: CleanOutcomeNotice) -> &'sta
     }
 }
 
-/// One panel row. Clean and AI rows carry the metadata that makes them
-/// interactive.
+#[cfg(test)]
+/// One entry of the text projection of the active surface. Clean and AI rows
+/// carry the metadata the designed pages use for their interactive rows.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum PanelEntry {
     Text(String),
@@ -2300,6 +1437,7 @@ pub(crate) enum PanelEntry {
     },
 }
 
+#[cfg(test)]
 impl PanelEntry {
     /// The text this entry paints. Used by the test-only text projection of
     /// [`panel_entries`]; the window paints each entry with its own element.
@@ -2313,13 +1451,12 @@ impl PanelEntry {
     }
 }
 
-/// The panel as text lines, derived from [`panel_entries`] so it mirrors what
-/// the window paints.
+/// The panel as text lines, derived from [`panel_entries`].
 ///
-/// The render path paints `panel_entries` directly (Clean rows stay
-/// interactive there), so this projection is only consumed by tests and
-/// other text-only assertions. They still assert the real rendered state:
-/// every line here is the exact text of a painted entry.
+/// The window paints designed pages (cards, tables, tiles) from the same
+/// session state; this projection keeps every fact those pages show as one
+/// line each so tests can assert state, notices and row names without a
+/// window. Interactive rows reuse these exact strings as accessible names.
 #[cfg(test)]
 pub(crate) fn panel_lines(session: &Session, save_error: Option<&str>) -> Vec<String> {
     panel_entries(session, save_error)
@@ -2328,12 +1465,13 @@ pub(crate) fn panel_lines(session: &Session, save_error: Option<&str>) -> Vec<St
         .collect()
 }
 
+#[cfg(test)]
 fn mode_row_text(session: &Session, mode: Mode, id: &str, focused: bool) -> String {
     let locale = session.locale();
-    if mode == Mode::Software {
-        if let Some(line) = session.software_review().row_line(id, locale, focused) {
-            return line;
-        }
+    if mode == Mode::Software
+        && let Some(line) = session.software_review().row_line(id, locale, focused)
+    {
+        return line;
     }
     if mode == Mode::Optimize {
         if let Some(line) = session.optimize_board().row_line(id, locale, focused) {
@@ -2354,6 +1492,7 @@ fn mode_row_text(session: &Session, mode: Mode, id: &str, focused: bool) -> Stri
     }
 }
 
+#[cfg(test)]
 pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<PanelEntry> {
     let locale = session.locale();
     let shell = session.shell();
@@ -2636,6 +1775,7 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
     entries
 }
 
+#[cfg(test)]
 /// Clean phase, root, selection, preview digest and result lines.
 fn push_clean_review_lines(session: &Session, entries: &mut Vec<PanelEntry>) {
     let locale = session.locale();
@@ -2719,6 +1859,7 @@ fn push_clean_review_lines(session: &Session, entries: &mut Vec<PanelEntry>) {
     }
 }
 
+#[cfg(test)]
 /// One interactive Clean row entry with its selection state.
 fn clean_row_entry(session: &Session, id: &str, focused: bool) -> PanelEntry {
     let workbench = session.clean_workbench();
@@ -2739,6 +1880,7 @@ fn clean_row_entry(session: &Session, id: &str, focused: bool) -> PanelEntry {
     }
 }
 
+#[cfg(test)]
 /// One interactive AI row entry with its selection state.
 fn clean_ai_row_entry(session: &Session, id: &str, focused: bool) -> Option<PanelEntry> {
     let view = session.clean_ai();
@@ -2750,6 +1892,7 @@ fn clean_ai_row_entry(session: &Session, id: &str, focused: bool) -> Option<Pane
     })
 }
 
+#[cfg(test)]
 /// AI subview phase, provider, categories, selection, digest and recovery.
 ///
 /// Category rows themselves are painted by the bounded row window, so this
@@ -2877,6 +2020,20 @@ fn push_clean_ai_lines(session: &Session, entries: &mut Vec<PanelEntry>) {
     }
 }
 
+/// Review-host override of the initial window size (`WIDTHxHEIGHT`). Only the
+/// opt-in Linux preview build reads it; the Windows product never does.
+#[cfg(feature = "linux-preview")]
+fn preview_window_size() -> Option<(f32, f32)> {
+    let value = std::env::var("DEVSWEEP_PREVIEW_WINDOW").ok()?;
+    let (w, h) = value.split_once('x')?;
+    Some((w.parse().ok()?, h.parse().ok()?))
+}
+
+#[cfg(not(feature = "linux-preview"))]
+fn preview_window_size() -> Option<(f32, f32)> {
+    None
+}
+
 pub fn run(session: Session) {
     // The tray lives for this blocking run and is dropped when the app exits.
     // Unit tests do not call `run`, so they do not create a notification-area icon.
@@ -2939,7 +2096,8 @@ pub fn run(session: Session) {
             })
             .detach();
 
-            let bounds = Bounds::centered(None, size(px(1040.), px(720.)), cx);
+            let (width, height) = preview_window_size().unwrap_or((1240.0, 820.0));
+            let bounds = Bounds::centered(None, size(px(width), px(height)), cx);
             let window = cx
                 .open_window(
                     WindowOptions {
@@ -3025,17 +2183,20 @@ mod tests {
 
     #[test]
     fn light_theme_canvas_is_not_dark() {
-        let light = shell_palette(DesktopTheme::Light);
-        assert_ne!(light.canvas, 0x11162a);
-        assert_ne!(light.text, 0xeef1f7);
+        let light = Theme::for_preferences(DesktopTheme::Light, false);
+        let dark = Theme::for_preferences(DesktopTheme::Dark, false);
+        assert_ne!(light.canvas, dark.canvas);
+        assert_ne!(light.text, dark.text);
+        assert_eq!(light.canvas, 0xf3f5fa);
+        assert!(!light.dark);
     }
 
     #[test]
     fn high_contrast_palette_is_distinct() {
-        let high_dark = shell_palette_for(DesktopTheme::Dark, true);
-        let high_light = shell_palette_for(DesktopTheme::Light, true);
-        let dark = shell_palette_for(DesktopTheme::Dark, false);
-        let light = shell_palette_for(DesktopTheme::Light, false);
+        let high_dark = Theme::for_preferences(DesktopTheme::Dark, true);
+        let high_light = Theme::for_preferences(DesktopTheme::Light, true);
+        let dark = Theme::for_preferences(DesktopTheme::Dark, false);
+        let light = Theme::for_preferences(DesktopTheme::Light, false);
 
         assert_eq!(high_dark.canvas, 0x000000);
         assert_eq!(high_dark.text, 0xffffff);
@@ -3043,10 +2204,10 @@ mod tests {
         assert_ne!(high_dark, dark);
         assert_ne!(high_dark, light);
         assert_ne!(dark, light);
-        assert_eq!(light.canvas, 0xf3f5fa);
-        assert_eq!(dark.canvas, 0x11162a);
-        assert_eq!(shell_palette(DesktopTheme::Light), light);
-        assert_eq!(shell_palette(DesktopTheme::Dark), dark);
+        // Every themed system tone stays distinct from the high-contrast field.
+        for tone in [Tone::Success, Tone::Warning, Tone::Danger, Tone::Info] {
+            assert_ne!(high_dark.tone(tone), high_dark.canvas);
+        }
     }
 
     #[test]
@@ -3054,14 +2215,24 @@ mod tests {
         let icon = PackagedAssets.load(ICON_NAME).unwrap().expect("icon");
         assert!(icon.starts_with(b"\x89PNG\r\n\x1a\n"));
         assert!(PackagedAssets.load("mole-planet.png").unwrap().is_none());
+        let listed = PackagedAssets.list("").unwrap();
         assert_eq!(
-            PackagedAssets.list("").unwrap(),
-            vec![
+            &listed[..3],
+            &[
                 SharedString::from(ICON_NAME),
                 SharedString::from(COPY_NAME),
                 SharedString::from(EARTH_NAME)
             ]
         );
+        // Everything else is an original packaged stroke icon.
+        for extra in &listed[3..] {
+            assert!(
+                extra.starts_with("icons/") && extra.ends_with(".svg"),
+                "{extra}"
+            );
+            assert!(PackagedAssets.load(extra).unwrap().is_some(), "{extra}");
+        }
+        assert_eq!(listed.len(), 3 + ui::ICONS.len());
         // The landing still is the repository's licensed Earth image, not a
         // newly fetched asset. The packaged bytes must stay byte-identical to
         // desktop/public/earth/still.png (the constant in this file documents
@@ -3524,29 +2695,28 @@ mod tests {
     }
 
     #[test]
-    fn panel_lines_use_their_text_as_accessible_names() {
-        let source = include_str!("view.rs");
-        let marker = r#".id(gpui::ElementId::named_usize("panel-line", index))"#;
-        let start = source.find(marker).expect("panel-line row div must exist");
-        let snippet = &source[start..];
-        let role = snippet
-            .find(".role(gpui::Role::ListItem)")
-            .expect("panel-line div must set Role::ListItem");
+    fn interactive_rows_use_their_row_text_as_accessible_names() {
+        // The designed rows paint structured cells, but their accessible name
+        // stays the full row line (selection, rebuild cost, protection, ignore,
+        // confidence), so UIA and the text projection read the same facts.
+        let source = include_str!("view/page_clean.rs");
+        let row = source
+            .find("fn clean_row(")
+            .expect("the Clean row builder must exist");
+        let snippet = &source[row..];
+        let text = snippet
+            .find("crate::clean_workbench::row_text(")
+            .expect("the row name must come from row_text");
         let aria = snippet
-            .find(".aria_label(SharedString::from(line.clone()))")
-            .expect("panel-line div must set aria_label from line.clone()");
-        let child = snippet
-            .find(".child(SharedString::from(line))")
-            .expect("panel-line div must still paint line as the child");
-        assert!(
-            !snippet[..child].contains("GenericContainer"),
-            "panel-line div must not set GenericContainer"
-        );
-        assert!(role < aria, "Role::ListItem must come before aria_label");
-        assert!(
-            aria < child,
-            "aria_label from line.clone() must come before the child"
-        );
+            .find(".aria_label(SharedString::from(text))")
+            .expect("the row must use that text as its accessible name");
+        let list_item = include_str!("ui.rs")
+            .find(".role(gpui::Role::ListItem)")
+            .expect("list rows must keep Role::ListItem");
+        assert!(text < aria);
+        assert!(list_item > 0);
+        let ai = include_str!("view/page_clean.rs");
+        assert!(ai.contains("let text = view.row_text(locale, id, focused)"));
     }
 
     #[test]

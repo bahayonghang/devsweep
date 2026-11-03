@@ -1524,7 +1524,7 @@ impl Session {
     }
 
     fn status_enter(&mut self) {
-        let mut panel = self.status_panel.take().unwrap_or_else(StatusPanel::new);
+        let mut panel = self.status_panel.take().unwrap_or_default();
         panel.set_main_visible(true);
         match devsweep_core::status::capture_snapshot(8, None) {
             Ok(snapshot) => {
@@ -1592,12 +1592,67 @@ impl Session {
         }
     }
 
+    /// Click path for one Software, Optimize, or Analyze row: select it and run
+    /// the same Enter activation the keyboard uses. Activation plans and
+    /// previews; it never confirms on the first press.
+    pub fn activate_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
+        if self.shell.mode() != mode || self.shell.surface() != Surface::Mode {
+            return;
+        }
+        self.shell.select(mode, id);
+        if mode == Mode::Analyze {
+            self.sync_analyze_board_selection();
+        }
+        self.activate_mode_enter();
+    }
+
+    /// Opens one Software segment directly (the segmented control). Leaves any
+    /// open segment first so the three segments never stack.
+    pub fn software_open_segment(&mut self, segment: crate::workbench::SoftwareSegment) {
+        if self.shell.mode() != Mode::Software {
+            return;
+        }
+        if self.software_review.is_open() {
+            self.software_review.close();
+            self.shell
+                .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
+        }
+        let id = match segment {
+            crate::workbench::SoftwareSegment::Uninstall => "uninstall",
+            crate::workbench::SoftwareSegment::Updates => "updates",
+            crate::workbench::SoftwareSegment::Startup => "startup",
+            crate::workbench::SoftwareSegment::Leftovers => "leftovers",
+        };
+        self.shell.select(Mode::Software, id);
+        let locale = self.locale();
+        self.software_enter(id, locale);
+    }
+
+    /// Returns to the Software landing.
+    pub fn software_close_segment(&mut self) {
+        if self.software_review.is_open() {
+            self.software_review.close();
+            self.shell
+                .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
+        }
+    }
+
+    /// Leaves an open Optimize group, or the Analyze detail, like Escape.
+    pub fn close_mode_detail(&mut self) -> bool {
+        self.close_nested_review()
+    }
+
     pub fn select_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
         self.shell.select(mode, id);
     }
 
     pub fn set_mode_row_window(&mut self, mode: Mode, start: usize) {
         self.shell.set_row_window_start(mode, start);
+    }
+
+    /// Id of the Software/Optimize review awaiting its second activation.
+    pub fn workbench_pending_id(&self) -> Option<&str> {
+        self.workbench_review.pending_id()
     }
 
     pub fn workbench_review_lines(&self) -> &[String] {
@@ -1905,11 +1960,8 @@ impl Session {
             return false;
         };
         let mut events = Vec::new();
-        loop {
-            match receiver.recv_timeout(std::time::Duration::ZERO) {
-                Ok(event) => events.push(event),
-                Err(_) => break,
-            }
+        while let Ok(event) = receiver.recv_timeout(std::time::Duration::ZERO) {
+            events.push(event);
         }
         let mut applied = false;
         for event in events {
@@ -2079,8 +2131,29 @@ impl Session {
         };
     }
 
-    pub fn cycle_theme(&mut self) {
-        self.draft.theme = self.draft.theme.cycle();
+    /// Draft a theme choice. Saving stays an explicit action.
+    pub fn set_theme(&mut self, theme: DesktopTheme) {
+        self.draft.theme = theme;
+    }
+
+    /// Draft a language choice. Saving stays an explicit action.
+    pub fn set_locale(&mut self, locale: Locale) {
+        if self.locale() != locale {
+            self.cycle_language();
+        }
+    }
+
+    /// Draft one of the stored text scales (100, 110, 125). Other values are
+    /// ignored so the draft never holds a value the store rejects.
+    pub fn set_text_scale(&mut self, percent: u8) {
+        if matches!(percent, 100 | 110 | 125) {
+            self.draft.text_scale_percent = percent;
+        }
+    }
+
+    /// True when the draft differs from the committed preferences.
+    pub fn settings_dirty(&self) -> bool {
+        self.draft_desktop_dirty() || self.draft.language != self.draft.committed_language
     }
 
     pub fn set_scan_roots(&mut self, roots: Vec<String>) {

@@ -29,6 +29,10 @@ pub const UPDATES_FILE_ENV: &str = "DEVSWEEP_SOFTWARE_UPDATES_FILE";
 pub const UPDATE_PROGRAM_ENV: &str = "DEVSWEEP_SOFTWARE_UPDATE_PROGRAM";
 pub const HIVE_ENV: &str = "DEVSWEEP_SOFTWARE_STARTUP_HIVE";
 
+/// Isolated uninstall executor injected by tests; the window passes none.
+pub type UninstallExecutor<'a> =
+    dyn FnMut(&SoftwareSelectionPlanV1, &str) -> Result<String, String> + 'a;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SoftwareSort {
     Name,
@@ -129,6 +133,39 @@ impl SoftwareReview {
     #[must_use]
     pub fn lines(&self) -> &[String] {
         &self.lines
+    }
+
+    /// Open segment, when any.
+    #[must_use]
+    pub fn segment(&self) -> Option<SoftwareSegment> {
+        self.segment
+    }
+
+    #[must_use]
+    pub fn sort(&self) -> SoftwareSort {
+        self.sort
+    }
+
+    #[must_use]
+    pub fn filter(&self) -> SoftwareFilter {
+        self.filter
+    }
+
+    /// One reviewed item by id.
+    #[must_use]
+    pub fn item(&self, id: &str) -> Option<&SoftwareItem> {
+        self.items.iter().find(|item| item.id == id)
+    }
+
+    #[must_use]
+    pub fn item_count(&self) -> usize {
+        self.items.len()
+    }
+
+    /// Id of the uninstall plan awaiting a second confirmation, if any.
+    #[must_use]
+    pub fn pending_id(&self) -> Option<&str> {
+        self.pending.as_ref().map(|pending| pending.id.as_str())
     }
 
     #[must_use]
@@ -361,7 +398,7 @@ impl SoftwareReview {
         &mut self,
         id: &str,
         locale: Locale,
-        executor: Option<&mut dyn FnMut(&SoftwareSelectionPlanV1, &str) -> Result<String, String>>,
+        executor: Option<&mut UninstallExecutor<'_>>,
     ) {
         if self.segment == Some(SoftwareSegment::Leftovers) {
             self.lines = vec![copy::software_leftovers_unavailable(locale).to_string()];
@@ -428,9 +465,7 @@ impl SoftwareReview {
     fn confirm_uninstall(
         &mut self,
         locale: Locale,
-        mut executor: Option<
-            &mut dyn FnMut(&SoftwareSelectionPlanV1, &str) -> Result<String, String>,
-        >,
+        mut executor: Option<&mut UninstallExecutor<'_>>,
     ) {
         let Some(pending) = self.pending.clone() else {
             self.lines = vec![copy::software_digest_missing(locale).to_string()];
@@ -971,7 +1006,6 @@ pub fn seal_inventory(inventory: &mut SoftwareInventoryV1) -> Result<(), String>
     Ok(())
 }
 
-#[must_use]
 pub fn entry_id(identity: &SoftwareIdentity) -> Result<String, String> {
     software_entry_id(identity).map_err(|error| error.to_string())
 }

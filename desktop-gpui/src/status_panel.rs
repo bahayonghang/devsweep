@@ -307,13 +307,14 @@ fn metric_line<T>(
     }
 }
 
-/// Searchable, sortable process rows. A displayed PID is not a kill request.
+/// Filtered and sorted process rows shared by the text projection and the
+/// process table. A displayed PID is not a kill request.
 #[must_use]
-pub fn process_lines(
+pub fn sorted_processes(
     snapshot: &devsweep_core::status::StatusSnapshotV1,
     query: &str,
     sort: ProcessSort,
-) -> Vec<String> {
+) -> Vec<devsweep_core::status::ProcessV1> {
     use devsweep_core::status::AvailabilityV1;
     let (AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. }) =
         &snapshot.processes
@@ -338,6 +339,17 @@ pub fn process_lines(
         };
         order.then_with(|| left.pid.cmp(&right.pid))
     });
+    rows
+}
+
+/// Searchable, sortable process rows. A displayed PID is not a kill request.
+#[must_use]
+pub fn process_lines(
+    snapshot: &devsweep_core::status::StatusSnapshotV1,
+    query: &str,
+    sort: ProcessSort,
+) -> Vec<String> {
+    let rows = sorted_processes(snapshot, query, sort);
     rows.iter()
         .map(|row| {
             format!(

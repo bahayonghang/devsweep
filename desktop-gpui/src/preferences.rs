@@ -164,18 +164,6 @@ impl DesktopTheme {
             Self::Claude => "claude",
         }
     }
-
-    pub fn cycle(self) -> Self {
-        match self {
-            Self::Dark => Self::Light,
-            Self::Light => Self::System,
-            Self::System => Self::CatppuccinLatte,
-            Self::CatppuccinLatte => Self::CatppuccinMocha,
-            Self::CatppuccinMocha => Self::Codex,
-            Self::Codex => Self::Claude,
-            Self::Claude => Self::Dark,
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

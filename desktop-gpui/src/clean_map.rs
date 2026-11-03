@@ -13,9 +13,6 @@ pub const MAX_LEAVES: usize = 6;
 /// Rows that receive their own parent group. The byte tail stays in Other.
 pub const MAX_DETAILED_ROWS: usize = 256;
 /// Canvas used by the Found-state map. Layout is independent of the window.
-pub const MAP_CANVAS_WIDTH: f32 = 560.0;
-pub const MAP_CANVAS_HEIGHT: f32 = 220.0;
-
 const GROUP_HEADER: f64 = 18.0;
 
 /// Content class for one scanned target. Color is not a safety claim.
@@ -192,10 +189,10 @@ pub fn review_band(selectable: bool, selected_by_default: bool) -> ReviewBand {
 
 /// Short tile name. A path's last component wins over the rule id.
 pub fn leaf_title(rule_id: &str, path: Option<&str>) -> String {
-    if let Some(name) = path.and_then(path_name) {
-        if !name.is_empty() {
-            return name.to_string();
-        }
+    if let Some(name) = path.and_then(path_name)
+        && !name.is_empty()
+    {
+        return name.to_string();
     }
     rule_short_name(rule_id).to_string()
 }
@@ -367,41 +364,6 @@ pub fn project_disk_map(rows: &[MapInput<'_>], bounds: MapBounds) -> DiskMap {
         groups: laid_groups,
         categories,
     }
-}
-
-/// Fill used for a category tile. High contrast ignores the pastel.
-pub fn category_fill(category: MapCategory, high_contrast: bool) -> u32 {
-    if high_contrast {
-        return 0x000000;
-    }
-    match category {
-        MapCategory::BuildOutput => 0xD6E4F5,
-        MapCategory::SafeToClear => 0xD7F0DE,
-        MapCategory::AgentHistory => 0xE4D9FB,
-        MapCategory::AiModels => 0xF8D5DE,
-        MapCategory::Docker => 0xD4F1F4,
-        MapCategory::SystemApps => 0xE6E4DF,
-        MapCategory::Other => 0xF3E6D4,
-    }
-}
-
-pub fn category_border(category: MapCategory, high_contrast: bool) -> u32 {
-    if high_contrast {
-        return 0xFFFFFF;
-    }
-    match category {
-        MapCategory::BuildOutput => 0x8FB4D6,
-        MapCategory::SafeToClear => 0x8FCB9E,
-        MapCategory::AgentHistory => 0xB7A3E0,
-        MapCategory::AiModels => 0xE3A8B6,
-        MapCategory::Docker => 0x8FCDD4,
-        MapCategory::SystemApps => 0xC5C1B8,
-        MapCategory::Other => 0xE0CDB4,
-    }
-}
-
-pub fn category_ink(high_contrast: bool) -> u32 {
-    if high_contrast { 0xFFFFFF } else { 0x1C2430 }
 }
 
 fn is_build_output(rule_id: &str) -> bool {
@@ -674,6 +636,49 @@ fn push_category(categories: &mut Vec<MapCategory>, category: MapCategory) {
     if !categories.contains(&category) {
         categories.push(category);
     }
+}
+
+/// One squarified rectangle for a caller-owned item index.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SquareRect {
+    pub index: usize,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+/// Squarified layout of `(area, stable key)` items inside `bounds`. Items with
+/// a zero area are dropped. Shared by the Analyze treemap so both maps use one
+/// projection rule.
+#[must_use]
+pub fn squarify_items(items: &[(u64, String)], bounds: MapBounds) -> Vec<SquareRect> {
+    let total: f64 = items.iter().map(|(area, _)| *area as f64).sum();
+    if total <= 0.0 {
+        return Vec::new();
+    }
+    let width = finite_positive(bounds.width);
+    let height = finite_positive(bounds.height);
+    let scale = width * height / total;
+    let data = items
+        .iter()
+        .enumerate()
+        .map(|(index, (area, key))| Datum {
+            index,
+            key: key.clone(),
+            area: *area as f64 * scale,
+        })
+        .collect();
+    squarify(data, Rect::new(0.0, 0.0, width, height))
+        .into_iter()
+        .map(|(index, rect)| SquareRect {
+            index,
+            x: rect.x as f32,
+            y: rect.y as f32,
+            width: rect.width as f32,
+            height: rect.height as f32,
+        })
+        .collect()
 }
 
 fn finite_positive(value: f32) -> f64 {

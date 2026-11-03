@@ -80,7 +80,6 @@ impl WorkbenchReview {
     }
 
     #[must_use]
-    #[allow(dead_code)]
     pub fn pending_id(&self) -> Option<&str> {
         self.pending.as_ref().map(|pending| pending.id.as_str())
     }
@@ -470,12 +469,9 @@ fn refuse_unconfirmed_optimize(plan: Option<&MaintenancePlanV1>) -> String {
     }
 }
 
-fn host_last(id: &str, locale: Locale) -> String {
-    if HOST_NOT_DISPOSABLE.contains(&id) {
-        format!("last={}", copy::workbench_not_run(locale))
-    } else {
-        format!("last={}", copy::workbench_not_run(locale))
-    }
+/// Host rows never report a run from this window, disposable or not.
+fn host_last(_id: &str, locale: Locale) -> String {
+    format!("last={}", copy::workbench_not_run(locale))
 }
 
 fn domain_line(locale: Locale, code: &str, display: &str) -> String {

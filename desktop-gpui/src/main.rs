@@ -2,17 +2,21 @@
 
 #[cfg_attr(not(test), allow(dead_code))]
 mod analyze;
+#[cfg_attr(not(test), allow(dead_code))]
 mod analyze_window;
 mod buffer;
 #[cfg_attr(not(test), allow(dead_code))]
 mod clean;
+#[cfg_attr(not(test), allow(dead_code))]
 mod clean_ai;
+#[cfg_attr(not(test), allow(dead_code))]
 mod clean_map;
 mod clean_workbench;
 #[cfg_attr(not(test), allow(dead_code))]
 mod copy;
 mod icon;
 mod input;
+#[cfg_attr(not(test), allow(dead_code))]
 mod optimize_board;
 #[cfg_attr(not(test), allow(dead_code))]
 mod preferences;
@@ -22,11 +26,14 @@ mod process_spawn;
 mod screen;
 #[cfg_attr(not(test), allow(dead_code))]
 mod shell;
+#[cfg_attr(not(test), allow(dead_code))]
 mod software_review;
 #[cfg_attr(not(test), allow(dead_code))]
 mod status_panel;
 mod tray;
+mod ui;
 mod view;
+#[cfg_attr(not(test), allow(dead_code))]
 mod workbench;
 mod workbench_review;
 

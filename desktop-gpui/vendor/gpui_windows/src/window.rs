@@ -1352,6 +1352,8 @@ fn note_focus_after_activation(
 struct NarratorNoteReset {
     off: Option<accesskit_windows::QueuedEvents>,
     focus: NoteFocusEvents,
+    // Read by the narrator-reset unit test.
+    #[cfg_attr(not(test), allow(dead_code))]
     assertive_label: Option<String>,
 }
 

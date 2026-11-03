@@ -1803,6 +1803,72 @@ pub enum StoreName {
     Protections,
 }
 
+/// Chooses one of two literal strings for the active locale. Used by the
+/// designed GPUI pages for short labels that have no older catalogue entry.
+#[must_use]
+pub fn pick(locale: Locale, en: &'static str, zh: &'static str) -> &'static str {
+    match locale {
+        Locale::En => en,
+        Locale::ZhCn => zh,
+    }
+}
+
+/// Display name of one Optimize catalogue id. Unknown ids show the id.
+#[must_use]
+pub fn optimize_task_title(locale: Locale, id: &str) -> String {
+    let (en, zh) = match id {
+        "dns.flush" => ("Flush DNS cache", "刷新 DNS 缓存"),
+        "settings.storage_recommendations" => ("Storage recommendations", "存储建议"),
+        "settings.search" => ("Search indexing settings", "搜索索引设置"),
+        "settings.energy_recommendations" => ("Energy recommendations", "节能建议"),
+        "guidance.drive_optimize" => ("Optimize drives", "优化驱动器"),
+        "guidance.system_integrity" => ("System file integrity", "系统文件完整性"),
+        "guidance.filesystem_check" => ("File system check", "文件系统检查"),
+        "guidance.network_reset" => ("Network reset", "网络重置"),
+        "maintenance.retrim" => ("Retrim SSD volumes", "SSD 重新修剪"),
+        "maintenance.clock_probe" => ("Check clock offset", "检查时钟偏差"),
+        "maintenance.clock_sync" => ("Resync system clock", "重新同步系统时钟"),
+        "maintenance.image_scan" => ("Scan Windows image", "扫描 Windows 映像"),
+        "maintenance.image_repair" => ("Repair Windows image", "修复 Windows 映像"),
+        "maintenance.dead_startup" => ("Broken startup entries", "失效的启动项"),
+        "maintenance.disk_health" => ("Disk health", "磁盘健康"),
+        "maintenance.update_cache" => ("Windows Update cache", "Windows 更新缓存"),
+        "maintenance.icon_cache" => ("Icon cache", "图标缓存"),
+        "maintenance.search" => ("Rebuild search index", "重建搜索索引"),
+        "maintenance.winget_repair" => ("Repair winget sources", "修复 winget 源"),
+        other => return other.to_string(),
+    };
+    pick(locale, en, zh).to_string()
+}
+
+/// One-line explanation of one Optimize action class.
+#[must_use]
+pub fn optimize_class_label(locale: Locale, class: &str) -> &'static str {
+    match class {
+        "execute" => pick(locale, "Runs after review", "审阅后执行"),
+        "settings_handoff" => pick(locale, "Opens Windows Settings", "打开 Windows 设置"),
+        "guidance" => pick(locale, "Guidance only", "仅提供指引"),
+        _ => pick(locale, "Read-only check", "只读检查"),
+    }
+}
+
+/// Short description shown under each Clean scope choice.
+#[must_use]
+pub fn clean_scope_detail(locale: Locale, scope: &str) -> &'static str {
+    match scope {
+        "project" => pick(
+            locale,
+            "Build outputs and dependency folders inside the project folders you choose.",
+            "你选择的项目文件夹中的构建产物和依赖目录。",
+        ),
+        _ => pick(
+            locale,
+            "Package-manager and tool caches in your user profile. Nothing is selected until you review it.",
+            "用户目录中的包管理器与工具缓存。审阅之前不会选中任何项。",
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
