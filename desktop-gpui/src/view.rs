@@ -2044,6 +2044,7 @@ fn recommendation_card(
     };
     let element_id = SharedString::from(format!("clean-row-{}", row.id));
     let clicked = row.id.clone();
+    let visible_row = text.clone();
     div()
         .id(ElementId::Name(element_id.clone()))
         .role(gpui::Role::ListItem)
@@ -2057,6 +2058,7 @@ fn recommendation_card(
         }))
         .flex()
         .flex_row()
+        .flex_wrap()
         .items_center()
         .gap_2()
         .px_2()
@@ -2104,6 +2106,15 @@ fn recommendation_card(
                 ),
         )
         .child(SharedString::from(copy::clean_bytes_short(row.bytes)))
+        // The map replaces the row list. This is the same row line, so rebuild
+        // cost, protection, ignore, partial confidence, and inspect-only stay
+        // visible instead of living only in the accessible name.
+        .child(
+            div()
+                .w(px(276.))
+                .text_size(px(12.))
+                .child(SharedString::from(visible_row)),
+        )
         .into_any_element()
 }
 
