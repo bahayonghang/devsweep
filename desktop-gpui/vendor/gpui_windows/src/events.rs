@@ -1288,6 +1288,12 @@ impl WindowsWindowInner {
             self.handle_system_theme_changed(handle, lparam)?;
         };
 
+        // Transparency and high contrast can change without a Light/Dark
+        // transition. Let the app re-read appearance settings on this event.
+        if let Some(mut callback) = self.state.callbacks.appearance_changed.take() {
+            callback();
+            self.state.callbacks.appearance_changed.set(Some(callback));
+        }
         Some(0)
     }
 
@@ -1306,10 +1312,6 @@ impl WindowsWindowInner {
 
                 if new_appearance != self.state.appearance.get() {
                     self.state.appearance.set(new_appearance);
-                    let mut callback = self.state.callbacks.appearance_changed.take()?;
-
-                    callback();
-                    self.state.callbacks.appearance_changed.set(Some(callback));
                     configure_dwm_dark_mode(handle, new_appearance);
                 }
             }

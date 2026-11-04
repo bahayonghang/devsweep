@@ -18,7 +18,8 @@ use std::{
 use gpui::{
     Action, App, AssetSource, Bounds, Context, ElementId, Entity, FocusHandle, Focusable,
     FontWeight, KeyBinding, PathPromptOptions, SharedString, TitlebarOptions, Window, WindowBounds,
-    WindowControlArea, WindowOptions, actions, div, img, prelude::*, px, rems, rgb, size,
+    WindowControlArea, WindowOptions, actions, div, img, linear_color_stop, linear_gradient,
+    prelude::*, px, rems, rgb, rgba, size,
 };
 use gpui_platform::application;
 #[cfg(windows)]
@@ -85,6 +86,47 @@ fn windows_high_contrast_on() -> bool {
     queried.is_ok() && contrast.dwFlags.contains(HCF_HIGHCONTRASTON)
 }
 
+#[derive(Default)]
+struct WindowMaterial {
+    high_contrast: bool,
+    transparency: bool,
+    blur_requested: bool,
+    blur_active: bool,
+}
+
+impl WindowMaterial {
+    fn read_preferences(&mut self) {
+        self.high_contrast = system_high_contrast();
+        #[cfg(windows)]
+        {
+            self.transparency = windows::UI::ViewManagement::UISettings::new()
+                .and_then(|settings| settings.AdvancedEffectsEnabled())
+                .unwrap_or(false);
+        }
+    }
+
+    fn wants_blur(&self, width: gpui::Pixels) -> bool {
+        self.transparency && !self.high_contrast && width >= px(960.0)
+    }
+
+    fn update(&mut self, window: &Window) {
+        let requested = self.wants_blur(window.viewport_size().width);
+        if requested == self.blur_requested {
+            return;
+        }
+        self.blur_requested = requested;
+        if requested {
+            #[cfg(windows)]
+            {
+                self.blur_active = gpui_windows::try_enable_window_blur(window);
+            }
+        } else {
+            window.set_background_appearance(gpui::WindowBackgroundAppearance::Opaque);
+            self.blur_active = false;
+        }
+    }
+}
+
 actions!(
     shell_view,
     [
@@ -141,6 +183,7 @@ impl AssetSource for PackagedAssets {
 
 pub struct ShellView {
     focus_handle: FocusHandle,
+    material: WindowMaterial,
     session: Session,
     save_error: Option<String>,
     note: Entity<TextInput>,
@@ -630,11 +673,14 @@ impl Focusable for ShellView {
 
 impl Render for ShellView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let high_contrast = system_high_contrast();
-        let t = Theme::for_preferences(self.session.theme(), high_contrast);
+        self.material.update(window);
+        let glass = self.material.blur_active;
+        let t = Theme::for_preferences(self.session.theme(), self.material.high_contrast);
         // Spacing and type are rem based, so the stored text scale scales the
         // whole layout, not only the root font.
         window.set_rem_size(px(16.0 * f32::from(self.session.text_scale()) / 100.0));
+        let compact = window.viewport_size().width < window.rem_size() * 69.0;
+        let narrow = window.viewport_size().width < window.rem_size() * 36.0;
         self.sync_inputs(&t, cx);
         // The beaver PNG and the Earth still are single frames. Do not request
         // a decorative animation frame.
@@ -665,7 +711,9 @@ impl Render for ShellView {
         };
         let shell_access = accessible_control(locale, AccessibleSlot::Shell);
         let maximized = window.is_maximized();
-        let top_bar = self.top_bar(&t, locale, selected, surface, menu_open, maximized, cx);
+        let top_bar = self.top_bar(
+            &t, locale, selected, surface, menu_open, maximized, compact, narrow, cx,
+        );
         let page = self.page(&t, cx);
         let busy =
             self.session.shell().activity() == Activity::Busy || self.session.background_busy();
@@ -715,7 +763,14 @@ impl Render for ShellView {
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(t.canvas))
+            .bg(linear_gradient(
+                160.0,
+                linear_color_stop(rgba((t.canvas << 8) | if glass { 0xc4 } else { 0xff }), 0.0),
+                linear_color_stop(
+                    rgba((t.canvas_end << 8) | if glass { 0xc4 } else { 0xff }),
+                    1.0,
+                ),
+            ))
             .text_color(rgb(t.text))
             .text_size(rems(0.9375))
             .child(top_bar)
@@ -726,21 +781,30 @@ impl Render for ShellView {
                     .min_h_0()
                     .overflow_y_scroll()
                     .child(
-                        div().w_full().flex().flex_col().items_center().child(
-                            div()
-                                .id("mode-panel")
-                                .role(gpui::Role::TabPanel)
-                                .aria_label(panel_title(&self.session))
-                                .w_full()
-                                .max_w(rems(76.0))
-                                .px(rems(2.0))
-                                .pt(rems(1.75))
-                                .pb(rems(3.0))
-                                .flex()
-                                .flex_col()
-                                .gap(rems(1.25))
-                                .child(page),
-                        ),
+                        div()
+                            .w_full()
+                            .flex()
+                            .flex_col()
+                            .items_center()
+                            .p(rems(if compact { 0.75 } else { 1.5 }))
+                            .child(
+                                div()
+                                    .id("mode-panel")
+                                    .role(gpui::Role::TabPanel)
+                                    .aria_label(panel_title(&self.session))
+                                    .w_full()
+                                    .max_w(rems(76.0))
+                                    .bg(t.sheet(glass))
+                                    .border_1()
+                                    .border_color(t.sheet_edge(glass))
+                                    .rounded(px(20.0))
+                                    .when(glass, |sheet| sheet.shadow_sm())
+                                    .p(rems(if compact { 0.75 } else { 1.5 }))
+                                    .flex()
+                                    .flex_col()
+                                    .gap(rems(1.25))
+                                    .child(page),
+                            ),
                     ),
             )
             .child(
@@ -793,7 +857,7 @@ impl Render for ShellView {
                             .flex_shrink_0()
                             .items_center()
                             .gap(rems(0.5))
-                            .w(rems(17.0))
+                            .w(rems(if narrow { 10.0 } else { 17.0 }))
                             .child(ui::icon("history", t.text_subtle).size(rems(0.85)))
                             .child(
                                 div()
@@ -825,7 +889,7 @@ impl Render for ShellView {
                         .child(
                             div()
                                 .text_size(rems(0.8))
-                                .text_color(rgb(0x5A6274))
+                                .text_color(rgb(if t.high_contrast { t.text } else { 0x91999F }))
                                 .child(copy::clean_screen_active(locale)),
                         ),
                 )
@@ -878,7 +942,7 @@ impl ShellView {
         let locale = self.session.locale();
         let base = InputStyle {
             background: t.surface_alt,
-            border: t.border,
+            border: t.border_strong,
             focus_border: t.accent,
             text: t.text,
             placeholder: t.text_subtle,
@@ -892,7 +956,6 @@ impl ShellView {
             note.set_placeholder(copy::note_placeholder(locale), cx);
             note.set_style(
                 InputStyle {
-                    background: t.canvas,
                     font_px: 12.5,
                     line_px: 17.0,
                     ..base
@@ -916,8 +979,11 @@ impl ShellView {
         surface: Surface,
         menu_open: bool,
         maximized: bool,
+        compact: bool,
+        narrow: bool,
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
+        let tooltip_theme = *t;
         let tabs = Mode::ORDER
             .into_iter()
             .map(|mode| {
@@ -937,7 +1003,7 @@ impl ShellView {
                     .items_center()
                     .gap(rems(0.45))
                     .h(rems(2.1))
-                    .px(rems(0.95))
+                    .px(rems(if compact { 0.65 } else { 0.95 }))
                     .rounded_full()
                     .text_size(rems(0.85))
                     .font_weight(FontWeight::MEDIUM)
@@ -946,11 +1012,13 @@ impl ShellView {
                     .border_color(gpui::transparent_black())
                     .keyboard_focus(t)
                     .when(active, |tab| {
-                        tab.bg(rgb(t.pill)).text_color(rgb(t.pill_text))
+                        tab.bg(rgb(t.pill))
+                            .text_color(rgb(t.pill_text))
+                            .font_weight(FontWeight::SEMIBOLD)
                     })
                     .when(!active, |tab| {
                         tab.text_color(rgb(t.text_muted))
-                            .hover(move |s| s.text_color(rgb(hover_text)))
+                            .hover(move |s| s.text_color(rgb(hover_text)).bg(rgb(t.surface_alt)))
                     })
                     .on_click(cx.listener(move |this, _, _, cx| {
                         this.session.show_mode(mode);
@@ -963,12 +1031,16 @@ impl ShellView {
                         )
                         .size(rems(0.95)),
                     )
-                    .child(access.label)
+                    .when(!compact || active, |tab| tab.child(access.label))
+                    .tooltip(move |_, cx| {
+                        cx.new(|_| TooltipText(access.label.into(), tooltip_theme))
+                            .into()
+                    })
             })
             .collect::<Vec<_>>();
         let keep_on = self.session.stored_lease_count() > 0;
         let toggle = |id: &'static str, icon: &'static str, label: &'static str, on: bool| {
-            let border = if on { t.accent } else { t.border };
+            let border = if on { t.accent } else { t.border_strong };
             let color = if on { t.accent } else { t.text_muted };
             let hover_bg = t.surface_alt;
             div()
@@ -992,10 +1064,30 @@ impl ShellView {
                 .cursor_pointer()
                 .hover(move |s| s.bg(rgb(hover_bg)))
                 .keyboard_focus(t)
-                .tooltip(move |_, cx| cx.new(|_| TooltipText(label.into())).into())
+                .tooltip(move |_, cx| cx.new(|_| TooltipText(label.into(), tooltip_theme)).into())
                 .child(ui::icon(icon, color).size(rems(1.0)))
         };
-        div()
+        let tabs = div()
+            .id("mode-tabs")
+            .occlude()
+            .role(gpui::Role::TabList)
+            .aria_label(copy::modes_label(locale))
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap(rems(0.15))
+            .p(rems(0.25))
+            .rounded_full()
+            .bg(rgb(t.surface))
+            .border_1()
+            .border_color(rgb(t.border))
+            .children(tabs);
+        let (inline_tabs, lower_tabs) = if narrow {
+            (None, Some(tabs))
+        } else {
+            (Some(tabs), None)
+        };
+        let bar = div()
             .id("top-bar")
             .flex()
             .flex_row()
@@ -1064,12 +1156,14 @@ impl ShellView {
                                 .size(rems(1.75))
                                 .with_fallback(|| div().child("DevSweep").into_any_element()),
                         )
-                        .child(
-                            div()
-                                .text_size(rems(0.95))
-                                .font_weight(FontWeight::SEMIBOLD)
-                                .child(WINDOW_TITLE),
-                        )
+                        .when(!compact || narrow, |brand| {
+                            brand.child(
+                                div()
+                                    .text_size(rems(0.95))
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .child(WINDOW_TITLE),
+                            )
+                        })
                         .child(
                             ui::icon("chevron-right", t.text_subtle)
                                 .size(rems(0.8))
@@ -1077,23 +1171,7 @@ impl ShellView {
                         ),
                 ),
             )
-            .child(
-                div()
-                    .id("mode-tabs")
-                    .occlude()
-                    .role(gpui::Role::TabList)
-                    .aria_label(copy::modes_label(locale))
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .gap(rems(0.15))
-                    .p(rems(0.25))
-                    .rounded_full()
-                    .bg(rgb(t.surface))
-                    .border_1()
-                    .border_color(rgb(t.border))
-                    .children(tabs),
-            )
+            .children(inline_tabs)
             .child(
                 div()
                     .flex_1()
@@ -1129,7 +1207,16 @@ impl ShellView {
                     .when(CUSTOM_CAPTION, |row| {
                         row.child(caption_buttons(t, locale, maximized, cx))
                     }),
-            )
+            );
+        div()
+            .flex()
+            .flex_col()
+            .flex_shrink_0()
+            .bg(rgb(t.chrome))
+            .child(bar)
+            .when_some(lower_tabs, |shell, tabs| {
+                shell.child(div().flex().justify_center().pb(rems(0.5)).child(tabs))
+            })
             .into_any_element()
     }
 
@@ -1485,7 +1572,7 @@ fn disk_map_summary_line(session: &Session) -> String {
 }
 
 /// Plain tooltip body for icon-only controls.
-struct TooltipText(SharedString);
+struct TooltipText(SharedString, Theme);
 
 impl Render for TooltipText {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
@@ -1493,8 +1580,10 @@ impl Render for TooltipText {
             .px(rems(0.5))
             .py(rems(0.25))
             .rounded(rems(0.4))
-            .bg(rgb(0x232D4A))
-            .text_color(rgb(0xEEF1F7))
+            .bg(rgb(self.1.surface))
+            .border_1()
+            .border_color(rgb(self.1.border_strong))
+            .text_color(rgb(self.1.text))
             .text_size(rems(0.75))
             .child(self.0.clone())
     }
@@ -2424,7 +2513,10 @@ pub fn run(session: Session) {
                         let mut session = session;
                         // The window never blocks its UI thread on host reads.
                         session.enable_background_jobs();
+                        let mut material = WindowMaterial::default();
+                        material.read_preferences();
                         let view = cx.new(|cx| ShellView {
+                            material,
                             focus_handle: cx.focus_handle(),
                             session,
                             save_error: None,
@@ -2435,6 +2527,11 @@ pub fn run(session: Session) {
                             // A keyboard click can remove the focused control
                             // (a page change). Nothing focused would strand
                             // every chord, so focus falls back to the Note.
+                            cx.observe_window_appearance(window, |this, _, cx| {
+                                this.material.read_preferences();
+                                cx.notify();
+                            })
+                            .detach();
                             cx.on_focus_lost(window, |this, window, cx| {
                                 window.focus(&this.note.focus_handle(cx), cx);
                             })
@@ -2486,12 +2583,23 @@ mod tests {
     };
 
     #[test]
+    fn native_blur_requires_system_consent_and_a_wide_window() {
+        let mut material = WindowMaterial::default();
+        assert!(!material.wants_blur(px(1240.0)));
+        material.transparency = true;
+        assert!(material.wants_blur(px(960.0)));
+        assert!(!material.wants_blur(px(959.0)));
+        material.high_contrast = true;
+        assert!(!material.wants_blur(px(1240.0)));
+    }
+
+    #[test]
     fn light_theme_canvas_is_not_dark() {
         let light = Theme::for_preferences(DesktopTheme::Light, false);
         let dark = Theme::for_preferences(DesktopTheme::Dark, false);
         assert_ne!(light.canvas, dark.canvas);
         assert_ne!(light.text, dark.text);
-        assert_eq!(light.canvas, 0xf3f5fa);
+        assert_eq!(light.canvas, 0xe7f6f1);
         assert!(!light.dark);
     }
 

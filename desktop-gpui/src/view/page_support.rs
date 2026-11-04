@@ -320,7 +320,6 @@ impl ShellView {
                             .px(rems(0.8))
                             .py(rems(0.55))
                             .rounded(rems(0.5))
-                            .hover(|s| s.bg(rgb(t.surface_alt)))
                             .child(ui::icon(row_icon, t.text_muted))
                             .child(
                                 div()

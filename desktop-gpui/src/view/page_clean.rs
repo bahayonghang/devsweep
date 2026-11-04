@@ -8,6 +8,27 @@ use super::*;
 const MAP_WIDTH: f32 = 640.0;
 const MAP_HEIGHT: f32 = 260.0;
 
+fn preview_status(
+    t: &Theme,
+    locale: copy::Locale,
+    id: &'static str,
+    ready: bool,
+    digest_line: String,
+) -> gpui::Stateful<gpui::Div> {
+    let (tone, label) = if ready {
+        (Tone::Success, digest_line)
+    } else {
+        (
+            Tone::Warning,
+            copy::clean_outcome_stale_preview(locale).to_owned(),
+        )
+    };
+    ui::banner(t, tone, label.clone())
+        .id(id)
+        .role(gpui::Role::Status)
+        .aria_label(label)
+}
+
 impl ShellView {
     pub(super) fn clean_page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         if self.session.clean_ai().open() {
@@ -127,110 +148,89 @@ impl ShellView {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
         let prompt = workbench.prompt();
-        let k = if prompt == CleanLandingPrompt::None {
-            1.0
-        } else {
-            0.6
-        };
-        let earth = div()
-            .relative()
-            .flex()
-            .items_center()
-            .justify_center()
-            .size(rems(15.0 * k))
-            .child(
-                div()
-                    .absolute()
-                    .size(rems(15.0 * k))
-                    .rounded_full()
-                    .bg(t.tint(t.accent, 0x14)),
-            )
-            .child(
-                div()
-                    .absolute()
-                    .size(rems(12.75 * k))
-                    .rounded_full()
-                    .border_1()
-                    .border_color(t.tint(t.accent, 0x30)),
-            )
-            .child(
-                img(EARTH_NAME)
-                    .id("clean-earth")
-                    .size(rems(11.25 * k))
-                    .with_fallback(|| div().child(SharedString::from("Earth")).into_any_element()),
-            );
+        let earth = div().flex_shrink_0().child(
+            img(EARTH_NAME)
+                .id("clean-earth")
+                .size(rems(6.5))
+                .with_fallback(|| div().child(SharedString::from("Earth")).into_any_element()),
+        );
         let headline = div()
             .flex()
             .flex_col()
-            .items_center()
+            .flex_1()
+            .min_w_0()
             .gap(rems(0.5))
             .child(
                 div()
-                    .text_size(rems(1.9))
+                    .text_size(rems(1.7))
                     .font_weight(FontWeight::SEMIBOLD)
-                    .child(copy::mode_subtitle(locale, "clean")),
+                    .child(copy::mode_name(locale, "clean")),
             )
+            .child(ui::muted(t, copy::mode_subtitle(locale, "clean")))
             .when(prompt == CleanLandingPrompt::None, |d| d.child(
                 div()
                     .max_w(rems(34.0))
-                    .text_center()
                     .text_size(rems(0.95))
-                    .text_color(rgb(t.text_muted))
                     .child(copy::pick(
                         locale,
                         "DevSweep finds build outputs and tool caches, explains what each one costs to rebuild, and moves only what you confirm to the Recycle Bin.",
                         "DevSweep 找出构建产物与工具缓存，说明每一项的重建代价，只把你确认的内容移到回收站。",
                     )),
             ));
-        let mut hero = div()
-            .flex()
-            .flex_col()
-            .items_center()
-            .gap(rems(1.5))
-            .pt(rems(1.0))
-            .child(earth)
-            .child(headline);
-        hero = match prompt {
-            CleanLandingPrompt::None => hero.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .items_center()
-                    .gap(rems(0.75))
+        let landing = div().flex().flex_col().items_start().gap(rems(1.5)).child(
+            div()
+                .w_full()
+                .flex()
+                .items_center()
+                .gap(rems(1.25))
+                .child(headline)
+                .child(earth),
+        );
+        match prompt {
+            CleanLandingPrompt::None => {
+                landing
                     .child(
-                        ui::icon_button(
-                            t,
-                            "clean-scan-primary",
-                            "play",
-                            copy::clean_scan_primary(locale),
-                            ButtonKind::Primary,
-                        )
-                        .h(rems(2.75))
-                        .px(rems(1.5))
-                        .text_size(rems(0.95))
-                        .on_click(
-                            cx.listener(|this, _, window, cx| this.clean_open_scope(window, cx)),
-                        ),
-                    )
-                    .child(
-                        ui::icon_button(
-                            t,
-                            "clean-ai-open",
-                            "sparkle",
-                            copy::clean_ai_open_action(locale),
-                            ButtonKind::Ghost,
-                        )
-                        .on_click(cx.listener(|this, _, _, cx| this.clean_ai_open(cx))),
+                        div()
+                            .flex()
+                            .flex_row()
+                            .flex_wrap()
+                            .items_center()
+                            .gap(rems(0.75))
+                            .child(
+                                ui::icon_button(
+                                    t,
+                                    "clean-scan-primary",
+                                    "play",
+                                    copy::clean_scan_primary(locale),
+                                    ButtonKind::Primary,
+                                )
+                                .h(rems(2.75))
+                                .px(rems(1.5))
+                                .text_size(rems(0.95))
+                                .on_click(cx.listener(
+                                    |this, _, window, cx| this.clean_open_scope(window, cx),
+                                )),
+                            )
+                            .child(
+                                ui::icon_button(
+                                    t,
+                                    "clean-ai-open",
+                                    "sparkle",
+                                    copy::clean_ai_open_action(locale),
+                                    ButtonKind::Ghost,
+                                )
+                                .on_click(cx.listener(|this, _, _, cx| this.clean_ai_open(cx))),
+                            ),
                     )
                     .when(!self.session.shell().scan_roots().is_empty(), |d| {
                         d.child(self.saved_roots_line(t))
-                    }),
-            ),
-            CleanLandingPrompt::ScopeChoice => hero.child(self.clean_scope_cards(t, cx)),
-            CleanLandingPrompt::RootRequired => hero.child(self.clean_root_picker(t, cx)),
-            CleanLandingPrompt::ConfirmGlobal => hero.child(self.clean_global_confirm(t, cx)),
-        };
-        hero.into_any_element()
+                    })
+            }
+            CleanLandingPrompt::ScopeChoice => landing.child(self.clean_scope_cards(t, cx)),
+            CleanLandingPrompt::RootRequired => landing.child(self.clean_root_picker(t, cx)),
+            CleanLandingPrompt::ConfirmGlobal => landing.child(self.clean_global_confirm(t, cx)),
+        }
+        .into_any_element()
     }
 
     fn saved_roots_line(&self, t: &Theme) -> gpui::AnyElement {
@@ -239,7 +239,6 @@ impl ShellView {
             .flex()
             .flex_row()
             .flex_wrap()
-            .justify_center()
             .items_center()
             .gap(rems(0.4))
             .child(ui::icon("folder", t.text_subtle).size(rems(0.85)))
@@ -283,7 +282,7 @@ impl ShellView {
                 .rounded(rems(0.9))
                 .bg(rgb(t.surface))
                 .border_1()
-                .border_color(rgb(t.border))
+                .border_color(rgb(t.border_strong))
                 .cursor_pointer()
                 .hover(move |s| s.border_color(rgb(hover_border)))
                 .keyboard_focus(t)
@@ -620,8 +619,8 @@ impl ShellView {
         let mut canvas = div()
             .id("clean-disk-map-canvas")
             .relative()
-            .flex_shrink_0()
             .w(px(MAP_WIDTH))
+            .max_w_full()
             .h(px(MAP_HEIGHT))
             .overflow_hidden()
             .rounded(rems(0.6))
@@ -650,9 +649,9 @@ impl ShellView {
                     "clean-map-group-{group_index}"
                 ))))
                 .absolute()
-                .left(px(group.x + 1.0))
+                .left(gpui::relative((group.x + 1.0) / MAP_WIDTH))
                 .top(px(group.y + 1.0))
-                .w(px((group.width - 2.0).max(1.0)))
+                .w(gpui::relative((group.width - 2.0).max(1.0) / MAP_WIDTH))
                 .h(px((group.height - 2.0).max(1.0)))
                 .rounded(px(6.0))
                 .overflow_hidden()
@@ -706,27 +705,23 @@ impl ShellView {
                 let mut tile = div()
                     .id(ElementId::Name(SharedString::from(element_id)))
                     .absolute()
-                    .left(px(x))
+                    .left(gpui::relative(x / (group.width - 2.0).max(1.0)))
                     .top(px(y))
-                    .w(px(w))
+                    .w(gpui::relative(w / (group.width - 2.0).max(1.0)))
                     .h(px(h))
                     .overflow_hidden()
                     .rounded(px(5.0))
                     .px(px(6.0))
                     .py(px(4.0))
-                    .bg(t.tint(hue, if selected { 0x88 } else { 0x38 }))
+                    .bg(t.tint(hue, if selected { 0x30 } else { 0x18 }))
                     .border_1()
-                    .border_color(if selected {
-                        rgb(t.text)
-                    } else {
-                        t.tint(hue, 0x90)
-                    })
+                    .border_color(if selected { rgb(t.text) } else { rgb(hue) })
                     .aria_label(SharedString::from(label));
                 if let Some(id) = leaf.id.clone() {
                     tile = tile
                         .role(gpui::Role::Button)
                         .cursor_pointer()
-                        .hover(|s| s.opacity(0.85))
+                        .hover(|s| s.border_color(rgb(t.text)))
                         .on_click(cx.listener(move |this, _, _, cx| {
                             this.session.clean_click_row(&id);
                             cx.notify();
@@ -745,7 +740,7 @@ impl ShellView {
                         tile = tile.child(
                             div()
                                 .text_size(px(10.5))
-                                .text_color(rgb(t.text_muted))
+                                .text_color(rgb(t.text))
                                 .child(SharedString::from(copy::clean_bytes_short(leaf.bytes))),
                         );
                     }
@@ -835,8 +830,9 @@ impl ShellView {
                     .items_center()
                     .gap(rems(0.5))
                     .w(rems(20.0))
+                    .max_w_full()
                     .child(ui::icon("search", t.text_subtle))
-                    .child(div().flex_1().child(self.search.clone())),
+                    .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
             .when(found, |bar| {
@@ -1052,6 +1048,7 @@ impl ShellView {
                 div()
                     .flex_shrink_0()
                     .text_size(rems(0.95))
+                    .font_features(ui::tabular_numerals())
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(copy::clean_bytes_short(row.bytes)),
             )
@@ -1159,40 +1156,24 @@ impl ShellView {
                             "trash",
                             format!("{} · {selection}", copy::clean_confirm_action(locale)),
                             if ready {
-                                ButtonKind::Primary
+                                ButtonKind::Danger
                             } else {
-                                ButtonKind::Secondary
+                                ButtonKind::Disabled
                             },
                         )
-                        .when(!ready, |b| b.opacity(0.6))
-                        .on_click(cx.listener(|this, _, _, cx| this.clean_confirm_execute(cx))),
+                        .when(ready, |b| {
+                            b.on_click(cx.listener(|this, _, _, cx| this.clean_confirm_execute(cx)))
+                        }),
                     ),
             )
             .when_some(workbench.preview(), |bar, preview| {
-                bar.child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .items_center()
-                        .gap(rems(0.5))
-                        .child(ui::icon(
-                            if ready { "check-circle" } else { "alert" },
-                            if ready { t.success } else { t.warning },
-                        ))
-                        .child(
-                            div()
-                                .flex_1()
-                                .min_w_0()
-                                .truncate()
-                                .text_size(rems(0.76))
-                                .text_color(rgb(t.text_muted))
-                                .child(copy::clean_preview_digest_line(
-                                    locale,
-                                    &preview.digest,
-                                    preview.count,
-                                )),
-                        ),
-                )
+                bar.child(preview_status(
+                    t,
+                    locale,
+                    "clean-preview-status",
+                    ready,
+                    copy::clean_preview_digest_line(locale, &preview.digest, preview.count),
+                ))
             })
             .into_any_element()
     }
@@ -1463,8 +1444,9 @@ impl ShellView {
                             .items_center()
                             .gap(rems(0.5))
                             .w(rems(16.0))
+                            .max_w_full()
                             .child(ui::icon("search", t.text_subtle))
-                            .child(div().flex_1().child(self.search.clone())),
+                            .child(div().flex_1().min_w_0().child(self.search.clone())),
                     ),
             )
             .child(ui::muted(
@@ -1518,18 +1500,24 @@ impl ShellView {
                             "trash",
                             format!("{} · {selection}", copy::clean_ai_confirm_action(locale)),
                             if ready {
-                                ButtonKind::Primary
+                                ButtonKind::Danger
                             } else {
-                                ButtonKind::Secondary
+                                ButtonKind::Disabled
                             },
                         )
-                        .when(!ready, |b| b.opacity(0.6))
-                        .on_click(cx.listener(|this, _, _, cx| this.clean_ai_confirm_execute(cx))),
+                        .when(ready, |b| {
+                            b.on_click(
+                                cx.listener(|this, _, _, cx| this.clean_ai_confirm_execute(cx)),
+                            )
+                        }),
                     ),
             )
             .when_some(view.preview(), |c, preview| {
-                c.child(ui::muted(
+                c.child(preview_status(
                     t,
+                    locale,
+                    "clean-ai-preview-status",
+                    ready,
                     copy::clean_ai_digest_line(locale, &preview.digest, preview.count),
                 ))
             })

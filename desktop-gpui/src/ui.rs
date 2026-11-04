@@ -1,10 +1,8 @@
 //! DevSweep GPUI design system.
 //!
-//! One set of semantic tokens drives every surface: a dark navy field, raised
-//! cards, a light selected pill, and four status tones. Light and Windows
-//! high-contrast palettes redefine the same tokens. Components here are pure
-//! builders: they paint and expose accessible names, and never own state or
-//! start work. Callers attach click handlers.
+//! A single paper surface sits on a cool two-tone field. Controls and data
+//! wells use solid fills. Light, dark and Windows high contrast share the
+//! same control roles. Callers own state and attach click handlers.
 //!
 //! Spacing and type use rems, and the shell sets the window rem size from the
 //! stored text scale, so the whole layout scales together.
@@ -21,9 +19,10 @@ use crate::preferences::DesktopTheme;
 pub struct Theme {
     pub high_contrast: bool,
     pub dark: bool,
-    /// Window field behind everything.
+    /// Endpoints of the window field.
     pub canvas: u32,
-    /// Top bar and footer.
+    pub canvas_end: u32,
+    /// Paper, top bar, and footer.
     pub chrome: u32,
     /// Cards and panels.
     pub surface: u32,
@@ -36,7 +35,7 @@ pub struct Theme {
     pub text: u32,
     pub text_muted: u32,
     pub text_subtle: u32,
-    /// The light selected pill and primary button.
+    /// The selected mode pill and primary action.
     pub pill: u32,
     pub pill_text: u32,
     /// Focus ring, links, progress.
@@ -63,6 +62,26 @@ impl Theme {
         }
     }
 
+    /// Fill for the workbench paper. Its opaque equivalent is used on fallback.
+    #[must_use]
+    pub fn sheet(&self, glass: bool) -> Rgba {
+        let paper = rgb(self.chrome);
+        if glass && !self.high_contrast {
+            paper.alpha(if self.dark { 0.90 } else { 0.78 })
+        } else {
+            paper
+        }
+    }
+
+    #[must_use]
+    pub fn sheet_edge(&self, glass: bool) -> Rgba {
+        if glass && !self.high_contrast {
+            rgb(0xFFFFFF).alpha(if self.dark { 0.16 } else { 0.80 })
+        } else {
+            rgb(self.border)
+        }
+    }
+
     /// Translucent tint of a token for soft fills (badges, banners, tiles).
     #[must_use]
     pub fn tint(&self, color: u32, alpha: u8) -> Rgba {
@@ -70,6 +89,11 @@ impl Theme {
             return rgb(self.canvas);
         }
         rgba((color << 8) | u32::from(alpha))
+    }
+
+    /// Opaque status wash, including when a badge is inside a selected row.
+    fn tone_well(&self, color: u32) -> Rgba {
+        rgb(self.surface).blend(self.tint(color, 0x12))
     }
 
     #[must_use]
@@ -104,51 +128,54 @@ impl Theme {
 pub const DARK: Theme = Theme {
     high_contrast: false,
     dark: true,
-    canvas: 0x0D1222,
-    chrome: 0x10162A,
-    surface: 0x151C32,
-    surface_alt: 0x1B233C,
-    surface_active: 0x232D4A,
-    border: 0x232C47,
-    border_strong: 0x34405F,
-    text: 0xEEF1F7,
-    text_muted: 0xA3ADC2,
-    text_subtle: 0x6E7893,
-    pill: 0xEEF1F7,
-    pill_text: 0x12172A,
-    accent: 0x6E9BFF,
-    success: 0x3DD68C,
-    warning: 0xF5B649,
-    danger: 0xFF6B7A,
-    info: 0x45C2F5,
+    canvas: 0x142322,
+    canvas_end: 0x232032,
+    chrome: 0x20292F,
+    surface: 0x252F36,
+    surface_alt: 0x29353A,
+    surface_active: 0x30443E,
+    border: 0x40504F,
+    border_strong: 0x859E94,
+    text: 0xEDF4F2,
+    text_muted: 0xB3C2BF,
+    text_subtle: 0xA2B4AE,
+    pill: 0xA4DEC8,
+    pill_text: 0x142823,
+    accent: 0x87D9BA,
+    success: 0x96DAAC,
+    warning: 0xEDC37E,
+    danger: 0xFFA6A9,
+    info: 0xC6B5FF,
 };
 
 pub const LIGHT: Theme = Theme {
     high_contrast: false,
     dark: false,
-    canvas: 0xF3F5FA,
+    canvas: 0xE7F6F1,
+    canvas_end: 0xEDE7F8,
     chrome: 0xFFFFFF,
     surface: 0xFFFFFF,
-    surface_alt: 0xF2F5FA,
-    surface_active: 0xE6ECF6,
-    border: 0xE0E5EE,
-    border_strong: 0xC9D1DF,
-    text: 0x192238,
-    text_muted: 0x56627C,
-    text_subtle: 0x8790A6,
-    pill: 0x1E2A45,
+    surface_alt: 0xF2F7F5,
+    surface_active: 0xE7F3EE,
+    border: 0xD9E5DF,
+    border_strong: 0x78877F,
+    text: 0x24303A,
+    text_muted: 0x505F68,
+    text_subtle: 0x52616A,
+    pill: 0x21624D,
     pill_text: 0xFFFFFF,
-    accent: 0x2F6FE4,
-    success: 0x168A4C,
-    warning: 0xB86E00,
-    danger: 0xD33A4A,
-    info: 0x0B83C4,
+    accent: 0x187A56,
+    success: 0x216D47,
+    warning: 0x805413,
+    danger: 0x9F3B45,
+    info: 0x6D4BD6,
 };
 
 pub const HIGH_CONTRAST: Theme = Theme {
     high_contrast: true,
     dark: true,
     canvas: 0x000000,
+    canvas_end: 0x000000,
     chrome: 0x000000,
     surface: 0x000000,
     surface_alt: 0x000000,
@@ -187,6 +214,8 @@ pub enum ButtonKind {
     Ghost,
     /// Destructive confirmation.
     Danger,
+    /// Unavailable action. Callers omit activation handlers in this state.
+    Disabled,
 }
 
 /// Packaged icon names. Every entry is an original stroke drawing under
@@ -311,20 +340,21 @@ pub fn icon(name: &'static str, color: u32) -> Svg {
 ///
 /// The element joins the window tab order in paint order, Enter and Space
 /// fire its click listeners through GPUI's keyboard click, and a keyboard
-/// focus (not a mouse press) draws an accent border plus an outer ring.
+/// focus draws an inset ring. A drop shadow would fill transparent tabs
+/// behind their icon and make a focused tab look selected.
 /// The element must already paint a 1px border, transparent if needed.
 pub trait KeyboardFocus: InteractiveElement + Sized {
     #[must_use]
     fn keyboard_focus(self, t: &Theme) -> Self {
         let ring = t.accent;
-        let halo = t.tint(t.accent, if t.high_contrast { 0xFF } else { 0x55 });
+        let edge = t.pill_text;
         self.tab_index(0).focus_visible(move |s| {
-            s.border_color(rgb(ring)).shadow(vec![BoxShadow {
-                color: halo.into(),
+            s.border_color(rgb(edge)).shadow(vec![BoxShadow {
+                color: rgb(ring).into(),
                 offset: point(px(0.0), px(0.0)),
                 blur_radius: px(0.0),
-                spread_radius: px(2.0),
-                inset: false,
+                spread_radius: px(3.0),
+                inset: true,
             }])
         })
     }
@@ -340,17 +370,37 @@ pub fn button(
     kind: ButtonKind,
 ) -> Stateful<Div> {
     let label = label.into();
-    let (bg, fg, border, hover) = match kind {
-        ButtonKind::Primary => (t.pill, t.pill_text, t.pill, t.pill),
-        ButtonKind::Secondary => (t.surface_alt, t.text, t.border_strong, t.surface_active),
-        ButtonKind::Ghost => (t.surface, t.text_muted, t.surface, t.surface_alt),
-        ButtonKind::Danger => (t.danger, t.pill_text, t.danger, t.danger),
+    button_base(t, id, label.clone(), kind).child(label)
+}
+
+fn button_base(
+    t: &Theme,
+    id: impl Into<ElementId>,
+    label: SharedString,
+    kind: ButtonKind,
+) -> Stateful<Div> {
+    let (bg, fg, border) = match kind {
+        ButtonKind::Primary => (t.pill, t.pill_text, t.pill),
+        ButtonKind::Secondary => (t.surface_alt, t.text, t.border_strong),
+        ButtonKind::Ghost => (t.surface, t.text_muted, t.surface),
+        ButtonKind::Danger => (t.danger, t.pill_text, t.danger),
+        ButtonKind::Disabled => (t.surface_alt, t.text_subtle, t.border),
+    };
+    let (hover, pressed) = match kind {
+        ButtonKind::Primary | ButtonKind::Danger => (
+            rgb(bg).blend(rgb(t.text).alpha(0.15)),
+            rgb(bg).blend(rgb(t.text).alpha(0.32)),
+        ),
+        _ => (
+            rgb(t.surface_active),
+            rgb(t.surface_active).blend(rgb(t.text).alpha(0.06)),
+        ),
     };
     let ghost = kind == ButtonKind::Ghost;
     div()
         .id(id)
         .role(gpui::Role::Button)
-        .aria_label(label.clone())
+        .aria_label(label)
         .flex()
         .flex_row()
         .flex_shrink_0()
@@ -359,7 +409,7 @@ pub fn button(
         .gap(rems(0.4))
         .h(rems(2.25))
         .px(rems(0.9))
-        .rounded(rems(0.6))
+        .rounded_full()
         .border_1()
         .border_color(rgb(border))
         .when(!ghost, |b| b.bg(rgb(bg)))
@@ -368,17 +418,15 @@ pub fn button(
         .text_size(rems(0.875))
         .font_weight(FontWeight::MEDIUM)
         .whitespace_nowrap()
-        .cursor_pointer()
-        .hover(move |s| {
-            if matches!(kind, ButtonKind::Primary | ButtonKind::Danger) {
-                s.opacity(0.88)
-            } else {
-                s.bg(rgb(hover)).text_color(rgb(fg))
-            }
+        .when(kind == ButtonKind::Disabled, |b| {
+            b.a11y_synthetic_children(|tree| tree.parent_node().set_disabled())
         })
-        .active(|s| s.opacity(0.75))
-        .keyboard_focus(t)
-        .child(label)
+        .when(kind != ButtonKind::Disabled, |b| {
+            b.cursor_pointer()
+                .hover(move |s| s.bg(hover).border_color(rgb(fg)))
+                .active(move |s| s.bg(pressed).underline())
+                .keyboard_focus(t)
+        })
 }
 
 /// Button with a leading icon.
@@ -393,15 +441,15 @@ pub fn icon_button(
         ButtonKind::Primary | ButtonKind::Danger => t.pill_text,
         ButtonKind::Secondary => t.text,
         ButtonKind::Ghost => t.text_muted,
+        ButtonKind::Disabled => t.text_subtle,
     };
     let label = label.into();
-    // Rebuild so the icon precedes the label.
-    let base = button(t, id, SharedString::default(), kind).aria_label(label.clone());
+    let base = button_base(t, id, label.clone(), kind);
     base.child(icon(icon_name, fg).size(rems(0.95)))
         .child(label)
 }
 
-/// Raised card.
+/// Opaque content well nested within the workbench paper.
 #[must_use]
 pub fn card(t: &Theme) -> Div {
     div()
@@ -410,8 +458,7 @@ pub fn card(t: &Theme) -> Div {
         .bg(rgb(t.surface))
         .border_1()
         .border_color(rgb(t.border))
-        .rounded(rems(0.9))
-        .when(!t.high_contrast && !t.dark, |c| c.shadow_sm())
+        .rounded(rems(1.0))
         .p(rems(1.25))
 }
 
@@ -456,25 +503,18 @@ pub fn muted(t: &Theme, text: impl Into<SharedString>) -> Div {
 #[must_use]
 pub fn badge(t: &Theme, text: impl Into<SharedString>, tone: Tone) -> Div {
     let color = t.tone(tone);
-    let fg = if t.high_contrast { t.text } else { color };
     div()
         .flex()
         .flex_shrink_0()
         .items_center()
-        .gap(rems(0.3))
-        .px(rems(0.5))
+        .px(rems(0.45))
         .py(rems(0.1))
         .rounded_full()
-        .bg(t.tint(color, 0x24))
-        .border_1()
-        .border_color(if t.high_contrast {
-            rgb(t.text)
-        } else {
-            t.tint(color, 0x40)
-        })
+        .bg(t.tone_well(color))
+        .when(t.high_contrast, |b| b.border_1().border_color(rgb(t.text)))
         .text_size(rems(0.72))
         .font_weight(FontWeight::MEDIUM)
-        .text_color(rgb(fg))
+        .text_color(rgb(color))
         .whitespace_nowrap()
         .child(text.into())
 }
@@ -547,8 +587,19 @@ pub fn progress_track(t: &Theme) -> Div {
                 .w(rems(0.9))
                 .flex_shrink_0()
                 .rounded_full()
-                .bg(t.tint(t.accent, if index % 2 == 0 { 0xC0 } else { 0x55 }))
+                .bg(if t.high_contrast {
+                    rgb(t.accent)
+                } else {
+                    t.tint(t.accent, if index % 2 == 0 { 0xC0 } else { 0x55 })
+                })
         }))
+}
+
+/// Keep digits aligned while respecting the user's chosen typeface.
+pub fn tabular_numerals() -> gpui::FontFeatures {
+    static FEATURES: std::sync::LazyLock<gpui::FontFeatures> =
+        std::sync::LazyLock::new(|| gpui::FontFeatures(vec![("tnum".into(), 1)].into()));
+    FEATURES.clone()
 }
 
 /// Metric tile: label, large value, detail line.
@@ -586,6 +637,7 @@ pub fn stat(
         .child(
             div()
                 .text_size(rems(1.45))
+                .font_features(tabular_numerals())
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(rgb(t.text))
                 .child(value),
@@ -616,7 +668,7 @@ pub fn banner(t: &Theme, tone: Tone, text: impl Into<SharedString>) -> Div {
         .px(rems(0.9))
         .py(rems(0.6))
         .rounded(rems(0.6))
-        .bg(t.tint(color, 0x1A))
+        .bg(t.tone_well(color))
         .border_1()
         .border_color(if t.high_contrast {
             rgb(t.text)
@@ -687,7 +739,7 @@ pub fn segmented(t: &Theme) -> Div {
         .items_center()
         .gap(rems(0.2))
         .p(rems(0.2))
-        .rounded(rems(0.7))
+        .rounded(rems(0.65))
         .bg(rgb(t.surface_alt))
         .border_1()
         .border_color(rgb(t.border))
@@ -714,17 +766,26 @@ pub fn segment(
         .px(rems(0.8))
         .rounded(rems(0.5))
         .text_size(rems(0.82))
-        .font_weight(FontWeight::MEDIUM)
+        .font_weight(if active {
+            FontWeight::SEMIBOLD
+        } else {
+            FontWeight::MEDIUM
+        })
         .whitespace_nowrap()
         .cursor_pointer()
         .border_1()
         .border_color(gpui::transparent_black())
         .keyboard_focus(t)
-        .when(active, |s| s.bg(rgb(t.pill)).text_color(rgb(t.pill_text)))
+        .when(active, |s| {
+            s.bg(rgb(t.surface_active))
+                .text_color(rgb(t.text))
+                .border_color(rgb(t.border_strong))
+        })
         .when(!active, |s| {
             s.text_color(rgb(t.text_muted))
-                .hover(move |h| h.bg(rgb(hover_bg)))
+                .hover(move |h| h.bg(rgb(hover_bg)).text_color(rgb(t.text)))
         })
+        .active(|s| s.underline())
         .child(label)
 }
 
@@ -744,9 +805,7 @@ pub fn checkbox(t: &Theme, checked: bool, enabled: bool) -> Div {
         .when(checked, |c| c.bg(rgb(t.accent)))
         .when(!enabled, |c| c.opacity(0.4))
         .when(checked, |c| {
-            c.child(
-                icon("check", if t.high_contrast { 0x000000 } else { 0xFFFFFF }).size(rems(0.8)),
-            )
+            c.child(icon("check", t.pill_text).size(rems(0.8)))
         })
 }
 
@@ -775,7 +834,11 @@ pub fn list_row(
         } else {
             gpui::transparent_black().into()
         })
-        .when(selected, |r| r.bg(rgb(t.surface_active)))
+        .bg(rgb(if selected {
+            t.surface_active
+        } else {
+            t.surface
+        }))
         .when(!selected, |r| r.hover(move |h| h.bg(rgb(hover_bg))))
         .cursor_pointer()
         .keyboard_focus(t)
@@ -858,18 +921,72 @@ mod tests {
     }
 
     #[test]
-    fn palettes_keep_distinct_fields_and_readable_pills() {
-        assert_ne!(DARK.canvas, LIGHT.canvas);
-        assert_eq!(HIGH_CONTRAST.canvas, 0x000000);
-        assert_eq!(HIGH_CONTRAST.text, 0xFFFFFF);
-        for theme in [DARK, LIGHT, HIGH_CONTRAST] {
-            assert_ne!(theme.pill, theme.pill_text);
-            assert_ne!(theme.text, theme.canvas);
+    fn paper_is_translucent_only_in_normal_glass_mode() {
+        for theme in [DARK, LIGHT] {
+            assert!(theme.sheet(true).a < 1.0);
+            assert_eq!(theme.sheet(false), rgb(theme.chrome));
+            assert_ne!(theme.canvas, theme.canvas_end);
         }
+        assert_eq!(HIGH_CONTRAST.sheet(true), HIGH_CONTRAST.sheet(false));
+        assert_eq!(HIGH_CONTRAST.sheet_edge(true), rgb(HIGH_CONTRAST.border));
         assert_eq!(
             Theme::for_preferences(DesktopTheme::Light, true),
             HIGH_CONTRAST
         );
+    }
+
+    fn assert_contrast(foreground: u32, background: Rgba, minimum: f32) {
+        fn luminance(color: Rgba) -> f32 {
+            let [r, g, b] = [color.r, color.g, color.b].map(|c| {
+                if c <= 0.04045 {
+                    c / 12.92
+                } else {
+                    ((c + 0.055) / 1.055).powf(2.4)
+                }
+            });
+            0.2126 * r + 0.7152 * g + 0.0722 * b
+        }
+        let fg = luminance(rgb(foreground));
+        let bg = luminance(background);
+        let ratio = (fg.max(bg) + 0.05) / (fg.min(bg) + 0.05);
+        assert!(
+            ratio >= minimum,
+            "#{foreground:06x} on {background:?}: {ratio:.2} < {minimum}"
+        );
+    }
+
+    #[test]
+    fn text_and_control_edges_meet_contrast_on_paper_and_wells() {
+        for t in [DARK, LIGHT, HIGH_CONTRAST] {
+            for background in [
+                rgb(t.canvas).blend(t.sheet(true)),
+                rgb(t.canvas_end).blend(t.sheet(true)),
+                t.sheet(false),
+                rgb(t.surface),
+                rgb(t.surface_alt),
+                rgb(t.surface_active),
+            ] {
+                for foreground in [t.text, t.text_muted, t.text_subtle] {
+                    assert_contrast(foreground, background, 4.5);
+                }
+                assert_contrast(t.accent, background, 3.0);
+                assert_contrast(t.border_strong, background, 3.0);
+            }
+            for tone in [
+                Tone::Neutral,
+                Tone::Accent,
+                Tone::Success,
+                Tone::Warning,
+                Tone::Danger,
+                Tone::Info,
+            ] {
+                let color = t.tone(tone);
+                assert_contrast(color, t.tone_well(color), 4.5);
+            }
+            for fill in [t.pill, t.danger, t.accent] {
+                assert_contrast(t.pill_text, rgb(fill), 4.5);
+            }
+        }
     }
 
     #[test]

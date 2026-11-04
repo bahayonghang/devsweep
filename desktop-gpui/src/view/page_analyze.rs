@@ -146,21 +146,24 @@ impl ShellView {
                 .items_center()
                 .gap(rems(0.85))
                 .w(rems(20.0))
+                .max_w_full()
                 .p(rems(1.0))
                 .rounded(rems(0.9))
                 .bg(rgb(t.surface))
                 .border_1()
-                .border_color(rgb(t.border))
+                .border_color(rgb(if ready { t.border_strong } else { t.border }))
                 .when(ready, |c| {
                     c.cursor_pointer()
                         .hover(move |s| s.border_color(rgb(hover)))
                         .keyboard_focus(t)
+                        .on_click(cx.listener(move |this, _, _, cx| {
+                            let _ = this.session.analyze_open_listed(index);
+                            cx.notify();
+                        }))
                 })
-                .when(!ready, |c| c.opacity(0.7))
-                .on_click(cx.listener(move |this, _, _, cx| {
-                    let _ = this.session.analyze_open_listed(index);
-                    cx.notify();
-                }))
+                .when(!ready, |c| {
+                    c.a11y_synthetic_children(|tree| tree.parent_node().set_disabled())
+                })
                 .child(ui::icon_tile(
                     t,
                     "drive",
@@ -175,7 +178,7 @@ impl ShellView {
                         choice.error.clone().unwrap_or_default()
                     },
                 ))
-                .child(ui::icon("chevron-right", t.text_subtle))
+                .when(ready, |c| c.child(ui::icon("chevron-right", t.text_subtle)))
         });
         div()
             .flex()
@@ -233,8 +236,7 @@ impl ShellView {
             .role(gpui::Role::Group)
             .aria_label(copy::analyze_treemap_title(locale))
             .relative()
-            .flex_shrink_0()
-            .w(px(TREEMAP_W))
+            .w_full()
             .h(px(TREEMAP_H))
             .rounded(rems(0.6))
             .overflow_hidden()
@@ -259,23 +261,19 @@ impl ShellView {
                     ui::bytes(child.bytes)
                 )))
                 .absolute()
-                .left(px(rect.x + 1.0))
+                .left(gpui::relative((rect.x + 1.0) / TREEMAP_W))
                 .top(px(rect.y + 1.0))
-                .w(px(w))
+                .w(gpui::relative(w / TREEMAP_W))
                 .h(px(h))
                 .rounded(px(5.0))
                 .overflow_hidden()
                 .px(px(6.0))
                 .py(px(4.0))
-                .bg(t.tint(hue, if is_selected { 0x90 } else { 0x3A }))
+                .bg(t.tint(hue, if is_selected { 0x30 } else { 0x18 }))
                 .border_1()
-                .border_color(if is_selected {
-                    rgb(t.text)
-                } else {
-                    t.tint(hue, 0x90)
-                })
+                .border_color(if is_selected { rgb(t.text) } else { rgb(hue) })
                 .cursor_pointer()
-                .hover(|s| s.opacity(0.85))
+                .hover(|s| s.border_color(rgb(t.text)))
                 .on_click(cx.listener(move |this, _, _, cx| {
                     this.session.analyze_select(id);
                     cx.notify();
@@ -293,7 +291,7 @@ impl ShellView {
                     tile = tile.child(
                         div()
                             .text_size(px(10.5))
-                            .text_color(rgb(t.text_muted))
+                            .text_color(rgb(t.text))
                             .child(SharedString::from(ui::bytes(child.bytes))),
                     );
                 }
@@ -395,6 +393,7 @@ impl ShellView {
                                     div()
                                         .flex_shrink_0()
                                         .text_size(rems(0.82))
+                                        .font_features(ui::tabular_numerals())
                                         .font_weight(FontWeight::MEDIUM)
                                         .child(SharedString::from(ui::bytes(child.bytes))),
                                 ),
@@ -640,6 +639,8 @@ impl ShellView {
                     .gap(rems(1.0))
                     .child(
                         ui::card(t)
+                            .w(px(TREEMAP_W))
+                            .max_w_full()
                             .gap(rems(0.75))
                             .child(ui::card_header(t, copy::analyze_treemap_title(locale)))
                             .child(canvas)

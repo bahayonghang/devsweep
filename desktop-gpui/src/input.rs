@@ -9,6 +9,7 @@ use gpui::{
 
 use crate::buffer::{BufferError, TextBuffer};
 use crate::copy::Locale;
+use crate::ui;
 use crate::view::{AccessibleControl, AccessibleSlot, accessible_control};
 
 actions!(spike_input, [Backspace, Delete, Left, Right, Home, End]);
@@ -43,14 +44,15 @@ pub struct InputStyle {
 
 impl Default for InputStyle {
     fn default() -> Self {
+        let theme = ui::DARK;
         Self {
-            background: 0xffffff,
-            border: 0xc8c2b4,
-            focus_border: 0x1d4e89,
-            text: 0x192238,
-            placeholder: 0x8a94ab,
-            caret: 0x1d4e89,
-            selection: 0x3366e64d,
+            background: theme.surface_alt,
+            border: theme.border_strong,
+            focus_border: theme.accent,
+            text: theme.text,
+            placeholder: theme.text_subtle,
+            caret: theme.accent,
+            selection: (theme.accent << 8) | 0x55,
             font_px: NOTE_FONT_PX,
             line_px: NOTE_LINE_HEIGHT_PX,
         }
@@ -68,6 +70,7 @@ pub struct TextInput {
     tab_index: isize,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
+    scroll_x: Pixels,
 }
 
 impl TextInput {
@@ -92,6 +95,7 @@ impl TextInput {
             tab_index: 0,
             last_layout: None,
             last_bounds: None,
+            scroll_x: px(0.0),
         }
     }
 
@@ -114,6 +118,7 @@ impl TextInput {
             tab_index: 0,
             last_layout: None,
             last_bounds: None,
+            scroll_x: px(0.0),
         }
     }
 
@@ -212,7 +217,7 @@ impl TextInput {
         if position.y > bounds.bottom() {
             return self.buffer.content().len();
         }
-        line.closest_index_for_x(position.x - bounds.left())
+        line.closest_index_for_x(position.x - bounds.left() + self.scroll_x)
     }
 
     fn selection_changed(&mut self, window: &Window, cx: &mut Context<Self>) {
@@ -333,11 +338,11 @@ impl EntityInputHandler for TextInput {
         let utf8 = self.buffer.byte_range_from_utf16(range_utf16).ok()?;
         Some(Bounds::from_corners(
             point(
-                bounds.left() + last_layout.x_for_index(utf8.start),
+                bounds.left() - self.scroll_x + last_layout.x_for_index(utf8.start),
                 bounds.top(),
             ),
             point(
-                bounds.left() + last_layout.x_for_index(utf8.end),
+                bounds.left() - self.scroll_x + last_layout.x_for_index(utf8.end),
                 bounds.bottom(),
             ),
         ))
@@ -367,7 +372,7 @@ impl EntityInputHandler for TextInput {
             return None;
         }
         let content = self.buffer.content();
-        let mut utf8_index = last_layout.closest_index_for_x(line_point.x);
+        let mut utf8_index = last_layout.closest_index_for_x(line_point.x + self.scroll_x);
         if utf8_index > content.len() {
             utf8_index = content.len();
         }
@@ -383,10 +388,20 @@ struct TextElement {
 }
 
 struct PrepaintState {
+    scroll_x: Pixels,
     line: Option<ShapedLine>,
     placeholder: Option<ShapedLine>,
     cursor: Option<PaintQuad>,
     selection: Option<PaintQuad>,
+}
+
+/// Keep the insertion caret in the visible single-line field, including after resize.
+fn caret_scroll(previous: Pixels, cursor: Pixels, width: Pixels, text_width: Pixels) -> Pixels {
+    let available = (width - px(2.)).max(px(0.));
+    previous
+        .min(cursor)
+        .max(cursor - available)
+        .min((text_width - available).max(px(0.)))
 }
 
 impl IntoElement for TextElement {
@@ -498,12 +513,14 @@ impl Element for TextElement {
             None
         };
         let cursor_pos = line.x_for_index(cursor);
+        let scroll_x = caret_scroll(input.scroll_x, cursor_pos, bounds.size.width, line.width);
+        let text_left = bounds.left() - scroll_x;
         let (selection, cursor) = if selected_range.is_empty() {
             (
                 None,
                 Some(fill(
                     Bounds::new(
-                        point(bounds.left() + cursor_pos, bounds.top()),
+                        point(text_left + cursor_pos, bounds.top()),
                         size(px(2.), bounds.bottom() - bounds.top()),
                     ),
                     caret_color,
@@ -514,11 +531,11 @@ impl Element for TextElement {
                 Some(fill(
                     Bounds::from_corners(
                         point(
-                            bounds.left() + line.x_for_index(selected_range.start),
+                            text_left + line.x_for_index(selected_range.start),
                             bounds.top(),
                         ),
                         point(
-                            bounds.left() + line.x_for_index(selected_range.end),
+                            text_left + line.x_for_index(selected_range.end),
                             bounds.bottom(),
                         ),
                     ),
@@ -528,6 +545,7 @@ impl Element for TextElement {
             )
         };
         PrepaintState {
+            scroll_x,
             line: Some(line),
             placeholder: placeholder_line,
             cursor,
@@ -568,7 +586,7 @@ impl Element for TextElement {
                 .ok();
         } else {
             line.paint(
-                bounds.origin,
+                point(bounds.left() - prepaint.scroll_x, bounds.top()),
                 window.line_height(),
                 TextAlign::Left,
                 None,
@@ -585,6 +603,7 @@ impl Element for TextElement {
         self.input.update(cx, |input, _cx| {
             input.last_layout = Some(line);
             input.last_bounds = Some(bounds);
+            input.scroll_x = prepaint.scroll_x;
         });
     }
 }
@@ -623,14 +642,19 @@ impl Render for TextInput {
             .px(px(12.0 * scale))
             .py(px(7.0 * scale))
             .bg(rgb(style.background))
-            .border_1()
+            .border_2()
             .border_color(rgb(style.border))
             .rounded(px(10.0 * scale))
             .text_color(rgb(style.text))
             .text_size(px(font_px))
             .line_height(px(line_px))
             .focus(move |focused| focused.border_color(rgb(style.focus_border)))
-            .child(TextElement { input: cx.entity() })
+            .child(
+                div()
+                    .w_full()
+                    .overflow_hidden()
+                    .child(TextElement { input: cx.entity() }),
+            )
     }
 }
 
@@ -657,5 +681,13 @@ mod tests {
         let (font, line) = scaled_text_metrics(125);
         assert_close(font, 25.0);
         assert_close(line, 35.0);
+    }
+
+    #[test]
+    fn long_text_keeps_its_caret_visible_after_navigation_and_resize() {
+        assert_eq!(caret_scroll(px(0.), px(160.), px(100.), px(160.)), px(62.));
+        assert_eq!(caret_scroll(px(62.), px(130.), px(100.), px(160.)), px(62.));
+        assert_eq!(caret_scroll(px(62.), px(10.), px(100.), px(160.)), px(10.));
+        assert_eq!(caret_scroll(px(62.), px(160.), px(200.), px(160.)), px(0.));
     }
 }

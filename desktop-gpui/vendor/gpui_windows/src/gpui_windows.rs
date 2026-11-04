@@ -43,5 +43,6 @@ pub(crate) use window::*;
 pub(crate) use wrapper::*;
 
 pub use platform::WindowsPlatform;
+pub use window::try_enable_window_blur;
 
 pub(crate) use windows::Win32::Foundation::HWND;

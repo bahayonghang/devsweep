@@ -95,3 +95,26 @@ or suppressing the assertion. Verify changes with accessibility enabled, mouse
 clicks (including the already-selected tab), Tab/Shift+Tab, and keyboard
 activation in the native debug build. Source guards and state tests do not
 replace that runtime check.
+
+## GPUI window material
+
+The app applies one translucent work surface over a window-level gradient. Data
+rows and input wells use opaque fills. Keep the saved theme and text scale when
+changing material. `WindowMaterial::wants_blur` uses logical viewport pixels.
+
+| Window state | Renderer and surface |
+| --- | --- |
+| Width ≥ 960, Windows advanced effects enabled, normal contrast | Request blur once on entry. Paint translucent surfaces only after `gpui_windows::try_enable_window_blur(&Window)` succeeds. |
+| Width < 960, high contrast, advanced effects disabled or unavailable | Opaque window and paper. High contrast takes precedence over the saved palette. |
+| Non-composited swap chain or native accent call fails | Opaque fallback even at full width. `GPUI_DISABLE_DIRECT_COMPOSITION=1` exercises the unsupported-renderer case on Windows. |
+
+Refresh system preferences on appearance notifications, including
+`WM_SETTINGCHANGE` with an unchanged light/dark palette. Do not poll Windows
+settings on every frame. A native request returning success and a screenshot
+of a pastel gradient are insufficient to establish visible transparency. On
+Windows compare a pixel inside the owned window over two controlled backgrounds,
+then repeat at narrow width or with direct composition disabled.
+
+On transparent interactive surfaces draw keyboard focus with an inset ring.
+A zero-blur outer shadow paints through an unfilled tab and can obscure its
+icon. Verify with one tab selected and another focused in the native window.

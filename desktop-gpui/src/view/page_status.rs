@@ -172,7 +172,9 @@ impl ShellView {
             None => t.text_subtle,
         };
         ui::card(t)
-            .min_w_0()
+            .flex_1()
+            .flex_basis(gpui::relative(0.30))
+            .min_w(rems(12.0))
             .gap(rems(0.55))
             .p(rems(1.0))
             .id(ElementId::Name(SharedString::from(format!(
@@ -198,6 +200,7 @@ impl ShellView {
             .child(
                 div()
                     .text_size(rems(1.5))
+                    .font_features(ui::tabular_numerals())
                     .font_weight(FontWeight::SEMIBOLD)
                     .when(fraction.is_none(), |d| {
                         d.text_color(rgb(t.text_subtle)).text_size(rems(1.05))
@@ -209,7 +212,6 @@ impl ShellView {
                 div()
                     .text_size(rems(0.76))
                     .text_color(rgb(t.text_muted))
-                    .truncate()
                     .child(detail),
             )
             .into_any_element()
@@ -460,7 +462,14 @@ impl ShellView {
                     .child(ui::eyebrow(t, copy::status_health_title(locale)))
                     .child(ui::badge(t, health_label, health_tone)),
             )
-            .child(div().grid().grid_cols(3).gap(rems(0.75)).children(cards))
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .flex_wrap()
+                    .gap(rems(0.75))
+                    .children(cards),
+            )
             .into_any_element()
     }
 
@@ -620,8 +629,8 @@ impl ShellView {
                     ui::bytes(row.private_bytes)
                 )))
                 .border_1()
-                .border_color(rgb(if selected { t.accent } else { t.surface }))
-                .when(selected, |row| row.bg(rgb(t.surface_alt)))
+                .border_color(rgb(if selected { t.border_strong } else { t.surface }))
+                .when(selected, |row| row.bg(rgb(t.surface_active)))
                 .cursor_pointer()
                 .keyboard_focus(t)
                 .on_click(cx.listener(move |this, _, _, cx| {
@@ -642,7 +651,8 @@ impl ShellView {
                 .px(rems(0.85))
                 .py(rems(0.45))
                 .rounded(rems(0.5))
-                .hover(|s| s.bg(rgb(t.surface_alt)))
+                .when(!selected, |row| row.hover(|s| s.bg(rgb(t.surface_alt))))
+                .font_features(ui::tabular_numerals())
                 .child(
                     div()
                         .flex()
@@ -721,6 +731,7 @@ impl ShellView {
             .gap(rems(0.75))
             .child(
                 ui::card_header(t, copy::pick(locale, "Processes", "进程"))
+                    .flex_wrap()
                     .child(div().flex_1())
                     .child(
                         div()
@@ -729,8 +740,9 @@ impl ShellView {
                             .items_center()
                             .gap(rems(0.5))
                             .w(rems(16.0))
+                            .max_w_full()
                             .child(ui::icon("search", t.text_subtle))
-                            .child(div().flex_1().child(self.search.clone())),
+                            .child(div().flex_1().min_w_0().child(self.search.clone())),
                     )
                     .child(
                         ui::icon_button(t, "status-sort", "sort", sort_label, ButtonKind::Ghost)
@@ -753,9 +765,21 @@ impl ShellView {
                     .map(|line| ui::muted(t, line)),
             )
             .children(orphan)
-            .child(table_header)
-            .child(ui::divider(t))
-            .child(div().flex().flex_col().children(body))
+            .child(
+                div()
+                    .id("status-process-columns")
+                    .w_full()
+                    .overflow_x_scroll()
+                    .child(
+                        div()
+                            .min_w(rems(38.0))
+                            .flex()
+                            .flex_col()
+                            .child(table_header)
+                            .child(ui::divider(t))
+                            .children(body),
+                    ),
+            )
             .into_any_element()
     }
 

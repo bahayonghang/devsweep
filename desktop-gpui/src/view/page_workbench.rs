@@ -72,6 +72,7 @@ impl ShellView {
                 div()
                     .flex()
                     .flex_row()
+                    .flex_wrap()
                     .items_center()
                     .gap(rems(0.75))
                     .child(
@@ -189,7 +190,7 @@ impl ShellView {
                     .px(rems(0.75))
                     .rounded(rems(0.5))
                     .bg(rgb(t.surface))
-                    .border_color(rgb(t.border))
+                    .border_color(rgb(t.border_strong))
                     .hover(move |s| s.border_color(rgb(hover)))
                     .child(ui::icon(icon, t.text_muted).size(rems(0.9)))
                     .child(div().text_size(rems(0.82)).child(title))
@@ -202,7 +203,7 @@ impl ShellView {
                     .p(rems(1.25))
                     .rounded(rems(0.9))
                     .bg(rgb(t.surface))
-                    .border_color(rgb(t.border))
+                    .border_color(rgb(t.border_strong))
                     .hover(move |s| s.border_color(rgb(hover)))
                     .child(ui::icon_tile(t, icon, t.accent))
                     .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
@@ -276,8 +277,9 @@ impl ShellView {
                     .items_center()
                     .gap(rems(0.5))
                     .w(rems(20.0))
+                    .max_w_full()
                     .child(ui::icon("search", t.text_subtle))
-                    .child(div().flex_1().child(self.search.clone())),
+                    .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
             .when(review.item_count() > 0, |bar| {
@@ -438,6 +440,7 @@ impl ShellView {
                                 .child(
                                     div()
                                         .text_size(rems(0.86))
+                                        .font_features(ui::tabular_numerals())
                                         .font_weight(FontWeight::MEDIUM)
                                         .child(format!("{prefix}{}", ui::bytes(size.bytes()))),
                                 )
