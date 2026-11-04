@@ -1,0 +1,31 @@
+binary=E446F085DA71635B68C2503CFBFF66C589E8CDBC5F0CAB015128EDF1B4A0EF30 os=10.0.26300.0 windowsBuild=26300 transparency=1
+dark dpi=120 size=1568x1034 locale=en
+dark wide over blue field_BGR=22120D interior_BGR=22120D
+dark wide over gold field_BGR=22120D interior_BGR=22120D
+dark idle_cpu_ms_over_3s=15.625
+dark fixture_review=True
+dark scroll_present_n=47 p50_us=30981 p95_us=32038
+dark uia_tabs=Clean,Software,Optimize,Analyze,Status
+dark selected_first=True focus_second=True
+dark enter_selected_second=True
+dark tab_focus=Optimize
+dark reverse_tab_returns=True
+dark zoom_after_invoke=True
+dark zoom_after_restore=False
+dark compact over blue field_BGR=22120D interior_BGR=22120D
+dark compact over gold field_BGR=22120D interior_BGR=22120D
+dark exit=0
+light dpi=120 size=1568x1034 locale=zh-CN
+light wide over blue field_BGR=FAF5F3 interior_BGR=FAF5F3
+light wide over gold field_BGR=FAF5F3 interior_BGR=FAF5F3
+light idle_cpu_ms_over_3s=0
+light fixture_review=True
+light scroll_present_n=47 p50_us=30762 p95_us=31954
+light uia_tabs=清理,软件,优化,分析,状态
+light selected_first=True focus_second=True
+light enter_selected_second=True
+light tab_focus=优化
+light reverse_tab_returns=True
+light compact over blue field_BGR=FAF5F3 interior_BGR=FAF5F3
+light compact over gold field_BGR=FAF5F3 interior_BGR=FAF5F3
+light exit=0

@@ -1,0 +1,50 @@
+binary=4F9D147D35CAB2C3F0DBD7BF546DD0684C9B5D287CAA2D4F9E9B71E0E6F5DF53 os=10.0.26300.0 windowsBuild=26300 transparency=1
+dark dpi=120 size=1568x1034 locale=en
+dark wide over blue field_BGR=252317 interior_BGR=2D281F
+dark wide over gold field_BGR=1D4440 interior_BGR=2C2B22
+dark idle_cpu_ms_over_3s=0
+dark fixture_review=True
+dark scroll_present_n=47 p50_us=30740 p95_us=32966
+before_preview confirm_enabled=False
+selection_after_enter=Confirm move · 1 of 2 targets selected.
+preview digest_visible=True confirm_enabled=True
+after_clear confirm_enabled=False fixture_intact=True
+dark uia_tabs=Clean,Software,Optimize,Analyze,Status
+dark selected_first=True focus_second=True
+dark enter_selected_second=True
+dark tab_focus=Optimize
+dark reverse_tab_returns=True
+dark zoom_after_invoke=True
+dark zoom_after_restore=False
+dark compact over blue field_BGR=242516 interior_BGR=2F2920
+dark compact over gold field_BGR=242516 interior_BGR=2F2920
+compact mode=Optimize selected=True
+compact mode=Analyze selected=True
+compact mode=Status selected=True
+compact mode=Clean selected=True
+support=Settings title_visible=True
+support=Protection title_visible=True
+support=Rules title_visible=True
+support=History title_visible=True
+dark exit=0
+restored dpi=120 size=1568x1034 locale=en
+restart light_selected=True
+restored exit=0
+light dpi=120 size=1568x1034 locale=zh-CN
+light wide over blue field_BGR=C7C8BC interior_BGR=EAEAE8
+light wide over gold field_BGR=BFE9E4 interior_BGR=E8F0EF
+light idle_cpu_ms_over_3s=15.625
+light fixture_review=True
+light scroll_present_n=47 p50_us=31070 p95_us=32083
+light uia_tabs=清理,软件,优化,分析,状态
+light selected_first=True focus_second=True
+light enter_selected_second=True
+light tab_focus=优化
+light reverse_tab_returns=True
+light compact over blue field_BGR=F3F8E9 interior_BGR=FFFFFF
+light compact over gold field_BGR=F3F8E9 interior_BGR=FFFFFF
+light exit=0
+solid dpi=120 size=1568x1034 locale=en
+no-composition over blue field_BGR=242516 interior_BGR=2F2920
+no-composition over gold field_BGR=242516 interior_BGR=2F2920
+solid exit=0

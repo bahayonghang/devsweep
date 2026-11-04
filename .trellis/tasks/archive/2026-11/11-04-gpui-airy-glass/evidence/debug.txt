@@ -1,0 +1,9 @@
+binary=82093CEA89DFE00E531D8BB29FCC61282AA14600BD2461A086BF15BD65010663 os=10.0.26300.0 windowsBuild=26300 transparency=1
+dark dpi=120 size=1568x1034 locale=en
+debug click=Software selected=True
+debug click=Optimize selected=True
+debug click=Analyze selected=True
+debug click=Status selected=True
+debug click=Clean selected=True
+debug click=Clean selected=True
+dark exit=0
