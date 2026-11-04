@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 61
-- **Last Active**: 2026-10-29
+- **Total Sessions**: 62
+- **Last Active**: 2026-11-04
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1813 | Active |
+| `journal-1.md` | ~1843 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 62 | 2026-11-04 | GPUI 轻盈毛玻璃重构与 Windows 原生验收 | `760ee22` | `dev` |
 | 61 | 2026-10-29 | 拆分提交工作台接线并写下实施 Prompt | `66e4a84a122a94e41cf124d950563f8e22b27be6`, `7cc16b6d8dba4c5f1bf3156467123c078cb090b7`, `2bb5e1e105a9edb0d106b41910045efcdb36f2f7`, `532eff0ed8a72365942773d196779a55a7ab535b`, `c7846e46a2250726a26fbe2d846770f2e23ea4e1`, `8d050f8fa212395bb7f3ef2e6bdd1c3e4661f90d`, `47585e082a28d2cf10b809f77ec7098ea4a262b4`, `deba8d1abc527adda91cb0acc75edc000e7f3e7d`, `0b80363c834dde6299f7a004b47a59267449e60c`, `4d7febd816de83a8fb792607b9f952396a56e78f` | `codex/gpui-desktop-rewrite` |
 | 60 | 2026-10-16 | 归档 08-29 与 09-28 历史任务 | `eaff884` | `codex/gpui-desktop-rewrite` |
 | 59 | 2026-10-14 | 清理首页范围、占用提醒与河狸标识 | `e7ebf4be4b4dc3ecc4014dd1ba0562d1a79518bb`, `cb6747fb34e81d20eb6e89ca27c4dd354c57c6f0`, `e277ae82cde42e86ecd952c84c79e3470b91499f`, `fc1f54570b620720b8a02f842e8fef146407be89`, `864183207151f990d37316b72c52233980e585b0`, `178e279e278679b9f68b42e77b2678de90f3570e`, `203a67a35d2ca8b55aa81c66e420d1ae48deb584` | `dev` |

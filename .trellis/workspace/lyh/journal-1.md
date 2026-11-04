@@ -1811,3 +1811,33 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - 先做 C11 和 C13 的窗口缺口，软件验证放在最后一份 Prompt。
+
+
+## Session 62: GPUI 轻盈毛玻璃重构与 Windows 原生验收
+<!-- trellis-session: v=2 fp=f982fde1b0f8e50f -->
+
+**Date**: 2026-11-04
+**Task**: GPUI 轻盈毛玻璃重构与 Windows 原生验收
+**Branch**: `dev`
+
+### Summary
+
+完成深浅主题、原生材质回退及键盘焦点重构，归档实测对照。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `760ee22` | feat(gpui): ✨ 为深浅色工作台加入原生毛玻璃与实色回退 |
+
+### Testing
+
+- [OK] just ci 与 just gpui 通过，164 项 GPUI 测试通过，Windows release 与 debug 原生验收记录已归档。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 按用户选择，Windows 全局高对比与透明效果开关的热切换保留为人工验收。
