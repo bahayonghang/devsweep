@@ -3,7 +3,7 @@
   "name": "gpui-desktop-rewrite",
   "title": "CLI-first GPUI desktop rewrite and Mole Windows feature parity",
   "description": "Plan a Rust-first five-mode desktop replacement, strengthen shared core and CLI capabilities, reuse approved assets, and verify native Windows performance.",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": "fullstack",
   "scope": "cli-first-gpui-rewrite",
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "lyh",
   "assignee": "lyh",
   "createdAt": "2026-10-15",
-  "completedAt": null,
+  "completedAt": "2026-11-04",
   "branch": "codex/gpui-desktop-rewrite",
   "base_branch": "dev",
   "worktree_path": null,
@@ -67,6 +67,11 @@
     "final_review": "final-review.md",
     "prd_convergence_complete": true,
     "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md",
-    "approved_summary_sha256": "365a0fa0454ef91c0445369e10e07e5d653476d23c5c4c1ebf5fc93c9c1b756d"
+    "approved_summary_sha256": "365a0fa0454ef91c0445369e10e07e5d653476d23c5c4c1ebf5fc93c9c1b756d",
+    "archive_disposition": "administrative_closure_with_acceptance_gaps",
+    "archive_authorized_on": "2026-11-04",
+    "acceptance_complete": false,
+    "archive_record": "archive-closure.md",
+    "pre_archive_status": "in_progress"
   }
 }

@@ -90,3 +90,7 @@ not an MSRV pass. `cargo test --locked` exited 0 with 160 passed.
   Those fixes need a new hash.
 
 No box changes state. See "Follow-up 4" in `evidence/redesign-2026-11-03.md`.
+
+2026-11-04: User-authorized administrative archive of all seven remaining GPUI
+tasks, explicitly retaining acceptance gaps. No acceptance box changes state.
+See `archive-closure.md`. Archived/completed task status is not aggregate PASS.

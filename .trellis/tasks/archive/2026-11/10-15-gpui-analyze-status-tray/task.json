@@ -3,7 +3,7 @@
   "name": "gpui-analyze-status-tray",
   "title": "C13 Native analysis status and tray surfaces",
   "description": "Build scalable disk visualization, live status/process views and a lifecycle-aware Windows tray.",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "lyh",
   "assignee": "lyh",
   "createdAt": "2026-10-15",
-  "completedAt": null,
+  "completedAt": "2026-11-04",
   "branch": "codex/gpui-desktop-rewrite",
   "base_branch": "dev",
   "worktree_path": null,
@@ -32,6 +32,11 @@
     ],
     "task_code": "C13",
     "blocking_product_questions": [],
-    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md"
+    "approval_record": ".trellis/tasks/10-15-gpui-desktop-rewrite/implementation-approval.md",
+    "archive_disposition": "administrative_closure_with_acceptance_gaps",
+    "archive_authorized_on": "2026-11-04",
+    "acceptance_complete": false,
+    "archive_record": "archive-closure.md",
+    "pre_archive_status": "in_progress"
   }
 }
