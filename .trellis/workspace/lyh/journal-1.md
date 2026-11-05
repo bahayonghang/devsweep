@@ -1841,3 +1841,29 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Next Steps
 
 - 按用户选择，Windows 全局高对比与透明效果开关的热切换保留为人工验收。
+
+
+## Session 63: GPUI 标题栏主题切换与设置入口
+<!-- trellis-session: v=2 fp=25a41ea76b757c9c -->
+
+**Date**: 2026-11-04
+**Task**: GPUI 标题栏主题切换与设置入口
+**Branch**: `dev`
+
+### Summary
+
+标题栏提供明暗预览与设置导航，移除 GPUI 常亮入口，保留 F11 清屏。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9005902` | feat(gpui): ✨ 让标题栏切换明暗主题并打开设置 |
+
+### Testing
+
+- [OK] 167 项 GPUI 测试、严格 Clippy、发布构建、根工作区 CI 与中英文 Windows 原生交互通过。系统高对比度仅有自动化验证。
+
+### Status
+
+[OK] **Completed**
