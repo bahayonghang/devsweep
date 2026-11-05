@@ -168,6 +168,13 @@ with the existing source cap, turn duration, and hidden-document stop preserved.
 
 ## 6. Tests Required
 
+In native GPUI, the title bar and Settings preview the same theme draft through
+`Session::set_theme`. Only an explicit Save commits pending edits. When testing
+the shortcut, change another field first, toggle the theme, and reopen from the
+same temporary preferences directory. The previous values must load until Save.
+Resolve the toggle direction from the underlying theme so both directions still
+work while the high-contrast palette is active.
+
 - Core: exact schema/default bytes, validation, missing/unreadable/newer files,
   write rollback, group reset boundaries, concurrent updates, and preservation
   of existing language bytes.

@@ -148,7 +148,6 @@ actions!(
         CycleCleanSort,
         OpenAiReview,
         ToggleCleanScreen,
-        ToggleKeepScreen,
         FocusNextControl,
         FocusPrevControl
     ]
@@ -219,6 +218,18 @@ pub(crate) fn on_view_a11y(
     move |_data, _window, app| {
         let _ = view.update(app, |this, cx| run(this, cx));
     }
+}
+
+fn next_titlebar_theme(current: DesktopTheme) -> DesktopTheme {
+    if Theme::for_preferences(current, false).dark {
+        DesktopTheme::Light
+    } else {
+        DesktopTheme::Dark
+    }
+}
+
+fn toggle_titlebar_theme(session: &mut Session) {
+    session.set_theme(next_titlebar_theme(session.theme()));
 }
 
 impl ShellView {
@@ -369,18 +380,7 @@ impl ShellView {
     }
 
     fn back(&mut self, _: &Back, _: &mut Window, cx: &mut Context<Self>) {
-        // Clean Screen must restore before any other Escape handling, and it
-        // must not lock the Note.
-        if self.session.screen_covered() {
-            self.session.apply_key(crate::shell::NavKey::Escape);
-            cx.notify();
-            return;
-        }
-        // Escape first stops an active worker, then leaves the AI review
-        // subview, and only then is the surface back key.
-        if !self.session.clean_request_cancel() && !self.session.clean_back() {
-            self.session.apply_key(crate::shell::NavKey::Escape);
-        }
+        self.session.apply_key(crate::shell::NavKey::Escape);
         cx.notify();
     }
 
@@ -402,7 +402,6 @@ impl ShellView {
         cx.notify();
     }
 
-    /// F8 opens the AI review subview. Opening does not scan.
     fn toggle_clean_screen(
         &mut self,
         _: &ToggleCleanScreen,
@@ -413,21 +412,6 @@ impl ShellView {
             self.session.apply_key(crate::shell::NavKey::Escape);
         } else {
             self.session.begin_clean_screen();
-        }
-        cx.notify();
-    }
-
-    fn toggle_keep_screen(&mut self, _: &ToggleKeepScreen, _: &mut Window, cx: &mut Context<Self>) {
-        if self.session.stored_lease_count() > 0 {
-            let _ = self.session.stop_screen_on();
-        } else {
-            let service =
-                std::sync::Arc::new(devsweep_core::status::KeepAwakeService::production());
-            let _ = self.session.start_screen_on(
-                service,
-                "gpui-window",
-                std::time::Duration::from_secs(30 * 60),
-            );
         }
         cx.notify();
     }
@@ -744,7 +728,6 @@ impl Render for ShellView {
             .on_action(cx.listener(Self::menu_toggle))
             .on_action(cx.listener(Self::open_ai_review))
             .on_action(cx.listener(Self::toggle_clean_screen))
-            .on_action(cx.listener(Self::toggle_keep_screen))
             .on_action(cx.listener(Self::request_project_rows))
             .on_action(cx.listener(Self::focus_next_control))
             .on_action(cx.listener(Self::focus_prev_control))
@@ -1038,35 +1021,65 @@ impl ShellView {
                     })
             })
             .collect::<Vec<_>>();
-        let keep_on = self.session.stored_lease_count() > 0;
-        let toggle = |id: &'static str, icon: &'static str, label: &'static str, on: bool| {
-            let border = if on { t.accent } else { t.border_strong };
-            let color = if on { t.accent } else { t.text_muted };
+        let mut titlebar_button = |id: &'static str,
+                                   icon: &'static str,
+                                   label: &'static str,
+                                   run: fn(&mut Session)| {
             let hover_bg = t.surface_alt;
             div()
                 .id(id)
                 .occlude()
                 .role(gpui::Role::Button)
+                .accessibility_id(id)
                 .aria_label(label)
-                .aria_toggled(if on {
-                    gpui::Toggled::True
-                } else {
-                    gpui::Toggled::False
-                })
                 .flex()
                 .items_center()
                 .justify_center()
                 .size(rems(2.2))
                 .rounded_full()
                 .border_1()
-                .border_color(rgb(border))
-                .when(on, |b| b.bg(t.tint(t.accent, 0x1E)))
+                .border_color(rgb(t.border_strong))
                 .cursor_pointer()
                 .hover(move |s| s.bg(rgb(hover_bg)))
                 .keyboard_focus(t)
                 .tooltip(move |_, cx| cx.new(|_| TooltipText(label.into(), tooltip_theme)).into())
-                .child(ui::icon(icon, color).size(rems(1.0)))
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    run(&mut this.session);
+                    cx.notify();
+                }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, move |this, cx| {
+                        run(&mut this.session);
+                        cx.notify();
+                    }),
+                )
+                .child(ui::icon(icon, t.text_muted).size(rems(1.0)))
         };
+        let (theme_icon, theme_label) =
+            if next_titlebar_theme(self.session.theme()) == DesktopTheme::Light {
+                (
+                    "sun",
+                    copy::pick(locale, "Switch to light theme", "切换到浅色主题"),
+                )
+            } else {
+                (
+                    "moon",
+                    copy::pick(locale, "Switch to dark theme", "切换到深色主题"),
+                )
+            };
+        let theme_button = titlebar_button(
+            "titlebar-theme",
+            theme_icon,
+            theme_label,
+            toggle_titlebar_theme,
+        );
+        let settings_button = titlebar_button(
+            "titlebar-settings",
+            "settings",
+            copy::settings_title(locale),
+            Session::open_settings,
+        );
         let tabs = div()
             .id("mode-tabs")
             .occlude()
@@ -1180,30 +1193,8 @@ impl ShellView {
                     .justify_end()
                     .items_center()
                     .gap(rems(0.5))
-                    .child(
-                        toggle(
-                            "keep-screen-on",
-                            "sun",
-                            copy::keep_screen_on_label(locale),
-                            keep_on,
-                        )
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.toggle_keep_screen_on();
-                            cx.notify();
-                        })),
-                    )
-                    .child(
-                        toggle(
-                            "clean-screen",
-                            "monitor",
-                            copy::clean_screen_label(locale),
-                            false,
-                        )
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.session.begin_clean_screen();
-                            cx.notify();
-                        })),
-                    )
+                    .child(theme_button)
+                    .child(settings_button)
                     .when(CUSTOM_CAPTION, |row| {
                         row.child(caption_buttons(t, locale, maximized, cx))
                     }),
@@ -1388,22 +1379,8 @@ impl ShellView {
         }
     }
 
-    fn toggle_keep_screen_on(&mut self) {
-        if self.session.stored_lease_count() > 0 {
-            let _ = self.session.stop_screen_on();
-        } else {
-            let service =
-                std::sync::Arc::new(devsweep_core::status::KeepAwakeService::production());
-            let _ = self.session.start_screen_on(
-                service,
-                "gpui-window",
-                std::time::Duration::from_secs(30 * 60),
-            );
-        }
-    }
-
     /// Session-wide banners shared by every page: preserved stores, a save
-    /// error, stale review notices, and the keep-awake lease.
+    /// error and stale review notices.
     fn shared_banners(&self, t: &Theme) -> Vec<gpui::AnyElement> {
         let locale = self.session.locale();
         let mut banners = Vec::new();
@@ -1435,9 +1412,6 @@ impl ShellView {
             if let Some(report) = self.session.shell().report(mode) {
                 banners.push(ui::any(ui::banner(t, Tone::Info, report.to_string())));
             }
-        }
-        if let Some(line) = self.session.screen_lease_line(locale) {
-            banners.push(ui::any(ui::banner(t, Tone::Info, line)));
         }
         banners
     }
@@ -1981,9 +1955,6 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
                     copy::clean_screen_active(locale).to_string(),
                 ));
             }
-            if let Some(line) = session.screen_lease_line(locale) {
-                entries.push(PanelEntry::Text(line));
-            }
             if matches!(mode, Mode::Software | Mode::Optimize) {
                 for line in session.workbench_review_lines() {
                     entries.push(PanelEntry::Text(line.clone()));
@@ -2452,8 +2423,6 @@ pub fn run(session: Session) {
                 KeyBinding::new("f9", RequestProjectRows, None),
                 KeyBinding::new("f11", ToggleCleanScreen, None),
                 KeyBinding::new("f11", ToggleCleanScreen, Some("SpikeInput")),
-                KeyBinding::new("f12", ToggleKeepScreen, None),
-                KeyBinding::new("f12", ToggleKeepScreen, Some("SpikeInput")),
                 KeyBinding::new("escape", Back, Some("SpikeInput")),
                 KeyBinding::new("f10", MenuToggle, None),
                 KeyBinding::new("f10", MenuToggle, Some("SpikeInput")),
@@ -2591,6 +2560,107 @@ mod tests {
         assert!(!material.wants_blur(px(959.0)));
         material.high_contrast = true;
         assert!(!material.wants_blur(px(1240.0)));
+    }
+
+    #[test]
+    fn titlebar_theme_toggles_from_every_supported_palette() {
+        use DesktopTheme::*;
+        let mut session = Session::unbacked();
+        session.open_settings();
+        for (current, first, second) in [
+            (Dark, Light, Dark),
+            (Light, Dark, Light),
+            (System, Light, Dark),
+            (CatppuccinLatte, Dark, Light),
+            (CatppuccinMocha, Light, Dark),
+            (Codex, Light, Dark),
+            (Claude, Light, Dark),
+        ] {
+            session.set_theme(current);
+            toggle_titlebar_theme(&mut session);
+            assert_eq!(session.theme(), first);
+            assert!(Theme::for_preferences(session.theme(), true).high_contrast);
+            toggle_titlebar_theme(&mut session);
+            assert_eq!(session.theme(), second);
+            assert_eq!(session.shell().surface(), Surface::Settings);
+        }
+    }
+
+    #[test]
+    fn titlebar_theme_previews_without_committing_other_drafts() {
+        use crate::preferences::PreferenceFiles;
+        use std::{fs, time::SystemTime};
+
+        let stamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "devsweep-gpui-titlebar-{}-{stamp}",
+            std::process::id()
+        ));
+        fs::create_dir(&root).unwrap();
+        let files = PreferenceFiles::new(root.join("settings"), root.join("protected-paths.json"));
+        let mut session = Session::launch(files.clone());
+        session.set_text_scale(125);
+        session.set_locale(Locale::ZhCn);
+        toggle_titlebar_theme(&mut session);
+        assert!(session.settings_dirty());
+        assert_eq!(session.theme(), DesktopTheme::Light);
+        assert_eq!(session.text_scale(), 125);
+        assert_eq!(session.locale(), Locale::ZhCn);
+        let reopened = Session::launch(files.clone());
+        assert_eq!(reopened.theme(), DesktopTheme::Dark);
+        assert_eq!(reopened.text_scale(), 100);
+        assert!(!files.settings_dir.exists());
+        assert!(session.save_settings().unwrap());
+        let saved = Session::launch(files);
+        assert_eq!(saved.theme(), DesktopTheme::Light);
+        assert_eq!(saved.text_scale(), 125);
+        assert_eq!(saved.locale(), Locale::ZhCn);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn settings_button_reopens_the_same_surface_and_returns_to_each_mode() {
+        let mut session = Session::unbacked();
+        for mode in Mode::ORDER {
+            session.show_mode(mode);
+            session.toggle_menu();
+            session.open_settings();
+            session.set_text_scale(125);
+            session.open_settings();
+            assert_eq!(session.shell().surface(), Surface::Settings);
+            assert!(!session.shell().menu_open());
+            assert!(!session.screen_covered());
+            assert_eq!(session.text_scale(), 125);
+            session.apply_key(NavKey::Escape);
+            assert_eq!(session.shell().surface(), Surface::Mode);
+            assert_eq!(session.shell().mode(), mode);
+        }
+        session.show_mode(Mode::Clean);
+        assert!(session.clean_ai_open());
+        session.open_settings();
+        session.apply_key(NavKey::Escape);
+        assert_eq!(session.shell().surface(), Surface::Mode);
+        assert!(session.clean_ai().open());
+        session.apply_key(NavKey::Escape);
+        assert!(!session.clean_ai().open());
+    }
+
+    #[test]
+    fn clean_screen_escape_restores_the_covered_mode_and_surface() {
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Software);
+        session.open_settings();
+        session.begin_clean_screen();
+        assert!(session.screen_covered());
+        assert!(!session.input_locked());
+        session.apply_key(NavKey::Right);
+        session.apply_key(NavKey::Escape);
+        assert!(!session.screen_covered());
+        assert_eq!(session.shell().mode(), Mode::Software);
+        assert_eq!(session.shell().surface(), Surface::Settings);
     }
 
     #[test]

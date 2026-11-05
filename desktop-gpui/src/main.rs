@@ -26,8 +26,6 @@ mod preferences;
 #[cfg_attr(not(test), allow(dead_code))]
 mod process_spawn;
 #[cfg_attr(not(test), allow(dead_code))]
-mod screen;
-#[cfg_attr(not(test), allow(dead_code))]
 mod shell;
 #[cfg_attr(not(test), allow(dead_code))]
 mod software_review;

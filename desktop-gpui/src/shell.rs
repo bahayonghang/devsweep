@@ -42,10 +42,7 @@ use devsweep_core::{
     process::{CancelObserver as _, FlagCancelObserver},
     scan::ScanOptions,
     software::{AdapterOutcome, SoftwareExecutionOutcome, SoftwarePlanError},
-    status::{
-        KeepAwakeError, KeepAwakeOwner, KeepAwakeService, KeepAwakeStatusV1, LiveControl,
-        StatusEventV1, StatusSnapshotV1,
-    },
+    status::{LiveControl, StatusEventV1, StatusSnapshotV1},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1083,14 +1080,6 @@ fn visible_slice(ids: &[String], start: usize) -> &[String] {
     &ids[first..=last]
 }
 
-struct ScreenOnLease {
-    service: Arc<KeepAwakeService>,
-    token: String,
-    owner_name: String,
-    #[allow(dead_code)]
-    owner: KeepAwakeOwner,
-}
-
 pub struct Session {
     shell: ShellState,
     mailbox: Arc<SharedMailbox>,
@@ -1120,7 +1109,6 @@ pub struct Session {
     status_receiver: Option<devsweep_core::status::StatusEventReceiver>,
     status_subscription_starts: u32,
     status_subscription_stops: u32,
-    screen_lease: Option<ScreenOnLease>,
     clean: CleanWorkbench,
     clean_ai: CleanAiView,
     clean_cancel: Option<Arc<FlagCancelObserver>>,
@@ -1282,7 +1270,6 @@ impl Session {
             status_receiver: None,
             status_subscription_starts: 0,
             status_subscription_stops: 0,
-            screen_lease: None,
             clean,
             clean_ai: CleanAiView::new(),
             clean_cancel: None,
@@ -1458,6 +1445,16 @@ impl Session {
     pub fn apply_key(&mut self, key: NavKey) {
         if self.shell.screen_covered() {
             self.shell.apply_key(key);
+            return;
+        }
+        // Escape from Settings returns to the workbench that opened it.
+        // Only Escape on the Clean workbench can cancel its worker or close AI.
+        if key == NavKey::Escape
+            && self.shell.surface() == Surface::Mode
+            && self.shell.mode() == Mode::Clean
+            && !self.shell.menu_open()
+            && (self.clean_request_cancel() || self.clean_back())
+        {
             return;
         }
         if key == NavKey::Escape
@@ -2303,49 +2300,6 @@ impl Session {
         applied
     }
 
-    pub fn stored_lease_count(&self) -> usize {
-        usize::from(self.screen_lease.is_some())
-    }
-
-    pub fn start_screen_on(
-        &mut self,
-        service: Arc<KeepAwakeService>,
-        owner: &str,
-        duration: std::time::Duration,
-    ) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
-        if self.screen_lease.is_some() {
-            let _ = self.stop_screen_on();
-        }
-        let status = service.run(owner, duration, true)?;
-        self.screen_lease = Some(ScreenOnLease {
-            owner: KeepAwakeOwner::new(Arc::clone(&service), owner),
-            token: status.token.clone(),
-            owner_name: owner.to_string(),
-            service,
-        });
-        Ok(status)
-    }
-
-    pub fn stop_screen_on(&mut self) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
-        let Some(lease) = self.screen_lease.take() else {
-            return Err(KeepAwakeError::UnknownToken);
-        };
-        lease.service.stop(&lease.token, &lease.owner_name)
-    }
-
-    pub fn screen_lease_line(&self, locale: Locale) -> Option<String> {
-        let lease = self.screen_lease.as_ref()?;
-        let status = lease.service.status(&lease.token, &lease.owner_name).ok()?;
-        Some(crate::copy::keep_awake_lease(
-            locale,
-            &status.state,
-            &status.token,
-            &status.owner,
-            status.remaining_ms,
-            "local",
-        ))
-    }
-
     pub fn analyze_window_lines(&self) -> Vec<String> {
         let Some(window) = &self.analyze_window else {
             return Vec::new();
@@ -2446,6 +2400,10 @@ impl Session {
         let before = self.shell.surface();
         self.shell.open_menu_item(index);
         self.note_history_opened(before);
+    }
+
+    pub fn open_settings(&mut self) {
+        self.shell.open_surface(Surface::Settings);
     }
 
     pub fn cycle_language(&mut self) {

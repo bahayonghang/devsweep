@@ -1798,42 +1798,10 @@ pub fn status_phase_live(locale: Locale) -> &'static str {
     }
 }
 
-pub fn keep_awake_lease(
-    locale: Locale,
-    state: &str,
-    token: &str,
-    owner: &str,
-    remaining: u64,
-    endpoint: &str,
-) -> String {
-    match locale {
-        Locale::En => format!(
-            "{state} | token {token} | owner {owner} | remaining {remaining} ms | endpoint {endpoint} | power settings unchanged"
-        ),
-        Locale::ZhCn => format!(
-            "{state} | 令牌 {token} | 所有者 {owner} | 剩余 {remaining} 毫秒 | 端点 {endpoint} | 电源设置未改变"
-        ),
-    }
-}
-
 pub fn clean_screen_active(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Clean Screen covers the window. Escape restores the view.",
         Locale::ZhCn => "清屏覆盖窗口。Escape 恢复视图。",
-    }
-}
-
-pub fn keep_screen_on_label(locale: Locale) -> &'static str {
-    match locale {
-        Locale::En => "Keep Screen On",
-        Locale::ZhCn => "保持屏幕开启",
-    }
-}
-
-pub fn clean_screen_label(locale: Locale) -> &'static str {
-    match locale {
-        Locale::En => "Clean Screen",
-        Locale::ZhCn => "清屏",
     }
 }
 
