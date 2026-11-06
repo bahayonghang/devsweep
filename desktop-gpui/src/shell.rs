@@ -28,8 +28,8 @@ use crate::{
     copy::{Locale, StoreName},
     optimize_board::OptimizeBoard,
     preferences::{
-        self, DesktopMotion, DesktopPatch, DesktopPreferences, DesktopTheme, LanguageTag,
-        PreferenceFiles, StoreError,
+        self, DesktopFont, DesktopMotion, DesktopPatch, DesktopPreferences, DesktopTheme,
+        LanguageTag, PreferenceFiles, StoreError,
     },
     software_review::SoftwareReview,
     status_panel::{ProcessSort, StatusPanel, StatusPhase},
@@ -491,10 +491,31 @@ struct LiveOperation {
 struct Draft {
     committed: DesktopPreferences,
     theme: DesktopTheme,
+    font: DesktopFont,
     text_scale_percent: u8,
     motion: DesktopMotion,
     language: Option<LanguageTag>,
     committed_language: Option<LanguageTag>,
+}
+
+impl Draft {
+    /// Rebase untouched fields after every successful patch, including when a
+    /// later patch fails and the user retries Save. Keep remaining user edits.
+    fn commit_desktop(&mut self, saved: DesktopPreferences) {
+        if self.font == self.committed.font {
+            self.font = saved.font.clone();
+        }
+        if self.theme == self.committed.theme {
+            self.theme = saved.theme;
+        }
+        if self.text_scale_percent == self.committed.text_scale_percent {
+            self.text_scale_percent = saved.text_scale_percent;
+        }
+        if self.motion == self.committed.motion {
+            self.motion = saved.motion;
+        }
+        self.committed = saved;
+    }
 }
 
 pub struct ShellState {
@@ -1240,6 +1261,7 @@ impl Session {
             files,
             draft: Draft {
                 theme: loaded.desktop.theme,
+                font: loaded.desktop.font.clone(),
                 text_scale_percent: loaded.desktop.text_scale_percent,
                 motion: loaded.desktop.motion,
                 language: loaded.language,
@@ -1374,6 +1396,21 @@ impl Session {
         self.draft.theme
     }
 
+    pub fn font(&self) -> &DesktopFont {
+        &self.draft.font
+    }
+
+    /// Preview a validated font; only explicit Save writes the preference.
+    pub fn set_font(&mut self, font: DesktopFont) -> Result<(), StoreError> {
+        let validated = self
+            .draft
+            .committed
+            .clone()
+            .patched(DesktopPatch::Font { value: font })?;
+        self.draft.font = validated.font;
+        Ok(())
+    }
+
     pub fn text_scale(&self) -> u8 {
         self.draft.text_scale_percent
     }
@@ -1459,6 +1496,7 @@ impl Session {
         }
         if key == NavKey::Escape
             && self.shell.surface() == Surface::Mode
+            && !self.shell.menu_open()
             && self.close_nested_review()
         {
             return;
@@ -1554,13 +1592,23 @@ impl Session {
     }
 
     fn software_enter(&mut self, id: &str, locale: Locale) {
-        if self.software_review.is_open() {
-            self.software_review.activate(id, locale, None);
-            self.sync_software_rows();
-            return;
-        }
         if id == "leftovers" {
             self.workbench_review.activate(id, locale);
+            return;
+        }
+        if self.software_review.is_open() {
+            if !self
+                .shell
+                .filtered_row_ids(Mode::Software)
+                .iter()
+                .any(|row| row == id)
+                || (self.software_review.host_backed()
+                    && self.software_review.pending_id() == Some(id))
+            {
+                return;
+            }
+            self.software_review.activate(id, locale, None);
+            self.sync_software_rows();
             return;
         }
         let segment = match id {
@@ -1593,17 +1641,13 @@ impl Session {
     }
 
     fn close_nested_review(&mut self) -> bool {
-        if self.analyze_cancel_scan() {
+        if self.shell.mode() == Mode::Analyze && self.analyze_cancel_scan() {
             return true;
         }
-        if self.software_review.is_open() {
-            self.software_job = None;
-            self.software_review.close();
-            self.shell
-                .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
-            return true;
+        if self.shell.mode() == Mode::Software {
+            return self.software_review.cancel_review(self.locale());
         }
-        if self.optimize_board.group().is_some() {
+        if self.shell.mode() == Mode::Optimize && self.optimize_board.group().is_some() {
             self.optimize_board.close_group();
             self.sync_optimize_rows();
             return true;
@@ -1765,7 +1809,7 @@ impl Session {
             (Some(_), _) => index.unwrap_or(0),
         };
         let id = ids[next].clone();
-        self.shell.select(mode, id);
+        self.select_mode_row(mode, id);
         let start = next.saturating_sub(crate::shell::VISIBLE_ROW_CAPACITY / 2);
         self.shell.set_row_window_start(mode, start);
         true
@@ -1773,9 +1817,8 @@ impl Session {
 
     fn ensure_workbench_rows(&mut self) {
         match self.shell.mode() {
-            Mode::Software if self.shell.filtered_row_ids(Mode::Software).is_empty() => {
-                self.shell
-                    .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
+            Mode::Software if !self.software_review.is_open() => {
+                self.software_open_segment(crate::workbench::SoftwareSegment::Uninstall);
             }
             Mode::Optimize if self.shell.filtered_row_ids(Mode::Optimize).is_empty() => {
                 self.sync_optimize_rows();
@@ -1798,35 +1841,32 @@ impl Session {
         self.activate_mode_enter();
     }
 
-    /// Opens one Software segment directly (the segmented control). Leaves any
-    /// open segment first so the three segments never stack.
+    /// Switches the one Software workspace. Repeated tab activation is a no-op.
     pub fn software_open_segment(&mut self, segment: crate::workbench::SoftwareSegment) {
-        if self.shell.mode() != Mode::Software {
+        if self.shell.mode() != Mode::Software || self.shell.surface() != Surface::Mode {
             return;
         }
-        if self.software_review.is_open() {
-            self.software_review.close();
-            self.shell
-                .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
+        if segment == crate::workbench::SoftwareSegment::Leftovers {
+            self.workbench_review.activate("leftovers", self.locale());
+            return;
         }
+        if self.software_review.segment() == Some(segment) {
+            return;
+        }
+        self.software_job = None;
+        self.jobs
+            .retain(|job| !matches!(job, BackgroundJob::SoftwareHost { .. }));
+        self.software_review.close();
+        self.workbench_review = WorkbenchReview::new();
         let id = match segment {
             crate::workbench::SoftwareSegment::Uninstall => "uninstall",
             crate::workbench::SoftwareSegment::Updates => "updates",
             crate::workbench::SoftwareSegment::Startup => "startup",
             crate::workbench::SoftwareSegment::Leftovers => "leftovers",
         };
-        self.shell.select(Mode::Software, id);
+        self.shell.clear_row_selection(Mode::Software);
         let locale = self.locale();
         self.software_enter(id, locale);
-    }
-
-    /// Returns to the Software landing.
-    pub fn software_close_segment(&mut self) {
-        if self.software_review.is_open() {
-            self.software_review.close();
-            self.shell
-                .set_row_ids(Mode::Software, crate::workbench_review::software_row_ids());
-        }
     }
 
     /// Leaves an open Optimize group, or the Analyze detail, like Escape.
@@ -1835,6 +1875,10 @@ impl Session {
     }
 
     pub fn select_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
+        let id = id.into();
+        if mode == Mode::Software && self.shell.selection(mode) != Some(id.as_str()) {
+            self.software_review.cancel_review(self.locale());
+        }
         self.shell.select(mode, id);
     }
 
@@ -2114,6 +2158,10 @@ impl Session {
     }
 
     pub fn software_set_query(&mut self, query: impl Into<String>) {
+        let query = query.into();
+        if self.software_review.query() != query {
+            self.software_review.cancel_review(self.locale());
+        }
         self.software_review.set_query(query);
         self.sync_software_rows();
     }
@@ -2130,9 +2178,12 @@ impl Session {
 
     pub fn software_refresh(&mut self) {
         let locale = self.locale();
+        if self.software_review.loading() {
+            return;
+        }
         if self.background_jobs
-            && self.software_review.host_backed()
             && let Some(segment) = self.software_review.segment()
+            && !SoftwareReview::has_fixture(segment)
         {
             self.queue_software_load(segment, locale);
             return;
@@ -2177,6 +2228,32 @@ impl Session {
 
     pub fn status_query(&self) -> &str {
         &self.status_query
+    }
+
+    /// The shared field displays each mode's own query after navigation.
+    pub fn search_query(&self) -> &str {
+        match self.shell.mode() {
+            Mode::Clean => self.shell.row_query(Mode::Clean),
+            Mode::Software => self.software_review.query(),
+            Mode::Optimize => self.optimize_board.query(),
+            Mode::Status => self.status_query(),
+            Mode::Analyze => "",
+        }
+    }
+
+    pub fn set_search_query(&mut self, query: String) {
+        if self.search_query() == query {
+            return;
+        }
+        match self.shell.mode() {
+            Mode::Clean => {
+                self.clean_set_search(query);
+            }
+            Mode::Software => self.software_set_query(query),
+            Mode::Optimize => self.optimize_set_query(query),
+            Mode::Status => self.status_set_query(query),
+            Mode::Analyze => {}
+        }
     }
 
     /// Pick a process row for its local explanation. Picking the same row
@@ -2464,17 +2541,21 @@ impl Session {
         self.shell.set_row_ids(Mode::Clean, ids);
     }
 
-    /// The landing primary button asks for a scope instead of scanning.
-    pub fn clean_open_scope_choice(&mut self) {
-        self.clean.open_scope_choice();
+    /// Changes the visible scan configuration without dispatching work.
+    pub fn clean_choose_scope(&mut self, scope: CleanScope) {
+        if self.shell.operation_id().is_some() || self.clean.selected_scope() == scope {
+            return;
+        }
+        self.clean.select_scope(scope);
+        self.reset_clean_row_view();
     }
 
-    /// Asks for the scope before any scan. Global only arms a confirmation.
-    pub fn clean_choose_scope(&mut self, scope: CleanScope) -> bool {
+    /// The explicit scan action. Global still requires its second scope prompt.
+    pub fn clean_start_selected_scope(&mut self) -> bool {
         if self.clean.phase() != CleanPhase::Landing {
             return false;
         }
-        match scope {
+        match self.clean.selected_scope() {
             CleanScope::Global => {
                 self.clean.require_global_confirmation();
                 false
@@ -2496,6 +2577,10 @@ impl Session {
     /// The folder is remembered through the existing scan-root store when one
     /// is available; otherwise it stays explicit for this session only.
     pub fn clean_pick_scan_root(&mut self, root: PathBuf) -> bool {
+        if self.shell.operation_id().is_some() || self.clean.selected_scope() != CleanScope::Project
+        {
+            return false;
+        }
         let Ok(validated) =
             devsweep_core::scan_preferences::validate_scan_roots(std::slice::from_ref(&root))
         else {
@@ -2512,7 +2597,9 @@ impl Session {
             Err(_) => true,
         };
         self.clean.set_root_session_only(session_only);
-        self.request_project_scan()
+        self.clean.reset_to_landing();
+        self.reset_clean_row_view();
+        true
     }
 
     /// Cancels a landing prompt without starting anything.
@@ -3017,13 +3104,7 @@ impl Session {
         match self.clean.phase() {
             CleanPhase::Landing => match self.clean.prompt() {
                 crate::clean_workbench::CleanLandingPrompt::None => {
-                    self.clean.open_scope_choice();
-                    true
-                }
-                // The keyboard default is the project scope; the global scan
-                // remains an explicit, separately confirmed action.
-                crate::clean_workbench::CleanLandingPrompt::ScopeChoice => {
-                    let _ = self.clean_choose_scope(CleanScope::Project);
+                    let _ = self.clean_start_selected_scope();
                     true
                 }
                 crate::clean_workbench::CleanLandingPrompt::RootRequired => false,
@@ -3231,36 +3312,63 @@ impl Session {
             return Err(StoreError::Blocked);
         }
         let mut wrote = false;
-        if self.draft.theme != self.draft.committed.theme {
+        // Snapshot intent before the first patch rereads concurrent preferences.
+        // A refreshed committed snapshot must not turn an untouched draft field
+        // into another write that overwrites the other process's change.
+        let font_dirty = self.draft.font != self.draft.committed.font;
+        let theme_dirty = self.draft.theme != self.draft.committed.theme;
+        let scale_dirty = self.draft.text_scale_percent != self.draft.committed.text_scale_percent;
+        let motion_dirty = self.draft.motion != self.draft.committed.motion;
+        if font_dirty {
+            let saved = preferences::save_desktop_patch(
+                &files,
+                DesktopPatch::Font {
+                    value: self.draft.font.clone(),
+                },
+            )?;
+            self.draft.commit_desktop(saved);
+            self.shell.motion = self.draft.motion;
+            wrote = true;
+        }
+        if theme_dirty {
             let saved = preferences::save_desktop_patch(
                 &files,
                 DesktopPatch::Theme {
                     value: self.draft.theme,
                 },
             )?;
-            self.draft.committed = saved;
+            self.draft.commit_desktop(saved);
+            self.shell.motion = self.draft.motion;
             wrote = true;
         }
-        if self.draft.text_scale_percent != self.draft.committed.text_scale_percent {
+        if scale_dirty {
             let saved = preferences::save_desktop_patch(
                 &files,
                 DesktopPatch::TextScalePercent {
                     value: self.draft.text_scale_percent,
                 },
             )?;
-            self.draft.committed = saved;
+            self.draft.commit_desktop(saved);
+            self.shell.motion = self.draft.motion;
             wrote = true;
         }
-        if self.draft.motion != self.draft.committed.motion {
+        if motion_dirty {
             let saved = preferences::save_desktop_patch(
                 &files,
                 DesktopPatch::Motion {
                     value: self.draft.motion,
                 },
             )?;
-            self.draft.committed = saved;
-            self.shell.motion = self.draft.committed.motion;
+            self.draft.commit_desktop(saved);
+            self.shell.motion = self.draft.motion;
             wrote = true;
+        }
+        if wrote {
+            self.draft.font = self.draft.committed.font.clone();
+            self.draft.theme = self.draft.committed.theme;
+            self.draft.text_scale_percent = self.draft.committed.text_scale_percent;
+            self.draft.motion = self.draft.committed.motion;
+            self.shell.motion = self.draft.motion;
         }
         if self.draft.language != self.draft.committed_language {
             let Some(language) = self.draft.language else {
@@ -3299,6 +3407,7 @@ impl Session {
 
     fn draft_desktop_dirty(&self) -> bool {
         self.draft.theme != self.draft.committed.theme
+            || self.draft.font != self.draft.committed.font
             || self.draft.text_scale_percent != self.draft.committed.text_scale_percent
             || self.draft.motion != self.draft.committed.motion
     }
@@ -3342,6 +3451,62 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn partial_save_rebases_concurrent_untouched_fields_before_retry() {
+        let mut session = Session::unbacked();
+        session.draft.font = DesktopFont::Installed {
+            family: "Consolas".to_string(),
+        };
+        session.draft.text_scale_percent = 125;
+        let mut saved = session.draft.committed.clone();
+        saved.font = session.draft.font.clone();
+        saved.theme = DesktopTheme::Light;
+        saved.motion = DesktopMotion::Reduced;
+        // The font patch succeeded; a later scale patch may fail. Concurrent
+        // theme/motion changes must already be rebased for the next Save.
+        session.draft.commit_desktop(saved.clone());
+        assert_eq!(session.draft.font, saved.font);
+        assert_eq!(session.draft.theme, saved.theme);
+        assert_eq!(session.draft.motion, saved.motion);
+        assert_eq!(session.draft.text_scale_percent, 125);
+        assert_ne!(session.draft.text_scale_percent, saved.text_scale_percent);
+        assert!(session.draft_desktop_dirty());
+        saved.text_scale_percent = 125;
+        session.draft.commit_desktop(saved);
+        assert!(!session.draft_desktop_dirty());
+    }
+
+    #[test]
+    fn shared_search_restores_each_modes_query_across_routes_and_settings() {
+        let mut session = Session::unbacked();
+        let queries = [
+            (Mode::Clean, "cache"),
+            (Mode::Software, "editor"),
+            (Mode::Optimize, "image_"),
+            (Mode::Status, "rust"),
+        ];
+        for (mode, query) in queries {
+            session.show_mode(mode);
+            assert_eq!(session.search_query(), "");
+            session.set_search_query(query.to_string());
+        }
+        for (mode, query) in queries.into_iter().rev() {
+            session.show_mode(mode);
+            assert_eq!(session.search_query(), query);
+            // Style/label changes notify the field observer without an edit.
+            session.set_search_query(session.search_query().to_string());
+            session.open_settings();
+            assert_eq!(session.search_query(), query);
+            session.apply_key(NavKey::Escape);
+            assert_eq!(session.search_query(), query);
+        }
+        session.show_mode(Mode::Analyze);
+        session.set_search_query("stale input".to_string());
+        assert_eq!(session.search_query(), "");
+        session.show_mode(Mode::Clean);
+        assert_eq!(session.search_query(), "cache");
+    }
 
     #[test]
     fn analyze_up_returns_to_the_parent_folder_without_rescanning() {
@@ -3451,6 +3616,131 @@ mod tests {
             result: Err("late".to_string()),
         }));
         assert!(session.analyze_window().is_none());
+    }
+
+    #[test]
+    fn software_workspace_loads_once_preserves_navigation_and_rejects_stale_jobs() {
+        use crate::workbench::SoftwareSegment;
+        if SoftwareReview::has_fixture(SoftwareSegment::Uninstall)
+            || SoftwareReview::has_fixture(SoftwareSegment::Startup)
+        {
+            return;
+        }
+        let mut session = Session::unbacked();
+        session.enable_background_jobs();
+        session.show_mode(Mode::Software);
+        assert_eq!(
+            session.software_review.segment(),
+            Some(SoftwareSegment::Uninstall)
+        );
+        let jobs = session.take_jobs();
+        assert_eq!(jobs.len(), 1);
+        let BackgroundJob::SoftwareHost {
+            generation: old_generation,
+            segment,
+        } = &jobs[0]
+        else {
+            panic!("expected initial inventory");
+        };
+        assert_eq!(*segment, SoftwareSegment::Uninstall);
+        session.software_open_segment(SoftwareSegment::Uninstall);
+        session.show_mode(Mode::Software);
+        assert!(
+            session.take_jobs().is_empty(),
+            "same tab/route must not reload"
+        );
+        session.software_open_segment(SoftwareSegment::Startup);
+        assert!(!session.apply_job(JobResult::SoftwareHost {
+            generation: *old_generation,
+            load: None
+        }));
+        let jobs = session.take_jobs();
+        assert_eq!(jobs.len(), 1);
+        let BackgroundJob::SoftwareHost {
+            generation,
+            segment,
+        } = &jobs[0]
+        else {
+            panic!("startup job");
+        };
+        assert_eq!(*segment, SoftwareSegment::Startup);
+        assert!(session.apply_job(JobResult::SoftwareHost {
+            generation: *generation,
+            load: Some(crate::software_review::SoftwareHostLoad::Startup(
+                devsweep_core::software::SoftwareStartupListV1 {
+                    version: 1,
+                    observed_at_unix_ms: 0,
+                    sources: Vec::new(),
+                    entries: Vec::new(),
+                }
+            ))
+        }));
+        session.software_set_query("retained query");
+        session.software_cycle_filter();
+        assert_eq!(
+            session.software_review.filter(),
+            crate::software_review::SoftwareFilter::All
+        );
+        session.open_settings();
+        session.apply_key(NavKey::Escape);
+        assert_eq!(session.software_review.query(), "retained query");
+        session.show_mode(Mode::Optimize);
+        session.apply_key(NavKey::Escape);
+        assert_eq!(
+            session.software_review.segment(),
+            Some(SoftwareSegment::Startup)
+        );
+        session.show_mode(Mode::Software);
+        assert!(
+            session.take_jobs().is_empty(),
+            "return must retain loaded segment"
+        );
+        assert!(
+            session.shell.filtered_row_ids(Mode::Software).is_empty(),
+            "no landing identities in empty list"
+        );
+        session.software_refresh();
+        assert_eq!(session.take_jobs().len(), 1, "explicit refresh reloads");
+        session.software_open_segment(SoftwareSegment::Leftovers);
+        assert_eq!(
+            session.software_review.segment(),
+            Some(SoftwareSegment::Startup)
+        );
+        assert!(
+            session
+                .workbench_review
+                .lines()
+                .iter()
+                .any(|line| line.contains("unavailable"))
+        );
+    }
+
+    #[test]
+    fn software_empty_review_never_recreates_navigation_rows() {
+        use crate::workbench::SoftwareSegment;
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Software);
+        session.software_open_segment(SoftwareSegment::Updates);
+        session.software_review.open_updates(Vec::new(), Locale::En);
+        session.sync_software_rows();
+        session.workbench_enter();
+        assert!(session.shell.filtered_row_ids(Mode::Software).is_empty());
+        assert_eq!(
+            session.software_review.segment(),
+            Some(SoftwareSegment::Updates)
+        );
+        assert!(
+            session
+                .software_review
+                .lines()
+                .iter()
+                .any(|line| line == "No updates were reported.")
+        );
+        session.apply_key(NavKey::Escape);
+        assert_eq!(
+            session.software_review.segment(),
+            Some(SoftwareSegment::Updates)
+        );
     }
 
     #[test]
@@ -3752,6 +4042,99 @@ mod tests {
     }
 
     #[test]
+    fn clean_scope_and_folder_edits_never_scan_and_scan_uses_explicit_roots() {
+        let root = isolated_multi_cache_project();
+        let mut session = Session::unbacked();
+        assert_eq!(
+            session.clean_workbench().selected_scope(),
+            CleanScope::Project
+        );
+        session.clean_choose_scope(CleanScope::Global);
+        assert_eq!(
+            session.clean_workbench().prompt(),
+            crate::clean_workbench::CleanLandingPrompt::None
+        );
+        assert_eq!(session.shell().activity(), Activity::Idle);
+        assert!(
+            !session.clean_confirm_global_scan(),
+            "a tab does not arm confirmation"
+        );
+        assert!(
+            !session.clean_start_selected_scope(),
+            "global only arms its prompt"
+        );
+        assert_eq!(
+            session.clean_workbench().prompt(),
+            crate::clean_workbench::CleanLandingPrompt::ConfirmGlobal
+        );
+        session.clean_choose_scope(CleanScope::Project);
+        assert!(
+            !session.clean_confirm_global_scan(),
+            "switching scope invalidates confirmation"
+        );
+        assert!(session.clean_pick_scan_root(root.clone()));
+        assert_eq!(session.shell().activity(), Activity::Idle);
+        assert_eq!(session.clean_workbench().phase(), CleanPhase::Landing);
+        assert!(session.clean_workbench().rows().is_empty());
+        assert_eq!(session.drain_mail().applied, 0);
+        assert_eq!(session.shell().scan_roots().len(), 1);
+
+        assert!(session.clean_start_selected_scope());
+        assert_eq!(
+            session.clean_workbench().last_scope(),
+            Some(CleanScope::Project)
+        );
+        session.clean_choose_scope(CleanScope::Global);
+        assert_eq!(
+            session.clean_workbench().selected_scope(),
+            CleanScope::Project,
+            "busy scope is locked"
+        );
+        assert!(
+            !session.clean_pick_scan_root(root.clone()),
+            "busy root edits are refused"
+        );
+        assert!(drain_until_idle(&mut session) > 0);
+        assert_eq!(session.clean_workbench().phase(), CleanPhase::Found);
+        assert!(session.clean_workbench().rows().iter().all(|row| matches!(
+            row.scope,
+            crate::clean_workbench::CleanRowScope::Project { .. }
+        )));
+        assert!(root.join(".pytest_cache").join("payload").is_file());
+        cleanup(&root);
+    }
+
+    #[test]
+    fn clean_scope_replacement_clears_review_but_reselecting_scope_preserves_it() {
+        let root = isolated_multi_cache_project();
+        let mut session = Session::unbacked();
+        assert!(session.clean_pick_scan_root(root.clone()));
+        assert!(session.clean_start_selected_scope());
+        assert!(drain_until_idle(&mut session) > 0);
+        let id = session
+            .clean_workbench()
+            .rows()
+            .iter()
+            .find(|row| row.rule_id == "python.pytest_cache")
+            .expect("pytest row")
+            .id
+            .clone();
+        session.clean.clear_selected();
+        assert!(session.clean_click_row(&id));
+        assert!(session.clean_preview_selection());
+        session.clean_choose_scope(CleanScope::Project);
+        assert!(session.clean_workbench().preview_matches_current());
+        session.clean_choose_scope(CleanScope::Global);
+        assert_eq!(session.clean_workbench().phase(), CleanPhase::Landing);
+        assert!(session.clean_workbench().preview().is_none());
+        assert_eq!(session.clean_workbench().selected_count(), 0);
+        assert!(session.shell().visible_row_ids(Mode::Clean).is_empty());
+        assert!(!session.clean_confirm_execute());
+        assert!(root.join(".pytest_cache").join("payload").is_file());
+        cleanup(&root);
+    }
+
+    #[test]
     fn isolated_project_rows_apply_after_drain() {
         let root = isolated_pytest_project();
         let name = root
@@ -3910,7 +4293,9 @@ mod tests {
 
         let lines = crate::view::panel_lines(&session, None);
         assert!(!lines.iter().any(|line| line == &far));
-        assert!(lines.len().saturating_sub(before.len()) <= VISIBLE_ROW_CAPACITY);
+        // An offscreen selection adds one summary; an empty workspace has no
+        // synthetic landing selection to offset that line anymore.
+        assert!(lines.len().saturating_sub(before.len()) <= VISIBLE_ROW_CAPACITY + 1);
         assert!(
             lines.len() < 10_000,
             "panel_lines must not paint 10_000 rows: {}",
@@ -4028,6 +4413,90 @@ mod tests {
     }
 
     #[test]
+    fn font_preview_save_restart_and_concurrent_unrelated_fields() {
+        let root = env::temp_dir().join(format!("devsweep-font-session-{}", std::process::id()));
+        let settings = root.join("settings");
+        fs::create_dir_all(&settings).unwrap();
+        let files = PreferenceFiles::new(settings.clone(), root.join("protected.json"));
+        let mut session = Session::launch(files.clone());
+        let font = DesktopFont::Installed {
+            family: "测试 Font Family".into(),
+        };
+        session.set_font(font.clone()).unwrap();
+        assert_eq!(session.font(), &font);
+        assert!(session.settings_dirty());
+        assert!(!settings.join("desktop-preferences-v2.json").exists());
+        assert_eq!(
+            Session::launch(files.clone()).font(),
+            &DesktopFont::default()
+        );
+
+        preferences::save_desktop_patch(
+            &files,
+            DesktopPatch::Theme {
+                value: DesktopTheme::Light,
+            },
+        )
+        .unwrap();
+        preferences::save_desktop_patch(&files, DesktopPatch::StatusIntervalSeconds { value: 10 })
+            .unwrap();
+        assert!(session.save_settings().unwrap());
+        let saved = preferences::load_stores(&files).desktop;
+        assert_eq!(saved.font, font);
+        assert_eq!(
+            saved.theme,
+            DesktopTheme::Light,
+            "font save must not overwrite an untouched concurrent theme"
+        );
+        assert_eq!(saved.status_interval_seconds, 10);
+        assert_eq!(session.theme(), DesktopTheme::Light);
+        assert!(!session.settings_dirty());
+        assert!(!session.save_settings().unwrap());
+        assert_eq!(Session::launch(files.clone()).font(), &font);
+        assert!(
+            session
+                .set_font(DesktopFont::Installed {
+                    family: "bad\nfont".into()
+                })
+                .is_err()
+        );
+        assert_eq!(session.font(), &font);
+        session.set_font(DesktopFont::default()).unwrap();
+        session.save_settings().unwrap();
+        assert_eq!(Session::launch(files).font(), &DesktopFont::default());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn font_save_failure_preserves_bytes_and_preview_draft() {
+        let root = env::temp_dir().join(format!("devsweep-font-blocked-{}", std::process::id()));
+        let settings = root.join("settings");
+        fs::create_dir_all(&settings).unwrap();
+        let path = settings.join("desktop-preferences-v2.json");
+        let future = br#"{"schema_version":99,"private":"preserve"}"#;
+        fs::write(&path, future).unwrap();
+        let files = PreferenceFiles::new(settings, root.join("protected.json"));
+        let mut session = Session::launch(files.clone());
+        let font = DesktopFont::Installed {
+            family: "Missing later".into(),
+        };
+        session.set_font(font.clone()).unwrap();
+        assert!(matches!(session.save_settings(), Err(StoreError::Blocked)));
+        assert_eq!(session.font(), &font);
+        assert!(session.settings_dirty());
+        assert_eq!(fs::read(&path).unwrap(), future);
+        fs::remove_file(&path).unwrap();
+        let mut session = Session::launch(files);
+        session.set_font(font.clone()).unwrap();
+        fs::write(&path, b"corrupt after launch").unwrap();
+        assert!(session.save_settings().is_err());
+        assert_eq!(fs::read(&path).unwrap(), b"corrupt after launch");
+        assert_eq!(session.font(), &font);
+        assert!(session.settings_dirty());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn launch_does_not_migrate_and_an_unchanged_save_writes_nothing() {
         let root =
             env::temp_dir().join(format!("devsweep-gpui-c10-{}-session", std::process::id()));
@@ -4044,6 +4513,12 @@ mod tests {
         assert!(!settings.join("desktop-preferences-v2.json").exists());
         assert_eq!(session.theme(), DesktopTheme::Light);
         assert_eq!(session.text_scale(), 110);
+        assert_eq!(
+            session.font(),
+            &DesktopFont::Installed {
+                family: "Segoe UI".into()
+            }
+        );
         assert_eq!(
             session.shell().report(Mode::Clean),
             None,

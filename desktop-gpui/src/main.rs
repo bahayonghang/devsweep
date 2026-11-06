@@ -17,6 +17,7 @@ mod clean_map;
 mod clean_workbench;
 #[cfg_attr(not(test), allow(dead_code))]
 mod copy;
+mod fonts;
 mod icon;
 mod input;
 #[cfg_attr(not(test), allow(dead_code))]

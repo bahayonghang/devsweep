@@ -54,15 +54,15 @@ pub fn mode_subtitle(locale: Locale, name: &'static str) -> &'static str {
     }
 }
 
-/// The mode chord. `left` and `right` alone stay with the Note's caret, so the
+/// The mode chord. Bare arrows stay with an editable field's caret, so the
 /// shell needs its own chord that the text field does not claim.
 pub fn mode_keys_hint(locale: Locale) -> &'static str {
     match locale {
         Locale::En => {
-            "Keyboard: Alt+Left and Alt+Right switch mode while the Note has focus. F10 opens the menu; Down moves the highlighted item; Enter opens it."
+            "Keyboard: Alt+Left and Alt+Right switch mode. F10 opens the menu; Down moves the highlighted item; Enter opens it."
         }
         Locale::ZhCn => {
-            "键盘：焦点在备注输入框时，Alt+← 和 Alt+→ 切换模式。F10 打开菜单；Down 移动高亮项；Enter 打开它。"
+            "键盘：Alt+← 和 Alt+→ 切换模式。F10 打开菜单；Down 移动高亮项；Enter 打开它。"
         }
     }
 }
@@ -168,13 +168,6 @@ pub fn back_label(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Back",
         Locale::ZhCn => "返回",
-    }
-}
-
-pub fn note_placeholder(locale: Locale) -> &'static str {
-    match locale {
-        Locale::En => "Type here",
-        Locale::ZhCn => "在此输入",
     }
 }
 
@@ -401,17 +394,10 @@ pub fn clean_outcome_trash_reported(locale: Locale) -> &'static str {
     }
 }
 
-pub fn clean_scan_primary(locale: Locale) -> &'static str {
-    match locale {
-        Locale::En => "Start a Clean scan",
-        Locale::ZhCn => "开始清理扫描",
-    }
-}
-
 pub fn clean_scope_prompt(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "Choose a scan scope. No scan starts until you pick one.",
-        Locale::ZhCn => "选择扫描范围。选择之前不会开始扫描。",
+        Locale::En => "Scan scope",
+        Locale::ZhCn => "扫描范围",
     }
 }
 
@@ -1411,10 +1397,10 @@ pub fn clean_map_summary_line(
 pub fn clean_keys_hint(locale: Locale) -> &'static str {
     match locale {
         Locale::En => {
-            "Keyboard: Tab moves between the Note and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F8 opens AI review without scanning; F9 scans the saved project folders; Enter previews, then confirms."
+            "Keyboard: Tab moves through controls and the search field; Space toggles the focused row; Alt+Up/Alt+Down move the row cursor; PageUp/PageDown scroll the row window; F7 cycles sort; F8 opens AI review without scanning; F9 scans the saved project folders; Enter previews, then confirms."
         }
         Locale::ZhCn => {
-            "键盘：Tab 在备注和搜索框之间移动；空格切换当前行；Alt+↑/Alt+↓ 移动行光标；PageUp/PageDown 滚动行窗口；F7 切换排序；F8 打开 AI 审查且不扫描；F9 扫描已保存的项目文件夹；Enter 先预览，再确认。"
+            "键盘：Tab 在控件和搜索框之间移动；空格切换当前行；Alt+↑/Alt+↓ 移动行光标；PageUp/PageDown 滚动行窗口；F7 切换排序；F8 打开 AI 审查且不扫描；F9 扫描已保存的项目文件夹；Enter 先预览，再确认。"
         }
     }
 }
@@ -1927,19 +1913,9 @@ mod tests {
     }
 
     #[test]
-    fn chinese_note_placeholder_is_not_english() {
-        let en = note_placeholder(Locale::En);
-        let zh = note_placeholder(Locale::ZhCn);
-        assert_eq!(en, "Type here");
-        assert_eq!(zh, "在此输入");
-        assert_ne!(en, zh);
-    }
-
-    #[test]
     fn clean_workbench_copy_is_bilingual_and_never_claims_success() {
         for locale in [Locale::En, Locale::ZhCn] {
             for text in [
-                clean_scan_primary(locale),
                 clean_scope_prompt(locale),
                 clean_scope_project(locale),
                 clean_scope_global(locale),
@@ -2047,11 +2023,6 @@ mod tests {
             assert!(!clean_ai_recovery_line(locale, "id-1", "ab", "cache/regen-a").is_empty());
             assert!(!clean_ai_restore_ready(locale, "cache/regen-a", "ab").is_empty());
         }
-        assert_eq!(clean_scan_primary(Locale::En), "Start a Clean scan");
-        assert_ne!(
-            clean_scan_primary(Locale::En),
-            clean_scan_primary(Locale::ZhCn)
-        );
         assert_ne!(
             clean_phase_cleaning(Locale::En),
             clean_phase_cleaning(Locale::ZhCn)

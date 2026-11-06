@@ -327,6 +327,19 @@ impl SoftwareReview {
         self.filter
     }
 
+    pub fn query(&self) -> &str {
+        &self.query
+    }
+
+    /// Escape dismisses pending authority without returning to an introduction.
+    pub fn cancel_review(&mut self, locale: Locale) -> bool {
+        if self.pending.take().is_none() {
+            return false;
+        }
+        self.lines = self.summary_lines(locale);
+        true
+    }
+
     /// One reviewed item by id.
     #[must_use]
     pub fn item(&self, id: &str) -> Option<&SoftwareItem> {
@@ -501,6 +514,10 @@ impl SoftwareReview {
     }
 
     pub fn cycle_filter(&mut self) {
+        if self.segment != Some(SoftwareSegment::Uninstall) {
+            self.filter = SoftwareFilter::All;
+            return;
+        }
         self.filter = match self.filter {
             SoftwareFilter::All => SoftwareFilter::Selectable,
             SoftwareFilter::Selectable => SoftwareFilter::Protected,
@@ -932,7 +949,10 @@ impl SoftwareReview {
                     copy::software_updates_summary(locale, rows.len()),
                 ];
                 if rows.is_empty() {
-                    lines.push(copy::software_updates_unavailable(locale).to_string());
+                    lines.push(
+                        copy::pick(locale, "No updates were reported.", "未发现可用更新。")
+                            .to_string(),
+                    );
                 }
                 lines
             }
@@ -1649,13 +1669,12 @@ mod tests {
     }
 
     #[test]
-    fn session_review_refuses_a_host_inventory_and_escape_returns() {
+    fn session_empty_inventory_and_escape_retain_the_workspace() {
         use crate::shell::{Mode, NavKey, Session};
         use crate::view::panel_lines;
 
         let mut session = Session::unbacked();
         session.show_mode(Mode::Software);
-        session.select_mode_row(Mode::Software, "uninstall");
         session.apply_key(NavKey::Enter);
         assert!(session.software_review().is_open());
         let lines = panel_lines(&session, None).join("\n");
@@ -1666,7 +1685,10 @@ mod tests {
         assert!(!lines.to_ascii_lowercase().contains("succeed"));
         session.software_cycle_filter();
         session.apply_key(NavKey::Escape);
-        assert!(!session.software_review().is_open());
+        assert_eq!(
+            session.software_review().segment(),
+            Some(SoftwareSegment::Uninstall)
+        );
         assert!(!session.input_locked());
     }
 

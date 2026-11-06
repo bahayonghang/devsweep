@@ -175,6 +175,28 @@ same temporary preferences directory. The previous values must load until Save.
 Resolve the toggle direction from the underlying theme so both directions still
 work while the high-contrast palette is active.
 
+Native GPUI font selection uses the same draft/explicit-Save contract through
+`Session::set_font(DesktopFont)` and `DesktopPatch::Font`. Reading the catalogue
+or selecting a family must not write preferences. `FontCatalogue` caches
+`TextSystem::all_font_names()` on first Settings entry, coalesces refresh and
+keeps the full searchable membership while bounding visible choices. The GPUI
+API returns names, not a fallible native result: empty and no-match states must
+not invent a platform error. Enumeration belongs on the background executor.
+Root typography is inherited by normal content and `TextInput` shaping; native
+checks must inspect actual text, placeholders and IME, not merely stored JSON.
+Missing families keep their saved identity and use system fallback.
+
+Before any multi-field GPUI save, snapshot which fields differ from the original
+committed state. Each locked patch rereads the file and can return concurrent
+changes to untouched fields. Do not compare later draft fields against that
+refreshed snapshot and accidentally turn another process's edit into local
+write intent. After each successful patch, untouched draft fields adopt that
+committed snapshot while remaining user edits stay dirty. This rebase must
+happen even when a later patch fails, so retry cannot overwrite concurrent
+untouched fields. Tests must cover partial-save retry and a font-only edit concurrent with theme and
+Status edits, no-op Save, restart restoration, invalid/future files and failed
+persistence retaining the draft.
+
 - Core: exact schema/default bytes, validation, missing/unreadable/newer files,
   write rollback, group reset boundaries, concurrent updates, and preservation
   of existing language bytes.

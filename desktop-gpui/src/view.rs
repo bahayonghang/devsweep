@@ -1,8 +1,8 @@
 //! One native window. The capsule order is Clean, Software, Optimize, Analyze, Status.
 //!
 //! Layout: a top bar (beaver menu, centered mode capsule, screen toggles), a
-//! scrollable page built from the `ui` design system, and a status bar that
-//! holds the Note. Each page lives in a `view/page_*.rs` submodule.
+//! scrollable page built from the `ui` design system. Each page lives in a
+//! `view/page_*.rs` submodule; the shell owns fallback keyboard focus.
 //!
 //! The in-window beaver control uses the packaged DevSweep master PNG. The
 //! window and notification-area glyph use the offline-derived multi-size ICO
@@ -35,7 +35,7 @@ use crate::{
     clean_workbench::{CleanLandingPrompt, CleanPhase, CleanRow, CleanScope, CleanSort},
     copy,
     input::{self, InputStyle, TextInput},
-    preferences::DesktopTheme,
+    preferences::{DesktopFont, DesktopTheme},
     shell::{Activity, CleanOutcomeNotice, MENU, Mode, Session, Surface, WorkbenchNotice},
     ui::{self, ButtonKind, KeyboardFocus, Theme, Tone},
 };
@@ -143,8 +143,6 @@ actions!(
         ToggleRow,
         CleanPageUp,
         CleanPageDown,
-        TabCleanReview,
-        ShiftTabCleanReview,
         CycleCleanSort,
         OpenAiReview,
         ToggleCleanScreen,
@@ -185,14 +183,15 @@ pub struct ShellView {
     material: WindowMaterial,
     session: Session,
     save_error: Option<String>,
-    note: Entity<TextInput>,
     search: Entity<TextInput>,
+    font_search: Entity<TextInput>,
+    fonts: crate::fonts::FontCatalogue,
 }
 
 /// Route a resolved mode action to the session.
 ///
 /// The shell root owns the `ModePrev`/`ModeNext` listeners, and it sits on the
-/// Note's action dispatch path, so the Note's `alt-left`/`alt-right` chord
+/// search field's action dispatch path, so its `alt-left`/`alt-right` chord
 /// arrives here through the same bubbling path `down`/`up` already use. Keeping
 /// the decision on the action (not the keystroke) is what lets a test drive a
 /// resolved keystroke through the real handler.
@@ -265,10 +264,8 @@ impl ShellView {
 
     /// Space toggles the focused Clean row only while review is active.
     ///
-    /// The Note's own context receives the key. Propagate when the search
-    /// field owns the caret, or when review is not active, so the character
-    /// stays text. A real toggle does not propagate, so the Note does not
-    /// gain a space.
+    /// Propagate when an input or clickable control owns focus. The shell's
+    /// review shortcut must not swallow typed spaces or keyboard clicks.
     fn toggle_row(&mut self, _: &ToggleRow, window: &mut Window, cx: &mut Context<Self>) {
         if self.search.focus_handle(cx).is_focused(window) || self.control_focused(window, cx) {
             cx.propagate();
@@ -282,40 +279,17 @@ impl ShellView {
         cx.notify();
     }
 
-    /// Tab from the Note jumps to the Clean search field during review.
-    ///
-    /// The search field is focused only while review is active and the Note
-    /// already has focus. Tab from the search field continues through the
-    /// window tab order, so review rows and actions stay reachable. Startup
-    /// and a non-review surface never move focus here.
-    fn tab_clean_review(
-        &mut self,
-        _: &TabCleanReview,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if !self.clean_review_active() {
-            cx.propagate();
-            return;
-        }
-        if self.note.focus_handle(cx).is_focused(window) {
-            window.focus(&self.search.focus_handle(cx), cx);
-            return;
-        }
-        cx.propagate();
-    }
-
     /// True when keyboard focus sits on a clickable control rather than the
-    /// Note, the search field, or the shell root. Enter and Space then belong
+    /// search field or the shell root. Enter and Space then belong
     /// to that control's keyboard click, not to the shell's chords.
     fn control_focused(&self, window: &Window, cx: &App) -> bool {
         window.focused(cx).is_some()
-            && !self.note.focus_handle(cx).is_focused(window)
             && !self.search.focus_handle(cx).is_focused(window)
+            && !self.font_search.focus_handle(cx).is_focused(window)
             && !self.focus_handle.is_focused(window)
     }
 
-    /// Tab walks every control in paint order: top bar, page, then the Note.
+    /// Tab walks the visible controls in paint order: top bar, then page.
     fn focus_next_control(
         &mut self,
         _: &FocusNextControl,
@@ -332,22 +306,6 @@ impl ShellView {
         cx: &mut Context<Self>,
     ) {
         window.focus_prev(cx);
-    }
-
-    /// Shift-Tab from the search field returns to the Note during review.
-    /// It does not focus the search field, and it does not move focus outside
-    /// review.
-    fn shift_tab_clean_review(
-        &mut self,
-        _: &ShiftTabCleanReview,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if self.clean_review_active() && self.search.focus_handle(cx).is_focused(window) {
-            window.focus(&self.note.focus_handle(cx), cx);
-            return;
-        }
-        cx.propagate();
     }
 
     /// F7 cycles Clean sort in the Found phase only. It does not change mode.
@@ -385,6 +343,10 @@ impl ShellView {
     }
 
     fn activate(&mut self, _: &Activate, window: &mut Window, cx: &mut Context<Self>) {
+        // Enter in the font filter must never activate a domain row or Save.
+        if self.font_search.focus_handle(cx).is_focused(window) {
+            return;
+        }
         // A focused button, tab, card or row clicks itself on Enter.
         if self.control_focused(window, cx) {
             cx.propagate();
@@ -437,14 +399,14 @@ impl ShellView {
         self.after_clean_action(started, cx);
     }
 
-    fn clean_open_scope(&mut self, _: &mut Window, cx: &mut Context<Self>) {
-        self.session.clean_open_scope_choice();
-        cx.notify();
+    fn clean_start_scope(&mut self, cx: &mut Context<Self>) {
+        let started = self.session.clean_start_selected_scope();
+        self.after_clean_action(started, cx);
     }
 
     fn clean_scope(&mut self, scope: CleanScope, cx: &mut Context<Self>) {
-        let started = self.session.clean_choose_scope(scope);
-        self.after_clean_action(started, cx);
+        self.session.clean_choose_scope(scope);
+        cx.notify();
     }
 
     fn clean_confirm_global(&mut self, cx: &mut Context<Self>) {
@@ -473,16 +435,16 @@ impl ShellView {
                 return;
             };
             let _ = this.update(cx, |this, cx| {
-                let started = this.session.clean_pick_scan_root(root);
-                this.after_clean_action(started, cx);
+                this.session.clean_pick_scan_root(root);
+                cx.notify();
             });
         })
         .detach();
     }
 
     fn clean_pick_suggestion(&mut self, root: PathBuf, cx: &mut Context<Self>) {
-        let started = self.session.clean_pick_scan_root(root);
-        self.after_clean_action(started, cx);
+        self.session.clean_pick_scan_root(root);
+        cx.notify();
     }
 
     fn analyze_pick_root(&mut self, cx: &mut Context<Self>) {
@@ -624,7 +586,7 @@ impl ShellView {
         .detach();
     }
 
-    fn save(&mut self, _: &mut Window, cx: &mut Context<Self>) {
+    fn save(&mut self, cx: &mut Context<Self>) {
         self.save_error = match self.session.save_settings() {
             Ok(_) => None,
             Err(error) => Some(error.to_string()),
@@ -637,8 +599,7 @@ impl ShellView {
 ///
 /// A Found report counts only while the AI subview is closed, because opening
 /// that subview replaces the search field. An open subview counts only in its
-/// Review phase. Landing, scanning, and other phases leave the Note's keys
-/// as text.
+/// Review phase. Other phases leave the review shortcut inactive.
 pub(crate) fn clean_review_is_active(session: &Session) -> bool {
     if session.shell().surface() != Surface::Mode || session.shell().mode() != Mode::Clean {
         return false;
@@ -698,11 +659,13 @@ impl Render for ShellView {
         let top_bar = self.top_bar(
             &t, locale, selected, surface, menu_open, maximized, compact, narrow, cx,
         );
-        let page = self.page(&t, cx);
-        let busy =
-            self.session.shell().activity() == Activity::Busy || self.session.background_busy();
-        let hint = copy::mode_keys_hint(locale);
-        let note_label = copy::pick(locale, "Note", "笔记");
+        let page = self.page(&t, window, cx);
+        let font_family = match self.session.font() {
+            DesktopFont::Installed { family } if !self.fonts.missing(self.session.font()) => {
+                SharedString::from(family.clone())
+            }
+            _ => gpui::TextStyle::default().font_family,
+        };
 
         div()
             .id("shell-root")
@@ -718,8 +681,6 @@ impl Render for ShellView {
             .on_action(cx.listener(Self::row_down))
             .on_action(cx.listener(Self::row_up))
             .on_action(cx.listener(Self::toggle_row))
-            .on_action(cx.listener(Self::tab_clean_review))
-            .on_action(cx.listener(Self::shift_tab_clean_review))
             .on_action(cx.listener(Self::cycle_clean_sort))
             .on_action(cx.listener(Self::clean_page_up))
             .on_action(cx.listener(Self::clean_page_down))
@@ -732,13 +693,13 @@ impl Render for ShellView {
             .on_action(cx.listener(Self::focus_next_control))
             .on_action(cx.listener(Self::focus_prev_control))
             // A click on a non-focusable surface must not strand the keyboard:
-            // with nothing focused, return focus to the Note so every chord
-            // keeps working. A click on the search field focuses it first.
+            // with nothing focused, return to the shell. A focused input or
+            // control keeps its focus and owns its editing/activation keys.
             .on_mouse_down(
                 gpui::MouseButton::Left,
                 cx.listener(|this, _, window, cx| {
                     if window.focused(cx).is_none() {
-                        window.focus(&this.note.focus_handle(cx), cx);
+                        window.focus(&this.focus_handle, cx);
                     }
                 }),
             )
@@ -755,6 +716,7 @@ impl Render for ShellView {
                 ),
             ))
             .text_color(rgb(t.text))
+            .font_family(font_family)
             .text_size(rems(0.9375))
             .child(top_bar)
             .child(
@@ -788,67 +750,6 @@ impl Render for ShellView {
                                     .gap(rems(1.25))
                                     .child(page),
                             ),
-                    ),
-            )
-            .child(
-                div()
-                    .id("status-bar")
-                    .flex()
-                    .flex_row()
-                    .flex_shrink_0()
-                    .items_center()
-                    .gap(rems(1.0))
-                    .h(rems(3.0))
-                    .px(rems(1.25))
-                    .bg(rgb(t.chrome))
-                    .border_t_1()
-                    .border_color(rgb(t.border))
-                    .child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .flex_shrink_0()
-                            .items_center()
-                            .gap(rems(0.45))
-                            .child(ui::dot(if busy { t.warning } else { t.success }))
-                            .child(
-                                div()
-                                    .text_size(rems(0.78))
-                                    .text_color(rgb(t.text_muted))
-                                    .child(if busy {
-                                        copy::pick(locale, "Working…", "正在处理…")
-                                    } else {
-                                        copy::pick(locale, "Ready", "就绪")
-                                    }),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .id("keys-hint")
-                            .flex_1()
-                            .min_w_0()
-                            .truncate()
-                            .text_size(rems(0.74))
-                            .text_color(rgb(t.text_subtle))
-                            .aria_label(hint)
-                            .child(hint),
-                    )
-                    .child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .flex_shrink_0()
-                            .items_center()
-                            .gap(rems(0.5))
-                            .w(rems(if narrow { 10.0 } else { 17.0 }))
-                            .child(ui::icon("history", t.text_subtle).size(rems(0.85)))
-                            .child(
-                                div()
-                                    .text_size(rems(0.74))
-                                    .text_color(rgb(t.text_subtle))
-                                    .child(note_label),
-                            )
-                            .child(div().flex_1().min_w_0().child(self.note.clone())),
                     ),
             )
             .when(menu_open, |root| {
@@ -919,7 +820,7 @@ impl ShellView {
         }
     }
 
-    /// Keeps both text fields on the app scale, locale, and design tokens.
+    /// Keeps search on the app scale, locale, and design tokens.
     fn sync_inputs(&self, t: &Theme, cx: &mut Context<Self>) {
         let percent = self.session.text_scale();
         let locale = self.session.locale();
@@ -934,22 +835,39 @@ impl ShellView {
             font_px: 14.0,
             line_px: 20.0,
         };
-        self.note.update(cx, |note, cx| {
-            note.set_text_scale_percent(percent, cx);
-            note.set_placeholder(copy::note_placeholder(locale), cx);
-            note.set_style(
-                InputStyle {
-                    font_px: 12.5,
-                    line_px: 17.0,
-                    ..base
-                },
-                cx,
-            );
-        });
         self.search.update(cx, |search, cx| {
+            // Presentation updates notify observers too. Restore the active
+            // model first so another mode's query cannot be published here.
+            search.restore_content(self.session.search_query());
             search.set_text_scale_percent(percent, cx);
             search.set_style(base, cx);
-            search.set_placeholder(copy::clean_search_placeholder(locale), cx);
+            let placeholder = if self.session.shell().mode() == Mode::Software {
+                match self.session.software_review().segment() {
+                    Some(crate::workbench::SoftwareSegment::Updates) => {
+                        copy::pick(locale, "Search updates", "搜索更新")
+                    }
+                    Some(crate::workbench::SoftwareSegment::Startup) => {
+                        copy::pick(locale, "Search startup entries", "搜索启动项")
+                    }
+                    _ => copy::pick(locale, "Search installed apps", "搜索已安装应用"),
+                }
+            } else {
+                copy::clean_search_placeholder(locale)
+            };
+            search.set_placeholder(placeholder, cx);
+            search.set_accessible_label(placeholder, cx);
+        });
+        self.font_search.update(cx, |search, cx| {
+            search.set_text_scale_percent(percent, cx);
+            search.set_style(base, cx);
+            search.set_placeholder(
+                copy::pick(locale, "Search installed fonts", "搜索已安装字体"),
+                cx,
+            );
+            search.set_accessible_label(
+                copy::pick(locale, "Search installed fonts", "搜索已安装字体"),
+                cx,
+            );
         });
     }
 
@@ -1100,6 +1018,8 @@ impl ShellView {
         } else {
             (Some(tabs), None)
         };
+        let busy =
+            self.session.shell().activity() == Activity::Busy || self.session.background_busy();
         let bar = div()
             .id("top-bar")
             .flex()
@@ -1123,6 +1043,12 @@ impl ShellView {
                         .occlude()
                         .role(gpui::Role::Button)
                         .aria_label(copy::menu_label(locale))
+                        .tooltip(move |_, cx| {
+                            cx.new(|_| {
+                                TooltipText(copy::mode_keys_hint(locale).into(), tooltip_theme)
+                            })
+                            .into()
+                        })
                         .aria_expanded(menu_open)
                         .flex()
                         .flex_row()
@@ -1185,6 +1111,18 @@ impl ShellView {
                 ),
             )
             .children(inline_tabs)
+            .when(busy, |bar| {
+                bar.child(
+                    ui::badge(
+                        t,
+                        copy::pick(locale, "Working…", "正在处理…"),
+                        Tone::Warning,
+                    )
+                    .id("shell-busy")
+                    .role(gpui::Role::Status)
+                    .ml(rems(0.5)),
+                )
+            })
             .child(
                 div()
                     .flex_1()
@@ -1363,11 +1301,11 @@ impl ShellView {
     }
 
     /// The page body for the active surface.
-    fn page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn page(&mut self, t: &Theme, window: &Window, cx: &mut Context<Self>) -> gpui::AnyElement {
         match self.session.shell().surface() {
             Surface::Mode => match self.session.shell().mode() {
-                Mode::Clean => self.clean_page(t, cx),
-                Mode::Software => self.software_page(t, cx),
+                Mode::Clean => self.clean_page(t, window, cx),
+                Mode::Software => self.software_page(t, window, cx),
                 Mode::Optimize => self.optimize_page(t, cx),
                 Mode::Analyze => self.analyze_page(t, cx),
                 Mode::Status => self.status_page(t, cx),
@@ -1626,8 +1564,8 @@ pub(crate) struct AccessibleControl {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AccessibleSlot {
     Shell,
-    Note,
     CleanSearch,
+    FontSearch,
     Mode(Mode),
     Menu(Surface),
 }
@@ -1638,13 +1576,13 @@ pub(crate) fn accessible_control(locale: copy::Locale, slot: AccessibleSlot) -> 
             id: "shell-root",
             label: WINDOW_TITLE,
         },
-        AccessibleSlot::Note => AccessibleControl {
-            id: "note-input",
-            label: "Note",
-        },
         AccessibleSlot::CleanSearch => AccessibleControl {
             id: "clean-search-input",
             label: copy::clean_search_placeholder(locale),
+        },
+        AccessibleSlot::FontSearch => AccessibleControl {
+            id: "settings-font-search",
+            label: copy::pick(locale, "Search installed fonts", "搜索已安装字体"),
         },
         AccessibleSlot::Mode(mode) => AccessibleControl {
             id: mode.element_id(),
@@ -2049,7 +1987,6 @@ fn push_clean_review_lines(session: &Session, entries: &mut Vec<PanelEntry>) {
     let phase_line = match workbench.phase() {
         CleanPhase::Landing => match workbench.prompt() {
             CleanLandingPrompt::None => None,
-            CleanLandingPrompt::ScopeChoice => Some(copy::clean_scope_prompt(locale).to_string()),
             CleanLandingPrompt::RootRequired => Some(copy::clean_root_prompt(locale).to_string()),
             CleanLandingPrompt::ConfirmGlobal => {
                 Some(copy::clean_global_confirm(locale).to_string())
@@ -2395,20 +2332,16 @@ pub fn run(session: Session) {
             cx.bind_keys([
                 KeyBinding::new("left", ModePrev, None),
                 KeyBinding::new("right", ModeNext, None),
+                KeyBinding::new("alt-left", ModePrev, None),
+                KeyBinding::new("alt-right", ModeNext, None),
                 KeyBinding::new("up", MenuUp, None),
                 KeyBinding::new("down", MenuDown, None),
                 KeyBinding::new("alt-down", RowDown, None),
                 KeyBinding::new("alt-up", RowUp, None),
-                // Space toggles the focused row. SpikeInput is the Note's own
-                // context; CleanReview stays for a focused shell outside the Note.
-                // The handler propagates when the key must stay text.
+                // Review shortcuts yield to focused inputs and controls.
                 KeyBinding::new("space", ToggleRow, Some("CleanReview")),
                 KeyBinding::new("space", ToggleRow, Some("SpikeInput")),
-                // Tab reaches the search field from the focused Note during
-                // review. Shift-Tab from that field returns to the Note.
-                KeyBinding::new("tab", TabCleanReview, Some("SpikeInput")),
-                KeyBinding::new("shift-tab", ShiftTabCleanReview, Some("SpikeInput")),
-                // Everywhere else Tab walks the window tab order. Buttons,
+                // Tab walks the window tab order, including search fields. Buttons,
                 // tabs, segments, cards and rows are tab stops; Enter and
                 // Space click the focused one.
                 KeyBinding::new("tab", FocusNextControl, None),
@@ -2438,6 +2371,8 @@ pub fn run(session: Session) {
                 KeyBinding::new("alt-right", ModeNext, Some("SpikeInput")),
                 KeyBinding::new("home", input::Home, Some("SpikeInput")),
                 KeyBinding::new("end", input::End, Some("SpikeInput")),
+                KeyBinding::new("ctrl-a", input::SelectAll, Some("SpikeInput")),
+                KeyBinding::new("ctrl-v", input::Paste, Some("SpikeInput")),
             ]);
             cx.on_window_closed(|cx, _window_id| {
                 if cx.windows().is_empty() {
@@ -2465,10 +2400,6 @@ pub fn run(session: Session) {
                         ..Default::default()
                     },
                     move |window, cx| {
-                        let placeholder = copy::note_placeholder(session.locale());
-                        let text_scale_percent = session.text_scale();
-                        let note = cx
-                            .new(|cx| TextInput::new(window, cx, placeholder, text_scale_percent));
                         // The row search never steals startup focus. Its edits
                         // drive the existing row query through the shell model.
                         let search = cx.new(|cx| {
@@ -2480,6 +2411,18 @@ pub fn run(session: Session) {
                             )
                         });
                         let mut session = session;
+                        let font_search = cx.new(|cx| {
+                            TextInput::new_secondary(
+                                cx,
+                                copy::pick(
+                                    session.locale(),
+                                    "Search installed fonts",
+                                    "搜索已安装字体",
+                                ),
+                                "settings-font-search",
+                                accessible_control(session.locale(), AccessibleSlot::FontSearch),
+                            )
+                        });
                         // The window never blocks its UI thread on host reads.
                         session.enable_background_jobs();
                         let mut material = WindowMaterial::default();
@@ -2489,32 +2432,34 @@ pub fn run(session: Session) {
                             focus_handle: cx.focus_handle(),
                             session,
                             save_error: None,
-                            note,
                             search: search.clone(),
+                            font_search: font_search.clone(),
+                            fonts: crate::fonts::FontCatalogue::default(),
                         });
                         view.update(cx, |_view, cx| {
+                            cx.observe(&font_search, |this, observed, cx| {
+                                this.fonts
+                                    .set_query(observed.read(cx).content().to_string());
+                                cx.notify();
+                            })
+                            .detach();
                             // A keyboard click can remove the focused control
                             // (a page change). Nothing focused would strand
-                            // every chord, so focus falls back to the Note.
+                            // every chord, so focus falls back to the shell.
                             cx.observe_window_appearance(window, |this, _, cx| {
                                 this.material.read_preferences();
                                 cx.notify();
                             })
                             .detach();
                             cx.on_focus_lost(window, |this, window, cx| {
-                                window.focus(&this.note.focus_handle(cx), cx);
+                                if window.focused(cx).is_none() {
+                                    window.focus(&this.focus_handle, cx);
+                                }
                             })
                             .detach();
                             cx.observe(&search, |this, observed, cx| {
                                 let query = observed.read(cx).content().to_string();
-                                match this.session.shell().mode() {
-                                    Mode::Software => this.session.software_set_query(query),
-                                    Mode::Optimize => this.session.optimize_set_query(query),
-                                    Mode::Status => this.session.status_set_query(query),
-                                    _ => {
-                                        this.session.clean_set_search(query);
-                                    }
-                                }
+                                this.session.set_search_query(query);
                                 cx.notify();
                             })
                             .detach();
@@ -2529,13 +2474,11 @@ pub fn run(session: Session) {
                     // HWND; the handles are kept alive by `window_icons`.
                     #[cfg(windows)]
                     let _ = window_icons.apply(window);
-                    // EntityInputHandler only receives characters while the Note
-                    // control keeps keyboard focus. Do not retarget this to the
-                    // shell root.
-                    window.focus(&view.note.focus_handle(cx), cx);
+                    // The shell owns startup chords; Tab reaches actual controls.
+                    window.focus(&view.focus_handle, cx);
                     cx.activate(true);
                 })
-                .expect("focus note");
+                .expect("focus shell");
         });
 }
 
@@ -3171,9 +3114,9 @@ mod tests {
         assert_eq!(shell.id, "shell-root");
         assert_eq!(shell.label, "DevSweep");
 
-        let note = accessible_control(Locale::En, AccessibleSlot::Note);
-        assert_eq!(note.id, "note-input");
-        assert_eq!(note.label, "Note");
+        let search = accessible_control(Locale::En, AccessibleSlot::CleanSearch);
+        assert_eq!(search.id, "clean-search-input");
+        assert_eq!(search.label, copy::clean_search_placeholder(Locale::En));
     }
 
     #[test]
@@ -3264,30 +3207,22 @@ mod tests {
             "switching language must leave the menu item mounted"
         );
 
-        // The Uninstall landing button stays mounted after the segment opens.
-        // Unmounting it makes a later UIA Invoke return element-not-available.
+        // Tabs own segment navigation; obsolete UIA handles must be reacquired.
         let work = crate::source_lf(include_str!("view/page_workbench.rs"));
         let page = work
             .split_once("fn software_page(")
-            .expect("software page")
-            .1
-            .split_once("fn software_landing(")
-            .expect("landing follows")
-            .0;
-        assert!(page.contains("self.software_landing(t, review_open, cx)"));
-        assert!(page.contains("self.software_review_card(t, cx)"));
-        assert!(!page.contains("None =>"));
-        let landing = work
-            .split_once("fn software_landing(")
-            .expect("landing")
+            .unwrap()
             .1
             .split_once("fn software_review_card(")
-            .expect("review follows")
+            .unwrap()
             .0;
-        assert!(landing.contains("\"software-card-uninstall\""));
-        assert!(landing.contains(".accessibility_id(id)"));
-        assert!(landing.contains("AccessibleAction::Click"));
-        assert!(landing.contains("software_open_segment"));
+        assert!(!page.contains("software_landing"));
+        assert!(!page.contains("software-card-uninstall"));
+        assert!(!page.contains("software-close-segment"));
+        assert!(page.contains("software-segment-{id}"));
+        assert!(page.contains(".accessibility_id(id)"));
+        assert!(page.contains("AccessibleAction::Click"));
+        assert!(page.contains("self.software_review_card(t, row_height, cx)"));
     }
 
     #[test]
@@ -3443,7 +3378,7 @@ mod tests {
     }
 
     #[test]
-    fn clean_review_keys_are_bound_on_the_note_and_startup_keeps_note_focus() {
+    fn clean_review_keys_preserve_search_and_startup_focuses_the_shell() {
         let source = crate::source_lf(include_str!("view.rs"));
         let run_at = source
             .find("pub fn run(session: Session)")
@@ -3456,15 +3391,15 @@ mod tests {
         for binding in [
             r#"KeyBinding::new("space", ToggleRow, Some("SpikeInput"))"#,
             r#"KeyBinding::new("space", ToggleRow, Some("CleanReview"))"#,
-            r#"KeyBinding::new("tab", TabCleanReview, Some("SpikeInput"))"#,
-            r#"KeyBinding::new("shift-tab", ShiftTabCleanReview, Some("SpikeInput"))"#,
+            r#"KeyBinding::new("tab", FocusNextControl, None)"#,
+            r#"KeyBinding::new("shift-tab", FocusPrevControl, None)"#,
             r#"KeyBinding::new("f7", CycleCleanSort, None)"#,
         ] {
             assert!(run.contains(binding), "missing binding: {binding}");
         }
         assert!(
-            run.contains("window.focus(&view.note.focus_handle(cx), cx)"),
-            "startup must focus the Note"
+            run.contains("window.focus(&view.focus_handle, cx)"),
+            "startup must focus the shell"
         );
         assert!(
             !run.contains("search.focus_handle"),
@@ -3481,11 +3416,11 @@ mod tests {
     }
 
     #[test]
-    fn mode_chord_routes_to_the_mode_action_while_the_note_owns_the_caret() {
+    fn mode_chord_routes_to_the_mode_action_while_search_owns_the_caret() {
         let mut session = Session::unbacked();
         assert_eq!(session.shell().mode(), Mode::Clean);
 
-        // The Note's SpikeInput context keeps plain `left`/`right` for the caret,
+        // The search field's SpikeInput context keeps plain arrows for the caret,
         // so the mode chord must be a different keystroke that still resolves to
         // ModeNext/ModePrev on the shell's dispatch path.
         assert!(
@@ -3521,64 +3456,28 @@ mod tests {
     }
 
     #[test]
-    fn mode_chord_is_bound_in_the_note_context_and_reaches_the_shell_handlers() {
+    fn mode_chords_reach_the_shell_without_a_footer_input() {
         let source = crate::source_lf(include_str!("view.rs"));
+        let production = source.split("#[cfg(test)]\nmod tests").next().unwrap();
         for binding in [
+            r#"KeyBinding::new("alt-left", ModePrev, None)"#,
+            r#"KeyBinding::new("alt-right", ModeNext, None)"#,
             r#"KeyBinding::new("alt-left", ModePrev, Some("SpikeInput"))"#,
             r#"KeyBinding::new("alt-right", ModeNext, Some("SpikeInput"))"#,
-        ] {
-            assert!(source.contains(binding), "missing chord binding: {binding}");
-        }
-        // The caret keeps the bare arrows inside the Note.
-        for binding in [
             r#"KeyBinding::new("left", input::Left, Some("SpikeInput"))"#,
             r#"KeyBinding::new("right", input::Right, Some("SpikeInput"))"#,
         ] {
-            assert!(source.contains(binding), "caret binding lost: {binding}");
+            assert!(production.contains(binding), "missing binding: {binding}");
         }
-
-        // The chord resolves to ModePrev/ModeNext, which no Note element handles.
-        // They bubble to the shell root, so the Note must be rendered as a
-        // descendant of the element that carries the prev/next listeners.
-        let root = source
-            .find(r#".id("shell-root")"#)
-            .expect("shell root element must exist");
-        let note = source
-            .find(".child(self.note.clone())")
-            .expect("shell root must render the Note as a child");
-        assert!(root < note, "the Note must sit inside the shell root");
-        for handler in [
-            ".on_action(cx.listener(Self::prev))",
-            ".on_action(cx.listener(Self::next))",
-        ] {
-            let at = source
-                .find(handler)
-                .unwrap_or_else(|| panic!("shell root must register {handler}"));
-            assert!(
-                root < at && at < note,
-                "{handler} must be on the shell root above the Note"
-            );
-        }
-        // The Note must not swallow the chord on its own element. The Note and
-        // the Clean search share this render path, and the constructor pins
-        // the Note element identity.
-        let note_source = crate::source_lf(include_str!("input.rs"));
-        assert!(
-            note_source.contains(r#"element_id: "note-input""#),
-            "the Note constructor must keep the note-input element identity"
-        );
-        let note_start = note_source
-            .find(".id(self.element_id)")
-            .expect("note element must exist");
-        let note_element = &note_source[note_start..];
-        let note_end = note_element
-            .find(".on_mouse_down")
-            .expect("note element must end at its mouse handler");
-        assert!(
-            !note_element[..note_end].contains("ModePrev")
-                && !note_element[..note_end].contains("ModeNext"),
-            "the Note must not claim the mode chord"
-        );
+        assert!(!production.contains("self.note"));
+        assert!(!production.contains(r#".id("status-bar")"#));
+        assert!(production.contains("if window.focused(cx).is_none()"));
+        assert!(production.contains("window.focus(&this.focus_handle, cx)"));
+        let input = crate::source_lf(include_str!("input.rs"));
+        assert!(!input.contains("note-input"));
+        let element = input.split(".id(self.element_id)").nth(1).unwrap();
+        let handlers = element.split(".on_mouse_down").next().unwrap();
+        assert!(!handlers.contains("ModePrev") && !handlers.contains("ModeNext"));
     }
 
     #[test]
@@ -3632,7 +3531,7 @@ mod tests {
         );
         assert!(
             source.contains(r#"KeyBinding::new("down", MenuDown, Some("SpikeInput"))"#),
-            "down must also bind while the Note holds SpikeInput focus"
+            "down must also bind while search holds SpikeInput focus"
         );
         assert!(
             source.contains(r#"KeyBinding::new("f8", OpenAiReview, Some("SpikeInput"))"#),

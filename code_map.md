@@ -188,7 +188,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 
 - `desktop-gpui/src/main.rs` - native entry; loads preferences, then `view::run`.
 - `desktop-gpui/src/ui.rs` - design tokens (dark/light/high contrast), components, packaged icon table.
-- `desktop-gpui/src/view.rs` - `ShellView`: actions, key bindings, top bar, status bar, background-job dispatch; `panel_entries` is a test-only text projection.
+- `desktop-gpui/src/view.rs` - `ShellView`: actions, key bindings, top bar, fallback focus and background-job dispatch; `panel_entries` is a test-only text projection.
+- `desktop-gpui/src/fonts.rs` - cached local font catalogue, bounded searchable choices and missing-family detection; Settings owns enumeration and selection.
 - `desktop-gpui/src/view/page_*.rs` - Clean, Software/Optimize, Analyze, Status, and Settings/support pages.
 - `desktop-gpui/src/shell.rs` - `Session` state machine and the generation-guarded `BackgroundJob` queue.
 - `desktop-gpui/src/clean_workbench.rs`, `clean_ai.rs`, `clean_map.rs` - Clean review, AI subview, disk-map projection.

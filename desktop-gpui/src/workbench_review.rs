@@ -5,10 +5,10 @@
 //! uninstall, and real startup keys are not dispatched. Guidance and observe
 //! rows have no schedule path.
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
+
+#[cfg(test)]
+use std::path::Path;
 
 use devsweep_core::optimize::{
     MaintenanceActionClass, MaintenancePlanV1, OptimizePlanError, PrecheckReason, catalogue_entry,
@@ -27,7 +27,6 @@ use crate::workbench::{self, SoftwareSegment, WorkbenchAction, WorkbenchDecision
 const HIVE_ENV: &str = "DEVSWEEP_SOFTWARE_STARTUP_HIVE";
 const UPDATE_ENV: &str = "DEVSWEEP_SOFTWARE_UPDATE_PROGRAM";
 const STALE_ENV: &str = "DEVSWEEP_SOFTWARE_REVIEW_STALE";
-const ROW_DIR_ENV: &str = "DEVSWEEP_WORKBENCH_ROW_DIR";
 
 const HOST_NOT_DISPOSABLE: &[&str] = &[
     "guidance.drive_optimize",
@@ -106,50 +105,12 @@ impl WorkbenchReview {
     }
 }
 
-/// Catalogue ids the shell can select. Isolated row files are appended, not
-/// substituted for the four software segments.
-#[must_use]
-pub fn software_row_ids() -> Vec<String> {
-    let mut ids = vec![
-        "uninstall".to_string(),
-        "updates".to_string(),
-        "startup".to_string(),
-        "leftovers".to_string(),
-    ];
-    if let Some(dir) = env_path(ROW_DIR_ENV) {
-        ids.extend(isolated_row_ids(&dir));
-    }
-    ids
-}
-
 #[must_use]
 pub fn optimize_row_ids() -> Vec<String> {
     published_entries()
         .iter()
         .map(|entry| entry.id.to_string())
         .collect()
-}
-
-/// Names of files in an isolated directory. Directories are skipped.
-#[must_use]
-pub fn isolated_row_ids(dir: &Path) -> Vec<String> {
-    let mut names = Vec::new();
-    let Ok(read) = fs::read_dir(dir) else {
-        return names;
-    };
-    for item in read.flatten() {
-        let Ok(file_type) = item.file_type() else {
-            continue;
-        };
-        if !file_type.is_file() {
-            continue;
-        }
-        if let Some(name) = item.file_name().to_str() {
-            names.push(name.to_string());
-        }
-    }
-    names.sort();
-    names
 }
 
 fn open_review(id: &str, locale: Locale) -> ReviewEffect {
@@ -787,14 +748,7 @@ mod tests {
 
     #[test]
     fn isolated_row_window_stays_bounded_and_keeps_offscreen_selection() {
-        let root =
-            std::env::temp_dir().join(format!("devsweep-gpui-c12-rows-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&root);
-        fs::create_dir_all(&root).expect("row root");
-        for index in 0..1_000 {
-            fs::write(root.join(format!("row-{index:04}")), b"isolated").expect("row file");
-        }
-        let ids = isolated_row_ids(&root);
+        let ids: Vec<_> = (0..1_000).map(|index| format!("row-{index:04}")).collect();
         assert_eq!(ids.len(), 1_000);
         let far = ids[900].clone();
         let mut session = Session::unbacked();
@@ -825,7 +779,6 @@ mod tests {
             session.shell().selection(Mode::Software),
             Some(far.as_str())
         );
-        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

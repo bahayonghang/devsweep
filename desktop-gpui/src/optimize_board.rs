@@ -116,6 +116,10 @@ impl OptimizeBoard {
         self.query = query.into();
     }
 
+    pub fn query(&self) -> &str {
+        &self.query
+    }
+
     /// Host maintenance cannot become Completed. Guidance and observe cannot run.
     pub fn note_completed(&mut self, id: &str) -> bool {
         if !schedule_allowed(id) || HOST_NOT_DISPOSABLE.contains(&id) {

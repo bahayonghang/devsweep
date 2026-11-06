@@ -25,7 +25,7 @@ use crate::{
 /// Ordered Clean review phases. Rendering never starts a scan or an execution.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CleanPhase {
-    /// Earth still and one primary button. No scan has started.
+    /// Scope configuration and explicit scan action. No scan has started.
     Landing,
     /// A worker scan is in flight.
     Scanning,
@@ -76,10 +76,8 @@ impl CleanScope {
 /// Landing sub-state. Landing never scans; these prompts only ask.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CleanLandingPrompt {
-    /// Only the primary button is shown.
+    /// Scope controls and the selected scope configuration are shown.
     None,
-    /// The primary button asked for a scope; two scope choices are shown.
-    ScopeChoice,
     /// Project scope needs a saved root before a scan can start.
     RootRequired,
     /// Global scope asked for an explicit confirmation before its scan.
@@ -336,6 +334,7 @@ pub struct CleanExecutionStart {
 pub struct CleanWorkbench {
     phase: CleanPhase,
     prompt: CleanLandingPrompt,
+    selected_scope: CleanScope,
     rows: Vec<CleanRow>,
     row_index: HashMap<String, usize>,
     cached_ids: Vec<String>,
@@ -362,6 +361,7 @@ impl CleanWorkbench {
         Self {
             phase: CleanPhase::Landing,
             prompt: CleanLandingPrompt::None,
+            selected_scope: CleanScope::Project,
             rows: Vec::new(),
             row_index: HashMap::new(),
             cached_ids: Vec::new(),
@@ -389,6 +389,21 @@ impl CleanWorkbench {
 
     pub fn prompt(&self) -> CleanLandingPrompt {
         self.prompt
+    }
+
+    pub fn selected_scope(&self) -> CleanScope {
+        self.selected_scope
+    }
+
+    /// Scope editing never starts work and invalidates any prior authority.
+    pub fn select_scope(&mut self, scope: CleanScope) {
+        if matches!(self.phase, CleanPhase::Scanning | CleanPhase::Cleaning) {
+            return;
+        }
+        if self.selected_scope != scope {
+            self.reset_to_landing();
+            self.selected_scope = scope;
+        }
     }
 
     pub fn notice(&self) -> Option<CleanOutcomeNotice> {
@@ -532,7 +547,7 @@ impl CleanWorkbench {
         self.preview = None;
     }
 
-    /// Returns to the one-button landing and drops the review projection.
+    /// Returns to scope configuration and drops the review projection.
     pub fn reset_to_landing(&mut self) {
         self.phase = CleanPhase::Landing;
         self.prompt = CleanLandingPrompt::None;
@@ -579,13 +594,6 @@ impl CleanWorkbench {
             .collect()
     }
 
-    /// The landing primary button asks for a scope instead of scanning.
-    pub fn open_scope_choice(&mut self) {
-        if self.phase == CleanPhase::Landing {
-            self.prompt = CleanLandingPrompt::ScopeChoice;
-        }
-    }
-
     /// Global scope only arms an explicit confirmation; it never scans here.
     pub fn require_global_confirmation(&mut self) {
         if self.phase == CleanPhase::Landing {
@@ -611,13 +619,14 @@ impl CleanWorkbench {
         }
     }
 
-    /// Cancels any landing prompt and returns to the one-button landing.
+    /// Cancels a confirmation or root prompt and returns to scope configuration.
     pub fn cancel_prompt(&mut self) {
         self.prompt = CleanLandingPrompt::None;
     }
 
     /// Records that a scope was accepted and a worker scan is starting.
     pub fn on_scan_started(&mut self, scope: CleanScope) {
+        self.selected_scope = scope;
         self.phase = CleanPhase::Scanning;
         self.prompt = CleanLandingPrompt::None;
         self.set_rows(Vec::new());
@@ -1199,8 +1208,10 @@ mod tests {
         assert!(workbench.rows().is_empty());
         assert!(workbench.row_ids().is_empty());
 
-        workbench.open_scope_choice();
-        assert_eq!(workbench.prompt(), CleanLandingPrompt::ScopeChoice);
+        assert_eq!(workbench.selected_scope(), CleanScope::Project);
+        workbench.select_scope(CleanScope::Global);
+        assert_eq!(workbench.selected_scope(), CleanScope::Global);
+        assert_eq!(workbench.prompt(), CleanLandingPrompt::None);
         assert_eq!(workbench.phase(), CleanPhase::Landing);
 
         // Global scope arms a confirmation only; it never starts a scan here.

@@ -4,6 +4,364 @@ use super::*;
 use crate::preferences::DesktopMotion;
 
 impl ShellView {
+    fn load_fonts(&mut self, refresh: bool, cx: &mut Context<Self>) {
+        if !self.fonts.begin(refresh) {
+            return;
+        }
+        let text_system = cx.text_system().clone();
+        let catalogue = cx
+            .background_executor()
+            .spawn(async move { text_system.all_font_names() });
+        cx.spawn(async move |this, cx| {
+            let names = catalogue.await;
+            let _ = this.update(cx, |this, cx| {
+                this.fonts.complete(names);
+                cx.notify();
+            });
+        })
+        .detach();
+    }
+
+    fn font_settings(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+        let locale = self.session.locale();
+        let selected = self.session.font().clone();
+        let selected_label = match &selected {
+            DesktopFont::System {} => copy::pick(locale, "System default", "系统默认").to_owned(),
+            DesktopFont::Installed { family } => family.clone(),
+        };
+        let mut section = div().flex().flex_col().gap(rems(0.65)).child(
+            self.setting_row(
+                t,
+                copy::pick(locale, "Font", "字体"),
+                selected_label.clone(),
+                ui::button(
+                    t,
+                    "settings-font-toggle",
+                    copy::pick(
+                        locale,
+                        if self.fonts.open {
+                            "Close font list"
+                        } else {
+                            "Choose font"
+                        },
+                        if self.fonts.open {
+                            "收起字体列表"
+                        } else {
+                            "选择字体"
+                        },
+                    ),
+                    ButtonKind::Secondary,
+                )
+                .accessibility_id("settings-font-toggle")
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.fonts.open = !this.fonts.open;
+                    cx.notify();
+                }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, |this, cx| {
+                        this.fonts.open = !this.fonts.open;
+                        cx.notify();
+                    }),
+                ),
+            ),
+        );
+        if self.fonts.missing(&selected) {
+            section = section.child(ui::banner(t, Tone::Warning, copy::pick(locale,
+                "The saved font is unavailable. Using the system font without changing your preference.",
+                "保存的字体当前不可用，已回退为系统字体，原偏好仍保留。")));
+        }
+        if self.fonts.open {
+            let busy = self.fonts.loading;
+            let system_selected = matches!(selected, DesktopFont::System {});
+            let mut list = div()
+                .id("settings-font-list")
+                .role(gpui::Role::List)
+                .max_h(rems(11.0))
+                .overflow_y_scroll()
+                .flex()
+                .flex_col()
+                .gap(rems(0.25));
+            list = list.child(
+                ui::button(
+                    t,
+                    "settings-font-system",
+                    copy::pick(locale, "System default", "系统默认"),
+                    if system_selected {
+                        ButtonKind::Secondary
+                    } else {
+                        ButtonKind::Ghost
+                    },
+                )
+                .aria_selected(system_selected)
+                .when(system_selected, |button| button.border_color(rgb(t.accent)))
+                .accessibility_id("settings-font-system")
+                .on_click(cx.listener(|this, _, _, cx| {
+                    let _ = this.session.set_font(DesktopFont::System {});
+                    cx.notify();
+                }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, |this, cx| {
+                        let _ = this.session.set_font(DesktopFont::System {});
+                        cx.notify();
+                    }),
+                ),
+            );
+            for family in self.fonts.visible() {
+                let chosen = selected
+                    == (DesktopFont::Installed {
+                        family: family.clone(),
+                    });
+                let select = family.clone();
+                let accessible_select = family.clone();
+                list = list.child(
+                    ui::button(
+                        t,
+                        ElementId::Name(format!("settings-font-{family}").into()),
+                        family,
+                        if chosen {
+                            ButtonKind::Secondary
+                        } else {
+                            ButtonKind::Ghost
+                        },
+                    )
+                    .aria_selected(chosen)
+                    .when(chosen, |button| button.border_color(rgb(t.accent)))
+                    .accessibility_id(SharedString::from(format!("settings-font-{select}")))
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        if let Err(error) = this.session.set_font(DesktopFont::Installed {
+                            family: select.clone(),
+                        }) {
+                            this.save_error = Some(error.to_string());
+                        }
+                        cx.notify();
+                    }))
+                    .on_a11y_action(
+                        gpui::AccessibleAction::Click,
+                        on_view_a11y(cx, move |this, cx| {
+                            if let Err(error) = this.session.set_font(DesktopFont::Installed {
+                                family: accessible_select.clone(),
+                            }) {
+                                this.save_error = Some(error.to_string());
+                            }
+                            cx.notify();
+                        }),
+                    ),
+                );
+            }
+            section = section.child(
+                div()
+                    .flex()
+                    .items_center()
+                    .flex_wrap()
+                    .gap(rems(0.5))
+                    .child(
+                        div()
+                            .w(rems(22.0))
+                            .max_w_full()
+                            .child(self.font_search.clone()),
+                    )
+                    .child(
+                        ui::button(
+                            t,
+                            "settings-font-refresh",
+                            copy::pick(locale, "Refresh fonts", "刷新字体"),
+                            if busy {
+                                ButtonKind::Disabled
+                            } else {
+                                ButtonKind::Ghost
+                            },
+                        )
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.load_fonts(true, cx);
+                            cx.notify();
+                        }))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            on_view_a11y(cx, |this, cx| {
+                                this.load_fonts(true, cx);
+                                cx.notify();
+                            }),
+                        ),
+                    ),
+            );
+            if busy {
+                section = section.child(ui::muted(
+                    t,
+                    copy::pick(locale, "Reading local fonts…", "正在读取本机字体…"),
+                ));
+            } else if self.fonts.families.as_ref().is_some_and(Vec::is_empty) {
+                section = section.child(ui::muted(
+                    t,
+                    copy::pick(
+                        locale,
+                        "No local font families were reported. System default remains available.",
+                        "未读取到本机字体，仍可选择系统默认字体。",
+                    ),
+                ));
+            } else if self.fonts.count() == 0 {
+                section = section.child(ui::muted(
+                    t,
+                    copy::pick(
+                        locale,
+                        "No matching fonts. Try another search.",
+                        "没有匹配字体，请修改搜索条件。",
+                    ),
+                ));
+            }
+            section = section.child(list);
+            if self.fonts.pages() > 1 {
+                let first = self.fonts.page() == 0;
+                let last = self.fonts.page() + 1 == self.fonts.pages();
+                section = section.child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(rems(0.5))
+                        .child(
+                            ui::button(
+                                t,
+                                "settings-font-previous",
+                                copy::pick(locale, "Previous", "上一页"),
+                                if first {
+                                    ButtonKind::Disabled
+                                } else {
+                                    ButtonKind::Ghost
+                                },
+                            )
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.fonts.move_page(false);
+                                cx.notify();
+                            }))
+                            .on_a11y_action(
+                                gpui::AccessibleAction::Click,
+                                on_view_a11y(cx, |this, cx| {
+                                    this.fonts.move_page(false);
+                                    cx.notify();
+                                }),
+                            ),
+                        )
+                        .child(ui::muted(
+                            t,
+                            format!("{} / {}", self.fonts.page() + 1, self.fonts.pages()),
+                        ))
+                        .child(
+                            ui::button(
+                                t,
+                                "settings-font-next",
+                                copy::pick(locale, "Next", "下一页"),
+                                if last {
+                                    ButtonKind::Disabled
+                                } else {
+                                    ButtonKind::Ghost
+                                },
+                            )
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.fonts.move_page(true);
+                                cx.notify();
+                            }))
+                            .on_a11y_action(
+                                gpui::AccessibleAction::Click,
+                                on_view_a11y(cx, |this, cx| {
+                                    this.fonts.move_page(true);
+                                    cx.notify();
+                                }),
+                            ),
+                        ),
+                );
+            }
+        }
+        section
+            .child(
+                div()
+                    .pb(rems(0.6))
+                    .text_size(rems(1.0))
+                    .child("DevSweep 字体预览 0123456789"),
+            )
+            .into_any_element()
+    }
+
+    fn about_settings(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+        let locale = self.session.locale();
+        ui::card(t)
+            .gap(rems(0.65))
+            .child(ui::card_header(
+                t,
+                copy::pick(locale, "About DevSweep", "关于 DevSweep"),
+            ))
+            .child(ui::muted(
+                t,
+                format!(
+                    "{} {}  |  {}",
+                    copy::pick(locale, "GPUI build", "GPUI 构建版本"),
+                    env!("CARGO_PKG_VERSION"),
+                    env!("CARGO_PKG_LICENSE")
+                ),
+            ))
+            .child(ui::muted(t, env!("CARGO_PKG_REPOSITORY")))
+            .child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .gap(rems(0.5))
+                    .child(
+                        ui::icon_button(
+                            t,
+                            "about-repository",
+                            "external",
+                            copy::pick(locale, "Project repository", "项目仓库"),
+                            ButtonKind::Secondary,
+                        )
+                        .on_click(
+                            cx.listener(|_, _, _, cx| cx.open_url(env!("CARGO_PKG_REPOSITORY"))),
+                        )
+                        .on_a11y_action(gpui::AccessibleAction::Click, |_, _, cx| {
+                            cx.open_url(env!("CARGO_PKG_REPOSITORY"))
+                        }),
+                    )
+                    .child(
+                        ui::button(
+                            t,
+                            "about-issues",
+                            copy::pick(locale, "Report an issue", "反馈问题"),
+                            ButtonKind::Ghost,
+                        )
+                        .on_click(cx.listener(|_, _, _, cx| {
+                            cx.open_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues"))
+                        }))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            |_, _, cx| {
+                                cx.open_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues"))
+                            },
+                        ),
+                    )
+                    .child(
+                        ui::button(
+                            t,
+                            "about-copy-link",
+                            copy::pick(locale, "Copy project link", "复制项目链接"),
+                            ButtonKind::Ghost,
+                        )
+                        .on_click(cx.listener(|_, _, _, cx| {
+                            cx.write_to_clipboard(gpui::ClipboardItem::new_string(
+                                env!("CARGO_PKG_REPOSITORY").into(),
+                            ))
+                        }))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            |_, _, cx| {
+                                cx.write_to_clipboard(gpui::ClipboardItem::new_string(
+                                    env!("CARGO_PKG_REPOSITORY").into(),
+                                ))
+                            },
+                        ),
+                    ),
+            )
+            .into_any_element()
+    }
+
     fn surface_back_button(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
         ui::any(
@@ -50,6 +408,7 @@ impl ShellView {
     }
 
     pub(super) fn settings_page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+        self.load_fonts(false, cx);
         let locale = self.session.locale();
         let theme = self.session.theme();
         let dark = matches!(
@@ -208,7 +567,12 @@ impl ShellView {
                 ButtonKind::Secondary
             },
         )
-        .on_click(cx.listener(|this, _, window, cx| this.save(window, cx)));
+        .accessibility_id("settings-save")
+        .on_click(cx.listener(|this, _, _, cx| this.save(cx)))
+        .on_a11y_action(
+            gpui::AccessibleAction::Click,
+            on_view_a11y(cx, |this, cx| this.save(cx)),
+        );
         div()
             .flex()
             .flex_col()
@@ -257,6 +621,8 @@ impl ShellView {
                         appearance,
                     ))
                     .child(ui::divider(t))
+                    .child(self.font_settings(t, cx))
+                    .child(ui::divider(t))
                     .child(self.setting_row(
                         t,
                         copy::pick(locale, "Text size", "文字大小"),
@@ -282,6 +648,7 @@ impl ShellView {
                     .child(roots_list)
                     .child(ui::muted(t, copy::separate_protection(locale))),
             )
+            .child(self.about_settings(t, cx))
             .into_any_element()
     }
 

@@ -85,6 +85,17 @@ impl TextBuffer {
         self.marked = None;
     }
 
+    pub fn select_all(&mut self) {
+        self.selected = 0..self.content.len();
+        self.selection_reversed = false;
+        self.marked = None;
+    }
+
+    pub fn replace_all(&mut self, text: &str) {
+        self.replace_utf16(Some(0..self.utf16_len()), text)
+            .expect("whole buffer is a valid UTF-16 range");
+    }
+
     pub fn replace_utf16(
         &mut self,
         range_utf16: Option<Range<usize>>,
@@ -300,6 +311,37 @@ fn offset_to_utf16(content: &str, offset: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn select_all_then_paste_replaces_unicode_and_clears_composition() {
+        let mut buffer = TextBuffer::new();
+        buffer.replace_utf16(None, "Segoe 字体🦫").unwrap();
+        buffer.replace_and_mark_utf16(None, "ni", None).unwrap();
+        buffer.select_all();
+        assert_eq!(buffer.selected_utf16(), 0..buffer.utf16_len());
+        assert_eq!(buffer.marked_range(), None);
+        buffer.replace_utf16(None, "Consolas").unwrap();
+        assert_eq!(buffer.content(), "Consolas");
+        assert_eq!(buffer.selected_utf16(), 8..8);
+        buffer.replace_utf16(None, " 字体").unwrap();
+        assert_eq!(buffer.content(), "Consolas 字体");
+    }
+
+    #[test]
+    fn accessible_value_replaces_entire_buffer_independent_of_selection_or_mark() {
+        let mut buffer = TextBuffer::new();
+        buffer.replace_utf16(None, "A🦫B").unwrap();
+        buffer
+            .replace_and_mark_utf16(Some(1..3), "输入", Some(0..1))
+            .unwrap();
+        buffer.replace_all("字体🦫");
+        assert_eq!(buffer.content(), "字体🦫");
+        assert_eq!(buffer.selected_utf16(), 4..4);
+        assert_eq!(buffer.marked_range(), None);
+        buffer.replace_all("");
+        assert_eq!(buffer.content(), "");
+        assert_eq!(buffer.selected_utf16(), 0..0);
+    }
 
     #[test]
     fn insert_and_partial_replace_keep_the_surrounding_text() {

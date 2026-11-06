@@ -30,57 +30,79 @@ fn preview_status(
 }
 
 impl ShellView {
-    pub(super) fn clean_page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    pub(super) fn clean_page(
+        &mut self,
+        t: &Theme,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
         if self.session.clean_ai().open() {
             return self.clean_ai_page(t, cx);
         }
         let locale = self.session.locale();
         let phase = self.session.clean_workbench().phase();
+        // Reserve chrome, scope, toolbar and actions; the row viewport uses the
+        // remaining height. Short lists stay compact and long lists scroll.
+        let row_height =
+            (window.viewport_size().height - window.rem_size() * 26.0).max(window.rem_size() * 8.0);
         let mut page = div().flex().flex_col().gap(rems(1.25));
-        if phase != CleanPhase::Landing {
-            let mut actions = Vec::new();
-            actions.push(ui::any(
-                ui::icon_button(
-                    t,
-                    "clean-ai-open",
-                    "sparkle",
-                    copy::clean_ai_open_action(locale),
-                    ButtonKind::Ghost,
-                )
-                .on_click(cx.listener(|this, _, _, cx| this.clean_ai_open(cx))),
-            ));
-            if matches!(
-                phase,
-                CleanPhase::Found
-                    | CleanPhase::AllClean
-                    | CleanPhase::Completed
-                    | CleanPhase::Failed
-            ) {
+        let mut actions = vec![ui::any(
+            ui::icon_button(
+                t,
+                "clean-ai-open",
+                "sparkle",
+                copy::clean_ai_open_action(locale),
+                ButtonKind::Ghost,
+            )
+            .on_click(cx.listener(|this, _, _, cx| this.clean_ai_open(cx))),
+        )];
+        if matches!(
+            phase,
+            CleanPhase::Found | CleanPhase::AllClean | CleanPhase::Completed | CleanPhase::Failed
+        ) {
+            if self.session.clean_workbench().selected_scope() == CleanScope::Project {
                 actions.push(ui::any(
                     ui::icon_button(
                         t,
-                        "clean-retry",
-                        "refresh",
-                        copy::clean_retry_action(locale),
-                        ButtonKind::Secondary,
+                        "clean-root-choose",
+                        "folder",
+                        copy::pick(locale, "Change folder", "更换文件夹"),
+                        ButtonKind::Ghost,
                     )
-                    .on_click(cx.listener(|this, _, _, cx| this.clean_retry(cx))),
+                    .on_click(cx.listener(|this, _, _, cx| this.clean_pick_root(cx)))
+                    .on_a11y_action(
+                        gpui::AccessibleAction::Click,
+                        on_view_a11y(cx, |this, cx| this.clean_pick_root(cx)),
+                    ),
                 ));
             }
-            page = page.child(self.page_header(
-                t,
-                "clean",
-                copy::mode_name(locale, "clean"),
-                copy::mode_subtitle(locale, "clean"),
-                actions,
+            actions.push(ui::any(
+                ui::icon_button(
+                    t,
+                    "clean-retry",
+                    "refresh",
+                    copy::clean_retry_action(locale),
+                    ButtonKind::Secondary,
+                )
+                .on_click(cx.listener(|this, _, _, cx| this.clean_retry(cx))),
             ));
+        }
+        page = page.child(self.page_header(
+            t,
+            "clean",
+            copy::mode_name(locale, "clean"),
+            copy::mode_subtitle(locale, "clean"),
+            actions,
+        ));
+        if !matches!(phase, CleanPhase::Scanning | CleanPhase::Cleaning) {
+            page = page.child(self.clean_scope_tabs(t, cx));
         }
         page = page.children(self.shared_banners(t));
         page = page.children(self.clean_context_banners(t));
         let body = match phase {
             CleanPhase::Landing => self.clean_landing(t, cx),
             CleanPhase::Scanning | CleanPhase::Cleaning => self.clean_progress(t, cx),
-            CleanPhase::Found => self.clean_review(t, cx),
+            CleanPhase::Found => self.clean_review(t, row_height, cx),
             CleanPhase::AllClean => ui::any(ui::card(t).child(ui::empty_state(
                 t,
                 "check-circle",
@@ -100,7 +122,7 @@ impl ShellView {
                         .gap(rems(1.25))
                         .child(result)
                         .when(disk_map_active(&self.session), |d| {
-                            d.child(self.clean_review(t, cx))
+                            d.child(self.clean_review(t, row_height, cx))
                         }),
                 )
             }
@@ -147,200 +169,123 @@ impl ShellView {
     fn clean_landing(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
-        let prompt = workbench.prompt();
-        let earth = div().flex_shrink_0().child(
-            img(EARTH_NAME)
-                .id("clean-earth")
-                .size(rems(6.5))
-                .with_fallback(|| div().child(SharedString::from("Earth")).into_any_element()),
-        );
-        let headline = div()
-            .flex()
-            .flex_col()
-            .flex_1()
-            .min_w_0()
-            .gap(rems(0.5))
-            .child(
-                div()
-                    .text_size(rems(1.7))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(copy::mode_name(locale, "clean")),
-            )
-            .child(ui::muted(t, copy::mode_subtitle(locale, "clean")))
-            .when(prompt == CleanLandingPrompt::None, |d| d.child(
-                div()
-                    .max_w(rems(34.0))
-                    .text_size(rems(0.95))
-                    .child(copy::pick(
-                        locale,
-                        "DevSweep finds build outputs and tool caches, explains what each one costs to rebuild, and moves only what you confirm to the Recycle Bin.",
-                        "DevSweep 找出构建产物与工具缓存，说明每一项的重建代价，只把你确认的内容移到回收站。",
-                    )),
-            ));
-        let landing = div().flex().flex_col().items_start().gap(rems(1.5)).child(
-            div()
-                .w_full()
-                .flex()
-                .items_center()
-                .gap(rems(1.25))
-                .child(headline)
-                .child(earth),
-        );
-        match prompt {
-            CleanLandingPrompt::None => {
-                landing
-                    .child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .flex_wrap()
-                            .items_center()
-                            .gap(rems(0.75))
-                            .child(
-                                ui::icon_button(
-                                    t,
-                                    "clean-scan-primary",
-                                    "play",
-                                    copy::clean_scan_primary(locale),
-                                    ButtonKind::Primary,
-                                )
-                                .h(rems(2.75))
-                                .px(rems(1.5))
-                                .text_size(rems(0.95))
-                                .on_click(cx.listener(
-                                    |this, _, window, cx| this.clean_open_scope(window, cx),
-                                )),
-                            )
-                            .child(
-                                ui::icon_button(
-                                    t,
-                                    "clean-ai-open",
-                                    "sparkle",
-                                    copy::clean_ai_open_action(locale),
-                                    ButtonKind::Ghost,
-                                )
-                                .on_click(cx.listener(|this, _, _, cx| this.clean_ai_open(cx))),
-                            ),
-                    )
-                    .when(!self.session.shell().scan_roots().is_empty(), |d| {
-                        d.child(self.saved_roots_line(t))
-                    })
-            }
-            CleanLandingPrompt::ScopeChoice => landing.child(self.clean_scope_cards(t, cx)),
-            CleanLandingPrompt::RootRequired => landing.child(self.clean_root_picker(t, cx)),
-            CleanLandingPrompt::ConfirmGlobal => landing.child(self.clean_global_confirm(t, cx)),
+        let project = workbench.selected_scope() == CleanScope::Project;
+        let mut configuration = div().flex().flex_col().gap(rems(0.75)).child(ui::muted(
+            t,
+            copy::clean_scope_detail(locale, workbench.selected_scope().id()),
+        ));
+        if workbench.prompt() == CleanLandingPrompt::ConfirmGlobal {
+            return configuration
+                .child(self.clean_global_confirm(t, cx))
+                .into_any_element();
         }
-        .into_any_element()
-    }
-
-    fn saved_roots_line(&self, t: &Theme) -> gpui::AnyElement {
-        let locale = self.session.locale();
-        div()
-            .flex()
-            .flex_row()
-            .flex_wrap()
-            .items_center()
-            .gap(rems(0.4))
-            .child(ui::icon("folder", t.text_subtle).size(rems(0.85)))
-            .child(
-                div()
-                    .text_size(rems(0.78))
-                    .text_color(rgb(t.text_subtle))
-                    .child(copy::project_folders(locale)),
-            )
-            .children(
-                self.session
-                    .shell()
-                    .scan_roots()
-                    .iter()
-                    .map(|root| ui::badge(t, root.clone(), Tone::Neutral)),
-            )
-            .into_any_element()
-    }
-
-    fn clean_scope_cards(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
-        let locale = self.session.locale();
-        let cards = [CleanScope::Project, CleanScope::Global].map(|scope| {
-            let (icon, title) = match scope {
-                CleanScope::Project => ("code", copy::clean_scope_project(locale)),
-                CleanScope::Global => ("globe", copy::clean_scope_global(locale)),
-            };
-            let hover_border = t.accent;
-            div()
-                .id(ElementId::Name(SharedString::from(format!(
-                    "clean-scope-{}",
-                    scope.id()
-                ))))
-                .role(gpui::Role::Button)
-                .aria_label(title)
-                .flex()
-                .flex_col()
-                .flex_1()
-                .min_w_0()
-                .gap(rems(0.6))
-                .p(rems(1.25))
-                .rounded(rems(0.9))
-                .bg(rgb(t.surface))
-                .border_1()
-                .border_color(rgb(t.border_strong))
-                .cursor_pointer()
-                .hover(move |s| s.border_color(rgb(hover_border)))
-                .keyboard_focus(t)
-                .on_click(cx.listener(move |this, _, _, cx| this.clean_scope(scope, cx)))
-                .child(ui::icon_tile(t, icon, t.accent))
-                .child(
-                    div()
-                        .text_size(rems(1.0))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .child(title),
-                )
-                .child(ui::muted(t, copy::clean_scope_detail(locale, scope.id())))
-                .child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .items_center()
-                        .gap(rems(0.3))
-                        .text_size(rems(0.8))
-                        .text_color(rgb(t.accent))
-                        .child(copy::pick(locale, "Choose", "选择"))
-                        .child(ui::icon("chevron-right", t.accent).size(rems(0.8))),
-                )
-        });
-        div()
-            .w_full()
-            .max_w(rems(44.0))
-            .flex()
-            .flex_col()
-            .gap(rems(0.9))
-            .child(
-                div()
-                    .text_center()
-                    .text_size(rems(0.95))
-                    .font_weight(FontWeight::MEDIUM)
-                    .child(copy::clean_scope_prompt(locale)),
-            )
-            .child(
-                div()
-                    .w_full()
-                    .flex()
-                    .flex_row()
-                    .gap(rems(1.0))
-                    .children(cards),
-            )
-            .child(
-                div().flex().justify_center().child(
-                    ui::button(
-                        t,
-                        "clean-scope-back",
-                        copy::back_label(locale),
-                        ButtonKind::Ghost,
-                    )
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        this.session.clean_cancel_prompt();
-                        cx.notify();
+        if project {
+            let roots = self.session.shell().scan_roots();
+            configuration = configuration.child(
+                div().id("clean-project-roots").flex().flex_col().gap(rems(0.4))
+                    .when(roots.is_empty(), |d| d.child(ui::muted(t, copy::pick(locale,
+                        "Choose a project folder before scanning. Nothing is scanned automatically.",
+                        "先选择项目文件夹，再开始扫描。不会自动扫描。"))))
+                    .children(roots.iter().enumerate().map(|(index, root)| {
+                        div().id(ElementId::named_usize("clean-saved-root", index))
+                            .flex().items_center().gap(rems(0.5)).min_w_0()
+                            .child(ui::icon("folder", t.accent))
+                            .child(div().flex_1().min_w_0().overflow_hidden().text_size(rems(0.86))
+                                .child(root.clone()))
                     })),
-                ),
+            );
+        }
+        let has_roots = !self.session.shell().scan_roots().is_empty();
+        configuration = configuration.child(
+            div()
+                .flex()
+                .flex_row()
+                .flex_wrap()
+                .items_center()
+                .gap(rems(0.75))
+                .when(project, |d| {
+                    d.child(
+                        ui::icon_button(
+                            t,
+                            "clean-root-choose",
+                            "folder",
+                            copy::clean_root_choose(locale),
+                            if has_roots {
+                                ButtonKind::Secondary
+                            } else {
+                                ButtonKind::Primary
+                            },
+                        )
+                        .on_click(cx.listener(|this, _, _, cx| this.clean_pick_root(cx)))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            on_view_a11y(cx, |this, cx| this.clean_pick_root(cx)),
+                        ),
+                    )
+                })
+                .when(!project || has_roots, |d| {
+                    d.child(
+                        ui::icon_button(
+                            t,
+                            "clean-scan-primary",
+                            "play",
+                            copy::pick(
+                                locale,
+                                if project {
+                                    "Scan projects"
+                                } else {
+                                    "Scan global caches"
+                                },
+                                if project {
+                                    "扫描项目"
+                                } else {
+                                    "扫描全局缓存"
+                                },
+                            ),
+                            ButtonKind::Primary,
+                        )
+                        .on_click(cx.listener(|this, _, _, cx| this.clean_start_scope(cx)))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            on_view_a11y(cx, |this, cx| this.clean_start_scope(cx)),
+                        ),
+                    )
+                }),
+        );
+        if workbench.prompt() == CleanLandingPrompt::RootRequired {
+            configuration = configuration.child(self.clean_root_picker(t, cx));
+        }
+        configuration.into_any_element()
+    }
+
+    fn clean_scope_tabs(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+        let locale = self.session.locale();
+        div()
+            .flex()
+            .child(
+                ui::segmented(t)
+                    .id("clean-scopes")
+                    .role(gpui::Role::TabList)
+                    .aria_label(copy::clean_scope_prompt(locale))
+                    .children([CleanScope::Project, CleanScope::Global].map(|scope| {
+                        ui::segment(
+                            t,
+                            ElementId::Name(SharedString::from(format!(
+                                "clean-scope-{}",
+                                scope.id()
+                            ))),
+                            match scope {
+                                CleanScope::Project => copy::clean_scope_project(locale),
+                                CleanScope::Global => copy::clean_scope_global(locale),
+                            },
+                            self.session.clean_workbench().selected_scope() == scope,
+                        )
+                        .on_click(cx.listener(move |this, _, _, cx| this.clean_scope(scope, cx)))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            on_view_a11y(cx, move |this, cx| this.clean_scope(scope, cx)),
+                        )
+                    })),
             )
             .into_any_element()
     }
@@ -365,42 +310,12 @@ impl ShellView {
             .child(div().flex_1().min_w_0().truncate().child(label))
             .child(ui::icon("chevron-right", t.text_subtle))
         });
-        ui::card(t)
-            .w_full()
-            .max_w(rems(40.0))
-            .gap(rems(0.9))
-            .child(ui::card_header(t, copy::clean_root_prompt(locale)))
+        div()
+            .flex()
+            .flex_col()
+            .gap(rems(0.5))
             .child(ui::muted(t, copy::clean_root_suggestions(locale)))
-            .child(div().flex().flex_col().gap(rems(0.2)).children(rows))
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .justify_end()
-                    .gap(rems(0.5))
-                    .child(
-                        ui::button(
-                            t,
-                            "clean-root-back",
-                            copy::back_label(locale),
-                            ButtonKind::Ghost,
-                        )
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.session.clean_cancel_prompt();
-                            cx.notify();
-                        })),
-                    )
-                    .child(
-                        ui::icon_button(
-                            t,
-                            "clean-root-choose",
-                            "folder",
-                            copy::clean_root_choose(locale),
-                            ButtonKind::Primary,
-                        )
-                        .on_click(cx.listener(|this, _, _, cx| this.clean_pick_root(cx))),
-                    ),
-            )
+            .children(rows)
             .into_any_element()
     }
 
@@ -442,7 +357,11 @@ impl ShellView {
                             copy::clean_global_scan_action(locale),
                             ButtonKind::Primary,
                         )
-                        .on_click(cx.listener(|this, _, _, cx| this.clean_confirm_global(cx))),
+                        .on_click(cx.listener(|this, _, _, cx| this.clean_confirm_global(cx)))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            on_view_a11y(cx, |this, cx| this.clean_confirm_global(cx)),
+                        ),
                     ),
             )
             .into_any_element()
@@ -556,8 +475,13 @@ impl ShellView {
             .into_any_element()
     }
 
-    /// Found review: stat tiles, disk map, row list, and the staged actions.
-    fn clean_review(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    /// Found review puts the targets and staged actions before secondary maps.
+    fn clean_review(
+        &self,
+        t: &Theme,
+        row_height: gpui::Pixels,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
         let locale = self.session.locale();
         let summary = clean_map::summarize(&map_inputs(&self.session));
         let stats = div()
@@ -598,11 +522,11 @@ impl ShellView {
             .flex()
             .flex_col()
             .gap(rems(1.25))
+            .child(self.clean_rows_card(t, row_height, cx))
             .child(stats)
             .when(disk_map_active(&self.session), |d| {
                 d.child(self.clean_disk_map(t, cx))
             })
-            .child(self.clean_rows_card(t, cx))
             .into_any_element()
     }
 
@@ -807,7 +731,12 @@ impl ShellView {
             .into_any_element()
     }
 
-    fn clean_rows_card(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn clean_rows_card(
+        &self,
+        t: &Theme,
+        row_height: gpui::Pixels,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
         let locale = self.session.locale();
         let shell = self.session.shell();
         let workbench = self.session.clean_workbench();
@@ -863,6 +792,8 @@ impl ShellView {
         let mut rows = div()
             .id("clean-rows")
             .role(gpui::Role::List)
+            .max_h(row_height)
+            .overflow_y_scroll()
             .flex()
             .flex_col()
             .gap(rems(0.15));
@@ -941,10 +872,10 @@ impl ShellView {
                     .child(ui::muted(t, copy::clean_map_recommendations_hint(locale))),
             )
             .child(toolbar)
+            .when(found, |c| c.child(self.clean_action_bar(t, cx)))
             .child(ui::divider(t))
             .child(rows)
             .children(pager)
-            .when(found, |c| c.child(self.clean_action_bar(t, cx)))
             .into_any_element()
     }
 

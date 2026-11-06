@@ -8,22 +8,24 @@ use gpui::{
 };
 
 use crate::buffer::{BufferError, TextBuffer};
-use crate::copy::Locale;
 use crate::ui;
-use crate::view::{AccessibleControl, AccessibleSlot, accessible_control};
+use crate::view::AccessibleControl;
 
-actions!(spike_input, [Backspace, Delete, Left, Right, Home, End]);
+actions!(
+    spike_input,
+    [Backspace, Delete, Left, Right, Home, End, SelectAll, Paste]
+);
 
-/// Note text metrics at 100 percent scale.
-const NOTE_FONT_PX: f32 = 20.0;
-const NOTE_LINE_HEIGHT_PX: f32 = 28.0;
+/// Text input metrics at 100 percent scale.
+const INPUT_FONT_PX: f32 = 20.0;
+const INPUT_LINE_HEIGHT_PX: f32 = 28.0;
 
-/// Note font and line height in pixels for the app text scale. The helper is
+/// Input font and line height in pixels for the app text scale. The helper is
 /// pure so the 100/110/125 percent cases are testable without a window.
 #[cfg(test)]
 pub(crate) fn scaled_text_metrics(text_scale_percent: u8) -> (f32, f32) {
     let scale = f32::from(text_scale_percent) / 100.0;
-    (NOTE_FONT_PX * scale, NOTE_LINE_HEIGHT_PX * scale)
+    (INPUT_FONT_PX * scale, INPUT_LINE_HEIGHT_PX * scale)
 }
 
 /// Theme colors for one field. The shell passes the active design tokens so
@@ -53,8 +55,8 @@ impl Default for InputStyle {
             placeholder: theme.text_subtle,
             caret: theme.accent,
             selection: (theme.accent << 8) | 0x55,
-            font_px: NOTE_FONT_PX,
-            line_px: NOTE_LINE_HEIGHT_PX,
+            font_px: INPUT_FONT_PX,
+            line_px: INPUT_LINE_HEIGHT_PX,
         }
     }
 }
@@ -74,31 +76,6 @@ pub struct TextInput {
 }
 
 impl TextInput {
-    /// Creates the Note control. The Note keeps startup focus.
-    pub fn new(
-        window: &mut Window,
-        cx: &mut Context<Self>,
-        placeholder: &'static str,
-        text_scale_percent: u8,
-    ) -> Self {
-        let access = accessible_control(Locale::En, AccessibleSlot::Note);
-        let focus_handle = cx.focus_handle().tab_index(0).tab_stop(true);
-        window.focus(&focus_handle, cx);
-        Self {
-            style: InputStyle::default(),
-            focus_handle,
-            buffer: TextBuffer::new(),
-            placeholder,
-            text_scale_percent,
-            access,
-            element_id: "note-input",
-            tab_index: 0,
-            last_layout: None,
-            last_bounds: None,
-            scroll_x: px(0.0),
-        }
-    }
-
     /// Creates a secondary field (the Clean row search). It never steals focus.
     pub fn new_secondary(
         cx: &mut Context<Self>,
@@ -150,8 +127,27 @@ impl TextInput {
         cx.notify();
     }
 
+    pub fn set_accessible_label(&mut self, label: &'static str, cx: &mut Context<Self>) {
+        if self.access.label != label {
+            self.access.label = label;
+            cx.notify();
+        }
+    }
+
     pub fn content(&self) -> &str {
         self.buffer.content()
+    }
+
+    /// Restore a model-owned query during render without publishing an edit.
+    pub fn restore_content(&mut self, text: &str) {
+        if self.content() != text {
+            self.buffer = TextBuffer::new();
+            self.buffer
+                .replace_utf16(None, text)
+                .expect("empty valid buffer");
+            self.last_layout = None;
+            self.scroll_x = px(0.0);
+        }
     }
 
     fn left(&mut self, _: &Left, window: &mut Window, cx: &mut Context<Self>) {
@@ -172,6 +168,20 @@ impl TextInput {
     fn end(&mut self, _: &End, window: &mut Window, cx: &mut Context<Self>) {
         let _ = self.buffer.move_to(self.buffer.content().len());
         self.selection_changed(window, cx);
+    }
+
+    fn select_all(&mut self, _: &SelectAll, window: &mut Window, cx: &mut Context<Self>) {
+        self.buffer.select_all();
+        self.selection_changed(window, cx);
+    }
+
+    fn paste(&mut self, _: &Paste, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
+            let result = self
+                .buffer
+                .replace_utf16(None, &text.replace(['\r', '\n'], " "));
+            self.apply(result, window, cx);
+        }
     }
 
     fn backspace(&mut self, _: &Backspace, window: &mut Window, cx: &mut Context<Self>) {
@@ -196,7 +206,7 @@ impl TextInput {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        // The Note already holds focus; a click on any other field moves it.
+        // Clicking this field gives it the caret without affecting other fields.
         window.focus(&self.focus_handle, cx);
         window.request_virtual_keyboard();
         let offset = self.index_for_mouse_position(event.position);
@@ -616,17 +626,29 @@ impl Focusable for TextInput {
 
 impl Render for TextInput {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let note = self.access;
+        let input = cx.entity().downgrade();
+        let access = self.access;
         let style = self.style;
         let scale = f32::from(self.text_scale_percent) / 100.0;
         let (font_px, line_px) = (style.font_px * scale, style.line_px * scale);
         div()
             .id(self.element_id)
             .role(gpui::Role::TextInput)
-            .accessibility_id(note.id)
-            .aria_label(note.label)
+            .accessibility_id(access.id)
+            .aria_label(access.label)
             .aria_value(self.content())
             .aria_placeholder(self.placeholder)
+            .on_a11y_action(
+                gpui::accesskit::Action::SetValue,
+                move |data, window, app| {
+                    if let Some(gpui::accesskit::ActionData::Value(value)) = data {
+                        let _ = input.update(app, |this, cx| {
+                            this.buffer.replace_all(&value.replace(['\r', '\n'], " "));
+                            this.text_changed(window, cx);
+                        });
+                    }
+                },
+            )
             .key_context("SpikeInput")
             .track_focus(&self.focus_handle)
             .tab_index(self.tab_index)
@@ -637,6 +659,8 @@ impl Render for TextInput {
             .on_action(cx.listener(Self::right))
             .on_action(cx.listener(Self::home))
             .on_action(cx.listener(Self::end))
+            .on_action(cx.listener(Self::select_all))
+            .on_action(cx.listener(Self::paste))
             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_mouse_down))
             .w_full()
             .px(px(12.0 * scale))
@@ -670,7 +694,7 @@ mod tests {
     }
 
     #[test]
-    fn note_text_metrics_follow_the_app_scale() {
+    fn input_text_metrics_follow_the_app_scale() {
         let (font, line) = scaled_text_metrics(100);
         assert_eq!((font, line), (20.0, 28.0), "100% stays 20/28 px");
 

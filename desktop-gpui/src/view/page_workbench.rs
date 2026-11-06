@@ -7,27 +7,39 @@ use crate::software_review::{SoftwareFilter, SoftwareSize, SoftwareSort};
 use crate::workbench::SoftwareSegment;
 
 impl ShellView {
-    pub(super) fn software_page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    pub(super) fn software_page(
+        &mut self,
+        t: &Theme,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
         let locale = self.session.locale();
-        let review = self.session.software_review();
-        let segment = review.segment();
-        let mut actions = Vec::new();
-        if segment.is_some() {
-            actions.push(ui::any(
-                ui::icon_button(
-                    t,
-                    "software-refresh",
-                    "refresh",
-                    copy::pick(locale, "Refresh", "刷新"),
-                    ButtonKind::Secondary,
-                )
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.session.software_refresh();
-                    cx.notify();
-                })),
-            ));
-        }
-        let segments = [
+        let segment = self.session.software_review().segment();
+        let loading = self.session.software_review().loading();
+        let refresh = ui::icon_button(
+            t,
+            "software-refresh",
+            "refresh",
+            copy::pick(locale, "Refresh", "刷新"),
+            if loading {
+                ButtonKind::Disabled
+            } else {
+                ButtonKind::Secondary
+            },
+        )
+        .accessibility_id("software-refresh")
+        .on_click(cx.listener(|this, _, _, cx| {
+            this.session.software_refresh();
+            cx.notify();
+        }))
+        .on_a11y_action(
+            gpui::AccessibleAction::Click,
+            on_view_a11y(cx, |this, cx| {
+                this.session.software_refresh();
+                cx.notify();
+            }),
+        );
+        let tabs = [
             (
                 SoftwareSegment::Uninstall,
                 "uninstall",
@@ -45,56 +57,46 @@ impl ShellView {
             ),
         ]
         .map(|(value, id, label)| {
+            let id = SharedString::from(format!("software-segment-{id}"));
             ui::segment(
                 t,
-                ElementId::Name(SharedString::from(format!("software-segment-{id}"))),
+                ElementId::Name(id.clone()),
                 label,
                 segment == Some(value),
             )
+            .accessibility_id(id)
             .on_click(cx.listener(move |this, _, _, cx| {
                 this.session.software_open_segment(value);
                 cx.notify();
             }))
+            .on_a11y_action(
+                gpui::AccessibleAction::Click,
+                on_view_a11y(cx, move |this, cx| {
+                    this.session.software_open_segment(value);
+                    cx.notify();
+                }),
+            )
         });
         let mut page = div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
+            .gap(rems(0.9))
             .child(self.page_header(
                 t,
                 "software",
                 copy::mode_name(locale, "software"),
                 copy::mode_subtitle(locale, "software"),
-                actions,
+                vec![ui::any(refresh)],
             ))
             .children(self.shared_banners(t))
             .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .flex_wrap()
-                    .items_center()
-                    .gap(rems(0.75))
-                    .child(
-                        ui::segmented(t)
-                            .id("software-segments")
-                            .role(gpui::Role::TabList)
-                            .children(segments),
-                    )
-                    .when(segment.is_some(), |d| {
-                        d.child(
-                            ui::button(
-                                t,
-                                "software-close-segment",
-                                copy::back_label(locale),
-                                ButtonKind::Ghost,
-                            )
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.session.software_close_segment();
-                                cx.notify();
-                            })),
-                        )
-                    }),
+                div().flex().child(
+                    ui::segmented(t)
+                        .id("software-segments")
+                        .role(gpui::Role::TabList)
+                        .aria_label(copy::pick(locale, "Software tasks", "软件任务"))
+                        .children(tabs),
+                ),
             );
         if let Some(notice) = self.session.workbench_notice() {
             page = page.child(ui::banner(
@@ -103,147 +105,18 @@ impl ShellView {
                 workbench_notice_line(locale, notice),
             ));
         }
-        // The landing buttons stay mounted after a segment opens. A UIA
-        // client holds the Uninstall button and Invokes it after selecting
-        // the tab; unmounting that button returns element-not-available.
-        let review_open = segment.is_some();
-        page = page.child(self.software_landing(t, review_open, cx));
-        if review_open {
-            page = page.child(self.software_review_card(t, cx));
-        }
-        page = page.children(self.workbench_review_card(t));
-        page.into_any_element()
-    }
-
-    fn software_landing(
-        &self,
-        t: &Theme,
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> gpui::AnyElement {
-        let locale = self.session.locale();
-        let cards = [
-            (
-                SoftwareSegment::Uninstall,
-                "trash",
-                copy::pick(locale, "Uninstall", "卸载"),
-                copy::pick(
-                    locale,
-                    "Installed apps from Programs and Features, MSI and Store packages. Removal is planned, previewed, and confirmed one app at a time.",
-                    "来自程序和功能、MSI 与应用商店的已安装应用。逐个规划、预览并确认卸载。",
-                ),
-            ),
-            (
-                SoftwareSegment::Updates,
-                "refresh",
-                copy::pick(locale, "Updates", "更新"),
-                copy::pick(
-                    locale,
-                    "Checks winget for newer versions. Checking is read-only and installs nothing.",
-                    "通过 winget 检查新版本。检查是只读的，不会安装任何内容。",
-                ),
-            ),
-            (
-                SoftwareSegment::Startup,
-                "rocket",
-                copy::pick(locale, "Startup", "启动项"),
-                copy::pick(
-                    locale,
-                    "Apps that start with Windows. Current-user entries can be turned off and back on.",
-                    "随 Windows 启动的应用。当前用户的启动项可以关闭再恢复。",
-                ),
-            ),
-        ]
-        .map(|(segment, icon, title, body)| {
-            let hover = t.accent;
-            let id = match segment {
-                SoftwareSegment::Uninstall => "software-card-uninstall",
-                SoftwareSegment::Updates => "software-card-updates",
-                _ => "software-card-startup",
-            };
-            let card = div()
-                .id(id)
-                .accessibility_id(id)
-                .role(gpui::Role::Button)
-                .aria_label(title)
-                .cursor_pointer()
-                .border_1()
-                .keyboard_focus(t)
-                .on_click(cx.listener(move |this, _, _, cx| {
-                    this.session.software_open_segment(segment);
-                    cx.notify();
-                }))
-                .on_a11y_action(
-                    gpui::AccessibleAction::Click,
-                    on_view_a11y(cx, move |this, cx| {
-                        this.session.software_open_segment(segment);
-                        cx.notify();
-                    }),
-                );
-            if compact {
-                card.flex()
-                    .flex_row()
-                    .flex_1()
-                    .items_center()
-                    .gap(rems(0.45))
-                    .h(rems(2.1))
-                    .px(rems(0.75))
-                    .rounded(rems(0.5))
-                    .bg(rgb(t.surface))
-                    .border_color(rgb(t.border_strong))
-                    .hover(move |s| s.border_color(rgb(hover)))
-                    .child(ui::icon(icon, t.text_muted).size(rems(0.9)))
-                    .child(div().text_size(rems(0.82)).child(title))
-            } else {
-                card.flex()
-                    .flex_col()
-                    .flex_1()
-                    .min_w(rems(14.0))
-                    .gap(rems(0.6))
-                    .p(rems(1.25))
-                    .rounded(rems(0.9))
-                    .bg(rgb(t.surface))
-                    .border_color(rgb(t.border_strong))
-                    .hover(move |s| s.border_color(rgb(hover)))
-                    .child(ui::icon_tile(t, icon, t.accent))
-                    .child(div().font_weight(FontWeight::SEMIBOLD).child(title))
-                    .child(ui::muted(t, body))
-            }
-        });
-        div()
-            .flex()
-            .flex_col()
-            .gap(rems(1.0))
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .flex_wrap()
-                    .gap(if compact { rems(0.5) } else { rems(1.0) })
-                    .children(cards),
-            )
-            // A quiet footnote, not an alert: Leftovers is simply out of scope.
-            // Hidden once a segment is open so the compact cards stay one row.
-            .when(!compact, |landing| {
-                landing.child(
-                    div()
-                        .flex()
-                        .flex_row()
-                        .items_center()
-                        .gap(rems(0.45))
-                        .child(ui::icon("info", t.text_subtle).size(rems(0.85)))
-                        .child(
-                            div()
-                                .text_size(rems(0.8))
-                                .text_color(rgb(t.text_subtle))
-                                .child(copy::software_leftovers_unavailable(locale)),
-                        ),
-                )
-            })
+        let row_height =
+            (window.viewport_size().height - window.rem_size() * 23.0).max(window.rem_size() * 8.0);
+        page.child(self.software_review_card(t, row_height, cx))
             .into_any_element()
     }
 
-    fn software_review_card(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn software_review_card(
+        &self,
+        t: &Theme,
+        row_height: gpui::Pixels,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
         let locale = self.session.locale();
         let review = self.session.software_review();
         let sort_label = match review.sort() {
@@ -260,7 +133,7 @@ impl ShellView {
         };
         let filter_label = match review.filter() {
             SoftwareFilter::All => copy::pick(locale, "All", "全部"),
-            SoftwareFilter::Selectable => copy::pick(locale, "Removable", "可卸载"),
+            SoftwareFilter::Selectable => copy::pick(locale, "Eligible for review", "可审阅"),
             SoftwareFilter::Protected => copy::pick(locale, "Protected", "受保护"),
             SoftwareFilter::PermissionDenied => copy::pick(locale, "Needs admin", "需要管理员"),
         };
@@ -290,20 +163,39 @@ impl ShellView {
                     .on_click(cx.listener(|this, _, _, cx| {
                         this.session.software_cycle_sort();
                         cx.notify();
-                    })),
+                    }))
+                    .on_a11y_action(
+                        gpui::AccessibleAction::Click,
+                        on_view_a11y(cx, |this, cx| {
+                            this.session.software_cycle_sort();
+                            cx.notify();
+                        }),
+                    ),
             )
-            .child(
-                ui::icon_button(
-                    t,
-                    "software-filter",
-                    "rules",
-                    filter_label,
-                    ButtonKind::Ghost,
-                )
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.session.software_cycle_filter();
-                    cx.notify();
-                })),
+            .when(
+                review.segment() == Some(SoftwareSegment::Uninstall),
+                |bar| {
+                    bar.child(
+                        ui::icon_button(
+                            t,
+                            "software-filter",
+                            "rules",
+                            filter_label,
+                            ButtonKind::Ghost,
+                        )
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.session.software_cycle_filter();
+                            cx.notify();
+                        }))
+                        .on_a11y_action(
+                            gpui::AccessibleAction::Click,
+                            on_view_a11y(cx, |this, cx| {
+                                this.session.software_cycle_filter();
+                                cx.notify();
+                            }),
+                        ),
+                    )
+                },
             );
         let has_items = review.item_count() > 0;
         let summary = review
@@ -362,7 +254,7 @@ impl ShellView {
                     } else if needs_admin {
                         copy::pick(locale, "needs admin to change", "需要管理员才能更改")
                     } else if item.permission == "allowed" {
-                        copy::pick(locale, "you can change this", "当前用户可更改")
+                        copy::pick(locale, "change can be previewed", "可预览更改")
                     } else {
                         copy::pick(locale, "review only", "仅可审阅")
                     };
@@ -378,7 +270,10 @@ impl ShellView {
                             Tone::Warning,
                         )
                     } else if item.selectable {
-                        (copy::pick(locale, "Removable", "可卸载"), Tone::Success)
+                        (
+                            copy::pick(locale, "Eligible for review", "可审阅"),
+                            Tone::Success,
+                        )
                     } else {
                         (copy::pick(locale, "Review only", "仅可审阅"), Tone::Neutral)
                     };
@@ -387,8 +282,11 @@ impl ShellView {
             };
             let element_id = SharedString::from(format!("software-row-{id}"));
             let select_id = id.clone();
+            let select_access_id = id.clone();
             let review_id = id.clone();
+            let review_access_id = id.clone();
             let awaiting = pending.as_deref() == Some(id.as_str());
+            let preview_only = awaiting && review.host_backed();
             let initial = item
                 .name
                 .chars()
@@ -404,6 +302,14 @@ impl ShellView {
                             .select_mode_row(Mode::Software, select_id.clone());
                         cx.notify();
                     }))
+                    .on_a11y_action(
+                        gpui::AccessibleAction::Click,
+                        on_view_a11y(cx, move |this, cx| {
+                            this.session
+                                .select_mode_row(Mode::Software, select_access_id.clone());
+                            cx.notify();
+                        }),
+                    )
                     .child(
                         div()
                             .flex()
@@ -458,24 +364,40 @@ impl ShellView {
                             ui::button(
                                 t,
                                 "software-row-review",
-                                if awaiting {
+                                if preview_only {
+                                    copy::pick(locale, "Preview only", "仅预览")
+                                } else if awaiting {
                                     copy::pick(locale, "Confirm", "确认")
                                 } else {
                                     copy::pick(locale, "Review", "审阅")
                                 },
-                                if awaiting {
+                                if preview_only {
+                                    ButtonKind::Disabled
+                                } else if awaiting {
                                     ButtonKind::Danger
                                 } else {
                                     ButtonKind::Secondary
                                 },
                             )
-                            .on_click(cx.listener(
-                                move |this, _, _, cx| {
+                            .on_click(cx.listener(move |this, _, _, cx| {
+                                if !preview_only {
                                     this.session
                                         .activate_mode_row(Mode::Software, review_id.clone());
+                                }
+                                cx.notify();
+                            }))
+                            .on_a11y_action(
+                                gpui::AccessibleAction::Click,
+                                on_view_a11y(cx, move |this, cx| {
+                                    if !preview_only {
+                                        this.session.activate_mode_row(
+                                            Mode::Software,
+                                            review_access_id.clone(),
+                                        );
+                                    }
                                     cx.notify();
-                                },
-                            )),
+                                }),
+                            ),
                         )
                     }),
             );
@@ -490,6 +412,17 @@ impl ShellView {
                     .child(ui::muted(t, review.lines().join(" ")))
                     .child(ui::progress_track(t)),
             );
+        } else if !any_row && review.item_count() > 0 {
+            rows = rows.child(ui::empty_state(
+                t,
+                "search",
+                copy::pick(locale, "No matching items", "没有匹配项目"),
+                copy::pick(
+                    locale,
+                    "Change the search or filter to see more items.",
+                    "调整搜索或筛选条件以显示更多项目。",
+                ),
+            ));
         } else if !any_row && !review.lines().is_empty() {
             let lines = review.lines();
             rows = rows.child(ui::empty_state(
@@ -518,9 +451,14 @@ impl ShellView {
         ui::card(t)
             .gap(rems(0.9))
             .child(toolbar)
+            .child(ui::muted(t, match review.segment() {
+                Some(SoftwareSegment::Updates) => copy::pick(locale, "Checks for updates only; nothing is installed.", "仅检查更新，不会安装任何内容。"),
+                Some(SoftwareSegment::Startup) => copy::pick(locale, "Review startup entries and preview changes. Applying host changes is unavailable here.", "审阅启动项并预览更改；此处不能修改本机启动项。"),
+                _ => copy::pick(locale, "Review uninstall eligibility and preview a plan. Host uninstall is unavailable here.", "审阅卸载条件并预览计划；此处不能卸载本机应用。"),
+            }))
             .child(div().flex().flex_col().gap(rems(0.2)).children(summary))
             .child(ui::divider(t))
-            .child(rows)
+            .child(rows.max_h(row_height).overflow_y_scroll())
             .into_any_element()
     }
 
