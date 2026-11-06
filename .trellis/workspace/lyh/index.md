@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 63
-- **Last Active**: 2026-11-04
+- **Total Sessions**: 64
+- **Last Active**: 2026-11-06
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1869 | Active |
+| `journal-1.md` | ~1899 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 64 | 2026-11-06 | GPUI 易用性优化实施与归档 | `4fc8a64` | `dev` |
 | 63 | 2026-11-04 | GPUI 标题栏主题切换与设置入口 | `9005902` | `dev` |
 | 62 | 2026-11-04 | GPUI 轻盈毛玻璃重构与 Windows 原生验收 | `760ee22` | `dev` |
 | 61 | 2026-10-29 | 拆分提交工作台接线并写下实施 Prompt | `66e4a84a122a94e41cf124d950563f8e22b27be6`, `7cc16b6d8dba4c5f1bf3156467123c078cb090b7`, `2bb5e1e105a9edb0d106b41910045efcdb36f2f7`, `532eff0ed8a72365942773d196779a55a7ab535b`, `c7846e46a2250726a26fbe2d846770f2e23ea4e1`, `8d050f8fa212395bb7f3ef2e6bdd1c3e4661f90d`, `47585e082a28d2cf10b809f77ec7098ea4a262b4`, `deba8d1abc527adda91cb0acc75edc000e7f3e7d`, `0b80363c834dde6299f7a004b47a59267449e60c`, `4d7febd816de83a8fb792607b9f952396a56e78f` | `codex/gpui-desktop-rewrite` |

@@ -1867,3 +1867,33 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 64: GPUI 易用性优化实施与归档
+<!-- trellis-session: v=2 fp=8492186467dc8fb2 -->
+
+**Date**: 2026-11-06
+**Task**: GPUI 易用性优化实施与归档
+**Branch**: `dev`
+
+### Summary
+
+移除无效底栏，添加系统字体选择与 About，优化 Clean/Software 工作区。核心功能已验证，按用户要求停止外围窗口矩阵测试。主任务及四个子任务已归档。
+
+### Main Changes
+
+- 补齐字体预览保存、搜索输入和页面状态隔离，保留现有清理与软件操作权限。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4fc8a64` | feat(gpui): ✨ 优化清理与软件工作区并补齐字体设置 |
+
+### Testing
+
+- [OK] just ci、just gpui-check、178 项 GPUI 测试、release build 及改动核心功能原生验收通过。
+
+### Status
+
+[OK] **Completed**
