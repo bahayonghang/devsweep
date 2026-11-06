@@ -1,0 +1,31 @@
+{
+  "id": "gpui-usability-workbenches",
+  "name": "gpui-usability-workbenches",
+  "title": "GPUI usability: shell, preferences and operational workbenches",
+  "description": "Analyze and plan removal of the inert footer, system font selection and About, and task-oriented Clean/Software layouts.",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "lyh",
+  "assignee": "lyh",
+  "createdAt": "2026-11-06",
+  "completedAt": "2026-11-06",
+  "branch": "dev",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": "4fc8a64a90e996e00854955dbf1726dcfb5ea370",
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "11-06-gpui-shell-footer",
+    "11-06-gpui-settings-fonts-about",
+    "11-06-gpui-clean-workspace",
+    "11-06-gpui-software-workspace"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Implemented and reviewed. Core validation passed: root ci, GPUI check, 178 tests, release build and native changed-core checks. User narrowed acceptance to core functionality and authorized commit/archive on 2026-11-06; peripheral display matrix is not required.",
+  "meta": {}
+}

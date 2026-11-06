@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/index.md","reason":"Compact spec routing; read relevant quality-guidelines sections directly before implementation because the full guide exceeds injection size."}
+{"file":".trellis/spec/backend/desktop-preferences.md","reason":"Existing V2/font persistence compatibility; distinguish Tauri transport from GPUI draft semantics."}
+{"file":".trellis/tasks/11-06-gpui-usability-workbenches/research/audit.md","reason":"Verified GPUI source anchors, design audit, known test and runtime evidence gaps."}
+{"file":".trellis/tasks/11-06-gpui-usability-workbenches/design.md","reason":"Shared UX, focus, font, workbench and authority contract."}
+{"file":".trellis/tasks/archive/2026-11/11-04-gpui-airy-glass/design.md","reason":"Preserve established native dark/light material and accessibility adaptation."}
+{"file":".trellis/tasks/11-06-gpui-shell-footer/design.md","reason":"Child-specific architecture and rollback boundaries."}
