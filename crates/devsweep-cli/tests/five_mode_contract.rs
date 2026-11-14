@@ -379,14 +379,49 @@ fn partial_and_unavailable_states_stay_truthful() {
         .iter()
         .map(|capability| capability["code"].as_str().expect("code"))
         .collect::<Vec<_>>();
-    for code in ["vram", "fan", "smart", "physical_disk_activity"] {
+    for code in ["vram", "fan", "smart"] {
         assert!(unsupported.contains(&code), "missing {code}");
     }
-    for (group, code) in [("gpu", "gpu_utilization"), ("thermal", "thermal")] {
+    for (group, code) in [
+        ("gpu", "gpu_utilization"),
+        ("thermal", "thermal"),
+        ("disk_activity", "physical_disk_activity"),
+    ] {
         let state = document["data"][group]["state"].as_str().expect("state");
         let measured = state == "available" || state == "partial";
         assert_eq!(unsupported.contains(&code), !measured, "{group} {state}");
     }
+    // A null field is never a zero: its capability code names the gap.
+    for (group, field, code) in [
+        ("cpu", "frequency_mhz", "cpu_frequency"),
+        ("power", "full_charge_basis_points", "battery_health"),
+        ("power", "cycle_count", "battery_cycle_count"),
+        ("power", "rate_milliwatts", "battery_rate"),
+    ] {
+        let value = &document["data"][group]["value"][field];
+        assert_eq!(
+            unsupported.contains(&code),
+            value.is_null(),
+            "{group}.{field} {value}"
+        );
+    }
+    let adapters = document["data"]["gpu"]["value"]["adapters"].as_array();
+    let all_named = adapters.is_some_and(|adapters| {
+        adapters.iter().all(|adapter| {
+            adapter["name"]
+                .as_str()
+                .is_some_and(|name| !name.is_empty())
+        })
+    });
+    assert_eq!(unsupported.contains(&"gpu_name"), !all_named);
+    let host_state = document["data"]["host"]["state"].as_str().expect("host");
+    assert!(
+        matches!(
+            host_state,
+            "available" | "partial" | "unavailable" | "unsupported"
+        ),
+        "host {host_state}"
+    );
 
     let hostile = devsweep(&[
         "optimize",

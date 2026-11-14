@@ -149,7 +149,7 @@ describe("Status V1 decoders", () => {
     expect(snapshot.gpu.state === "available" ? snapshot.gpu.value?.adapters[0].utilization_basis_points : null).toBe(1250);
     expect(snapshot.thermal).toEqual({ state: "unavailable", sampled_at_unix_ms: null, reason_code: "counter_missing" });
     expect(snapshot.unsupported_capabilities.map((item) => item.code)).toEqual([
-      "vram", "thermal", "fan", "smart", "physical_disk_activity",
+      "vram", "thermal", "fan", "smart", "battery_health", "battery_cycle_count", "battery_rate",
     ]);
 
     const extraAdapterField = structuredClone(statusSnapshotFixture) as unknown as {
@@ -177,18 +177,83 @@ describe("Status V1 decoders", () => {
         ...statusSnapshotFixture.unsupported_capabilities,
       ],
     };
-    expect(() => decodeStatusSnapshot(gpuListedWithValue)).toThrow("GPU and thermal probes");
+    expect(() => decodeStatusSnapshot(gpuListedWithValue)).toThrow("do not match the measured fields");
 
     const thermalMeasured = {
       ...statusSnapshotFixture,
       thermal: { state: "available", sampled_at_unix_ms: 1, age_ms: 0, value: { zones: [{ zone_id: "\\_TZ.TZ00", temperature_tenths_celsius: -5 }] } },
     };
-    expect(() => decodeStatusSnapshot(thermalMeasured)).toThrow("GPU and thermal probes");
+    expect(() => decodeStatusSnapshot(thermalMeasured)).toThrow("do not match the measured fields");
     const decoded = decodeStatusSnapshot({
       ...thermalMeasured,
       unsupported_capabilities: statusSnapshotFixture.unsupported_capabilities.filter((item) => item.code !== "thermal"),
     });
     expect(decoded.thermal.state === "available" ? decoded.thermal.value?.zones[0].temperature_tenths_celsius : null).toBe(-5);
+  });
+
+  it("decodes the additive host, disk, frequency, commit, battery, kind, and name fields closed", () => {
+    const snapshot = decodeStatusSnapshot(statusSnapshotFixture);
+    expect(snapshot.host.state === "available" ? snapshot.host.value?.os_version : null).toBe("10.0.26300.9974 (26H2)");
+    expect(snapshot.disk_activity.state === "available" ? snapshot.disk_activity.value?.write_bytes_per_second : null).toBe(8388608);
+    expect(snapshot.cpu.state === "available" ? snapshot.cpu.value?.frequency_mhz : null).toBe(4520);
+    expect(snapshot.memory.state === "partial" ? snapshot.memory.value?.commit_limit_bytes : null).toBe(42949672960);
+    expect(snapshot.network.state === "available" ? snapshot.network.value?.interfaces[0].kind : null).toBe("ethernet");
+    expect(snapshot.gpu.state === "available" ? snapshot.gpu.value?.adapters[0].name : null).toBe("Fixture GPU");
+
+    const fixture = statusSnapshotFixture as unknown as Record<string, unknown>;
+    for (const group of ["host", "disk_activity"]) {
+      const missing = structuredClone(fixture);
+      delete missing[group];
+      expect(() => decodeStatusSnapshot(missing)).toThrow();
+    }
+    const hostExtra = structuredClone(fixture) as { host: { value: Record<string, unknown> } };
+    hostExtra.host.value.product_name = "Windows 11";
+    expect(() => decodeStatusSnapshot(hostExtra)).toThrow("unknown field");
+    const missingFrequency = structuredClone(fixture) as { cpu: { value: Record<string, unknown> } };
+    delete missingFrequency.cpu.value.frequency_mhz;
+    expect(() => decodeStatusSnapshot(missingFrequency)).toThrow("cpu.frequency_mhz");
+    const zeroFrequency = structuredClone(fixture) as { cpu: { value: Record<string, unknown> } };
+    zeroFrequency.cpu.value.frequency_mhz = 0;
+    expect(() => decodeStatusSnapshot(zeroFrequency)).toThrow("cpu.frequency_mhz");
+    const commitOverLimit = structuredClone(fixture) as { memory: { value: Record<string, unknown> } };
+    commitOverLimit.memory.value.commit_used_bytes = 42949672961;
+    expect(() => decodeStatusSnapshot(commitOverLimit)).toThrow("memory commit");
+    const absentBatteryRate = structuredClone(fixture) as { power: { value: Record<string, unknown> } };
+    absentBatteryRate.power.value.rate_milliwatts = 0;
+    expect(() => decodeStatusSnapshot(absentBatteryRate)).toThrow("battery fields");
+    const unknownKind = structuredClone(fixture) as { network: { value: { interfaces: Array<Record<string, unknown>> } } };
+    unknownKind.network.value.interfaces[0].kind = "virtual";
+    expect(() => decodeStatusSnapshot(unknownKind)).toThrow("network.kind");
+
+    const unnamed = structuredClone(fixture) as {
+      gpu: { value: { adapters: Array<Record<string, unknown>> } };
+      unsupported_capabilities: Array<Record<string, unknown>>;
+    };
+    unnamed.gpu.value.adapters[0].name = null;
+    expect(() => decodeStatusSnapshot(unnamed)).toThrow("do not match the measured fields");
+    unnamed.unsupported_capabilities.push({ code: "gpu_name", state: "unsupported", reason_code: "not_supported_v1" });
+    expect(decodeStatusSnapshot(unnamed).unsupported_capabilities.at(-1)?.code).toBe("gpu_name");
+
+    const battery = structuredClone(fixture) as {
+      power: { value: Record<string, unknown> };
+      unsupported_capabilities: Array<{ code: string }>;
+    };
+    Object.assign(battery.power.value, {
+      battery_present: true, charge_basis_points: 9500, remaining_seconds: null,
+      full_charge_basis_points: 8999, cycle_count: 412, rate_milliwatts: -12345,
+    });
+    battery.unsupported_capabilities = battery.unsupported_capabilities.filter((item) => !item.code.startsWith("battery_"));
+    const charged = decodeStatusSnapshot(battery);
+    expect(charged.power.state === "available" ? charged.power.value?.rate_milliwatts : null).toBe(-12345);
+
+    const noDisk = structuredClone(fixture) as {
+      disk_activity: unknown;
+      unsupported_capabilities: Array<Record<string, unknown>>;
+    };
+    noDisk.disk_activity = { state: "unavailable", sampled_at_unix_ms: null, reason_code: "counter_missing" };
+    expect(() => decodeStatusSnapshot(noDisk)).toThrow("do not match the measured fields");
+    noDisk.unsupported_capabilities.splice(4, 0, { code: "physical_disk_activity", state: "unsupported", reason_code: "not_supported_v1" });
+    expect(decodeStatusSnapshot(noDisk).disk_activity.state).toBe("unavailable");
   });
 
   it("decodes only the two closed HUD events", () => {

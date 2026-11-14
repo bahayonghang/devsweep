@@ -3,10 +3,12 @@
   "sampled_at_unix_ms": 1788019202000,
   "sample_window_ms": 1000,
   "logical_processor_count": 16,
+  "host": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "cpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "memory": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+  "disk_activity": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "gpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
   "thermal": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
@@ -17,6 +19,11 @@
     { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
     { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
     { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
-    { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+    { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" },
+    { "code": "cpu_frequency", "state": "unsupported", "reason_code": "not_supported_v1" },
+    { "code": "battery_health", "state": "unsupported", "reason_code": "not_supported_v1" },
+    { "code": "battery_cycle_count", "state": "unsupported", "reason_code": "not_supported_v1" },
+    { "code": "battery_rate", "state": "unsupported", "reason_code": "not_supported_v1" },
+    { "code": "gpu_name", "state": "unsupported", "reason_code": "not_supported_v1" }
   ]
 }

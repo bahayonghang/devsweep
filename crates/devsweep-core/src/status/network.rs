@@ -1,6 +1,13 @@
 //! `GetIfTable2` topology and byte-counter deltas.
 
-use super::{AvailabilityV1, NetworkInterfaceV1, NetworkV1, system::DeltaIssue, unix_now_ms};
+use super::{
+    AvailabilityV1, NetworkInterfaceV1, NetworkKind, NetworkV1, system::DeltaIssue, unix_now_ms,
+};
+
+/// `IF_TYPE_ETHERNET_CSMACD`.
+const IF_TYPE_ETHERNET: u32 = 6;
+/// `IF_TYPE_IEEE80211`.
+const IF_TYPE_WIRELESS: u32 = 71;
 
 /// One interface sample identified by a 64-bit LUID.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -9,6 +16,19 @@ pub(crate) struct InterfaceCounters {
     pub name: String,
     pub in_octets: u64,
     pub out_octets: u64,
+    pub kind: Option<NetworkKind>,
+}
+
+/// Map `MIB_IF_ROW2.Type` plus the `HardwareInterface` flag. Hyper-V vEthernet,
+/// vSwitch, Bluetooth PAN and WAN miniports report the Ethernet type without
+/// the hardware flag and are `other`. The same rule applies to the 802.11
+/// type, whose filter-driver and Wi-Fi Direct virtual interfaces also lack it.
+pub(crate) fn network_kind(if_type: u32, hardware_interface: bool) -> NetworkKind {
+    match if_type {
+        IF_TYPE_ETHERNET if hardware_interface => NetworkKind::Ethernet,
+        IF_TYPE_WIRELESS if hardware_interface => NetworkKind::Wireless,
+        _ => NetworkKind::Other,
+    }
 }
 
 pub(crate) fn sample_interfaces()
@@ -62,6 +82,7 @@ pub(crate) fn network_from_pair(
                     name: later.name.clone(),
                     rx_bytes_per_second,
                     tx_bytes_per_second,
+                    kind: later.kind,
                 });
             }
             Err(DeltaIssue::CounterReset) => push_reason(&mut reasons, "counter_reset"),
@@ -157,6 +178,8 @@ fn row_to_counters(
 ) -> InterfaceCounters {
     let luid = luid_value(row);
     let name = utf16_lossy(&row.Alias);
+    // Bit 0 of InterfaceAndOperStatusFlags is HardwareInterface.
+    let hardware_interface = row.InterfaceAndOperStatusFlags._bitfield & 1 != 0;
     InterfaceCounters {
         luid,
         name: if name.is_empty() {
@@ -166,6 +189,7 @@ fn row_to_counters(
         },
         in_octets: row.InOctets,
         out_octets: row.OutOctets,
+        kind: Some(network_kind(row.Type, hardware_interface)),
     }
 }
 
@@ -208,7 +232,37 @@ mod tests {
             name: format!("if-{luid}"),
             in_octets: inn,
             out_octets: out,
+            kind: Some(NetworkKind::Wireless),
         }
+    }
+
+    #[test]
+    fn interface_kind_needs_the_hardware_flag() {
+        assert_eq!(network_kind(6, true), NetworkKind::Ethernet);
+        assert_eq!(network_kind(6, false), NetworkKind::Other);
+        assert_eq!(network_kind(71, true), NetworkKind::Wireless);
+        assert_eq!(network_kind(71, false), NetworkKind::Other);
+        for if_type in [24, 131, 23, 243, 53] {
+            assert_eq!(network_kind(if_type, true), NetworkKind::Other, "{if_type}");
+        }
+        let AvailabilityV1::Available { value, .. } =
+            network_from_pair(&[iface(1, 0, 0)], &[iface(1, 10, 10)], 1_000, 1_000)
+        else {
+            panic!("matched");
+        };
+        assert_eq!(value.interfaces[0].kind, Some(NetworkKind::Wireless));
+        let missing = [InterfaceCounters {
+            kind: None,
+            ..iface(2, 0, 0)
+        }];
+        let AvailabilityV1::Available { value, .. } =
+            network_from_pair(&missing, &missing, 1_000, 1_000)
+        else {
+            panic!("matched");
+        };
+        assert_eq!(value.interfaces[0].kind, None);
+        let encoded = serde_json::to_value(&value.interfaces[0]).unwrap();
+        assert!(encoded["kind"].is_null());
     }
 
     #[test]

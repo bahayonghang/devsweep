@@ -636,16 +636,26 @@ ProcessRequest {
 
 #### 1. Scope / Trigger
 
-- Trigger: code changes `status/pdh.rs`, the `gpu`/`thermal` groups of
-  `StatusSnapshotV1`, `unsupported_capabilities`, or the Tauri files
-  `hud.rs`, `tray.rs`, and the invoke-handler gate in `lib.rs`.
+- Trigger: code changes `status/pdh.rs`, `status/host.rs`,
+  `status/battery.rs`, the probed groups or fields of `StatusSnapshotV1`,
+  `unsupported_capabilities`, or the Tauri files `hud.rs`, `tray.rs`, and the
+  invoke-handler gate in `lib.rs`.
 
 #### 2. Signatures
 
-- `unsupported_capabilities(&AvailabilityV1<GpuV1>, &AvailabilityV1<ThermalV1>)
-  -> Vec<UnsupportedCapabilityV1>` (replaces the static list).
-- `GpuV1 { adapters: [{ adapter_id, utilization_basis_points }] }` and
+- `unsupported_capabilities(&StatusSnapshotV1) -> Vec<UnsupportedCapabilityV1>`;
+  the sampler calls it last, on the finished snapshot.
+- `GpuV1 { adapters: [{ adapter_id, utilization_basis_points, name }] }` and
   `ThermalV1 { zones: [{ zone_id, temperature_tenths_celsius }] }`.
+- Additive V1 fields (still `schema_version: 1`; every optional field
+  serializes as an explicit `null`): groups
+  `host: Availability<{cpu_model, os_version, boot_time_unix_ms}>` and
+  `disk_activity: Availability<{read_bytes_per_second, write_bytes_per_second}>`
+  (both `#[serde(default)]` to an `unavailable` value so pre-change JSON still
+  parses); `CpuV1.frequency_mhz`; `MemoryV1.commit_used_bytes` /
+  `commit_limit_bytes`; `PowerV1.full_charge_basis_points` / `cycle_count` /
+  `rate_milliwatts` (signed, negative while discharging);
+  `NetworkInterfaceV1.kind` (`ethernet` | `wireless` | `other`).
 - `HudSampler::start(interval, sample, emit)`, `HudSampler::stop()`; event
   `hud-status` with closed payload `{type: "sampling"}` or
   `{type: "snapshot", snapshot}`.
@@ -661,18 +671,43 @@ ProcessRequest {
   `PdhAddEnglishCounterW`. The query is primed once and collected once per
   sample; `Drop` closes it when its owning collection/worker ends. Only the `windows-sys` feature
   `Win32_System_Performance` is added; no new crate.
+- The same query also holds `\Processor Information(_Total)\Processor Frequency`
+  times `% Processor Performance` / 100 (CPU MHz) and
+  `\PhysicalDisk(_Total)\Disk Read Bytes/sec` / `Disk Write Bytes/sec`,
+  read per tick. Host identity (registry CPU model and OS version through a
+  local `RegGetValueW`, `RtlGetVersion`, `GetTickCount64` boot time) and GPU
+  adapter names (`D3DKMTEnumAdapters2` + `KMTQAITYPE_DRIVER_DESCRIPTION`,
+  joined to `luid_0x{high:08x}_0x{low:08x}`) are read once per cache. Battery
+  health, cycles, and rate come from `GUID_DEVICE_BATTERY` + battery IOCTLs on
+  the 30 s power cadence, only when a battery is present. Commit comes from
+  the existing `GlobalMemoryStatusEx` page-file totals. Network kind is
+  `ethernet`/`wireless` only when `MIB_IF_ROW2` also has the
+  HardwareInterface flag; filters and virtual adapters are `other`. Added
+  `windows-sys` features: `Wdk_Graphics_Direct3D`,
+  `Win32_Devices_DeviceAndDriverInstallation`. No process spawning, WMI,
+  drivers, or elevation.
 - GPU: group instances by the `luid_..._phys_<n>` adapter key, sum per engine
   type, keep the busiest type per adapter, and clamp to 10000 basis points.
   Thermal: Kelvin to tenths of °C; drop 0 K and non-finite zones.
 - A missing query, counter, instance set, or valid value gives
   `unavailable` with a reason code (`pdh_unavailable`, `counter_missing`,
   `collect_failed`, `counter_read_failed`, `no_valid_data`, `no_instances`).
-  It never gives a zero. `gpu_utilization` and `thermal` stay in
-  `unsupported_capabilities` exactly when their group has no value. VRAM, fan,
-  SMART, and physical-disk activity are always listed.
-- Both groups join warning aggregation but not the outcome check: a host
-  without thermal zones or GPU counters still reports `success` when the
-  other groups are complete, as before the probes existed.
+  It never gives a zero. `gpu_utilization`, `thermal`, and
+  `physical_disk_activity` stay in `unsupported_capabilities` exactly when
+  their group has no value. `cpu_frequency`, `battery_health`,
+  `battery_cycle_count`, and `battery_rate` are listed exactly when their field
+  is `null` (or the owning group has no value); `gpu_name` when the GPU group
+  has no value or any adapter name is `null`. VRAM, fan, and SMART are always
+  listed. Order is the closed enum order: `gpu_utilization, vram, thermal,
+  fan, smart, physical_disk_activity, cpu_frequency, battery_health,
+  battery_cycle_count, battery_rate, gpu_name`.
+- An untracked value is `null`, never `0`: a firmware cycle count of 0, an
+  unknown battery rate, or relative-capacity batteries give `null`; a CPU
+  frequency must be positive.
+- `gpu`, `thermal`, `host`, and `disk_activity` join warning aggregation but
+  not the outcome check: a host without thermal zones, GPU counters, disk
+  counters, or identity still reports `success` when the supported groups
+  (cpu, memory, volumes, network, power, processes) are complete.
 - The HUD sampler owns one thread and one `FlagCancelObserver`. It samples
   at the validated desktop-preference interval (2/5/10 s, default 2 s) only
   while the HUD window is visible. The interval is captured on show. Hide, HUD destroy, main
@@ -707,7 +742,11 @@ ProcessRequest {
 #### 6. Tests Required
 
 - PDH fixture tests for grouping, clamp, idle zero versus no instance, 0 K
-  drop, and reason codes; capability-list tests for each probe state.
+  drop, and reason codes; capability-list tests for each probe state and
+  for each nullable field (value versus `null`).
+- The closed decoders (`cli_contract.rs` `status_v1_contract` and Tauri
+  `contract.ts`) list every key and recompute the expected capability list;
+  the CLI and Tauri fixture copies stay byte-identical.
 - HUD sampler tests for start on show, cancel and join on hide and drop, no
   sample after stop, the selected cadence/default 2 s, and a refused second start.
 - A window-gate test over every shipped command for `main`, `hud`, and an

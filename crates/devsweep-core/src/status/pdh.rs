@@ -1,8 +1,10 @@
-//! Read-only PDH probes for GPU engine utilization and ACPI thermal zones.
+//! Read-only PDH probes for GPU engine utilization, ACPI thermal zones, CPU
+//! frequency and system disk throughput.
 //!
-//! One query per sampler holds both wildcard counters. A missing counter set,
-//! a missing instance, or a counter without valid data becomes `unavailable`
-//! with a reason code. It never becomes a zero value.
+//! One query per sampler holds every counter and is collected once per sample.
+//! A missing counter set, a missing instance, or a counter without valid data
+//! becomes `unavailable` (or a `null` field) with a reason code. It never
+//! becomes a zero value.
 
 #![cfg_attr(not(windows), allow(dead_code))]
 
@@ -11,12 +13,22 @@ use std::collections::BTreeMap;
 #[cfg(windows)]
 use windows_sys::Win32::System::Performance::{PDH_HCOUNTER, PDH_HQUERY};
 
-use super::{AvailabilityV1, GpuAdapterV1, GpuV1, ThermalV1, ThermalZoneV1};
+use super::{AvailabilityV1, DiskActivityV1, GpuAdapterV1, GpuV1, ThermalV1, ThermalZoneV1};
 
 /// English counter path for per-engine GPU utilization.
 pub(crate) const GPU_ENGINE_COUNTER: &str = r"\GPU Engine(*)\Utilization Percentage";
 /// English counter path for thermal-zone temperature in Kelvin.
 pub(crate) const THERMAL_ZONE_COUNTER: &str = r"\Thermal Zone Information(*)\Temperature";
+/// Nominal processor frequency in MHz.
+pub(crate) const CPU_FREQUENCY_COUNTER: &str =
+    r"\Processor Information(_Total)\Processor Frequency";
+/// Processor performance relative to nominal, in percent (may exceed 100).
+pub(crate) const CPU_PERFORMANCE_COUNTER: &str =
+    r"\Processor Information(_Total)\% Processor Performance";
+/// System-wide physical disk read throughput.
+pub(crate) const DISK_READ_COUNTER: &str = r"\PhysicalDisk(_Total)\Disk Read Bytes/sec";
+/// System-wide physical disk write throughput.
+pub(crate) const DISK_WRITE_COUNTER: &str = r"\PhysicalDisk(_Total)\Disk Write Bytes/sec";
 
 /// One formatted counter instance.
 #[derive(Debug, Clone, PartialEq)]
@@ -27,6 +39,62 @@ pub(crate) struct CounterSample {
 
 /// Instance values of one counter, or a stable reason code.
 pub(crate) type CounterRead = Result<Vec<CounterSample>, &'static str>;
+
+/// One single-instance counter value, or a stable reason code.
+pub(crate) type ValueRead = Result<f64, &'static str>;
+
+/// Effective frequency in MHz as Task Manager computes it: nominal frequency
+/// times processor performance. Missing, non-finite or non-positive inputs
+/// give `None`, never 0.
+pub(crate) fn frequency_mhz(nominal: ValueRead, performance: ValueRead) -> Option<u32> {
+    let (Ok(nominal), Ok(performance)) = (nominal, performance) else {
+        return None;
+    };
+    if !nominal.is_finite() || !performance.is_finite() || nominal <= 0.0 || performance <= 0.0 {
+        return None;
+    }
+    let mhz = (nominal * performance / 100.0).round();
+    if mhz < 1.0 || mhz > f64::from(u32::MAX) {
+        return None;
+    }
+    Some(mhz as u32)
+}
+
+/// System disk read/write throughput. Either counter failing makes the group
+/// unavailable with that counter's reason; a negative or non-finite rate is
+/// `no_valid_data`.
+pub(crate) fn disk_activity_availability(
+    read: ValueRead,
+    write: ValueRead,
+    sampled_at_unix_ms: u64,
+) -> AvailabilityV1<DiskActivityV1> {
+    let (read, write) = match (read, write) {
+        (Ok(read), Ok(write)) => (read, write),
+        (Err(reason), _) | (_, Err(reason)) => return AvailabilityV1::unavailable(reason),
+    };
+    match (bytes_per_second(read), bytes_per_second(write)) {
+        (Some(read_bytes_per_second), Some(write_bytes_per_second)) => AvailabilityV1::available(
+            sampled_at_unix_ms,
+            0,
+            DiskActivityV1 {
+                read_bytes_per_second,
+                write_bytes_per_second,
+            },
+        ),
+        _ => AvailabilityV1::unavailable("no_valid_data"),
+    }
+}
+
+fn bytes_per_second(value: f64) -> Option<u64> {
+    if !value.is_finite() || value < 0.0 {
+        return None;
+    }
+    let rounded = value.round();
+    if rounded >= u64::MAX as f64 {
+        return Some(u64::MAX);
+    }
+    Some(rounded as u64)
+}
 
 /// Sum utilization per adapter and engine type, then keep the busiest engine
 /// type per adapter. Instance names carry `luid_<..>_phys_<n>` and
@@ -58,6 +126,7 @@ pub(crate) fn gpu_from_samples(samples: &[CounterSample]) -> Option<GpuV1> {
             .map(|(adapter_id, percent)| GpuAdapterV1 {
                 adapter_id,
                 utilization_basis_points: percent_to_basis_points(percent),
+                name: None,
             })
             .collect(),
     })
@@ -137,8 +206,7 @@ fn kelvin_to_tenths_celsius(kelvin: f64) -> i32 {
     tenths.clamp(f64::from(i32::MIN), f64::from(i32::MAX)) as i32
 }
 
-/// One PDH query with the GPU and thermal counters. Dropping it closes the
-/// query.
+/// One PDH query with every Status counter. Dropping it closes the query.
 #[derive(Debug)]
 pub(crate) struct PdhProbe {
     #[cfg(windows)]
@@ -147,12 +215,22 @@ pub(crate) struct PdhProbe {
     gpu: Result<PDH_HCOUNTER, &'static str>,
     #[cfg(windows)]
     thermal: Result<PDH_HCOUNTER, &'static str>,
+    #[cfg(windows)]
+    cpu_frequency: Result<PDH_HCOUNTER, &'static str>,
+    #[cfg(windows)]
+    cpu_performance: Result<PDH_HCOUNTER, &'static str>,
+    #[cfg(windows)]
+    disk_read: Result<PDH_HCOUNTER, &'static str>,
+    #[cfg(windows)]
+    disk_write: Result<PDH_HCOUNTER, &'static str>,
 }
 
-/// GPU and thermal groups from one collection.
+/// Groups and fields from one collection.
 pub(crate) struct PdhGroups {
     pub(crate) gpu: AvailabilityV1<GpuV1>,
     pub(crate) thermal: AvailabilityV1<ThermalV1>,
+    pub(crate) cpu_frequency_mhz: Option<u32>,
+    pub(crate) disk_activity: AvailabilityV1<DiskActivityV1>,
 }
 
 impl PdhProbe {
@@ -164,21 +242,32 @@ impl PdhProbe {
         probe
     }
 
-    /// Collect once and read both counters. The GPU rate covers the time since
+    /// Collect once and read every counter. Rate counters cover the time since
     /// the previous collection.
     pub(crate) fn sample(&self, sampled_at_unix_ms: u64) -> PdhGroups {
         #[cfg(windows)]
         {
-            let (gpu, thermal) = match self.collect() {
-                Ok(()) => (
-                    self.gpu.and_then(read_counter),
-                    self.thermal.and_then(read_counter),
-                ),
-                Err(reason) => (self.gpu.and(Err(reason)), self.thermal.and(Err(reason))),
+            let collected = self.collect();
+            let array = |counter: Result<PDH_HCOUNTER, &'static str>| match collected {
+                Ok(()) => counter.and_then(read_counter),
+                Err(reason) => counter.and(Err(reason)),
+            };
+            let single = |counter: Result<PDH_HCOUNTER, &'static str>| match collected {
+                Ok(()) => counter.and_then(read_value),
+                Err(reason) => counter.and(Err(reason)),
             };
             PdhGroups {
-                gpu: gpu_availability(gpu, sampled_at_unix_ms),
-                thermal: thermal_availability(thermal, sampled_at_unix_ms),
+                gpu: gpu_availability(array(self.gpu), sampled_at_unix_ms),
+                thermal: thermal_availability(array(self.thermal), sampled_at_unix_ms),
+                cpu_frequency_mhz: frequency_mhz(
+                    single(self.cpu_frequency),
+                    single(self.cpu_performance),
+                ),
+                disk_activity: disk_activity_availability(
+                    single(self.disk_read),
+                    single(self.disk_write),
+                    sampled_at_unix_ms,
+                ),
             }
         }
         #[cfg(not(windows))]
@@ -187,6 +276,8 @@ impl PdhProbe {
             PdhGroups {
                 gpu: AvailabilityV1::unsupported("platform_unsupported"),
                 thermal: AvailabilityV1::unsupported("platform_unsupported"),
+                cpu_frequency_mhz: None,
+                disk_activity: AvailabilityV1::unsupported("platform_unsupported"),
             }
         }
     }
@@ -203,12 +294,20 @@ impl PdhProbe {
                 query: std::ptr::null_mut(),
                 gpu: Err("pdh_unavailable"),
                 thermal: Err("pdh_unavailable"),
+                cpu_frequency: Err("pdh_unavailable"),
+                cpu_performance: Err("pdh_unavailable"),
+                disk_read: Err("pdh_unavailable"),
+                disk_write: Err("pdh_unavailable"),
             };
         }
         Self {
             query,
             gpu: add_counter(query, GPU_ENGINE_COUNTER),
             thermal: add_counter(query, THERMAL_ZONE_COUNTER),
+            cpu_frequency: add_counter(query, CPU_FREQUENCY_COUNTER),
+            cpu_performance: add_counter(query, CPU_PERFORMANCE_COUNTER),
+            disk_read: add_counter(query, DISK_READ_COUNTER),
+            disk_write: add_counter(query, DISK_WRITE_COUNTER),
         }
     }
 
@@ -337,6 +436,38 @@ fn read_counter(counter: PDH_HCOUNTER) -> CounterRead {
 }
 
 #[cfg(windows)]
+fn read_value(counter: PDH_HCOUNTER) -> ValueRead {
+    use windows_sys::Win32::System::Performance::{
+        PDH_CSTATUS_NEW_DATA, PDH_CSTATUS_VALID_DATA, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
+        PdhGetFormattedCounterValue,
+    };
+    /// `PDH_FMT_NOCAP100`: `% Processor Performance` routinely exceeds 100.
+    const PDH_FMT_NOCAP100: u32 = 0x0000_8000;
+
+    // SAFETY: zeroed PDH_FMT_COUNTERVALUE is a valid out-parameter.
+    let mut value: PDH_FMT_COUNTERVALUE = unsafe { std::mem::zeroed() };
+    let mut kind = 0_u32;
+    // SAFETY: `counter` belongs to this probe's open query; both out-pointers
+    // are writable locals.
+    let status = unsafe {
+        PdhGetFormattedCounterValue(
+            counter,
+            PDH_FMT_DOUBLE | PDH_FMT_NOCAP100,
+            &mut kind,
+            &mut value,
+        )
+    };
+    if status != 0 {
+        return Err("counter_read_failed");
+    }
+    if value.CStatus != PDH_CSTATUS_VALID_DATA && value.CStatus != PDH_CSTATUS_NEW_DATA {
+        return Err("no_valid_data");
+    }
+    // SAFETY: PDH_FMT_DOUBLE selects the `doubleValue` member.
+    Ok(unsafe { value.Anonymous.doubleValue })
+}
+
+#[cfg(windows)]
 unsafe fn wide_to_string(pointer: *const u16) -> String {
     let mut len = 0_usize;
     // SAFETY: the caller guarantees a NUL-terminated UTF-16 string.
@@ -385,10 +516,12 @@ mod tests {
                 GpuAdapterV1 {
                     adapter_id: "luid_0x00000000_0x0000C0B6_phys_0".into(),
                     utilization_basis_points: 4_000,
+                    name: None,
                 },
                 GpuAdapterV1 {
                     adapter_id: "luid_0x00000000_0x0000D1A0_phys_0".into(),
                     utilization_basis_points: 125,
+                    name: None,
                 },
             ]
         );
@@ -467,11 +600,78 @@ mod tests {
     }
 
     #[test]
-    fn counter_paths_are_the_english_wildcard_paths() {
+    fn counter_paths_are_the_english_paths() {
         assert_eq!(GPU_ENGINE_COUNTER, r"\GPU Engine(*)\Utilization Percentage");
         assert_eq!(
             THERMAL_ZONE_COUNTER,
             r"\Thermal Zone Information(*)\Temperature"
         );
+        assert_eq!(
+            CPU_FREQUENCY_COUNTER,
+            r"\Processor Information(_Total)\Processor Frequency"
+        );
+        assert_eq!(
+            CPU_PERFORMANCE_COUNTER,
+            r"\Processor Information(_Total)\% Processor Performance"
+        );
+        assert_eq!(
+            DISK_READ_COUNTER,
+            r"\PhysicalDisk(_Total)\Disk Read Bytes/sec"
+        );
+        assert_eq!(
+            DISK_WRITE_COUNTER,
+            r"\PhysicalDisk(_Total)\Disk Write Bytes/sec"
+        );
+    }
+
+    #[test]
+    fn frequency_is_nominal_times_performance_and_missing_is_none_not_zero() {
+        // Task Manager formula: 2300 MHz nominal at 196.5 % performance.
+        assert_eq!(frequency_mhz(Ok(2_300.0), Ok(196.5)), Some(4_520));
+        assert_eq!(frequency_mhz(Ok(2_300.0), Ok(100.0)), Some(2_300));
+        for (nominal, performance) in [
+            (Err("counter_missing"), Ok(100.0)),
+            (Ok(2_300.0), Err("no_valid_data")),
+            (Ok(0.0), Ok(100.0)),
+            (Ok(2_300.0), Ok(0.0)),
+            (Ok(f64::NAN), Ok(100.0)),
+            (Ok(2_300.0), Ok(-5.0)),
+        ] {
+            assert_eq!(frequency_mhz(nominal, performance), None);
+        }
+    }
+
+    #[test]
+    fn disk_activity_is_measured_bytes_or_unavailable_with_a_reason() {
+        let AvailabilityV1::Available { value, .. } =
+            disk_activity_availability(Ok(1_040_000.4), Ok(0.0), 7)
+        else {
+            panic!("both counters read");
+        };
+        assert_eq!(value.read_bytes_per_second, 1_040_000);
+        assert_eq!(value.write_bytes_per_second, 0);
+        assert_eq!(
+            disk_activity_availability(Err("counter_missing"), Ok(1.0), 7),
+            AvailabilityV1::unavailable("counter_missing")
+        );
+        assert_eq!(
+            disk_activity_availability(Ok(1.0), Err("collect_failed"), 7),
+            AvailabilityV1::unavailable("collect_failed")
+        );
+        assert_eq!(
+            disk_activity_availability(Ok(-1.0), Ok(1.0), 7),
+            AvailabilityV1::unavailable("no_valid_data")
+        );
+        assert_eq!(
+            disk_activity_availability(Ok(1.0), Ok(f64::INFINITY), 7),
+            AvailabilityV1::unavailable("no_valid_data")
+        );
+        let encoded = serde_json::to_string(&disk_activity_availability(
+            Err("pdh_unavailable"),
+            Ok(1.0),
+            7,
+        ))
+        .unwrap();
+        assert!(!encoded.contains("bytes_per_second"));
     }
 }

@@ -338,21 +338,51 @@ fn status_outcome_excludes_optional_probes_but_requires_supported_groups() {
         "sampled_at_unix_ms": null,
         "reason_code": "access_denied"
     });
-    envelope["data"]["unsupported_capabilities"]
+    let capabilities = envelope["data"]["unsupported_capabilities"]
         .as_array_mut()
-        .unwrap()
-        .insert(
-            0,
-            serde_json::json!({
-                "code": "gpu_utilization",
-                "state": "unsupported",
-                "reason_code": "not_supported_v1"
-            }),
-        );
+        .unwrap();
+    capabilities.insert(
+        0,
+        serde_json::json!({
+            "code": "gpu_utilization",
+            "state": "unsupported",
+            "reason_code": "not_supported_v1"
+        }),
+    );
+    capabilities.push(serde_json::json!({
+        "code": "gpu_name",
+        "state": "unsupported",
+        "reason_code": "not_supported_v1"
+    }));
     envelope["warnings"] = serde_json::json!([]);
     envelope["outcome"] = "success".into();
     status_v1_contract::decode_snapshot_envelope(&envelope)
         .expect("optional GPU and thermal failures do not degrade success");
+
+    let mut identity_missing = envelope.clone();
+    identity_missing["data"]["host"] = serde_json::json!({
+        "state": "unavailable",
+        "sampled_at_unix_ms": null,
+        "reason_code": "api_unavailable"
+    });
+    identity_missing["data"]["disk_activity"] = serde_json::json!({
+        "state": "unavailable",
+        "sampled_at_unix_ms": null,
+        "reason_code": "counter_missing"
+    });
+    identity_missing["data"]["unsupported_capabilities"]
+        .as_array_mut()
+        .unwrap()
+        .insert(
+            5,
+            serde_json::json!({
+                "code": "physical_disk_activity",
+                "state": "unsupported",
+                "reason_code": "not_supported_v1"
+            }),
+        );
+    status_v1_contract::decode_snapshot_envelope(&identity_missing)
+        .expect("missing host identity or disk activity does not degrade success");
     envelope["outcome"] = "partial".into();
     assert!(status_v1_contract::decode_snapshot_envelope(&envelope).is_err());
 
@@ -361,6 +391,17 @@ fn status_outcome_excludes_optional_probes_but_requires_supported_groups() {
         "sampled_at_unix_ms": null,
         "reason_code": "api_unavailable"
     });
+    envelope["data"]["unsupported_capabilities"]
+        .as_array_mut()
+        .unwrap()
+        .insert(
+            5,
+            serde_json::json!({
+                "code": "cpu_frequency",
+                "state": "unsupported",
+                "reason_code": "not_supported_v1"
+            }),
+        );
     status_v1_contract::decode_snapshot_envelope(&envelope)
         .expect("supported CPU failure requires partial");
     envelope["outcome"] = "success".into();
@@ -434,15 +475,30 @@ mod status_v1_contract {
         sampled_at_unix_ms: u64,
         sample_window_ms: u32,
         logical_processor_count: u32,
+        host: AvailabilityV1<HostV1>,
         cpu: AvailabilityV1<CpuV1>,
         memory: AvailabilityV1<MemoryV1>,
         volumes: AvailabilityV1<VolumesV1>,
         network: AvailabilityV1<NetworkV1>,
+        disk_activity: AvailabilityV1<DiskActivityV1>,
         power: AvailabilityV1<PowerV1>,
         gpu: AvailabilityV1<GpuV1>,
         thermal: AvailabilityV1<ThermalV1>,
         processes: AvailabilityV1<ProcessesV1>,
         unsupported_capabilities: Vec<UnsupportedCapabilityV1>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct HostV1 {
+        cpu_model: Option<String>,
+        os_version: Option<String>,
+        boot_time_unix_ms: Option<u64>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct DiskActivityV1 {
+        read_bytes_per_second: u64,
+        write_bytes_per_second: u64,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -454,6 +510,7 @@ mod status_v1_contract {
     struct GpuAdapterV1 {
         adapter_id: String,
         utilization_basis_points: u32,
+        name: Option<String>,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -496,6 +553,7 @@ mod status_v1_contract {
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct CpuV1 {
         system_utilization_basis_points: u32,
+        frequency_mhz: Option<u32>,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -503,6 +561,8 @@ mod status_v1_contract {
         total_bytes: u64,
         available_bytes: u64,
         used_bytes: u64,
+        commit_used_bytes: Option<u64>,
+        commit_limit_bytes: Option<u64>,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -531,6 +591,14 @@ mod status_v1_contract {
         name: String,
         rx_bytes_per_second: u64,
         tx_bytes_per_second: u64,
+        kind: Option<NetworkKind>,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum NetworkKind {
+        Ethernet,
+        Wireless,
+        Other,
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -546,6 +614,9 @@ mod status_v1_contract {
         ac_state: AcState,
         charge_basis_points: Option<u32>,
         remaining_seconds: Option<u64>,
+        full_charge_basis_points: Option<u32>,
+        cycle_count: Option<u32>,
+        rate_milliwatts: Option<i32>,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -578,6 +649,11 @@ mod status_v1_contract {
         Fan,
         Smart,
         PhysicalDiskActivity,
+        CpuFrequency,
+        BatteryHealth,
+        BatteryCycleCount,
+        BatteryRate,
+        GpuName,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -712,6 +788,29 @@ mod status_v1_contract {
                 .transpose()
         }
 
+        fn take_nullable_i32(&mut self, key: &str) -> DecodeResult<Option<i32>> {
+            let value = self.take(key)?;
+            if value.is_null() {
+                return Ok(None);
+            }
+            value
+                .as_i64()
+                .and_then(|value| i32::try_from(value).ok())
+                .map(Some)
+                .ok_or_else(|| format!("{}.{} must be null or an i32 integer", self.context, key))
+        }
+
+        fn take_nullable_nonempty_string(&mut self, key: &str) -> DecodeResult<Option<String>> {
+            match self.take(key)? {
+                Value::Null => Ok(None),
+                Value::String(text) if !text.is_empty() => Ok(Some(text)),
+                _ => Err(format!(
+                    "{}.{} must be null or a nonempty string",
+                    self.context, key
+                )),
+            }
+        }
+
         fn take_null(&mut self, key: &str) -> DecodeResult<()> {
             if self.take(key)?.is_null() {
                 Ok(())
@@ -810,10 +909,16 @@ mod status_v1_contract {
             if logical_processor_count == 0 {
                 return Err("logical_processor_count must be positive".to_string());
             }
+            let host = decode_availability(object.take("host")?, "host", decode_host)?;
             let cpu = decode_availability(object.take("cpu")?, "cpu", decode_cpu)?;
             let memory = decode_availability(object.take("memory")?, "memory", decode_memory)?;
             let volumes = decode_availability(object.take("volumes")?, "volumes", decode_volumes)?;
             let network = decode_availability(object.take("network")?, "network", decode_network)?;
+            let disk_activity = decode_availability(
+                object.take("disk_activity")?,
+                "disk_activity",
+                decode_disk_activity,
+            )?;
             let power = decode_availability(object.take("power")?, "power", decode_power)?;
             let gpu = decode_availability(object.take("gpu")?, "gpu", decode_gpu)?;
             let thermal = decode_availability(object.take("thermal")?, "thermal", decode_thermal)?;
@@ -828,20 +933,44 @@ mod status_v1_contract {
                 .iter()
                 .map(|capability| capability.code)
                 .collect::<Vec<_>>();
+            let frequency = cpu.value().and_then(|cpu| cpu.frequency_mhz);
+            let battery = power.value();
+            let gpu_named = gpu
+                .value()
+                .is_some_and(|gpu| gpu.adapters.iter().all(|adapter| adapter.name.is_some()));
             let expected = [
                 (UnsupportedCode::GpuUtilization, !gpu.has_value()),
                 (UnsupportedCode::Vram, true),
                 (UnsupportedCode::Thermal, !thermal.has_value()),
                 (UnsupportedCode::Fan, true),
                 (UnsupportedCode::Smart, true),
-                (UnsupportedCode::PhysicalDiskActivity, true),
+                (
+                    UnsupportedCode::PhysicalDiskActivity,
+                    !disk_activity.has_value(),
+                ),
+                (UnsupportedCode::CpuFrequency, frequency.is_none()),
+                (
+                    UnsupportedCode::BatteryHealth,
+                    battery
+                        .and_then(|power| power.full_charge_basis_points)
+                        .is_none(),
+                ),
+                (
+                    UnsupportedCode::BatteryCycleCount,
+                    battery.and_then(|power| power.cycle_count).is_none(),
+                ),
+                (
+                    UnsupportedCode::BatteryRate,
+                    battery.and_then(|power| power.rate_milliwatts).is_none(),
+                ),
+                (UnsupportedCode::GpuName, !gpu_named),
             ]
             .into_iter()
             .filter_map(|(code, listed)| listed.then_some(code))
             .collect::<Vec<_>>();
             if actual != expected {
                 return Err(
-                    "Status V1 unsupported capabilities must list each static code once and GPU/thermal only without a probe value"
+                    "Status V1 unsupported capabilities must list each static code once and every probed code only without a value"
                         .to_string(),
                 );
             }
@@ -851,10 +980,12 @@ mod status_v1_contract {
                 sampled_at_unix_ms,
                 sample_window_ms,
                 logical_processor_count,
+                host,
                 cpu,
                 memory,
                 volumes,
                 network,
+                disk_activity,
                 power,
                 gpu,
                 thermal,
@@ -867,6 +998,13 @@ mod status_v1_contract {
     impl<T> AvailabilityV1<T> {
         fn has_value(&self) -> bool {
             matches!(self, Self::Available { .. } | Self::Partial { .. })
+        }
+
+        fn value(&self) -> Option<&T> {
+            match self {
+                Self::Available { value, .. } | Self::Partial { value, .. } => Some(value),
+                _ => None,
+            }
         }
 
         fn is_degraded(&self) -> bool {
@@ -978,15 +1116,41 @@ mod status_v1_contract {
         Ok(reason)
     }
 
+    fn decode_host(value: Value) -> DecodeResult<HostV1> {
+        let mut object = ClosedObject::decode(value, "HostV1")?;
+        let host = HostV1 {
+            cpu_model: object.take_nullable_nonempty_string("cpu_model")?,
+            os_version: object.take_nullable_nonempty_string("os_version")?,
+            boot_time_unix_ms: object.take_nullable_u64("boot_time_unix_ms")?,
+        };
+        object.finish()?;
+        Ok(host)
+    }
+
+    fn decode_disk_activity(value: Value) -> DecodeResult<DiskActivityV1> {
+        let mut object = ClosedObject::decode(value, "DiskActivityV1")?;
+        let disk = DiskActivityV1 {
+            read_bytes_per_second: object.take_u64("read_bytes_per_second")?,
+            write_bytes_per_second: object.take_u64("write_bytes_per_second")?,
+        };
+        object.finish()?;
+        Ok(disk)
+    }
+
     fn decode_cpu(value: Value) -> DecodeResult<CpuV1> {
         let mut object = ClosedObject::decode(value, "CpuV1")?;
         let system_utilization_basis_points = object.take_u32("system_utilization_basis_points")?;
         if system_utilization_basis_points > 10_000 {
             return Err("system CPU basis points must be 0..10000".to_string());
         }
+        let frequency_mhz = object.take_nullable_u32("frequency_mhz")?;
+        if frequency_mhz == Some(0) {
+            return Err("CPU frequency must be positive or null, never 0".to_string());
+        }
         object.finish()?;
         Ok(CpuV1 {
             system_utilization_basis_points,
+            frequency_mhz,
         })
     }
 
@@ -998,11 +1162,22 @@ mod status_v1_contract {
         if available_bytes > total_bytes || used_bytes != total_bytes - available_bytes {
             return Err("memory byte fields must be internally consistent".to_string());
         }
+        let commit_used_bytes = object.take_nullable_u64("commit_used_bytes")?;
+        let commit_limit_bytes = object.take_nullable_u64("commit_limit_bytes")?;
+        match (commit_used_bytes, commit_limit_bytes) {
+            (Some(used), Some(limit)) if used <= limit && limit > 0 => {}
+            (None, None) => {}
+            _ => {
+                return Err("commit fields must both be null or used <= positive limit".to_string());
+            }
+        }
         object.finish()?;
         Ok(MemoryV1 {
             total_bytes,
             available_bytes,
             used_bytes,
+            commit_used_bytes,
+            commit_limit_bytes,
         })
     }
 
@@ -1053,12 +1228,23 @@ mod status_v1_contract {
             let name = item.take_nonempty_string("name")?;
             let rx_bytes_per_second = item.take_u64("rx_bytes_per_second")?;
             let tx_bytes_per_second = item.take_u64("tx_bytes_per_second")?;
+            let kind = match item.take("kind")? {
+                Value::Null => None,
+                Value::String(kind) => Some(match kind.as_str() {
+                    "ethernet" => NetworkKind::Ethernet,
+                    "wireless" => NetworkKind::Wireless,
+                    "other" => NetworkKind::Other,
+                    other => return Err(format!("unsupported network kind {other}")),
+                }),
+                _ => return Err("network kind must be a string or null".to_string()),
+            };
             item.finish()?;
             Ok(NetworkInterfaceV1 {
                 interface_luid,
                 name,
                 rx_bytes_per_second,
                 tx_bytes_per_second,
+                kind,
             })
         })?;
         object.finish()?;
@@ -1082,10 +1268,20 @@ mod status_v1_contract {
             return Err("charge_basis_points must be 0..10000 or null".to_string());
         }
         let remaining_seconds = object.take_nullable_u64("remaining_seconds")?;
-        if !battery_present && (charge_basis_points.is_some() || remaining_seconds.is_some()) {
-            return Err(
-                "battery-absent power values must use null charge and remaining time".to_string(),
-            );
+        let full_charge_basis_points = object.take_nullable_u32("full_charge_basis_points")?;
+        let cycle_count = object.take_nullable_u32("cycle_count")?;
+        let rate_milliwatts = object.take_nullable_i32("rate_milliwatts")?;
+        if !battery_present
+            && (charge_basis_points.is_some()
+                || remaining_seconds.is_some()
+                || full_charge_basis_points.is_some()
+                || cycle_count.is_some()
+                || rate_milliwatts.is_some())
+        {
+            return Err("battery-absent power values must use null battery fields".to_string());
+        }
+        if cycle_count == Some(0) {
+            return Err("an untracked cycle count is null, never 0".to_string());
         }
         object.finish()?;
         Ok(PowerV1 {
@@ -1093,6 +1289,9 @@ mod status_v1_contract {
             ac_state,
             charge_basis_points,
             remaining_seconds,
+            full_charge_basis_points,
+            cycle_count,
+            rate_milliwatts,
         })
     }
 
@@ -1105,10 +1304,12 @@ mod status_v1_contract {
             if utilization_basis_points > 10_000 {
                 return Err("GPU basis points must be 0..10000".to_string());
             }
+            let name = item.take_nullable_nonempty_string("name")?;
             item.finish()?;
             Ok(GpuAdapterV1 {
                 adapter_id,
                 utilization_basis_points,
+                name,
             })
         })?;
         object.finish()?;
@@ -1197,6 +1398,11 @@ mod status_v1_contract {
             "fan" => UnsupportedCode::Fan,
             "smart" => UnsupportedCode::Smart,
             "physical_disk_activity" => UnsupportedCode::PhysicalDiskActivity,
+            "cpu_frequency" => UnsupportedCode::CpuFrequency,
+            "battery_health" => UnsupportedCode::BatteryHealth,
+            "battery_cycle_count" => UnsupportedCode::BatteryCycleCount,
+            "battery_rate" => UnsupportedCode::BatteryRate,
+            "gpu_name" => UnsupportedCode::GpuName,
             other => return Err(format!("unsupported static capability code {other}")),
         };
         if object.take_string("state")? != "unsupported"
@@ -1405,13 +1611,29 @@ mod status_v1_contract {
                 UnsupportedCode::Thermal,
                 UnsupportedCode::Fan,
                 UnsupportedCode::Smart,
-                UnsupportedCode::PhysicalDiskActivity,
+                UnsupportedCode::BatteryHealth,
+                UnsupportedCode::BatteryCycleCount,
+                UnsupportedCode::BatteryRate,
             ]
         );
         let AvailabilityV1::Available { value: gpu, .. } = &cli_snapshot.data.gpu else {
             panic!("GPU fixture must be available");
         };
         assert_eq!(gpu.adapters[0].utilization_basis_points, 1250);
+        assert_eq!(gpu.adapters[0].name.as_deref(), Some("Fixture GPU"));
+        let AvailabilityV1::Available { value: host, .. } = &cli_snapshot.data.host else {
+            panic!("host fixture must be available");
+        };
+        assert_eq!(host.os_version.as_deref(), Some("10.0.26300.9974 (26H2)"));
+        let AvailabilityV1::Available { value: disk, .. } = &cli_snapshot.data.disk_activity else {
+            panic!("disk activity fixture must be available");
+        };
+        assert_eq!(disk.write_bytes_per_second, 8_388_608);
+        let AvailabilityV1::Available { value: cpu, .. } = &cli_snapshot.data.cpu else {
+            panic!("CPU fixture must be available");
+        };
+        assert_eq!(cpu.frequency_mhz, Some(4_520));
+        assert_eq!(network.interfaces[0].kind, Some(NetworkKind::Ethernet));
         assert!(matches!(
             &cli_snapshot.data.thermal,
             AvailabilityV1::Unavailable { reason_code, .. } if reason_code == "counter_missing"
@@ -1442,7 +1664,7 @@ mod status_v1_contract {
         let StatusEventV1::Snapshot { data, .. } = &cli_stream[1] else {
             panic!("canonical stream second event must be status_snapshot");
         };
-        assert_eq!(data.unsupported_capabilities.len(), 6);
+        assert_eq!(data.unsupported_capabilities.len(), 11);
         assert!(matches!(
             cli_stream.last(),
             Some(StatusEventV1::Terminal {
@@ -1662,10 +1884,112 @@ mod status_v1_contract {
         });
         assert!(SnapshotEnvelopeV1::decode(fake_zero_gpu).is_err());
 
-        let mut luid = canonical;
+        let mut luid = canonical.clone();
         luid["data"]["network"]["value"]["interfaces"][0]["interface_luid"] =
             Value::String("1.5".to_string());
         assert!(SnapshotEnvelopeV1::decode(luid).is_err());
+
+        for group in ["host", "disk_activity"] {
+            let mut missing_group = canonical.clone();
+            missing_group["data"].as_object_mut().unwrap().remove(group);
+            assert!(
+                SnapshotEnvelopeV1::decode(missing_group).is_err(),
+                "{group}"
+            );
+        }
+        for (path, field) in [
+            (&["cpu", "value"][..], "frequency_mhz"),
+            (&["memory", "value"][..], "commit_used_bytes"),
+            (&["power", "value"][..], "cycle_count"),
+            (&["host", "value"][..], "cpu_model"),
+        ] {
+            let mut missing_field = canonical.clone();
+            let mut target = &mut missing_field["data"];
+            for segment in path {
+                target = &mut target[*segment];
+            }
+            target.as_object_mut().unwrap().remove(field);
+            assert!(
+                SnapshotEnvelopeV1::decode(missing_field).is_err(),
+                "{field}"
+            );
+        }
+
+        let mut host_extra = canonical.clone();
+        host_extra["data"]["host"]["value"]
+            .as_object_mut()
+            .unwrap()
+            .insert(
+                "product_name".to_string(),
+                Value::String("Windows 11".into()),
+            );
+        assert!(SnapshotEnvelopeV1::decode(host_extra).is_err());
+
+        let mut zero_frequency = canonical.clone();
+        zero_frequency["data"]["cpu"]["value"]["frequency_mhz"] = serde_json::json!(0);
+        assert!(SnapshotEnvelopeV1::decode(zero_frequency).is_err());
+
+        let mut absent_battery_rate = canonical.clone();
+        absent_battery_rate["data"]["power"]["value"]["rate_milliwatts"] = serde_json::json!(0);
+        assert!(SnapshotEnvelopeV1::decode(absent_battery_rate).is_err());
+
+        let mut commit_over_limit = canonical.clone();
+        commit_over_limit["data"]["memory"]["value"]["commit_used_bytes"] =
+            serde_json::json!(42_949_672_961_u64);
+        assert!(SnapshotEnvelopeV1::decode(commit_over_limit).is_err());
+
+        let mut unknown_kind = canonical.clone();
+        unknown_kind["data"]["network"]["value"]["interfaces"][0]["kind"] =
+            Value::String("virtual".to_string());
+        assert!(SnapshotEnvelopeV1::decode(unknown_kind).is_err());
+
+        let mut disk_listed_with_value = canonical.clone();
+        disk_listed_with_value["data"]["unsupported_capabilities"]
+            .as_array_mut()
+            .unwrap()
+            .insert(
+                4,
+                serde_json::json!({
+                    "code": "physical_disk_activity",
+                    "state": "unsupported",
+                    "reason_code": "not_supported_v1"
+                }),
+            );
+        assert!(SnapshotEnvelopeV1::decode(disk_listed_with_value).is_err());
+
+        let mut unnamed_gpu_unlisted = canonical.clone();
+        unnamed_gpu_unlisted["data"]["gpu"]["value"]["adapters"][0]["name"] = Value::Null;
+        assert!(SnapshotEnvelopeV1::decode(unnamed_gpu_unlisted.clone()).is_err());
+        unnamed_gpu_unlisted["data"]["unsupported_capabilities"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "code": "gpu_name",
+                "state": "unsupported",
+                "reason_code": "not_supported_v1"
+            }));
+        SnapshotEnvelopeV1::decode(unnamed_gpu_unlisted)
+            .expect("an unnamed adapter is listed as gpu_name");
+
+        let mut missing_disk = canonical;
+        missing_disk["data"]["disk_activity"] = serde_json::json!({
+            "state": "unavailable",
+            "sampled_at_unix_ms": null,
+            "reason_code": "counter_missing"
+        });
+        missing_disk["data"]["unsupported_capabilities"]
+            .as_array_mut()
+            .unwrap()
+            .insert(
+                4,
+                serde_json::json!({
+                    "code": "physical_disk_activity",
+                    "state": "unsupported",
+                    "reason_code": "not_supported_v1"
+                }),
+            );
+        SnapshotEnvelopeV1::decode(missing_disk)
+            .expect("missing disk activity is listed and does not change the outcome");
 
         let stream = include_str!("fixtures/cli/status-live.ndjson");
         let canonical_lines = stream.lines().map(str::to_string).collect::<Vec<_>>();

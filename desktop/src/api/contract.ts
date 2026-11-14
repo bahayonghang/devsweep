@@ -1470,11 +1470,21 @@ const PROCESS_ROW_KEYS = [
 ] as const;
 const UNSUPPORTED_CODES = [
   "gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity",
+  "cpu_frequency", "battery_health", "battery_cycle_count", "battery_rate", "gpu_name",
 ] as const;
 const SNAPSHOT_KEYS = [
   "snapshot_id", "sampled_at_unix_ms", "sample_window_ms", "logical_processor_count",
-  "cpu", "memory", "volumes", "network", "power", "gpu", "thermal", "processes", "unsupported_capabilities",
+  "host", "cpu", "memory", "volumes", "network", "disk_activity", "power", "gpu", "thermal", "processes",
+  "unsupported_capabilities",
 ] as const;
+
+function nullableNonEmptyString(value: unknown, name: string): string | null {
+  return value === null ? null : nonEmptyString(value, name);
+}
+
+function nullableSignedInteger(value: unknown, name: string): number | null {
+  return value === null ? null : signedInteger(value, name);
+}
 
 function decodeAvailability<T>(
   value: unknown,
@@ -1512,19 +1522,51 @@ function decodeAvailability<T>(
   } as StatusSnapshotV1["cpu"];
 }
 
+function decodeHostValue(value: unknown) {
+  const input = record(value, "host.value");
+  exact(input, ["cpu_model", "os_version", "boot_time_unix_ms"], "host.value");
+  return {
+    cpu_model: nullableNonEmptyString(input.cpu_model, "host.cpu_model"),
+    os_version: nullableNonEmptyString(input.os_version, "host.os_version"),
+    boot_time_unix_ms: nullableUnsignedInteger(input.boot_time_unix_ms, "host.boot_time_unix_ms"),
+  };
+}
+
+function decodeDiskActivityValue(value: unknown) {
+  const input = record(value, "disk_activity.value");
+  exact(input, ["read_bytes_per_second", "write_bytes_per_second"], "disk_activity.value");
+  return {
+    read_bytes_per_second: unsignedInteger(input.read_bytes_per_second, "disk_activity.read_bytes_per_second"),
+    write_bytes_per_second: unsignedInteger(input.write_bytes_per_second, "disk_activity.write_bytes_per_second"),
+  };
+}
+
 function decodeCpuValue(value: unknown) {
   const input = record(value, "cpu.value");
-  exact(input, ["system_utilization_basis_points"], "cpu.value");
-  return { system_utilization_basis_points: unsignedInteger(input.system_utilization_basis_points, "cpu.system_utilization_basis_points") };
+  exact(input, ["system_utilization_basis_points", "frequency_mhz"], "cpu.value");
+  const frequency_mhz = nullableUnsignedInteger(input.frequency_mhz, "cpu.frequency_mhz");
+  if (frequency_mhz === 0) throw new Error("Invalid cpu.frequency_mhz");
+  return {
+    system_utilization_basis_points: unsignedInteger(input.system_utilization_basis_points, "cpu.system_utilization_basis_points"),
+    frequency_mhz,
+  };
 }
 
 function decodeMemoryValue(value: unknown) {
   const input = record(value, "memory.value");
-  exact(input, ["total_bytes", "available_bytes", "used_bytes"], "memory.value");
+  exact(input, ["total_bytes", "available_bytes", "used_bytes", "commit_used_bytes", "commit_limit_bytes"], "memory.value");
+  const commit_used_bytes = nullableUnsignedInteger(input.commit_used_bytes, "memory.commit_used_bytes");
+  const commit_limit_bytes = nullableUnsignedInteger(input.commit_limit_bytes, "memory.commit_limit_bytes");
+  if ((commit_used_bytes === null) !== (commit_limit_bytes === null)
+    || (commit_used_bytes !== null && commit_limit_bytes !== null && (commit_limit_bytes === 0 || commit_used_bytes > commit_limit_bytes))) {
+    throw new Error("Invalid memory commit fields");
+  }
   return {
     total_bytes: unsignedInteger(input.total_bytes, "memory.total_bytes"),
     available_bytes: unsignedInteger(input.available_bytes, "memory.available_bytes"),
     used_bytes: unsignedInteger(input.used_bytes, "memory.used_bytes"),
+    commit_used_bytes,
+    commit_limit_bytes,
   };
 }
 
@@ -1553,12 +1595,13 @@ function decodeNetworkValue(value: unknown) {
     interval_ms: unsignedInteger(input.interval_ms, "network.interval_ms"),
     interfaces: array(input.interfaces, "network.interfaces", (item) => {
       const iface = record(item, "network.interface");
-      exact(iface, ["interface_luid", "name", "rx_bytes_per_second", "tx_bytes_per_second"], "network.interface");
+      exact(iface, ["interface_luid", "name", "rx_bytes_per_second", "tx_bytes_per_second", "kind"], "network.interface");
       return {
         interface_luid: nonEmptyString(iface.interface_luid, "network.interface_luid"),
         name: string(iface.name, "network.name"),
         rx_bytes_per_second: unsignedInteger(iface.rx_bytes_per_second, "network.rx_bytes_per_second"),
         tx_bytes_per_second: unsignedInteger(iface.tx_bytes_per_second, "network.tx_bytes_per_second"),
+        kind: iface.kind === null ? null : oneOf(iface.kind, ["ethernet", "wireless", "other"] as const, "network.kind"),
       };
     }),
   };
@@ -1566,18 +1609,28 @@ function decodeNetworkValue(value: unknown) {
 
 function decodePowerValue(value: unknown) {
   const input = record(value, "power.value");
-  exact(input, ["battery_present", "ac_state", "charge_basis_points", "remaining_seconds"], "power.value");
+  exact(input, [
+    "battery_present", "ac_state", "charge_basis_points", "remaining_seconds",
+    "full_charge_basis_points", "cycle_count", "rate_milliwatts",
+  ], "power.value");
   const battery_present = boolean(input.battery_present, "power.battery_present");
   const charge_basis_points = nullableUnsignedInteger(input.charge_basis_points, "power.charge_basis_points");
   const remaining_seconds = nullableUnsignedInteger(input.remaining_seconds, "power.remaining_seconds");
-  if (!battery_present && (charge_basis_points !== null || remaining_seconds !== null)) {
-    throw new Error("Missing battery must not report charge or remaining time");
+  const full_charge_basis_points = nullableUnsignedInteger(input.full_charge_basis_points, "power.full_charge_basis_points");
+  const cycle_count = nullableUnsignedInteger(input.cycle_count, "power.cycle_count");
+  const rate_milliwatts = nullableSignedInteger(input.rate_milliwatts, "power.rate_milliwatts");
+  if (!battery_present && [charge_basis_points, remaining_seconds, full_charge_basis_points, cycle_count, rate_milliwatts].some((field) => field !== null)) {
+    throw new Error("Missing battery must not report battery fields");
   }
+  if (cycle_count === 0) throw new Error("Invalid power.cycle_count");
   return {
     battery_present,
     ac_state: oneOf(input.ac_state, ["online", "offline", "unknown"] as const, "power.ac_state"),
     charge_basis_points,
     remaining_seconds,
+    full_charge_basis_points,
+    cycle_count,
+    rate_milliwatts,
   };
 }
 
@@ -1587,10 +1640,14 @@ function decodeGpuValue(value: unknown) {
   return {
     adapters: array(input.adapters, "gpu.adapters", (item) => {
       const adapter = record(item, "gpu.adapter");
-      exact(adapter, ["adapter_id", "utilization_basis_points"], "gpu.adapter");
+      exact(adapter, ["adapter_id", "utilization_basis_points", "name"], "gpu.adapter");
       const utilization_basis_points = unsignedInteger(adapter.utilization_basis_points, "gpu.utilization_basis_points");
       if (utilization_basis_points > 10_000) throw new Error("Invalid gpu.utilization_basis_points");
-      return { adapter_id: nonEmptyString(adapter.adapter_id, "gpu.adapter_id"), utilization_basis_points };
+      return {
+        adapter_id: nonEmptyString(adapter.adapter_id, "gpu.adapter_id"),
+        utilization_basis_points,
+        name: nullableNonEmptyString(adapter.name, "gpu.name"),
+      };
     }),
   };
 }
@@ -1661,25 +1718,44 @@ function hasMeasuredValue(availability: { readonly state: string }): boolean {
 export function decodeStatusSnapshot(value: unknown): StatusSnapshotV1 {
   const input = record(value, "status snapshot");
   exact(input, SNAPSHOT_KEYS, "status snapshot");
+  const cpu = decodeAvailability(input.cpu, "cpu", decodeCpuValue) as StatusSnapshotV1["cpu"];
+  const disk_activity = decodeAvailability(input.disk_activity, "disk_activity", decodeDiskActivityValue) as StatusSnapshotV1["disk_activity"];
+  const power = decodeAvailability(input.power, "power", decodePowerValue) as StatusSnapshotV1["power"];
   const gpu = decodeAvailability(input.gpu, "gpu", decodeGpuValue) as StatusSnapshotV1["gpu"];
   const thermal = decodeAvailability(input.thermal, "thermal", decodeThermalValue) as StatusSnapshotV1["thermal"];
   const unsupported_capabilities = array(input.unsupported_capabilities, "unsupported_capabilities", decodeUnsupportedCapability);
   const codes = unsupported_capabilities.map((item) => item.code);
-  const expected = UNSUPPORTED_CODES.filter((code) =>
-    code === "gpu_utilization" ? !hasMeasuredValue(gpu) : code === "thermal" ? !hasMeasuredValue(thermal) : true);
+  const battery = hasMeasuredValue(power) ? power.value ?? null : null;
+  const gpuNamed = hasMeasuredValue(gpu) && (gpu.value?.adapters ?? []).every((adapter) => adapter.name !== null);
+  const listed: Record<(typeof UNSUPPORTED_CODES)[number], boolean> = {
+    gpu_utilization: !hasMeasuredValue(gpu),
+    vram: true,
+    thermal: !hasMeasuredValue(thermal),
+    fan: true,
+    smart: true,
+    physical_disk_activity: !hasMeasuredValue(disk_activity),
+    cpu_frequency: (hasMeasuredValue(cpu) ? cpu.value?.frequency_mhz ?? null : null) === null,
+    battery_health: (battery?.full_charge_basis_points ?? null) === null,
+    battery_cycle_count: (battery?.cycle_count ?? null) === null,
+    battery_rate: (battery?.rate_milliwatts ?? null) === null,
+    gpu_name: !gpuNamed,
+  };
+  const expected = UNSUPPORTED_CODES.filter((code) => listed[code]);
   if (codes.join("\n") !== expected.join("\n")) {
-    throw new Error("Status V1 unsupported capabilities do not match the GPU and thermal probes");
+    throw new Error("Status V1 unsupported capabilities do not match the measured fields");
   }
   return {
     snapshot_id: nonEmptyString(input.snapshot_id, "snapshot.snapshot_id"),
     sampled_at_unix_ms: unsignedInteger(input.sampled_at_unix_ms, "snapshot.sampled_at_unix_ms"),
     sample_window_ms: unsignedInteger(input.sample_window_ms, "snapshot.sample_window_ms"),
     logical_processor_count: unsignedInteger(input.logical_processor_count, "snapshot.logical_processor_count"),
-    cpu: decodeAvailability(input.cpu, "cpu", decodeCpuValue) as StatusSnapshotV1["cpu"],
+    host: decodeAvailability(input.host, "host", decodeHostValue) as StatusSnapshotV1["host"],
+    cpu,
     memory: decodeAvailability(input.memory, "memory", decodeMemoryValue) as StatusSnapshotV1["memory"],
     volumes: decodeAvailability(input.volumes, "volumes", decodeVolumesValue) as StatusSnapshotV1["volumes"],
     network: decodeAvailability(input.network, "network", decodeNetworkValue) as StatusSnapshotV1["network"],
-    power: decodeAvailability(input.power, "power", decodePowerValue) as StatusSnapshotV1["power"],
+    disk_activity,
+    power,
     gpu,
     thermal,
     processes: decodeAvailability(input.processes, "processes", decodeProcessesValue) as StatusSnapshotV1["processes"],

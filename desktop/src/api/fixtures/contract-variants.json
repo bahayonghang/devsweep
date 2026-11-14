@@ -53,7 +53,8 @@
     "OptimizeAuditErrorCode": ["adapter_dispatch_failed", "adapter_operation_failed", "adapter_timed_out", "adapter_canceled_after_dispatch", "recovered_after_crash"],
     "OptimizeAdapterOutcome": ["success", "failure", "unfinished"],
     "AcState": ["online", "offline", "unknown"],
-    "UnsupportedCode": ["gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity"],
+    "UnsupportedCode": ["gpu_utilization", "vram", "thermal", "fan", "smart", "physical_disk_activity", "cpu_frequency", "battery_health", "battery_cycle_count", "battery_rate", "gpu_name"],
+    "NetworkKind": ["ethernet", "wireless", "other"],
     "UnsupportedCapabilityState": ["unsupported"],
     "TickSkipReason": ["sample_in_flight"],
     "TerminalReason": ["completed", "canceled", "broken_pipe", "producer_error"]
@@ -242,12 +243,14 @@
           "sampled_at_unix_ms": 1788019200000,
           "sample_window_ms": 1000,
           "logical_processor_count": 16,
-          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321 } },
-          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184 }, "reason_codes": ["counter_lagged"] },
+          "host": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "cpu_model": "Fixture CPU", "os_version": "10.0.26300.9974 (26H2)", "boot_time_unix_ms": 1787932800000 } },
+          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321, "frequency_mhz": 4520 } },
+          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184, "commit_used_bytes": 21474836480, "commit_limit_bytes": 42949672960 }, "reason_codes": ["counter_lagged"] },
           "volumes": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "items": [{ "volume_id": "volume-fixture", "mount_points": ["C:\\"], "total_bytes": 1000000000, "available_bytes": 400000000 }], "complete": true } },
-          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048 }] } },
-          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null } },
-          "gpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "adapters": [{ "adapter_id": "luid_0x00000000_0x0000C0B6_phys_0", "utilization_basis_points": 1250 }] } },
+          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048, "kind": "ethernet" }] } },
+          "disk_activity": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "read_bytes_per_second": 4194304, "write_bytes_per_second": 8388608 } },
+          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null, "full_charge_basis_points": null, "cycle_count": null, "rate_milliwatts": null } },
+          "gpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "adapters": [{ "adapter_id": "luid_0x00000000_0x0000C0B6_phys_0", "utilization_basis_points": 1250, "name": "Fixture GPU" }] } },
           "thermal": { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },
           "processes": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 3, "value": { "items": [{ "pid": 42, "name": "fixture.exe", "cpu_basis_points_of_one_logical_core": 12500, "private_bytes": 1048576, "read_bytes_per_second": 2048, "write_bytes_per_second": 1024 }], "enumerated_count": 4096, "returned_count": 1, "requested_limit": 15, "enumeration_ceiling": 4096, "detail_budget_ms": 150, "truncated_by_limit": true, "budget_exhausted": true }, "reason_codes": ["process_limit", "detail_budget_exhausted"] },
           "unsupported_capabilities": [
@@ -255,7 +258,9 @@
             { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
-            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+            { "code": "battery_health", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_cycle_count", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_rate", "state": "unsupported", "reason_code": "not_supported_v1" }
           ]
         }
       }],
@@ -274,12 +279,14 @@
           "sampled_at_unix_ms": 1788019200000,
           "sample_window_ms": 1000,
           "logical_processor_count": 16,
-          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321 } },
-          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184 }, "reason_codes": ["counter_lagged"] },
+          "host": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "cpu_model": "Fixture CPU", "os_version": "10.0.26300.9974 (26H2)", "boot_time_unix_ms": 1787932800000 } },
+          "cpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "system_utilization_basis_points": 4321, "frequency_mhz": 4520 } },
+          "memory": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 1, "value": { "total_bytes": 34359738368, "available_bytes": 17179869184, "used_bytes": 17179869184, "commit_used_bytes": 21474836480, "commit_limit_bytes": 42949672960 }, "reason_codes": ["counter_lagged"] },
           "volumes": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "items": [{ "volume_id": "volume-fixture", "mount_points": ["C:\\"], "total_bytes": 1000000000, "available_bytes": 400000000 }], "complete": true } },
-          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048 }] } },
-          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null } },
-          "gpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "adapters": [{ "adapter_id": "luid_0x00000000_0x0000C0B6_phys_0", "utilization_basis_points": 1250 }] } },
+          "network": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "interval_ms": 1000, "interfaces": [{ "interface_luid": "18446744073709551615", "name": "fixture-adapter", "rx_bytes_per_second": 4096, "tx_bytes_per_second": 2048, "kind": "ethernet" }] } },
+          "disk_activity": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "read_bytes_per_second": 4194304, "write_bytes_per_second": 8388608 } },
+          "power": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 2, "value": { "battery_present": false, "ac_state": "online", "charge_basis_points": null, "remaining_seconds": null, "full_charge_basis_points": null, "cycle_count": null, "rate_milliwatts": null } },
+          "gpu": { "state": "available", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "adapters": [{ "adapter_id": "luid_0x00000000_0x0000C0B6_phys_0", "utilization_basis_points": 1250, "name": "Fixture GPU" }] } },
           "thermal": { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" },
           "processes": { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 3, "value": { "items": [{ "pid": 42, "name": "fixture.exe", "cpu_basis_points_of_one_logical_core": 12500, "private_bytes": 1048576, "read_bytes_per_second": 2048, "write_bytes_per_second": 1024 }], "enumerated_count": 4096, "returned_count": 1, "requested_limit": 15, "enumeration_ceiling": 4096, "detail_budget_ms": 150, "truncated_by_limit": true, "budget_exhausted": true }, "reason_codes": ["process_limit", "detail_budget_exhausted"] },
           "unsupported_capabilities": [
@@ -287,7 +294,9 @@
             { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
-            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+            { "code": "battery_health", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_cycle_count", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_rate", "state": "unsupported", "reason_code": "not_supported_v1" }
           ]
         }
       }]
@@ -312,10 +321,12 @@
           "sampled_at_unix_ms": 1788019202000,
           "sample_window_ms": 1000,
           "logical_processor_count": 16,
+          "host": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "cpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "memory": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "volumes": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "network": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
+          "disk_activity": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "power": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "gpu": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
           "thermal": { "state": "unsupported", "sampled_at_unix_ms": null, "reason_code": "fixture" },
@@ -326,7 +337,12 @@
             { "code": "thermal", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "fan", "state": "unsupported", "reason_code": "not_supported_v1" },
             { "code": "smart", "state": "unsupported", "reason_code": "not_supported_v1" },
-            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" }
+            { "code": "physical_disk_activity", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "cpu_frequency", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_health", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_cycle_count", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "battery_rate", "state": "unsupported", "reason_code": "not_supported_v1" },
+            { "code": "gpu_name", "state": "unsupported", "reason_code": "not_supported_v1" }
           ]
         }
       }],
@@ -657,8 +673,28 @@
       { "state": "permission_denied", "sampled_at_unix_ms": null, "reason_code": "access_denied" }
     ],
     "PowerV1": [
-      { "battery_present": true, "ac_state": "offline", "charge_basis_points": 5400, "remaining_seconds": 3600 },
-      { "battery_present": false, "ac_state": "unknown", "charge_basis_points": null, "remaining_seconds": null }
+      { "battery_present": true, "ac_state": "offline", "charge_basis_points": 5400, "remaining_seconds": 3600, "full_charge_basis_points": 8999, "cycle_count": 412, "rate_milliwatts": -12345 },
+      { "battery_present": false, "ac_state": "unknown", "charge_basis_points": null, "remaining_seconds": null, "full_charge_basis_points": null, "cycle_count": null, "rate_milliwatts": null }
+    ],
+    "HostAvailabilityV1": [
+      { "state": "partial", "sampled_at_unix_ms": 1788019200000, "age_ms": 0, "value": { "cpu_model": null, "os_version": null, "boot_time_unix_ms": null }, "reason_codes": ["cpu_model_unavailable", "os_version_unavailable", "boot_time_unavailable"] },
+      { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "api_unavailable" }
+    ],
+    "DiskActivityAvailabilityV1": [
+      { "state": "unavailable", "sampled_at_unix_ms": null, "reason_code": "counter_missing" }
+    ],
+    "CpuV1": [
+      { "system_utilization_basis_points": 0, "frequency_mhz": null }
+    ],
+    "MemoryV1": [
+      { "total_bytes": 0, "available_bytes": 0, "used_bytes": 0, "commit_used_bytes": null, "commit_limit_bytes": null }
+    ],
+    "NetworkInterfaceV1": [
+      { "interface_luid": "1", "name": "fixture-wifi", "rx_bytes_per_second": 0, "tx_bytes_per_second": 0, "kind": "wireless" },
+      { "interface_luid": "2", "name": "fixture-unknown", "rx_bytes_per_second": 0, "tx_bytes_per_second": 0, "kind": null }
+    ],
+    "GpuAdapterV1": [
+      { "adapter_id": "luid_0x00000000_0x00000001_phys_0", "utilization_basis_points": 0, "name": null }
     ],
     "StatusTerminalV1": [
       { "reason": "canceled", "error_code": null },

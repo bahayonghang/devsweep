@@ -847,14 +847,32 @@ mod tests {
             .iter()
             .map(|capability| capability["code"].as_str().unwrap())
             .collect::<Vec<_>>();
-        for code in ["vram", "fan", "smart", "physical_disk_activity"] {
+        for code in ["vram", "fan", "smart"] {
             assert!(codes.contains(&code), "missing {code}");
         }
-        for (group, code) in [("gpu", "gpu_utilization"), ("thermal", "thermal")] {
+        for (group, code) in [
+            ("gpu", "gpu_utilization"),
+            ("thermal", "thermal"),
+            ("disk_activity", "physical_disk_activity"),
+        ] {
             let state = en_doc["data"][group]["state"].as_str().unwrap();
             let measured = state == "available" || state == "partial";
             assert_eq!(codes.contains(&code), !measured, "{group} {state}");
         }
+        for (group, field, code) in [
+            ("cpu", "frequency_mhz", "cpu_frequency"),
+            ("power", "full_charge_basis_points", "battery_health"),
+            ("power", "cycle_count", "battery_cycle_count"),
+            ("power", "rate_milliwatts", "battery_rate"),
+        ] {
+            let value = &en_doc["data"][group]["value"][field];
+            assert_eq!(
+                codes.contains(&code),
+                value.is_null(),
+                "{group}.{field} {value}"
+            );
+        }
+        assert!(en_doc["data"]["host"]["state"].is_string());
     }
 
     #[test]

@@ -349,6 +349,7 @@ export interface CpuAvailabilityV1 {
 }
 
 export interface CpuV1 {
+    frequency_mhz:                   number | null;
     system_utilization_basis_points: number;
 }
 
@@ -962,7 +963,9 @@ export interface DesktopStatusLiveResultCompleted {
 
 export interface StatusSnapshotV1 {
     cpu:                      CpuAvailabilityV1;
+    disk_activity:            DiskActivityAvailabilityV1;
     gpu:                      GpuAvailabilityV1;
+    host:                     HostAvailabilityV1;
     logical_processor_count:  number;
     memory:                   MemoryAvailabilityV1;
     network:                  NetworkAvailabilityV1;
@@ -974,6 +977,19 @@ export interface StatusSnapshotV1 {
     thermal:                  ThermalAvailabilityV1;
     unsupported_capabilities: UnsupportedCapabilityV1[];
     volumes:                  VolumesAvailabilityV1;
+}
+
+export interface DiskActivityAvailabilityV1 {
+    age_ms?:            number;
+    reason_code?:       string;
+    sampled_at_unix_ms: number | null;
+    state:              string;
+    value?:             DiskActivityV1;
+}
+
+export interface DiskActivityV1 {
+    read_bytes_per_second:  number;
+    write_bytes_per_second: number;
 }
 
 export interface GpuAvailabilityV1 {
@@ -990,7 +1006,23 @@ export interface GpuV1 {
 
 export interface GpuAdapterV1 {
     adapter_id:               string;
+    name:                     null | string;
     utilization_basis_points: number;
+}
+
+export interface HostAvailabilityV1 {
+    age_ms?:            number;
+    reason_code?:       string;
+    reason_codes?:      string[];
+    sampled_at_unix_ms: number | null;
+    state:              string;
+    value?:             HostV1;
+}
+
+export interface HostV1 {
+    boot_time_unix_ms: number | null;
+    cpu_model:         null | string;
+    os_version:        null | string;
 }
 
 export interface MemoryAvailabilityV1 {
@@ -1003,9 +1035,11 @@ export interface MemoryAvailabilityV1 {
 }
 
 export interface MemoryV1 {
-    available_bytes: number;
-    total_bytes:     number;
-    used_bytes:      number;
+    available_bytes:    number;
+    commit_limit_bytes: number | null;
+    commit_used_bytes:  number | null;
+    total_bytes:        number;
+    used_bytes:         number;
 }
 
 export interface NetworkAvailabilityV1 {
@@ -1023,6 +1057,7 @@ export interface NetworkV1 {
 
 export interface NetworkInterfaceV1 {
     interface_luid:      string;
+    kind:                null | string;
     name:                string;
     rx_bytes_per_second: number;
     tx_bytes_per_second: number;
@@ -1037,10 +1072,13 @@ export interface PowerAvailabilityV1 {
 }
 
 export interface PowerV1 {
-    ac_state:            string;
-    battery_present:     boolean;
-    charge_basis_points: number | null;
-    remaining_seconds:   number | null;
+    ac_state:                 string;
+    battery_present:          boolean;
+    charge_basis_points:      number | null;
+    cycle_count:              number | null;
+    full_charge_basis_points: number | null;
+    rate_milliwatts:          number | null;
+    remaining_seconds:        number | null;
 }
 
 export interface ProcessesAvailabilityV1 {
@@ -1166,6 +1204,8 @@ export interface HudStatusEventSnapshot {
 }
 
 export type MsiContext = "machine" | "user_managed" | "user_unmanaged";
+
+export type NetworkKind = "ethernet" | "other" | "wireless";
 
 export interface OptimizeAuditTransitionAdapterCompleted {
     kind: "adapter_completed";
@@ -1438,7 +1478,7 @@ export type TickSkipReason = "sample_in_flight";
 
 export type UnsupportedCapabilityState = "unsupported";
 
-export type UnsupportedCode = "fan" | "gpu_utilization" | "physical_disk_activity" | "smart" | "thermal" | "vram";
+export type UnsupportedCode = "battery_cycle_count" | "battery_health" | "battery_rate" | "cpu_frequency" | "fan" | "gpu_name" | "gpu_utilization" | "physical_disk_activity" | "smart" | "thermal" | "vram";
 
 export type DesktopFont = DesktopFontInstalled | DesktopFontSystem;
 export type DesktopFonts = DesktopFontsAvailable | DesktopFontsUnavailable;

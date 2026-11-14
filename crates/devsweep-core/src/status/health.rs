@@ -384,6 +384,11 @@ fn capability_subject(code: UnsupportedCode) -> &'static str {
         UnsupportedCode::Fan => "fan",
         UnsupportedCode::Smart => "smart",
         UnsupportedCode::PhysicalDiskActivity => "physical_disk_activity",
+        UnsupportedCode::CpuFrequency => "cpu_frequency",
+        UnsupportedCode::BatteryHealth => "battery_health",
+        UnsupportedCode::BatteryCycleCount => "battery_cycle_count",
+        UnsupportedCode::BatteryRate => "battery_rate",
+        UnsupportedCode::GpuName => "gpu_name",
     }
 }
 
@@ -420,11 +425,12 @@ mod tests {
         gpu: AvailabilityV1<GpuV1>,
         thermal: AvailabilityV1<ThermalV1>,
     ) -> StatusSnapshotV1 {
-        StatusSnapshotV1 {
+        let mut snapshot = StatusSnapshotV1 {
             snapshot_id: "health-fixture".to_string(),
             sampled_at_unix_ms: 10,
             sample_window_ms: 500,
             logical_processor_count: 2,
+            host: AvailabilityV1::unavailable("fixture"),
             cpu,
             memory: AvailabilityV1::available(
                 10,
@@ -433,6 +439,8 @@ mod tests {
                     total_bytes: 100,
                     available_bytes: 40,
                     used_bytes: 60,
+                    commit_used_bytes: None,
+                    commit_limit_bytes: None,
                 },
             ),
             volumes: AvailabilityV1::available(
@@ -444,12 +452,15 @@ mod tests {
                 },
             ),
             network: AvailabilityV1::unavailable("fixture"),
+            disk_activity: AvailabilityV1::unavailable("counter_missing"),
             power,
-            gpu: gpu.clone(),
-            thermal: thermal.clone(),
+            gpu,
+            thermal,
             processes: AvailabilityV1::unavailable("fixture"),
-            unsupported_capabilities: unsupported_capabilities(&gpu, &thermal),
-        }
+            unsupported_capabilities: Vec::new(),
+        };
+        snapshot.unsupported_capabilities = unsupported_capabilities(&snapshot);
+        snapshot
     }
 
     #[test]
@@ -481,10 +492,12 @@ mod tests {
                     GpuAdapterV1 {
                         adapter_id: "adapter-a".to_string(),
                         utilization_basis_points: 1_500,
+                        name: None,
                     },
                     GpuAdapterV1 {
                         adapter_id: "adapter-b".to_string(),
                         utilization_basis_points: 250,
+                        name: None,
                     },
                 ],
             },
@@ -500,6 +513,9 @@ mod tests {
                     ac_state: AcState::Online,
                     charge_basis_points: None,
                     remaining_seconds: None,
+                    full_charge_basis_points: None,
+                    cycle_count: None,
+                    rate_milliwatts: None,
                 },
             ),
             gpu,
@@ -528,7 +544,17 @@ mod tests {
         assert_eq!(battery.reason_code.as_deref(), Some("battery_absent"));
         assert!(!battery.text.contains('0'));
 
-        for subject in ["vram", "fan", "physical_disk_activity", "thermal"] {
+        for subject in [
+            "vram",
+            "fan",
+            "physical_disk_activity",
+            "thermal",
+            "cpu_frequency",
+            "battery_health",
+            "battery_cycle_count",
+            "battery_rate",
+            "gpu_name",
+        ] {
             let item = if subject == "thermal" {
                 line(&health, "thermal")
             } else {
@@ -558,6 +584,7 @@ mod tests {
                 0,
                 CpuV1 {
                     system_utilization_basis_points: 9_500,
+                    frequency_mhz: Some(4_520),
                 },
             ),
             AvailabilityV1::available(
@@ -568,6 +595,9 @@ mod tests {
                     ac_state: AcState::Online,
                     charge_basis_points: Some(5_000),
                     remaining_seconds: Some(60),
+                    full_charge_basis_points: Some(9_000),
+                    cycle_count: None,
+                    rate_milliwatts: Some(-5_000),
                 },
             ),
             AvailabilityV1::available(
@@ -577,6 +607,7 @@ mod tests {
                     adapters: vec![GpuAdapterV1 {
                         adapter_id: "adapter-a".to_string(),
                         utilization_basis_points: 10,
+                        name: Some("Adapter A".to_string()),
                     }],
                 },
             ),
@@ -596,6 +627,7 @@ mod tests {
             0,
             CpuV1 {
                 system_utilization_basis_points: 9_500,
+                frequency_mhz: Some(4_520),
             },
         );
         let health = explain_health(&snapshot);
@@ -604,6 +636,20 @@ mod tests {
         assert!(cpu.text.contains("CPU load is 9500 basis points"));
         assert!(cpu.text.contains("CPU load is not a system fault"));
         assert_eq!(cpu.text.matches("system fault").count(), 1);
+        // Named adapter, measured frequency, health and rate leave the list;
+        // the untracked cycle count stays as a named gap.
+        for subject in [
+            "cpu_frequency",
+            "battery_health",
+            "battery_rate",
+            "gpu_name",
+        ] {
+            assert!(
+                !health.evidence.iter().any(|item| item.subject == subject),
+                "{subject}"
+            );
+        }
+        assert_eq!(line(&health, "battery_cycle_count").state, "unsupported");
         let encoded = serde_json::to_value(&health).expect("health json");
         assert!(encoded.get("score").is_none());
         assert!(encoded.get("evidence").is_some());
@@ -620,6 +666,7 @@ mod tests {
                 STALE_SAMPLE_AGE_MS,
                 CpuV1 {
                     system_utilization_basis_points: 4_321,
+                    frequency_mhz: None,
                 },
             ),
             AvailabilityV1::unsupported("platform_unsupported"),

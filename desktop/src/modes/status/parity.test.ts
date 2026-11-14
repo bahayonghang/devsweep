@@ -7,7 +7,7 @@ describe("status cross-surface fixtures", () => {
   it("keeps process rows on the closed privacy set and lists GPU as unsupported only without a value", () => {
     const snapshot = decodeStatusSnapshot(snapshotJson);
     expect(snapshot.unsupported_capabilities.map((item) => item.code)).toEqual([
-      "vram", "thermal", "fan", "smart", "physical_disk_activity",
+      "vram", "thermal", "fan", "smart", "battery_health", "battery_cycle_count", "battery_rate",
     ]);
     expect(snapshot.gpu.state).toBe("available");
     expect(snapshot.thermal.state).toBe("unavailable");

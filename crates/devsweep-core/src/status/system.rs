@@ -50,7 +50,8 @@ pub fn cpu_utilization_basis_points(
 }
 
 /// Physical memory from totals. `available > total` is rejected rather than
-/// clamped into a fake used-zero.
+/// clamped into a fake used-zero. Commit fields are `null`; see
+/// [`with_commit`].
 pub fn memory_from_physical(total_bytes: u64, available_bytes: u64) -> Option<MemoryV1> {
     if total_bytes == 0 || available_bytes > total_bytes {
         return None;
@@ -59,7 +60,24 @@ pub fn memory_from_physical(total_bytes: u64, available_bytes: u64) -> Option<Me
         total_bytes,
         available_bytes,
         used_bytes: total_bytes - available_bytes,
+        commit_used_bytes: None,
+        commit_limit_bytes: None,
     })
+}
+
+/// Attach the commit charge from `GlobalMemoryStatusEx` page-file totals:
+/// limit = total page file, used = total minus available. A zero limit or an
+/// available value above the limit leaves both fields `null`.
+pub(crate) fn with_commit(
+    mut memory: MemoryV1,
+    total_page_file_bytes: u64,
+    available_page_file_bytes: u64,
+) -> MemoryV1 {
+    if total_page_file_bytes > 0 && available_page_file_bytes <= total_page_file_bytes {
+        memory.commit_limit_bytes = Some(total_page_file_bytes);
+        memory.commit_used_bytes = Some(total_page_file_bytes - available_page_file_bytes);
+    }
+    memory
 }
 
 #[must_use]
@@ -83,6 +101,7 @@ pub(crate) fn cpu_availability(
             0,
             super::CpuV1 {
                 system_utilization_basis_points,
+                frequency_mhz: None,
             },
         ),
         Err(DeltaIssue::ZeroElapsed) => AvailabilityV1::unavailable("zero_elapsed"),
@@ -173,6 +192,9 @@ pub(crate) fn power_from_status(
             ac_state,
             charge_basis_points: None,
             remaining_seconds: None,
+            full_charge_basis_points: None,
+            cycle_count: None,
+            rate_milliwatts: None,
         };
     }
     let charge_basis_points = if life_percent > 100 {
@@ -190,7 +212,24 @@ pub(crate) fn power_from_status(
         ac_state,
         charge_basis_points,
         remaining_seconds,
+        full_charge_basis_points: None,
+        cycle_count: None,
+        rate_milliwatts: None,
     }
+}
+
+/// Attach battery-device evidence. A power value without a battery keeps
+/// every battery field `null`, whatever the device query returned.
+pub(crate) fn with_battery(
+    mut power: PowerV1,
+    evidence: super::battery::BatteryEvidence,
+) -> PowerV1 {
+    if power.battery_present {
+        power.full_charge_basis_points = evidence.full_charge_basis_points;
+        power.cycle_count = evidence.cycle_count;
+        power.rate_milliwatts = evidence.rate_milliwatts;
+    }
+    power
 }
 
 pub(crate) fn keep_fixed_volume(drive_type: u32) -> bool {
@@ -244,7 +283,11 @@ fn windows_memory() -> AvailabilityV1<MemoryV1> {
         };
     }
     match memory_from_physical(status.ullTotalPhys, status.ullAvailPhys) {
-        Some(value) => AvailabilityV1::available(unix_now_ms(), 0, value),
+        Some(value) => AvailabilityV1::available(
+            unix_now_ms(),
+            0,
+            with_commit(value, status.ullTotalPageFile, status.ullAvailPageFile),
+        ),
         None => AvailabilityV1::unavailable("inconsistent_counters"),
     }
 }
@@ -395,16 +438,19 @@ fn windows_power() -> AvailabilityV1<PowerV1> {
             _ => AvailabilityV1::unavailable("api_unavailable"),
         };
     }
-    AvailabilityV1::available(
-        unix_now_ms(),
-        0,
-        power_from_status(
-            status.ACLineStatus,
-            status.BatteryFlag,
-            status.BatteryLifePercent,
-            status.BatteryLifeTime,
-        ),
-    )
+    let power = power_from_status(
+        status.ACLineStatus,
+        status.BatteryFlag,
+        status.BatteryLifePercent,
+        status.BatteryLifeTime,
+    );
+    // Battery devices are enumerated only when the system reports a battery.
+    let power = if power.battery_present {
+        with_battery(power, super::battery::sample_battery())
+    } else {
+        power
+    };
+    AvailabilityV1::available(unix_now_ms(), 0, power)
 }
 
 #[cfg(windows)]
@@ -494,6 +540,44 @@ mod tests {
         let value = memory_from_physical(100, 40).unwrap();
         assert_eq!(value.used_bytes, 60);
         assert_eq!(value.available_bytes, 40);
+        assert_eq!(value.commit_used_bytes, None);
+        assert_eq!(value.commit_limit_bytes, None);
+    }
+
+    #[test]
+    fn commit_charge_is_page_file_total_minus_available_or_null() {
+        let base = memory_from_physical(100, 40).unwrap();
+        // Values measured on the probe host: limit 98 208 624 640, used
+        // 64 149 155 840 (identical to GetPerformanceInfo).
+        let measured = with_commit(base.clone(), 98_208_624_640, 34_059_468_800);
+        assert_eq!(measured.commit_limit_bytes, Some(98_208_624_640));
+        assert_eq!(measured.commit_used_bytes, Some(64_149_155_840));
+        for (total, available) in [(0, 0), (100, 101)] {
+            let missing = with_commit(base.clone(), total, available);
+            assert_eq!(missing.commit_limit_bytes, None, "{total} {available}");
+            assert_eq!(missing.commit_used_bytes, None, "{total} {available}");
+        }
+        let encoded = serde_json::to_value(&base).unwrap();
+        assert!(encoded["commit_used_bytes"].is_null());
+        assert!(encoded["commit_limit_bytes"].is_null());
+    }
+
+    #[test]
+    fn battery_evidence_attaches_only_when_a_battery_is_present() {
+        let evidence = super::super::battery::BatteryEvidence {
+            full_charge_basis_points: Some(9_500),
+            cycle_count: Some(42),
+            rate_milliwatts: Some(-8_000),
+        };
+        let present = with_battery(power_from_status(0, 1, 55, 120), evidence);
+        assert_eq!(present.full_charge_basis_points, Some(9_500));
+        assert_eq!(present.cycle_count, Some(42));
+        assert_eq!(present.rate_milliwatts, Some(-8_000));
+        let absent = with_battery(power_from_status(1, 128, 0, 0), evidence);
+        assert!(!absent.battery_present);
+        assert_eq!(absent.full_charge_basis_points, None);
+        assert_eq!(absent.cycle_count, None);
+        assert_eq!(absent.rate_milliwatts, None);
     }
 
     #[test]
@@ -503,6 +587,9 @@ mod tests {
         assert_eq!(power.ac_state, AcState::Online);
         assert_eq!(power.charge_basis_points, None);
         assert_eq!(power.remaining_seconds, None);
+        assert_eq!(power.full_charge_basis_points, None);
+        assert_eq!(power.cycle_count, None);
+        assert_eq!(power.rate_milliwatts, None);
         let present = power_from_status(0, 1, 55, 120);
         assert!(present.battery_present);
         assert_eq!(present.charge_basis_points, Some(5_500));

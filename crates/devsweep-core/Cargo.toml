@@ -28,7 +28,11 @@ windows = { version = "=0.62.2", features = [
     "Win32_System_WinRT",
 ] }
 windows-sys = { version = "0.61.2", features = [
+    # Status: D3DKMT adapter names (gdi32 thunks, read-only).
+    "Wdk_Graphics_Direct3D",
     "Wdk_System_SystemServices",
+    # Status: SetupDi battery interface enumeration (read-only).
+    "Win32_Devices_DeviceAndDriverInstallation",
     "Win32_Foundation",
     "Win32_NetworkManagement_IpHelper",
     # GetIfTable2 / MIB_IF_ROW2 require the Ndis feature.

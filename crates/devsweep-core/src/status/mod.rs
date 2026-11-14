@@ -8,8 +8,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::process::{CancelObserver, FlagCancelObserver};
 
+mod battery;
 mod channel;
 mod health;
+mod host;
 mod keep_awake;
 mod network;
 mod pdh;
@@ -163,6 +165,53 @@ impl<T> AvailabilityV1<T> {
         }
     }
 
+    /// Transform a measured value; states without a value are unchanged.
+    pub(crate) fn map_value<U>(self, map: impl FnOnce(T) -> U) -> AvailabilityV1<U> {
+        match self {
+            Self::Available {
+                sampled_at_unix_ms,
+                age_ms,
+                value,
+            } => AvailabilityV1::Available {
+                sampled_at_unix_ms,
+                age_ms,
+                value: map(value),
+            },
+            Self::Partial {
+                sampled_at_unix_ms,
+                age_ms,
+                value,
+                reason_codes,
+            } => AvailabilityV1::Partial {
+                sampled_at_unix_ms,
+                age_ms,
+                value: map(value),
+                reason_codes,
+            },
+            Self::Unavailable {
+                sampled_at_unix_ms,
+                reason_code,
+            } => AvailabilityV1::Unavailable {
+                sampled_at_unix_ms,
+                reason_code,
+            },
+            Self::PermissionDenied {
+                sampled_at_unix_ms,
+                reason_code,
+            } => AvailabilityV1::PermissionDenied {
+                sampled_at_unix_ms,
+                reason_code,
+            },
+            Self::Unsupported {
+                sampled_at_unix_ms,
+                reason_code,
+            } => AvailabilityV1::Unsupported {
+                sampled_at_unix_ms,
+                reason_code,
+            },
+        }
+    }
+
     fn with_age(self, age_ms: u64) -> Self {
         match self {
             Self::Available {
@@ -191,16 +240,23 @@ impl<T> AvailabilityV1<T> {
 }
 
 /// Closed Status V1 snapshot document payload.
+///
+/// `host` and `disk_activity` were added to V1 additively. A document written
+/// before them decodes with both groups `unavailable` / `not_sampled`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StatusSnapshotV1 {
     pub snapshot_id: String,
     pub sampled_at_unix_ms: u64,
     pub sample_window_ms: u32,
     pub logical_processor_count: u32,
+    #[serde(default = "not_sampled")]
+    pub host: AvailabilityV1<HostV1>,
     pub cpu: AvailabilityV1<CpuV1>,
     pub memory: AvailabilityV1<MemoryV1>,
     pub volumes: AvailabilityV1<VolumesV1>,
     pub network: AvailabilityV1<NetworkV1>,
+    #[serde(default = "not_sampled")]
+    pub disk_activity: AvailabilityV1<DiskActivityV1>,
     pub power: AvailabilityV1<PowerV1>,
     pub gpu: AvailabilityV1<GpuV1>,
     pub thermal: AvailabilityV1<ThermalV1>,
@@ -210,9 +266,10 @@ pub struct StatusSnapshotV1 {
 
 impl StatusSnapshotV1 {
     #[must_use]
-    /// GPU and thermal are optional host probes. Their absence is reported in
-    /// the group state and `unsupported_capabilities`; it does not degrade the
-    /// snapshot outcome, as before those probes existed.
+    /// GPU, thermal, host identity and disk activity are optional host probes.
+    /// Their absence is reported in the group state and
+    /// `unsupported_capabilities`; it does not degrade the snapshot outcome, as
+    /// before those probes existed.
     pub fn supported_group_is_degraded(&self) -> bool {
         self.cpu.is_degraded()
             || self.memory.is_degraded()
@@ -235,10 +292,12 @@ impl StatusSnapshotV1 {
     pub fn envelope_warnings(&self) -> Vec<String> {
         let mut warnings = Vec::new();
         for group in [
+            self.host.warning_codes(),
             self.cpu.warning_codes(),
             self.memory.warning_codes(),
             self.volumes.warning_codes(),
             self.network.warning_codes(),
+            self.disk_activity.warning_codes(),
             self.power.warning_codes(),
             self.gpu.warning_codes(),
             self.thermal.warning_codes(),
@@ -254,18 +313,50 @@ impl StatusSnapshotV1 {
     }
 }
 
+fn not_sampled<T>() -> AvailabilityV1<T> {
+    AvailabilityV1::unavailable("not_sampled")
+}
+
+/// Machine identity read once per sampler. Each field is `null` when its
+/// source could not be read; the group is then `partial` with a reason code.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HostV1 {
+    /// Processor brand string, trimmed.
+    pub cpu_model: Option<String>,
+    /// Measured kernel version with revision and release label, for example
+    /// `10.0.26300.9974 (26H2)`. No product name is inferred.
+    pub os_version: Option<String>,
+    /// Last boot time, rounded to whole seconds.
+    pub boot_time_unix_ms: Option<u64>,
+}
+
 /// Whole-system CPU utilization in basis points (0..=10000).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CpuV1 {
     pub system_utilization_basis_points: u32,
+    /// Current effective frequency (nominal frequency x processor
+    /// performance). `null` lists `cpu_frequency` as unsupported.
+    #[serde(default)]
+    pub frequency_mhz: Option<u32>,
 }
 
-/// Physical memory totals in integer bytes.
+/// Physical memory totals in integer bytes, plus the system commit charge.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MemoryV1 {
     pub total_bytes: u64,
     pub available_bytes: u64,
     pub used_bytes: u64,
+    #[serde(default)]
+    pub commit_used_bytes: Option<u64>,
+    #[serde(default)]
+    pub commit_limit_bytes: Option<u64>,
+}
+
+/// System-wide physical disk throughput in bytes per second.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DiskActivityV1 {
+    pub read_bytes_per_second: u64,
+    pub write_bytes_per_second: u64,
 }
 
 /// Fixed-volume capacity group.
@@ -298,6 +389,18 @@ pub struct NetworkInterfaceV1 {
     pub name: String,
     pub rx_bytes_per_second: u64,
     pub tx_bytes_per_second: u64,
+    #[serde(default)]
+    pub kind: Option<NetworkKind>,
+}
+
+/// Closed interface kind. Virtual adapters that report the Ethernet type
+/// (Hyper-V, Bluetooth PAN, WAN miniports) are `other`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NetworkKind {
+    Ethernet,
+    Wireless,
+    Other,
 }
 
 /// AC line state.
@@ -310,13 +413,23 @@ pub enum AcState {
 }
 
 /// Battery and AC power. Missing hardware uses `battery_present: false`, never
-/// a zero charge.
+/// a zero charge; every battery field is then `null`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PowerV1 {
     pub battery_present: bool,
     pub ac_state: AcState,
     pub charge_basis_points: Option<u32>,
     pub remaining_seconds: Option<u64>,
+    /// Full-charge capacity over design capacity. Values above 10000 are
+    /// reported as measured.
+    #[serde(default)]
+    pub full_charge_basis_points: Option<u32>,
+    /// Firmware cycle count. A reported 0 means "not tracked" and is `null`.
+    #[serde(default)]
+    pub cycle_count: Option<u32>,
+    /// Signed battery power: negative discharging, positive charging.
+    #[serde(default)]
+    pub rate_milliwatts: Option<i32>,
 }
 
 /// GPU engine utilization from `\GPU Engine(*)\Utilization Percentage`.
@@ -331,6 +444,10 @@ pub struct GpuV1 {
 pub struct GpuAdapterV1 {
     pub adapter_id: String,
     pub utilization_basis_points: u32,
+    /// Driver description joined by adapter LUID. `null` when no adapter with
+    /// that LUID could be named.
+    #[serde(default)]
+    pub name: Option<String>,
 }
 
 /// ACPI thermal zones from `\Thermal Zone Information(*)\Temperature`.
@@ -370,8 +487,9 @@ pub struct ProcessV1 {
     pub write_bytes_per_second: u64,
 }
 
-/// Unsupported V1 capability. GPU utilization and thermal are listed only when
-/// their probe has no value in the same snapshot.
+/// Unsupported V1 capability. VRAM, fan and SMART are always listed. Every
+/// other code is listed only when its reading has no value in the same
+/// snapshot.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnsupportedCapabilityV1 {
     pub code: UnsupportedCode,
@@ -389,6 +507,11 @@ pub enum UnsupportedCode {
     Fan,
     Smart,
     PhysicalDiskActivity,
+    CpuFrequency,
+    BatteryHealth,
+    BatteryCycleCount,
+    BatteryRate,
+    GpuName,
 }
 
 /// Capability state. V1 values are always `unsupported`.
@@ -518,20 +641,44 @@ pub struct LiveRequest<'a> {
 }
 
 /// Unsupported capabilities for one snapshot, in the closed V1 order. VRAM,
-/// fan, SMART, and physical-disk activity are always listed. GPU utilization
-/// and thermal are listed only when their probe has no value.
+/// fan and SMART are always listed. GPU utilization, thermal and physical-disk
+/// activity are listed when their group has no value. CPU frequency, battery
+/// health, cycle count and rate are listed when the field is `null` or its
+/// group has no value. GPU name is listed when the GPU group has no value or
+/// any adapter has a `null` name. The `unsupported_capabilities` field of
+/// `snapshot` itself is ignored.
 #[must_use]
-pub fn unsupported_capabilities(
-    gpu: &AvailabilityV1<GpuV1>,
-    thermal: &AvailabilityV1<ThermalV1>,
-) -> Vec<UnsupportedCapabilityV1> {
+pub fn unsupported_capabilities(snapshot: &StatusSnapshotV1) -> Vec<UnsupportedCapabilityV1> {
+    let cpu_frequency = group_value(&snapshot.cpu).and_then(|cpu| cpu.frequency_mhz);
+    let power = group_value(&snapshot.power);
+    let gpu_named = group_value(&snapshot.gpu)
+        .is_some_and(|gpu| gpu.adapters.iter().all(|adapter| adapter.name.is_some()));
     [
-        (UnsupportedCode::GpuUtilization, !gpu.has_value()),
+        (UnsupportedCode::GpuUtilization, !snapshot.gpu.has_value()),
         (UnsupportedCode::Vram, true),
-        (UnsupportedCode::Thermal, !thermal.has_value()),
+        (UnsupportedCode::Thermal, !snapshot.thermal.has_value()),
         (UnsupportedCode::Fan, true),
         (UnsupportedCode::Smart, true),
-        (UnsupportedCode::PhysicalDiskActivity, true),
+        (
+            UnsupportedCode::PhysicalDiskActivity,
+            !snapshot.disk_activity.has_value(),
+        ),
+        (UnsupportedCode::CpuFrequency, cpu_frequency.is_none()),
+        (
+            UnsupportedCode::BatteryHealth,
+            power
+                .and_then(|power| power.full_charge_basis_points)
+                .is_none(),
+        ),
+        (
+            UnsupportedCode::BatteryCycleCount,
+            power.and_then(|power| power.cycle_count).is_none(),
+        ),
+        (
+            UnsupportedCode::BatteryRate,
+            power.and_then(|power| power.rate_milliwatts).is_none(),
+        ),
+        (UnsupportedCode::GpuName, !gpu_named),
     ]
     .into_iter()
     .filter_map(|(code, listed)| listed.then_some(code))
@@ -541,6 +688,15 @@ pub fn unsupported_capabilities(
         reason_code: "not_supported_v1".to_string(),
     })
     .collect()
+}
+
+fn group_value<T>(group: &AvailabilityV1<T>) -> Option<&T> {
+    match group {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+            Some(value)
+        }
+        _ => None,
+    }
 }
 
 #[must_use]

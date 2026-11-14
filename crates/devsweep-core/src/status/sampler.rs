@@ -11,10 +11,12 @@ use std::time::{Duration, Instant};
 use crate::process::{CancelObserver, FlagCancelObserver, NoopCancelObserver};
 
 use super::{
-    AvailabilityV1, CpuV1, DEFAULT_LIVE_INTERVAL_MS, DEFAULT_PROCESS_LIMIT, LiveRequest,
-    PROCESS_DETAIL_BUDGET_MS, PROCESS_REFRESH_MS, SNAPSHOT_WINDOW_MS, StatusEventV1,
+    AvailabilityV1, CpuV1, DEFAULT_LIVE_INTERVAL_MS, DEFAULT_PROCESS_LIMIT, GpuV1, HostV1,
+    LiveRequest, PROCESS_DETAIL_BUDGET_MS, PROCESS_REFRESH_MS, SNAPSHOT_WINDOW_MS, StatusEventV1,
     StatusSnapshotV1, StatusStartedV1, StatusTerminalV1, TickSkipReason, TickSkippedV1,
-    VOLUME_POWER_REFRESH_MS, clamp_interval_ms, clamp_process_limit, logical_processor_count,
+    VOLUME_POWER_REFRESH_MS, clamp_interval_ms, clamp_process_limit,
+    host::{AdapterNames, has_unnamed, name_adapters, sample_adapter_names, sample_host},
+    logical_processor_count,
     network::{InterfaceCounters, network_from_pair, sample_interfaces},
     pdh::{PdhGroups, PdhProbe},
     process::{
@@ -95,6 +97,9 @@ struct SamplerCache {
     last_processes: Option<AvailabilityV1<super::ProcessesV1>>,
     last_sample_at: Option<Instant>,
     pdh: Option<Rc<PdhProbe>>,
+    host: Option<AvailabilityV1<HostV1>>,
+    host_at_ms: u64,
+    adapter_names: Option<AdapterNames>,
 }
 
 impl SamplerCache {
@@ -106,6 +111,52 @@ impl SamplerCache {
                 .get_or_insert_with(|| Rc::new(PdhProbe::open_primed())),
         )
     }
+
+    /// Machine identity is static: read once per cache, then aged.
+    fn host(&mut self, sampled_at_unix_ms: u64) -> AvailabilityV1<HostV1> {
+        if self.host.is_none() {
+            self.host = Some(sample_host());
+            self.host_at_ms = monotonic_ms();
+        }
+        age_group(self.host.clone(), self.host_at_ms, sampled_at_unix_ms)
+    }
+
+    /// Adapter names are read once, when the first measured adapter appears,
+    /// and again on the power cadence only while some adapter is unnamed
+    /// (hot-plugged eGPU or virtual display).
+    fn named_gpu(
+        &mut self,
+        gpu: AvailabilityV1<GpuV1>,
+        refresh_due: bool,
+    ) -> AvailabilityV1<GpuV1> {
+        if !gpu.has_value() {
+            return gpu;
+        }
+        let stale = refresh_due
+            && self
+                .adapter_names
+                .as_ref()
+                .is_some_and(|names| has_unnamed(&gpu, names));
+        if self.adapter_names.is_none() || stale {
+            self.adapter_names = Some(sample_adapter_names());
+        }
+        match self.adapter_names.as_ref() {
+            Some(names) => name_adapters(gpu, names),
+            None => gpu,
+        }
+    }
+}
+
+fn with_frequency(cpu: AvailabilityV1<CpuV1>, frequency_mhz: Option<u32>) -> AvailabilityV1<CpuV1> {
+    cpu.map_value(|mut value| {
+        value.frequency_mhz = frequency_mhz;
+        value
+    })
+}
+
+fn finish_snapshot(mut snapshot: StatusSnapshotV1) -> StatusSnapshotV1 {
+    snapshot.unsupported_capabilities = unsupported_capabilities(&snapshot);
+    snapshot
 }
 
 impl StatusSampler {
@@ -487,7 +538,15 @@ fn collect_snapshot(
     }
     let volumes = age_group(cache.volumes.clone(), cache.volumes_at_ms, sampled_at);
     let power = age_group(cache.power.clone(), cache.power_at_ms, sampled_at);
-    let PdhGroups { gpu, thermal } = pdh.sample(sampled_at);
+    let PdhGroups {
+        gpu,
+        thermal,
+        cpu_frequency_mhz,
+        disk_activity,
+    } = pdh.sample(sampled_at);
+    let cpu = with_frequency(cpu, cpu_frequency_mhz);
+    let gpu = cache.named_gpu(gpu, need_power_refresh);
+    let host = cache.host(sampled_at);
 
     let processes = if need_process_refresh {
         let second = detail_processes(
@@ -526,7 +585,7 @@ fn collect_snapshot(
         )
     };
 
-    Ok(StatusSnapshotV1 {
+    Ok(finish_snapshot(StatusSnapshotV1 {
         snapshot_id: format!(
             "snapshot-{}-{}",
             sampled_at,
@@ -535,16 +594,18 @@ fn collect_snapshot(
         sampled_at_unix_ms: sampled_at,
         sample_window_ms: actual_window_ms.max(1),
         logical_processor_count: logical_processor_count(),
+        host,
         cpu,
         memory,
         volumes,
         network,
+        disk_activity,
         power,
-        unsupported_capabilities: unsupported_capabilities(&gpu, &thermal),
         gpu,
         thermal,
         processes,
-    })
+        unsupported_capabilities: Vec::new(),
+    }))
 }
 
 fn compose_without_delta(
@@ -561,7 +622,14 @@ fn compose_without_delta(
         return Err(StatusError::Canceled);
     }
     let sampled_at = unix_now_ms();
-    let PdhGroups { gpu, thermal } = pdh.sample(sampled_at);
+    let PdhGroups {
+        gpu,
+        thermal,
+        disk_activity,
+        ..
+    } = pdh.sample(sampled_at);
+    let gpu = cache.named_gpu(gpu, need_power_refresh);
+    let host = cache.host(sampled_at);
     if need_volume_refresh {
         cache.volumes = Some(sample_volumes());
         cache.volumes_at_ms = monotonic_ms();
@@ -615,7 +683,7 @@ fn compose_without_delta(
             AvailabilityV1::unavailable("api_unavailable")
         }
     };
-    Ok(StatusSnapshotV1 {
+    Ok(finish_snapshot(StatusSnapshotV1 {
         snapshot_id: format!(
             "snapshot-{}-{}",
             sampled_at,
@@ -624,16 +692,18 @@ fn compose_without_delta(
         sampled_at_unix_ms: sampled_at,
         sample_window_ms: SNAPSHOT_WINDOW_MS,
         logical_processor_count: logical_processor_count(),
+        host,
         cpu,
         memory: sample_memory(),
         volumes: age_group(cache.volumes.clone(), cache.volumes_at_ms, sampled_at),
         network,
+        disk_activity,
         power: age_group(cache.power.clone(), cache.power_at_ms, sampled_at),
-        unsupported_capabilities: unsupported_capabilities(&gpu, &thermal),
         gpu,
         thermal,
         processes,
-    })
+        unsupported_capabilities: Vec::new(),
+    }))
 }
 
 struct ProcessBaseline {
@@ -889,6 +959,40 @@ mod tests {
         drop(rx);
         control.join();
         LIVE_PERMIT.store(false, Ordering::SeqCst);
+    }
+
+    #[test]
+    fn frequency_attaches_only_to_a_measured_cpu_value() {
+        let measured = AvailabilityV1::available(
+            1,
+            0,
+            CpuV1 {
+                system_utilization_basis_points: 1_000,
+                frequency_mhz: None,
+            },
+        );
+        let AvailabilityV1::Available { value, .. } = with_frequency(measured.clone(), Some(4_520))
+        else {
+            panic!("value kept");
+        };
+        assert_eq!(value.frequency_mhz, Some(4_520));
+        let AvailabilityV1::Available { value, .. } = with_frequency(measured, None) else {
+            panic!("value kept");
+        };
+        assert_eq!(value.frequency_mhz, None);
+        let missing = AvailabilityV1::<CpuV1>::unavailable("zero_elapsed");
+        assert_eq!(with_frequency(missing.clone(), Some(4_520)), missing);
+    }
+
+    #[test]
+    fn host_identity_is_read_once_per_cache_and_aged() {
+        let mut cache = SamplerCache::default();
+        let first = cache.host(1);
+        assert!(cache.host.is_some());
+        let stored = cache.host.clone();
+        let second = cache.host(2);
+        assert_eq!(cache.host, stored, "host is not re-read on later ticks");
+        assert_eq!(first.has_value(), second.has_value());
     }
 
     #[test]

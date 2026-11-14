@@ -1,9 +1,9 @@
 //! Bilingual Status V1 human renderer over the frozen snapshot DTO.
 
 use devsweep_core::status::{
-    AcState, AvailabilityV1, GpuV1, HealthExplanationV1, KeepAwakeStatusV1, PowerV1,
-    ProcessTerminationPreviewV1, ProcessTerminationReportV1, ProcessesV1, StatusEventV1,
-    StatusSnapshotV1, TerminalReason, ThermalV1,
+    AcState, AvailabilityV1, DiskActivityV1, GpuV1, HealthExplanationV1, HostV1, KeepAwakeStatusV1,
+    NetworkKind, PowerV1, ProcessTerminationPreviewV1, ProcessTerminationReportV1, ProcessesV1,
+    StatusEventV1, StatusSnapshotV1, TerminalReason, ThermalV1, UnsupportedCode,
 };
 
 use super::render;
@@ -22,15 +22,117 @@ pub(crate) fn snapshot(
         &[("id", snapshot.snapshot_id.as_str())],
         None,
     )?];
+    lines.extend(render_host(
+        locale,
+        &snapshot.host,
+        snapshot.sampled_at_unix_ms,
+    )?);
     lines.push(render_cpu(locale, &snapshot.cpu)?);
     lines.push(render_memory(locale, &snapshot.memory)?);
     lines.extend(render_volumes(locale, &snapshot.volumes)?);
     lines.extend(render_network(locale, &snapshot.network)?);
+    lines.push(render_disk_activity(locale, &snapshot.disk_activity)?);
     lines.push(render_power(locale, &snapshot.power)?);
     lines.extend(render_gpu(locale, &snapshot.gpu)?);
     lines.extend(render_thermal(locale, &snapshot.thermal)?);
     lines.extend(render_processes(locale, &snapshot.processes)?);
+    if !snapshot.unsupported_capabilities.is_empty() {
+        let codes = snapshot
+            .unsupported_capabilities
+            .iter()
+            .map(|capability| unsupported_code(capability.code))
+            .collect::<Vec<_>>()
+            .join(", ");
+        lines.push(render(
+            locale,
+            "status.v1.unsupported",
+            &[("codes", &codes)],
+            None,
+        )?);
+    }
     Ok(lines.join("\n"))
+}
+
+fn unsupported_code(code: UnsupportedCode) -> &'static str {
+    match code {
+        UnsupportedCode::GpuUtilization => "gpu_utilization",
+        UnsupportedCode::Vram => "vram",
+        UnsupportedCode::Thermal => "thermal",
+        UnsupportedCode::Fan => "fan",
+        UnsupportedCode::Smart => "smart",
+        UnsupportedCode::PhysicalDiskActivity => "physical_disk_activity",
+        UnsupportedCode::CpuFrequency => "cpu_frequency",
+        UnsupportedCode::BatteryHealth => "battery_health",
+        UnsupportedCode::BatteryCycleCount => "battery_cycle_count",
+        UnsupportedCode::BatteryRate => "battery_rate",
+        UnsupportedCode::GpuName => "gpu_name",
+    }
+}
+
+fn render_host(
+    locale: Locale,
+    host: &AvailabilityV1<HostV1>,
+    sampled_at_unix_ms: u64,
+) -> Result<Vec<String>, CatalogueError> {
+    match host {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+            let mut lines = vec![render(
+                locale,
+                "status.v1.host",
+                &[
+                    ("cpu", value.cpu_model.as_deref().unwrap_or("-")),
+                    ("os", value.os_version.as_deref().unwrap_or("-")),
+                ],
+                None,
+            )?];
+            if let Some(minutes) = value
+                .boot_time_unix_ms
+                .and_then(|boot| sampled_at_unix_ms.checked_sub(boot))
+                .map(|uptime_ms| uptime_ms / 60_000)
+            {
+                lines.push(render(
+                    locale,
+                    "status.v1.host.uptime",
+                    &[
+                        ("hours", &(minutes / 60).to_string()),
+                        ("minutes", &(minutes % 60).to_string()),
+                    ],
+                    None,
+                )?);
+            }
+            if let AvailabilityV1::Partial { reason_codes, .. } = host {
+                lines.push(render(
+                    locale,
+                    "status.v1.group.partial",
+                    &[("group", "host"), ("reasons", &reason_codes.join(","))],
+                    None,
+                )?);
+            }
+            Ok(lines)
+        }
+        other => Ok(vec![tagged_group(locale, "host", other)?]),
+    }
+}
+
+fn render_disk_activity(
+    locale: Locale,
+    disk: &AvailabilityV1<DiskActivityV1>,
+) -> Result<String, CatalogueError> {
+    match disk {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+            let line = render(
+                locale,
+                "status.v1.disk_activity",
+                &[
+                    ("read", &format_binary_bytes(value.read_bytes_per_second)),
+                    ("write", &format_binary_bytes(value.write_bytes_per_second)),
+                ],
+                None,
+            )?;
+            suffix_partial(locale, "disk_activity", disk, line)
+        }
+        other => tagged_group(locale, "disk_activity", other),
+    }
 }
 
 pub(crate) fn live_started(
@@ -168,7 +270,15 @@ fn render_cpu(
     match cpu {
         AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
             let percent = basis_points(value.system_utilization_basis_points);
-            let line = render(locale, "status.v1.cpu", &[("percent", &percent)], None)?;
+            let line = match value.frequency_mhz {
+                Some(mhz) => render(
+                    locale,
+                    "status.v1.cpu.frequency",
+                    &[("mhz", &mhz.to_string()), ("percent", &percent)],
+                    None,
+                )?,
+                None => render(locale, "status.v1.cpu", &[("percent", &percent)], None)?,
+            };
             suffix_partial(locale, "cpu", cpu, line)
         }
         other => tagged_group(locale, "cpu", other),
@@ -181,7 +291,7 @@ fn render_memory(
 ) -> Result<String, CatalogueError> {
     match memory {
         AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
-            let line = render(
+            let mut line = render(
                 locale,
                 "status.v1.memory",
                 &[
@@ -191,6 +301,18 @@ fn render_memory(
                 ],
                 None,
             )?;
+            if let (Some(used), Some(limit)) = (value.commit_used_bytes, value.commit_limit_bytes) {
+                line.push('\n');
+                line.push_str(&render(
+                    locale,
+                    "status.v1.memory.commit",
+                    &[
+                        ("used", &format_binary_bytes(used)),
+                        ("limit", &format_binary_bytes(limit)),
+                    ],
+                    None,
+                )?);
+            }
             suffix_partial(locale, "memory", memory, line)
         }
         other => tagged_group(locale, "memory", other),
@@ -251,20 +373,42 @@ fn render_network(
                 )?);
             }
             for interface in &value.interfaces {
-                lines.push(render(
-                    locale,
-                    "status.v1.network.item",
-                    &[
-                        ("name", interface.name.as_str()),
-                        ("rx", &format_binary_bytes(interface.rx_bytes_per_second)),
-                        ("tx", &format_binary_bytes(interface.tx_bytes_per_second)),
-                    ],
-                    None,
-                )?);
+                let rx = format_binary_bytes(interface.rx_bytes_per_second);
+                let tx = format_binary_bytes(interface.tx_bytes_per_second);
+                lines.push(match interface.kind {
+                    Some(kind) => {
+                        let kind = render(locale, network_kind_key(kind), &[], None)?;
+                        render(
+                            locale,
+                            "status.v1.network.item.kind",
+                            &[
+                                ("kind", &kind),
+                                ("name", interface.name.as_str()),
+                                ("rx", &rx),
+                                ("tx", &tx),
+                            ],
+                            None,
+                        )?
+                    }
+                    None => render(
+                        locale,
+                        "status.v1.network.item",
+                        &[("name", interface.name.as_str()), ("rx", &rx), ("tx", &tx)],
+                        None,
+                    )?,
+                });
             }
             Ok(lines)
         }
         other => Ok(vec![tagged_group(locale, "network", other)?]),
+    }
+}
+
+fn network_kind_key(kind: NetworkKind) -> &'static str {
+    match kind {
+        NetworkKind::Ethernet => "status.v1.network.kind.ethernet",
+        NetworkKind::Wireless => "status.v1.network.kind.wireless",
+        NetworkKind::Other => "status.v1.network.kind.other",
     }
 }
 
@@ -294,6 +438,25 @@ fn render_power(locale: Locale, power: &AvailabilityV1<PowerV1>) -> Result<Strin
                     &[("percent", &percent), ("remaining", &remaining)],
                     None,
                 )?);
+                let health = value
+                    .full_charge_basis_points
+                    .map(basis_points)
+                    .unwrap_or_else(|| "-".into());
+                let cycles = value
+                    .cycle_count
+                    .map(|count| count.to_string())
+                    .unwrap_or_else(|| "-".into());
+                let rate = value
+                    .rate_milliwatts
+                    .map(milliwatts_as_watts)
+                    .unwrap_or_else(|| "-".into());
+                line.push('\n');
+                line.push_str(&render(
+                    locale,
+                    "status.v1.power.battery_detail",
+                    &[("cycles", &cycles), ("health", &health), ("rate", &rate)],
+                    None,
+                )?);
             } else {
                 line.push('\n');
                 line.push_str(&render(locale, "status.v1.power.no_battery", &[], None)?);
@@ -311,15 +474,28 @@ fn render_gpu(locale: Locale, gpu: &AvailabilityV1<GpuV1>) -> Result<Vec<String>
                 .adapters
                 .iter()
                 .map(|adapter| {
-                    render(
-                        locale,
-                        "status.v1.gpu.adapter",
-                        &[
-                            ("adapter", adapter.adapter_id.as_str()),
-                            ("percent", &basis_points(adapter.utilization_basis_points)),
-                        ],
-                        None,
-                    )
+                    let percent = basis_points(adapter.utilization_basis_points);
+                    match adapter.name.as_deref() {
+                        Some(name) => render(
+                            locale,
+                            "status.v1.gpu.adapter.named",
+                            &[
+                                ("adapter", adapter.adapter_id.as_str()),
+                                ("name", name),
+                                ("percent", &percent),
+                            ],
+                            None,
+                        ),
+                        None => render(
+                            locale,
+                            "status.v1.gpu.adapter",
+                            &[
+                                ("adapter", adapter.adapter_id.as_str()),
+                                ("percent", &percent),
+                            ],
+                            None,
+                        ),
+                    }
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             if let AvailabilityV1::Partial { reason_codes, .. } = gpu {
@@ -474,6 +650,12 @@ fn basis_points(points: u32) -> String {
     format!("{}.{:02}", points / 100, points % 100)
 }
 
+fn milliwatts_as_watts(milliwatts: i32) -> String {
+    let sign = if milliwatts < 0 { "-" } else { "" };
+    let magnitude = milliwatts.unsigned_abs();
+    format!("{sign}{}.{:02}", magnitude / 1_000, magnitude % 1_000 / 10)
+}
+
 fn tenths(value: i32) -> String {
     let sign = if value < 0 { "-" } else { "" };
     let magnitude = value.unsigned_abs();
@@ -488,17 +670,43 @@ mod tests {
         unsupported_capabilities,
     };
 
+    fn present_battery() -> PowerV1 {
+        PowerV1 {
+            battery_present: true,
+            ac_state: AcState::Offline,
+            charge_basis_points: Some(9_500),
+            remaining_seconds: Some(3_600),
+            full_charge_basis_points: Some(10_000),
+            cycle_count: None,
+            rate_milliwatts: Some(-12_345),
+        }
+    }
+
     fn fixture() -> StatusSnapshotV1 {
         StatusSnapshotV1 {
             snapshot_id: "snapshot-fixture".into(),
             sampled_at_unix_ms: 1,
             sample_window_ms: 500,
             logical_processor_count: 8,
+            host: AvailabilityV1::partial(
+                1,
+                0,
+                HostV1 {
+                    cpu_model: Some("Fixture CPU".into()),
+                    os_version: None,
+                    boot_time_unix_ms: None,
+                },
+                vec![
+                    "os_version_unavailable".into(),
+                    "boot_time_unavailable".into(),
+                ],
+            ),
             cpu: AvailabilityV1::available(
                 1,
                 0,
                 CpuV1 {
                     system_utilization_basis_points: 4_321,
+                    frequency_mhz: None,
                 },
             ),
             memory: AvailabilityV1::available(
@@ -508,10 +716,13 @@ mod tests {
                     total_bytes: 1_024,
                     available_bytes: 512,
                     used_bytes: 512,
+                    commit_used_bytes: None,
+                    commit_limit_bytes: None,
                 },
             ),
             volumes: AvailabilityV1::unsupported("not_supported_v1"),
             network: AvailabilityV1::unavailable("fixture"),
+            disk_activity: AvailabilityV1::unavailable("counter_missing"),
             power: AvailabilityV1::available(
                 1,
                 0,
@@ -520,6 +731,9 @@ mod tests {
                     ac_state: AcState::Online,
                     charge_basis_points: None,
                     remaining_seconds: None,
+                    full_charge_basis_points: None,
+                    cycle_count: None,
+                    rate_milliwatts: None,
                 },
             ),
             gpu: AvailabilityV1::available(
@@ -529,6 +743,7 @@ mod tests {
                     adapters: vec![GpuAdapterV1 {
                         adapter_id: "luid_0x0_0x1_phys_0".into(),
                         utilization_basis_points: 1_250,
+                        name: None,
                     }],
                 },
             ),
@@ -599,12 +814,116 @@ mod tests {
                 ],
             },
         );
-        document.unsupported_capabilities =
-            unsupported_capabilities(&document.gpu, &document.thermal);
+        document.unsupported_capabilities = unsupported_capabilities(&document);
         let english = snapshot(Locale::En, &document).unwrap();
         assert!(english.contains("Temperature TZ00: 27.9 °C"));
         assert!(english.contains("Temperature COLD: -0.5 °C"));
         assert!(english.contains("gpu: unavailable (counter_missing)"));
         assert!(!english.contains("GPU luid"));
+        assert!(english.contains("Not measured: gpu_utilization, vram, fan, smart"));
+    }
+
+    #[test]
+    fn new_fields_render_in_both_languages_or_name_their_gap() {
+        let mut document = fixture();
+        document.sampled_at_unix_ms = 1_000 + 3 * 3_600_000 + 25 * 60_000 + 59_000;
+        document.host = AvailabilityV1::available(
+            1,
+            0,
+            HostV1 {
+                cpu_model: Some("Intel(R) Core(TM) Ultra 9 275HX".into()),
+                os_version: Some("10.0.26300.9974 (26H2)".into()),
+                boot_time_unix_ms: Some(1_000),
+            },
+        );
+        document.cpu = AvailabilityV1::available(
+            1,
+            0,
+            CpuV1 {
+                system_utilization_basis_points: 4_321,
+                frequency_mhz: Some(4_442),
+            },
+        );
+        document.memory = AvailabilityV1::available(
+            1,
+            0,
+            MemoryV1 {
+                total_bytes: 1_024,
+                available_bytes: 512,
+                used_bytes: 512,
+                commit_used_bytes: Some(2_048),
+                commit_limit_bytes: Some(4_096),
+            },
+        );
+        document.network = AvailabilityV1::available(
+            1,
+            0,
+            devsweep_core::status::NetworkV1 {
+                interval_ms: 1_000,
+                interfaces: vec![devsweep_core::status::NetworkInterfaceV1 {
+                    interface_luid: "1".into(),
+                    name: "WLAN".into(),
+                    rx_bytes_per_second: 2_048,
+                    tx_bytes_per_second: 1_024,
+                    kind: Some(NetworkKind::Wireless),
+                }],
+            },
+        );
+        document.disk_activity = AvailabilityV1::available(
+            1,
+            0,
+            DiskActivityV1 {
+                read_bytes_per_second: 1_048_576,
+                write_bytes_per_second: 0,
+            },
+        );
+        document.power = AvailabilityV1::available(1, 0, present_battery());
+        if let AvailabilityV1::Available { value, .. } = &mut document.gpu {
+            value.adapters[0].name = Some("Fixture GPU".into());
+        }
+        document.unsupported_capabilities = unsupported_capabilities(&document);
+        let english = snapshot(Locale::En, &document).unwrap();
+        let chinese = snapshot(Locale::ZhCn, &document).unwrap();
+        for expected in [
+            "Host: Intel(R) Core(TM) Ultra 9 275HX; OS 10.0.26300.9974 (26H2)",
+            "Uptime: 3 h 25 min",
+            "CPU: 43.21% at 4442 MHz",
+            "Commit: 2.0 KiB of 4.0 KiB",
+            "WLAN (Wi-Fi): rx",
+            "Disk activity: read 1.0 MiB/s, write 0 B/s",
+            "Battery health: 100.00% of design; cycles -; rate -12.34 W",
+            "GPU Fixture GPU (luid_0x0_0x1_phys_0): 12.50%",
+            "Not measured: vram, thermal, fan, smart, battery_cycle_count",
+        ] {
+            assert!(
+                english.contains(expected),
+                "missing {expected:?} in\n{english}"
+            );
+        }
+        for expected in [
+            "主机：Intel(R) Core(TM) Ultra 9 275HX；系统 10.0.26300.9974 (26H2)",
+            "已运行：3 小时 25 分钟",
+            "CPU：43.21%，频率 4442 MHz",
+            "WLAN（无线）：接收",
+            "磁盘活动：读取",
+            "电池健康：设计容量的 100.00%；循环 - 次；功率 -12.34 W",
+            "GPU Fixture GPU（luid_0x0_0x1_phys_0）：12.50%",
+            "未测量：vram, thermal, fan, smart, battery_cycle_count",
+        ] {
+            assert!(
+                chinese.contains(expected),
+                "missing {expected:?} in\n{chinese}"
+            );
+        }
+
+        let gaps = snapshot(Locale::En, &fixture()).unwrap();
+        assert!(gaps.contains("Host: Fixture CPU; OS -"));
+        assert!(gaps.contains("host: partial (os_version_unavailable,boot_time_unavailable)"));
+        assert!(gaps.contains("disk_activity: unavailable (counter_missing)"));
+        assert!(!gaps.contains("Uptime"));
+        assert!(!gaps.contains("Commit"));
+        assert!(gaps.contains("CPU: 43.21%\n"));
+        assert_eq!(milliwatts_as_watts(0), "0.00");
+        assert_eq!(milliwatts_as_watts(4_005), "4.00");
     }
 }
