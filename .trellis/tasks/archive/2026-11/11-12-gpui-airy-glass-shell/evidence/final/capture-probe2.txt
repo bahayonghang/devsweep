@@ -1,0 +1,29 @@
+round=final-probe2 binary_sha256=2B6BD70B3836BF48DB7FCB5C250A06EC27287B0BB91578EEE0D313D377C61E2E os=10.0.26300.0 transparency=1 logical_width=0 no_composition=False
+en-dark-100 dpi=120 size=1568x1034
+en-dark-100 mode=clean selected=True
+en-dark-100 mode=software selected=True
+en-dark-100 mode=optimize selected=True
+en-dark-100 mode=analyze selected=True
+en-dark-100 mode=status selected=True
+en-dark-100 uia_mode_tabs=Clean,Software,Optimize,Analyze,Status
+en-dark-100 field over black BGR=242316 luminance=0.015
+en-dark-100 field-end over black BGR=322222 luminance=0.0171
+en-dark-100 paper over black BGR=2E281F luminance=0.0201
+en-dark-100 field over white BGR=2B2A1D luminance=0.0209
+en-dark-100 field-end over white BGR=392929 luminance=0.0235
+en-dark-100 paper over white BGR=2F2920 luminance=0.021
+en-dark-100 exit=0
+en-light-100 dpi=120 size=1568x1034
+en-light-100 mode=clean selected=True
+en-light-100 mode=software selected=True
+en-light-100 mode=optimize selected=True
+en-light-100 mode=analyze selected=True
+en-light-100 mode=status selected=True
+en-light-100 uia_mode_tabs=Clean,Software,Optimize,Analyze,Status
+en-light-100 field over black BGR=E5E7DB luminance=0.7787
+en-light-100 field-end over black BGR=ECDBE1 luminance=0.7273
+en-light-100 paper over black BGR=F9F9F7 luminance=0.9437
+en-light-100 field over white BGR=ECEEE3 luminance=0.8354
+en-light-100 field-end over white BGR=F3E2E8 luminance=0.7802
+en-light-100 paper over white BGR=FBFBF9 luminance=0.961
+en-light-100 exit=0

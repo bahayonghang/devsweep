@@ -1,0 +1,41 @@
+round=after binary_sha256=BDD41A63D20412C874BBC33DCA96659F98A4EF73C28EE0194E02C6FD424C2C59 os=10.0.26300.0 transparency=1
+en-dark-100 dpi=120 size=1568x1034
+en-dark-100 mode=clean selected=True
+en-dark-100 mode=software selected=True
+en-dark-100 mode=optimize selected=True
+en-dark-100 mode=analyze selected=True
+en-dark-100 mode=status selected=True
+en-dark-100 uia_mode_tabs=Clean,Software,Optimize,Analyze,Status
+en-dark-100 field over black BGR=201E13 luminance=0.0117
+en-dark-100 field over white BGR=4C4A3F luminance=0.0648
+en-dark-100 exit=0
+zh-dark-100 dpi=120 size=1568x1034
+zh-dark-100 mode=clean selected=True
+zh-dark-100 mode=software selected=True
+zh-dark-100 mode=optimize selected=True
+zh-dark-100 mode=analyze selected=True
+zh-dark-100 mode=status selected=True
+zh-dark-100 uia_mode_tabs=清理,软件,优化,分析,状态
+zh-dark-100 field over black BGR=201E13 luminance=0.0117
+zh-dark-100 field over white BGR=4C4A3F luminance=0.0648
+zh-dark-100 exit=0
+en-light-100 dpi=120 size=1568x1034
+en-light-100 mode=clean selected=True
+en-light-100 mode=software selected=True
+en-light-100 mode=optimize selected=True
+en-light-100 mode=analyze selected=True
+en-light-100 mode=status selected=True
+en-light-100 uia_mode_tabs=Clean,Software,Optimize,Analyze,Status
+en-light-100 field over black BGR=B8B9B0 luminance=0.4739
+en-light-100 field over white BGR=E4E5DC luminance=0.7686
+en-light-100 exit=0
+zh-light-125 dpi=120 size=1568x1034
+zh-light-125 mode=clean selected=True
+zh-light-125 mode=software selected=True
+zh-light-125 mode=optimize selected=True
+zh-light-125 mode=analyze selected=True
+zh-light-125 mode=status selected=True
+zh-light-125 uia_mode_tabs=清理,软件,优化,分析,状态
+zh-light-125 field over black BGR=B8B9B0 luminance=0.4739
+zh-light-125 field over white BGR=E4E5DC luminance=0.7686
+zh-light-125 exit=0

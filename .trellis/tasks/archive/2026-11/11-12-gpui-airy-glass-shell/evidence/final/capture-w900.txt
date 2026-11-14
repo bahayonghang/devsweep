@@ -1,0 +1,13 @@
+round=final-w900 binary_sha256=30FE197871B52F5C13463FEB339358FC46451FC1A21502CDF566EA7E978A6355 os=10.0.26300.0 transparency=1 logical_width=900 no_composition=False
+en-light-100 dpi=120 size=1125x1034
+en-light-100 mode=clean selected=True
+en-light-100 mode=software selected=True
+en-light-100 mode=optimize selected=True
+en-light-100 mode=analyze selected=True
+en-light-100 mode=status selected=True
+en-light-100 uia_mode_tabs=Clean,Software,Optimize,Analyze,Status
+en-light-100 field over black BGR=EEECE3 luminance=0.8249
+en-light-100 field-end over black BGR=F2E1E6 luminance=0.7708
+en-light-100 field over white BGR=EEECE3 luminance=0.8249
+en-light-100 field-end over white BGR=F2E1E6 luminance=0.7708
+en-light-100 exit=0

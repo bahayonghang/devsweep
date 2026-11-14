@@ -1,0 +1,22 @@
+# Keep the baseline (before/), the final matrix, and the PNGs material.md
+# cites. Capture logs (*.txt) stay tracked for every round.
+
+# Intermediate round, superseded by final/.
+after/*.png
+
+# Uncited final/ variants.
+final/*-tree.png
+final/*-w900.png
+final/*-nocomp.png
+final/*-1080x720.png
+final/*-1400x860.png
+
+# Cited in material.md.
+!final/*-analyze-treemap-tree.png
+!final/*-clean-treemap-tree.png
+!final/*-clean-review-tree.png
+!final/en-light-100-software-nocomp.png
+!final/en-light-100-status-nocomp.png
+!final/en-light-100-software-1080x720.png
+!final/zh-dark-100-software-1080x720.png
+!final/en-light-100-status-1400x860.png

@@ -1,0 +1,33 @@
+round=final-tree binary_sha256=5D865A345FF04D1DBF31D5A797B42CB9CEB080B71E63784137E8412D1668D760 os=10.0.26300.0 transparency=1 logical_width=0 no_composition=False
+en-light-100 dpi=120 size=1568x1034
+en-light-100 mode=clean selected=True
+en-light-100 mode=software selected=True
+en-light-100 mode=optimize selected=True
+en-light-100 mode=analyze selected=True
+en-light-100 mode=status selected=True
+en-light-100 analyze fixture opened=True
+en-light-100 clean fixture scan requested
+en-light-100 uia_mode_tabs=Clean,Software,Optimize,Analyze,Status
+en-light-100 field over black BGR=E5E7DB luminance=0.7787
+en-light-100 field-end over black BGR=ECDBE1 luminance=0.7273
+en-light-100 paper over black BGR=F9F9F7 luminance=0.9437
+en-light-100 field over white BGR=ECEEE3 luminance=0.8354
+en-light-100 field-end over white BGR=F3E2E8 luminance=0.7802
+en-light-100 paper over white BGR=FBFBF9 luminance=0.961
+en-light-100 exit=0
+zh-light-125 dpi=120 size=1568x1034
+zh-light-125 mode=clean selected=True
+zh-light-125 mode=software selected=True
+zh-light-125 mode=optimize selected=True
+zh-light-125 mode=analyze selected=True
+zh-light-125 mode=status selected=True
+zh-light-125 analyze fixture opened=True
+zh-light-125 clean fixture scan requested
+zh-light-125 uia_mode_tabs=清理,软件,优化,分析,状态
+zh-light-125 field over black BGR=E5E6DB luminance=0.7731
+zh-light-125 field-end over black BGR=EBDADF luminance=0.7183
+zh-light-125 paper over black BGR=F6F8F4 luminance=0.9302
+zh-light-125 field over white BGR=ECEDE3 luminance=0.8296
+zh-light-125 field-end over white BGR=F2E1E6 luminance=0.7708
+zh-light-125 paper over white BGR=F6F8F4 luminance=0.9302
+zh-light-125 exit=0
