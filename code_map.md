@@ -7,7 +7,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 
 - `Cargo.toml` - virtual workspace membership and shared package metadata.
 - `justfile` - local command registry. `just ci` is the canonical gate.
-  `just tdev` starts the Tauri desktop development window.
+  `just gpui-dev` starts the GPUI desktop window; `just gpui` is its gate.
 - `.github/workflows/ci.yml` - CI parity for format, check, test, and clippy on
   Windows, Ubuntu, and macOS, plus Windows/Ubuntu MSRV jobs. Hosted runs start
   from pull requests and manual `workflow_dispatch`, not from every push to
@@ -146,44 +146,6 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-cli/src/tui/support/` - History, Protection, and Rules surfaces.
 - `crates/devsweep-cli/src/tui/test_support.rs` - test-only keys, plans, and render helpers.
 
-### Desktop Shell
-
-- `desktop/src-tauri/src/lib.rs` - Tauri application composition and frozen invoke names.
-- `desktop/src-tauri/src/async_runtime.rs` - bounded asynchronous command workers, with a separate unchanged blocking executor.
-- `desktop/src-tauri/src/commands.rs` - shared IPC helpers (scan start/cancel, presentation
-  settings, protections).
-- `desktop/src-tauri/src/scan.rs` - single-flight scan state, cancellation, progress forwarding and acknowledged delivery.
-- `desktop/src-tauri/src/scan_preferences.rs` - explicit root selection, session validation and persistence IPC.
-- `desktop/src-tauri/src/clean.rs` - Clean-mode IPC.
-- `desktop/src-tauri/src/software.rs` - Software-mode IPC.
-- `desktop/src-tauri/src/optimize.rs` - Optimize-mode IPC.
-- `desktop/src-tauri/src/analyze.rs` - Analyze-mode IPC.
-- `desktop/src-tauri/src/status.rs` - Status-mode IPC.
-- `desktop/src-tauri/src/fonts.rs` - main-only, read-only DirectWrite family catalogue.
-- `desktop/src-tauri/src/desktop_preferences.rs` - ordered V2 preference commits and events.
-- `desktop/src-tauri/src/tray.rs` - tray icon, menu, tooltip, HUD window toggle, and app exit.
-- `desktop/src-tauri/src/hud.rs` - `HudSampler` (2 s while the HUD is visible) and the `hud-status` event type.
-- `desktop/src-tauri/src/support.rs` - History, Protection, and Rules IPC.
-- `desktop/src-tauri/src/error.rs` - centralized structured command-error mapping.
-- `desktop/src/App.tsx` - React shell host: locale gate, operation coordinator, and AppShell.
-- `desktop/src/lifecycle.ts` - window controls, close coordination and native decorative-presentation visibility observation.
-- `desktop/src/app-shell/` - five-mode registry, routing, and accessible shell chrome.
-- `desktop/src/modes/` - Clean, Software, Optimize, Analyze, and Status workbenches.
-- `desktop/src/hud/` - second Vite entry (`desktop/hud.html`) for the tray HUD window.
-- `desktop/src/support/` - History, Protection, and Rules pages.
-- `desktop/src/pages/` - remaining Clean workflow views composed by `CleanWorkbench` (scan,
-  preview, review, execute). Not the primary five-mode surface.
-- `desktop/src/api/` - generated IPC types, closed-world runtime decoders, the
-  production Tauri bridge, and controlled fixture replay.
-- `desktop/src/state/` - reducer-owned workflow state, digest invalidation, and
-  derived selection/capacity rules.
-- `desktop/src/components/` - shared table, evidence, error, and confirmation widgets.
-- `desktop/src/stage/Planet.tsx` - decorative renderer lifecycle, motion preferences and fallback.
-- `desktop/src/stage/earth-renderer.ts` - bounded geographic Clean WebGL renderer; other modes use `planet-renderer.ts`.
-- `desktop/src/stage/earth-texture.ts` - asynchronous bounded local texture loading.
-- `desktop/public/earth/` and `desktop/public/THIRD_PARTY_NOTICES.txt` - packaged Earth assets and exact redistribution evidence.
-- `desktop/scripts/prepare-earth-assets.py` - offline reproducible Earth asset conversion.
-
 ### GPUI desktop (`desktop-gpui/`, standalone workspace)
 
 - `desktop-gpui/src/main.rs` - native entry; loads preferences, then `view::run`.
@@ -195,26 +157,16 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop-gpui/src/clean_workbench.rs`, `clean_ai.rs`, `clean_map.rs` - Clean review, AI subview, disk-map projection.
 - `desktop-gpui/src/software_review.rs`, `optimize_board.rs`, `workbench_review.rs` - Software/Optimize review models; host reads only in `load_host`.
 - `desktop-gpui/src/analyze*.rs`, `status_panel.rs` - Analyze board/window and Status projections.
-- `desktop-gpui/assets/` - beaver master PNG/ICO, licensed Earth still, original `icons/*.svg`.
+- `desktop-gpui/assets/` - beaver master PNG/ICO, licensed Earth still (see `desktop-gpui/THIRD_PARTY_NOTICES.txt`), original `icons/*.svg`.
 - `desktop-gpui/vendor/gpui_windows/` - patched GPUI Windows backend.
 - Linux review build: `cargo build --features linux-preview` (X11 backend, not a delivery target).
 
 ### Performance evidence tools
 
-- `tools/measure-readonly.py` - isolated read-only CLI/native workloads and task-owned process-tree sampling.
-- `tools/inspect-native-readonly.mjs` - packaged native-page metadata/screenshot capture through an explicit loopback debug port.
-- `tools/planet-render-benchmark.mjs` and `desktop/vite.planet-benchmark.config.ts` - production Planet comparison and visual matrix.
-- `tools/clean-render-benchmark.mjs` and `desktop/vite.clean-benchmark.config.ts` - full-report Clean selection/preview measurements and pagination visuals.
-- `tools/native-clean-smoke.mjs` - owned packaged-app offline Earth, explicit-root UI and complete CLI/Tauri report parity smoke; no cleanup execution.
-- `tools/native-earth-smoke.mjs` - packaged Earth scale/locale captures and native route/minimize resource lifecycle checks.
-- `tools/native-operation-smoke.mjs` - one read-only Software/Optimize/Analyze UI and IPC sample per invocation for alternating builds.
-- `tools/native-scan-consumer.mjs` - native paused-consumer scan delivery and cancellation evidence.
-- `tools/native-status-lifecycle.mjs` and `tools/summarize-native-status.py` - same-PID Status stop and HUD visibility evidence with separate post-stop CPU accounting.
+- `tools/measure-readonly.py` - isolated read-only CLI workloads and task-owned process-tree sampling.
 - `tools/status-sink-smoke.py` - release CLI slow-reader/broken-pipe and create-new JSON output checks with natural-exit evidence.
 - `tools/provider-golden-parity.py` - isolated repaired-provider B3/C2 release CLI envelope parity, fixture preservation and offline semantic reassessment.
 - `tools/owned-console-smoke.py` - hidden owned-console Status signal/file and TUI input checks; keeps unsupported resize and failed attempts explicit.
-- `tools/analyze-layout-benchmark.mjs` - deterministic inherited Analyze layout fixture and percentile gate.
-- `tools/run-analyze-react-commit.mjs` - production Analyze component commit/DOM gate in an isolated browser.
 
 The dependency direction starts at `main -> devsweep::run -> application ->
 devsweep-core`. Core modules never import CLI or TUI code. TUI render code
@@ -232,8 +184,6 @@ remains read-only and backend discovery layers remain non-mutating.
   links for scanner, executor, CLI, logging, and data-contract work.
 - `.trellis/spec/frontend/index.md` - ratatui/TUI pre-development checklist and
   links for render, state, event, and type-safety work.
-- `.trellis/spec/desktop-frontend/index.md` - React/Tauri webview structure,
-  state, IPC type-safety, accessibility, and quality checklist.
 - `.trellis/workflow.md` and `.trellis/scripts/` - Trellis task lifecycle and
   context helpers.
 - `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, and `.claude/` -
@@ -245,7 +195,6 @@ remains read-only and backend discovery layers remain non-mutating.
 - `target/` - Cargo build output.
 - `dist/` - release archive output from `just release-archive`.
 - `node_modules/` - documentation-site dependencies from root `npm ci`.
-- `desktop/node_modules/` and `desktop/dist/` - desktop dependency and web build output.
 - `docs/.vitepress/dist/` and `docs/.vitepress/.temp/` - VitePress build output.
 - `__pycache__/` and `*.pyc` - Python tool and test bytecode.
 - Do not add nested guidance for generated, vendored, dependency, cache, or

@@ -8,7 +8,6 @@
 devsweep-core   能力与数据契约（唯一实现）
    ├── devsweep-cli     子命令、JSON 契约、契约测试（先交付）
    ├── desktop-gpui     进程内调用 core（后交付）
-   ├── desktop (Tauri)  封闭解码器，随 JSON 变化同步
    └── TUI              进程内使用类型
 ```
 
@@ -31,7 +30,6 @@ devsweep-core   能力与数据契约（唯一实现）
 
 - 新字段一律可选，缺失表示不可用并带原因，不用 0。
 - V1 能否容纳纯增量字段，按 `.trellis/spec/backend/` 的规则判断；第一个涉及的子任务（status-dashboard）得出结论后，其余子任务沿用，并在父任务 `research/` 里留一份结论。
-- Tauri 的 `desktop/src/api/contract.ts` 用 `exact(...)` 封闭解码。任何被 Tauri 消费的载荷加字段时，同一改动里更新解码器、生成类型和夹具。
 - 已保存的计划文件、观察文件和偏好文件保持可读。
 
 ## 授权链

@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location("measure_readonly", Path(__file__).parents[1] / "measure-readonly.py")
 BENCH = importlib.util.module_from_spec(SPEC)
@@ -37,9 +37,8 @@ class ReadonlyBenchmarkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             profile = Path(directory)
             env = BENCH.isolated_environment(profile)
-            for key in ("LOCALAPPDATA", "APPDATA", "HOME", "USERPROFILE", "TEMP", "TMP", "WEBVIEW2_USER_DATA_FOLDER"):
+            for key in ("LOCALAPPDATA", "APPDATA", "HOME", "USERPROFILE", "TEMP", "TMP"):
                 self.assertTrue(Path(env[key]).is_relative_to(profile))
-            self.assertNotIn("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", env)
         self.assertEqual(dict(os.environ), before)
 
     def test_process_identity_excludes_reused_pid_and_unrelated_process(self):
@@ -57,32 +56,12 @@ class ReadonlyBenchmarkTests(unittest.TestCase):
 
     def test_workload_deadline_is_explicit_finite_and_bounded(self):
         self.assertEqual(BENCH.workload_deadline("many-1000", 30, None), 900)
-        self.assertEqual(BENCH.workload_deadline("desktop-idle", 30, None), 60)
         self.assertEqual(BENCH.workload_deadline("software-msi", 30, 120), 120)
         for value in (0, -1, float("inf"), float("nan"), 86401):
             with self.assertRaises(ValueError):
                 BENCH.workload_deadline("software", 30, value)
-        with self.assertRaises(ValueError):
-            BENCH.workload_deadline("desktop-idle", 30, 30)
         self.assertEqual(BENCH.workload("software-msi", Path("fixtures")),
                          ["software", "inventory", "--source", "msi", "--format", "json"])
-
-    @unittest.skipUnless(sys.platform == "win32", "Windows window identity")
-    def test_minimize_requires_exact_owned_window_when_hud_shares_title(self):
-        sampler = object.__new__(BENCH.WindowsSampler)
-        sampler.windows = lambda pid, created: [
-            {"class": "Tauri Window", "title": "DevSweep", "handle": 11},
-            {"class": "Tauri Window", "title": "DevSweep", "handle": 12},
-        ]
-        user = Mock()
-        with patch.object(BENCH.ct, "WinDLL", return_value=user):
-            with self.assertRaises(RuntimeError):
-                sampler.main_window_state(1, 100, "minimized")
-            with self.assertRaises(RuntimeError):
-                sampler.main_window_state(1, 100, "minimized", 999)
-            user.ShowWindow.assert_not_called()
-            self.assertEqual(sampler.main_window_state(1, 100, "minimized", 11), 11)
-            user.ShowWindow.assert_called_once_with(11, 6)
 
     @unittest.skipUnless(sys.platform == "win32", "Windows thread descriptions")
     def test_named_threads_rejects_reused_pid_and_reads_current_process(self):

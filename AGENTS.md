@@ -11,8 +11,9 @@ broad grep or repo-wide search so navigation starts from the maintained map.
 - `just dev` runs the CLI binary with
   `cargo run --locked -p devsweep-cli --bin devsweep` (no extra argv).
 - Interactive TUI is bare `devsweep` with stdin and stdout TTYs.
-- `just tdev` starts the Tauri desktop development window with
-  `cd desktop; npm run tauri -- dev`.
+- `just gpui-dev` starts the GPUI desktop window; `just gpui` is its gate
+  (format, Clippy, tests, release build). `desktop-gpui/` is a standalone
+  workspace outside `just ci`.
 - `just build` runs
   `cargo build --locked -p devsweep-cli --bin devsweep`.
 - `just release-archive` builds a locked release binary for the rustc host
@@ -72,8 +73,9 @@ run `clean execute` with a live preview digest and `--confirm`. Do not run
 
 - For backend changes, read `.trellis/spec/backend/index.md` before editing.
 - For TUI changes, read `.trellis/spec/frontend/index.md` before editing.
-- For desktop React/Tauri changes, read
-  `.trellis/spec/desktop-frontend/index.md` before editing.
+- For GPUI desktop changes, read the GPUI sections of
+  `.trellis/spec/backend/desktop-runtime.md` and `desktop-gpui/DESIGN.md`
+  before editing.
 - Project Codex hooks and agents are optional local scaffolding. Do not assume
   `.codex/hooks.json` hooks are active unless the user-level Codex config
   enables hooks and the hook has been approved.

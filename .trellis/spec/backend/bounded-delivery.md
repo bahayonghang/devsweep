@@ -2,7 +2,7 @@
 
 ## 1. Scope / Trigger
 
-Apply when changing Status live production, CLI/Tauri Status consumption or the
+Apply when changing Status live production, CLI/GPUI Status consumption or the
 TUI worker mailbox/event loop. Replaceable scan observations and lossless live
 records have different delivery requirements; neither may grow an unbounded
 application queue behind a slow consumer.

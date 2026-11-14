@@ -50,8 +50,8 @@ check-skills:
     python -X utf8 (Join-Path $repoRoot 'tools\skill_distribution.py') check --repo-root $repoRoot
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-# Install CLI, desktop app, and local agent skills
-install-all: install tinstall install-skill
+# Install the CLI and local agent skills
+install-all: install install-skill
     @echo "install-all complete"
 
 [script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
@@ -178,34 +178,12 @@ release-smoke:
 dev:
     cargo run --locked -p devsweep-cli --bin devsweep
 
-# Start the Tauri desktop development window
-tdev:
-    cd desktop; npm run tauri -- dev
-
 # Start the GPUI native desktop window. desktop-gpui is a standalone workspace.
 gpui-dev:
     cd desktop-gpui; cargo run --locked -p devsweep-gpui-spike
 
 docs:
     npm run docs:dev
-
-[script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
-desktop-web-check:
-    $ErrorActionPreference = 'Stop'
-    Set-Location -LiteralPath (Join-Path (Get-Location) 'desktop')
-    npm run types:generate -- --check
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    npm run lint
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    npm run typecheck
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    npm test
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    npm run build
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-desktop-test:
-    cargo test --locked -p devsweep-desktop
 
 # GPUI native gate. `desktop-gpui` is a standalone workspace, so the root
 # `ci` recipe does not build it. `/Brepro` makes the MSVC link deterministic:
@@ -221,33 +199,6 @@ gpui-build:
 
 gpui: gpui-check gpui-test gpui-build
     @echo "gpui gate complete"
-
-desktop-build:
-    cd desktop; npm run tauri -- build
-
-# Build the unsigned NSIS installer and silently install the Tauri desktop app
-[script("powershell.exe", "-NoLogo", "-NoProfile", "-File")]
-tinstall: desktop-build
-    $ErrorActionPreference = 'Stop'
-    $nsisDirs = @(
-        'target\release\bundle\nsis',
-        'desktop\src-tauri\target\release\bundle\nsis'
-    )
-    $setup = $nsisDirs |
-        Where-Object { Test-Path $_ } |
-        ForEach-Object { Get-ChildItem -Path $_ -Filter '*-setup.exe' } |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1
-    if ($null -eq $setup) {
-        throw 'NSIS setup exe missing; expected target\release\bundle\nsis\*-setup.exe'
-    }
-    Write-Output ('installing: ' + $setup.FullName)
-    $proc = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait -PassThru
-    if ($null -eq $proc) { throw 'NSIS installer did not start' }
-    if ($proc.ExitCode -ne 0) {
-        throw ('NSIS installer failed with exit code ' + $proc.ExitCode)
-    }
-    Write-Output 'desktop install complete'
 
 ci: fmt check test clippy
     @echo "ci complete"

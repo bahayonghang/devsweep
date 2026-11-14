@@ -20,7 +20,6 @@
 
 - 不读取、不输出任何卸载命令字段。core 关于"厂商卸载命令不是授权依据"的规则不变。
 - 版本策略与 status-dashboard 相同：先按 `.trellis/spec/backend/` 的数据契约规则判断可选字段能否留在 V1，结论写入 `research/contract.md`。
-- Tauri 的封闭解码器（`desktop/src/api/contract.ts`）和夹具同步更新。
 
 ## GPUI
 

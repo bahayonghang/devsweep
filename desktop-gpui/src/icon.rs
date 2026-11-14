@@ -4,8 +4,7 @@
 //! `assets/devsweep-icon-master.png` (1254x1254) with Pillow 13.0.0. Each of the
 //! 16, 32, 48, and 256 pixel images is a premultiplied-alpha LANCZOS resize
 //! stored as a 32 bpp bottom-up BGRA BMP entry with its AND mask under one
-//! `ICONDIR`. There is no download and no runtime conversion. The legacy Tauri
-//! `icon.ico` is not the beaver and is not used.
+//! `ICONDIR`. There is no download and no runtime conversion.
 
 const ICO_BYTES: &[u8] = include_bytes!("../assets/devsweep.ico");
 const ICONDIR_MAGIC: [u8; 4] = [0, 0, 1, 0];

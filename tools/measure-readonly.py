@@ -1,9 +1,8 @@
 """Owned-process Windows performance evidence; no cleanup or maintenance actions.
 
 Generated binaries, fixtures, profiles and raw output belong under ignored dist/.
-This runner does not import the historical maintenance benchmark. Desktop normal
-shutdown posts WM_CLOSE to its own root window. Deadline teardown may terminate
-only recorded owned PID/creation identities and is always a failed measurement,
+This runner does not import the historical maintenance benchmark. Deadline
+teardown may terminate only recorded owned PID/creation identities and is always a failed measurement,
 never successful cooperative cancellation or lifecycle evidence.
 """
 
@@ -85,8 +84,6 @@ def workload(name: str, fixtures: Path) -> list[str]:
         return ["software", "inventory", "--format", "json"]
     if name in ("software-arp", "software-msi", "software-msix"):
         return ["software", "inventory", "--source", name.removeprefix("software-"), "--format", "json"]
-    if name == "desktop-idle":
-        return []
     raise ValueError(f"Unsupported read-only workload: {name}")
 
 
@@ -205,75 +202,6 @@ class WindowsSampler:
         owned.update({pid: row["created"] for pid, row in rows.items()})
         return list(rows.values())
 
-    def windows(self, root_pid: int, created: int) -> list[dict]:
-        current = self.inspect({"pid": root_pid})
-        if current.get("created") != created:
-            return []
-        user = ct.WinDLL("user32", use_last_error=True)
-        callback_type = ct.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
-        user.EnumWindows.argtypes = [callback_type, wt.LPARAM]
-        user.GetWindowThreadProcessId.argtypes = [wt.HWND, ct.POINTER(wt.DWORD)]
-        user.GetClassNameW.argtypes = [wt.HWND, wt.LPWSTR, ct.c_int]
-        user.GetWindowTextW.argtypes = [wt.HWND, wt.LPWSTR, ct.c_int]
-        user.IsWindowVisible.argtypes, user.IsWindowVisible.restype = [wt.HWND], wt.BOOL
-        user.IsIconic.argtypes, user.IsIconic.restype = [wt.HWND], wt.BOOL
-        windows = []
-        @callback_type
-        def collect(window, _):
-            owner = wt.DWORD()
-            user.GetWindowThreadProcessId(window, ct.byref(owner))
-            if owner.value != root_pid:
-                return True
-            window_class = ct.create_unicode_buffer(256)
-            title = ct.create_unicode_buffer(256)
-            user.GetClassNameW(window, window_class, 256)
-            user.GetWindowTextW(window, title, 256)
-            if window_class.value in ("Tauri Window", "tray_icon_app"):
-                windows.append({"handle": int(window), "visible": bool(user.IsWindowVisible(window)),
-                                "minimized": bool(user.IsIconic(window)),
-                                "class": window_class.value, "title": title.value})
-            return True
-        user.EnumWindows(collect, 0)
-        return windows
-
-    def close_window(self, root_pid: int, created: int) -> int:
-        user = ct.WinDLL("user32", use_last_error=True)
-        user.PostMessageW.argtypes = [wt.HWND, wt.UINT, wt.WPARAM, wt.LPARAM]
-        count = 0
-        for window in self.windows(root_pid, created):
-            if window["class"] == "Tauri Window" and window["title"] == "DevSweep":
-                count += bool(user.PostMessageW(window["handle"], 0x10, 0, 0))
-        return count
-
-    def main_window_state(self, root_pid: int, created: int, state: str,
-                          window_handle: int | None = None) -> int:
-        commands = {"minimized": 6, "restored": 9}
-        command = commands[state]
-        windows = [window for window in self.windows(root_pid, created)
-                   if window["class"] == "Tauri Window" and window["title"] == "DevSweep"
-                   and (window_handle is None or window["handle"] == window_handle)]
-        if len(windows) != 1:
-            raise RuntimeError("Expected exactly one owned main window")
-        user = ct.WinDLL("user32", use_last_error=True)
-        user.ShowWindow.argtypes, user.ShowWindow.restype = [wt.HWND, ct.c_int], wt.BOOL
-        user.ShowWindow(windows[0]["handle"], command)
-        return windows[0]["handle"]
-
-    def toggle_owned_hud(self, root_pid: int, created: int) -> int:
-        windows = [window for window in self.windows(root_pid, created)
-                   if window["class"] == "tray_icon_app"]
-        if len(windows) != 1:
-            raise RuntimeError("Expected exactly one owned tray window")
-        # Pinned tray-icon 0.24.2 windows/mod.rs: WM_USER_TRAYICON=6002,
-        # lparam=WM_LBUTTONUP. Its own window userdata supplies the tray id and
-        # Shell_NotifyIconGetRect; wparam is unused. This follows the real tray
-        # event callback without moving the user's cursor or touching Explorer.
-        user = ct.WinDLL("user32", use_last_error=True)
-        user.PostMessageW.argtypes, user.PostMessageW.restype = [wt.HWND, wt.UINT, wt.WPARAM, wt.LPARAM], wt.BOOL
-        if not user.PostMessageW(windows[0]["handle"], 6002, 0, 0x0202):
-            raise ct.WinError(ct.get_last_error())
-        return windows[0]["handle"]
-
     def named_threads(self, root_pid: int, created: int) -> list[dict]:
         """Read thread descriptions only for this exact owned root process."""
         if self.inspect({"pid": root_pid}).get("created") != created:
@@ -345,11 +273,9 @@ class WindowsSampler:
 def workload_deadline(name: str, duration: float, deadline: float | None) -> float:
     if not math.isfinite(duration) or duration <= 0:
         raise ValueError("Duration must be finite and positive")
-    seconds = deadline if deadline is not None else (duration + 30 if name == "desktop-idle" else 900)
+    seconds = deadline if deadline is not None else 900
     if not math.isfinite(seconds) or seconds <= 0 or seconds > 86400:
         raise ValueError("Deadline must be finite, positive and at most 86400 seconds")
-    if name == "desktop-idle" and seconds <= duration:
-        raise ValueError("Desktop deadline must leave time after the normal close request")
     return seconds
 
 
@@ -357,11 +283,10 @@ def isolated_environment(profile: Path) -> dict[str, str]:
     environment = dict(os.environ)
     for key, relative in {"LOCALAPPDATA": "Local", "APPDATA": "Roaming",
                           "USERPROFILE": "Home", "HOME": "Home", "TEMP": "Temp",
-                          "TMP": "Temp", "WEBVIEW2_USER_DATA_FOLDER": "WebView"}.items():
+                          "TMP": "Temp"}.items():
         path = profile / relative
         path.mkdir(parents=True, exist_ok=True)
         environment[key] = str(path)
-    environment.pop("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", None)
     # Seed only this launch's private locale; never touch the user's settings.
     settings = profile / "Local/DevSweep/settings"
     settings.mkdir(parents=True)
@@ -370,23 +295,12 @@ def isolated_environment(profile: Path) -> dict[str, str]:
 
 
 def measure(exe: Path, fixtures: Path, out: Path, name: str, duration: float,
-            debug_port: int | None = None, deadline: float | None = None,
-            window_state: str = "visible") -> dict:
+            deadline: float | None = None) -> dict:
     arguments = workload(name, fixtures)
     deadline_seconds = workload_deadline(name, duration, deadline)
     executable_hash = sha256(exe)
     out.mkdir(parents=True, exist_ok=False)
     environment = isolated_environment(out / "profile")
-    if name == "desktop-idle":
-        # Historical harness bootstrap compatibility choice, not a proven
-        # WebView2 runtime-discovery requirement. App preferences, temporary
-        # files and WebView data remain isolated, but real HOME/USERPROFILE
-        # restrict this workload to runs without global user-cache discovery.
-        for key in ("USERPROFILE", "HOME"):
-            if key in os.environ:
-                environment[key] = os.environ[key]
-    if debug_port:
-        environment["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = f"--remote-debugging-port={debug_port}"
     sampler = WindowsSampler()
     owned: dict[int, int] = {}
     samples = []
@@ -394,7 +308,7 @@ def measure(exe: Path, fixtures: Path, out: Path, name: str, duration: float,
     with (out / "stdout.txt").open("xb") as stdout, (out / "stderr.txt").open("xb") as stderr:
         startup = subprocess.STARTUPINFO()
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startup.wShowWindow = 5 if name == "desktop-idle" and window_state == "visible" else 0
+        startup.wShowWindow = 0
         process = subprocess.Popen([str(exe), *arguments], cwd=fixtures, env=environment,
                                    stdout=stdout, stderr=stderr, startupinfo=startup,
                                    creationflags=subprocess.CREATE_NO_WINDOW)
@@ -404,10 +318,8 @@ def measure(exe: Path, fixtures: Path, out: Path, name: str, duration: float,
         write_json(out / "launch.json", {"pid": process.pid, "executable": str(exe),
                                          "created": str(root_identity["created"]) if root_identity.get("present") else None,
                                          "started_unix_ns": str(time.time_ns()),
-                                         "workload": name, "debug_port": debug_port,
-                                         "deadline_seconds": deadline_seconds,
-                                         "window_state_requested": window_state})
-        close_requested = None
+                                         "workload": name,
+                                         "deadline_seconds": deadline_seconds})
         timed_out = False
         teardown = []
         next_sample = 0.0
@@ -417,13 +329,8 @@ def measure(exe: Path, fixtures: Path, out: Path, name: str, duration: float,
                 rows = sampler.tree(process.pid, owned)
                 sample = {"wall_ms": elapsed * 1000, "sampled_unix_ns": str(time.time_ns()),
                           "root_pid": process.pid, "processes": rows}
-                if name == "desktop-idle":
-                    sample["windows"] = sampler.windows(process.pid, owned.get(process.pid, -1))
                 samples.append(sample)
                 next_sample = elapsed + 0.2
-            if name == "desktop-idle" and elapsed >= duration and close_requested is None:
-                close_requested = {"wall_ms": elapsed * 1000,
-                                   "windows": sampler.close_window(process.pid, owned.get(process.pid, -1))}
             if elapsed >= deadline_seconds:
                 timed_out = True
                 # Preserve pre-teardown facts; forced termination never passes a
@@ -440,7 +347,7 @@ def measure(exe: Path, fixtures: Path, out: Path, name: str, duration: float,
             time.sleep(0.01)
         elapsed_ms = (time.perf_counter() - started) * 1000
         remaining = sampler.tree(process.pid, owned)
-        # WebView helpers can exit shortly after the host. Observe their normal
+        # Child processes can exit shortly after the root. Observe their normal
         # exit for a bounded interval; never terminate them to pass lifecycle.
         settle_started = time.perf_counter()
         settle_samples = []
@@ -466,14 +373,13 @@ def measure(exe: Path, fixtures: Path, out: Path, name: str, duration: float,
                "measurement_status": "failed: deadline exceeded" if timed_out else ("completed" if process.returncode == 0 else "failed: nonzero exit"),
                "forced_teardown": teardown,
                "lifecycle_pass": not timed_out and process.returncode == 0 and not remaining,
-               "window_state_requested": window_state if name == "desktop-idle" else None,
                "sample_count": len(samples), "sample_period_ms": 200,
                "resources_status": "available" if valid_root_samples >= 2 else "unavailable: fewer than two valid root samples",
                "cpu_definition": "100% = one logical core; delta CPU milliseconds / delta wall milliseconds * 100",
-               "close_requested": close_requested, "owned_after_exit": remaining,
+               "owned_after_exit": remaining,
                "post_exit_settle": {"limit_ms": 5000, "elapsed_ms": settle_elapsed_ms,
                                     "samples": settle_samples, "forced_teardown": False},
-               "profile": str(out / "profile"), "debug_port": debug_port,
+               "profile": str(out / "profile"),
                "stdout_bytes": (out / "stdout.txt").stat().st_size,
                "host": {"platform": platform.platform(), "logical_cores": os.cpu_count(),
                         "python": platform.python_version(), "os_file_cache": "uncontrolled"}}
@@ -492,15 +398,13 @@ def main() -> None:
     run.add_argument("--out", required=True, type=Path)
     run.add_argument("--workload", required=True)
     run.add_argument("--duration", type=float, default=30)
-    run.add_argument("--debug-port", type=int)
-    run.add_argument("--deadline", type=float, help="Hard workload seconds; default CLI 900, desktop duration + 30. Timeout is a failed measurement.")
-    run.add_argument("--window-state", choices=("visible", "hidden"), default="visible")
+    run.add_argument("--deadline", type=float, help="Hard workload seconds; default 900. Timeout is a failed measurement.")
     args = parser.parse_args()
     if args.command == "prepare":
         prepare(args.root.resolve())
     else:
         result = measure(args.exe.resolve(), args.fixtures.resolve(), args.out.resolve(),
-                         args.workload, args.duration, args.debug_port, args.deadline, args.window_state)
+                         args.workload, args.duration, args.deadline)
         print(json.dumps(result, indent=2))
         if result["measurement_status"] != "completed" or result["owned_after_exit"]:
             raise SystemExit(1)

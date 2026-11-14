@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/devsweep-core", "crates/devsweep-cli", "desktop/src-tauri"]
+members = ["crates/devsweep-core", "crates/devsweep-cli"]
 resolver = "3"
 
 [workspace.package]

@@ -6,9 +6,9 @@
 
 ## Overview
 
-`devsweep` is a Cargo workspace with a reusable `devsweep-core` crate, a
-binary-oriented `devsweep-cli` crate, and a Tauri shell under
-`desktop/src-tauri`. The CLI library keeps the existing
+`devsweep` is a Cargo workspace with a reusable `devsweep-core` crate and a
+binary-oriented `devsweep-cli` crate. The GPUI desktop app lives in the
+standalone `desktop-gpui/` workspace and depends on `devsweep-core` by path. The CLI library keeps the existing
 `devsweep::run()` interface; core exposes only the scanner, plan, execution,
 inventory, rule, cancellation, and service types required by current callers.
 Keep other implementation items private by default.
@@ -56,14 +56,6 @@ crates/
         ├── i18n/                # locale, catalogues, metadata, formatting
         ├── bin/process_fixture.rs # ProcessRunner child-tree fixture
         └── tui/                 # ratatui UI (see frontend spec)
-desktop/
-├── src/                         # React/TypeScript desktop frontend
-└── src-tauri/
-    └── src/
-        ├── lib.rs               # Tauri composition and command registration
-        ├── commands.rs          # async IPC bridge into devsweep-core
-        ├── scan.rs              # scan single-flight/cancel/event orchestration
-        └── error.rs             # tagged IPC error mapping
 ```
 
 Behavior tests live with the owner, including `application::cli::tests`,
@@ -165,11 +157,9 @@ the public sampler's `Default + Send + Sync` guarantees.
   promote only the transitive type closure required by current CLI and service
   signatures. Keep `unreachable_pub` enabled in both crates and do not add
   compatibility re-exports for old implementation paths.
-- Keep `desktop/src-tauri` as a thin adapter over `devsweep-core`; IPC payloads
-  use core Serde models directly. Do not add parallel DTOs or import the CLI
-  crate. Long-running core calls run off the async runtime thread, and the
-  adapter owns only command state, event forwarding, app-data paths, and typed
-  boundary error mapping.
+- Keep `desktop-gpui` a consumer of `devsweep-core`: use core models directly,
+  do not add parallel DTOs or import the CLI crate, and run long core calls on
+  the background executor.
 
 Example from `crates/devsweep-cli/src/application/commands/mod.rs`:
 

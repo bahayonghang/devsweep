@@ -3,7 +3,7 @@
 ## 1. Scope / Trigger
 
 Use this contract when changing project/global discovery, scan health, CLI
-Clean output, or Tauri report decoding/presentation. Coverage explains what
+Clean output, or desktop/TUI report presentation. Coverage explains what
 was examined; it never grants cleanup authority. Core models in
 `crates/devsweep-core/src/model/scan.rs` own the wire shape.
 
@@ -58,7 +58,7 @@ embedded untrusted cleanup plan remains version 2.
   Invalid external plans still fail whole-plan validation. Discovery diagnostics
   are not an exception to the execution trust boundary.
 - Coverage stays visible in empty and partial results. CLI human/JSON and
-  Tauri must expose equivalent core facts for equal effective input options.
+  the GPUI desktop must expose equivalent core facts for equal effective input options.
 - Progress observations remain read-only and cannot become a completed plan.
   Scope, selection, protection and reviewed-rescan changes invalidate stale
   preview/confirmation state through the existing workflow.

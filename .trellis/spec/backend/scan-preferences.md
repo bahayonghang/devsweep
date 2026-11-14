@@ -2,21 +2,14 @@
 
 ## 1. Scope / Trigger
 
-Use when changing remembered desktop scan roots, scope editing, or the related
-Tauri commands. Core `scan_preferences` owns validation and stored bytes.
+Use when changing remembered desktop scan roots or scope editing. Core `scan_preferences` owns validation and stored bytes.
 Preferences select read-only discovery scope; they never authorize cleanup and
 never change the CLI's explicit/default root semantics.
 
 ## 2. Signatures
 
 Core exposes `load_scan_roots`, `save_scan_roots`, `validate_scan_roots`, and
-`scan_root_suggestions`. Tauri exposes these closed responses:
-
-```text
-clean_scan_preferences_get() -> {version: 1, roots: string[], suggestions: string[]}
-clean_scan_preferences_set(roots) -> the same snapshot shape
-clean_scan_roots_validate(roots) -> the same snapshot shape, without persistence
-```
+`scan_root_suggestions`. The GPUI desktop calls them in process.
 
 The fixed Windows settings file is
 `%LOCALAPPDATA%/DevSweep/settings/clean-scan-roots-v1.json`:

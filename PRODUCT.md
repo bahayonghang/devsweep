@@ -27,7 +27,7 @@ only at the execution boundary.
 
 ## Operating Context
 
-- The Windows-first Tauri desktop app is an Operate surface for repeated scan,
+- The Windows-first GPUI desktop app is an Operate surface for repeated scan,
   review, dry-run, confirmation, execution, and reporting workflows.
 - CLI JSON reports support scriptable review and saved-plan workflows; the TUI
   provides an interactive view over the same scan and execution semantics.
@@ -64,7 +64,7 @@ certainty.
   boundary.
 - `DESIGN.md` records the original product and architecture direction; current
   code, tests, and Trellis specs override stale details.
-- The desktop React/Tauri implementation and controlled fixtures cover scan,
+- The GPUI desktop implementation and controlled fixtures cover scan,
   cancel, review, dry-run, confirmation, execution, and reporting states.
 - No field evidence establishes that moving an item to trash immediately frees
   capacity; future UI must not fabricate such a claim.

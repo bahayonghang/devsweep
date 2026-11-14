@@ -114,8 +114,7 @@ explicitly adds cleanup support.
 
 - Good: English/Chinese help, generated manifests, and the actual parser all
   derive from the same built Clap tree; value-less flags remain value-less.
-- Good: the CLI and future Tauri Status fixtures decode through one closed V1
-  test contract and are byte-identical before runtime adapters are registered.
+- Good: the CLI Status fixtures decode through one closed V1 test contract.
 - Base: a fully shaped staged command returns a locale-appropriate human error
   or locale-neutral machine error with `mode_unavailable`/exit 4.
 - Bad: a custom help renderer models `ArgAction::SetTrue` as
@@ -135,8 +134,7 @@ explicitly adds cleanup support.
 - Catalogue parity, plural, accelerator, metadata, locale, unit, injection,
   truncation, and closed presentation-language-tag tests.
 - Closed Status snapshot/live fixture tests, including negative primitive,
-  unit, availability, capability, truncation, sequence, and terminal cases plus
-  byte-identical CLI/Tauri fixtures.
+  unit, availability, capability, truncation, sequence, and terminal cases.
 - Output tests for create-new, stdout/stderr separation, cancel/join,
   `producer_error`, and a real closed OS pipe.
 - Native Windows Terminal evidence for TTY versus redirected behavior,
@@ -516,10 +514,8 @@ const WINGET_UPGRADE_ARGS: [&str; 2] = ["upgrade", "--disable-interactivity"];
 
 #### 1. Scope / Trigger
 
-- Trigger: code changes `analysis/actions.rs`, the Analyze snapshot retention
-  in `desktop/src-tauri/src/analyze.rs`, or the desktop commands
-  `analyze_default_root`, `analyze_reveal`, `analyze_trash_preview`, and
-  `analyze_trash_execute`.
+- Trigger: code changes `analysis/actions.rs` or a desktop caller of Analyze
+  reveal or Recycle Bin preview/execute.
 
 #### 2. Signatures
 
@@ -540,10 +536,9 @@ const WINGET_UPGRADE_ARGS: [&str; 2] = ["upgrade", "--disable-interactivity"];
   through a core-built plan, a live confirmation digest, and an explicit
   second confirmation. The walker, snapshot, and progress types still carry
   no cleanup field.
-- The desktop sends only `(operation_id, node_id)` or
-  `(operation_id, node_ids)`. The Tauri `AnalyzeCoordinator` retains the last
-  terminal snapshot for one operation id; any other id is
-  `analyze_stale_operation`. Core rebuilds each path from `root.input` (or
+- A desktop caller passes only `(operation_id, node_id)` or
+  `(operation_id, node_ids)` against the last terminal snapshot it retained for
+  that operation id; any other id is `analyze_stale_operation`. Core rebuilds each path from `root.input` (or
   `root.normalized`) plus node names along `parent_id` links and rejects
   unknown ids and cycles.
 - Reveal runs program `explorer.exe` with argv `["/select,", <path>]`
@@ -611,8 +606,8 @@ const WINGET_UPGRADE_ARGS: [&str; 2] = ["upgrade", "--disable-interactivity"];
   execution through a fake trash runner that writes Clean audit records.
 - Reveal argv test through a captured `ProcessRequest`, and a launch-failure
   test.
-- Tauri tests for snapshot retention, stale operation refusal, and the
-  command inventory; a bridge test that proves only ids cross the boundary.
+- Desktop caller tests for snapshot retention and stale operation refusal,
+  proving only ids reach the core action.
 
 #### 7. Wrong vs Correct
 
@@ -632,14 +627,13 @@ ProcessRequest {
 }
 ```
 
-### Scenario: Status PDH probes and tray HUD sampler
+### Scenario: Status PDH probes
 
 #### 1. Scope / Trigger
 
 - Trigger: code changes `status/pdh.rs`, `status/host.rs`,
   `status/battery.rs`, the probed groups or fields of `StatusSnapshotV1`,
-  `unsupported_capabilities`, or the Tauri files `hud.rs`, `tray.rs`, and the
-  invoke-handler gate in `lib.rs`.
+  or `unsupported_capabilities`.
 
 #### 2. Signatures
 
@@ -656,9 +650,6 @@ ProcessRequest {
   `commit_limit_bytes`; `PowerV1.full_charge_basis_points` / `cycle_count` /
   `rate_milliwatts` (signed, negative while discharging);
   `NetworkInterfaceV1.kind` (`ethernet` | `wireless` | `other`).
-- `HudSampler::start(interval, sample, emit)`, `HudSampler::stop()`; event
-  `hud-status` with closed payload `{type: "sampling"}` or
-  `{type: "snapshot", snapshot}`.
 
 #### 3. Contracts
 
@@ -708,49 +699,26 @@ ProcessRequest {
   not the outcome check: a host without thermal zones, GPU counters, disk
   counters, or identity still reports `success` when the supported groups
   (cpu, memory, volumes, network, power, processes) are complete.
-- The HUD sampler owns one thread and one `FlagCancelObserver`. It samples
-  at the validated desktop-preference interval (2/5/10 s, default 2 s) only
-  while the HUD window is visible. The interval is captured on show. Hide, HUD destroy, main
-  window destroy, `RunEvent::ExitRequested`/`Exit`, and `Drop` cancel and
-  join it. A second start while running is refused. Tray tooltip updates are
-  posted to the event loop, so a join on the event loop cannot deadlock.
-- Closing the main window calls `app.exit(0)`; the tray icon goes with the
-  process. There is no autostart.
-- Without an app ACL manifest, Tauri lets every local window invoke every app
-  command. `window_gated` wraps `generate_handler!`: `main` may invoke all
-  commands, `hud` only `presentation_settings_get` and `desktop_preferences_get`,
-  any other label nothing.
-  The `hud` capability grants only `core:event:allow-listen` and
-  `core:event:allow-unlisten`.
-
 #### 4. Validation & Error Matrix
 
 - PDH open or counter add fails -> both or one group `unavailable`; the code
   stays in `unsupported_capabilities`.
 - All instances invalid on the first rate read -> `no_valid_data`, not zero.
-- HUD window invokes a cleanup, uninstall, or trash command -> rejected
-  before the command runs.
 
 #### 5. Good/Base/Bad Cases
 
 - Good: two engines of type 3D on one adapter at 70% and 55% report 10000.
 - Base: a desktop with no ACPI zones reports `thermal: unavailable` and lists
   `thermal` as unsupported.
-- Bad: `thermal: available` with an empty zone list, or a HUD sampler thread
-  that survives hide.
+- Bad: `thermal: available` with an empty zone list.
 
 #### 6. Tests Required
 
 - PDH fixture tests for grouping, clamp, idle zero versus no instance, 0 K
   drop, and reason codes; capability-list tests for each probe state and
   for each nullable field (value versus `null`).
-- The closed decoders (`cli_contract.rs` `status_v1_contract` and Tauri
-  `contract.ts`) list every key and recompute the expected capability list;
-  the CLI and Tauri fixture copies stay byte-identical.
-- HUD sampler tests for start on show, cancel and join on hide and drop, no
-  sample after stop, the selected cadence/default 2 s, and a refused second start.
-- A window-gate test over every shipped command for `main`, `hud`, and an
-  unknown label.
+- The closed decoder (`cli_contract.rs` `status_v1_contract`) lists every key
+  and recomputes the expected capability list.
 
 #### 7. Wrong vs Correct
 
@@ -1123,8 +1091,8 @@ GlobalCacheRule {
   starts a full matrix on every push to `dev`.
 - CI must run the same four validation classes as `just ci`: format, check,
   tests, and clippy.
-- The Windows stable job validates the workspace, including the retained Tauri
-  shell. Ubuntu/macOS stable jobs explicitly select core/CLI. MSRV jobs read
+- The Windows stable job validates the workspace. Ubuntu/macOS stable jobs
+  explicitly select core/CLI. MSRV jobs read
   `workspace.package.rust-version` and check/test core/CLI on Windows and Ubuntu;
   adding a desktop package must not silently broaden the CLI compiler contract.
 - The development compiler and declared minimum compiler are separate facts.
@@ -1339,7 +1307,7 @@ cargo test --workspace --locked --all-targets --target-dir /tmp/devsweep-check
   policy before cumulative ranking/cloning, with phase-boundary flushes. See
   [Runtime Publication](./runtime-publication.md); callback cadence is distinct
   from expensive snapshot publication.
-- Webview progress uses the core-owned `ScanPreviewSnapshot` projection. It is an
+- Desktop progress uses the core-owned `ScanPreviewSnapshot` projection. It is an
   observation DTO and must omit `CleanAction`, cleanup intent,
   `selected_by_default`, and the versioned plan envelope.
 - TUI state tests proving staged scan partials apply as cumulative ranked

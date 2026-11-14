@@ -10,11 +10,10 @@
 .kimi-code/
 .omp/
 
-# Cargo, Node, VitePress, and Tauri outputs
+# Cargo, Node, and VitePress outputs
 target/
 dist/
 node_modules/
-desktop/src-tauri/gen/
 docs/.vitepress/cache/
 docs/.vitepress/.temp/
 *.rs.bk
@@ -49,7 +48,7 @@ ehthumbs_vista.db
 *.orig
 *.rej
 
-# Local secrets. desktop/.env.fixture and .env.example stay trackable.
+# Local secrets. .env.fixture and .env.example stay trackable.
 .env
 .env.*
 !.env.fixture

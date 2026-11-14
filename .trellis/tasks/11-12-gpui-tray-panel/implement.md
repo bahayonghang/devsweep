@@ -4,7 +4,7 @@
 
 ## 步骤
 
-1. [ ] 调研并写 `research/tray.md`：托盘回调消息的挂接点、GPUI 固定版本的窗口种类、Tauri 版托盘与 HUD 的做法、历史里软件与优化成功记录的判定。
+1. [ ] 调研并写 `research/tray.md`：托盘回调消息的挂接点、GPUI 固定版本的窗口种类、已移除的 Tauri 版托盘与 HUD 的做法（`git show 0d32939:desktop/src-tauri/src/tray.rs`）、历史里软件与优化成功记录的判定。
 2. [ ] **规划关口**：关闭行为的默认值交给用户确定，更新 `prd.md`。
 
 ### A. core 与 CLI

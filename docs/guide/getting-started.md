@@ -6,8 +6,7 @@ It is designed around reviewable plans rather than implicit deletion.
 ## Prerequisites
 
 - Rust 1.88.0 or later to build from this repository.
-- Node.js only when serving or building this documentation site, or when
-  developing the desktop app (Node.js 22).
+- Node.js only when serving or building this documentation site.
 
 This repository contains a small `process_fixture` test binary as well as the
 main program. Select `devsweep` explicitly when using `cargo run`.
@@ -86,8 +85,7 @@ just docs
 documentation dependencies are not installed.
 
 ```powershell
-just tdev
+just gpui-dev
 ```
 
-`just tdev` starts the Tauri desktop development window from the repository
-root. Install `desktop/` dependencies with `npm ci` first (Node.js 22).
+`just gpui-dev` starts the GPUI desktop window from the repository root.

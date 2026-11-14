@@ -9,7 +9,7 @@
 1. [ ] 调研并写 `research/msi.md`：产品代码在清单里的来源与可靠性；`msiexec` 的静默与重启抑制参数；退出码映射；按用户与按机器安装的提权差别；`KeepAwakeService` 与 CLI 的状态共享。
 2. [ ] **评审关口**：把 `research/msi.md` 的结论（尤其是固定的参数和退出码映射）给用户过目。
 3. [ ] core：MSI 分派、产品代码校验、资格取值、历史记录；测试覆盖 AC2、AC3。
-4. [ ] CLI：`software plan / preview / uninstall` 支持 MSI；契约测试；中英文输出；必要时更新 Tauri 解码器与夹具。
+4. [ ] CLI：`software plan / preview / uninstall` 支持 MSI；契约测试；中英文输出。
    回滚点 A。
 
 ### B. GPUI（在 airy-glass-shell、software-evidence、status-dashboard 之后）

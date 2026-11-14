@@ -9,7 +9,7 @@
 1. [ ] 调研并写 `research/snapshot.md`：遍历器的保留上限、快照里文件节点的完整性、卷容量的取得方式、`recycle_ids()` 的现状、GPUI 弹出菜单的可用接口。
 2. [ ] 最大文件投影与测试（阈值、上限、稳定顺序、空结果、不完整标记）。
 3. [ ] `analyze roots` 的容量证据与测试。
-4. [ ] CLI：`analyze largest` 子命令、契约测试、中英文输出；必要时更新 Tauri 解码器与夹具。
+4. [ ] CLI：`analyze largest` 子命令、契约测试、中英文输出。
    回滚点 A。
 
 ### B. GPUI（在 airy-glass-shell 之后）

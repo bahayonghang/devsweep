@@ -62,34 +62,22 @@ devsweep clean rules list
 
 `--language <en|zh-CN>` localizes human output only. It is invalid with JSON or NDJSON.
 
-See [`docs/guide/cli-migration.md`](docs/guide/cli-migration.md) for labeled old→new mappings. Native Windows evidence is historical; see [`docs/validation/five-mode-native.md`](docs/validation/five-mode-native.md).
+See [`docs/guide/cli-migration.md`](docs/guide/cli-migration.md) for labeled old→new mappings.
 
 ## Desktop Development
 
-The Tauri 2 desktop MVP targets Windows and requires Node.js 22. Install its
-locked frontend dependencies, then start the native development window from the
-repository root:
+The native Windows desktop app is built with GPUI in `desktop-gpui/`, a
+standalone Cargo workspace outside the root workspace. Start its development
+window from the repository root:
 
 ```powershell
-cd desktop
-npm ci
+just gpui-dev
 ```
 
-```powershell
-just tdev
-```
-
-`just tdev` runs `npm run tauri -- dev` in `desktop/`. The equivalent from that
-directory is `npm run tauri -- dev`.
-
-From the repository root, run the desktop frontend and Rust checks or build an
-unsigned NSIS installer:
+Run its gate (format, Clippy, tests, and a release build):
 
 ```powershell
-just desktop-web-check
-just desktop-test
-just desktop-build
-just tinstall
+just gpui
 ```
 
 The desktop app uses the same core validation, confirmation digest, and

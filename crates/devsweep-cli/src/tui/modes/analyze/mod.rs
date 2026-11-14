@@ -549,7 +549,7 @@ mod tests {
     #[test]
     fn cli_generated_fixture_matches_tui_reducer_totals_evidence_and_warnings() {
         let envelope: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../../../../desktop/src/api/fixtures/analyze/cli-parity.json"
+            "../../../../tests/fixtures/analyze/cli-parity.json"
         ))
         .expect("CLI parity envelope");
         let snapshot: AnalyzeSnapshotV1 =

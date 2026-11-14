@@ -183,13 +183,11 @@ class TestJustfileSkillRecipes(unittest.TestCase):
     def test_install_all_and_unrelated_recipes_not_expanded(self) -> None:
         recipes = just_recipes(JUSTFILE.read_text(encoding="utf-8"))
         install_all = recipes["install-all"]
-        self.assertIn("install tinstall install-skill", install_all)
+        self.assertIn("install install-skill", install_all)
         self.assertNotIn("check-skills", install_all)
         self.assertNotIn("check-skills", recipes["ci"])
         self.assertNotIn("install-skill", recipes["ci"])
         self.assertNotIn("check-skills", recipes["dev"])
-        self.assertNotIn("check-skills", recipes["tdev"])
-        self.assertNotIn("check-skills", recipes["desktop-web-check"])
         self.assertNotIn("check-skills", recipes["release-archive"])
         self.assertNotIn("check-skills", recipes["release-smoke"])
 

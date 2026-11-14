@@ -42,14 +42,14 @@
 - AC2：GPUI 里每个会改变主机状态的动作，都能在对应子任务的"等价 CLI"表里找到同一 core 路径的 CLI 命令，且该命令有契约测试。
 - AC3：`desktop-gpui` 源码里没有新增的外部进程派生点（`explorer.exe` 除外）；有检索证据。
 - AC4：`desktop-gpui/DESIGN.md` 与 `ui.rs` 的 Token 一致；源码守卫测试通过。
-- AC5：CLI 的 JSON 新增字段没有破坏 Tauri 桌面的封闭解码器，`desktop` 测试通过。
+- AC5：CLI 的 JSON 新增字段保持 V1 增量，CLI 契约测试通过。（Tauri 桌面已于 2026-11-14 移除）
 - AC6：`AGENTS.md` 的安全契约逐条复核，没有新增 `--execute`、永久删除、Docker 清理或 Cargo home 清理动作。
 - AC7：`just ci` 与 `just gpui` 在集成后的分支上通过。
 - AC8：五个模式加托盘面板的原生截图矩阵（英文与中文、浅色与深色），与 `research/gap-analysis.md` 第 4 节逐条对照，每个差距标为已解决、有意差异或延后。
 
 ## 不在范围
 
-健康分数。行星、插画、诗句和首屏大图。仅深色。永久删除。执行注册表里的厂商卸载命令字符串。Docker 与 Cargo home 清理。错误报告、Windows Update 下载、传递优化、Downloads 的清理。风扇控制、扫描增长对比、MFT 扫描。Tauri 与 TUI 的界面改版。复制 Mole 的素材、名称或文案。
+健康分数。行星、插画、诗句和首屏大图。仅深色。永久删除。执行注册表里的厂商卸载命令字符串。Docker 与 Cargo home 清理。错误报告、Windows Update 下载、传递优化、Downloads 的清理。风扇控制、扫描增长对比、MFT 扫描。TUI 的界面改版。复制 Mole 的素材、名称或文案。
 
 ## 决定
 

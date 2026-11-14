@@ -9,7 +9,7 @@
 1. [ ] 调研并写 `research/contract.md`：`DisplayIcon` 与 `InstallDate` 的实际格式样本、MSIX 的 logo 与安装时间来源、版本策略、`discover_software_leftovers` 的调用前提。
 2. [ ] `software/model.rs` 加字段；ARP 与 MSIX 采集补解析；夹具测试覆盖有值、缺失、格式错误。
 3. [ ] CLI：`software inventory` 的 JSON 契约测试与人类可读输出（中英文）。
-4. [ ] Tauri：解码器、生成类型、夹具；跑 `desktop` 测试。
+4. [x] 不再适用（Tauri 桌面已于 2026-11-14 移除）。
    回滚点 A。
 
 ### B. GPUI（在 airy-glass-shell 之后）

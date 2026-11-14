@@ -28,7 +28,7 @@ New roots with no old equivalent:
 | `devsweep status {snapshot,live}` | Read-only metrics. `status live --format human` requires a TTY; NDJSON is the non-interactive stream. |
 | `devsweep history {list,show}` | Read-only inspection of the fixed V1 audit stores. Unknown or newer schema versions are preserved and never executed. |
 
-TUI and the packaged Tauri app follow the same mode set. Unavailable
+TUI and the GPUI desktop app follow the same mode set. Unavailable
 capabilities are omitted or labelled unsupported; they are not placeholders or
 compatibility aliases.
 

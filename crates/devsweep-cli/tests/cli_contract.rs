@@ -314,7 +314,7 @@ fn legacy_audit_paths_are_not_accepted_discovered_or_modified() {
 }
 
 #[test]
-fn status_wire_fixtures_are_closed_typed_and_cli_tauri_exact() {
+fn status_wire_fixtures_are_closed_and_typed() {
     status_v1_contract::verify_canonical_fixtures();
     status_v1_contract::verify_closed_schema_rejections();
 }
@@ -1565,17 +1565,10 @@ mod status_v1_contract {
 
     pub(super) fn verify_canonical_fixtures() {
         let cli_snapshot_source = include_str!("fixtures/cli/status-snapshot.json");
-        let tauri_snapshot_source = include_str!("fixtures/cli/status-snapshot.tauri.json");
-        assert_eq!(cli_snapshot_source, tauri_snapshot_source);
         let cli_snapshot = SnapshotEnvelopeV1::decode(
             serde_json::from_str(cli_snapshot_source).expect("CLI snapshot fixture JSON"),
         )
         .expect("CLI snapshot satisfies closed Status V1");
-        let tauri_snapshot = SnapshotEnvelopeV1::decode(
-            serde_json::from_str(tauri_snapshot_source).expect("Tauri snapshot fixture JSON"),
-        )
-        .expect("Tauri snapshot satisfies closed Status V1");
-        assert_eq!(cli_snapshot, tauri_snapshot);
         assert_eq!(cli_snapshot.data.sample_window_ms, 1000);
         assert_eq!(cli_snapshot.data.logical_processor_count, 16);
         let AvailabilityV1::Available { value: network, .. } = &cli_snapshot.data.network else {
@@ -1640,12 +1633,7 @@ mod status_v1_contract {
         ));
 
         let cli_stream_source = include_str!("fixtures/cli/status-live.ndjson");
-        let tauri_stream_source = include_str!("fixtures/cli/status-live.tauri.ndjson");
-        assert_eq!(cli_stream_source, tauri_stream_source);
         let cli_stream = decode_stream(cli_stream_source).expect("CLI NDJSON satisfies closed V1");
-        let tauri_stream =
-            decode_stream(tauri_stream_source).expect("Tauri NDJSON satisfies closed V1");
-        assert_eq!(cli_stream, tauri_stream);
         assert_eq!(cli_stream.len(), 4);
         let StatusEventV1::Started {
             interval_ms,

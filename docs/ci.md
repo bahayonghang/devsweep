@@ -5,7 +5,6 @@
 | Job | Purpose |
 | --- | --- |
 | `rust` on Windows, Ubuntu, and macOS | Format, locked check, locked tests, and Clippy with warnings denied. |
-| `desktop` on Windows | Node 22 desktop frontend types drift check, lint, typecheck, test, and Vite build as separate steps, then unsigned Tauri compile (`tauri build --no-bundle`). |
 | `docs` | Node 22 documentation site build from the root `package-lock.json` (`npm ci` then `npm run docs:build`). |
 | `msrv` | Check and test core/CLI on the exact `package.rust-version` from `Cargo.toml` on Ubuntu and Windows. |
 | `cargo-audit` | RustSec advisory gate. |
@@ -16,27 +15,16 @@ Hosted CI runs on `pull_request` and `workflow_dispatch` only. Direct pushes to
 `dev` or `main` do not start this workflow.
 
 Non-Windows Rust jobs and all MSRV jobs select `-p devsweep-core -p devsweep-cli`
-explicitly. Desktop workspace members have separate platform/toolchain validation;
-adding a desktop member must not silently expand the CLI's compiler requirements.
+explicitly. The GPUI desktop app (`desktop-gpui/`) is a standalone workspace with
+its own local gate (`just gpui`) and is not part of hosted CI.
 
 All jobs use read-only contents permission, cancel-in-progress concurrency, and
-bounded timeouts. Hosted Desktop frontend checks are split into one step per npm
-script so a native non-zero exit cannot be swallowed by a later command. Types
-drift is compared before any generate-write. The comparison ignores
-working-tree CRLF so Windows checkouts of the LF blob do not fail.
+bounded timeouts.
 
 ## Node and npm
 
-The desktop app declares `engines.node` `>=22 <23` and `engines.npm` `>=10 <12`
-(npm 10 or 11) in `desktop/package.json`. Hosted `desktop` and `docs` jobs use
-Node 22. Local desktop gates must use that same Node 22 and npm 10 or 11 range;
-newer system Node/npm (for example Node 26 / npm 12) is outside the supported
-engines.
-
-Install locked dependencies with `npm ci`:
-
-- Documentation: repository root `package-lock.json`.
-- Desktop: `desktop/package-lock.json`.
+The documentation site uses Node 22. Install its locked dependencies from the
+repository root `package-lock.json` with `npm ci`.
 
 ## Local Rust gate
 
@@ -52,26 +40,6 @@ Refresh the lockfile only with the explicit maintenance recipe:
 ```powershell
 just sync-lock
 ```
-
-## Local desktop gate
-
-```powershell
-just desktop-web-check
-```
-
-The recipe runs these named npm scripts in order under `desktop/`:
-`types:generate -- --check`, `lint`, `typecheck`, `test`, and `build`. Each
-invocation's native exit code is checked; a non-zero status stops the entry.
-
-On Windows PowerShell, chaining native commands with `;` does not stop on an
-early failure. This recipe therefore checks `$LASTEXITCODE` after each npm
-invocation instead of relying on the last command.
-
-`types:generate --check` compares committed `desktop/src/api/types.gen.ts` to
-the generator's `--stdout` result and does not write. Newlines are canonicalized
-to LF before comparison, so a Windows CRLF working tree is not treated as drift.
-Unflagged `npm run types:generate` still writes and is the explicit maintenance
-path.
 
 ## Documentation build
 

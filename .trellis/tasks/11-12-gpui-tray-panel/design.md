@@ -14,7 +14,7 @@
 
 ## GPUI
 
-- **托盘消息**：`notify_data`（`tray.rs:229-252`）现在只设 `NIF_ICON | NIF_TIP`。加上回调消息，在消息窗口里处理左键、右键和键盘激活。实现前先看 Tauri 版的先例（`desktop/src-tauri/src/tray.rs`、`hud.rs`）和 vendor 的 `gpui_windows` 是否已有消息窗口可挂接。
+- **托盘消息**：`notify_data`（`tray.rs:229-252`）现在只设 `NIF_ICON | NIF_TIP`。加上回调消息，在消息窗口里处理左键、右键和键盘激活。实现前可参考已移除的 Tauri 版先例（提交 `0d32939` 及更早版本中的 `desktop/src-tauri/src/tray.rs`、`hud.rs`，用 `git show` 查看）和 vendor 的 `gpui_windows` 是否已有消息窗口可挂接。
 - **菜单**：原生弹出菜单，两项。显示前把消息窗口设为前台，这是 Windows 托盘菜单能正常关闭的前提。
 - **面板**：一个无边框的小窗口，定位在托盘图标附近并限制在工作区内。第一步确认固定版本的 GPUI 支持的窗口种类（弹出窗口、置顶、不进任务栏）；不支持时退为一个普通的小窗口。失去焦点或按 Escape 关闭。内容复用 status-dashboard 的指标组件的紧凑形态。
 - **可见性**：`session.status_set_tray_visible`（`main.rs:62`）只在面板打开时为真。`StatusPanel::reconcile`（`status_panel.rs:55-66`）的逻辑不用改。status-dashboard 已把启动时的置位改为假。

@@ -51,9 +51,9 @@ const COPY_NAME: &str = "copy.txt";
 const EARTH_NAME: &str = "earth-still.png";
 const ICON_BYTES: &[u8] = include_bytes!("../assets/devsweep-icon-master.png");
 const COPY_BYTES: &[u8] = include_bytes!("../assets/copy.txt");
-// Byte-identical to desktop/public/earth/still.png (SHA-256
-// 1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18, Natural
-// Earth public domain; provenance in desktop/public/THIRD_PARTY_NOTICES.txt).
+// Natural Earth still (SHA-256
+// 1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18, public
+// domain; provenance in desktop-gpui/THIRD_PARTY_NOTICES.txt).
 const EARTH_BYTES: &[u8] = include_bytes!("../assets/earth-still.png");
 const WINDOW_TITLE: &str = "DevSweep";
 
@@ -2826,9 +2826,9 @@ mod tests {
         }
         assert_eq!(listed.len(), 3 + ui::ICONS.len());
         // The landing still is the repository's licensed Earth image, not a
-        // newly fetched asset. The packaged bytes must stay byte-identical to
-        // desktop/public/earth/still.png (the constant in this file documents
-        // the same hash), and it is a single still frame: the render path
+        // newly fetched asset. The packaged bytes must match the hash pinned in
+        // THIRD_PARTY_NOTICES.txt (the constant in this file documents the same
+        // hash), and it is a single still frame: the render path
         // paints it with `img` and never requests an animation frame.
         let earth = PackagedAssets
             .load(EARTH_NAME)
@@ -2845,13 +2845,18 @@ mod tests {
         };
         assert_eq!(
             earth_hash, "1826f0bd821a838717f4cd8756d3fa50c85ada38395f8a8bfaa638e0620cfe18",
-            "packaged Earth still must stay byte-identical to desktop/public/earth/still.png"
+            "packaged Earth still must match the hash pinned in THIRD_PARTY_NOTICES.txt"
         );
         assert!(!earth.is_empty());
         let view_source = crate::source_lf(include_str!("view.rs"));
         assert!(
-            view_source.contains("desktop/public/earth/still.png"),
-            "the earth-still reuse must stay documented in view.rs"
+            view_source.contains("desktop-gpui/THIRD_PARTY_NOTICES.txt"),
+            "the earth-still provenance must stay documented in view.rs"
+        );
+        let notices = include_str!("../THIRD_PARTY_NOTICES.txt");
+        assert!(
+            notices.contains(&earth_hash),
+            "THIRD_PARTY_NOTICES.txt must pin the packaged Earth still"
         );
         let copy_bytes = PackagedAssets.load(COPY_NAME).unwrap().expect("copy");
         let packaged_copy = std::str::from_utf8(copy_bytes.as_ref()).unwrap();

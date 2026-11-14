@@ -3,4 +3,4 @@
 {"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引"}
 {"file": ".trellis/spec/backend/provider-authority.md", "reason": "授权依据与执行边界"}
 {"file": ".trellis/spec/backend/error-handling.md", "reason": "错误与不可用状态的表达"}
-{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "core、CLI、Tauri、GPUI 跨层变更检查"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "core、CLI、GPUI 跨层变更检查"}

@@ -6,8 +6,7 @@ DevSweep 是一个用于规划和执行开发工作区清理的 Rust 命令行�
 ## 前置条件
 
 - 从本仓库构建需要 Rust 1.88.0 或更高版本。
-- 仅在启动或构建本文档站点，或开发桌面应用时需要 Node.js（桌面端需要
-  Node.js 22）。
+- 仅在启动或构建本文档站点时需要 Node.js。
 
 本仓库同时包含主程序和一个名为 `process_fixture` 的测试二进制目标。因此使用
 `cargo run` 时必须显式选择 `devsweep`。
@@ -82,8 +81,7 @@ just docs
 `just docs` 启动本文档站点；若尚未安装文档依赖，请先运行 `npm ci`。
 
 ```powershell
-just tdev
+just gpui-dev
 ```
 
-`just tdev` 从仓库根目录启动 Tauri 桌面开发窗口。请先在 `desktop/` 下用
-`npm ci` 安装依赖（需要 Node.js 22）。
+`just gpui-dev` 从仓库根目录启动 GPUI 桌面窗口。

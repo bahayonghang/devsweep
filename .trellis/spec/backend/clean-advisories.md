@@ -57,32 +57,3 @@ shared atomic replacement helper. Failed replacement preserves the prior value
 and removes temporary bytes. The pure `clean_advisory_preferences` validator
 allows a caller to offer session-only recovery without overwriting corrupt data.
 
-## Desktop contract and verification
-
-The thin Tauri module exposes `clean_advisory_preferences_get`,
-`clean_advisory_preferences_set(threshold_gib)`, and
-`clean_advisories(report, threshold_gib)`. Each dispatches blocking work through
-`spawn_blocking`. The existing bridge uses camelCase `thresholdGib` IPC arguments;
-components only call the typed DesktopBridge methods. No new command belongs to
-the HUD allowlist.
-
-Closed decoders reject unknown fields, unsafe values, incorrect included kinds,
-invalid SHA identities, duplicate owners/IDs, contradictory confidence and
-assessment, and threshold-response mismatches. Generate `types.gen.ts` from
-fixtures; never edit it directly.
-
-`cargo run -p devsweep-core --example clean_advisory_fixture` regenerates the
-native Windows fixture corpus using public core functions. It also emits exact
-scoped report/advisory replay pairs for the browser fixture. Fixture scan honors
-global/project options and explicit supported roots, emits the same rows in
-progress and completion, and keeps project defaults false. It rejects advisory
-requests for unrecorded reports rather than inventing frontend ownership or
-reusing an unrelated report hash. Historical saved fixtures remain unchanged.
-
-Required tests cover T-1/T/T+1, accumulated small outputs, partial/unknown
-assessments, dependencies, owner aliases/overlap/shared storage, zero-target
-coverage and volume-root boundaries, no report mutation, integer boundaries,
-missing/corrupt/future stores, failed replacement, concurrent whole-value writes,
-closed decoder and native Rust wire/projection parity. Windows-only archived
-path parity is separate from portable core tests and cross-platform wire
-roundtrips. Parent integration owns native UI and `just ci` evidence.
