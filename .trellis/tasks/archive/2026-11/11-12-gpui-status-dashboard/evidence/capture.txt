@@ -1,0 +1,26 @@
+baseline=False binary_sha256=93F07E0203906A044989A25682DB70A7E1FDF3F92F42C442C30B8A2071A1C59E os=10.0.26300.0 cores=24
+en-dark dpi=120 size=1350x900
+en-dark clean_idle_cpu_ms_over_3s=31.25 threads=48
+en-dark captured_after_entry_ms=2106
+en-dark live_cpu_ms_over_3s=62.5 threads=51
+en-dark paused_cpu_ms_over_3s=0 threads=50
+en-dark after_leave_cpu_ms_over_3s=31.25 threads=49
+en-dark exit=0
+zh-dark dpi=120 size=1350x900
+zh-dark clean_idle_cpu_ms_over_3s=46.875 threads=60
+zh-dark live_cpu_ms_over_3s=62.5 threads=62
+zh-dark paused_cpu_ms_over_3s=15.625 threads=61
+zh-dark after_leave_cpu_ms_over_3s=0 threads=60
+zh-dark exit=0
+en-light dpi=120 size=1350x900
+en-light clean_idle_cpu_ms_over_3s=156.25 threads=60
+en-light live_cpu_ms_over_3s=109.375 threads=62
+en-light paused_cpu_ms_over_3s=0 threads=61
+en-light after_leave_cpu_ms_over_3s=0 threads=60
+en-light exit=0
+zh-light dpi=120 size=1350x900
+zh-light clean_idle_cpu_ms_over_3s=140.625 threads=60
+zh-light live_cpu_ms_over_3s=0 threads=62
+zh-light paused_cpu_ms_over_3s=0 threads=61
+zh-light after_leave_cpu_ms_over_3s=0 threads=60
+zh-light exit=0

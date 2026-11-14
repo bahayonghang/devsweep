@@ -1,0 +1,6 @@
+baseline=True binary_sha256=C9E11AC1DD2FC8A802F48A09B6BD81491A4809C4814C4412088D94E791086BC6 os=10.0.26300.0 cores=24
+en-dark dpi=120 size=1350x900
+en-dark clean_idle_cpu_ms_over_3s=0 threads=47
+en-dark status_not_live_cpu_ms_over_3s=0 threads=48
+en-dark after_leave_cpu_ms_over_3s=15.625 threads=48
+en-dark exit=0

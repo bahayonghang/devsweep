@@ -53,3 +53,12 @@
 - Tauri 封闭解码器漏改会让 Tauri 的 Status 页整体失败。验收 AC3 专门覆盖。
 - 自动采样改变了空闲开销。AC7 记录前后对比。
 - 电池与频率接口在台式机或虚拟机上经常不可用，界面必须把"不可用"当常态处理。
+
+## 已定事项（用户 2026-11-13 批准，依据 `research/collectors.md` 第 6 节）
+
+1. 字段级缺失原因：扩展封闭的 `UnsupportedCode`，新增 `cpu_frequency`、`battery_health`、`battery_cycle_count`、`battery_rate`、`gpu_name`，字段为 `null` 时列出。不把父块标为 partial。
+2. `physical_disk_activity` 改为条件列出：`disk_activity` 有值时不列，与 gpu/thermal 一致。`host`、`disk_activity` 不参与 envelope `outcome` 判定。
+3. 新增 windows-sys 特性 `Wdk_Graphics_Direct3D` 与 `Win32_Devices_DeviceAndDriverInstallation`（注册表读取沿用现有本地声明或已启用特性）；同步更新规格中"只新增 `Win32_System_Performance`"的记录。
+4. `NetworkKind` 不加 `virtual`：`Type` 为以太网但 `InterfaceAndOperStatusFlags.HardwareInterface` 为假的接口归为 `other`。
+5. 电池：`full_charge_basis_points` 超过 10000 照实输出，界面条形封顶；`cycle_count` 为 0 视为未报告（`null` 并列 `battery_cycle_count`）；充放电功率沿用 30 秒电源节奏。
+6. `os_version` 为实测版本加 DisplayVersion，例如 `10.0.26300.9974 (26H2)`；不按构建号推断产品名，不读 `ProductName`。

@@ -6,19 +6,19 @@
 
 ### A. core 与 CLI（可先于界面进行）
 
-1. [ ] 调研并写 `research/collectors.md`：每个新指标的系统接口、是否需要提权、失败时的原因码；V1 增量还是 V2 的结论。
-2. [ ] 扩展 `status/mod.rs` 的模型和 `sampler.rs`、`system.rs`、`network.rs`、`pdh.rs` 的采集。每项补"有值"和"不可用"两类测试。
-3. [ ] CLI：`commands/status.rs` 的人类可读输出与双语文案；`cli_contract.rs`、`five_mode_contract.rs` 的契约断言。
-4. [ ] Tauri：更新 `desktop/src/api/contract.ts`、生成类型和夹具，跑 `desktop` 的测试。
-5. [ ] 跑 `tools/status-sink-smoke.py` 和 `tools/summarize-native-status.py`。
+1. [x] 调研并写 `research/collectors.md`：每个新指标的系统接口、是否需要提权、失败时的原因码；V1 增量还是 V2 的结论。
+2. [x] 扩展 `status/mod.rs` 的模型和 `sampler.rs`、`system.rs`、`network.rs`、`pdh.rs` 的采集。每项补"有值"和"不可用"两类测试。
+3. [x] CLI：`commands/status.rs` 的人类可读输出与双语文案；`cli_contract.rs`、`five_mode_contract.rs` 的契约断言。
+4. [x] Tauri：更新 `desktop/src/api/contract.ts`、生成类型和夹具，跑 `desktop` 的测试。
+5. [x] 跑 `tools/status-sink-smoke.py` 和 `tools/summarize-native-status.py`。
    回滚点 A：后端新增字段独立可用。
 
 ### B. GPUI（在 airy-glass-shell 之后）
 
-6. [ ] `status_panel.rs`：环形缓冲和测试。
-7. [ ] `shell.rs`：可见即采样、不可见即停；`main.rs:62` 的托盘可见位改为假；更新相关测试。
-8. [ ] `page_status.rs`：指标格、趋势绘制、健康格、进程表列。
-9. [ ] 文案：新指标和不可用原因的中英文。
+6. [x] `status_panel.rs`：环形缓冲和测试。
+7. [x] `shell.rs`：可见即采样、不可见即停；`main.rs:62` 的托盘可见位改为假；更新相关测试。
+8. [x] `page_status.rs`：指标格、趋势绘制、健康格、进程表列。
+9. [x] 文案：新指标和不可用原因的中英文。
    回滚点 B：界面改动。
 
 ## 验证
