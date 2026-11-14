@@ -676,8 +676,12 @@ impl Render for ShellView {
             self.session.prepare_analyze_landing();
         }
         self.dispatch_jobs(cx);
+        // Status samples while its page is on screen and stops when it is not.
         let status_main = selected == Mode::Status && surface == Surface::Mode;
         self.session.status_set_main_visible(status_main);
+        if let Some(generation) = self.session.take_status_poll_request() {
+            self.start_status_poll(generation, cx);
+        }
         let review_surface = self.clean_review_active();
         let key_context = if menu_open {
             "ShellMenu"
@@ -1342,7 +1346,7 @@ impl ShellView {
                 Mode::Software => self.software_page(t, window, cx),
                 Mode::Optimize => self.optimize_page(t, cx),
                 Mode::Analyze => self.analyze_page(t, cx),
-                Mode::Status => self.status_page(t, cx),
+                Mode::Status => self.status_page(t, window, cx),
             },
             Surface::Settings => self.settings_page(t, cx),
             Surface::Protection => self.protection_page(t, cx),
@@ -1431,17 +1435,23 @@ impl ShellView {
         cx.notify();
     }
 
-    fn start_status_poll(&mut self, cx: &mut Context<Self>) {
+    /// Drain live Status samples every 250 ms while the subscription of
+    /// `generation` is open. Redraw only when a sample or terminal arrived;
+    /// no animation frame is requested.
+    fn start_status_poll(&mut self, generation: u64, cx: &mut Context<Self>) {
         cx.spawn(async move |this, cx| {
             loop {
                 let stop = this
                     .update(cx, |this, cx| {
+                        if !this.session.status_poll_current(generation) {
+                            return true;
+                        }
                         let visible = this.session.shell().mode() == Mode::Status
                             && this.session.shell().surface() == Surface::Mode;
                         if this.session.poll_status_live() && visible {
                             cx.notify();
                         }
-                        this.session.status_phase() != crate::status_panel::StatusPhase::Live
+                        !this.session.status_poll_current(generation)
                     })
                     .unwrap_or(true);
                 if stop {
@@ -2002,12 +2012,18 @@ pub(crate) fn panel_entries(session: &Session, save_error: Option<&str>) -> Vec<
             if mode == Mode::Status {
                 let phase = if session.status_phase() == crate::status_panel::StatusPhase::Live {
                     copy::status_phase_live(locale)
+                } else if session.status_paused() {
+                    copy::status_phase_paused(locale)
                 } else {
                     copy::status_phase_landing(locale)
                 };
                 entries.push(PanelEntry::Text(format!("phase={phase}")));
                 if session.status_phase() == crate::status_panel::StatusPhase::Live {
-                    entries.push(PanelEntry::Text(copy::status_live_started(locale, 1, 8)));
+                    entries.push(PanelEntry::Text(copy::status_live_started(
+                        locale,
+                        crate::shell::STATUS_LIVE_INTERVAL_MS / 1_000,
+                        crate::shell::STATUS_PROCESS_LIMIT,
+                    )));
                 }
                 if let Some(snapshot) = session.status_snapshot() {
                     for line in crate::status_panel::group_lines(snapshot, locale) {

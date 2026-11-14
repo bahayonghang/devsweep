@@ -1742,13 +1742,6 @@ pub fn status_live_started(locale: Locale, interval: u32, limit: u32) -> String 
     }
 }
 
-pub fn status_live_stopped(locale: Locale, reason: &str) -> String {
-    match locale {
-        Locale::En => format!("Live status stopped ({reason})."),
-        Locale::ZhCn => format!("实时状态已停止（{reason}）。"),
-    }
-}
-
 pub fn status_action_snapshot(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Refresh snapshot",
@@ -1756,17 +1749,24 @@ pub fn status_action_snapshot(locale: Locale) -> &'static str {
     }
 }
 
-pub fn status_action_live_start(locale: Locale) -> &'static str {
+pub fn status_action_pause(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "Start live",
-        Locale::ZhCn => "开始实时",
+        Locale::En => "Pause",
+        Locale::ZhCn => "暂停",
     }
 }
 
-pub fn status_action_live_stop(locale: Locale) -> &'static str {
+pub fn status_action_resume(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "Stop live",
-        Locale::ZhCn => "停止实时",
+        Locale::En => "Resume",
+        Locale::ZhCn => "继续",
+    }
+}
+
+pub fn status_phase_paused(locale: Locale) -> &'static str {
+    match locale {
+        Locale::En => "Paused",
+        Locale::ZhCn => "已暂停",
     }
 }
 
@@ -1954,20 +1954,115 @@ pub fn optimize_catalogue_status(locale: Locale, total: usize, runnable: usize) 
     }
 }
 
-/// First-row status of the Status page while it is not live.
+/// Where the Status page's live sampling stands.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StatusLiveState {
+    /// Live, waiting for the first reading.
+    Starting,
+    Live,
+    Paused,
+    /// A one-off snapshot is being taken while paused.
+    Snapshot,
+    /// The sampler could not start.
+    StartFailed,
+    /// The sampler stopped on its own.
+    Ended,
+}
+
+/// First-row status of the Status page. `samples` is how many readings each
+/// trend holds, out of `capacity`.
 #[must_use]
-pub fn status_idle_status(locale: Locale, sampling: bool, has_snapshot: bool) -> &'static str {
-    if sampling {
-        pick(locale, "Taking a snapshot", "正在生成快照")
-    } else if has_snapshot {
-        pick(
-            locale,
-            "Snapshot shown, live updates off",
-            "显示的是快照，未开启实时刷新",
-        )
-    } else {
-        pick(locale, "Not sampling", "未在采样")
+pub fn status_live_line(
+    locale: Locale,
+    state: StatusLiveState,
+    interval_seconds: u32,
+    samples: usize,
+    capacity: usize,
+) -> String {
+    match (locale, state) {
+        (Locale::En, StatusLiveState::Starting) => "Starting live sampling".to_string(),
+        (Locale::ZhCn, StatusLiveState::Starting) => "正在开始实时采样".to_string(),
+        (Locale::En, StatusLiveState::Live) => format!(
+            "Live, every {interval_seconds} s · {samples} of {capacity} samples in the trends"
+        ),
+        (Locale::ZhCn, StatusLiveState::Live) => {
+            format!("实时，每 {interval_seconds} 秒 · 趋势已有 {samples}/{capacity} 个样本")
+        }
+        (Locale::En, StatusLiveState::Paused) => {
+            format!("Paused · trends keep {samples} samples")
+        }
+        (Locale::ZhCn, StatusLiveState::Paused) => format!("已暂停 · 趋势保留 {samples} 个样本"),
+        (Locale::En, StatusLiveState::Snapshot) => "Paused · taking a snapshot".to_string(),
+        (Locale::ZhCn, StatusLiveState::Snapshot) => "已暂停 · 正在生成快照".to_string(),
+        (Locale::En, StatusLiveState::StartFailed) => "Live sampling could not start".to_string(),
+        (Locale::ZhCn, StatusLiveState::StartFailed) => "实时采样无法启动".to_string(),
+        (Locale::En, StatusLiveState::Ended) => "Live sampling stopped".to_string(),
+        (Locale::ZhCn, StatusLiveState::Ended) => "实时采样已停止".to_string(),
     }
+}
+
+/// Plain words for a Status reason code. An unknown code is named as is.
+#[must_use]
+pub fn status_reason(locale: Locale, code: &str) -> String {
+    let words = match code {
+        "counter_missing" => pick(
+            locale,
+            "The Windows performance counter is missing.",
+            "缺少 Windows 性能计数器。",
+        ),
+        "pdh_unavailable" => pick(
+            locale,
+            "Windows performance counters could not be opened.",
+            "无法打开 Windows 性能计数器。",
+        ),
+        "no_instances" => pick(
+            locale,
+            "No device reported this reading.",
+            "没有设备上报这项读数。",
+        ),
+        "no_valid_data" => pick(
+            locale,
+            "The counter has no valid reading yet.",
+            "计数器还没有有效读数。",
+        ),
+        "collect_failed" | "counter_read_failed" | "status_sample_failed" => {
+            pick(locale, "Reading it failed.", "读取失败。")
+        }
+        "zero_elapsed"
+        | "counter_reset"
+        | "sample_gap"
+        | "inconsistent_counters"
+        | "interface_churn"
+        | "not_sampled" => pick(locale, "Waiting for the next sample.", "等待下一次采样。"),
+        "access_denied" | "permission_denied" | "process_access_denied" => {
+            pick(locale, "Windows denied access.", "Windows 拒绝了访问。")
+        }
+        "api_unavailable" => pick(
+            locale,
+            "The Windows interface for it is not available.",
+            "对应的 Windows 接口不可用。",
+        ),
+        "platform_unsupported" => pick(locale, "Not supported on this platform.", "此平台不支持。"),
+        "battery_absent" => pick(
+            locale,
+            "This PC reports no battery.",
+            "这台电脑没有报告电池。",
+        ),
+        "sample_aged" => pick(locale, "The reading is old.", "读数已过时。"),
+        "detail_budget_exhausted" | "process_limit" => pick(
+            locale,
+            "Sampling stopped at its time or row limit.",
+            "采样在时间或行数上限处停止。",
+        ),
+        "volume_incomplete" => pick(locale, "Some volumes did not report.", "部分卷没有上报。"),
+        other => {
+            return match locale {
+                Locale::En => format!("Not reported ({other})."),
+                Locale::ZhCn => format!("未上报（{other}）。"),
+            };
+        }
+    };
+    words.to_string()
 }
 
 /// First-row status of the Analyze landing: how many locations are listed.
@@ -2290,6 +2385,57 @@ mod tests {
             "clean | op-1 | succeeded"
         );
     }
+    #[test]
+    fn status_reasons_and_live_lines_are_worded_in_both_locales() {
+        for code in [
+            "counter_missing",
+            "pdh_unavailable",
+            "no_instances",
+            "no_valid_data",
+            "collect_failed",
+            "zero_elapsed",
+            "access_denied",
+            "api_unavailable",
+            "platform_unsupported",
+            "battery_absent",
+            "sample_aged",
+            "detail_budget_exhausted",
+            "volume_incomplete",
+        ] {
+            let en = status_reason(Locale::En, code);
+            let zh = status_reason(Locale::ZhCn, code);
+            assert!(!en.contains(code), "{code} has words: {en}");
+            assert!(!zh.contains(code), "{code} has words: {zh}");
+            assert!(
+                !zh.replace("Windows", "")
+                    .chars()
+                    .any(|c| c.is_ascii_lowercase()),
+                "{code} in Chinese has no English words: {zh}"
+            );
+        }
+        assert_eq!(
+            status_reason(Locale::ZhCn, "new_code"),
+            "未上报（new_code）。"
+        );
+        for state in [
+            StatusLiveState::Starting,
+            StatusLiveState::Live,
+            StatusLiveState::Paused,
+            StatusLiveState::Snapshot,
+            StatusLiveState::StartFailed,
+            StatusLiveState::Ended,
+        ] {
+            let en = status_live_line(Locale::En, state, 1, 12, 60);
+            let zh = status_live_line(Locale::ZhCn, state, 1, 12, 60);
+            assert_ne!(en, zh);
+            assert!(!zh.chars().any(|c| c.is_ascii_lowercase()), "{zh}");
+        }
+        assert_eq!(
+            status_live_line(Locale::En, StatusLiveState::Live, 1, 12, 60),
+            "Live, every 1 s · 12 of 60 samples in the trends"
+        );
+    }
+
     #[test]
     fn clean_landing_status_states_the_chosen_folders() {
         assert_eq!(

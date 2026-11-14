@@ -96,6 +96,33 @@ clicks (including the already-selected tab), Tab/Shift+Tab, and keyboard
 activation in the native debug build. Source guards and state tests do not
 replace that runtime check.
 
+## GPUI Status live lifecycle
+
+Status samples while its page is on screen. Every `ShellView` render calls
+`Session::status_set_main_visible(mode == Status && surface == Mode)`;
+`StatusPanel::reconcile` starts the one live subscription when the main panel
+is visible and not paused (or the tray is visible) and stops it otherwise. The
+tray starts hidden (`main.rs` no longer marks it visible); the tray panel task
+owns setting it. Pause stops and joins the sampler and freezes the 60-sample
+trends; entering the page again clears the pause.
+
+- Only a session with background jobs (the window) calls `spawn_live`; tests
+  and `Session::unbacked` keep the subscription as bookkeeping and never take
+  the process-wide live permit.
+- Each open bumps `status_poll_generation` and leaves one poll request. The
+  view takes it and runs one 250 ms poll loop that ends as soon as
+  `status_poll_current(generation)` is false (closed, paused, terminal, or a
+  newer subscription). Close joins the producer and drops the receiver, so no
+  sample arrives after leaving.
+- A redraw happens only when a sample or terminal was applied while the page
+  is visible. Trends are painted with `canvas` + `PathBuilder` on that render;
+  nothing requests an animation frame.
+- A failed `spawn_live` or a producer terminal sets `StatusLiveFault`; render
+  does not retry, and Resume closes the old control before starting again.
+- Network totals and link type use the hardware Ethernet/Wi-Fi interfaces when
+  any is listed; Windows repeats each adapter's bytes on its filter-driver
+  layers, so summing every interface overcounts.
+
 ## GPUI window material
 
 The app applies one translucent work surface over a window-level gradient. Data

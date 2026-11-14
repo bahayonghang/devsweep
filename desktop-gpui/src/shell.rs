@@ -1101,6 +1101,20 @@ fn visible_slice(ids: &[String], start: usize) -> &[String] {
     &ids[first..=last]
 }
 
+/// Live Status sampling interval: 60 samples cover the last minute.
+pub const STATUS_LIVE_INTERVAL_MS: u32 = 1_000;
+/// Process rows per Status sample.
+pub const STATUS_PROCESS_LIMIT: u32 = devsweep_core::status::DEFAULT_PROCESS_LIMIT;
+
+/// Why live sampling is not running although the panel wants it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StatusLiveFault {
+    /// The sampler could not be spawned.
+    StartFailed,
+    /// The producer sent its terminal record.
+    Ended,
+}
+
 pub struct Session {
     shell: ShellState,
     mailbox: Arc<SharedMailbox>,
@@ -1130,6 +1144,13 @@ pub struct Session {
     status_receiver: Option<devsweep_core::status::StatusEventReceiver>,
     status_subscription_starts: u32,
     status_subscription_stops: u32,
+    /// A live subscription is open. In the window it owns `status_live`;
+    /// without host jobs (tests, `Session::unbacked`) it is bookkeeping only.
+    status_subscribed: bool,
+    /// Bumped on every open, so a poll loop from an earlier subscription ends.
+    status_poll_generation: u64,
+    status_poll_request: Option<u64>,
+    status_live_fault: Option<StatusLiveFault>,
     clean: CleanWorkbench,
     clean_ai: CleanAiView,
     clean_cancel: Option<Arc<FlagCancelObserver>>,
@@ -1173,11 +1194,12 @@ pub enum JobResult {
     },
     StatusSnapshot {
         generation: u64,
-        result: Result<StatusSnapshotV1, String>,
+        /// Boxed: a snapshot is far larger than the other results.
+        result: Result<Box<StatusSnapshotV1>, String>,
     },
     AnalyzeScan {
         generation: u64,
-        result: Result<AnalyzeWindow, String>,
+        result: Result<Box<AnalyzeWindow>, String>,
     },
 }
 
@@ -1195,7 +1217,8 @@ impl BackgroundJob {
             },
             Self::StatusSnapshot { generation } => JobResult::StatusSnapshot {
                 generation,
-                result: devsweep_core::status::capture_snapshot(8, None)
+                result: devsweep_core::status::capture_snapshot(STATUS_PROCESS_LIMIT, None)
+                    .map(Box::new)
                     .map_err(|error| error.to_string()),
             },
             Self::AnalyzeScan {
@@ -1204,7 +1227,7 @@ impl BackgroundJob {
                 cancel,
             } => JobResult::AnalyzeScan {
                 generation,
-                result: AnalyzeWindow::scan_with_cancel(&path, Some(cancel.as_ref())),
+                result: AnalyzeWindow::scan_with_cancel(&path, Some(cancel.as_ref())).map(Box::new),
             },
         }
     }
@@ -1292,6 +1315,10 @@ impl Session {
             status_receiver: None,
             status_subscription_starts: 0,
             status_subscription_stops: 0,
+            status_subscribed: false,
+            status_poll_generation: 0,
+            status_poll_request: None,
+            status_live_fault: None,
             clean,
             clean_ai: CleanAiView::new(),
             clean_cancel: None,
@@ -1370,7 +1397,7 @@ impl Session {
                     return false;
                 }
                 self.status_job = None;
-                self.apply_status_capture(result);
+                self.apply_status_capture(result.map(|snapshot| *snapshot));
                 true
             }
             JobResult::AnalyzeScan { generation, result } => {
@@ -1378,7 +1405,7 @@ impl Session {
                     return false;
                 }
                 self.analyze_job = None;
-                self.install_analyze_result(result);
+                self.install_analyze_result(result.map(|window| *window));
                 true
             }
         }
@@ -1747,8 +1774,8 @@ impl Session {
             }
             return;
         }
-        let result =
-            devsweep_core::status::capture_snapshot(8, None).map_err(|error| error.to_string());
+        let result = devsweep_core::status::capture_snapshot(STATUS_PROCESS_LIMIT, None)
+            .map_err(|error| error.to_string());
         self.apply_status_capture(result);
     }
 
@@ -1761,7 +1788,6 @@ impl Session {
             .and_then(|bytes| serde_json::from_slice::<StatusSnapshotV1>(&bytes).ok())
             .map_or(result, Ok);
         let mut panel = self.status_panel.take().unwrap_or_default();
-        panel.set_main_visible(true);
         match result {
             Ok(snapshot) => {
                 self.status_lines = crate::status_panel::snapshot_lines(&snapshot);
@@ -1790,7 +1816,6 @@ impl Session {
                 self.status_lines = vec![format!("unavailable snapshot_unavailable: {error}")];
             }
         }
-        panel.reconcile(|| {}, || {});
         self.status_panel = Some(panel);
     }
 
@@ -2279,7 +2304,22 @@ impl Session {
         self.status_snapshot = Some(snapshot);
     }
 
-    /// Main and tray share one live control. A second start does not spawn again.
+    /// One live sample: it becomes the shown snapshot and, unless the main
+    /// panel is paused, one more point on every trend.
+    pub fn status_receive_live(&mut self, snapshot: StatusSnapshotV1) {
+        self.status_panel
+            .get_or_insert_with(StatusPanel::new)
+            .record_live_sample(&snapshot);
+        self.apply_status_snapshot(snapshot);
+    }
+
+    /// Live trends, once a panel exists.
+    pub fn status_trends(&self) -> Option<&crate::status_panel::StatusTrends> {
+        self.status_panel.as_ref().map(StatusPanel::trends)
+    }
+
+    /// Main and tray share one live control. A second start does not spawn
+    /// again. The main panel samples while it is visible and not paused.
     pub fn status_set_main_visible(&mut self, visible: bool) {
         self.status_set_visible(Some(visible), None);
     }
@@ -2296,20 +2336,72 @@ impl Session {
         if let Some(visible) = tray {
             panel.set_tray_visible(visible);
         }
+        self.status_reconcile();
+    }
+
+    fn status_reconcile(&mut self) {
+        let panel = self.status_panel.get_or_insert_with(StatusPanel::new);
         let mut start = false;
         let mut stop = false;
         panel.reconcile(|| start = true, || stop = true);
-        if start && self.status_live.is_none() {
-            self.status_subscription_starts = self.status_subscription_starts.saturating_add(1);
+        if start {
+            self.status_open_subscription();
         }
         if stop {
-            self.status_subscription_stops = self.status_subscription_stops.saturating_add(1);
-            if let Some(mut live) = self.status_live.take() {
-                live.join();
-            }
-            self.status_receiver = None;
-            self.status_phase = StatusPhase::Landing;
+            self.status_close_subscription();
         }
+    }
+
+    /// Open the live subscription. Only the window (host jobs enabled) spawns
+    /// the sampler; elsewhere the subscription is bookkeeping, so tests never
+    /// take the process-wide live permit.
+    fn status_open_subscription(&mut self) {
+        if self.background_jobs {
+            let request = devsweep_core::status::LiveRequest {
+                interval_ms: STATUS_LIVE_INTERVAL_MS,
+                process_limit: STATUS_PROCESS_LIMIT,
+                operation_id: "gpui-status".to_string(),
+                cancel: None,
+            };
+            match devsweep_core::status::spawn_live(request) {
+                Ok((receiver, control)) => {
+                    self.status_receiver = Some(receiver);
+                    self.status_live = Some(control);
+                }
+                Err(error) => {
+                    // The panel stays marked running so render does not retry
+                    // every frame. Resume clears the mark and tries again.
+                    self.status_lines
+                        .push(format!("unavailable live_start_failed: {error}"));
+                    self.status_live_fault = Some(StatusLiveFault::StartFailed);
+                    self.status_phase = StatusPhase::Landing;
+                    return;
+                }
+            }
+        }
+        self.status_poll_generation = self.status_poll_generation.wrapping_add(1);
+        if self.status_receiver.is_some() {
+            self.status_poll_request = Some(self.status_poll_generation);
+        }
+        self.status_live_fault = None;
+        self.status_subscribed = true;
+        self.status_subscription_starts = self.status_subscription_starts.saturating_add(1);
+        self.status_phase = StatusPhase::Live;
+    }
+
+    /// Cancel and join the producer. The receiver goes with it, so no later
+    /// sample can arrive.
+    fn status_close_subscription(&mut self) {
+        if let Some(mut live) = self.status_live.take() {
+            live.join();
+        }
+        self.status_receiver = None;
+        self.status_poll_request = None;
+        if self.status_subscribed {
+            self.status_subscribed = false;
+            self.status_subscription_stops = self.status_subscription_stops.saturating_add(1);
+        }
+        self.status_phase = StatusPhase::Landing;
     }
 
     pub fn status_subscription_starts(&self) -> u32 {
@@ -2320,43 +2412,50 @@ impl Session {
         self.status_subscription_stops
     }
 
-    /// Starts the accepted live sampler once. Hidden panels do not request a decorative frame.
-    pub fn status_start_live(&mut self) -> Result<(), String> {
-        if self.status_live.is_some() {
-            self.status_phase = StatusPhase::Live;
-            return Ok(());
-        }
-        let request = devsweep_core::status::LiveRequest {
-            interval_ms: 1_000,
-            process_limit: 8,
-            operation_id: "gpui-status".to_string(),
-            cancel: None,
-        };
-        match devsweep_core::status::spawn_live(request) {
-            Ok((receiver, control)) => {
-                self.status_receiver = Some(receiver);
-                self.status_live = Some(control);
-                self.status_phase = StatusPhase::Live;
-                self.status_subscription_starts = self.status_subscription_starts.saturating_add(1);
-                self.status_lines
-                    .push(crate::copy::status_live_started(self.locale(), 1, 8));
-                Ok(())
-            }
-            Err(error) => Err(error.to_string()),
-        }
+    /// Pause the main panel: the sampler stops and the trends stop growing.
+    pub fn status_pause(&mut self) {
+        self.status_panel
+            .get_or_insert_with(StatusPanel::new)
+            .set_paused(true);
+        self.status_reconcile();
     }
 
-    pub fn status_stop_live(&mut self) {
-        if let Some(mut live) = self.status_live.take() {
-            live.join();
-            self.status_subscription_stops = self.status_subscription_stops.saturating_add(1);
+    /// Resume after a pause, a failed start or a producer that ended.
+    pub fn status_resume(&mut self) {
+        let ended = self.status_live_fault.is_some();
+        if ended {
+            self.status_close_subscription();
         }
-        self.status_receiver = None;
-        self.status_phase = StatusPhase::Landing;
-        self.status_lines
-            .push(crate::copy::status_live_stopped(self.locale(), "stopped"));
+        let panel = self.status_panel.get_or_insert_with(StatusPanel::new);
+        panel.set_paused(false);
+        if ended {
+            panel.note_stopped();
+        }
+        self.status_reconcile();
     }
 
+    pub fn status_paused(&self) -> bool {
+        self.status_panel.as_ref().is_some_and(StatusPanel::paused)
+    }
+
+    pub fn status_live_fault(&self) -> Option<StatusLiveFault> {
+        self.status_live_fault
+    }
+
+    /// A newly opened host subscription asks the window for one poll loop.
+    pub fn take_status_poll_request(&mut self) -> Option<u64> {
+        self.status_poll_request.take()
+    }
+
+    /// The poll loop of `generation` keeps running only while it belongs to
+    /// the open subscription.
+    pub fn status_poll_current(&self, generation: u64) -> bool {
+        generation == self.status_poll_generation
+            && self.status_phase == StatusPhase::Live
+            && self.status_receiver.is_some()
+    }
+
+    /// Drain the live receiver. True when a snapshot or terminal was applied.
     pub fn poll_status_live(&mut self) -> bool {
         let Some(receiver) = self.status_receiver.as_ref() else {
             return false;
@@ -2367,10 +2466,16 @@ impl Session {
         }
         let mut applied = false;
         for event in events {
-            applied = true;
             match event {
-                StatusEventV1::Snapshot { data, .. } => self.apply_status_snapshot(*data),
-                StatusEventV1::Terminal { .. } => self.status_phase = StatusPhase::Landing,
+                StatusEventV1::Snapshot { data, .. } => {
+                    self.status_receive_live(*data);
+                    applied = true;
+                }
+                StatusEventV1::Terminal { .. } => {
+                    self.status_phase = StatusPhase::Landing;
+                    self.status_live_fault = Some(StatusLiveFault::Ended);
+                    applied = true;
+                }
                 _ => {}
             }
         }

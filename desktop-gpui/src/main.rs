@@ -55,11 +55,13 @@ fn main() {
     // Read happens before the GPUI render loop. Launch does not migrate or write.
     // `cargo test` does not call this function, so the test process does not open
     // the user preference files.
-    let mut session = match PreferenceFiles::from_env() {
+    let session = match PreferenceFiles::from_env() {
         Ok(files) => Session::launch(files),
         Err(_) => Session::unbacked(),
     };
-    session.status_set_tray_visible(true);
+    // The notification-area icon has no Status panel yet, so it does not
+    // hold the live subscription open. The tray panel sets this when it
+    // shows; until then Status samples only while its page is visible.
     view::run(session);
 }
 

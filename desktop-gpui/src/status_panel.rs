@@ -1,12 +1,19 @@
 //! Shared Status main-panel and tray subscription.
 //!
 //! One running sampler bit. Main and tray visibility share it. This module
-//! projects `AvailabilityV1` into panel text. It does not open a sensor API.
+//! projects `AvailabilityV1` into panel text and keeps the last
+//! [`TREND_CAPACITY`] live readings per trend. It does not open a sensor API.
 //! A displayed PID is presentation only and is not termination authority.
 
+use std::collections::VecDeque;
 use std::fmt;
 
-use devsweep_core::status::AvailabilityV1;
+use devsweep_core::status::{
+    AvailabilityV1, NetworkInterfaceV1, NetworkKind, NetworkV1, StatusSnapshotV1,
+};
+
+/// Live samples kept per trend: one minute at the one-second live interval.
+pub const TREND_CAPACITY: usize = 60;
 
 /// Why a displayed PID cannot authorize a kill.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,14 +27,263 @@ impl fmt::Display for DisplayedPidError {
 
 impl std::error::Error for DisplayedPidError {}
 
+/// The five metrics drawn as a trend line.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TrendMetric {
+    /// System CPU utilization, percent.
+    Cpu,
+    /// Busiest GPU adapter, percent.
+    Gpu,
+    /// Physical memory in use, percent.
+    Memory,
+    /// Received plus sent bytes per second over every interface.
+    Network,
+    /// Physical disk read plus write bytes per second.
+    DiskActivity,
+}
+
+impl TrendMetric {
+    pub const ALL: [Self; 5] = [
+        Self::Cpu,
+        Self::Gpu,
+        Self::Memory,
+        Self::Network,
+        Self::DiskActivity,
+    ];
+
+    /// Percent metrics share a fixed 0..=100 scale. Throughput scales to the
+    /// busiest kept sample, but never below 64 KiB/s, so idle noise stays flat.
+    #[must_use]
+    pub fn ceiling(self, trend: &Trend) -> f64 {
+        const THROUGHPUT_FLOOR: f64 = 64.0 * 1024.0;
+        match self {
+            Self::Cpu | Self::Gpu | Self::Memory => 100.0,
+            Self::Network | Self::DiskActivity => trend.peak().unwrap_or(0.0).max(THROUGHPUT_FLOOR),
+        }
+    }
+
+    /// The reading this metric takes from one snapshot. A group with no value
+    /// gives `None`: a gap in the line, never a zero.
+    #[must_use]
+    pub fn reading(self, snapshot: &StatusSnapshotV1) -> Option<f64> {
+        match self {
+            Self::Cpu => value_of(&snapshot.cpu)
+                .map(|cpu| f64::from(cpu.system_utilization_basis_points) / 100.0),
+            Self::Gpu => value_of(&snapshot.gpu).and_then(|gpu| {
+                gpu.adapters
+                    .iter()
+                    .map(|adapter| adapter.utilization_basis_points)
+                    .max()
+                    .map(|points| f64::from(points) / 100.0)
+            }),
+            Self::Memory => value_of(&snapshot.memory)
+                .filter(|memory| memory.total_bytes > 0)
+                .map(|memory| memory.used_bytes as f64 * 100.0 / memory.total_bytes as f64),
+            Self::Network => value_of(&snapshot.network)
+                .filter(|network| !network.interfaces.is_empty())
+                .map(|network| {
+                    let (rx, tx) = traffic_totals(network);
+                    rx.saturating_add(tx) as f64
+                }),
+            Self::DiskActivity => value_of(&snapshot.disk_activity).map(|disk| {
+                disk.read_bytes_per_second
+                    .saturating_add(disk.write_bytes_per_second) as f64
+            }),
+        }
+    }
+}
+
+/// The interfaces whose counters describe the machine's own traffic: the
+/// hardware Ethernet and Wi-Fi adapters, when any is listed. Windows also
+/// lists each adapter's filter-driver layers (QoS, WFP, Npcap), virtual
+/// switches and tunnels, which carry the same bytes again, so summing every
+/// interface counts one transfer several times. Without a hardware adapter
+/// every interface counts.
+#[must_use]
+pub fn traffic_interfaces(network: &NetworkV1) -> Vec<&NetworkInterfaceV1> {
+    let hardware: Vec<&NetworkInterfaceV1> = network
+        .interfaces
+        .iter()
+        .filter(|item| {
+            matches!(
+                item.kind,
+                Some(NetworkKind::Ethernet | NetworkKind::Wireless)
+            )
+        })
+        .collect();
+    if hardware.is_empty() {
+        network.interfaces.iter().collect()
+    } else {
+        hardware
+    }
+}
+
+/// Received and sent bytes per second over [`traffic_interfaces`].
+#[must_use]
+pub fn traffic_totals(network: &NetworkV1) -> (u64, u64) {
+    traffic_interfaces(network)
+        .into_iter()
+        .fold((0_u64, 0_u64), |(rx, tx), item| {
+            (
+                rx.saturating_add(item.rx_bytes_per_second),
+                tx.saturating_add(item.tx_bytes_per_second),
+            )
+        })
+}
+
+/// The measured value of a group, if it has one.
+#[must_use]
+pub fn value_of<T>(availability: &AvailabilityV1<T>) -> Option<&T> {
+    match availability {
+        AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+            Some(value)
+        }
+        AvailabilityV1::Unavailable { .. }
+        | AvailabilityV1::PermissionDenied { .. }
+        | AvailabilityV1::Unsupported { .. } => None,
+    }
+}
+
+/// The last [`TREND_CAPACITY`] readings of one metric, oldest first. A sample
+/// whose group had no value is kept as a gap so the lines stay aligned.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Trend {
+    samples: VecDeque<Option<f64>>,
+}
+
+impl Trend {
+    pub fn push(&mut self, value: Option<f64>) {
+        if self.samples.len() == TREND_CAPACITY {
+            self.samples.pop_front();
+        }
+        self.samples.push_back(value);
+    }
+
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.samples.len()
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.samples.is_empty()
+    }
+
+    #[must_use]
+    pub fn samples(&self) -> Vec<Option<f64>> {
+        self.samples.iter().copied().collect()
+    }
+
+    #[must_use]
+    pub fn peak(&self) -> Option<f64> {
+        self.samples.iter().flatten().copied().reduce(f64::max)
+    }
+}
+
+/// One ring buffer per [`TrendMetric`]. Every live sample appends to all five.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct StatusTrends {
+    cpu: Trend,
+    gpu: Trend,
+    memory: Trend,
+    network: Trend,
+    disk: Trend,
+}
+
+impl StatusTrends {
+    pub fn record(&mut self, snapshot: &StatusSnapshotV1) {
+        for metric in TrendMetric::ALL {
+            let reading = metric.reading(snapshot);
+            self.trend_mut(metric).push(reading);
+        }
+    }
+
+    #[must_use]
+    pub fn get(&self, metric: TrendMetric) -> &Trend {
+        match metric {
+            TrendMetric::Cpu => &self.cpu,
+            TrendMetric::Gpu => &self.gpu,
+            TrendMetric::Memory => &self.memory,
+            TrendMetric::Network => &self.network,
+            TrendMetric::DiskActivity => &self.disk,
+        }
+    }
+
+    fn trend_mut(&mut self, metric: TrendMetric) -> &mut Trend {
+        match metric {
+            TrendMetric::Cpu => &mut self.cpu,
+            TrendMetric::Gpu => &mut self.gpu,
+            TrendMetric::Memory => &mut self.memory,
+            TrendMetric::Network => &mut self.network,
+            TrendMetric::DiskActivity => &mut self.disk,
+        }
+    }
+
+    /// Samples kept. Every trend holds the same count.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.cpu.len()
+    }
+}
+
+/// Polyline segments for a trend drawn in a `width` x `height` box, in
+/// box-local pixels. The newest sample sits on the right edge and each sample
+/// takes one of [`TREND_CAPACITY`] slots, so a short history grows in from the
+/// right. A gap ends a segment; a lone point between gaps is left out.
+#[must_use]
+pub fn trend_segments(
+    samples: &[Option<f64>],
+    ceiling: f64,
+    width: f32,
+    height: f32,
+) -> Vec<Vec<(f32, f32)>> {
+    const INSET: f32 = 1.0;
+    let kept = &samples[samples.len().saturating_sub(TREND_CAPACITY)..];
+    let slot = width / (TREND_CAPACITY - 1) as f32;
+    let first = TREND_CAPACITY - kept.len();
+    let span = (height - 2.0 * INSET).max(0.0);
+    let ceiling = if ceiling.is_finite() && ceiling > 0.0 {
+        ceiling
+    } else {
+        1.0
+    };
+    let mut segments = Vec::new();
+    let mut current: Vec<(f32, f32)> = Vec::new();
+    for (index, sample) in kept.iter().enumerate() {
+        match sample.filter(|value| value.is_finite()) {
+            Some(value) => {
+                let fraction = (value / ceiling).clamp(0.0, 1.0) as f32;
+                let x = (first + index) as f32 * slot;
+                let y = INSET + span * (1.0 - fraction);
+                current.push((x, y));
+            }
+            None => {
+                if current.len() >= 2 {
+                    segments.push(std::mem::take(&mut current));
+                } else {
+                    current.clear();
+                }
+            }
+        }
+    }
+    if current.len() >= 2 {
+        segments.push(current);
+    }
+    segments
+}
+
 /// Main/tray visibility and the single running subscription bit.
 #[derive(Debug)]
 pub struct StatusPanel {
     main_visible: bool,
     tray_visible: bool,
+    /// The user paused sampling on the main panel. Entering the panel again
+    /// clears it, so every visit starts sampling.
+    paused: bool,
     running: bool,
     sensor_line: Option<String>,
     displayed_pid: Option<u32>,
+    trends: StatusTrends,
 }
 
 impl StatusPanel {
@@ -36,13 +292,18 @@ impl StatusPanel {
         Self {
             main_visible: false,
             tray_visible: false,
+            paused: false,
             running: false,
             sensor_line: None,
             displayed_pid: None,
+            trends: StatusTrends::default(),
         }
     }
 
     pub fn set_main_visible(&mut self, visible: bool) {
+        if visible && !self.main_visible {
+            self.paused = false;
+        }
         self.main_visible = visible;
     }
 
@@ -50,10 +311,20 @@ impl StatusPanel {
         self.tray_visible = visible;
     }
 
-    /// Start only when nothing was running and at least one panel is visible.
-    /// Stop only when both are hidden and it was running.
+    pub fn set_paused(&mut self, paused: bool) {
+        self.paused = paused;
+    }
+
+    #[must_use]
+    pub fn paused(&self) -> bool {
+        self.paused
+    }
+
+    /// Start only when nothing was running and a panel wants samples: the
+    /// main panel while not paused, or the tray. Stop only when neither does
+    /// and it was running.
     pub fn reconcile(&mut self, start: impl FnOnce(), stop: impl FnOnce()) {
-        let want = self.main_visible || self.tray_visible;
+        let want = (self.main_visible && !self.paused) || self.tray_visible;
         if want {
             if !self.running {
                 start();
@@ -63,6 +334,27 @@ impl StatusPanel {
             stop();
             self.running = false;
         }
+    }
+
+    /// The subscription ended on its own (a failed start or a producer
+    /// terminal). The next reconcile may start again.
+    pub fn note_stopped(&mut self) {
+        self.running = false;
+    }
+
+    /// Append one live sample to every trend. A paused panel keeps its trends
+    /// unchanged and returns `false`.
+    pub fn record_live_sample(&mut self, snapshot: &StatusSnapshotV1) -> bool {
+        if self.paused {
+            return false;
+        }
+        self.trends.record(snapshot);
+        true
+    }
+
+    #[must_use]
+    pub fn trends(&self) -> &StatusTrends {
+        &self.trends
     }
 
     pub fn set_sensor<T>(&mut self, availability: &AvailabilityV1<T>) {
@@ -641,6 +933,259 @@ mod tests {
             !lines.iter().any(|line| looks_like_zero_reading(line)),
             "Status panel_lines must not append a zero: {lines:?}"
         );
+
+        // The window starts with the tray hidden: the notification-area icon
+        // has no panel yet, so it must not hold the sampler open. Showing and
+        // hiding the main panel alone starts and stops it once each.
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Status);
+        session.status_set_main_visible(true);
+        assert_eq!(session.status_subscription_starts(), 1);
+        assert_eq!(session.status_subscription_stops(), 0);
+        session.status_set_main_visible(false);
+        assert_eq!(session.status_subscription_starts(), 1);
+        assert_eq!(
+            session.status_subscription_stops(),
+            1,
+            "leaving Status stops the sampler while the tray is hidden"
+        );
+        assert_eq!(session.shell().decorative_frames_scheduled(), 0);
+    }
+
+    fn fixture_snapshot() -> StatusSnapshotV1 {
+        serde_json::from_str(include_str!(
+            "../../crates/devsweep-cli/tests/fixtures/status/snapshot.json"
+        ))
+        .expect("status fixture decodes")
+    }
+
+    fn set_cpu(snapshot: &mut StatusSnapshotV1, basis_points: u32) {
+        match &mut snapshot.cpu {
+            AvailabilityV1::Available { value, .. } | AvailabilityV1::Partial { value, .. } => {
+                value.system_utilization_basis_points = basis_points;
+            }
+            _ => panic!("fixture CPU has a value"),
+        }
+    }
+
+    #[test]
+    fn trends_keep_the_last_sixty_samples_and_do_not_grow_while_paused() {
+        let mut snapshot = fixture_snapshot();
+        let mut panel = StatusPanel::new();
+        assert!(panel.trends().get(TrendMetric::Cpu).is_empty());
+
+        // Two minutes at one sample per second.
+        for second in 0..120_u32 {
+            set_cpu(&mut snapshot, second * 50);
+            assert!(panel.record_live_sample(&snapshot));
+        }
+        assert_eq!(panel.trends().len(), TREND_CAPACITY);
+        for metric in TrendMetric::ALL {
+            assert_eq!(
+                panel.trends().get(metric).len(),
+                TREND_CAPACITY,
+                "{metric:?} keeps exactly the last minute"
+            );
+        }
+        let cpu = panel.trends().get(TrendMetric::Cpu).samples();
+        assert_eq!(cpu.first(), Some(&Some(30.0)), "oldest kept is second 60");
+        assert_eq!(cpu.last(), Some(&Some(59.5)), "newest is second 119");
+        assert_eq!(
+            panel.trends().get(TrendMetric::Memory).samples().last(),
+            Some(&Some(50.0)),
+            "a partial memory group still has a reading"
+        );
+        assert_eq!(
+            panel.trends().get(TrendMetric::Network).samples().last(),
+            Some(&Some(6_144.0))
+        );
+        assert_eq!(
+            panel
+                .trends()
+                .get(TrendMetric::DiskActivity)
+                .samples()
+                .last(),
+            Some(&Some(12_582_912.0))
+        );
+
+        // Paused: nothing is appended and nothing is dropped.
+        let before = panel.trends().clone();
+        panel.set_paused(true);
+        set_cpu(&mut snapshot, 9_999);
+        assert!(!panel.record_live_sample(&snapshot));
+        assert_eq!(panel.trends(), &before);
+
+        // Entering the panel again clears the pause.
+        panel.set_main_visible(true);
+        assert!(!panel.paused());
+        assert!(panel.record_live_sample(&snapshot));
+        assert_eq!(panel.trends().len(), TREND_CAPACITY);
+        assert_eq!(
+            panel.trends().get(TrendMetric::Cpu).samples().last(),
+            Some(&Some(99.99))
+        );
+
+        // A group without a value is a gap, not a zero.
+        let mut gaps = snapshot.clone();
+        gaps.gpu = AvailabilityV1::unavailable("no_instances");
+        gaps.disk_activity = AvailabilityV1::unavailable("counter_missing");
+        gaps.network = AvailabilityV1::permission_denied("access_denied");
+        panel.record_live_sample(&gaps);
+        for metric in [
+            TrendMetric::Gpu,
+            TrendMetric::Network,
+            TrendMetric::DiskActivity,
+        ] {
+            assert_eq!(
+                panel.trends().get(metric).samples().last(),
+                Some(&None),
+                "{metric:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn trend_segments_place_the_newest_sample_on_the_right_and_break_at_gaps() {
+        let width = (TREND_CAPACITY - 1) as f32 * 2.0;
+        let segments = trend_segments(&[Some(0.0), Some(100.0)], 100.0, width, 12.0);
+        assert_eq!(segments, vec![vec![(116.0, 11.0), (118.0, 1.0)]]);
+
+        // A lone point between gaps is left out; a reading above the ceiling
+        // is drawn at the top.
+        let segments = trend_segments(
+            &[Some(50.0), None, Some(50.0), Some(250.0)],
+            100.0,
+            width,
+            12.0,
+        );
+        assert_eq!(segments, vec![vec![(116.0, 6.0), (118.0, 1.0)]]);
+
+        // More than a minute: only the last sixty are drawn, from the left edge.
+        let long: Vec<Option<f64>> = (0..70).map(|value| Some(f64::from(value))).collect();
+        let segments = trend_segments(&long, 100.0, width, 12.0);
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].len(), TREND_CAPACITY);
+        assert_eq!(segments[0][0].0, 0.0);
+        assert!(trend_segments(&[], 100.0, width, 12.0).is_empty());
+        assert!(trend_segments(&[None, None], 100.0, width, 12.0).is_empty());
+
+        // Throughput scales to the busiest kept sample, with a 64 KiB/s floor.
+        let mut quiet = Trend::default();
+        quiet.push(Some(512.0));
+        assert_eq!(TrendMetric::Network.ceiling(&quiet), 65_536.0);
+        quiet.push(Some(4_000_000.0));
+        assert_eq!(TrendMetric::DiskActivity.ceiling(&quiet), 4_000_000.0);
+        assert_eq!(TrendMetric::Cpu.ceiling(&quiet), 100.0);
+    }
+
+    /// AC4 and AC5 in the session: entering samples at once, every render
+    /// keeps one subscription, pause stops it and freezes the trends, leaving
+    /// stops it and no later sample is read.
+    #[test]
+    fn status_samples_while_its_page_is_visible_and_stops_when_it_is_not() {
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Status);
+        session.status_set_main_visible(true);
+        assert_eq!(session.status_subscription_starts(), 1);
+        assert_eq!(session.status_phase(), StatusPhase::Live);
+        session.status_set_main_visible(true);
+        assert_eq!(
+            session.status_subscription_starts(),
+            1,
+            "a later render does not start a second sampler"
+        );
+        for _ in 0..3 {
+            session.status_receive_live(fixture_snapshot());
+        }
+        assert_eq!(session.status_trends().map(StatusTrends::len), Some(3));
+
+        session.status_pause();
+        assert!(session.status_paused());
+        assert_eq!(session.status_subscription_stops(), 1);
+        assert_eq!(session.status_phase(), StatusPhase::Landing);
+        session.status_receive_live(fixture_snapshot());
+        assert_eq!(
+            session.status_trends().map(StatusTrends::len),
+            Some(3),
+            "a straggling sample does not extend a paused trend"
+        );
+        session.status_set_main_visible(true);
+        assert_eq!(
+            session.status_subscription_starts(),
+            1,
+            "rendering a paused page does not restart sampling"
+        );
+
+        session.status_resume();
+        assert!(!session.status_paused());
+        assert_eq!(session.status_subscription_starts(), 2);
+        assert_eq!(session.status_phase(), StatusPhase::Live);
+
+        session.show_mode(Mode::Clean);
+        session.status_set_main_visible(false);
+        assert_eq!(session.status_subscription_stops(), 2);
+        assert!(!session.poll_status_live(), "no receiver after leaving");
+        assert_eq!(session.status_trends().map(StatusTrends::len), Some(3));
+
+        // A pause does not outlive the visit.
+        session.show_mode(Mode::Status);
+        session.status_set_main_visible(true);
+        session.status_pause();
+        session.show_mode(Mode::Clean);
+        session.status_set_main_visible(false);
+        assert_eq!(session.status_subscription_stops(), 3, "stopped once");
+        session.show_mode(Mode::Status);
+        session.status_set_main_visible(true);
+        assert!(!session.status_paused());
+        assert_eq!(session.status_subscription_starts(), 4);
+
+        assert_eq!(
+            session.take_status_poll_request(),
+            None,
+            "a session without host jobs spawns no sampler"
+        );
+        assert_eq!(session.shell().decorative_frames_scheduled(), 0);
+    }
+
+    /// The window path: one real sampler, a reading without a click, and a
+    /// join on leave after which nothing more arrives.
+    #[cfg(windows)]
+    #[test]
+    fn the_window_spawns_one_sampler_on_entry_and_joins_it_on_leave() {
+        use std::time::{Duration, Instant};
+
+        let mut session = Session::unbacked();
+        session.enable_background_jobs();
+        session.show_mode(Mode::Status);
+        let entered = Instant::now();
+        session.status_set_main_visible(true);
+        let generation = session
+            .take_status_poll_request()
+            .expect("the window polls the new subscription");
+        assert!(session.status_poll_current(generation));
+        while session.status_snapshot().is_none() {
+            assert!(
+                entered.elapsed() < Duration::from_secs(10),
+                "no live sample arrived"
+            );
+            session.poll_status_live();
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        eprintln!("first live sample after {:?}", entered.elapsed());
+        let kept = session.status_trends().map_or(0, StatusTrends::len);
+        assert!(kept >= 1);
+
+        session.status_set_main_visible(false);
+        assert_eq!(session.status_subscription_starts(), 1);
+        assert_eq!(session.status_subscription_stops(), 1);
+        assert!(!session.status_poll_current(generation));
+        std::thread::sleep(Duration::from_millis(1_500));
+        assert!(!session.poll_status_live());
+        assert_eq!(
+            session.status_trends().map_or(0, StatusTrends::len),
+            kept,
+            "no sample after leaving"
+        );
     }
 
     #[test]
@@ -652,10 +1197,12 @@ mod tests {
             sampled_at_unix_ms: 1,
             sample_window_ms: 500,
             logical_processor_count: 1,
+            host: AvailabilityV1::unavailable("api_unavailable"),
             cpu: AvailabilityV1::unavailable("counter_missing"),
             memory: AvailabilityV1::unavailable("counter_missing"),
             volumes: AvailabilityV1::unavailable("counter_missing"),
             network: AvailabilityV1::unavailable("counter_missing"),
+            disk_activity: AvailabilityV1::unavailable("counter_missing"),
             power: AvailabilityV1::unavailable("counter_missing"),
             gpu: AvailabilityV1::unavailable("sensor_missing"),
             thermal: AvailabilityV1::unsupported("platform_unsupported"),
@@ -782,6 +1329,7 @@ mod tests {
             sampled_at_unix_ms: 1,
             sample_window_ms: 500,
             logical_processor_count: 8,
+            host: AvailabilityV1::unavailable("api_unavailable"),
             cpu: AvailabilityV1::unavailable("counter_missing"),
             memory: AvailabilityV1::available(
                 1,
@@ -790,10 +1338,13 @@ mod tests {
                     total_bytes: 16 * 1024 * 1024 * 1024,
                     available_bytes: 8 * 1024 * 1024 * 1024,
                     used_bytes: 8 * 1024 * 1024 * 1024,
+                    commit_used_bytes: None,
+                    commit_limit_bytes: None,
                 },
             ),
             volumes: AvailabilityV1::unavailable("counter_missing"),
             network: AvailabilityV1::unavailable("counter_missing"),
+            disk_activity: AvailabilityV1::unavailable("counter_missing"),
             power: AvailabilityV1::unavailable("counter_missing"),
             gpu: AvailabilityV1::unavailable("sensor_missing"),
             thermal: AvailabilityV1::unsupported("platform_unsupported"),
