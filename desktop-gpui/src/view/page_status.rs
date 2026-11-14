@@ -74,33 +74,30 @@ impl ShellView {
                 })),
             ),
         ];
+        let bar = page_bar(
+            t,
+            Some(if live {
+                copy::status_phase_live(locale).to_string()
+            } else {
+                copy::status_idle_status(
+                    locale,
+                    self.session.status_sampling(),
+                    self.session.status_snapshot().is_some(),
+                )
+                .to_string()
+            }),
+            None,
+            actions,
+        );
         let mut page = div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
-            .child(self.page_header(
-                t,
-                "status",
-                copy::mode_name(locale, "status"),
-                copy::mode_subtitle(locale, "status"),
-                actions,
-            ))
+            .gap(ui::SPACE_4)
             .children(self.shared_banners(t));
-        if live {
-            page = page.child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .gap(rems(0.5))
-                    .child(ui::dot(t.success))
-                    .child(ui::muted(t, copy::status_phase_live(locale))),
-            );
-        }
         if self.session.status_sampling() {
             page = page.child(
                 ui::card(t)
-                    .gap(rems(0.6))
+                    .gap(ui::SPACE_1)
                     .child(ui::muted(
                         t,
                         copy::pick(locale, "Sampling host collectors…", "正在采样主机数据…"),
@@ -128,12 +125,12 @@ impl ShellView {
                 .iter()
                 .find(|line| line.starts_with("unavailable"))
                 .cloned();
-            return page
+            let body = page
                 .child(
                     ui::card(t).items_center().child(ui::empty_state(
                         t,
                         "status",
-                        copy::status_phase_landing(locale),
+                        copy::status_empty_title(locale),
                         error.unwrap_or_else(|| {
                             copy::pick(
                                 locale,
@@ -145,12 +142,15 @@ impl ShellView {
                     )),
                 )
                 .into_any_element();
+            return sheet_frame(bar, body, None);
         };
         let snapshot = snapshot.clone();
-        page.child(self.status_metrics(t, &snapshot))
+        let body = page
+            .child(self.status_metrics(t, &snapshot))
             .child(self.status_volumes(t, &snapshot))
             .child(self.status_processes(t, &snapshot, cx))
-            .into_any_element()
+            .into_any_element();
+        sheet_frame(bar, body, None)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -169,14 +169,14 @@ impl ShellView {
             Some(f) if f >= 0.9 => t.danger,
             Some(f) if f >= 0.7 => t.warning,
             Some(_) => t.accent,
-            None => t.text_subtle,
+            None => t.text_muted,
         };
         ui::card(t)
             .flex_1()
             .flex_basis(gpui::relative(0.30))
             .min_w(rems(12.0))
-            .gap(rems(0.55))
-            .p(rems(1.0))
+            .gap(ui::SPACE_1)
+            .p(ui::SPACE_3)
             .id(ElementId::Name(SharedString::from(format!(
                 "status-metric-{icon}"
             ))))
@@ -186,7 +186,7 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .child(ui::icon(icon, t.text_muted))
                     .child(div().flex_1().child(ui::eyebrow(t, label)))
                     .when(partial, |d| {
@@ -199,18 +199,18 @@ impl ShellView {
             )
             .child(
                 div()
-                    .text_size(rems(1.5))
+                    .text_size(ui::TYPE_DISPLAY)
                     .font_features(ui::tabular_numerals())
                     .font_weight(FontWeight::SEMIBOLD)
                     .when(fraction.is_none(), |d| {
-                        d.text_color(rgb(t.text_subtle)).text_size(rems(1.05))
+                        d.text_color(rgb(t.text_muted)).text_size(ui::TYPE_TITLE)
                     })
                     .child(value),
             )
             .when_some(fraction, |c, f| c.child(ui::meter(t, f, color)))
             .child(
                 div()
-                    .text_size(rems(0.76))
+                    .text_size(ui::TYPE_META)
                     .text_color(rgb(t.text_muted))
                     .child(detail),
             )
@@ -452,13 +452,13 @@ impl ShellView {
         div()
             .flex()
             .flex_col()
-            .gap(rems(0.75))
+            .gap(ui::SPACE_2)
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.6))
+                    .gap(ui::SPACE_1)
                     .child(ui::eyebrow(t, copy::status_health_title(locale)))
                     .child(ui::badge(t, health_label, health_tone)),
             )
@@ -467,7 +467,7 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .flex_wrap()
-                    .gap(rems(0.75))
+                    .gap(ui::SPACE_2)
                     .children(cards),
             )
             .into_any_element()
@@ -497,7 +497,7 @@ impl ShellView {
                         .flex()
                         .flex_row()
                         .items_center()
-                        .gap(rems(0.75))
+                        .gap(ui::SPACE_2)
                         .child(ui::icon("drive", t.text_muted))
                         .child(
                             div()
@@ -505,14 +505,16 @@ impl ShellView {
                                 .flex_col()
                                 .flex_1()
                                 .min_w_0()
-                                .gap(rems(0.3))
+                                .gap(ui::SPACE_1)
                                 .child(
                                     div()
                                         .flex()
                                         .flex_row()
                                         .justify_between()
-                                        .gap(rems(0.5))
-                                        .child(div().truncate().text_size(rems(0.88)).child(name))
+                                        .gap(ui::SPACE_1)
+                                        .child(
+                                            div().truncate().text_size(ui::TYPE_BODY).child(name),
+                                        )
                                         .child(ui::muted(
                                             t,
                                             match locale {
@@ -535,7 +537,7 @@ impl ShellView {
                 div()
                     .flex()
                     .flex_col()
-                    .gap(rems(0.9))
+                    .gap(ui::SPACE_3)
                     .children(rows)
                     .into_any_element()
             }
@@ -546,7 +548,7 @@ impl ShellView {
             )),
         };
         ui::card(t)
-            .gap(rems(0.9))
+            .gap(ui::SPACE_3)
             .child(ui::card_header(t, title))
             .child(body)
             .into_any_element()
@@ -564,9 +566,9 @@ impl ShellView {
             crate::status_panel::sorted_processes(snapshot, self.session.status_query(), sort);
         let header_cell = |label: &'static str, active: bool, width: Option<f32>| {
             let cell = div()
-                .text_size(rems(0.72))
+                .text_size(ui::TYPE_META)
                 .font_weight(FontWeight::SEMIBOLD)
-                .text_color(rgb(if active { t.text } else { t.text_subtle }));
+                .text_color(rgb(if active { t.text } else { t.text_muted }));
             match width {
                 Some(w) => cell.w(rems(w)).flex_shrink_0().text_right().child(label),
                 None => cell.flex_1().child(label),
@@ -576,9 +578,9 @@ impl ShellView {
             .flex()
             .flex_row()
             .items_center()
-            .gap(rems(0.75))
-            .px(rems(0.85))
-            .pb(rems(0.4))
+            .gap(ui::SPACE_2)
+            .px(ui::SPACE_2)
+            .pb(ui::SPACE_1)
             .child(header_cell(
                 copy::pick(locale, "PROCESS", "进程"),
                 sort == ProcessSort::Name,
@@ -647,10 +649,10 @@ impl ShellView {
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(rems(0.75))
-                .px(rems(0.85))
-                .py(rems(0.45))
-                .rounded(rems(0.5))
+                .gap(ui::SPACE_2)
+                .px(ui::SPACE_2)
+                .py(ui::SPACE_1)
+                .rounded(ui::RADIUS_ITEM)
                 .when(!selected, |row| row.hover(|s| s.bg(rgb(t.surface_alt))))
                 .font_features(ui::tabular_numerals())
                 .child(
@@ -659,11 +661,10 @@ impl ShellView {
                         .flex_col()
                         .flex_1()
                         .min_w_0()
-                        .gap(rems(0.2))
                         .child(
                             div()
                                 .truncate()
-                                .text_size(rems(0.86))
+                                .text_size(ui::TYPE_BODY)
                                 .child(row.name.clone()),
                         )
                         .child(ui::meter(
@@ -677,8 +678,8 @@ impl ShellView {
                         .w(rems(5.0))
                         .flex_shrink_0()
                         .text_right()
-                        .text_size(rems(0.8))
-                        .text_color(rgb(t.text_subtle))
+                        .text_size(ui::TYPE_META)
+                        .text_color(rgb(t.text_muted))
                         .child(row.pid.to_string()),
                 )
                 .child(
@@ -686,7 +687,7 @@ impl ShellView {
                         .w(rems(5.0))
                         .flex_shrink_0()
                         .text_right()
-                        .text_size(rems(0.84))
+                        .text_size(ui::TYPE_BODY)
                         .child(format!("{cpu:.1}%")),
                 )
                 .child(
@@ -694,7 +695,7 @@ impl ShellView {
                         .w(rems(6.5))
                         .flex_shrink_0()
                         .text_right()
-                        .text_size(rems(0.84))
+                        .text_size(ui::TYPE_BODY)
                         .child(ui::bytes(row.private_bytes)),
                 )
                 .child(
@@ -702,7 +703,7 @@ impl ShellView {
                         .w(rems(7.0))
                         .flex_shrink_0()
                         .text_right()
-                        .text_size(rems(0.78))
+                        .text_size(ui::TYPE_META)
                         .text_color(rgb(t.text_muted))
                         .child(format!(
                             "{}/s",
@@ -728,7 +729,7 @@ impl ShellView {
             .id("status-processes")
             .role(gpui::Role::Table)
             .aria_label(copy::pick(locale, "Processes", "进程"))
-            .gap(rems(0.75))
+            .gap(ui::SPACE_2)
             .child(
                 ui::card_header(t, copy::pick(locale, "Processes", "进程"))
                     .flex_wrap()
@@ -738,10 +739,10 @@ impl ShellView {
                             .flex()
                             .flex_row()
                             .items_center()
-                            .gap(rems(0.5))
+                            .gap(ui::SPACE_1)
                             .w(rems(16.0))
                             .max_w_full()
-                            .child(ui::icon("search", t.text_subtle))
+                            .child(ui::icon("search", t.text_muted))
                             .child(div().flex_1().min_w_0().child(self.search.clone())),
                     )
                     .child(
@@ -812,17 +813,18 @@ impl ShellView {
             )))
             .flex()
             .flex_col()
-            .gap(rems(0.45))
-            .p(rems(0.9))
-            .rounded(rems(0.6))
+            .gap(ui::SPACE_1)
+            .p(ui::SPACE_3)
+            .rounded(ui::RADIUS_ITEM)
             .bg(rgb(t.surface_alt))
-            .border_1()
-            .border_color(rgb(t.border));
+            .when(t.high_contrast, |d| {
+                d.border_1().border_color(rgb(t.border))
+            });
         let header = div()
             .flex()
             .flex_row()
             .items_center()
-            .gap(rems(0.6))
+            .gap(ui::SPACE_1)
             .child(ui::icon("info", t.accent))
             .child(
                 div()

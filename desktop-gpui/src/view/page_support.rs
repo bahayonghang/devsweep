@@ -29,7 +29,7 @@ impl ShellView {
             DesktopFont::System {} => copy::pick(locale, "System default", "系统默认").to_owned(),
             DesktopFont::Installed { family } => family.clone(),
         };
-        let mut section = div().flex().flex_col().gap(rems(0.65)).child(
+        let mut section = div().flex().flex_col().gap(ui::SPACE_2).child(
             self.setting_row(
                 t,
                 copy::pick(locale, "Font", "字体"),
@@ -80,8 +80,7 @@ impl ShellView {
                 .max_h(rems(11.0))
                 .overflow_y_scroll()
                 .flex()
-                .flex_col()
-                .gap(rems(0.25));
+                .flex_col();
             list = list.child(
                 ui::button(
                     t,
@@ -155,7 +154,7 @@ impl ShellView {
                     .flex()
                     .items_center()
                     .flex_wrap()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .child(
                         div()
                             .w(rems(22.0))
@@ -218,7 +217,7 @@ impl ShellView {
                     div()
                         .flex()
                         .items_center()
-                        .gap(rems(0.5))
+                        .gap(ui::SPACE_1)
                         .child(
                             ui::button(
                                 t,
@@ -275,8 +274,8 @@ impl ShellView {
         section
             .child(
                 div()
-                    .pb(rems(0.6))
-                    .text_size(rems(1.0))
+                    .pb(ui::SPACE_1)
+                    .text_size(ui::TYPE_TITLE)
                     .child("DevSweep 字体预览 0123456789"),
             )
             .into_any_element()
@@ -285,7 +284,7 @@ impl ShellView {
     fn about_settings(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
         ui::card(t)
-            .gap(rems(0.65))
+            .gap(ui::SPACE_2)
             .child(ui::card_header(
                 t,
                 copy::pick(locale, "About DevSweep", "关于 DevSweep"),
@@ -304,7 +303,7 @@ impl ShellView {
                 div()
                     .flex()
                     .flex_wrap()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .child(
                         ui::icon_button(
                             t,
@@ -391,15 +390,14 @@ impl ShellView {
             .flex_row()
             .flex_wrap()
             .items_center()
-            .gap(rems(1.0))
-            .py(rems(0.85))
+            .gap(ui::SPACE_3)
+            .py(ui::SPACE_2)
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .flex_1()
                     .min_w(rems(14.0))
-                    .gap(rems(0.15))
                     .child(div().font_weight(FontWeight::MEDIUM).child(title.into()))
                     .child(ui::muted(t, detail)),
             )
@@ -411,10 +409,9 @@ impl ShellView {
         self.load_fonts(false, cx);
         let locale = self.session.locale();
         let theme = self.session.theme();
-        let dark = matches!(
-            Theme::for_preferences(theme, false),
-            ui::Theme { dark: true, .. }
-        );
+        let follows_system = theme == DesktopTheme::System;
+        let dark =
+            !follows_system && Theme::for_preferences(theme, self.material.system_dark, false).dark;
         let language = ui::segmented(t)
             .id("settings-language")
             .role(gpui::Role::TabList)
@@ -464,10 +461,22 @@ impl ShellView {
                     t,
                     "settings-theme-light",
                     copy::pick(locale, "Light", "浅色"),
-                    !dark,
+                    !dark && !follows_system,
                 )
                 .on_click(cx.listener(|this, _, _, cx| {
                     this.session.set_theme(DesktopTheme::Light);
+                    cx.notify();
+                })),
+            )
+            .child(
+                ui::segment(
+                    t,
+                    "settings-theme-system",
+                    copy::pick(locale, "Follow system", "跟随系统"),
+                    follows_system,
+                )
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.session.set_theme(DesktopTheme::System);
                     cx.notify();
                 })),
             );
@@ -532,16 +541,16 @@ impl ShellView {
                 div()
                     .flex()
                     .flex_col()
-                    .gap(rems(0.3))
+                    .gap(ui::SPACE_1)
                     .children(roots.into_iter().map(|root| {
                         div()
                             .flex()
                             .flex_row()
                             .items_center()
-                            .gap(rems(0.6))
-                            .px(rems(0.75))
-                            .py(rems(0.5))
-                            .rounded(rems(0.5))
+                            .gap(ui::SPACE_1)
+                            .px(ui::SPACE_2)
+                            .py(ui::SPACE_1)
+                            .rounded(ui::RADIUS_ITEM)
                             .bg(rgb(t.surface_alt))
                             .child(ui::icon("folder", t.accent))
                             .child(
@@ -549,7 +558,7 @@ impl ShellView {
                                     .flex_1()
                                     .min_w_0()
                                     .truncate()
-                                    .text_size(rems(0.86))
+                                    .text_size(ui::TYPE_BODY)
                                     .child(root),
                             )
                     })),
@@ -573,17 +582,18 @@ impl ShellView {
             gpui::AccessibleAction::Click,
             on_view_a11y(cx, |this, cx| this.save(cx)),
         );
-        div()
+        let bar = self.page_title(
+            t,
+            copy::settings_title(locale),
+            vec![self.surface_back_button(t, cx), ui::any(save)],
+        );
+        let about = self.about_settings(t, cx);
+        let fonts = self.font_settings(t, cx);
+        let body = div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
-            .child(self.page_header(
-                t,
-                "settings",
-                copy::settings_title(locale),
-                copy::settings_subtitle(locale),
-                vec![self.surface_back_button(t, cx), ui::any(save)],
-            ))
+            .gap(ui::SPACE_4)
+            .child(ui::muted(t, copy::settings_subtitle(locale)))
             .children(self.shared_banners(t))
             .when(dirty, |d| {
                 d.child(ui::banner(
@@ -598,7 +608,7 @@ impl ShellView {
             })
             .child(
                 ui::card(t)
-                    .py(rems(0.5))
+                    .py(ui::SPACE_1)
                     .child(self.setting_row(
                         t,
                         copy::language_label(locale),
@@ -621,7 +631,7 @@ impl ShellView {
                         appearance,
                     ))
                     .child(ui::divider(t))
-                    .child(self.font_settings(t, cx))
+                    .child(fonts)
                     .child(ui::divider(t))
                     .child(self.setting_row(
                         t,
@@ -643,13 +653,14 @@ impl ShellView {
             )
             .child(
                 ui::card(t)
-                    .gap(rems(0.75))
+                    .gap(ui::SPACE_2)
                     .child(ui::card_header(t, copy::project_folders(locale)))
                     .child(roots_list)
                     .child(ui::muted(t, copy::separate_protection(locale))),
             )
-            .child(self.about_settings(t, cx))
-            .into_any_element()
+            .child(about)
+            .into_any_element();
+        sheet_frame(bar, body, None)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -674,7 +685,6 @@ impl ShellView {
                     .role(gpui::Role::List)
                     .flex()
                     .flex_col()
-                    .gap(rems(0.2))
                     .children(rows.into_iter().enumerate().map(|(index, row)| {
                         div()
                             .id(gpui::ElementId::named_usize("support-row", index))
@@ -683,36 +693,32 @@ impl ShellView {
                             .flex()
                             .flex_row()
                             .items_center()
-                            .gap(rems(0.65))
-                            .px(rems(0.8))
-                            .py(rems(0.55))
-                            .rounded(rems(0.5))
+                            .gap(ui::SPACE_2)
+                            .px(ui::SPACE_2)
+                            .py(ui::SPACE_1)
+                            .rounded(ui::RADIUS_ITEM)
                             .child(ui::icon(row_icon, t.text_muted))
                             .child(
                                 div()
                                     .flex_1()
                                     .min_w_0()
-                                    .text_size(rems(0.86))
+                                    .text_size(ui::TYPE_BODY)
                                     .child(SharedString::from(row)),
                             )
                     })),
             )
         };
-        div()
+        let bar = self.page_title(t, title, vec![self.surface_back_button(t, cx)]);
+        let body = div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
-            .child(self.page_header(
-                t,
-                icon,
-                title,
-                subtitle,
-                vec![self.surface_back_button(t, cx)],
-            ))
+            .gap(ui::SPACE_4)
+            .child(ui::muted(t, subtitle))
             .children(self.shared_banners(t))
             .children(extra)
             .child(ui::card(t).child(list))
-            .into_any_element()
+            .into_any_element();
+        sheet_frame(bar, body, None)
     }
 
     pub(super) fn protection_page(

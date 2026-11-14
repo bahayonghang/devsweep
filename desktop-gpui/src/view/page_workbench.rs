@@ -77,17 +77,33 @@ impl ShellView {
                 }),
             )
         });
+        let review = self.session.software_review();
+        let status = if loading {
+            Some(
+                review
+                    .lines()
+                    .iter()
+                    .map(|line| copy::software_review_line(locale, line))
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            )
+        } else if review.item_count() > 0 {
+            Some(match locale {
+                copy::Locale::En => {
+                    format!("{} of {}", review.visible_count(), review.item_count())
+                }
+                copy::Locale::ZhCn => {
+                    format!("{} / {} 项", review.visible_count(), review.item_count())
+                }
+            })
+        } else {
+            Some(copy::software_empty_status(locale).to_string())
+        };
+        let bar = page_bar(t, status, None, vec![ui::any(refresh)]);
         let mut page = div()
             .flex()
             .flex_col()
-            .gap(rems(0.9))
-            .child(self.page_header(
-                t,
-                "software",
-                copy::mode_name(locale, "software"),
-                copy::mode_subtitle(locale, "software"),
-                vec![ui::any(refresh)],
-            ))
+            .gap(ui::SPACE_3)
             .children(self.shared_banners(t))
             .child(
                 div().flex().child(
@@ -107,8 +123,12 @@ impl ShellView {
         }
         let row_height =
             (window.viewport_size().height - window.rem_size() * 23.0).max(window.rem_size() * 8.0);
-        page.child(self.software_review_card(t, row_height, cx))
-            .into_any_element()
+        sheet_frame(
+            bar,
+            page.child(self.software_review_card(t, row_height, cx))
+                .into_any_element(),
+            None,
+        )
     }
 
     fn software_review_card(
@@ -142,16 +162,16 @@ impl ShellView {
             .flex_row()
             .flex_wrap()
             .items_center()
-            .gap(rems(0.5))
+            .gap(ui::SPACE_1)
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .w(rems(20.0))
                     .max_w_full()
-                    .child(ui::icon("search", t.text_subtle))
+                    .child(ui::icon("search", t.text_muted))
                     .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
@@ -202,7 +222,7 @@ impl ShellView {
             .lines()
             .iter()
             .filter(|_| has_items)
-            .map(|line| ui::muted(t, line.clone()));
+            .map(|line| ui::muted(t, copy::software_review_line(locale, line)));
         let cursor = self
             .session
             .shell()
@@ -213,8 +233,7 @@ impl ShellView {
             .id("software-rows")
             .role(gpui::Role::List)
             .flex()
-            .flex_col()
-            .gap(rems(0.15));
+            .flex_col();
         let mut any_row = false;
         for id in self.session.shell().visible_row_ids(Mode::Software) {
             let Some(item) = review.item(id) else {
@@ -236,7 +255,7 @@ impl ShellView {
                         "{} → {} · {}",
                         item.installed_version.as_deref().unwrap_or("?"),
                         item.version,
-                        item.source
+                        copy::software_source_label(locale, &item.source)
                     ),
                 ),
                 Some(SoftwareSegment::Startup) => {
@@ -277,7 +296,15 @@ impl ShellView {
                     } else {
                         (copy::pick(locale, "Review only", "仅可审阅"), Tone::Neutral)
                     };
-                    (label, tone, format!("{} · {}", item.version, item.source))
+                    (
+                        label,
+                        tone,
+                        format!(
+                            "{} · {}",
+                            copy::software_version_label(locale, &item.version),
+                            copy::software_source_label(locale, &item.source)
+                        ),
+                    )
                 }
             };
             let element_id = SharedString::from(format!("software-row-{id}"));
@@ -317,7 +344,7 @@ impl ShellView {
                             .items_center()
                             .justify_center()
                             .size(rems(2.0))
-                            .rounded(rems(0.5))
+                            .rounded(ui::RADIUS_ITEM)
                             .bg(t.tint(t.accent, 0x22))
                             .text_color(rgb(t.accent))
                             .font_weight(FontWeight::SEMIBOLD)
@@ -345,15 +372,15 @@ impl ShellView {
                                 .flex_shrink_0()
                                 .child(
                                     div()
-                                        .text_size(rems(0.86))
+                                        .text_size(ui::TYPE_BODY)
                                         .font_features(ui::tabular_numerals())
                                         .font_weight(FontWeight::MEDIUM)
                                         .child(format!("{prefix}{}", ui::bytes(size.bytes()))),
                                 )
                                 .child(
                                     div()
-                                        .text_size(rems(0.72))
-                                        .text_color(rgb(t.text_subtle))
+                                        .text_size(ui::TYPE_META)
+                                        .text_color(rgb(t.text_muted))
                                         .child(note),
                                 ),
                         )
@@ -403,15 +430,8 @@ impl ShellView {
             );
         }
         if review.loading() {
-            rows = rows.child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(rems(0.75))
-                    .py(rems(1.5))
-                    .child(ui::muted(t, review.lines().join(" ")))
-                    .child(ui::progress_track(t)),
-            );
+            // The page bar already says what is being read.
+            rows = rows.child(div().py(ui::SPACE_4).child(ui::progress_track(t)));
         } else if !any_row && review.item_count() > 0 {
             rows = rows.child(ui::empty_state(
                 t,
@@ -424,7 +444,11 @@ impl ShellView {
                 ),
             ));
         } else if !any_row && !review.lines().is_empty() {
-            let lines = review.lines();
+            let lines = review
+                .lines()
+                .iter()
+                .map(|line| copy::software_review_line(locale, line))
+                .collect::<Vec<_>>();
             rows = rows.child(ui::empty_state(
                 t,
                 "software",
@@ -449,14 +473,14 @@ impl ShellView {
             rows = rows.child(ui::empty_state(t, "software", title, body));
         }
         ui::card(t)
-            .gap(rems(0.9))
+            .gap(ui::SPACE_3)
             .child(toolbar)
             .child(ui::muted(t, match review.segment() {
                 Some(SoftwareSegment::Updates) => copy::pick(locale, "Checks for updates only; nothing is installed.", "仅检查更新，不会安装任何内容。"),
                 Some(SoftwareSegment::Startup) => copy::pick(locale, "Review startup entries and preview changes. Applying host changes is unavailable here.", "审阅启动项并预览更改；此处不能修改本机启动项。"),
                 _ => copy::pick(locale, "Review uninstall eligibility and preview a plan. Host uninstall is unavailable here.", "审阅卸载条件并预览计划；此处不能卸载本机应用。"),
             }))
-            .child(div().flex().flex_col().gap(rems(0.2)).children(summary))
+            .child(div().flex().flex_col().children(summary))
             .child(ui::divider(t))
             .child(rows.max_h(row_height).overflow_y_scroll())
             .into_any_element()
@@ -474,11 +498,11 @@ impl ShellView {
                 .id("workbench-review")
                 .role(gpui::Role::Group)
                 .aria_label(copy::pick(locale, "Review", "审阅"))
-                .gap(rems(0.5))
+                .gap(ui::SPACE_1)
                 .child(ui::card_header(t, copy::pick(locale, "Review", "审阅")))
                 .children(lines.iter().map(|line| {
                     div()
-                        .text_size(rems(0.82))
+                        .text_size(ui::TYPE_BODY)
                         .text_color(rgb(t.text_muted))
                         .child(line.clone())
                 })),
@@ -489,32 +513,41 @@ impl ShellView {
         let locale = self.session.locale();
         let board = self.session.optimize_board();
         let phase = board.phase();
-        let phase_tone = match phase {
-            crate::optimize_board::OptimizePhase::Landing => Tone::Neutral,
-            crate::optimize_board::OptimizePhase::Running => Tone::Accent,
-            crate::optimize_board::OptimizePhase::Completed => Tone::Success,
-            crate::optimize_board::OptimizePhase::Failed => Tone::Danger,
-            crate::optimize_board::OptimizePhase::AdminWait => Tone::Warning,
+        let landing = phase == crate::optimize_board::OptimizePhase::Landing;
+        // Landing states the catalogue. Any other phase is named once, as the
+        // status text; a failure or an admin wait also has its own banner.
+        let bar = if landing {
+            let ids: Vec<String> = OptimizeGroup::ALL
+                .into_iter()
+                .flat_map(crate::optimize_board::ids_in)
+                .collect();
+            let runnable = ids
+                .iter()
+                .filter(|id| {
+                    devsweep_core::optimize::catalogue_entry(id).is_some_and(|entry| {
+                        entry.action_class
+                            == devsweep_core::optimize::MaintenanceActionClass::Execute
+                    })
+                })
+                .count();
+            page_bar(
+                t,
+                Some(copy::optimize_catalogue_status(locale, ids.len(), runnable)),
+                None,
+                Vec::new(),
+            )
+        } else {
+            page_bar(
+                t,
+                Some(copy::optimize_phase_name(locale, phase.key()).to_string()),
+                None,
+                Vec::new(),
+            )
         };
         let mut page = div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
-            .child(self.page_header(
-                t,
-                "optimize",
-                copy::mode_name(locale, "optimize"),
-                copy::mode_subtitle(locale, "optimize"),
-                if phase == crate::optimize_board::OptimizePhase::Landing {
-                    Vec::new()
-                } else {
-                    vec![ui::any(ui::badge(
-                        t,
-                        copy::optimize_phase_name(locale, phase.key()),
-                        phase_tone,
-                    ))]
-                },
-            ))
+            .gap(ui::SPACE_4)
             .children(self.shared_banners(t));
         if phase == crate::optimize_board::OptimizePhase::AdminWait {
             page = page.child(ui::banner(
@@ -540,7 +573,7 @@ impl ShellView {
         let groups = OptimizeGroup::ALL
             .into_iter()
             .filter(|group| open_group.is_none_or(|open| open == *group));
-        let mut grid = div().flex().flex_col().gap(rems(1.0));
+        let mut grid = div().flex().flex_col().gap(ui::SPACE_3);
         for group in groups {
             let ids = crate::optimize_board::ids_in(group);
             let icon = match group {
@@ -560,8 +593,7 @@ impl ShellView {
                 ))))
                 .role(gpui::Role::List)
                 .flex()
-                .flex_col()
-                .gap(rems(0.15));
+                .flex_col();
             for id in &ids {
                 rows = rows.child(self.optimize_row(
                     t,
@@ -603,13 +635,13 @@ impl ShellView {
                     ))))
                     .role(gpui::Role::Group)
                     .aria_label(copy::optimize_group_name(locale, group.key()))
-                    .gap(rems(0.75))
+                    .gap(ui::SPACE_2)
                     .child(
                         div()
                             .flex()
                             .flex_row()
                             .items_center()
-                            .gap(rems(0.75))
+                            .gap(ui::SPACE_2)
                             .child(ui::icon_tile(t, icon, t.accent))
                             .child(
                                 div()
@@ -640,7 +672,7 @@ impl ShellView {
         }
         page = page.child(grid);
         page = page.children(self.workbench_review_card(t));
-        page.into_any_element()
+        sheet_frame(bar, page.into_any_element(), None)
     }
 
     fn optimize_row(

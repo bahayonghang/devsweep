@@ -982,6 +982,53 @@ mod tests {
         }
     }
 
+    /// A file saved by an earlier build with `theme: system` keeps that value
+    /// and every other field through a load and an unrelated save. The store
+    /// is closed (`deny_unknown_fields`), so a document carrying a field this
+    /// build does not know is refused and its bytes stay as they were; it is
+    /// never rewritten without that field.
+    #[test]
+    fn stored_system_theme_round_trips_and_unknown_fields_are_not_dropped() {
+        let (root, files) = isolated("system-theme");
+        let stored = br#"{"schema_version":2,"theme":"system","font":{"kind":"installed","family":"Segoe UI"},"text_scale_percent":110,"motion":"reduced","planet_fps":15,"status_interval_seconds":5,"status_process_limit":30,"hud_interval_seconds":5}"#;
+        fs::write(files.desktop_v2(), stored).unwrap();
+        let loaded = load_stores(&files);
+        assert!(!loaded.desktop_blocked);
+        assert_eq!(loaded.desktop.theme, DesktopTheme::System);
+        assert_eq!(serde_json::to_vec(&loaded.desktop).unwrap(), stored);
+        // Reading does not rewrite the file.
+        assert_eq!(fs::read(files.desktop_v2()).unwrap(), stored);
+
+        let saved =
+            save_desktop_patch(&files, DesktopPatch::TextScalePercent { value: 125 }).unwrap();
+        let expected = DesktopPreferences {
+            text_scale_percent: 125,
+            ..loaded.desktop.clone()
+        };
+        assert_eq!(saved, expected);
+        assert_eq!(load_stores(&files).desktop, expected);
+        let on_disk: serde_json::Value =
+            serde_json::from_slice(&fs::read(files.desktop_v2()).unwrap()).unwrap();
+        assert_eq!(on_disk["theme"], "system");
+
+        let mut extended: serde_json::Value = serde_json::from_slice(stored).unwrap();
+        extended["later_build_field"] = true.into();
+        let extended = serde_json::to_vec(&extended).unwrap();
+        fs::write(files.desktop_v2(), &extended).unwrap();
+        assert!(load_stores(&files).desktop_blocked);
+        assert!(
+            save_desktop_patch(
+                &files,
+                DesktopPatch::Theme {
+                    value: DesktopTheme::Light,
+                },
+            )
+            .is_err()
+        );
+        assert_eq!(fs::read(files.desktop_v2()).unwrap(), extended);
+        cleanup(&root);
+    }
+
     #[test]
     fn invalid_v2_does_not_fall_back_or_get_overwritten() {
         let (root, files) = isolated("invalid-v2");

@@ -46,40 +46,41 @@ impl ShellView {
                 ),
             );
         }
+        // The open folder is named once, here; the detail row below keeps
+        // only the up button and the size and completeness tags.
+        let status = Some(match self.session.analyze_window() {
+            Some(window) => ui::display_path_text(&window.breadcrumb()),
+            None => copy::analyze_locations_status(locale, self.session.analyze_roots().len()),
+        });
+        let bar = page_bar(t, status, None, actions);
         let mut page = div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
-            .child(self.page_header(
-                t,
-                "analyze",
-                copy::mode_name(locale, "analyze"),
-                copy::mode_subtitle(locale, "analyze"),
-                actions,
-            ))
+            .gap(ui::SPACE_4)
             .children(self.shared_banners(t));
         if let Some(notice) = self.session.analyze_notice() {
             page = page.child(ui::banner(t, Tone::Warning, notice.to_string()));
         }
         if let Some(path) = self.session.analyze_scanning() {
             let label = path.display().to_string();
+            let shown = ui::display_path(path);
             page = page.child(
                 ui::card(t)
                     .id("analyze-scanning")
                     .role(gpui::Role::Status)
                     .aria_label(SharedString::from(label.clone()))
-                    .gap(rems(0.9))
+                    .gap(ui::SPACE_3)
                     .child(
                         div()
                             .flex()
                             .flex_row()
                             .items_center()
-                            .gap(rems(0.9))
+                            .gap(ui::SPACE_3)
                             .child(ui::icon_tile(t, "search", t.accent))
                             .child(ui::two_line(
                                 t,
                                 copy::pick(locale, "Mapping folder…", "正在分析文件夹…"),
-                                label,
+                                shown,
                             ))
                             .child(
                                 ui::icon_button(
@@ -111,7 +112,7 @@ impl ShellView {
         } else {
             page.child(self.analyze_landing(t, cx))
         };
-        page.into_any_element()
+        sheet_frame(bar, page.into_any_element(), None)
     }
 
     fn analyze_landing(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
@@ -132,6 +133,8 @@ impl ShellView {
                 .clone()
                 .unwrap_or_else(|| choice.input.clone());
             let hover = t.accent;
+            let hover_fill = t.surface_alt;
+            let high_contrast = t.high_contrast;
             div()
                 .id(ElementId::Name(SharedString::from(format!(
                     "analyze-root-{index}"
@@ -144,17 +147,27 @@ impl ShellView {
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(rems(0.85))
+                .gap(ui::SPACE_2)
                 .w(rems(20.0))
                 .max_w_full()
-                .p(rems(1.0))
-                .rounded(rems(0.9))
+                .p(ui::SPACE_3)
+                .rounded(ui::RADIUS_WELL)
+                // A filled well; fill carries the boundary. High contrast
+                // keeps the 1px border.
                 .bg(rgb(t.surface))
-                .border_1()
-                .border_color(rgb(if ready { t.border_strong } else { t.border }))
+                .when(t.high_contrast, |c| {
+                    c.border_1()
+                        .border_color(rgb(if ready { t.border_strong } else { t.border }))
+                })
                 .when(ready, |c| {
                     c.cursor_pointer()
-                        .hover(move |s| s.border_color(rgb(hover)))
+                        .hover(move |s| {
+                            if high_contrast {
+                                s.border_color(rgb(hover))
+                            } else {
+                                s.bg(rgb(hover_fill))
+                            }
+                        })
                         .keyboard_focus(t)
                         .on_click(cx.listener(move |this, _, _, cx| {
                             let _ = this.session.analyze_open_listed(index);
@@ -167,23 +180,23 @@ impl ShellView {
                 .child(ui::icon_tile(
                     t,
                     "drive",
-                    if ready { t.accent } else { t.text_subtle },
+                    if ready { t.accent } else { t.text_muted },
                 ))
                 .child(ui::two_line(
                     t,
-                    label,
+                    ui::display_path_text(&label),
                     if ready {
                         copy::pick(locale, "Ready to map", "可以分析").to_string()
                     } else {
                         choice.error.clone().unwrap_or_default()
                     },
                 ))
-                .when(ready, |c| c.child(ui::icon("chevron-right", t.text_subtle)))
+                .when(ready, |c| c.child(ui::icon("chevron-right", t.text_muted)))
         });
         div()
             .flex()
             .flex_col()
-            .gap(rems(0.75))
+            .gap(ui::SPACE_2)
             .child(ui::eyebrow(t, copy::pick(locale, "LOCATIONS", "位置")))
             .child(
                 div()
@@ -193,7 +206,7 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .flex_wrap()
-                    .gap(rems(0.9))
+                    .gap(ui::SPACE_3)
                     .children(cards),
             )
             .into_any_element()
@@ -238,9 +251,12 @@ impl ShellView {
             .relative()
             .w_full()
             .h(px(TREEMAP_H))
-            .rounded(rems(0.6))
+            .rounded(ui::RADIUS_ITEM)
             .overflow_hidden()
             .bg(rgb(t.surface_alt));
+        // Tile labels are rem sized, so their fit thresholds follow the text
+        // scale while the map geometry stays in pixels.
+        let text_scale = f32::from(self.session.text_scale()) / 100.0;
         for rect in rects {
             let child = children[rect.index];
             let id = child.id;
@@ -265,10 +281,11 @@ impl ShellView {
                 .top(px(rect.y + 1.0))
                 .w(gpui::relative(w / TREEMAP_W))
                 .h(px(h))
-                .rounded(px(5.0))
+                .rounded(ui::RADIUS_CHECK)
                 .overflow_hidden()
-                .px(px(6.0))
-                .py(px(4.0))
+                // Horizontal padding only: the smallest spacing step on all
+                // four sides would leave a short tile no line height.
+                .px(ui::SPACE_1)
                 .bg(t.tint(hue, if is_selected { 0x30 } else { 0x18 }))
                 .border_1()
                 .border_color(if is_selected { rgb(t.text) } else { rgb(hue) })
@@ -278,19 +295,19 @@ impl ShellView {
                     this.session.analyze_select(id);
                     cx.notify();
                 }));
-            if w >= 54.0 && h >= 22.0 {
+            if w >= 54.0 * text_scale && h >= 22.0 * text_scale {
                 tile = tile.child(
                     div()
                         .truncate()
-                        .text_size(px(11.5))
+                        .text_size(ui::TYPE_META)
                         .font_weight(FontWeight::MEDIUM)
                         .text_color(rgb(t.text))
                         .child(SharedString::from(child.name.clone())),
                 );
-                if h >= 38.0 {
+                if h >= 38.0 * text_scale {
                     tile = tile.child(
                         div()
-                            .text_size(px(10.5))
+                            .text_size(ui::TYPE_META)
                             .text_color(rgb(t.text))
                             .child(SharedString::from(ui::bytes(child.bytes))),
                     );
@@ -315,8 +332,7 @@ impl ShellView {
             .role(gpui::Role::List)
             .aria_label(copy::analyze_list_title(locale))
             .flex()
-            .flex_col()
-            .gap(rems(0.1));
+            .flex_col();
         for child in children.iter().take(200) {
             let id = child.id;
             let face = window.board().face(id).unwrap_or(NodeFace::Present);
@@ -351,7 +367,7 @@ impl ShellView {
                     ui::bytes(child.bytes),
                     face.as_str()
                 )))
-                .py(rems(0.45))
+                .py(ui::SPACE_1)
                 .on_click(cx.listener(move |this, _, _, cx| {
                     if drillable {
                         this.session
@@ -371,19 +387,18 @@ impl ShellView {
                         .flex_col()
                         .flex_1()
                         .min_w_0()
-                        .gap(rems(0.25))
                         .child(
                             div()
                                 .flex()
                                 .flex_row()
                                 .items_center()
-                                .gap(rems(0.5))
+                                .gap(ui::SPACE_1)
                                 .child(
                                     div()
                                         .flex_1()
                                         .min_w_0()
                                         .truncate()
-                                        .text_size(rems(0.88))
+                                        .text_size(ui::TYPE_BODY)
                                         .child(SharedString::from(child.name.clone())),
                                 )
                                 .when_some(face_badge, |d, (label, tone)| {
@@ -392,7 +407,7 @@ impl ShellView {
                                 .child(
                                     div()
                                         .flex_shrink_0()
-                                        .text_size(rems(0.82))
+                                        .text_size(ui::TYPE_BODY)
                                         .font_features(ui::tabular_numerals())
                                         .font_weight(FontWeight::MEDIUM)
                                         .child(SharedString::from(ui::bytes(child.bytes))),
@@ -401,7 +416,7 @@ impl ShellView {
                         .child(ui::meter(t, share, t.accent)),
                 )
                 .when(drillable, |row| {
-                    row.child(ui::icon("chevron-right", t.text_subtle))
+                    row.child(ui::icon("chevron-right", t.text_muted))
                 }),
             );
         }
@@ -451,7 +466,6 @@ impl ShellView {
                         div()
                             .flex()
                             .flex_col()
-                            .gap(rems(0.2))
                             .children(lines.into_iter().map(|line| ui::muted(t, line))),
                     )
                 }
@@ -468,11 +482,11 @@ impl ShellView {
             };
             ui::card(t)
                 .id("analyze-selection")
-                .gap(rems(0.6))
+                .gap(ui::SPACE_1)
                 .child(ui::eyebrow(t, copy::pick(locale, "SELECTED", "已选择")))
                 .child(
                     div()
-                        .text_size(rems(1.05))
+                        .text_size(ui::TYPE_TITLE)
                         .font_weight(FontWeight::SEMIBOLD)
                         .child(SharedString::from(chosen.name.clone())),
                 )
@@ -481,7 +495,7 @@ impl ShellView {
                         .flex()
                         .flex_row()
                         .flex_wrap()
-                        .gap(rems(0.4))
+                        .gap(ui::SPACE_1)
                         .child(ui::badge(t, ui::bytes(chosen.bytes), Tone::Accent))
                         .child(ui::badge(
                             t,
@@ -512,7 +526,7 @@ impl ShellView {
                         .flex()
                         .flex_row()
                         .flex_wrap()
-                        .gap(rems(0.5))
+                        .gap(ui::SPACE_1)
                         .child(
                             ui::icon_button(
                                 t,
@@ -592,14 +606,14 @@ impl ShellView {
         div()
             .flex()
             .flex_col()
-            .gap(rems(1.0))
+            .gap(ui::SPACE_3)
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .flex_wrap()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .when(can_go_up, |row| {
                         row.child(
                             ui::icon_button(
@@ -610,23 +624,13 @@ impl ShellView {
                                 ButtonKind::Ghost,
                             )
                             .h(rems(1.9))
-                            .px(rems(0.6))
+                            .px(ui::SPACE_1)
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.session.analyze_go_up();
                                 cx.notify();
                             })),
                         )
                     })
-                    .child(ui::icon("folder", t.text_muted))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .truncate()
-                            .text_size(rems(0.88))
-                            .text_color(rgb(t.text_muted))
-                            .child(SharedString::from(window.breadcrumb())),
-                    )
                     .child(ui::badge(t, ui::bytes(parent_bytes), Tone::Accent))
                     .child(ui::badge(t, completeness, Tone::Neutral)),
             )
@@ -636,12 +640,12 @@ impl ShellView {
                     .flex_row()
                     .flex_wrap()
                     .items_start()
-                    .gap(rems(1.0))
+                    .gap(ui::SPACE_3)
                     .child(
                         ui::card(t)
                             .w(px(TREEMAP_W))
                             .max_w_full()
-                            .gap(rems(0.75))
+                            .gap(ui::SPACE_2)
                             .child(ui::card_header(t, copy::analyze_treemap_title(locale)))
                             .child(canvas)
                             .child(ui::muted(t, copy::analyze_treemap_description(locale))),
@@ -652,7 +656,7 @@ impl ShellView {
                             .flex_col()
                             .flex_1()
                             .min_w(rems(18.0))
-                            .gap(rems(1.0))
+                            .gap(ui::SPACE_3)
                             .child(detail.unwrap_or_else(|| {
                                 ui::card(t).id("analyze-selection").child(ui::empty_state(
                                     t,
@@ -669,7 +673,7 @@ impl ShellView {
             )
             .child(
                 ui::card(t)
-                    .gap(rems(0.6))
+                    .gap(ui::SPACE_1)
                     .child(ui::card_header(t, copy::analyze_list_title(locale)))
                     .child(list),
             )

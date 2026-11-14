@@ -52,7 +52,7 @@ impl Default for InputStyle {
             border: theme.border_strong,
             focus_border: theme.accent,
             text: theme.text,
-            placeholder: theme.text_subtle,
+            placeholder: theme.text_muted,
             caret: theme.accent,
             selection: (theme.accent << 8) | 0x55,
             font_px: INPUT_FONT_PX,

@@ -45,7 +45,7 @@ impl ShellView {
         // remaining height. Short lists stay compact and long lists scroll.
         let row_height =
             (window.viewport_size().height - window.rem_size() * 26.0).max(window.rem_size() * 8.0);
-        let mut page = div().flex().flex_col().gap(rems(1.25));
+        let mut page = div().flex().flex_col().gap(ui::SPACE_4);
         let mut actions = vec![ui::any(
             ui::icon_button(
                 t,
@@ -87,13 +87,20 @@ impl ShellView {
                 .on_click(cx.listener(|this, _, _, cx| this.clean_retry(cx))),
             ));
         }
-        page = page.child(self.page_header(
-            t,
-            "clean",
-            copy::mode_name(locale, "clean"),
-            copy::mode_subtitle(locale, "clean"),
-            actions,
-        ));
+        let figure = disk_map_active(&self.session).then(|| {
+            copy::clean_bytes_short(clean_map::summarize(&map_inputs(&self.session)).mapped_bytes)
+        });
+        // Landing has no phase sentence of its own, so the first row states
+        // the one fact there is: whether a folder is chosen and that nothing
+        // has been scanned.
+        let status = clean_phase_line(&self.session).or_else(|| {
+            (phase == CleanPhase::Landing).then(|| {
+                let project =
+                    self.session.clean_workbench().selected_scope() == CleanScope::Project;
+                copy::clean_landing_status(locale, project, self.session.shell().scan_roots().len())
+            })
+        });
+        let bar = page_bar(t, status, figure, actions);
         if !matches!(phase, CleanPhase::Scanning | CleanPhase::Cleaning) {
             page = page.child(self.clean_scope_tabs(t, cx));
         }
@@ -119,7 +126,7 @@ impl ShellView {
                     div()
                         .flex()
                         .flex_col()
-                        .gap(rems(1.25))
+                        .gap(ui::SPACE_4)
                         .child(result)
                         .when(disk_map_active(&self.session), |d| {
                             d.child(self.clean_review(t, row_height, cx))
@@ -128,7 +135,7 @@ impl ShellView {
             }
             CleanPhase::Failed => self.clean_failed(t),
         };
-        page.child(body).into_any_element()
+        sheet_frame(bar, page.child(body).into_any_element(), None)
     }
 
     /// Root, protection, outcome and failure banners for the Clean workflow.
@@ -170,7 +177,7 @@ impl ShellView {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
         let project = workbench.selected_scope() == CleanScope::Project;
-        let mut configuration = div().flex().flex_col().gap(rems(0.75)).child(ui::muted(
+        let mut configuration = div().flex().flex_col().gap(ui::SPACE_2).child(ui::muted(
             t,
             copy::clean_scope_detail(locale, workbench.selected_scope().id()),
         ));
@@ -182,16 +189,16 @@ impl ShellView {
         if project {
             let roots = self.session.shell().scan_roots();
             configuration = configuration.child(
-                div().id("clean-project-roots").flex().flex_col().gap(rems(0.4))
+                div().id("clean-project-roots").flex().flex_col().gap(ui::SPACE_1)
                     .when(roots.is_empty(), |d| d.child(ui::muted(t, copy::pick(locale,
                         "Choose a project folder before scanning. Nothing is scanned automatically.",
                         "先选择项目文件夹，再开始扫描。不会自动扫描。"))))
                     .children(roots.iter().enumerate().map(|(index, root)| {
                         div().id(ElementId::named_usize("clean-saved-root", index))
-                            .flex().items_center().gap(rems(0.5)).min_w_0()
+                            .flex().items_center().gap(ui::SPACE_1).min_w_0()
                             .child(ui::icon("folder", t.accent))
-                            .child(div().flex_1().min_w_0().overflow_hidden().text_size(rems(0.86))
-                                .child(root.clone()))
+                            .child(div().flex_1().min_w_0().overflow_hidden().text_size(ui::TYPE_BODY)
+                                .child(ui::display_path_text(root)))
                     })),
             );
         }
@@ -202,7 +209,7 @@ impl ShellView {
                 .flex_row()
                 .flex_wrap()
                 .items_center()
-                .gap(rems(0.75))
+                .gap(ui::SPACE_2)
                 .when(project, |d| {
                     d.child(
                         ui::icon_button(
@@ -295,6 +302,7 @@ impl ShellView {
         let suggestions = self.session.clean_workbench().suggestions().to_vec();
         let rows = suggestions.into_iter().enumerate().map(|(index, root)| {
             let label = root.display().to_string();
+            let shown = ui::display_path(&root);
             ui::list_row(
                 t,
                 ElementId::Name(SharedString::from(format!("clean-root-suggestion-{index}"))),
@@ -307,13 +315,13 @@ impl ShellView {
                 cx.listener(move |this, _, _, cx| this.clean_pick_suggestion(root.clone(), cx)),
             )
             .child(ui::icon("folder", t.accent))
-            .child(div().flex_1().min_w_0().truncate().child(label))
-            .child(ui::icon("chevron-right", t.text_subtle))
+            .child(div().flex_1().min_w_0().truncate().child(shown))
+            .child(ui::icon("chevron-right", t.text_muted))
         });
         div()
             .flex()
             .flex_col()
-            .gap(rems(0.5))
+            .gap(ui::SPACE_1)
             .child(ui::muted(t, copy::clean_root_suggestions(locale)))
             .children(rows)
             .into_any_element()
@@ -324,7 +332,7 @@ impl ShellView {
         ui::card(t)
             .w_full()
             .max_w(rems(40.0))
-            .gap(rems(0.9))
+            .gap(ui::SPACE_3)
             .child(ui::card_header(t, copy::clean_scope_global(locale)))
             .child(ui::banner(
                 t,
@@ -336,7 +344,7 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .justify_end()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .child(
                         ui::button(
                             t,
@@ -383,19 +391,19 @@ impl ShellView {
             .id("clean-progress")
             .role(gpui::Role::Status)
             .aria_label(SharedString::from(title.clone()))
-            .gap(rems(1.0))
-            .p(rems(1.75))
+            .gap(ui::SPACE_3)
+            .p(ui::SPACE_5)
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.9))
+                    .gap(ui::SPACE_3)
                     .child(ui::icon_tile(t, icon, t.accent))
                     .child(
                         div()
                             .flex_1()
-                            .text_size(rems(1.05))
+                            .text_size(ui::TYPE_TITLE)
                             .font_weight(FontWeight::SEMIBOLD)
                             .child(title),
                     )
@@ -451,17 +459,16 @@ impl ShellView {
         ui::card(t)
             .flex_row()
             .items_center()
-            .gap(rems(1.0))
+            .gap(ui::SPACE_3)
             .child(ui::icon_tile(t, "check-circle", tone))
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .flex_1()
-                    .gap(rems(0.15))
                     .child(
                         div()
-                            .text_size(rems(1.05))
+                            .text_size(ui::TYPE_TITLE)
                             .font_weight(FontWeight::SEMIBOLD)
                             .child(copy::clean_phase_completed(locale)),
                     )
@@ -489,7 +496,7 @@ impl ShellView {
             .flex()
             .flex_row()
             .flex_wrap()
-            .gap(rems(0.75))
+            .gap(ui::SPACE_2)
             .child(ui::stat(
                 t,
                 copy::clean_map_card_mapped(locale),
@@ -516,12 +523,12 @@ impl ShellView {
                 copy::clean_map_card_blocked(locale),
                 copy::clean_bytes_short(summary.blocked_bytes),
                 copy::clean_map_count(locale, summary.blocked_count),
-                t.text_subtle,
+                t.text_muted,
             ));
         div()
             .flex()
             .flex_col()
-            .gap(rems(1.25))
+            .gap(ui::SPACE_4)
             .child(self.clean_rows_card(t, row_height, cx))
             .child(stats)
             .when(disk_map_active(&self.session), |d| {
@@ -547,15 +554,18 @@ impl ShellView {
             .max_w_full()
             .h(px(MAP_HEIGHT))
             .overflow_hidden()
-            .rounded(rems(0.6))
+            .rounded(ui::RADIUS_ITEM)
             .bg(rgb(t.surface_alt));
         if map.groups.is_empty() {
             canvas = canvas.child(
                 div()
-                    .p(rems(1.0))
+                    .p(ui::SPACE_3)
                     .child(ui::muted(t, copy::clean_map_empty(locale))),
             );
         }
+        // Tile labels are rem sized, so their fit thresholds follow the text
+        // scale while the map geometry stays in pixels.
+        let text_scale = f32::from(self.session.text_scale()) / 100.0;
         for (group_index, group) in map.groups.iter().enumerate() {
             let title = if group.other {
                 copy::clean_map_other(locale, group.represented)
@@ -572,23 +582,31 @@ impl ShellView {
                 .id(ElementId::Name(SharedString::from(format!(
                     "clean-map-group-{group_index}"
                 ))))
+                // The group box is the whole group rectangle. Each tile
+                // insets itself by one pixel, so a box inset as well would
+                // clip the right and bottom edge of its last tiles.
                 .absolute()
-                .left(gpui::relative((group.x + 1.0) / MAP_WIDTH))
-                .top(px(group.y + 1.0))
-                .w(gpui::relative((group.width - 2.0).max(1.0) / MAP_WIDTH))
-                .h(px((group.height - 2.0).max(1.0)))
-                .rounded(px(6.0))
+                .left(gpui::relative(group.x / MAP_WIDTH))
+                .top(px(group.y))
+                .w(gpui::relative(group.width.max(1.0) / MAP_WIDTH))
+                .h(px(group.height.max(1.0)))
+                .rounded(ui::RADIUS_CHECK)
                 .overflow_hidden()
                 .aria_label(SharedString::from(group_label));
             if group.height >= 30.0 && group.width >= 60.0 {
                 node = node.child(
+                    // The band has a fixed pixel height while the label is
+                    // rem sized: one line of exactly the band height keeps
+                    // the label inside it at every text scale.
                     div()
                         .absolute()
                         .left(px(6.0))
-                        .top(px(2.0))
+                        .top(px(0.0))
                         .right(px(4.0))
+                        .h(px(clean_map::GROUP_HEADER as f32))
+                        .line_height(px(clean_map::GROUP_HEADER as f32))
                         .truncate()
-                        .text_size(px(10.5))
+                        .text_size(ui::TYPE_META)
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(rgb(t.text_muted))
                         .child(SharedString::from(format!(
@@ -629,14 +647,15 @@ impl ShellView {
                 let mut tile = div()
                     .id(ElementId::Name(SharedString::from(element_id)))
                     .absolute()
-                    .left(gpui::relative(x / (group.width - 2.0).max(1.0)))
+                    .left(gpui::relative(x / group.width.max(1.0)))
                     .top(px(y))
-                    .w(gpui::relative(w / (group.width - 2.0).max(1.0)))
+                    .w(gpui::relative(w / group.width.max(1.0)))
                     .h(px(h))
                     .overflow_hidden()
-                    .rounded(px(5.0))
-                    .px(px(6.0))
-                    .py(px(4.0))
+                    .rounded(ui::RADIUS_CHECK)
+                    // Horizontal padding only: the smallest spacing step on
+                    // all four sides would leave a short tile no line height.
+                    .px(ui::SPACE_1)
                     .bg(t.tint(hue, if selected { 0x30 } else { 0x18 }))
                     .border_1()
                     .border_color(if selected { rgb(t.text) } else { rgb(hue) })
@@ -651,19 +670,19 @@ impl ShellView {
                             cx.notify();
                         }));
                 }
-                if w >= 56.0 && h >= 24.0 {
+                if w >= 56.0 * text_scale && h >= 24.0 * text_scale {
                     tile = tile.child(
                         div()
                             .truncate()
-                            .text_size(px(11.5))
+                            .text_size(ui::TYPE_META)
                             .font_weight(FontWeight::MEDIUM)
                             .text_color(rgb(t.text))
                             .child(SharedString::from(leaf_title)),
                     );
-                    if h >= 40.0 {
+                    if h >= 40.0 * text_scale {
                         tile = tile.child(
                             div()
-                                .text_size(px(10.5))
+                                .text_size(ui::TYPE_META)
                                 .text_color(rgb(t.text))
                                 .child(SharedString::from(copy::clean_bytes_short(leaf.bytes))),
                         );
@@ -676,7 +695,7 @@ impl ShellView {
         let legend = div()
             .flex()
             .flex_col()
-            .gap(rems(0.55))
+            .gap(ui::SPACE_1)
             .min_w(rems(10.0))
             .child(ui::eyebrow(
                 t,
@@ -687,16 +706,16 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .child(
                         div()
                             .size(rems(0.7))
-                            .rounded(rems(0.2))
+                            .rounded(ui::RADIUS_CHECK)
                             .bg(rgb(t.category(category_index(*category)))),
                     )
                     .child(
                         div()
-                            .text_size(rems(0.8))
+                            .text_size(ui::TYPE_META)
                             .text_color(rgb(t.text_muted))
                             .child(copy::clean_map_category(locale, category.as_str())),
                     )
@@ -705,12 +724,11 @@ impl ShellView {
             .id("clean-disk-map")
             .role(gpui::Role::Group)
             .aria_label(copy::clean_map_title(locale))
-            .gap(rems(1.0))
+            .gap(ui::SPACE_3)
             .child(
                 div()
                     .flex()
                     .flex_col()
-                    .gap(rems(0.2))
                     .child(ui::card_header(t, copy::clean_map_title(locale)))
                     .child(ui::muted(t, copy::clean_map_subtitle(locale)))
                     .when(
@@ -724,7 +742,7 @@ impl ShellView {
                     .flex_row()
                     .flex_wrap()
                     .items_start()
-                    .gap(rems(1.5))
+                    .gap(ui::SPACE_4)
                     .child(canvas)
                     .child(legend),
             )
@@ -751,16 +769,16 @@ impl ShellView {
             .flex_row()
             .flex_wrap()
             .items_center()
-            .gap(rems(0.5))
+            .gap(ui::SPACE_1)
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .w(rems(20.0))
                     .max_w_full()
-                    .child(ui::icon("search", t.text_subtle))
+                    .child(ui::icon("search", t.text_muted))
                     .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
@@ -795,8 +813,7 @@ impl ShellView {
             .max_h(row_height)
             .overflow_y_scroll()
             .flex()
-            .flex_col()
-            .gap(rems(0.15));
+            .flex_col();
         for id in shell.visible_row_ids(Mode::Clean) {
             let Some(row) = workbench.row(id) else {
                 continue;
@@ -813,7 +830,7 @@ impl ShellView {
                 .flex_row()
                 .items_center()
                 .justify_between()
-                .pt(rems(0.5))
+                .pt(ui::SPACE_1)
                 .child(ui::muted(
                     t,
                     format!(
@@ -826,7 +843,7 @@ impl ShellView {
                     div()
                         .flex()
                         .flex_row()
-                        .gap(rems(0.4))
+                        .gap(ui::SPACE_1)
                         .child(
                             ui::icon_button(
                                 t,
@@ -862,12 +879,11 @@ impl ShellView {
             .id("clean-map-recommendations")
             .role(gpui::Role::Group)
             .aria_label(copy::clean_map_recommendations(locale))
-            .gap(rems(0.9))
+            .gap(ui::SPACE_3)
             .child(
                 div()
                     .flex()
                     .flex_col()
-                    .gap(rems(0.2))
                     .child(ui::card_header(t, copy::clean_map_recommendations(locale)))
                     .child(ui::muted(t, copy::clean_map_recommendations_hint(locale))),
             )
@@ -903,7 +919,7 @@ impl ShellView {
         };
         let title = clean_map::leaf_title(&row.rule_id, row.path.as_deref());
         let subtitle = match row.path.as_deref() {
-            Some(path) => path.to_string(),
+            Some(path) => ui::display_path_text(path),
             None => copy::clean_row_global(locale).to_string(),
         };
         let element_id = SharedString::from(format!("clean-row-{}", row.id));
@@ -913,7 +929,7 @@ impl ShellView {
             .flex_row()
             .flex_wrap()
             .items_center()
-            .gap(rems(0.3))
+            .gap(ui::SPACE_1)
             .child(ui::badge(
                 t,
                 copy::clean_map_band(locale, band.as_str()),
@@ -957,7 +973,6 @@ impl ShellView {
                     .flex_col()
                     .flex_1()
                     .min_w_0()
-                    .gap(rems(0.25))
                     .child(ui::two_line(t, title, subtitle))
                     .child(
                         div()
@@ -965,12 +980,12 @@ impl ShellView {
                             .flex_row()
                             .flex_wrap()
                             .items_center()
-                            .gap(rems(0.5))
+                            .gap(ui::SPACE_1)
                             .child(badges)
                             .child(
                                 div()
-                                    .text_size(rems(0.72))
-                                    .text_color(rgb(t.text_subtle))
+                                    .text_size(ui::TYPE_META)
+                                    .text_color(rgb(t.text_muted))
                                     .child(copy::clean_row_rebuild_cost(locale, &row.rule_id)),
                             ),
                     ),
@@ -978,7 +993,7 @@ impl ShellView {
             .child(
                 div()
                     .flex_shrink_0()
-                    .text_size(rems(0.95))
+                    .text_size(ui::TYPE_TITLE)
                     .font_features(ui::tabular_numerals())
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(copy::clean_bytes_short(row.bytes)),
@@ -1041,20 +1056,20 @@ impl ShellView {
             .id("clean-actions")
             .flex()
             .flex_col()
-            .gap(rems(0.6))
-            .mt(rems(0.25))
-            .p(rems(0.9))
-            .rounded(rems(0.7))
+            .gap(ui::SPACE_1)
+            .p(ui::SPACE_3)
+            .rounded(ui::RADIUS_ITEM)
             .bg(rgb(t.surface_alt))
-            .border_1()
-            .border_color(rgb(t.border))
+            .when(t.high_contrast, |d| {
+                d.border_1().border_color(rgb(t.border))
+            })
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .flex_wrap()
                     .items_center()
-                    .gap(rems(0.75))
+                    .gap(ui::SPACE_2)
                     .child(
                         div()
                             .flex()
@@ -1063,7 +1078,7 @@ impl ShellView {
                             .min_w(rems(12.0))
                             .child(
                                 div()
-                                    .text_size(rems(1.1))
+                                    .text_size(ui::TYPE_TITLE)
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .child(copy::clean_bytes_short(selected_bytes)),
                             )
@@ -1138,20 +1153,15 @@ impl ShellView {
             )
             .on_click(cx.listener(|this, _, _, cx| this.clean_ai_close(cx))),
         ));
+        let bar = self.page_title(t, copy::clean_ai_title(locale), actions);
         let mut page = div()
             .id("clean-ai-controls")
             .role(gpui::Role::Group)
             .aria_label(copy::clean_ai_title(locale))
             .flex()
             .flex_col()
-            .gap(rems(1.25))
-            .child(self.page_header(
-                t,
-                "sparkle",
-                copy::clean_ai_title(locale),
-                copy::clean_ai_subtitle(locale),
-                actions,
-            ))
+            .gap(ui::SPACE_4)
+            .child(ui::muted(t, copy::clean_ai_subtitle(locale)))
             .children(self.shared_banners(t));
         if let Some(notice) = view.notice() {
             page = page.child(ui::banner(
@@ -1163,7 +1173,7 @@ impl ShellView {
         if let Some(home) = view.home() {
             page = page.child(ui::muted(
                 t,
-                copy::clean_ai_home_line(locale, &home.display().to_string()),
+                copy::clean_ai_home_line(locale, &ui::display_path(home)),
             ));
         }
         let body = match phase {
@@ -1195,13 +1205,13 @@ impl ShellView {
                 };
                 ui::any(
                     ui::card(t)
-                        .gap(rems(1.0))
+                        .gap(ui::SPACE_3)
                         .child(
                             div()
                                 .flex()
                                 .flex_row()
                                 .items_center()
-                                .gap(rems(0.9))
+                                .gap(ui::SPACE_3)
                                 .child(ui::icon_tile(t, "search", t.accent))
                                 .child(
                                     div()
@@ -1240,7 +1250,7 @@ impl ShellView {
                     ui::card(t)
                         .flex_row()
                         .items_center()
-                        .gap(rems(1.0))
+                        .gap(ui::SPACE_3)
                         .child(ui::icon_tile(t, icon, tone))
                         .child(
                             div()
@@ -1270,7 +1280,7 @@ impl ShellView {
         if view.home().is_some() && !busy {
             page = page.child(self.clean_ai_recovery(t, cx));
         }
-        page.into_any_element()
+        sheet_frame(bar, page.into_any_element(), None)
     }
 
     fn clean_ai_review(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
@@ -1302,8 +1312,7 @@ impl ShellView {
             .id("clean-ai-rows")
             .role(gpui::Role::List)
             .flex()
-            .flex_col()
-            .gap(rems(0.15));
+            .flex_col();
         for id in self.session.shell().visible_row_ids(Mode::Clean) {
             let Some(row) = view.row(id) else {
                 continue;
@@ -1353,14 +1362,14 @@ impl ShellView {
         let selection =
             copy::clean_ai_selection_count(locale, view.selected_count(), view.selectable_count());
         ui::card(t)
-            .gap(rems(0.9))
+            .gap(ui::SPACE_3)
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .flex_wrap()
                     .items_center()
-                    .gap(rems(0.75))
+                    .gap(ui::SPACE_2)
                     .child(
                         ui::segmented(t)
                             .id("clean-ai-categories")
@@ -1373,10 +1382,10 @@ impl ShellView {
                             .flex()
                             .flex_row()
                             .items_center()
-                            .gap(rems(0.5))
+                            .gap(ui::SPACE_1)
                             .w(rems(16.0))
                             .max_w_full()
-                            .child(ui::icon("search", t.text_subtle))
+                            .child(ui::icon("search", t.text_muted))
                             .child(div().flex_1().min_w_0().child(self.search.clone())),
                     ),
             )
@@ -1398,12 +1407,13 @@ impl ShellView {
                     .flex_row()
                     .flex_wrap()
                     .items_center()
-                    .gap(rems(0.6))
-                    .p(rems(0.9))
-                    .rounded(rems(0.7))
+                    .gap(ui::SPACE_1)
+                    .p(ui::SPACE_3)
+                    .rounded(ui::RADIUS_ITEM)
                     .bg(rgb(t.surface_alt))
-                    .border_1()
-                    .border_color(rgb(t.border))
+                    .when(t.high_contrast, |d| {
+                        d.border_1().border_color(rgb(t.border))
+                    })
                     .child(div().flex_1().child(ui::muted(t, selection.clone())))
                     .child(
                         ui::button(
@@ -1458,7 +1468,7 @@ impl ShellView {
     fn clean_ai_recovery(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
         let view = self.session.clean_ai();
-        let mut list = div().flex().flex_col().gap(rems(0.3));
+        let mut list = div().flex().flex_col().gap(ui::SPACE_1);
         if view.recovery_loaded() && view.recovery().is_empty() {
             list = list.child(ui::muted(t, copy::clean_ai_recovery_empty(locale)));
         }
@@ -1469,10 +1479,10 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.6))
-                    .px(rems(0.75))
-                    .py(rems(0.5))
-                    .rounded(rems(0.5))
+                    .gap(ui::SPACE_1)
+                    .px(ui::SPACE_2)
+                    .py(ui::SPACE_1)
+                    .rounded(ui::RADIUS_ITEM)
                     .bg(rgb(t.surface_alt))
                     .child(ui::icon("history", t.text_muted))
                     .child(ui::two_line(
@@ -1512,7 +1522,7 @@ impl ShellView {
             ));
         }
         ui::card(t)
-            .gap(rems(0.75))
+            .gap(ui::SPACE_2)
             .child(
                 ui::card_header(t, copy::clean_ai_recovery_title(locale)).child(
                     ui::icon_button(

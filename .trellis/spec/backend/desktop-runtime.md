@@ -104,9 +104,43 @@ changing material. `WindowMaterial::wants_blur` uses logical viewport pixels.
 
 | Window state | Renderer and surface |
 | --- | --- |
-| Width ≥ 960, Windows advanced effects enabled, normal contrast | Request blur once on entry. Paint translucent surfaces only after `gpui_windows::try_enable_window_blur(&Window)` succeeds. |
+| Width ≥ 960, Windows advanced effects enabled, normal contrast | Request blur on entry, and again with the new tint when the theme changes while blur is active. A failed request is not retried until the window leaves and re-enters this state. Paint translucent surfaces only after `gpui_windows::try_enable_window_blur(&Window, tint)` succeeds. |
 | Width < 960, high contrast, advanced effects disabled or unavailable | Opaque window and paper. High contrast takes precedence over the saved palette. |
 | Non-composited swap chain or native accent call fails | Opaque fallback even at full width. `GPUI_DISABLE_DIRECT_COMPOSITION=1` exercises the unsupported-renderer case on Windows. |
+
+The backdrop is tinted, not clear. `gpui_windows::try_enable_window_blur(&Window, tint)`
+takes the acrylic colour as (red, green, blue, alpha); the app passes
+`Theme::backdrop_tint()`, the field start colour at `ui::BACKDROP_TINT_ALPHA`
+(0x99), and paints the field gradient over it at `ui::FIELD_GLASS_ALPHA` (0.90)
+through `Theme::field(glass)`. On fallback the field and the paper are opaque.
+`WindowMaterial::update(window, tint)` requests the backdrop on entering the
+blur condition and sends a new tint when the theme changes while blur is
+active. A request that failed stays failed until the window leaves and
+re-enters the condition; a new tint does not retry it.
+
+Luminance rule: the light field must read at least 0.70 WCAG relative
+luminance over a black window behind it; otherwise paint the field opaque and
+keep only the paper translucent. With the constants above the light field
+measured 0.7787 (mint end) and 0.7273 (lavender end) over black on Windows
+10.0.26300 at 120 dpi, so the tinted backdrop is kept. The margin at the
+lavender end is 0.027. Re-measure with a controlled black and white window
+behind the app whenever either constant, the field colours or the vendored
+blur call changes; a transparent-black tint measured 0.4739.
+
+Light wells are a fill step below the paper (`#FFFFFF`, `#F4F8F6`, `#EAF2EE`,
+`#DCEDE5`), because on the opaque fallback a white well on white paper has no
+edge and wells carry no border in normal contrast. High contrast keeps 1px
+borders.
+
+`DesktopTheme::System` follows the Windows app mode. `ShellView` reads
+`Window::appearance()` on render into `WindowMaterial.system_dark` and passes
+it to `Theme::for_preferences(theme, system_dark, high_contrast)`;
+`observe_window_appearance` re-renders on a change, so no restart is needed.
+High contrast overrides every saved theme. The title-bar toggle resolves its
+direction from the palette on screen, and writes an explicit light or dark
+draft. First launch stays dark. Switching the Windows app mode with the app
+open is a manual check: tests cover the resolution for both modes, not the
+OS notification.
 
 Refresh system preferences on appearance notifications, including
 `WM_SETTINGCHANGE` with an unchanged light/dark palette. Do not poll Windows

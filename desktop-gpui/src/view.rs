@@ -19,7 +19,7 @@ use gpui::{
     Action, App, AssetSource, Bounds, Context, ElementId, Entity, FocusHandle, Focusable,
     FontWeight, KeyBinding, PathPromptOptions, SharedString, TitlebarOptions, Window, WindowBounds,
     WindowControlArea, WindowOptions, actions, div, img, linear_color_stop, linear_gradient,
-    prelude::*, px, rems, rgb, rgba, size,
+    prelude::*, px, rems, rgb, size,
 };
 use gpui_platform::application;
 #[cfg(windows)]
@@ -89,9 +89,13 @@ fn windows_high_contrast_on() -> bool {
 #[derive(Default)]
 struct WindowMaterial {
     high_contrast: bool,
+    /// Windows app mode as reported by the window; resolves the `system` theme.
+    system_dark: bool,
     transparency: bool,
     blur_requested: bool,
     blur_active: bool,
+    /// Tint last handed to the compositor; a theme change sends a new one.
+    blur_tint: Option<(u8, u8, u8, u8)>,
 }
 
 impl WindowMaterial {
@@ -109,18 +113,24 @@ impl WindowMaterial {
         self.transparency && !self.high_contrast && width >= px(960.0)
     }
 
-    fn update(&mut self, window: &Window) {
+    fn update(&mut self, window: &Window, tint: (u8, u8, u8, u8)) {
         let requested = self.wants_blur(window.viewport_size().width);
-        if requested == self.blur_requested {
+        let tint = requested.then_some(tint);
+        if requested == self.blur_requested && tint == self.blur_tint {
             return;
         }
+        // A request that failed stays failed until the window leaves and
+        // re-enters the blur condition; a new tint does not retry it.
+        let retint = requested && self.blur_requested && self.blur_active;
+        let entering = requested && !self.blur_requested;
         self.blur_requested = requested;
-        if requested {
+        self.blur_tint = tint;
+        if entering || retint {
             #[cfg(windows)]
-            {
-                self.blur_active = gpui_windows::try_enable_window_blur(window);
+            if let Some(tint) = tint {
+                self.blur_active = gpui_windows::try_enable_window_blur(window, tint);
             }
-        } else {
+        } else if !requested {
             window.set_background_appearance(gpui::WindowBackgroundAppearance::Opaque);
             self.blur_active = false;
         }
@@ -219,16 +229,25 @@ pub(crate) fn on_view_a11y(
     }
 }
 
-fn next_titlebar_theme(current: DesktopTheme) -> DesktopTheme {
-    if Theme::for_preferences(current, false).dark {
+fn next_titlebar_theme(current: DesktopTheme, system_dark: bool) -> DesktopTheme {
+    if Theme::for_preferences(current, system_dark, false).dark {
         DesktopTheme::Light
     } else {
         DesktopTheme::Dark
     }
 }
 
-fn toggle_titlebar_theme(session: &mut Session) {
-    session.set_theme(next_titlebar_theme(session.theme()));
+#[cfg(test)]
+fn toggle_titlebar_theme(session: &mut Session, system_dark: bool) {
+    session.set_theme(next_titlebar_theme(session.theme(), system_dark));
+}
+
+fn titlebar_theme_light(session: &mut Session) {
+    session.set_theme(DesktopTheme::Light);
+}
+
+fn titlebar_theme_dark(session: &mut Session) {
+    session.set_theme(DesktopTheme::Dark);
 }
 
 impl ShellView {
@@ -618,14 +637,27 @@ impl Focusable for ShellView {
 
 impl Render for ShellView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.material.update(window);
+        // GPUI caches the window appearance and refreshes it on the system
+        // notification, so this is not a per-frame Windows query.
+        self.material.system_dark = matches!(
+            window.appearance(),
+            gpui::WindowAppearance::Dark | gpui::WindowAppearance::VibrantDark
+        );
+        let t = Theme::for_preferences(
+            self.session.theme(),
+            self.material.system_dark,
+            self.material.high_contrast,
+        );
+        self.material.update(window, t.backdrop_tint());
         let glass = self.material.blur_active;
-        let t = Theme::for_preferences(self.session.theme(), self.material.high_contrast);
+        let (field_start, field_end) = t.field(glass);
         // Spacing and type are rem based, so the stored text scale scales the
         // whole layout, not only the root font.
         window.set_rem_size(px(16.0 * f32::from(self.session.text_scale()) / 100.0));
         let compact = window.viewport_size().width < window.rem_size() * 69.0;
         let narrow = window.viewport_size().width < window.rem_size() * 36.0;
+        // Mode tabs keep their text from 720 logical px at every text scale.
+        let tab_labels = window.viewport_size().width >= ui::TAB_LABEL_MIN_WIDTH;
         self.sync_inputs(&t, cx);
         // The beaver PNG and the Earth still are single frames. Do not request
         // a decorative animation frame.
@@ -657,7 +689,7 @@ impl Render for ShellView {
         let shell_access = accessible_control(locale, AccessibleSlot::Shell);
         let maximized = window.is_maximized();
         let top_bar = self.top_bar(
-            &t, locale, selected, surface, menu_open, maximized, compact, narrow, cx,
+            &t, locale, selected, surface, menu_open, maximized, compact, narrow, tab_labels, cx,
         );
         let page = self.page(&t, window, cx);
         let font_family = match self.session.font() {
@@ -709,47 +741,42 @@ impl Render for ShellView {
             .flex_col()
             .bg(linear_gradient(
                 160.0,
-                linear_color_stop(rgba((t.canvas << 8) | if glass { 0xc4 } else { 0xff }), 0.0),
-                linear_color_stop(
-                    rgba((t.canvas_end << 8) | if glass { 0xc4 } else { 0xff }),
-                    1.0,
-                ),
+                linear_color_stop(field_start, 0.0),
+                linear_color_stop(field_end, 1.0),
             ))
             .text_color(rgb(t.text))
             .font_family(font_family)
-            .text_size(rems(0.9375))
+            .text_size(ui::TYPE_BODY)
             .child(top_bar)
             .child(
                 div()
-                    .id("page-scroll")
                     .flex_1()
                     .min_h_0()
-                    .overflow_y_scroll()
+                    .w_full()
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .p(if compact { ui::SPACE_2 } else { ui::SPACE_4 })
                     .child(
+                        // The paper fills the window height; pages scroll
+                        // inside it through `sheet_frame`.
                         div()
+                            .id("mode-panel")
+                            .role(gpui::Role::TabPanel)
+                            .aria_label(panel_title(&self.session))
                             .w_full()
+                            .max_w(rems(76.0))
+                            .flex_1()
+                            .min_h_0()
+                            .bg(t.sheet(glass))
+                            .border_1()
+                            .border_color(t.sheet_edge(glass))
+                            .rounded(ui::RADIUS_SHEET)
+                            .when(!t.high_contrast, |sheet| sheet.shadow(ui::sheet_shadow()))
+                            .p(if compact { ui::SPACE_2 } else { ui::SPACE_4 })
                             .flex()
                             .flex_col()
-                            .items_center()
-                            .p(rems(if compact { 0.75 } else { 1.5 }))
-                            .child(
-                                div()
-                                    .id("mode-panel")
-                                    .role(gpui::Role::TabPanel)
-                                    .aria_label(panel_title(&self.session))
-                                    .w_full()
-                                    .max_w(rems(76.0))
-                                    .bg(t.sheet(glass))
-                                    .border_1()
-                                    .border_color(t.sheet_edge(glass))
-                                    .rounded(px(20.0))
-                                    .when(glass, |sheet| sheet.shadow_sm())
-                                    .p(rems(if compact { 0.75 } else { 1.5 }))
-                                    .flex()
-                                    .flex_col()
-                                    .gap(rems(1.25))
-                                    .child(page),
-                            ),
+                            .child(page),
                     ),
             )
             .when(menu_open, |root| {
@@ -765,15 +792,19 @@ impl Render for ShellView {
                         .top_0()
                         .left_0()
                         .size_full()
-                        .bg(rgb(0x000000))
+                        .bg(rgb(ui::SCREEN_COVER))
                         .flex()
                         .items_end()
                         .justify_center()
-                        .pb(rems(2.0))
+                        .pb(ui::SPACE_5)
                         .child(
                             div()
-                                .text_size(rems(0.8))
-                                .text_color(rgb(if t.high_contrast { t.text } else { 0x91999F }))
+                                .text_size(ui::TYPE_META)
+                                .text_color(rgb(if t.high_contrast {
+                                    t.text
+                                } else {
+                                    ui::SCREEN_COVER_TEXT
+                                }))
                                 .child(copy::clean_screen_active(locale)),
                         ),
                 )
@@ -829,7 +860,7 @@ impl ShellView {
             border: t.border_strong,
             focus_border: t.accent,
             text: t.text,
-            placeholder: t.text_subtle,
+            placeholder: t.text_muted,
             caret: t.accent,
             selection: (t.accent << 8) | 0x55,
             font_px: 14.0,
@@ -882,6 +913,7 @@ impl ShellView {
         maximized: bool,
         compact: bool,
         narrow: bool,
+        tab_labels: bool,
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
         let tooltip_theme = *t;
@@ -902,11 +934,11 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.45))
+                    .gap(ui::SPACE_1)
                     .h(rems(2.1))
-                    .px(rems(if compact { 0.65 } else { 0.95 }))
+                    .px(if compact { ui::SPACE_2 } else { ui::SPACE_3 })
                     .rounded_full()
-                    .text_size(rems(0.85))
+                    .text_size(ui::TYPE_BODY)
                     .font_weight(FontWeight::MEDIUM)
                     .cursor_pointer()
                     .border_1()
@@ -932,7 +964,7 @@ impl ShellView {
                         )
                         .size(rems(0.95)),
                     )
-                    .when(!compact || active, |tab| tab.child(access.label))
+                    .when(tab_labels || active, |tab| tab.child(access.label))
                     .tooltip(move |_, cx| {
                         cx.new(|_| TooltipText(access.label.into(), tooltip_theme))
                             .into()
@@ -974,24 +1006,25 @@ impl ShellView {
                 )
                 .child(ui::icon(icon, t.text_muted).size(rems(1.0)))
         };
-        let (theme_icon, theme_label) =
-            if next_titlebar_theme(self.session.theme()) == DesktopTheme::Light {
+        // The direction is resolved against the palette on screen, so the
+        // button also leaves `system` for the opposite of the current mode.
+        let (theme_icon, theme_label, theme_run): (_, _, fn(&mut Session)) =
+            if next_titlebar_theme(self.session.theme(), self.material.system_dark)
+                == DesktopTheme::Light
+            {
                 (
                     "sun",
                     copy::pick(locale, "Switch to light theme", "切换到浅色主题"),
+                    titlebar_theme_light,
                 )
             } else {
                 (
                     "moon",
                     copy::pick(locale, "Switch to dark theme", "切换到深色主题"),
+                    titlebar_theme_dark,
                 )
             };
-        let theme_button = titlebar_button(
-            "titlebar-theme",
-            theme_icon,
-            theme_label,
-            toggle_titlebar_theme,
-        );
+        let theme_button = titlebar_button("titlebar-theme", theme_icon, theme_label, theme_run);
         let settings_button = titlebar_button(
             "titlebar-settings",
             "settings",
@@ -1006,12 +1039,11 @@ impl ShellView {
             .flex()
             .flex_row()
             .items_center()
-            .gap(rems(0.15))
-            .p(rems(0.25))
             .rounded_full()
             .bg(rgb(t.surface))
-            .border_1()
-            .border_color(rgb(t.border))
+            .when(t.high_contrast, |d| {
+                d.border_1().border_color(rgb(t.border))
+            })
             .children(tabs);
         let (inline_tabs, lower_tabs) = if narrow {
             (None, Some(tabs))
@@ -1027,8 +1059,8 @@ impl ShellView {
             .flex_shrink_0()
             .items_center()
             .h(rems(3.75))
-            .pl(rems(1.25))
-            .when(!CUSTOM_CAPTION, |bar| bar.pr(rems(1.25)))
+            .pl(ui::SPACE_4)
+            .when(!CUSTOM_CAPTION, |bar| bar.pr(ui::SPACE_4))
             .bg(rgb(t.chrome))
             .border_b_1()
             .border_color(rgb(t.border))
@@ -1053,11 +1085,11 @@ impl ShellView {
                         .flex()
                         .flex_row()
                         .items_center()
-                        .gap(rems(0.55))
+                        .gap(ui::SPACE_1)
                         .h(rems(2.3))
-                        .pl(rems(0.3))
-                        .pr(rems(0.6))
-                        .rounded(rems(0.6))
+                        .pl(ui::SPACE_1)
+                        .pr(ui::SPACE_1)
+                        .rounded(ui::RADIUS_ITEM)
                         .cursor_pointer()
                         .border_1()
                         .border_color(gpui::transparent_black())
@@ -1098,13 +1130,13 @@ impl ShellView {
                         .when(!compact || narrow, |brand| {
                             brand.child(
                                 div()
-                                    .text_size(rems(0.95))
+                                    .text_size(ui::TYPE_TITLE)
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .child(WINDOW_TITLE),
                             )
                         })
                         .child(
-                            ui::icon("chevron-right", t.text_subtle)
+                            ui::icon("chevron-right", t.text_muted)
                                 .size(rems(0.8))
                                 .when(menu_open, |i| i.text_color(rgb(t.text))),
                         ),
@@ -1120,7 +1152,7 @@ impl ShellView {
                     )
                     .id("shell-busy")
                     .role(gpui::Role::Status)
-                    .ml(rems(0.5)),
+                    .ml(ui::SPACE_1),
                 )
             })
             .child(
@@ -1130,7 +1162,10 @@ impl ShellView {
                     .flex_row()
                     .justify_end()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
+                    // Keeps a gap after the busy badge or the inline tabs when
+                    // they leave this row no free width.
+                    .pl(ui::SPACE_2)
                     .child(theme_button)
                     .child(settings_button)
                     .when(CUSTOM_CAPTION, |row| {
@@ -1144,7 +1179,7 @@ impl ShellView {
             .bg(rgb(t.chrome))
             .child(bar)
             .when_some(lower_tabs, |shell, tabs| {
-                shell.child(div().flex().justify_center().pb(rems(0.5)).child(tabs))
+                shell.child(div().flex().justify_center().pb(ui::SPACE_1).child(tabs))
             })
             .into_any_element()
     }
@@ -1171,10 +1206,10 @@ impl ShellView {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap(rems(0.65))
-                    .px(rems(0.7))
-                    .py(rems(0.5))
-                    .rounded(rems(0.5))
+                    .gap(ui::SPACE_2)
+                    .px(ui::SPACE_2)
+                    .py(ui::SPACE_1)
+                    .rounded(ui::RADIUS_ITEM)
                     .cursor_pointer()
                     .border_1()
                     .border_color(gpui::transparent_black())
@@ -1193,7 +1228,7 @@ impl ShellView {
                         }),
                     )
                     .child(ui::icon(surface_icon(item), t.text_muted))
-                    .child(div().flex_1().text_size(rems(0.875)).child(access.label))
+                    .child(div().flex_1().text_size(ui::TYPE_BODY).child(access.label))
             })
             .collect::<Vec<_>>();
         let language = self.menu_language_rows(t, locale, cx);
@@ -1225,21 +1260,20 @@ impl ShellView {
                     .w(rems(15.0))
                     .flex()
                     .flex_col()
-                    .gap(rems(0.1))
-                    .p(rems(0.35))
+                    .p(ui::SPACE_1)
                     .bg(rgb(t.surface))
                     .border_1()
                     .border_color(rgb(t.border_strong))
-                    .rounded(rems(0.8))
+                    .rounded(ui::RADIUS_ITEM)
                     .shadow_lg()
                     .children(items)
-                    .child(ui::divider(t).mt(rems(0.2)))
+                    .child(ui::divider(t))
                     .child(
                         div()
-                            .px(rems(0.7))
-                            .pt(rems(0.35))
-                            .text_size(rems(0.72))
-                            .text_color(rgb(t.text_subtle))
+                            .px(ui::SPACE_2)
+                            .pt(ui::SPACE_1)
+                            .text_size(ui::TYPE_META)
+                            .text_color(rgb(t.text_muted))
                             .child(copy::language_label(locale)),
                     )
                     .children(language),
@@ -1272,10 +1306,10 @@ impl ShellView {
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(rems(0.65))
-                .px(rems(0.7))
-                .py(rems(0.5))
-                .rounded(rems(0.5))
+                .gap(ui::SPACE_2)
+                .px(ui::SPACE_2)
+                .py(ui::SPACE_1)
+                .rounded(ui::RADIUS_ITEM)
                 .cursor_pointer()
                 .border_1()
                 .border_color(gpui::transparent_black())
@@ -1293,7 +1327,7 @@ impl ShellView {
                     }),
                 )
                 .child(ui::icon("globe", t.text_muted))
-                .child(div().flex_1().text_size(rems(0.875)).child(label))
+                .child(div().flex_1().text_size(ui::TYPE_BODY).child(label))
                 .when(active, |row| row.child(ui::icon("check", t.accent)))
                 .into_any_element()
         })
@@ -1354,40 +1388,28 @@ impl ShellView {
         banners
     }
 
-    /// Standard page header: icon tile, title, subtitle, trailing actions.
-    fn page_header(
+    /// Title row of a non-tab page (Settings, Protection, Rules, History and
+    /// the AI review): one title and its trailing actions.
+    fn page_title(
         &self,
         t: &Theme,
-        icon: &'static str,
         title: impl Into<SharedString>,
-        subtitle: impl Into<SharedString>,
         actions: Vec<gpui::AnyElement>,
     ) -> gpui::AnyElement {
         div()
             .flex()
             .flex_row()
             .items_center()
-            .gap(rems(1.0))
-            .child(ui::icon_tile(t, icon, t.accent).size(rems(2.75)))
+            .gap(ui::SPACE_3)
             .child(
                 div()
-                    .flex()
-                    .flex_col()
                     .flex_1()
                     .min_w_0()
-                    .gap(rems(0.15))
-                    .child(
-                        div()
-                            .text_size(rems(1.5))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(title.into()),
-                    )
-                    .child(
-                        div()
-                            .text_size(rems(0.88))
-                            .text_color(rgb(t.text_muted))
-                            .child(subtitle.into()),
-                    ),
+                    .truncate()
+                    .text_size(ui::TYPE_TITLE)
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(rgb(t.text))
+                    .child(title.into()),
             )
             .child(
                 div()
@@ -1395,7 +1417,7 @@ impl ShellView {
                     .flex_row()
                     .flex_shrink_0()
                     .items_center()
-                    .gap(rems(0.5))
+                    .gap(ui::SPACE_1)
                     .children(actions),
             )
             .into_any_element()
@@ -1431,6 +1453,119 @@ impl ShellView {
             }
         })
         .detach();
+    }
+}
+
+/// First row of a mode page: status, then the lead figure, then the actions.
+/// The tabs already name the page, so there is no title here. With neither a
+/// status nor a figure the status node is left out, so the row never holds an
+/// empty `Role::Status` element or an empty band.
+fn page_bar(
+    t: &Theme,
+    status: Option<String>,
+    figure: Option<String>,
+    actions: Vec<gpui::AnyElement>,
+) -> gpui::AnyElement {
+    let status = status.filter(|status| !status.trim().is_empty());
+    let figure = figure.filter(|figure| !figure.trim().is_empty());
+    let lead = status.is_some() || figure.is_some();
+    let has_actions = !actions.is_empty();
+    div()
+        .flex()
+        .flex_row()
+        .flex_wrap()
+        .items_center()
+        .gap(ui::SPACE_3)
+        .when(lead, |row| {
+            row.child(
+                div()
+                    .id("page-status")
+                    .role(gpui::Role::Status)
+                    .flex()
+                    .flex_col()
+                    .flex_1()
+                    .min_w(rems(12.0))
+                    .when_some(status, |column, status| {
+                        column.child(
+                            div()
+                                .text_size(ui::TYPE_BODY)
+                                .text_color(rgb(t.text_muted))
+                                .child(status),
+                        )
+                    })
+                    .when_some(figure, |column, figure| {
+                        column.child(
+                            div()
+                                .text_size(ui::TYPE_DISPLAY)
+                                .font_weight(FontWeight::BOLD)
+                                .font_features(ui::tabular_numerals())
+                                .text_color(rgb(t.info))
+                                .child(figure),
+                        )
+                    }),
+            )
+        })
+        // Without a lead, an unsized spacer keeps the actions at the right.
+        .when(!lead, |row| row.child(div().flex_1()))
+        .when(has_actions, |row| {
+            row.child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .flex_wrap()
+                    .flex_shrink_0()
+                    .items_center()
+                    .gap(ui::SPACE_1)
+                    .children(actions),
+            )
+        })
+        .into_any_element()
+}
+
+/// Page layout inside the paper: a fixed first row, a scrolling body and an
+/// optional fixed action row.
+fn sheet_frame(
+    top: gpui::AnyElement,
+    body: gpui::AnyElement,
+    bottom: Option<gpui::AnyElement>,
+) -> gpui::AnyElement {
+    div()
+        .flex()
+        .flex_col()
+        .flex_1()
+        .min_h_0()
+        .gap(ui::SPACE_3)
+        .child(div().flex_shrink_0().child(top))
+        .child(
+            div()
+                .id("page-scroll")
+                .flex_1()
+                .min_h_0()
+                .overflow_y_scroll()
+                .child(body),
+        )
+        .children(bottom.map(|bottom| div().flex_shrink_0().child(bottom)))
+        .into_any_element()
+}
+
+/// The Clean phase as one status sentence. Landing has one only for a prompt.
+fn clean_phase_line(session: &Session) -> Option<String> {
+    let locale = session.locale();
+    let workbench = session.clean_workbench();
+    match workbench.phase() {
+        CleanPhase::Landing => match workbench.prompt() {
+            CleanLandingPrompt::None => None,
+            CleanLandingPrompt::RootRequired => Some(copy::clean_root_prompt(locale).to_string()),
+            CleanLandingPrompt::ConfirmGlobal => {
+                Some(copy::clean_global_confirm(locale).to_string())
+            }
+        },
+        CleanPhase::Scanning => Some(copy::clean_phase_scanning(locale, workbench.found_so_far())),
+        CleanPhase::Found => Some(copy::clean_phase_found(locale, workbench.rows().len())),
+        CleanPhase::AllClean => Some(copy::clean_phase_all_clean(locale).to_string()),
+        CleanPhase::Cleaning => Some(copy::clean_phase_cleaning(locale).to_string()),
+        CleanPhase::Completed => Some(copy::clean_phase_completed(locale).to_string()),
+        CleanPhase::Failed => Some(copy::clean_phase_failed(locale).to_string()),
     }
 }
 
@@ -1489,14 +1624,13 @@ struct TooltipText(SharedString, Theme);
 impl Render for TooltipText {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
         div()
-            .px(rems(0.5))
-            .py(rems(0.25))
-            .rounded(rems(0.4))
+            .px(ui::SPACE_1)
+            .rounded(ui::RADIUS_ITEM)
             .bg(rgb(self.1.surface))
             .border_1()
             .border_color(rgb(self.1.border_strong))
             .text_color(rgb(self.1.text))
-            .text_size(rems(0.75))
+            .text_size(ui::TYPE_META)
             .child(self.0.clone())
     }
 }
@@ -1984,22 +2118,7 @@ fn push_clean_review_lines(session: &Session, entries: &mut Vec<PanelEntry>) {
     let locale = session.locale();
     let shell = session.shell();
     let workbench = session.clean_workbench();
-    let phase_line = match workbench.phase() {
-        CleanPhase::Landing => match workbench.prompt() {
-            CleanLandingPrompt::None => None,
-            CleanLandingPrompt::RootRequired => Some(copy::clean_root_prompt(locale).to_string()),
-            CleanLandingPrompt::ConfirmGlobal => {
-                Some(copy::clean_global_confirm(locale).to_string())
-            }
-        },
-        CleanPhase::Scanning => Some(copy::clean_phase_scanning(locale, workbench.found_so_far())),
-        CleanPhase::Found => Some(copy::clean_phase_found(locale, workbench.rows().len())),
-        CleanPhase::AllClean => Some(copy::clean_phase_all_clean(locale).to_string()),
-        CleanPhase::Cleaning => Some(copy::clean_phase_cleaning(locale).to_string()),
-        CleanPhase::Completed => Some(copy::clean_phase_completed(locale).to_string()),
-        CleanPhase::Failed => Some(copy::clean_phase_failed(locale).to_string()),
-    };
-    if let Some(line) = phase_line {
+    if let Some(line) = clean_phase_line(session) {
         entries.push(PanelEntry::Text(line));
     }
     if disk_map_active(session) {
@@ -2254,7 +2373,7 @@ fn caption_buttons(
     let text = t.text;
     let button = |id: &'static str, icon: &'static str, label: &'static str, area| {
         let (bg, ink) = if area == WindowControlArea::Close {
-            (0xC42B1C, 0xFFFFFF)
+            (ui::CAPTION_CLOSE_HOVER, ui::CAPTION_CLOSE_INK)
         } else {
             (hover_bg, text)
         };
@@ -2287,7 +2406,7 @@ fn caption_buttons(
         .flex()
         .flex_row()
         .h_full()
-        .ml(rems(0.75))
+        .ml(ui::SPACE_2)
         .child(
             button(
                 "caption-min",
@@ -2513,19 +2632,51 @@ mod tests {
         for (current, first, second) in [
             (Dark, Light, Dark),
             (Light, Dark, Light),
-            (System, Light, Dark),
             (CatppuccinLatte, Dark, Light),
             (CatppuccinMocha, Light, Dark),
             (Codex, Light, Dark),
             (Claude, Light, Dark),
         ] {
             session.set_theme(current);
-            toggle_titlebar_theme(&mut session);
+            toggle_titlebar_theme(&mut session, true);
             assert_eq!(session.theme(), first);
-            assert!(Theme::for_preferences(session.theme(), true).high_contrast);
-            toggle_titlebar_theme(&mut session);
+            assert!(Theme::for_preferences(session.theme(), true, true).high_contrast);
+            toggle_titlebar_theme(&mut session, false);
             assert_eq!(session.theme(), second);
             assert_eq!(session.shell().surface(), Surface::Settings);
+        }
+        // `system` leaves for the opposite of the Windows app mode in effect.
+        for (system_dark, first) in [(true, Light), (false, Dark)] {
+            session.set_theme(System);
+            toggle_titlebar_theme(&mut session, system_dark);
+            assert_eq!(session.theme(), first);
+        }
+    }
+
+    #[test]
+    fn system_theme_follows_the_windows_app_mode() {
+        assert_eq!(
+            Theme::for_preferences(DesktopTheme::System, true, false),
+            ui::DARK
+        );
+        assert_eq!(
+            Theme::for_preferences(DesktopTheme::System, false, false),
+            ui::LIGHT
+        );
+        // The stored palettes do not depend on the system mode.
+        for system_dark in [true, false] {
+            assert_eq!(
+                Theme::for_preferences(DesktopTheme::Light, system_dark, false),
+                ui::LIGHT
+            );
+            assert_eq!(
+                Theme::for_preferences(DesktopTheme::Dark, system_dark, false),
+                ui::DARK
+            );
+            assert_eq!(
+                Theme::for_preferences(DesktopTheme::System, system_dark, true),
+                ui::HIGH_CONTRAST
+            );
         }
     }
 
@@ -2547,7 +2698,7 @@ mod tests {
         let mut session = Session::launch(files.clone());
         session.set_text_scale(125);
         session.set_locale(Locale::ZhCn);
-        toggle_titlebar_theme(&mut session);
+        toggle_titlebar_theme(&mut session, true);
         assert!(session.settings_dirty());
         assert_eq!(session.theme(), DesktopTheme::Light);
         assert_eq!(session.text_scale(), 125);
@@ -2608,8 +2759,8 @@ mod tests {
 
     #[test]
     fn light_theme_canvas_is_not_dark() {
-        let light = Theme::for_preferences(DesktopTheme::Light, false);
-        let dark = Theme::for_preferences(DesktopTheme::Dark, false);
+        let light = Theme::for_preferences(DesktopTheme::Light, false, false);
+        let dark = Theme::for_preferences(DesktopTheme::Dark, false, false);
         assert_ne!(light.canvas, dark.canvas);
         assert_ne!(light.text, dark.text);
         assert_eq!(light.canvas, 0xe7f6f1);
@@ -2618,10 +2769,10 @@ mod tests {
 
     #[test]
     fn high_contrast_palette_is_distinct() {
-        let high_dark = Theme::for_preferences(DesktopTheme::Dark, true);
-        let high_light = Theme::for_preferences(DesktopTheme::Light, true);
-        let dark = Theme::for_preferences(DesktopTheme::Dark, false);
-        let light = Theme::for_preferences(DesktopTheme::Light, false);
+        let high_dark = Theme::for_preferences(DesktopTheme::Dark, false, true);
+        let high_light = Theme::for_preferences(DesktopTheme::Light, false, true);
+        let dark = Theme::for_preferences(DesktopTheme::Dark, false, false);
+        let light = Theme::for_preferences(DesktopTheme::Light, false, false);
 
         assert_eq!(high_dark.canvas, 0x000000);
         assert_eq!(high_dark.text, 0xffffff);
@@ -3264,6 +3415,136 @@ mod tests {
             main.contains(r#"#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]"#)
         );
         assert!(main.contains("install_crash_log();"));
+    }
+
+    /// Source guard for the type, radius and spacing scales
+    /// (`desktop-gpui/DESIGN.md`, "Type" and "Layout").
+    ///
+    /// Checked, in the production part of `view.rs` (everything before its
+    /// test module) and in every `view/page_*.rs`, with whitespace removed:
+    /// - `.text_size(...)` names a `ui::TYPE_` token and takes no `rems(` or
+    ///   `px(` literal, so a local bound to a literal does not pass;
+    /// - `.rounded(...)` and its per-corner forms name a `ui::RADIUS_` token
+    ///   and take no `rems(` or `px(` literal, and the only shorthand radius
+    ///   is `rounded_full`;
+    /// - `gap`, padding and margin setters (`gap`, `gap_x`, `gap_y`, `p`,
+    ///   `px`, `py`, `pt`, `pb`, `pl`, `pr`, `m`, `mx`, `my`, `mt`, `mb`,
+    ///   `ml`, `mr`) take only `ui::SPACE_1` to `ui::SPACE_6`, optionally
+    ///   chosen by a condition;
+    /// - no numbered shorthand such as `gap_2()`, `p_4()` or `text_sm()`.
+    ///
+    /// Not checked: element heights, widths, `size`, `min_*`/`max_*`, icon
+    /// sizes and absolute offsets (`top`, `left`, `right`, `bottom`), which
+    /// remain literals; colour literals; `ui.rs`, which defines the tokens;
+    /// and whether a token is the right one for its role.
+    #[test]
+    fn view_code_uses_only_named_type_radius_and_spacing_tokens() {
+        const SPACING: [&str; 17] = [
+            "gap", "gap_x", "gap_y", "p", "px", "py", "pt", "pb", "pl", "pr", "m", "mx", "my",
+            "mt", "mb", "ml", "mr",
+        ];
+        const TEXT_SHORTHAND: [&str; 7] = ["xs", "sm", "base", "lg", "xl", "2xl", "3xl"];
+        /// The argument text of the call whose opening parenthesis ends `at`.
+        fn argument(source: &str, at: usize) -> &str {
+            let mut depth = 1;
+            for (offset, byte) in source.as_bytes()[at..].iter().enumerate() {
+                match byte {
+                    b'(' => depth += 1,
+                    b')' => depth -= 1,
+                    _ => {}
+                }
+                if depth == 0 {
+                    return &source[at..at + offset];
+                }
+            }
+            &source[at..]
+        }
+        let view = crate::source_lf(include_str!("view.rs"));
+        let production = view
+            .find("\n#[cfg(test)]\nmod tests {")
+            .map(|end| view[..end].to_string())
+            .expect("view.rs ends with its test module");
+        let files = [
+            ("view.rs", production),
+            (
+                "view/page_analyze.rs",
+                crate::source_lf(include_str!("view/page_analyze.rs")),
+            ),
+            (
+                "view/page_clean.rs",
+                crate::source_lf(include_str!("view/page_clean.rs")),
+            ),
+            (
+                "view/page_status.rs",
+                crate::source_lf(include_str!("view/page_status.rs")),
+            ),
+            (
+                "view/page_support.rs",
+                crate::source_lf(include_str!("view/page_support.rs")),
+            ),
+            (
+                "view/page_workbench.rs",
+                crate::source_lf(include_str!("view/page_workbench.rs")),
+            ),
+        ];
+        let mut faults = Vec::new();
+        for (name, source) in files {
+            let source: String = source.chars().filter(|c| !c.is_whitespace()).collect();
+            for (setter, token) in [
+                ("text_size", "ui::TYPE_"),
+                ("rounded", "ui::RADIUS_"),
+                ("rounded_t", "ui::RADIUS_"),
+                ("rounded_b", "ui::RADIUS_"),
+                ("rounded_l", "ui::RADIUS_"),
+                ("rounded_r", "ui::RADIUS_"),
+            ] {
+                let call = format!(".{setter}(");
+                for (at, _) in source.match_indices(&call) {
+                    let value = argument(&source, at + call.len());
+                    if value.contains("rems(") || value.contains("px(") || !value.contains(token) {
+                        faults.push(format!("{name}: {call}{value})"));
+                    }
+                }
+            }
+            for setter in SPACING {
+                let call = format!(".{setter}(");
+                for (at, _) in source.match_indices(&call) {
+                    let value = argument(&source, at + call.len());
+                    let mut rest = value.to_string();
+                    for step in 1..=6 {
+                        rest = rest.replace(&format!("ui::SPACE_{step}"), "");
+                    }
+                    let literal = rest.contains('(') || rest.bytes().any(|b| b.is_ascii_digit());
+                    if literal || rest.len() == value.len() {
+                        faults.push(format!("{name}: {call}{value})"));
+                    }
+                }
+                let numbered = format!(".{setter}_");
+                for (at, _) in source.match_indices(&numbered) {
+                    let next = source.as_bytes().get(at + numbered.len());
+                    if next.is_some_and(u8::is_ascii_digit) {
+                        faults.push(format!("{name}: numbered shorthand {numbered}"));
+                    }
+                }
+            }
+            for (at, _) in source.match_indices(".rounded_") {
+                let tail = &source[at + ".rounded_".len()..];
+                let per_corner = ["t(", "b(", "l(", "r("].iter().any(|p| tail.starts_with(p));
+                if !tail.starts_with("full()") && !per_corner {
+                    faults.push(format!("{name}: shorthand radius .rounded_{}", &tail[..4]));
+                }
+            }
+            for size in TEXT_SHORTHAND {
+                if source.contains(&format!(".text_{size}()")) {
+                    faults.push(format!("{name}: shorthand type size .text_{size}()"));
+                }
+            }
+        }
+        assert!(
+            faults.is_empty(),
+            "off-scale values:\n{}",
+            faults.join("\n")
+        );
     }
 
     #[test]

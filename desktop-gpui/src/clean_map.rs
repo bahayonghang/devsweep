@@ -13,7 +13,8 @@ pub const MAX_LEAVES: usize = 6;
 /// Rows that receive their own parent group. The byte tail stays in Other.
 pub const MAX_DETAILED_ROWS: usize = 256;
 /// Canvas used by the Found-state map. Layout is independent of the window.
-const GROUP_HEADER: f64 = 18.0;
+/// Height of the title band above a group's tiles, in map pixels.
+pub const GROUP_HEADER: f64 = 18.0;
 
 /// Content class for one scanned target. Color is not a safety claim.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

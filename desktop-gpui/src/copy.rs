@@ -1777,6 +1777,122 @@ pub fn status_phase_landing(locale: Locale) -> &'static str {
     }
 }
 
+/// Title of the Status page before any snapshot exists.
+pub fn status_empty_title(locale: Locale) -> &'static str {
+    match locale {
+        Locale::En => "No snapshot yet",
+        Locale::ZhCn => "尚无快照",
+    }
+}
+
+/// First-row status of the Clean landing page: what is chosen, and that
+/// nothing has been scanned. `roots` counts the saved project folders.
+pub fn clean_landing_status(locale: Locale, project: bool, roots: usize) -> String {
+    match (locale, project, roots) {
+        (Locale::En, true, 0) => "No folder chosen".to_string(),
+        (Locale::ZhCn, true, 0) => "尚未选择文件夹".to_string(),
+        (Locale::En, true, 1) => "Not scanned yet · 1 folder chosen".to_string(),
+        (Locale::En, true, roots) => format!("Not scanned yet · {roots} folders chosen"),
+        (Locale::ZhCn, true, roots) => format!("尚未扫描 · 已选择 {roots} 个文件夹"),
+        (Locale::En, false, _) => "Not scanned yet".to_string(),
+        (Locale::ZhCn, false, _) => "尚未扫描".to_string(),
+    }
+}
+
+/// Readable name for an inventory source token built by
+/// `software_review::source_token`. Unknown tokens, such as an update
+/// provider name, pass through.
+pub fn software_source_label(locale: Locale, token: &str) -> String {
+    let label = match (locale, token) {
+        (Locale::En, "msix_current_user") => "MSIX package, current user",
+        (Locale::ZhCn, "msix_current_user") => "MSIX 包（当前用户）",
+        (Locale::En, "msi:UserUnmanaged") => "Windows Installer, current user",
+        (Locale::ZhCn, "msi:UserUnmanaged") => "Windows Installer（当前用户）",
+        (Locale::En, "msi:UserManaged") => "Windows Installer, current user (managed)",
+        (Locale::ZhCn, "msi:UserManaged") => "Windows Installer（当前用户，托管）",
+        (Locale::En, "msi:Machine") => "Windows Installer, all users",
+        (Locale::ZhCn, "msi:Machine") => "Windows Installer（所有用户）",
+        (Locale::En, "arp:CurrentUser:Registry64") => "Uninstall registry, current user",
+        (Locale::ZhCn, "arp:CurrentUser:Registry64") => "卸载注册表（当前用户）",
+        (Locale::En, "arp:CurrentUser:Registry32") => "Uninstall registry, current user (32-bit)",
+        (Locale::ZhCn, "arp:CurrentUser:Registry32") => "卸载注册表（当前用户，32 位）",
+        (Locale::En, "arp:LocalMachine:Registry64") => "Uninstall registry, all users",
+        (Locale::ZhCn, "arp:LocalMachine:Registry64") => "卸载注册表（所有用户）",
+        (Locale::En, "arp:LocalMachine:Registry32") => "Uninstall registry, all users (32-bit)",
+        (Locale::ZhCn, "arp:LocalMachine:Registry32") => "卸载注册表（所有用户，32 位）",
+        (Locale::En, "unknown") => "Source unknown",
+        (Locale::ZhCn, "unknown") => "来源未知",
+        _ => return token.to_string(),
+    };
+    label.to_string()
+}
+
+/// The version column of a software row. The review model stores the literal
+/// token `unknown` when the source reported none.
+pub fn software_version_label(locale: Locale, version: &str) -> String {
+    if version == "unknown" {
+        pick(locale, "Version unknown", "版本未知").to_string()
+    } else {
+        version.to_string()
+    }
+}
+
+/// A Software review line as shown on the page. The review model keeps
+/// failures as `code: detail`, where the detail is the core error's English
+/// text. English shows the line as it is. zh-CN shows a sentence for the code
+/// and keeps the code for support, plus a one-token reason code when the
+/// detail is one; an English sentence detail stays in the model and the text
+/// projection. Lines without a known code pass through.
+pub fn software_review_line(locale: Locale, line: &str) -> String {
+    if locale == Locale::En {
+        return line.to_string();
+    }
+    let code = line.split([':', '：']).next().unwrap_or_default();
+    let sentence = match code {
+        "inventory_unavailable" | "inventory_unreadable" => "无法读取软件清单",
+        "updates_unreadable" => "无法读取更新结果",
+        "probe_failed" => "更新检查失败",
+        "isolated_executor_refused" => "隔离卸载执行器拒绝了请求",
+        "digest_mismatch" => "预览摘要不一致，请重新预览",
+        "empty_selection" => "没有选择任何项目",
+        "manual_selection" => "所选项目需要手动处理",
+        "unknown_selection" => "所选项目不在清单中",
+        "inventory_expired" => "软件清单已过期，请刷新",
+        "inventory_fingerprint_mismatch" => "软件清单已变化，请刷新",
+        "stale_selection" => "所选项目已变化，请刷新",
+        "software_plan_error" => "无法生成软件计划",
+        "confirmation_required" => "需要确认后才能继续",
+        "unsupported_plan_version" => "不支持此计划版本",
+        "invalid_plan" => "计划无效",
+        "unknown_entry" => "找不到该启动项",
+        "requires_administrator" => "需要管理员权限",
+        "unsupported_platform" => "此平台不受支持",
+        "startup_source_unavailable" => "无法读取启动项来源",
+        "startup_identity_unavailable" => "无法确认启动项身份",
+        "startup_entry_changed" => "启动项已变化，请刷新",
+        "startup_state_changed" => "启动项状态已变化，请刷新",
+        "stale_confirmation" => "确认已过期，请重新预览",
+        "audit_unavailable" => "无法写入审计记录",
+        "protected" => "该项目受保护",
+        "ambiguous_package" => "匹配到多个软件包",
+        "unsupported_source" => "此来源不受支持",
+        "network_unavailable" => "网络不可用",
+        "version_changed" => "版本已变化，请重新检查",
+        "package_not_found" => "找不到该软件包",
+        "provider_changed" => "更新提供程序已变化，请重新检查",
+        _ => return line.to_string(),
+    };
+    // A one-token detail is a reason code (for example the update probe's
+    // `WingetMissing`), not an English sentence. Keep it: it is the only
+    // thing that tells one failure of this kind from another.
+    let detail = line[code.len()..].trim_start_matches([':', '：']).trim();
+    if !detail.is_empty() && !detail.contains(char::is_whitespace) && detail.is_ascii() {
+        format!("{sentence}（{code}: {detail}）。")
+    } else {
+        format!("{sentence}（{code}）。")
+    }
+}
+
 pub fn status_phase_live(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Live",
@@ -1825,6 +1941,51 @@ pub fn pick(locale: Locale, en: &'static str, zh: &'static str) -> &'static str 
         Locale::En => en,
         Locale::ZhCn => zh,
     }
+}
+
+/// First-row status of the Optimize landing: how many catalogue operations
+/// are listed and how many of them run after review.
+#[must_use]
+pub fn optimize_catalogue_status(locale: Locale, total: usize, runnable: usize) -> String {
+    match locale {
+        Locale::En if total == 1 => format!("1 operation, {runnable} run after review"),
+        Locale::En => format!("{total} operations, {runnable} run after review"),
+        Locale::ZhCn => format!("{total} 项操作，{runnable} 项审阅后执行"),
+    }
+}
+
+/// First-row status of the Status page while it is not live.
+#[must_use]
+pub fn status_idle_status(locale: Locale, sampling: bool, has_snapshot: bool) -> &'static str {
+    if sampling {
+        pick(locale, "Taking a snapshot", "正在生成快照")
+    } else if has_snapshot {
+        pick(
+            locale,
+            "Snapshot shown, live updates off",
+            "显示的是快照，未开启实时刷新",
+        )
+    } else {
+        pick(locale, "Not sampling", "未在采样")
+    }
+}
+
+/// First-row status of the Analyze landing: how many locations are listed.
+#[must_use]
+pub fn analyze_locations_status(locale: Locale, count: usize) -> String {
+    match (locale, count) {
+        (Locale::En, 0) => "No locations listed".to_string(),
+        (Locale::En, 1) => "1 location".to_string(),
+        (Locale::En, _) => format!("{count} locations"),
+        (Locale::ZhCn, 0) => "未列出位置".to_string(),
+        (Locale::ZhCn, _) => format!("{count} 个位置"),
+    }
+}
+
+/// First-row status of a Software list that loaded with nothing in it.
+#[must_use]
+pub fn software_empty_status(locale: Locale) -> &'static str {
+    pick(locale, "No entries", "没有条目")
 }
 
 /// Display name of one Optimize catalogue id. Unknown ids show the id.
@@ -2128,5 +2289,33 @@ mod tests {
             history_operation_line("clean", "op-1", "succeeded"),
             "clean | op-1 | succeeded"
         );
+    }
+    #[test]
+    fn clean_landing_status_states_the_chosen_folders() {
+        assert_eq!(
+            clean_landing_status(Locale::En, true, 0),
+            "No folder chosen"
+        );
+        assert_eq!(
+            clean_landing_status(Locale::En, true, 1),
+            "Not scanned yet · 1 folder chosen"
+        );
+        assert_eq!(
+            clean_landing_status(Locale::En, true, 3),
+            "Not scanned yet · 3 folders chosen"
+        );
+        assert_eq!(
+            clean_landing_status(Locale::En, false, 3),
+            "Not scanned yet"
+        );
+        assert_eq!(
+            clean_landing_status(Locale::ZhCn, true, 0),
+            "尚未选择文件夹"
+        );
+        assert_eq!(
+            clean_landing_status(Locale::ZhCn, true, 2),
+            "尚未扫描 · 已选择 2 个文件夹"
+        );
+        assert_eq!(clean_landing_status(Locale::ZhCn, false, 0), "尚未扫描");
     }
 }

@@ -8,8 +8,8 @@
 //! stored text scale, so the whole layout scales together.
 
 use gpui::{
-    AnyElement, BoxShadow, Div, ElementId, FontWeight, Rgba, SharedString, Stateful, Svg, div,
-    point, prelude::*, px, rems, rgb, rgba, svg,
+    AnyElement, BoxShadow, Div, ElementId, FontWeight, Pixels, Rems, Rgba, SharedString, Stateful,
+    Svg, div, point, prelude::*, px, rems, rgb, rgba, svg,
 };
 
 use crate::preferences::DesktopTheme;
@@ -33,8 +33,8 @@ pub struct Theme {
     pub border: u32,
     pub border_strong: u32,
     pub text: u32,
+    /// Secondary text. One value per colour group.
     pub text_muted: u32,
-    pub text_subtle: u32,
     /// The selected mode pill and primary action.
     pub pill: u32,
     pub pill_text: u32,
@@ -48,18 +48,43 @@ pub struct Theme {
 
 impl Theme {
     #[must_use]
-    pub fn for_preferences(theme: DesktopTheme, high_contrast: bool) -> Self {
+    pub fn for_preferences(theme: DesktopTheme, system_dark: bool, high_contrast: bool) -> Self {
         if high_contrast {
             return HIGH_CONTRAST;
         }
         match theme {
+            // `system` follows the Windows app mode reported by the window.
+            DesktopTheme::System if system_dark => DARK,
+            DesktopTheme::System => LIGHT,
             DesktopTheme::Light | DesktopTheme::CatppuccinLatte => LIGHT,
             DesktopTheme::Dark
-            | DesktopTheme::System
             | DesktopTheme::CatppuccinMocha
             | DesktopTheme::Codex
             | DesktopTheme::Claude => DARK,
         }
+    }
+
+    /// The two field stops. With the window backdrop on they are translucent
+    /// so the tinted backdrop shows through; otherwise they are opaque.
+    #[must_use]
+    pub fn field(&self, glass: bool) -> (Rgba, Rgba) {
+        let alpha = if glass && !self.high_contrast {
+            FIELD_GLASS_ALPHA
+        } else {
+            1.0
+        };
+        (
+            rgb(self.canvas).alpha(alpha),
+            rgb(self.canvas_end).alpha(alpha),
+        )
+    }
+
+    /// Tint for the window backdrop: the field start colour, as
+    /// (red, green, blue, alpha) bytes.
+    #[must_use]
+    pub fn backdrop_tint(&self) -> (u8, u8, u8, u8) {
+        let [_, red, green, blue] = self.canvas.to_be_bytes();
+        (red, green, blue, BACKDROP_TINT_ALPHA)
     }
 
     /// Fill for the workbench paper. Its opaque equivalent is used on fallback.
@@ -138,7 +163,6 @@ pub const DARK: Theme = Theme {
     border_strong: 0x859E94,
     text: 0xEDF4F2,
     text_muted: 0xB3C2BF,
-    text_subtle: 0xA2B4AE,
     pill: 0xA4DEC8,
     pill_text: 0x142823,
     accent: 0x87D9BA,
@@ -154,14 +178,14 @@ pub const LIGHT: Theme = Theme {
     canvas: 0xE7F6F1,
     canvas_end: 0xEDE7F8,
     chrome: 0xFFFFFF,
-    surface: 0xFFFFFF,
-    surface_alt: 0xF2F7F5,
-    surface_active: 0xE7F3EE,
+    // One fill step below the paper, so a borderless well keeps an edge.
+    surface: 0xF4F8F6,
+    surface_alt: 0xEAF2EE,
+    surface_active: 0xDCEDE5,
     border: 0xD9E5DF,
     border_strong: 0x78877F,
     text: 0x24303A,
     text_muted: 0x505F68,
-    text_subtle: 0x52616A,
     pill: 0x21624D,
     pill_text: 0xFFFFFF,
     accent: 0x187A56,
@@ -184,7 +208,6 @@ pub const HIGH_CONTRAST: Theme = Theme {
     border_strong: 0xFFFFFF,
     text: 0xFFFFFF,
     text_muted: 0xFFFFFF,
-    text_subtle: 0xFFFFFF,
     pill: 0xFFFFFF,
     pill_text: 0x000000,
     accent: 0xFFFF00,
@@ -193,6 +216,57 @@ pub const HIGH_CONTRAST: Theme = Theme {
     danger: 0xFF6060,
     info: 0x00FFFF,
 };
+
+/// Field alpha over the window backdrop, and the alpha of the backdrop tint.
+/// Together they keep the field the dominant colour over any desktop
+/// (`desktop-gpui/DESIGN.md`, "Material without backdrop-filter").
+pub const FIELD_GLASS_ALPHA: f32 = 0.90;
+pub const BACKDROP_TINT_ALPHA: u8 = 0x99;
+
+/// Theme-independent colours (`desktop-gpui/DESIGN.md`, "Fixed colours").
+/// The caption close button hovers in the Windows close red with white ink.
+/// The Clean screen cover is black in every theme, with a dim hint line.
+pub const CAPTION_CLOSE_HOVER: u32 = 0xC42B1C;
+pub const CAPTION_CLOSE_INK: u32 = 0xFFFFFF;
+pub const SCREEN_COVER: u32 = 0x000000;
+pub const SCREEN_COVER_TEXT: u32 = 0x91999F;
+
+/// Mode tabs keep their text labels from this window width, in logical
+/// pixels. It does not grow with the text scale.
+pub const TAB_LABEL_MIN_WIDTH: Pixels = px(720.0);
+
+/// Type scale (`desktop-gpui/DESIGN.md`, "Type"). One rem is 16px times the
+/// saved text scale. View code uses these four sizes and no others.
+pub const TYPE_DISPLAY: Rems = rems(2.0);
+pub const TYPE_TITLE: Rems = rems(1.0);
+pub const TYPE_BODY: Rems = rems(0.875);
+pub const TYPE_META: Rems = rems(0.75);
+
+/// Spacing scale: 8, 12, 16, 24, 32 and 48px at 100% text scale.
+pub const SPACE_1: Rems = rems(0.5);
+pub const SPACE_2: Rems = rems(0.75);
+pub const SPACE_3: Rems = rems(1.0);
+pub const SPACE_4: Rems = rems(1.5);
+pub const SPACE_5: Rems = rems(2.0);
+pub const SPACE_6: Rems = rems(3.0);
+
+/// Radii. Buttons, tags and segments are pills (`rounded_full`).
+pub const RADIUS_SHEET: Pixels = px(20.0);
+pub const RADIUS_WELL: Pixels = px(16.0);
+pub const RADIUS_ITEM: Pixels = px(12.0);
+pub const RADIUS_CHECK: Pixels = px(4.0);
+
+/// The one shadow, under the paper: `0 20px 48px rgba(70, 90, 120, 0.08)`.
+#[must_use]
+pub fn sheet_shadow() -> Vec<BoxShadow> {
+    vec![BoxShadow {
+        color: rgba(0x465A_7814).into(),
+        offset: point(px(0.0), px(20.0)),
+        blur_radius: px(48.0),
+        spread_radius: px(0.0),
+        inset: false,
+    }]
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tone {
@@ -364,6 +438,9 @@ pub trait KeyboardFocus: InteractiveElement + Sized {
 
 impl KeyboardFocus for Stateful<Div> {}
 
+/// Pressed fill step over the hover fill for neutral controls.
+const PRESS_STEP: f32 = 0.12;
+
 /// Base clickable button. Callers add `.on_click`.
 pub fn button(
     t: &Theme,
@@ -386,7 +463,7 @@ fn button_base(
         ButtonKind::Secondary => (t.surface_alt, t.text, t.border_strong),
         ButtonKind::Ghost => (t.surface, t.text_muted, t.surface),
         ButtonKind::Danger => (t.danger, t.pill_text, t.danger),
-        ButtonKind::Disabled => (t.surface_alt, t.text_subtle, t.border),
+        ButtonKind::Disabled => (t.surface_alt, t.text_muted, t.border),
     };
     let (hover, pressed) = match kind {
         ButtonKind::Primary | ButtonKind::Danger => (
@@ -395,7 +472,7 @@ fn button_base(
         ),
         _ => (
             rgb(t.surface_active),
-            rgb(t.surface_active).blend(rgb(t.text).alpha(0.06)),
+            rgb(t.surface_active).blend(rgb(t.text).alpha(PRESS_STEP)),
         ),
     };
     let ghost = kind == ButtonKind::Ghost;
@@ -408,16 +485,16 @@ fn button_base(
         .flex_shrink_0()
         .items_center()
         .justify_center()
-        .gap(rems(0.4))
+        .gap(SPACE_1)
         .h(rems(2.25))
-        .px(rems(0.9))
+        .px(SPACE_3)
         .rounded_full()
         .border_1()
         .border_color(rgb(border))
         .when(!ghost, |b| b.bg(rgb(bg)))
         .when(ghost, |b| b.border_color(gpui::transparent_black()))
         .text_color(rgb(fg))
-        .text_size(rems(0.875))
+        .text_size(TYPE_BODY)
         .font_weight(FontWeight::MEDIUM)
         .whitespace_nowrap()
         .when(kind == ButtonKind::Disabled, |b| {
@@ -426,7 +503,7 @@ fn button_base(
         .when(kind != ButtonKind::Disabled, |b| {
             b.cursor_pointer()
                 .hover(move |s| s.bg(hover).border_color(rgb(fg)))
-                .active(move |s| s.bg(pressed).underline())
+                .active(move |s| s.bg(pressed))
                 .keyboard_focus(t)
         })
 }
@@ -443,7 +520,7 @@ pub fn icon_button(
         ButtonKind::Primary | ButtonKind::Danger => t.pill_text,
         ButtonKind::Secondary => t.text,
         ButtonKind::Ghost => t.text_muted,
-        ButtonKind::Disabled => t.text_subtle,
+        ButtonKind::Disabled => t.text_muted,
     };
     let label = label.into();
     let base = button_base(t, id, label.clone(), kind);
@@ -451,17 +528,19 @@ pub fn icon_button(
         .child(label)
 }
 
-/// Opaque content well nested within the workbench paper.
+/// Opaque content well nested within the workbench paper. Fill carries the
+/// boundary; only high contrast draws an edge.
 #[must_use]
 pub fn card(t: &Theme) -> Div {
     div()
         .flex()
         .flex_col()
         .bg(rgb(t.surface))
-        .border_1()
-        .border_color(rgb(t.border))
-        .rounded(rems(1.0))
-        .p(rems(1.25))
+        .when(t.high_contrast, |d| {
+            d.border_1().border_color(rgb(t.border))
+        })
+        .rounded(RADIUS_WELL)
+        .p(SPACE_3)
 }
 
 /// Card title row with optional trailing content.
@@ -472,10 +551,10 @@ pub fn card_header(t: &Theme, title: impl Into<SharedString>) -> Div {
         .flex_row()
         .items_center()
         .justify_between()
-        .gap(rems(0.75))
+        .gap(SPACE_2)
         .child(
             div()
-                .text_size(rems(0.95))
+                .text_size(TYPE_TITLE)
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(rgb(t.text))
                 .child(title.into()),
@@ -486,9 +565,9 @@ pub fn card_header(t: &Theme, title: impl Into<SharedString>) -> Div {
 #[must_use]
 pub fn eyebrow(t: &Theme, text: impl Into<SharedString>) -> Div {
     div()
-        .text_size(rems(0.72))
+        .text_size(TYPE_META)
         .font_weight(FontWeight::SEMIBOLD)
-        .text_color(rgb(t.text_subtle))
+        .text_color(rgb(t.text_muted))
         .child(text.into())
 }
 
@@ -496,7 +575,7 @@ pub fn eyebrow(t: &Theme, text: impl Into<SharedString>) -> Div {
 #[must_use]
 pub fn muted(t: &Theme, text: impl Into<SharedString>) -> Div {
     div()
-        .text_size(rems(0.85))
+        .text_size(TYPE_BODY)
         .text_color(rgb(t.text_muted))
         .child(text.into())
 }
@@ -509,12 +588,12 @@ pub fn badge(t: &Theme, text: impl Into<SharedString>, tone: Tone) -> Div {
         .flex()
         .flex_shrink_0()
         .items_center()
-        .px(rems(0.45))
-        .py(rems(0.1))
+        .h(rems(1.375))
+        .px(SPACE_1)
         .rounded_full()
         .bg(t.tone_well(color))
         .when(t.high_contrast, |b| b.border_1().border_color(rgb(t.text)))
-        .text_size(rems(0.72))
+        .text_size(TYPE_META)
         .font_weight(FontWeight::MEDIUM)
         .text_color(rgb(color))
         .whitespace_nowrap()
@@ -540,7 +619,7 @@ pub fn icon_tile(t: &Theme, name: &'static str, color: u32) -> Div {
         .items_center()
         .justify_center()
         .size(rems(2.25))
-        .rounded(rems(0.6))
+        .rounded(RADIUS_ITEM)
         .bg(t.tint(color, 0x22))
         .when(t.high_contrast, |d| d.border_1().border_color(rgb(t.text)))
         .child(icon(name, color).size(rems(1.15)))
@@ -582,7 +661,7 @@ pub fn progress_track(t: &Theme) -> Div {
         .overflow_hidden()
         .flex()
         .flex_row()
-        .gap(rems(0.35))
+        .gap(SPACE_1)
         .children((0..24).map(|index| {
             div()
                 .h_full()
@@ -621,32 +700,32 @@ pub fn stat(
         .flex_col()
         .flex_1()
         .min_w(rems(9.0))
-        .gap(rems(0.25))
-        .p(rems(1.0))
-        .rounded(rems(0.8))
-        .bg(rgb(t.surface))
-        .border_1()
-        .border_color(rgb(t.border))
+        .p(SPACE_3)
+        .rounded(RADIUS_ITEM)
+        .bg(rgb(t.surface_alt))
+        .when(t.high_contrast, |d| {
+            d.border_1().border_color(rgb(t.border))
+        })
         .child(
             div()
                 .flex()
                 .flex_row()
                 .items_center()
-                .gap(rems(0.4))
+                .gap(SPACE_1)
                 .child(dot(color))
                 .child(eyebrow(t, label)),
         )
         .child(
             div()
-                .text_size(rems(1.45))
+                .text_size(TYPE_DISPLAY)
                 .font_features(tabular_numerals())
-                .font_weight(FontWeight::SEMIBOLD)
+                .font_weight(FontWeight::BOLD)
                 .text_color(rgb(t.text))
                 .child(value),
         )
         .child(
             div()
-                .text_size(rems(0.78))
+                .text_size(TYPE_META)
                 .text_color(rgb(t.text_muted))
                 .child(detail),
         )
@@ -666,23 +745,18 @@ pub fn banner(t: &Theme, tone: Tone, text: impl Into<SharedString>) -> Div {
         .flex()
         .flex_row()
         .items_start()
-        .gap(rems(0.6))
-        .px(rems(0.9))
-        .py(rems(0.6))
-        .rounded(rems(0.6))
+        .gap(SPACE_1)
+        .px(SPACE_3)
+        .py(SPACE_1)
+        .rounded(RADIUS_ITEM)
         .bg(t.tone_well(color))
-        .border_1()
-        .border_color(if t.high_contrast {
-            rgb(t.text)
-        } else {
-            t.tint(color, 0x55)
-        })
-        .child(icon(glyph, color).mt(rems(0.1)))
+        .when(t.high_contrast, |d| d.border_1().border_color(rgb(t.text)))
+        .child(icon(glyph, color))
         .child(
             div()
                 .flex_1()
                 .min_w_0()
-                .text_size(rems(0.85))
+                .text_size(TYPE_BODY)
                 .text_color(rgb(t.text))
                 .child(text),
         )
@@ -700,9 +774,9 @@ pub fn empty_state(
         .flex()
         .flex_col()
         .items_center()
-        .gap(rems(0.6))
-        .py(rems(2.5))
-        .px(rems(1.5))
+        .gap(SPACE_2)
+        .py(SPACE_6)
+        .px(SPACE_4)
         .child(
             div()
                 .flex()
@@ -711,13 +785,14 @@ pub fn empty_state(
                 .size(rems(3.25))
                 .rounded_full()
                 .bg(rgb(t.surface_alt))
-                .border_1()
-                .border_color(rgb(t.border))
+                .when(t.high_contrast, |d| {
+                    d.border_1().border_color(rgb(t.border))
+                })
                 .child(icon(icon_name, t.text_muted).size(rems(1.5))),
         )
         .child(
             div()
-                .text_size(rems(1.0))
+                .text_size(TYPE_TITLE)
                 .font_weight(FontWeight::SEMIBOLD)
                 .text_color(rgb(t.text))
                 .child(title.into()),
@@ -726,7 +801,7 @@ pub fn empty_state(
             div()
                 .max_w(rems(30.0))
                 .text_center()
-                .text_size(rems(0.85))
+                .text_size(TYPE_BODY)
                 .text_color(rgb(t.text_muted))
                 .child(body.into()),
         )
@@ -739,12 +814,11 @@ pub fn segmented(t: &Theme) -> Div {
         .flex()
         .flex_row()
         .items_center()
-        .gap(rems(0.2))
-        .p(rems(0.2))
-        .rounded(rems(0.65))
+        .rounded_full()
         .bg(rgb(t.surface_alt))
-        .border_1()
-        .border_color(rgb(t.border))
+        .when(t.high_contrast, |d| {
+            d.border_1().border_color(rgb(t.border))
+        })
 }
 
 /// One segment. Callers add `.on_click`.
@@ -756,6 +830,7 @@ pub fn segment(
 ) -> Stateful<Div> {
     let label = label.into();
     let hover_bg = t.surface_active;
+    let pressed = rgb(t.surface_active).blend(rgb(t.text).alpha(PRESS_STEP));
     div()
         .id(id)
         .role(gpui::Role::Tab)
@@ -763,11 +838,11 @@ pub fn segment(
         .aria_selected(active)
         .flex()
         .items_center()
-        .gap(rems(0.35))
-        .h(rems(1.9))
-        .px(rems(0.8))
-        .rounded(rems(0.5))
-        .text_size(rems(0.82))
+        .gap(SPACE_1)
+        .h(rems(2.0))
+        .px(SPACE_2)
+        .rounded_full()
+        .text_size(TYPE_BODY)
         .font_weight(if active {
             FontWeight::SEMIBOLD
         } else {
@@ -787,7 +862,7 @@ pub fn segment(
             s.text_color(rgb(t.text_muted))
                 .hover(move |h| h.bg(rgb(hover_bg)).text_color(rgb(t.text)))
         })
-        .active(|s| s.underline())
+        .active(move |s| s.bg(pressed))
         .child(label)
 }
 
@@ -801,7 +876,7 @@ pub fn checkbox(t: &Theme, checked: bool, enabled: bool) -> Div {
         .items_center()
         .justify_center()
         .size(rems(1.1))
-        .rounded(rems(0.3))
+        .rounded(RADIUS_CHECK)
         .border_1()
         .border_color(rgb(border))
         .when(checked, |c| c.bg(rgb(t.accent)))
@@ -826,10 +901,10 @@ pub fn list_row(
         .flex()
         .flex_row()
         .items_center()
-        .gap(rems(0.75))
-        .px(rems(0.85))
-        .py(rems(0.6))
-        .rounded(rems(0.6))
+        .gap(SPACE_2)
+        .px(SPACE_2)
+        .py(SPACE_1)
+        .rounded(RADIUS_ITEM)
         .border_1()
         .border_color(if focused {
             rgb(t.accent)
@@ -864,11 +939,10 @@ pub fn two_line(
         .flex_col()
         .flex_1()
         .min_w_0()
-        .gap(rems(0.1))
         .child(
             div()
                 .truncate()
-                .text_size(rems(0.9))
+                .text_size(TYPE_BODY)
                 .font_weight(FontWeight::MEDIUM)
                 .text_color(rgb(t.text))
                 .child(title.into()),
@@ -876,8 +950,8 @@ pub fn two_line(
         .child(
             div()
                 .truncate()
-                .text_size(rems(0.76))
-                .text_color(rgb(t.text_subtle))
+                .text_size(TYPE_META)
+                .text_color(rgb(t.text_muted))
                 .child(subtitle.into()),
         )
 }
@@ -898,6 +972,50 @@ pub fn bytes(value: u64) -> String {
         format!("{size:.0} {}", UNITS[unit])
     } else {
         format!("{size:.1} {}", UNITS[unit])
+    }
+}
+
+/// A path as shown to the user: the Windows verbatim prefix (`\\?\` and
+/// `\\?\UNC\`, with either slash) is dropped and the drive letter is upper
+/// case. Separators and everything after the drive stay as given. A verbatim
+/// path that is neither a drive nor a UNC path, such as a volume-GUID path,
+/// is shown unchanged. Accessible names and anything handed back to the
+/// system keep the original path.
+#[must_use]
+pub fn display_path(path: &std::path::Path) -> String {
+    display_path_text(&path.to_string_lossy())
+}
+
+/// [`display_path`] for a path already held as text, such as a saved root or
+/// a breadcrumb that starts with one.
+#[must_use]
+pub fn display_path_text(path: &str) -> String {
+    let is_sep = |c: char| c == '\\' || c == '/';
+    let mut chars = path.chars();
+    let verbatim = chars.next().is_some_and(is_sep)
+        && chars.next().is_some_and(is_sep)
+        && chars.next() == Some('?')
+        && chars.next().is_some_and(is_sep);
+    // The four prefix characters are ASCII, so byte offsets are safe.
+    let rest = if verbatim { &path[4..] } else { path };
+    let unc = verbatim
+        && rest
+            .get(..3)
+            .is_some_and(|head| head.eq_ignore_ascii_case("UNC"))
+        && rest[3..].chars().next().is_some_and(is_sep);
+    if unc {
+        // `\\?\UNC\server\share` is `\\server\share`.
+        let sep = &path[..1];
+        return format!("{sep}{sep}{}", &rest[4..]);
+    }
+    let mut head = rest.chars();
+    match (head.next(), head.next()) {
+        (Some(drive), Some(':')) if drive.is_ascii_alphabetic() => {
+            format!("{}{}", drive.to_ascii_uppercase(), &rest[1..])
+        }
+        // Without a drive the verbatim prefix is part of the name: a
+        // volume-GUID or device path has no shorter form.
+        _ => path.to_string(),
     }
 }
 
@@ -932,7 +1050,7 @@ mod tests {
         assert_eq!(HIGH_CONTRAST.sheet(true), HIGH_CONTRAST.sheet(false));
         assert_eq!(HIGH_CONTRAST.sheet_edge(true), rgb(HIGH_CONTRAST.border));
         assert_eq!(
-            Theme::for_preferences(DesktopTheme::Light, true),
+            Theme::for_preferences(DesktopTheme::Light, false, true),
             HIGH_CONTRAST
         );
     }
@@ -968,7 +1086,7 @@ mod tests {
                 rgb(t.surface_alt),
                 rgb(t.surface_active),
             ] {
-                for foreground in [t.text, t.text_muted, t.text_subtle] {
+                for foreground in [t.text, t.text_muted] {
                     assert_contrast(foreground, background, 4.5);
                 }
                 assert_contrast(t.accent, background, 3.0);
@@ -988,6 +1106,68 @@ mod tests {
             for fill in [t.pill, t.danger, t.accent] {
                 assert_contrast(t.pill_text, rgb(fill), 4.5);
             }
+        }
+    }
+
+    /// Wells have no border in normal contrast, so each fill step must differ
+    /// from the one it sits on: paper, well, hovered or inset, selected.
+    #[test]
+    fn wells_are_a_fill_step_away_from_the_paper() {
+        for t in [DARK, LIGHT] {
+            let steps = [t.chrome, t.surface, t.surface_alt, t.surface_active];
+            for pair in steps.windows(2) {
+                assert_ne!(pair[0], pair[1], "{steps:06x?}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_field_is_translucent_only_over_the_window_backdrop() {
+        for t in [DARK, LIGHT] {
+            let (start, end) = t.field(true);
+            assert_eq!(start.a, FIELD_GLASS_ALPHA);
+            assert_eq!(end.a, FIELD_GLASS_ALPHA);
+            assert_eq!(t.field(false), (rgb(t.canvas), rgb(t.canvas_end)));
+            let (red, green, blue, alpha) = t.backdrop_tint();
+            assert_eq!(
+                u32::from_be_bytes([0, red, green, blue]),
+                t.canvas,
+                "the backdrop is tinted with the field colour"
+            );
+            assert_eq!(alpha, BACKDROP_TINT_ALPHA);
+        }
+        assert_eq!(
+            HIGH_CONTRAST.field(true),
+            (rgb(HIGH_CONTRAST.canvas), rgb(HIGH_CONTRAST.canvas_end))
+        );
+    }
+
+    #[test]
+    fn display_paths_drop_the_verbatim_prefix_and_capitalise_the_drive() {
+        use std::path::Path;
+        for (given, shown) in [
+            (r"\\?\c:\work\app\target", r"C:\work\app\target"),
+            (r"\\?\C:\", r"C:\"),
+            (r"c:\users\me", r"C:\users\me"),
+            ("//?/d:/code/app", "D:/code/app"),
+            ("d:/code/app", "D:/code/app"),
+            (r"\\?\UNC\server\share\dir", r"\\server\share\dir"),
+            (r"\\?\unc\server\share", r"\\server\share"),
+            ("//?/UNC/server/share", "//server/share"),
+            (r"\\server\share\dir", r"\\server\share\dir"),
+            (r"\\?\Volume{0a1b}\dir", r"\\?\Volume{0a1b}\dir"),
+            ("//?/Volume{0a1b}/dir", "//?/Volume{0a1b}/dir"),
+            (r"\\?\GLOBALROOT\Device\x", r"\\?\GLOBALROOT\Device\x"),
+            ("/home/me/app", "/home/me/app"),
+            ("relative/dir", "relative/dir"),
+            ("c: / users / me", "C: / users / me"),
+            ("c", "c"),
+            ("", ""),
+            (r"\\?\", r"\\?\"),
+            ("é:x", "é:x"),
+        ] {
+            assert_eq!(display_path_text(given), shown, "{given}");
+            assert_eq!(display_path(Path::new(given)), shown, "{given}");
         }
     }
 

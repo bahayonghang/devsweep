@@ -1785,4 +1785,71 @@ mod tests {
         );
         let _ = fs::remove_dir_all(&dir);
     }
+    /// Every inventory source token has a readable name in both languages,
+    /// so a row subtitle never shows the internal `arp:...` or `msi:...` id.
+    #[test]
+    fn every_inventory_source_has_a_readable_name() {
+        use devsweep_core::software::{MsiContext, SoftwareSourceId};
+        let mut sources = vec![SoftwareSourceId::MsixCurrentUser];
+        for context in [
+            MsiContext::UserUnmanaged,
+            MsiContext::UserManaged,
+            MsiContext::Machine,
+        ] {
+            sources.push(SoftwareSourceId::Msi { context });
+        }
+        for hive in [RegistryHive::CurrentUser, RegistryHive::LocalMachine] {
+            for view in [RegistryView::Registry32, RegistryView::Registry64] {
+                sources.push(SoftwareSourceId::Arp { hive, view });
+            }
+        }
+        for source in &sources {
+            let token = source_token(source);
+            for locale in [Locale::En, Locale::ZhCn] {
+                let label = copy::software_source_label(locale, &token);
+                assert_ne!(label, token, "{token}");
+                assert!(!label.contains(':') && !label.contains('_'), "{label}");
+            }
+        }
+        assert!(
+            copy::software_source_label(Locale::ZhCn, "unknown")
+                .chars()
+                .all(|c| !c.is_ascii_alphabetic())
+        );
+        // An update provider name is already readable and passes through.
+        assert_eq!(
+            copy::software_source_label(Locale::ZhCn, "winget"),
+            "winget"
+        );
+    }
+
+    /// zh-CN shows a sentence for a failure code instead of the core error's
+    /// English text; English and unknown lines are unchanged.
+    #[test]
+    fn failure_lines_are_sentences_in_chinese() {
+        let line = plan_line(Locale::ZhCn, &SoftwarePlanError::DigestMismatch);
+        let shown = copy::software_review_line(Locale::ZhCn, &line);
+        assert_eq!(shown, "预览摘要不一致，请重新预览（digest_mismatch）。");
+        let startup = startup_line(
+            Locale::ZhCn,
+            &SoftwareStartupError::StartupSourceUnavailable,
+        );
+        assert_eq!(
+            copy::software_review_line(Locale::ZhCn, &startup),
+            "无法读取启动项来源（startup_source_unavailable）。"
+        );
+        // The update probe's reason code is kept; it is not a sentence.
+        assert_eq!(
+            copy::software_review_line(Locale::ZhCn, "probe_failed: WingetMissing"),
+            "更新检查失败（probe_failed: WingetMissing）。"
+        );
+        let english = plan_line(Locale::En, &SoftwarePlanError::DigestMismatch);
+        assert_eq!(copy::software_review_line(Locale::En, &english), english);
+        for plain in [
+            "可用更新",
+            "软件清单：3 个条目；1 个可选择；2 个需手动处理。",
+        ] {
+            assert_eq!(copy::software_review_line(Locale::ZhCn, plain), plain);
+        }
+    }
 }

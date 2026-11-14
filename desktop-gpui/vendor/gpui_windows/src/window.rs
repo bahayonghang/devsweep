@@ -2126,7 +2126,11 @@ fn dwm_set_window_composition_attribute(hwnd: HWND, backdrop_type: u32) {
 /// Switch the renderer to composited alpha and enable acrylic only when both
 /// the HWND swap chain and the compositor support it. GPUI's generic setter
 /// cannot report failure to callers that need to paint an opaque fallback.
-pub fn try_enable_window_blur(window: &Window) -> bool {
+///
+/// DevSweep patch: `tint` is the acrylic gradient colour as (red, green, blue,
+/// alpha). The caller passes its field colour so the desktop behind the
+/// window cannot grey the field out.
+pub fn try_enable_window_blur(window: &Window, tint: (u8, u8, u8, u8)) -> bool {
     use rwh::{HasWindowHandle, RawWindowHandle};
     let Ok(handle) = HasWindowHandle::window_handle(window) else {
         return false;
@@ -2139,7 +2143,7 @@ pub fn try_enable_window_blur(window: &Window) -> bool {
         return false;
     }
     window.set_background_appearance(WindowBackgroundAppearance::Transparent);
-    if set_window_composition_attribute(hwnd, Some((0, 0, 0, 0)), 4) {
+    if set_window_composition_attribute(hwnd, Some(tint), 4) {
         true
     } else {
         window.set_background_appearance(WindowBackgroundAppearance::Opaque);
