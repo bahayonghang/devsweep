@@ -1,0 +1,5 @@
+{"file": ".trellis/tasks/11-12-gpui-mole-parity-airy-glass/research/gap-analysis.md", "reason": "对标差距矩阵与证据"}
+{"file": ".trellis/tasks/11-12-gpui-mole-parity-airy-glass/design.md", "reason": "跨子任务契约：CLI 先行、授权链、JSON 兼容"}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引"}
+{"file": ".trellis/spec/backend/provider-authority.md", "reason": "授权依据与执行边界"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "core、CLI、Tauri、GPUI 跨层变更检查"}
