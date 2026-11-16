@@ -92,6 +92,67 @@ pub(super) fn install_location(
     None
 }
 
+/// Exact MSI registration restrictions only; never reads a vendor command.
+#[cfg(windows)]
+pub(super) fn msi_restrictions(product_code: &str) -> Result<String, ()> {
+    use native_registry::*;
+    let mut records = Vec::new();
+    let mut policies = Vec::new();
+    for view in [RegistryView::Registry32, RegistryView::Registry64] {
+        for hive in [RegistryHive::CurrentUser, RegistryHive::LocalMachine] {
+            let policy = RegKey::open(
+                predefined_hive(hive),
+                r"Software\Policies\Microsoft\Windows\Installer",
+                view,
+            )
+            .map_err(|_| ())?;
+            let value = policy
+                .as_ref()
+                .map(|key| key.dword("AlwaysInstallElevated"))
+                .transpose()?
+                .flatten();
+            if value.is_some_and(|value| value != 0) {
+                return Err(());
+            }
+            policies.push((view, hive, value));
+        }
+        let key = RegKey::open(
+            predefined_hive(RegistryHive::CurrentUser),
+            &format!(r"{UNINSTALL_ROOT}\{product_code}"),
+            view,
+        )
+        .map_err(|_| ())?;
+        let Some(key) = key else {
+            continue;
+        };
+        let installer = key.dword("WindowsInstaller")?;
+        let no_remove = key.dword("NoRemove")?;
+        let system_component = key.dword("SystemComponent")?;
+        let parent = key.string("ParentKeyName")?;
+        let release = key.string("ReleaseType")?;
+        if installer != Some(1)
+            || no_remove.is_some_and(|value| value != 0)
+            || system_component.is_some_and(|value| value != 0)
+            || parent.is_some()
+            || release.is_some()
+        {
+            return Err(());
+        }
+        records.push((
+            view,
+            installer,
+            no_remove,
+            system_component,
+            parent,
+            release,
+        ));
+    }
+    if records.is_empty() {
+        return Err(());
+    }
+    super::msi_authority::digest(&(records, policies))
+}
+
 #[cfg(windows)]
 struct EnumeratedArp {
     state: SoftwareSourceState,
@@ -138,6 +199,7 @@ fn observation_from_record(
             "update" | "hotfix" | "security update" | "service pack"
         );
     SoftwareObservation {
+        msi_registration: None,
         identity: SoftwareIdentity::Arp {
             hive,
             view,

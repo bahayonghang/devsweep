@@ -17,21 +17,27 @@ mod arp;
 mod audit;
 mod evidence;
 mod execution;
+mod file_authority;
 mod launch;
 mod leftovers;
 mod model;
 mod msi;
+mod msi_authority;
 mod msix;
 mod plan;
 mod startup;
 mod updates;
 
-pub use audit::SoftwareSupportAuditRecordV1;
+pub use audit::{
+    SoftwareSupportAuditRecordV1, SoftwareSupportLifecycleRecordV1, SoftwareSupportOperation,
+    SoftwareSupportTerminalResult,
+};
 pub use evidence::validated_installed_on;
 pub use execution::{
     AdapterOutcome, MSIX_CANCEL_GRACE, MSIX_MONITOR_TIMEOUT, MSIX_REQUERY_OFFSETS,
-    SOFTWARE_AUDIT_VERSION, SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1,
-    SoftwareAuditError, SoftwareAuditErrorCode, SoftwareAuditRecordV1, SoftwareAuditRequeryResult,
+    MsiExecutionEvidenceV1, MsiInterruption, MsiProcessEvidenceV1, SOFTWARE_AUDIT_VERSION,
+    SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1, SoftwareAuditError,
+    SoftwareAuditErrorCode, SoftwareAuditRecordV1, SoftwareAuditRequeryResult,
     SoftwareAuditStatusCode, SoftwareAuditTransition, SoftwareExecutionError,
     SoftwareExecutionOutcome, SoftwareExecutionReportV1, SoftwareExecutionRequest,
     SoftwareExecutor, SoftwareInstalledState, SoftwareRebootEvidence, ValidatedSoftwareAction,
@@ -53,13 +59,14 @@ pub use leftovers::{
     preview_registry_residue_restore, preview_software_leftover_plan,
 };
 pub use model::{
-    FixtureLaunch, FixtureLaunchKind, IconEvidenceV1, MsiContext, RegistryHive, RegistryView,
-    SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION, SOFTWARE_PREVIEW_VERSION,
-    SoftwareActionClass, SoftwareEligibility, SoftwareEligibilityReason, SoftwareEligibilityState,
-    SoftwareEntryV1, SoftwareIdentity, SoftwareInventorySource, SoftwareInventoryV1,
-    SoftwareLastUsedEvidence, SoftwareLastUsedReason, SoftwarePreviewItemV1, SoftwarePreviewV1,
-    SoftwareScope, SoftwareSelectionPlanV1, SoftwareSizeBasis, SoftwareSizeEvidence,
-    SoftwareSizeSourceCode, SoftwareSourceEvidence, SoftwareSourceId, SoftwareSourceState,
+    FixtureLaunch, FixtureLaunchKind, IconEvidenceV1, MsiContext, MsiRegistrationEvidenceV1,
+    RegistryHive, RegistryView, SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION,
+    SOFTWARE_PREVIEW_VERSION, SoftwareActionClass, SoftwareEligibility, SoftwareEligibilityReason,
+    SoftwareEligibilityState, SoftwareEntryV1, SoftwareIdentity, SoftwareInventorySource,
+    SoftwareInventoryV1, SoftwareLastUsedEvidence, SoftwareLastUsedReason, SoftwarePreviewItemV1,
+    SoftwarePreviewV1, SoftwareScope, SoftwareSelectionPlanV1, SoftwareSizeBasis,
+    SoftwareSizeEvidence, SoftwareSizeSourceCode, SoftwareSourceEvidence, SoftwareSourceId,
+    SoftwareSourceState,
 };
 pub use plan::{
     SOFTWARE_INVENTORY_TTL_MS, SoftwarePlanError, build_selection_plan, preview_selection_plan,
@@ -81,7 +88,8 @@ pub use updates::{
     SOFTWARE_UPDATE_PLAN_VERSION, SOFTWARE_UPDATES_VERSION, SoftwareUpdateError,
     SoftwareUpdateOutcome, SoftwareUpdatePlanV1, SoftwareUpdatePreviewV1, SoftwareUpdateReportV1,
     SoftwareUpdateRowV1, SoftwareUpdatesReason, SoftwareUpdatesV1, check_software_updates,
-    execute_software_update, plan_software_update, preview_software_update,
+    execute_software_update, execute_software_update_cancellable, plan_software_update,
+    preview_software_update,
 };
 
 use model::{EligibilityFlags, SoftwareObservation};
@@ -226,6 +234,10 @@ fn assemble_inventory(
             observation.flags.conflicting_identity = true;
         }
         if let Some(existing) = exact.get_mut(&observation.identity) {
+            if existing.msi_registration != observation.msi_registration {
+                existing.msi_registration = None;
+                existing.flags.conflicting_identity = true;
+            }
             if existing.display_name != observation.display_name {
                 existing.display_name = None;
                 existing.flags.conflicting_identity = true;
@@ -261,7 +273,11 @@ fn assemble_inventory(
 
     let mut entries = Vec::with_capacity(exact.len());
     for (_, observation) in exact {
-        let eligibility = ordered_eligibility(&observation.identity, observation.flags);
+        let eligibility = ordered_eligibility(
+            &observation.identity,
+            observation.flags,
+            observation.msi_registration.as_ref(),
+        );
         entries.push(SoftwareEntryV1 {
             id: software_id(&observation.identity)?,
             identity: observation.identity,
@@ -275,6 +291,7 @@ fn assemble_inventory(
             eligibility,
             size: observation.size,
             last_used: SoftwareLastUsedEvidence::default(),
+            msi_registration: observation.msi_registration,
             launch: None,
         });
     }
@@ -327,6 +344,7 @@ fn merge_flags(existing: &mut EligibilityFlags, incoming: EligibilityFlags) {
 fn ordered_eligibility(
     identity: &SoftwareIdentity,
     flags: EligibilityFlags,
+    msi_registration: Option<&MsiRegistrationEvidenceV1>,
 ) -> SoftwareEligibility {
     use SoftwareEligibilityReason as Reason;
     let reason = if flags.protected {
@@ -347,8 +365,16 @@ fn ordered_eligibility(
         Reason::StubPackage
     } else if flags.unhealthy {
         Reason::UnhealthyPackage
-    } else if matches!(identity, SoftwareIdentity::Msi { .. }) {
-        Reason::MsiExecutionNotSupportedV1
+    } else if let SoftwareIdentity::Msi { context, .. } = identity {
+        if *context != MsiContext::UserUnmanaged {
+            Reason::MsiContextUnsupported
+        } else if flags.unsupported {
+            Reason::MsiRequiresAdministrator
+        } else if msi_registration.is_some() {
+            Reason::EligibleCurrentUserMsi
+        } else {
+            Reason::MsiAuthorityUnavailable
+        }
     } else if matches!(identity, SoftwareIdentity::Arp { .. }) {
         Reason::RegistryOnlyManual
     } else if flags.unsupported {
@@ -357,7 +383,10 @@ fn ordered_eligibility(
         Reason::EligibleCurrentUserMsix
     };
     SoftwareEligibility {
-        state: if reason == Reason::EligibleCurrentUserMsix {
+        state: if matches!(
+            reason,
+            Reason::EligibleCurrentUserMsix | Reason::EligibleCurrentUserMsi
+        ) {
             SoftwareEligibilityState::Selectable
         } else {
             SoftwareEligibilityState::Manual

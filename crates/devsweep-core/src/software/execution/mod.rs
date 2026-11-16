@@ -1,4 +1,4 @@
-//! Current-user MSIX-only Software execution and recovery.
+//! Current-user MSIX/MSI Software execution and recovery.
 
 use std::{
     fmt,
@@ -19,6 +19,7 @@ use super::{
 };
 use crate::process::{CancelObserver, FlagCancelObserver};
 
+pub(super) mod msi;
 mod msix;
 mod provider;
 
@@ -28,6 +29,7 @@ pub use super::audit::{
     software_audit_v1_path,
 };
 use super::audit::{SoftwareAuditEvent, SoftwareAuditJournal};
+pub use msi::{MsiExecutionEvidenceV1, MsiInterruption, MsiProcessEvidenceV1};
 use msix::{RealInstalledStateRequery, RealMsixAdapter};
 
 pub const SOFTWARE_EXECUTION_VERSION: u32 = 1;
@@ -91,6 +93,7 @@ pub enum AdapterOutcome {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct AdapterEvidence {
+    pub(super) msi_result: Option<MsiProcessEvidenceV1>,
     pub(super) outcome: AdapterOutcome,
     pub(super) reboot_evidence: SoftwareRebootEvidence,
     pub(super) error_code: Option<SoftwareAuditErrorCode>,
@@ -99,6 +102,7 @@ pub(super) struct AdapterEvidence {
 impl AdapterEvidence {
     const fn success() -> Self {
         Self {
+            msi_result: None,
             outcome: AdapterOutcome::Success,
             reboot_evidence: SoftwareRebootEvidence::None,
             error_code: None,
@@ -107,6 +111,7 @@ impl AdapterEvidence {
 
     const fn failure(error_code: SoftwareAuditErrorCode) -> Self {
         Self {
+            msi_result: None,
             outcome: AdapterOutcome::Failure,
             reboot_evidence: SoftwareRebootEvidence::None,
             error_code: Some(error_code),
@@ -115,6 +120,7 @@ impl AdapterEvidence {
 
     const fn reboot_required() -> Self {
         Self {
+            msi_result: None,
             outcome: AdapterOutcome::RebootRequired,
             reboot_evidence: SoftwareRebootEvidence::Required,
             error_code: None,
@@ -123,6 +129,7 @@ impl AdapterEvidence {
 
     const fn unfinished(error_code: SoftwareAuditErrorCode) -> Self {
         Self {
+            msi_result: None,
             outcome: AdapterOutcome::Unfinished,
             reboot_evidence: SoftwareRebootEvidence::None,
             error_code: Some(error_code),
@@ -193,7 +200,7 @@ struct RealLiveSoftwareInventory;
 
 impl LiveSoftwareInventory for RealLiveSoftwareInventory {
     fn inventory(&self) -> Result<SoftwareInventoryV1, SoftwareExecutionError> {
-        inventory_software(SoftwareInventorySource::Msix, None)
+        inventory_software(SoftwareInventorySource::All, None)
             .map_err(|_| SoftwareExecutionError::LiveRevalidationUnavailable)
     }
 }
@@ -227,6 +234,7 @@ impl LiveSoftwareInventory for RealLiveSoftwareInventory {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedSoftwareAction {
+    msi_registration: Option<super::MsiRegistrationEvidenceV1>,
     id: String,
     identity: SoftwareIdentity,
     requery_key: String,
@@ -247,6 +255,8 @@ impl ValidatedSoftwareAction {
 
 #[derive(Clone, Copy)]
 struct AuditActionContext<'a> {
+    fixture: bool,
+    msi: Option<&'a MsiExecutionEvidenceV1>,
     software_id: &'a str,
     identity: &'a SoftwareIdentity,
     requery_key: &'a str,
@@ -257,6 +267,8 @@ struct AuditActionContext<'a> {
 impl<'a> From<&'a ValidatedSoftwareAction> for AuditActionContext<'a> {
     fn from(action: &'a ValidatedSoftwareAction) -> Self {
         Self {
+            fixture: action.launch.is_some(),
+            msi: None,
             software_id: &action.id,
             identity: &action.identity,
             requery_key: &action.requery_key,
@@ -277,6 +289,8 @@ pub struct SoftwareExecutionRequest<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SoftwareActionOutcomeV1 {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msi: Option<MsiExecutionEvidenceV1>,
     pub operation_id: String,
     pub software_id: String,
     pub outcome: SoftwareExecutionOutcome,
@@ -309,6 +323,7 @@ impl SoftwareExecutionReportV1 {
 pub enum SoftwareExecutionError {
     Plan(SoftwarePlanError),
     Audit(SoftwareAuditError),
+    AuditAfterDispatch(SoftwareAuditError),
     ConfirmationRequired,
     LiveRevalidationUnavailable,
     PermitPoisoned,
@@ -319,6 +334,9 @@ impl fmt::Display for SoftwareExecutionError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Plan(error) => error.fmt(formatter),
+            Self::AuditAfterDispatch(error) => {
+                write!(formatter, "Software result unknown after dispatch: {error}")
+            }
             Self::Audit(error) => error.fmt(formatter),
             Self::ConfirmationRequired => {
                 formatter.write_str("Software execution requires explicit confirmation")
@@ -336,7 +354,7 @@ impl std::error::Error for SoftwareExecutionError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Plan(error) => Some(error),
-            Self::Audit(error) => Some(error),
+            Self::Audit(error) | Self::AuditAfterDispatch(error) => Some(error),
             Self::ConfirmationRequired
             | Self::LiveRevalidationUnavailable
             | Self::PermitPoisoned
@@ -367,6 +385,9 @@ enum CrashPoint {
 
 #[derive(Clone)]
 pub struct SoftwareExecutor {
+    #[cfg(test)]
+    append_fault: super::audit::SupportAppendFault,
+    msi: msi::MsiRuntime,
     adapter: Arc<dyn MsixRemovalAdapter>,
     fixture_adapter: Arc<dyn FixtureRemovalAdapter>,
     requery: Arc<dyn InstalledStateRequery>,
@@ -380,6 +401,9 @@ pub struct SoftwareExecutor {
 impl Default for SoftwareExecutor {
     fn default() -> Self {
         Self {
+            #[cfg(test)]
+            append_fault: super::audit::SupportAppendFault::default(),
+            msi: msi::MsiRuntime::default(),
             adapter: Arc::new(RealMsixAdapter),
             fixture_adapter: Arc::new(provider::RealFixtureAdapter),
             requery: Arc::new(RealInstalledStateRequery),
@@ -412,6 +436,10 @@ impl SoftwareExecutor {
             None => software_audit_v1_path()?,
         };
         let mut journal = SoftwareAuditJournal::open(&path)?;
+        #[cfg(test)]
+        {
+            journal.append_fault = self.append_fault;
+        }
         self.recover_pending(&mut journal)?;
         // Live authority is acquired behind both single-flight boundaries and
         // after pending dispatches are reconciled. Public callers cannot
@@ -449,6 +477,10 @@ impl SoftwareExecutor {
             None => software_audit_v1_path()?,
         };
         let mut journal = SoftwareAuditJournal::open(&path)?;
+        #[cfg(test)]
+        {
+            journal.append_fault = self.append_fault;
+        }
         self.recover_pending(&mut journal)
     }
 
@@ -459,7 +491,18 @@ impl SoftwareExecutor {
         cancel: Option<&Arc<FlagCancelObserver>>,
     ) -> Result<SoftwareActionOutcomeV1, SoftwareExecutionError> {
         let operation_id = next_operation_id();
-        let context = AuditActionContext::from(action);
+        let mut msi_evidence =
+            action
+                .msi_registration
+                .as_ref()
+                .map(|registration| MsiExecutionEvidenceV1 {
+                    user_sid: registration.user_sid.clone(),
+                    process: None,
+                });
+        let context = AuditActionContext {
+            msi: msi_evidence.as_ref(),
+            ..AuditActionContext::from(action)
+        };
         journal.append(record(
             &operation_id,
             context,
@@ -502,7 +545,7 @@ impl SoftwareExecutor {
             ));
         }
 
-        // This flush+sync is the durable line immediately before the WinRT
+        // This flush+sync is the durable line before the removal adapter's
         // side-effect boundary.
         journal.append(record(
             &operation_id,
@@ -522,24 +565,35 @@ impl SoftwareExecutor {
             ));
         }
 
-        let adapter = if action.launch.is_some() {
+        let adapter = if action.msi_registration.is_some() {
+            self.msi.remove(action, cancel, self.timing.monitor_timeout)
+        } else if action.launch.is_some() {
             self.fixture_adapter.start(action, cancel, self.timing)
         } else {
             self.adapter.remove(action, cancel, self.timing)
         };
-        if adapter.outcome != AdapterOutcome::Unfinished {
-            journal.append(record(
-                &operation_id,
-                context,
-                audit_event(
-                    SoftwareAuditTransition::AdapterCompleted,
-                    adapter_status(adapter.outcome),
-                    adapter.error_code,
-                    adapter.reboot_evidence,
-                    None,
-                    Some(adapter.outcome),
-                ),
-            ))?;
+        if let Some(msi) = &mut msi_evidence {
+            msi.process = adapter.msi_result;
+        }
+        let context = AuditActionContext {
+            msi: msi_evidence.as_ref(),
+            ..AuditActionContext::from(action)
+        };
+        if adapter.outcome != AdapterOutcome::Unfinished || context.msi.is_some() {
+            journal
+                .append(record(
+                    &operation_id,
+                    context,
+                    audit_event(
+                        SoftwareAuditTransition::AdapterCompleted,
+                        adapter_status(adapter.outcome),
+                        adapter.error_code,
+                        adapter.reboot_evidence,
+                        None,
+                        Some(adapter.outcome),
+                    ),
+                ))
+                .map_err(SoftwareExecutionError::AuditAfterDispatch)?;
         }
         if self.crash_point == CrashPoint::AfterAdapterCompleted {
             return Err(SoftwareExecutionError::CrashInjected(
@@ -547,21 +601,28 @@ impl SoftwareExecutor {
             ));
         }
 
-        let installed = self.requery_and_record(journal, &operation_id, context)?;
-        let outcome = classify_terminal(adapter, installed.state);
+        let installed = self
+            .requery_and_record(journal, &operation_id, context)
+            .map_err(after_dispatch_error)?;
+        let outcome = context.msi.map_or_else(
+            || classify_terminal(adapter, installed.state),
+            |msi| msi::classify(msi, installed.state),
+        );
         let terminal_error = terminal_error_code(outcome, adapter, installed);
-        journal.append(record(
-            &operation_id,
-            context,
-            audit_event(
-                SoftwareAuditTransition::Terminal { outcome },
-                terminal_status(outcome),
-                terminal_error,
-                adapter.reboot_evidence,
-                Some(installed.state),
-                Some(adapter.outcome),
-            ),
-        ))?;
+        journal
+            .append(record(
+                &operation_id,
+                context,
+                audit_event(
+                    SoftwareAuditTransition::Terminal { outcome },
+                    terminal_status(outcome),
+                    terminal_error,
+                    adapter.reboot_evidence,
+                    Some(installed.state),
+                    Some(adapter.outcome),
+                ),
+            ))
+            .map_err(SoftwareExecutionError::AuditAfterDispatch)?;
         Ok(action_outcome(
             &operation_id,
             context,
@@ -591,6 +652,8 @@ impl SoftwareExecutor {
                 }
             })?;
             let context = AuditActionContext {
+                fixture: false,
+                msi: pending.msi.as_ref(),
                 software_id: &software_id,
                 identity: &pending.identity,
                 requery_key,
@@ -623,6 +686,7 @@ impl SoftwareExecutor {
             }
 
             let adapter = AdapterEvidence {
+                msi_result: pending.msi.as_ref().and_then(|msi| msi.process),
                 outcome: pending
                     .adapter_outcome
                     .unwrap_or(AdapterOutcome::Unfinished),
@@ -633,7 +697,10 @@ impl SoftwareExecutor {
                     .then_some(SoftwareAuditErrorCode::RecoveredAfterCrash),
             };
             let installed = self.requery_and_record(journal, &pending.operation_id, context)?;
-            let outcome = classify_terminal(adapter, installed.state);
+            let outcome = context.msi.map_or_else(
+                || classify_terminal(adapter, installed.state),
+                |msi| msi::classify(msi, installed.state),
+            );
             let terminal_error = terminal_error_code(outcome, adapter, installed).or_else(|| {
                 (!outcome.is_success()).then_some(SoftwareAuditErrorCode::RecoveredAfterCrash)
             });
@@ -674,7 +741,19 @@ impl SoftwareExecutor {
             if offset > elapsed {
                 std::thread::sleep(offset - elapsed);
             }
-            let observation = self.requery.query(context.requery_key);
+            let observation = if let Some(msi) = context.msi {
+                RequeryObservation {
+                    state: self
+                        .msi
+                        .registrations
+                        .query(context.identity, &msi.user_sid),
+                    error_code: None,
+                }
+            } else if matches!(context.identity, SoftwareIdentity::Msi { .. }) && !context.fixture {
+                RequeryObservation::unavailable()
+            } else {
+                self.requery.query(context.requery_key)
+            };
             if merge_requery_state(Some(final_observation.state), observation.state)
                 == observation.state
             {
@@ -704,6 +783,9 @@ impl SoftwareExecutor {
         live_inventory: Arc<dyn LiveSoftwareInventory>,
     ) -> Self {
         Self {
+            #[cfg(test)]
+            append_fault: super::audit::SupportAppendFault::default(),
+            msi: msi::MsiRuntime::default(),
             adapter,
             fixture_adapter: Arc::new(provider::RealFixtureAdapter),
             requery,
@@ -782,7 +864,38 @@ fn construct_validated_actions(
                         requery_key: package_full_name.clone(),
                         inventory_fingerprint: preview.inventory_fingerprint.clone(),
                         preview_digest: preview.digest.clone(),
+                        msi_registration: None,
                         launch: None,
+                    })
+                }
+                SoftwareActionClass::RemoveMsiProduct
+                    if item.eligibility == SoftwareEligibilityReason::EligibleCurrentUserMsi =>
+                {
+                    if !matches!(
+                        live.identity,
+                        SoftwareIdentity::Msi {
+                            context: super::MsiContext::UserUnmanaged,
+                            ..
+                        }
+                    ) || live.launch.is_some()
+                    {
+                        return Err(SoftwarePlanError::InvalidSelectedIdentity(item.id.clone()));
+                    }
+                    let registration = live
+                        .msi_registration
+                        .clone()
+                        .filter(super::msi_authority::valid_evidence)
+                        .ok_or_else(|| {
+                            SoftwarePlanError::InvalidSelectedIdentity(item.id.clone())
+                        })?;
+                    Ok(ValidatedSoftwareAction {
+                        id: item.id.clone(),
+                        identity: live.identity.clone(),
+                        requery_key: String::new(),
+                        inventory_fingerprint: preview.inventory_fingerprint.clone(),
+                        preview_digest: preview.digest.clone(),
+                        launch: None,
+                        msi_registration: Some(registration),
                     })
                 }
                 SoftwareActionClass::RemoveMsiProduct
@@ -806,6 +919,7 @@ fn construct_validated_actions(
                         inventory_fingerprint: preview.inventory_fingerprint.clone(),
                         preview_digest: preview.digest.clone(),
                         launch: Some(launch),
+                        msi_registration: None,
                     })
                 }
             }
@@ -846,14 +960,16 @@ fn record(
     context: AuditActionContext<'_>,
     event: SoftwareAuditEvent,
 ) -> SoftwareAuditRecordV1 {
-    SoftwareAuditRecordV1::new(
+    let mut record = SoftwareAuditRecordV1::new(
         operation_id,
         unix_ms(SystemTime::now()),
         context.identity,
         context.inventory_fingerprint,
         context.preview_digest,
         event,
-    )
+    );
+    record.msi = context.msi.cloned();
+    record
 }
 
 fn audit_event(
@@ -883,6 +999,7 @@ fn action_outcome(
     error_code: Option<SoftwareAuditErrorCode>,
 ) -> SoftwareActionOutcomeV1 {
     SoftwareActionOutcomeV1 {
+        msi: context.msi.cloned(),
         operation_id: operation_id.to_string(),
         software_id: context.software_id.to_string(),
         outcome,
@@ -926,6 +1043,13 @@ fn terminal_status(outcome: SoftwareExecutionOutcome) -> SoftwareAuditStatusCode
     }
 }
 
+fn after_dispatch_error(error: SoftwareExecutionError) -> SoftwareExecutionError {
+    match error {
+        SoftwareExecutionError::Audit(error) => SoftwareExecutionError::AuditAfterDispatch(error),
+        error => error,
+    }
+}
+
 fn terminal_error_code(
     outcome: SoftwareExecutionOutcome,
     adapter: AdapterEvidence,
@@ -956,6 +1080,8 @@ fn unix_ms(time: SystemTime) -> u64 {
     })
 }
 
+#[cfg(test)]
+mod msi_tests;
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;

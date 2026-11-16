@@ -107,7 +107,14 @@ fn load_plan(path: &Path) -> Result<SoftwareUpdatePlanV1, ApplicationError> {
 }
 
 fn map_update(error: SoftwareUpdateError) -> ApplicationError {
-    from_domain_code(error.code(), error.to_string())
+    if matches!(
+        error,
+        SoftwareUpdateError::ProviderMissing | SoftwareUpdateError::UnsupportedProvider
+    ) {
+        ApplicationError::new(ExitClass::Unavailable, error.code(), error.to_string())
+    } else {
+        from_domain_code(error.code(), error.to_string())
+    }
 }
 
 fn write_plan(path: &Path, plan: &SoftwareUpdatePlanV1) -> Result<(), ApplicationError> {

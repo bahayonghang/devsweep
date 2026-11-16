@@ -61,7 +61,7 @@ impl fmt::Display for SoftwarePlanError {
             Self::InvalidSelectedIdentity(id) => {
                 write!(
                     formatter,
-                    "selected identity is not current-user MSIX: {id}"
+                    "selected identity is not executable in the current-user context: {id}"
                 )
             }
             Self::DigestMismatch => formatter.write_str("software preview digest mismatch"),
@@ -128,6 +128,7 @@ pub fn preview_selection_plan(
         }
         selected.push(preview_item(live)?);
     }
+    reject_msi_batch(&selected)?;
     selected.sort_by(|left, right| left.id.cmp(&right.id));
     let digest = preview_digest(&plan.inventory_fingerprint, &selected)?;
     Ok(SoftwarePreviewV1 {
@@ -142,7 +143,7 @@ pub fn preview_selection_plan(
 /// Revalidates an untrusted saved plan directly against a fresh exact-identity
 /// inventory. This is the frozen CLI boundary: the plan contributes only its
 /// opaque selection ids, expiry, and prior fingerprint; all strategy facts are
-/// reconstructed from the live current-user MSIX inventory.
+/// reconstructed from the live current-user MSIX/MSI inventory.
 pub fn preview_selection_plan_live(
     plan: &SoftwareSelectionPlanV1,
     live_inventory: &SoftwareInventoryV1,
@@ -164,6 +165,7 @@ pub fn preview_selection_plan_live(
             .ok_or_else(|| SoftwarePlanError::StaleSelection(id.clone()))?;
         selected.push(preview_item(live)?);
     }
+    reject_msi_batch(&selected)?;
     selected.sort_by(|left, right| left.id.cmp(&right.id));
     let digest = preview_digest(&plan.inventory_fingerprint, &selected)?;
     Ok(SoftwarePreviewV1 {
@@ -243,11 +245,57 @@ fn preview_item(
     }
     match live.eligibility.reason {
         SoftwareEligibilityReason::EligibleCurrentUserMsix => preview_msix(live),
+        SoftwareEligibilityReason::EligibleCurrentUserMsi => preview_msi(live),
         SoftwareEligibilityReason::EligibleMsiQuiet
         | SoftwareEligibilityReason::EligibleVendorUninstaller
         | SoftwareEligibilityReason::EligibleScoopApp => preview_fixture(live),
         _ => Err(SoftwarePlanError::ManualSelection(live.id.clone())),
     }
+}
+
+fn reject_msi_batch(items: &[SoftwarePreviewItemV1]) -> Result<(), SoftwarePlanError> {
+    if items.len() > 1
+        && items
+            .iter()
+            .any(|item| item.eligibility == SoftwareEligibilityReason::EligibleCurrentUserMsi)
+    {
+        return Err(SoftwarePlanError::InvalidSelectedIdentity(
+            items[0].id.clone(),
+        ));
+    }
+    Ok(())
+}
+
+fn preview_msi(
+    live: &super::model::SoftwareEntryV1,
+) -> Result<SoftwarePreviewItemV1, SoftwarePlanError> {
+    let valid = matches!(&live.identity, SoftwareIdentity::Msi { product_code, context: super::MsiContext::UserUnmanaged } if launch::valid_product_code(product_code));
+    let evidence = live
+        .msi_registration
+        .as_ref()
+        .filter(|evidence| super::msi_authority::valid_evidence(evidence));
+    if !valid
+        || evidence.is_none()
+        || live.scope != SoftwareScope::CurrentUser
+        || live.launch.is_some()
+    {
+        return Err(SoftwarePlanError::InvalidSelectedIdentity(live.id.clone()));
+    }
+    let token = serde_json::to_vec(&(
+        "devsweep.software.msi.strategy.v1",
+        &live.identity,
+        &live.version,
+        evidence,
+    ))
+    .map_err(|_| SoftwarePlanError::SerializationFailed)?;
+    Ok(SoftwarePreviewItemV1 {
+        id: live.id.clone(),
+        identity: live.identity.clone(),
+        action_class: SoftwareActionClass::RemoveMsiProduct,
+        scope: SoftwareScope::CurrentUser,
+        eligibility: SoftwareEligibilityReason::EligibleCurrentUserMsi,
+        strategy_token: format!("software-token:sha256:{}", hex_sha256(&token)),
+    })
 }
 
 fn preview_msix(
@@ -367,6 +415,12 @@ fn validate_selections(
         if !entry.eligibility.is_selectable() {
             return Err(SoftwarePlanError::ManualSelection(id.clone()));
         }
+        if entry.eligibility.reason == SoftwareEligibilityReason::EligibleCurrentUserMsi {
+            preview_msi(entry)?;
+            if selected_ids.len() != 1 {
+                return Err(SoftwarePlanError::InvalidSelectedIdentity(id.clone()));
+            }
+        }
     }
     Ok(())
 }
@@ -461,6 +515,7 @@ mod tests {
                 icon: None,
                 installed_on: None,
                 last_used: SoftwareLastUsedEvidence::default(),
+                msi_registration: None,
                 launch: None,
             }],
             fingerprint: String::new(),

@@ -469,6 +469,16 @@ fn size_label(size: &SoftwareSizeEvidence, zh: bool) -> String {
 fn reason_label(reason: SoftwareEligibilityReason, zh: bool) -> &'static str {
     use SoftwareEligibilityReason::*;
     match (reason, zh) {
+        (EligibleCurrentUserMsi, false) => "Eligible current-user unmanaged MSI",
+        (EligibleCurrentUserMsi, true) => "符合条件的当前用户非托管 MSI",
+        (MsiAuthorityUnavailable, false) => {
+            "MSI identity, restrictions or privilege evidence unavailable"
+        }
+        (MsiAuthorityUnavailable, true) => "MSI 身份、限制或权限证据不可用",
+        (MsiContextUnsupported, false) => "Machine or managed MSI requires manual handling",
+        (MsiContextUnsupported, true) => "机器级或托管 MSI 需手动处理",
+        (MsiRequiresAdministrator, false) => "MSI may require administrator privileges",
+        (MsiRequiresAdministrator, true) => "MSI 可能需要管理员权限",
         (ProtectedProduct, false) => "protected product",
         (ProtectedProduct, true) => "受保护产品",
         (SourceIncomplete, false) => "source incomplete",

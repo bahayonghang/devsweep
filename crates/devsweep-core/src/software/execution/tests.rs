@@ -164,6 +164,7 @@ fn entry(identity: SoftwareIdentity) -> SoftwareEntryV1 {
         icon: None,
         installed_on: None,
         last_used: SoftwareLastUsedEvidence::default(),
+        msi_registration: None,
         launch: None,
     }
 }
@@ -979,6 +980,7 @@ fn assert_audit_redacted(path: &Path) {
 
 fn named_observation(identity: SoftwareIdentity, name: &str) -> SoftwareObservation {
     SoftwareObservation {
+        msi_registration: None,
         scope: super::super::scope_for_identity(&identity),
         identity,
         display_name: Some(name.to_string()),

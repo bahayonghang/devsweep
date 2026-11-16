@@ -2,6 +2,7 @@ use super::*;
 
 fn observation(identity: SoftwareIdentity, flags: EligibilityFlags) -> SoftwareObservation {
     SoftwareObservation {
+        msi_registration: None,
         scope: match &identity {
             SoftwareIdentity::Arp { hive, .. } => {
                 if *hive == RegistryHive::CurrentUser {
@@ -160,7 +161,7 @@ fn refusal_matrix_uses_the_exact_first_matching_priority() {
     for (index, (flags, expected)) in cases.into_iter().enumerate() {
         let entry = msix(&format!("Fixture{index}_1.0.0.0_x64__publisher"), flags);
         assert_eq!(
-            ordered_eligibility(&entry.identity, entry.flags).reason,
+            ordered_eligibility(&entry.identity, entry.flags, None).reason,
             expected
         );
     }
@@ -173,8 +174,8 @@ fn refusal_matrix_uses_the_exact_first_matching_priority() {
         EligibilityFlags::default(),
     );
     assert_eq!(
-        ordered_eligibility(&msi.identity, msi.flags).reason,
-        Reason::MsiExecutionNotSupportedV1
+        ordered_eligibility(&msi.identity, msi.flags, None).reason,
+        Reason::MsiContextUnsupported
     );
     let arp = observation(
         SoftwareIdentity::Arp {
@@ -185,7 +186,7 @@ fn refusal_matrix_uses_the_exact_first_matching_priority() {
         EligibilityFlags::default(),
     );
     assert_eq!(
-        ordered_eligibility(&arp.identity, arp.flags).reason,
+        ordered_eligibility(&arp.identity, arp.flags, None).reason,
         Reason::RegistryOnlyManual
     );
 }

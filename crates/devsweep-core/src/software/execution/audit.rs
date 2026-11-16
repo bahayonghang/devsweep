@@ -11,8 +11,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use super::execution::{
-    AdapterEvidence, AdapterOutcome, SoftwareExecutionOutcome, SoftwareInstalledState,
-    SoftwareRebootEvidence, classify_terminal, merge_requery_state,
+    AdapterEvidence, AdapterOutcome, MsiExecutionEvidenceV1, SoftwareExecutionOutcome,
+    SoftwareInstalledState, SoftwareRebootEvidence, classify_terminal, merge_requery_state,
 };
 use crate::software::{
     SoftwareIdentity, SoftwareLeftoverCertainty, SoftwareStartupLocation, SoftwareSupportErrorCode,
@@ -98,6 +98,8 @@ impl SoftwareAuditTransition {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SoftwareAuditRecordV1 {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msi: Option<MsiExecutionEvidenceV1>,
     pub schema_version: u32,
     pub domain: String,
     pub operation_id: String,
@@ -129,6 +131,7 @@ impl SoftwareAuditRecordV1 {
         event: SoftwareAuditEvent,
     ) -> Self {
         Self {
+            msi: None,
             schema_version: SOFTWARE_AUDIT_VERSION,
             domain: SOFTWARE_AUDIT_DOMAIN.to_string(),
             operation_id: operation_id.to_string(),
@@ -391,6 +394,7 @@ fn software_audit_v1_path_from(
 
 #[derive(Debug, Clone)]
 pub(super) struct PendingOperation {
+    pub msi: Option<MsiExecutionEvidenceV1>,
     pub operation_id: String,
     pub identity: SoftwareIdentity,
     pub inventory_fingerprint: String,
@@ -402,6 +406,7 @@ pub(super) struct PendingOperation {
 
 #[derive(Debug, Clone)]
 struct OperationState {
+    msi: Option<MsiExecutionEvidenceV1>,
     identity: SoftwareIdentity,
     inventory_fingerprint: String,
     preview_digest: String,
@@ -414,6 +419,7 @@ struct OperationState {
 impl OperationState {
     fn pending(&self, operation_id: &str) -> Option<PendingOperation> {
         (!self.last_transition.is_terminal()).then(|| PendingOperation {
+            msi: self.msi.clone(),
             operation_id: operation_id.to_string(),
             identity: self.identity.clone(),
             inventory_fingerprint: self.inventory_fingerprint.clone(),
@@ -426,6 +432,8 @@ impl OperationState {
 }
 
 pub(in crate::software) struct SoftwareAuditJournal {
+    #[cfg(test)]
+    pub(in crate::software) append_fault: SupportAppendFault,
     path: PathBuf,
     file: File,
     _lock: SidecarLock,
@@ -460,6 +468,8 @@ impl SoftwareAuditJournal {
             .open(path)
             .map_err(|error| io_error("open", path, error))?;
         Ok(Self {
+            #[cfg(test)]
+            append_fault: SupportAppendFault::default(),
             path: path.to_path_buf(),
             file,
             _lock: lock,
@@ -472,6 +482,17 @@ impl SoftwareAuditJournal {
         &mut self,
         record: SoftwareAuditRecordV1,
     ) -> Result<(), SoftwareAuditError> {
+        #[cfg(test)]
+        if (self.append_fault.fail_started
+            && record.transition == SoftwareAuditTransition::DispatchStarted)
+            || (self.append_fault.fail_terminal && record.transition.is_terminal())
+        {
+            return Err(io_error(
+                "append",
+                &self.path,
+                io::Error::other("injected uninstall audit failure"),
+            ));
+        }
         validate_record(&record)?;
         if self.support_operation_ids.contains(&record.operation_id) {
             return Err(SoftwareAuditError::InvalidTransition {
@@ -489,12 +510,24 @@ impl SoftwareAuditJournal {
     }
 
     /// Appends one durable support record. Leftover records require a
-    /// succeeded uninstall terminal for the same identity.
+    /// Removed uninstall terminal and current proof for the same identity.
     pub(in crate::software) fn append_support(
         &mut self,
         record: SoftwareSupportAuditRecordV1,
     ) -> Result<(), SoftwareAuditError> {
         validate_support_record(&self.states, &record)?;
+        if let SoftwareSupportAuditRecordV1::LeftoverMoved {
+            uninstall_operation_id,
+            identity,
+            ..
+        } = &record
+            && !uninstall_removed(&self.states, uninstall_operation_id, identity)
+        {
+            return Err(SoftwareAuditError::InvalidTransition {
+                operation_id: record.operation_id().to_string(),
+                detail: "leftover append has no current removed uninstall proof",
+            });
+        }
         let line = serde_json::to_vec(&record)
             .map_err(|_| SoftwareAuditError::Corrupt(self.path.clone()))?;
         self.write_line(line)?;
@@ -618,6 +651,14 @@ fn uninstall_removed(
 ) -> bool {
     states.get(operation_id).is_some_and(|state| {
         &state.identity == identity
+            && (!matches!(identity, SoftwareIdentity::Msi { .. })
+                || state.msi.as_ref().is_some_and(|msi| {
+                    crate::software::msi_authority::valid_sid(&msi.user_sid)
+                        && msi.process.is_some_and(|process| {
+                            process.exit_code == Some(0) && process.interruption.is_none()
+                        })
+                        && state.installed_state == Some(SoftwareInstalledState::Absent)
+                }))
             && matches!(
                 state.last_transition,
                 SoftwareAuditTransition::Terminal {
@@ -683,7 +724,15 @@ fn validate_support_record(
             if candidate_id.is_empty() || !consistent {
                 return Err(invalid("leftover record is inconsistent"));
             }
-            if !uninstall_removed(states, uninstall_operation_id, identity) {
+            // Historical legacy MSI support records remain readable. New
+            // appends additionally require the current MSI proof above.
+            if !states.get(uninstall_operation_id).is_some_and(|state| {
+                &state.identity == identity
+                    && state.last_transition
+                        == SoftwareAuditTransition::Terminal {
+                            outcome: SoftwareExecutionOutcome::Removed,
+                        }
+            }) {
                 return Err(invalid("leftover record has no removed uninstall"));
             }
         }
@@ -710,6 +759,34 @@ fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditEr
             detail: "record identity is not an executable software identity",
         });
     }
+    if let Some(msi) = &record.msi {
+        let valid = matches!(
+            record.identity,
+            SoftwareIdentity::Msi {
+                context: crate::software::MsiContext::UserUnmanaged,
+                ..
+            }
+        ) && crate::software::msi_authority::valid_sid(&msi.user_sid)
+            && match msi.process {
+                Some(result) => record.adapter_outcome.map_or(
+                    record.transition == SoftwareAuditTransition::RequeryObserved,
+                    |adapter| {
+                        super::execution::msi::valid_process(
+                            result,
+                            adapter,
+                            record.reboot_evidence,
+                        )
+                    },
+                ),
+                None => !matches!(record.transition, SoftwareAuditTransition::AdapterCompleted),
+            };
+        if !valid {
+            return Err(SoftwareAuditError::InvalidTransition {
+                operation_id: record.operation_id.clone(),
+                detail: "invalid MSI process evidence",
+            });
+        }
+    }
     let transition_shape_valid = match record.transition {
         SoftwareAuditTransition::Validated => {
             record.status_code == SoftwareAuditStatusCode::Validated
@@ -735,10 +812,15 @@ fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditEr
                     Some(AdapterOutcome::Failure),
                     SoftwareAuditStatusCode::AdapterFailed
                 ) | (
+                    Some(AdapterOutcome::Unfinished),
+                    SoftwareAuditStatusCode::UnknownAfterDispatch
+                ) | (
                     Some(AdapterOutcome::RebootRequired),
                     SoftwareAuditStatusCode::AdapterRebootRequired
                 )
-            ) && record.installed_state.is_none()
+            ) && (record.adapter_outcome != Some(AdapterOutcome::Unfinished)
+                || record.msi.is_some())
+                && record.installed_state.is_none()
                 && record.requery_result.is_none()
                 && record.reboot_evidence
                     == if record.adapter_outcome == Some(AdapterOutcome::RebootRequired) {
@@ -804,15 +886,30 @@ fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditEr
                             SoftwareAuditStatusCode::CanceledBeforeStart
                         }
                     }
-                && classify_terminal(
-                    AdapterEvidence {
-                        outcome: record.adapter_outcome.unwrap_or(AdapterOutcome::Unfinished),
-                        reboot_evidence: record.reboot_evidence,
-                        error_code: record.error_code,
+                && record.msi.as_ref().map_or_else(
+                    || {
+                        classify_terminal(
+                            AdapterEvidence {
+                                msi_result: None,
+                                outcome: record
+                                    .adapter_outcome
+                                    .unwrap_or(AdapterOutcome::Unfinished),
+                                reboot_evidence: record.reboot_evidence,
+                                error_code: record.error_code,
+                            },
+                            record
+                                .installed_state
+                                .unwrap_or(SoftwareInstalledState::Unavailable),
+                        )
                     },
-                    record
-                        .installed_state
-                        .unwrap_or(SoftwareInstalledState::Unavailable),
+                    |msi| {
+                        super::execution::msi::classify(
+                            msi,
+                            record
+                                .installed_state
+                                .unwrap_or(SoftwareInstalledState::Unavailable),
+                        )
+                    },
                 ) == outcome
         }
     };
@@ -862,6 +959,7 @@ fn apply_record(
             states.insert(
                 operation_id.clone(),
                 OperationState {
+                    msi: record.msi.clone(),
                     identity: record.identity.clone(),
                     inventory_fingerprint: record.inventory_fingerprint.clone(),
                     preview_digest: record.preview_digest.clone(),
@@ -874,7 +972,12 @@ fn apply_record(
             Ok(())
         }
         Some(state) => {
-            if state.identity != record.identity
+            if state.msi.as_ref().map(|msi| &msi.user_sid)
+                != record.msi.as_ref().map(|msi| &msi.user_sid)
+                || (state.msi.as_ref().and_then(|msi| msi.process).is_some()
+                    && state.msi.as_ref().and_then(|msi| msi.process)
+                        != record.msi.as_ref().and_then(|msi| msi.process))
+                || state.identity != record.identity
                 || state.inventory_fingerprint != record.inventory_fingerprint
                 || state.preview_digest != record.preview_digest
             {
@@ -956,6 +1059,7 @@ fn apply_record(
                     });
                 }
             }
+            state.msi = record.msi.clone();
             state.last_transition = record.transition;
             if record.adapter_outcome.is_some() {
                 state.adapter_outcome = record.adapter_outcome;
@@ -1049,7 +1153,8 @@ const SOFTWARE_SUPPORT_DOMAIN: &str = "software_support";
 /// `software.jsonl`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub(in crate::software) enum SoftwareSupportOperation {
+pub enum SoftwareSupportOperation {
+    Update,
     StartupToggle,
     LeftoverMove,
 }
@@ -1057,7 +1162,8 @@ pub(in crate::software) enum SoftwareSupportOperation {
 /// Terminal result of one strict support operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub(in crate::software) enum SoftwareSupportTerminalResult {
+pub enum SoftwareSupportTerminalResult {
+    RebootRequired,
     Succeeded,
     Failed,
     Unknown,
@@ -1068,7 +1174,7 @@ pub(in crate::software) enum SoftwareSupportTerminalResult {
 /// identity only: no path, registry bytes, or command line.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "phase", rename_all = "snake_case", deny_unknown_fields)]
-pub(in crate::software) enum SoftwareSupportLifecycleRecordV1 {
+pub enum SoftwareSupportLifecycleRecordV1 {
     Started {
         schema_version: u32,
         domain: String,
@@ -1409,8 +1515,14 @@ fn validate_support_lifecycle(
             plan_identity,
             preview_digest,
             error_code,
+            result,
             ..
         } => {
+            if *result == SoftwareSupportTerminalResult::RebootRequired
+                && *terminal_operation != SoftwareSupportOperation::Update
+            {
+                return Err(invalid("only an update operation can require a reboot"));
+            }
             let Some(state) = states.get(operation_id) else {
                 return Err(invalid("support terminal has no start"));
             };

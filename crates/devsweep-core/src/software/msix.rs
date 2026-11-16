@@ -69,6 +69,7 @@ fn inventory_from_msix(result: MtaResult, sizes: Vec<SoftwareSizeEvidence>) -> S
                 package.publisher.as_deref(),
             );
             SoftwareObservation {
+                msi_registration: None,
                 identity: SoftwareIdentity::Msix {
                     package_full_name: package.package_full_name,
                 },

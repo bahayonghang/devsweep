@@ -33,11 +33,23 @@ fn main() {
     }
     let mut args = env::args().skip(1).collect::<Vec<_>>().into_iter();
     let mode = args.next().unwrap_or_default();
+    if matches!(mode.as_str(), "--version" | "source")
+        && env::current_exe()
+            .ok()
+            .and_then(|path| {
+                path.parent()
+                    .map(|parent| parent.join("update-double.json"))
+            })
+            .is_some_and(|path| path.is_file())
+    {
+        update_double(std::iter::once(mode).chain(args).collect());
+        return;
+    }
     if provider_fixture(&mode, args.clone().collect()) {
         return;
     }
     if mode == "upgrade" {
-        update_double(args.collect());
+        update_double(std::iter::once(mode).chain(args).collect());
         return;
     }
     match mode.as_str() {
@@ -114,11 +126,9 @@ fn main() {
 }
 
 /// Command double for software update tests. It is not the installed winget.
-fn update_double(rest: Vec<String>) {
+fn update_double(args: Vec<String>) {
     let exe = env::current_exe().expect("fixture path");
     let directory = exe.parent().expect("fixture directory");
-    let mut args = vec!["upgrade".to_string()];
-    args.extend(rest);
     let mut calls = fs::OpenOptions::new()
         .create(true)
         .append(true)
@@ -134,6 +144,38 @@ fn update_double(rest: Vec<String>) {
     let fixture: serde_json::Value =
         serde_json::from_slice(&fs::read(&config_path).expect("update double"))
             .expect("double JSON");
+    if args == ["--version"] {
+        println!(
+            "{}",
+            fixture["provider_version"].as_str().unwrap_or("v1.12.350")
+        );
+        return;
+    }
+    if args == ["upgrade", "--help"] {
+        println!(
+            "{}",
+            fixture["provider_help"].as_str().unwrap_or(
+                "--id --version --source --exact --scope --silent --disable-interactivity"
+            )
+        );
+        return;
+    }
+    if args
+        == [
+            "source",
+            "export",
+            "--name",
+            "winget",
+            "--disable-interactivity",
+        ]
+    {
+        let source = fixture.get("provider_source").cloned().unwrap_or_else(|| serde_json::json!({
+            "Arg":"https://cdn.winget.microsoft.com/cache", "Data":"Microsoft.Winget.Source_8wekyb3d8bbwe", "Explicit":false,
+            "Identifier":"Microsoft.Winget.Source_8wekyb3d8bbwe", "Name":"winget", "TrustLevel":["Trusted","StoreOrigin"], "Type":"Microsoft.PreIndexed.Package"
+        }));
+        println!("{source}");
+        return;
+    }
     let network = fixture["network"].as_bool().unwrap_or(false);
     let upgrade = args.iter().any(|arg| arg == "--id");
     if !upgrade && network {
@@ -143,8 +185,7 @@ fn update_double(rest: Vec<String>) {
     if upgrade {
         match fixture["upgrade_result"].as_str().unwrap_or("fail") {
             "restart_required" => {
-                println!("restart_required");
-                std::process::exit(1);
+                std::process::exit(0x8A15_0109_u32 as i32);
             }
             "updated" => {
                 let id = args.iter().skip_while(|arg| *arg != "--id").nth(1);

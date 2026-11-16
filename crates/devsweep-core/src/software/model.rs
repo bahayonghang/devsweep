@@ -146,6 +146,10 @@ pub enum SoftwareEligibilityReason {
     RegistryOnlyManual,
     UnsupportedSource,
     EligibleCurrentUserMsix,
+    EligibleCurrentUserMsi,
+    MsiAuthorityUnavailable,
+    MsiContextUnsupported,
+    MsiRequiresAdministrator,
     /// Quiet `msiexec.exe /x {product} /qn /norestart` inside a fixture.
     EligibleMsiQuiet,
     /// Absolute vendor executable inside a fixture, with a closed argument list.
@@ -274,6 +278,9 @@ pub struct SoftwareEntryV1 {
     pub eligibility: SoftwareEligibility,
     pub size: SoftwareSizeEvidence,
     pub last_used: SoftwareLastUsedEvidence,
+    /// Observational MSI proof; execution must independently reacquire it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msi_registration: Option<MsiRegistrationEvidenceV1>,
     /// Fixture launch kept off the inventory wire and out of the fingerprint.
     #[serde(skip)]
     pub launch: Option<FixtureLaunch>,
@@ -353,9 +360,20 @@ pub enum FixtureLaunchKind {
     Scoop,
 }
 
+/// Optional V1 MSI evidence, with no executable path or arguments.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsiRegistrationEvidenceV1 {
+    pub user_sid: String,
+    pub package_code: String,
+    pub registration_digest: String,
+    pub tool_digest: String,
+}
+
 /// Internal source observation before deterministic assembly and fingerprinting.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SoftwareObservation {
+    pub msi_registration: Option<MsiRegistrationEvidenceV1>,
     pub identity: SoftwareIdentity,
     pub scope: SoftwareScope,
     pub display_name: Option<String>,

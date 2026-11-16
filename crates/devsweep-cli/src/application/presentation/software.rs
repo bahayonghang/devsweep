@@ -173,7 +173,7 @@ fn execution_item(
     item: &SoftwareActionOutcomeV1,
 ) -> Result<String, CatalogueError> {
     let outcome = static_text(locale, outcome_key(item.outcome))?;
-    render(
+    let mut text = render(
         locale,
         "software.v1.execution.item",
         &[
@@ -182,7 +182,32 @@ fn execution_item(
             ("operation", item.operation_id.as_str()),
         ],
         None,
-    )
+    )?;
+    if let Some(process) = item.msi.as_ref().and_then(|msi| msi.process) {
+        if let Some(code) = process.exit_code {
+            text.push_str(&format!(
+                "\n{}",
+                render(
+                    locale,
+                    "software.v1.msi.exit",
+                    &[("code", &code.to_string())],
+                    None
+                )?
+            ));
+            if code == 1641 {
+                text.push_str(&format!(
+                    "\n{}",
+                    static_text(locale, "software.v1.msi.reboot_initiated")?
+                ));
+            }
+        } else {
+            text.push_str(&format!(
+                "\n{}",
+                static_text(locale, "software.v1.msi.interrupted")?
+            ));
+        }
+    }
+    Ok(text)
 }
 
 fn identity(identity: &SoftwareIdentity) -> String {
@@ -275,6 +300,18 @@ fn eligibility_key(reason: SoftwareEligibilityReason) -> &'static str {
         }
         SoftwareEligibilityReason::EligibleCurrentUserMsix => {
             "software.v1.eligibility.eligible_current_user_msix"
+        }
+        SoftwareEligibilityReason::EligibleCurrentUserMsi => {
+            "software.v1.eligibility.eligible_current_user_msi"
+        }
+        SoftwareEligibilityReason::MsiAuthorityUnavailable => {
+            "software.v1.eligibility.msi_authority_unavailable"
+        }
+        SoftwareEligibilityReason::MsiContextUnsupported => {
+            "software.v1.eligibility.msi_context_unsupported"
+        }
+        SoftwareEligibilityReason::MsiRequiresAdministrator => {
+            "software.v1.eligibility.msi_requires_administrator"
         }
         SoftwareEligibilityReason::EligibleMsiQuiet => "software.v1.eligibility.eligible_msi_quiet",
         SoftwareEligibilityReason::EligibleVendorUninstaller => {
@@ -374,7 +411,7 @@ pub(crate) fn update_preview(
     locale: Locale,
     preview: &SoftwareUpdatePreviewV1,
 ) -> Result<String, CatalogueError> {
-    render(
+    let preview = render(
         locale,
         "software.cli.updates.preview",
         &[
@@ -385,7 +422,11 @@ pub(crate) fn update_preview(
             ("digest", preview.digest.as_str()),
         ],
         None,
-    )
+    )?;
+    Ok(format!(
+        "{preview}\n{}",
+        render(locale, "software.cli.updates.scope", &[], None)?
+    ))
 }
 
 pub(crate) fn update_report(
@@ -399,7 +440,7 @@ pub(crate) fn update_report(
         SoftwareUpdateOutcome::Unknown => "unknown",
     };
     let updated = if report.updated { "true" } else { "false" };
-    render(
+    let result = render(
         locale,
         "software.cli.updates.execute",
         &[
@@ -408,7 +449,20 @@ pub(crate) fn update_report(
             ("updated", updated),
         ],
         None,
-    )
+    )?;
+    let history = render(
+        locale,
+        "software.cli.updates.audit",
+        &[
+            (
+                "operation_id",
+                report.operation_id.as_deref().unwrap_or("unavailable"),
+            ),
+            ("error_code", report.error_code.as_deref().unwrap_or("none")),
+        ],
+        None,
+    )?;
+    Ok(format!("{result}\n{history}"))
 }
 
 pub(crate) fn startup_hive_execute(
@@ -586,6 +640,9 @@ fn with_code(locale: Locale, key: &str, code: Option<&str>) -> Result<String, Ca
 fn updates_reason_key(reason: SoftwareUpdatesReason) -> &'static str {
     match reason {
         SoftwareUpdatesReason::WingetMissing => "software.v1.updates.reason.winget_missing",
+        SoftwareUpdatesReason::ProviderUnsupported => {
+            "software.v1.updates.reason.provider_unsupported"
+        }
         SoftwareUpdatesReason::SourceAgreementPending => {
             "software.v1.updates.reason.source_agreement_pending"
         }

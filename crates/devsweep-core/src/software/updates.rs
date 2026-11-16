@@ -7,6 +7,8 @@
 use std::{
     ffi::{OsStr, OsString},
     fmt,
+    io::Read,
+    path::{Path, PathBuf},
     sync::Arc,
     time::SystemTime,
 };
@@ -16,17 +18,30 @@ use sha2::{Digest, Sha256};
 
 use crate::digest_encoding::hex_digest;
 
+use super::audit::{
+    SoftwareSupportJournal, SoftwareSupportLifecycleRecordV1, SoftwareSupportOperation,
+    SoftwareSupportTerminalResult, SupportAppendFault,
+};
+use super::file_authority::{BoundFile, digest as authority_digest};
 use super::{SoftwareInventoryV1, unix_ms};
 use crate::process::{
-    CancelObserver, CwdPolicy, DEFAULT_PROVIDER_PHASE_DEADLINE, FlagCancelObserver,
-    NoopCancelObserver, ProcessRequest, ProcessResult, ProcessRunner, ProcessStatus,
+    CancelObserver, CwdPolicy, DEFAULT_EXECUTOR_COMMAND_TIMEOUT, DEFAULT_PROVIDER_PHASE_DEADLINE,
+    FlagCancelObserver, NoopCancelObserver, ProcessRequest, ProcessResult, ProcessRunner,
+    ProcessStatus,
 };
 
 /// Software update-check wire version.
 pub const SOFTWARE_UPDATES_VERSION: u32 = 1;
 
 const WINGET_PROGRAM: &str = "winget";
-const WINGET_UPGRADE_ARGS: [&str; 2] = ["upgrade", "--disable-interactivity"];
+const WINGET_UPGRADE_ARGS: [&str; 6] = [
+    "upgrade",
+    "--disable-interactivity",
+    "--scope",
+    "user",
+    "--source",
+    "winget",
+];
 const TABLE_COLUMNS: usize = 5;
 const TRUNCATION_MARK: char = '\u{2026}';
 
@@ -76,6 +91,7 @@ pub struct SoftwareUpdateRowV1 {
 #[serde(rename_all = "snake_case")]
 pub enum SoftwareUpdatesReason {
     WingetMissing,
+    ProviderUnsupported,
     SourceAgreementPending,
     NonZeroExit,
     TimedOut,
@@ -89,6 +105,7 @@ pub enum SoftwareUpdatesReason {
 pub const SOFTWARE_UPDATE_PLAN_VERSION: u32 = 1;
 
 const SUPPORTED_UPDATE_SOURCE: &str = "winget";
+const UPDATE_SCOPE: &str = "user";
 
 /// One explicit package update. It stores no installer argv.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,12 +151,17 @@ pub struct SoftwareUpdateReportV1 {
     pub available_version: String,
     pub outcome: SoftwareUpdateOutcome,
     pub updated: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operation_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_code: Option<String>,
 }
 
 /// Failures before the upgrade process starts, plus a failed upgrade.
 #[derive(Debug)]
 pub enum SoftwareUpdateError {
     ConfirmationRequired,
+    CanceledBeforeStart,
     UnsupportedPlanVersion(u32),
     InvalidPlan,
     AmbiguousPackage,
@@ -150,6 +172,9 @@ pub enum SoftwareUpdateError {
     StaleConfirmation,
     ProviderChanged,
     ProbeFailed,
+    ProviderMissing,
+    UnsupportedProvider,
+    AuditUnavailable,
 }
 
 impl fmt::Display for SoftwareUpdateError {
@@ -157,6 +182,9 @@ impl fmt::Display for SoftwareUpdateError {
         match self {
             Self::ConfirmationRequired => {
                 formatter.write_str("package update requires explicit confirmation")
+            }
+            Self::CanceledBeforeStart => {
+                formatter.write_str("package update was canceled before dispatch")
             }
             Self::UnsupportedPlanVersion(version) => {
                 write!(formatter, "unsupported update plan version {version}")
@@ -172,6 +200,15 @@ impl fmt::Display for SoftwareUpdateError {
             Self::StaleConfirmation => formatter.write_str("update preview digest is stale"),
             Self::ProviderChanged => formatter.write_str("update provider fingerprint changed"),
             Self::ProbeFailed => formatter.write_str("update provider probe failed"),
+            Self::ProviderMissing => {
+                formatter.write_str("update provider is not installed or cannot be resolved")
+            }
+            Self::UnsupportedProvider => formatter.write_str(
+                "update provider version, capabilities, or native file layout is unsupported",
+            ),
+            Self::AuditUnavailable => {
+                formatter.write_str("update audit is unavailable; no update was dispatched")
+            }
         }
     }
 }
@@ -184,6 +221,7 @@ impl SoftwareUpdateError {
     pub fn code(&self) -> &'static str {
         match self {
             Self::ConfirmationRequired => "confirmation_required",
+            Self::CanceledBeforeStart => "canceled_before_start",
             Self::UnsupportedPlanVersion(_) => "unsupported_plan_version",
             Self::InvalidPlan => "invalid_plan",
             Self::AmbiguousPackage => "ambiguous_package",
@@ -194,6 +232,9 @@ impl SoftwareUpdateError {
             Self::StaleConfirmation => "stale_confirmation",
             Self::ProviderChanged => "provider_changed",
             Self::ProbeFailed => "probe_failed",
+            Self::ProviderMissing => "provider_missing",
+            Self::UnsupportedProvider => "unsupported_provider",
+            Self::AuditUnavailable => "audit_unavailable",
         }
     }
 }
@@ -206,52 +247,12 @@ pub fn plan_software_update(
     available_version: &str,
 ) -> Result<SoftwareUpdatePlanV1, SoftwareUpdateError> {
     let runner = ProcessRunner::default();
-    plan_software_update_with(
-        |request| runner.run(request),
-        program,
-        package_id,
-        source,
-        available_version,
-    )
-}
-
-/// Re-runs the read-only probe and binds the live row to `plan`.
-pub fn preview_software_update(
-    program: &OsStr,
-    plan: &SoftwareUpdatePlanV1,
-) -> Result<SoftwareUpdatePreviewV1, SoftwareUpdateError> {
-    let runner = ProcessRunner::default();
-    preview_software_update_with(|request| runner.run(request), program, plan)
-}
-
-/// Upgrades one planned package. Refusals return before the upgrade process.
-pub fn execute_software_update(
-    program: &OsStr,
-    plan: &SoftwareUpdatePlanV1,
-    expected_preview_digest: &str,
-    confirmed: bool,
-) -> Result<SoftwareUpdateReportV1, SoftwareUpdateError> {
-    let runner = ProcessRunner::default();
-    execute_software_update_with(
-        |request| runner.run(request),
-        program,
-        plan,
-        expected_preview_digest,
-        confirmed,
-    )
-}
-
-fn plan_software_update_with(
-    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
-    program: &OsStr,
-    package_id: &str,
-    source: &str,
-    available_version: &str,
-) -> Result<SoftwareUpdatePlanV1, SoftwareUpdateError> {
     validate_update_selector(package_id, source, available_version)?;
+    let mut run = |request: &ProcessRequest<'_>| runner.run(request);
+    let binding = bind_update_provider(program, &mut run)?;
     let row = select_update_row(
         &mut run,
-        program,
+        binding.file.path.as_os_str(),
         package_id,
         source,
         available_version,
@@ -263,16 +264,20 @@ fn plan_software_update_with(
         source: row.source,
         installed_version: row.installed_version,
         available_version: row.available_version,
-        provider_fingerprint: provider_fingerprint(program),
+        provider_fingerprint: binding.fingerprint,
     })
 }
 
-fn preview_software_update_with(
-    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+/// Re-runs the read-only probe and binds the live row to `plan`.
+pub fn preview_software_update(
     program: &OsStr,
     plan: &SoftwareUpdatePlanV1,
 ) -> Result<SoftwareUpdatePreviewV1, SoftwareUpdateError> {
-    let row = bound_update_row(&mut run, program, plan)?;
+    let runner = ProcessRunner::default();
+    validate_update_plan(plan)?;
+    let mut run = |request: &ProcessRequest<'_>| runner.run(request);
+    let binding = bind_update_provider(program, &mut run)?;
+    let row = bound_update_row(&mut run, &binding, plan)?;
     Ok(SoftwareUpdatePreviewV1 {
         version: SOFTWARE_UPDATE_PLAN_VERSION,
         digest: update_digest(plan, &row)?,
@@ -283,12 +288,30 @@ fn preview_software_update_with(
     })
 }
 
-fn execute_software_update_with(
-    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+/// Upgrades one planned package. Refusals return before the upgrade process.
+pub fn execute_software_update(
     program: &OsStr,
     plan: &SoftwareUpdatePlanV1,
     expected_preview_digest: &str,
     confirmed: bool,
+) -> Result<SoftwareUpdateReportV1, SoftwareUpdateError> {
+    execute_software_update_cancellable(
+        program,
+        plan,
+        expected_preview_digest,
+        confirmed,
+        &NoopCancelObserver,
+    )
+}
+
+/// Cancels read-only preflight and refuses before targeted dispatch. Once the
+/// target process starts, this observer cannot terminate it or hide its result.
+pub fn execute_software_update_cancellable(
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+    expected_preview_digest: &str,
+    confirmed: bool,
+    cancel: &dyn CancelObserver,
 ) -> Result<SoftwareUpdateReportV1, SoftwareUpdateError> {
     if !confirmed {
         return Err(SoftwareUpdateError::ConfirmationRequired);
@@ -296,16 +319,139 @@ fn execute_software_update_with(
     if !is_preview_digest(expected_preview_digest) {
         return Err(SoftwareUpdateError::InvalidPlan);
     }
-    let row = bound_update_row(&mut run, program, plan)?;
+    let runner = ProcessRunner::default();
+    let audit_path =
+        super::software_audit_v1_path().map_err(|_| SoftwareUpdateError::AuditUnavailable)?;
+    execute_software_update_with(
+        |request| runner.run(request),
+        program,
+        plan,
+        expected_preview_digest,
+        &audit_path,
+        SupportAppendFault::NONE,
+        cancel,
+    )
+}
+
+fn execute_software_update_with(
+    mut run: impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    program: &OsStr,
+    plan: &SoftwareUpdatePlanV1,
+    expected_preview_digest: &str,
+    audit_path: &Path,
+    fault: SupportAppendFault,
+    cancel: &dyn CancelObserver,
+) -> Result<SoftwareUpdateReportV1, SoftwareUpdateError> {
+    if !is_preview_digest(expected_preview_digest) {
+        return Err(SoftwareUpdateError::InvalidPlan);
+    }
+    validate_update_plan(plan)?;
+    if cancel.is_cancel_requested() {
+        return Err(SoftwareUpdateError::CanceledBeforeStart);
+    }
+    let cancellation_error = |error| {
+        if cancel.is_cancel_requested() {
+            SoftwareUpdateError::CanceledBeforeStart
+        } else {
+            error
+        }
+    };
+    let (binding, row) = {
+        let mut preflight =
+            |request: &ProcessRequest<'_>| update_preflight_probe(&mut run, request, cancel);
+        let binding = bind_update_provider(program, &mut preflight).map_err(cancellation_error)?;
+        let row = bound_update_row(&mut preflight, &binding, plan).map_err(cancellation_error)?;
+        (binding, row)
+    };
     let digest = update_digest(plan, &row)?;
     if digest != expected_preview_digest {
         return Err(SoftwareUpdateError::StaleConfirmation);
     }
+    if cancel.is_cancel_requested() {
+        return Err(SoftwareUpdateError::CanceledBeforeStart);
+    }
+    let plan_identity = authority_digest(&("devsweep.software.update.plan.v2", plan, UPDATE_SCOPE))
+        .map_err(|_| SoftwareUpdateError::InvalidPlan)?;
+    let mut journal = SoftwareSupportJournal::open(audit_path)
+        .map_err(|_| SoftwareUpdateError::AuditUnavailable)?;
+    let now = unix_ms(SystemTime::now());
+    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let operation_id = format!(
+        "software-update-{now:016x}-{:08x}-{sequence:016x}",
+        std::process::id()
+    );
+    journal
+        .append_lifecycle(
+            SoftwareSupportLifecycleRecordV1::started(
+                SoftwareSupportOperation::Update,
+                &operation_id,
+                now,
+                &plan_identity,
+                &digest,
+            ),
+            fault,
+        )
+        .map_err(|_| SoftwareUpdateError::AuditUnavailable)?;
+    // Bind again after the durable start. The held file handles prevent a
+    // same-name replacement while the trusted process is dispatched.
+    let late = {
+        let mut preflight =
+            |request: &ProcessRequest<'_>| update_preflight_probe(&mut run, request, cancel);
+        bind_update_provider(program, &mut preflight).and_then(|live| {
+            if live.fingerprint != binding.fingerprint {
+                return Err(SoftwareUpdateError::ProviderChanged);
+            }
+            bound_update_row(&mut preflight, &live, plan).map(|_| ())
+        })
+    }
+    .map_err(cancellation_error)
+    .and_then(|()| {
+        if cancel.is_cancel_requested() {
+            Err(SoftwareUpdateError::CanceledBeforeStart)
+        } else {
+            Ok(())
+        }
+    });
+    if let Err(error) = late {
+        journal
+            .append_lifecycle(
+                SoftwareSupportLifecycleRecordV1::terminal(
+                    SoftwareSupportOperation::Update,
+                    &operation_id,
+                    unix_ms(SystemTime::now()),
+                    &plan_identity,
+                    &digest,
+                    SoftwareSupportTerminalResult::Refused,
+                    Some(error.code()),
+                ),
+                fault,
+            )
+            .map_err(|_| SoftwareUpdateError::AuditUnavailable)?;
+        return Err(error);
+    }
     let noop = NoopCancelObserver;
-    let request = upgrade_request(program, plan, &noop);
+    let request = upgrade_request(binding.file.path.as_os_str(), plan, &noop);
     let result = run(&request);
-    let restart_required = output_line(&result, "restart_required");
-    let requery = probe_rows(&mut run, program);
+    // WinGet's HRESULT for RebootRequiredToFinish. Localized output is not
+    // execution evidence, including an injected `restart_required` line.
+    let restart_required = matches!(result.status, ProcessStatus::Exit { code: Some(code) } if code == 0x8A15_0109_u32 as i32);
+    let requery = bind_update_provider(program, &mut run).and_then(|live| {
+        if live.fingerprint != binding.fingerprint {
+            return Err(SoftwareUpdateError::ProviderChanged);
+        }
+        let rows = probe_rows(&mut run, live.file.path.as_os_str())?;
+        let mut selected = rows.iter().filter(|row| row.id == plan.package_id);
+        let current = selected.next();
+        if selected.next().is_some() {
+            return Err(SoftwareUpdateError::AmbiguousPackage);
+        }
+        if current.is_some_and(|row| row.source != plan.source) {
+            return Err(SoftwareUpdateError::UnsupportedSource);
+        }
+        Ok(rows)
+    });
+    let observation_error = requery.as_ref().err().map(|error| error.code().to_string());
     let outcome = if restart_required {
         SoftwareUpdateOutcome::RestartRequired
     } else if matches!(result.status, ProcessStatus::Success) {
@@ -322,32 +468,92 @@ fn execute_software_update_with(
             }
             Err(_) => SoftwareUpdateOutcome::Unknown,
         }
-    } else {
+    } else if matches!(result.status, ProcessStatus::Exit { code: Some(_) }) {
         SoftwareUpdateOutcome::Failed
+    } else {
+        SoftwareUpdateOutcome::Unknown
     };
-    let updated = outcome == SoftwareUpdateOutcome::Updated;
+    let error_code = match result.status {
+        ProcessStatus::Exit { code: Some(code) } => Some(format!("winget_exit_{}", code as u32)),
+        ProcessStatus::Success => observation_error.or_else(|| {
+            (outcome == SoftwareUpdateOutcome::Failed).then(|| "update_not_observed".to_string())
+        }),
+        _ => Some("unknown_after_dispatch".to_string()),
+    };
+    let terminal = match outcome {
+        SoftwareUpdateOutcome::Updated => SoftwareSupportTerminalResult::Succeeded,
+        SoftwareUpdateOutcome::RestartRequired => SoftwareSupportTerminalResult::RebootRequired,
+        SoftwareUpdateOutcome::Failed => SoftwareSupportTerminalResult::Failed,
+        SoftwareUpdateOutcome::Unknown => SoftwareSupportTerminalResult::Unknown,
+    };
+    let durable = journal
+        .append_lifecycle(
+            SoftwareSupportLifecycleRecordV1::terminal(
+                SoftwareSupportOperation::Update,
+                &operation_id,
+                unix_ms(SystemTime::now()),
+                &plan_identity,
+                &digest,
+                terminal,
+                error_code.as_deref(),
+            ),
+            fault,
+        )
+        .is_ok();
+    let outcome = if durable {
+        outcome
+    } else {
+        SoftwareUpdateOutcome::Unknown
+    };
     Ok(SoftwareUpdateReportV1 {
         version: SOFTWARE_UPDATE_PLAN_VERSION,
         package_id: plan.package_id.clone(),
         source: plan.source.clone(),
         available_version: plan.available_version.clone(),
         outcome,
-        updated,
+        updated: outcome == SoftwareUpdateOutcome::Updated,
+        operation_id: Some(operation_id),
+        error_code: if durable {
+            error_code
+        } else {
+            Some("unknown_after_dispatch".to_string())
+        },
+    })
+}
+
+fn update_preflight_probe(
+    run: &mut impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+    request: &ProcessRequest<'_>,
+    cancel: &dyn CancelObserver,
+) -> ProcessResult {
+    if cancel.is_cancel_requested() {
+        return ProcessResult {
+            status: ProcessStatus::Canceled,
+            output: Default::default(),
+        };
+    }
+    run(&ProcessRequest {
+        program: request.program.clone(),
+        args: request.args.clone(),
+        cwd: request.cwd.clone(),
+        timeout: request.timeout,
+        job_deadline: request.job_deadline,
+        cancel,
     })
 }
 
 fn bound_update_row(
     run: &mut impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
-    program: &OsStr,
+    binding: &UpdateBinding,
     plan: &SoftwareUpdatePlanV1,
 ) -> Result<ParsedRow, SoftwareUpdateError> {
     validate_update_plan(plan)?;
-    if provider_fingerprint(program) != plan.provider_fingerprint {
+    if binding.fingerprint != plan.provider_fingerprint {
         return Err(SoftwareUpdateError::ProviderChanged);
     }
     select_update_row(
         run,
-        program,
+        binding.file.path.as_os_str(),
         &plan.package_id,
         &plan.source,
         &plan.available_version,
@@ -445,6 +651,7 @@ fn update_digest(
         &plan.installed_version,
         &plan.available_version,
         &plan.provider_fingerprint,
+        UPDATE_SCOPE,
         &row.id,
         &row.source,
         &row.installed_version,
@@ -454,11 +661,234 @@ fn update_digest(
     Ok(format!("sha256:{}", hex_digest(Sha256::digest(canonical))))
 }
 
-fn provider_fingerprint(program: &OsStr) -> String {
-    format!(
-        "sha256:{}",
-        hex_digest(Sha256::digest(program.as_encoded_bytes()))
-    )
+struct UpdateBinding {
+    file: BoundFile,
+    fingerprint: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "PascalCase", deny_unknown_fields)]
+struct UpdateSource {
+    arg: String,
+    data: String,
+    explicit: bool,
+    identifier: String,
+    name: String,
+    trust_level: Vec<String>,
+    #[serde(rename = "Type")]
+    kind: String,
+}
+
+fn source_identity(text: &str) -> Result<UpdateSource, SoftwareUpdateError> {
+    let mut source: UpdateSource =
+        serde_json::from_str(text).map_err(|_| SoftwareUpdateError::UnsupportedSource)?;
+    source.trust_level.sort();
+    if source.arg != "https://cdn.winget.microsoft.com/cache"
+        || source.name != "winget"
+        || source.kind != "Microsoft.PreIndexed.Package"
+        || source.identifier != "Microsoft.Winget.Source_8wekyb3d8bbwe"
+        || source.data != source.identifier
+        || source.trust_level != ["StoreOrigin", "Trusted"]
+    {
+        return Err(SoftwareUpdateError::UnsupportedSource);
+    }
+    Ok(source)
+}
+
+fn bind_update_provider(
+    program: &OsStr,
+    run: &mut impl FnMut(&ProcessRequest<'_>) -> ProcessResult,
+) -> Result<UpdateBinding, SoftwareUpdateError> {
+    let path = resolve_update_program(program)?;
+    if !path
+        .try_exists()
+        .map_err(|_| SoftwareUpdateError::UnsupportedProvider)?
+    {
+        return Err(SoftwareUpdateError::ProviderMissing);
+    }
+    let file = BoundFile::open(&path).map_err(|_| SoftwareUpdateError::UnsupportedProvider)?;
+    let mut header = [0_u8; 4];
+    std::fs::File::open(&file.path)
+        .and_then(|mut file| file.read_exact(&mut header))
+        .map_err(|_| SoftwareUpdateError::UnsupportedProvider)?;
+    let native = if cfg!(windows) {
+        header.starts_with(b"MZ")
+    } else {
+        header == *b"\x7fELF"
+            || matches!(header, [0xcf, 0xfa, 0xed, 0xfe] | [0xfe, 0xed, 0xfa, 0xcf])
+    };
+    if !native {
+        return Err(SoftwareUpdateError::UnsupportedProvider);
+    }
+    let noop = NoopCancelObserver;
+    let request = |args: Vec<OsString>| ProcessRequest {
+        program: file.path.as_os_str().to_os_string(),
+        args,
+        cwd: CwdPolicy::Neutral,
+        timeout: Some(DEFAULT_PROVIDER_PHASE_DEADLINE),
+        job_deadline: None,
+        cancel: &noop,
+    };
+    let version = run(&request(vec![OsString::from("--version")]));
+    let version = bounded_provider_text(&version)?;
+    // Stable WinGet 1.x plus an explicit capability probe. A guessed minimum
+    // minor version cannot substitute for verifying the flags we actually use.
+    let Some(numbers) = version.trim().strip_prefix('v') else {
+        return Err(SoftwareUpdateError::UnsupportedProvider);
+    };
+    let components = numbers.split('.').collect::<Vec<_>>();
+    if !(3..=4).contains(&components.len())
+        || components[0] != "1"
+        || !components.iter().all(|part| {
+            !part.is_empty()
+                && part.bytes().all(|byte| byte.is_ascii_digit())
+                && part.parse::<u32>().is_ok()
+        })
+    {
+        return Err(SoftwareUpdateError::UnsupportedProvider);
+    }
+    let help = run(&request(vec![
+        OsString::from("upgrade"),
+        OsString::from("--help"),
+    ]));
+    let help = bounded_provider_text(&help)?;
+    let flags = [
+        "--id",
+        "--version",
+        "--source",
+        "--exact",
+        "--scope",
+        "--silent",
+        "--disable-interactivity",
+    ];
+    let tokens = help
+        .split(|c: char| c.is_whitespace() || matches!(c, ',' | '|' | '[' | ']' | '(' | ')'))
+        .collect::<Vec<_>>();
+    if flags.iter().any(|flag| !tokens.contains(flag)) {
+        return Err(SoftwareUpdateError::UnsupportedProvider);
+    }
+    let help_digest = hex_digest(Sha256::digest(help.as_bytes()));
+    let source = run(&request(
+        [
+            "source",
+            "export",
+            "--name",
+            "winget",
+            "--disable-interactivity",
+        ]
+        .map(OsString::from)
+        .into(),
+    ));
+    let source = source_identity(&bounded_provider_text(&source)?)?;
+    let fingerprint = authority_digest(&(
+        "devsweep.software.update.provider.v2",
+        &file.digest,
+        version.trim(),
+        flags,
+        help_digest,
+        UPDATE_SCOPE,
+        source,
+    ))
+    .map_err(|_| SoftwareUpdateError::InvalidPlan)?;
+    Ok(UpdateBinding { file, fingerprint })
+}
+
+fn bounded_provider_text(result: &ProcessResult) -> Result<String, SoftwareUpdateError> {
+    if !matches!(result.status, ProcessStatus::Success)
+        || result.output.stdout_truncated
+        || result.output.stderr_truncated
+        || result.output.stdout.len() > 128 * 1024
+    {
+        return Err(SoftwareUpdateError::UnsupportedProvider);
+    }
+    String::from_utf8(result.output.stdout.clone())
+        .map_err(|_| SoftwareUpdateError::UnsupportedProvider)
+}
+
+fn resolve_update_program(program: &OsStr) -> Result<PathBuf, SoftwareUpdateError> {
+    let path = Path::new(program);
+    if path.is_absolute() {
+        return Ok(path.to_path_buf());
+    }
+    if program != OsStr::new("winget") && program != OsStr::new("winget.exe") {
+        return Err(SoftwareUpdateError::UnsupportedProvider);
+    }
+    registered_winget()
+}
+
+#[cfg(not(windows))]
+fn registered_winget() -> Result<PathBuf, SoftwareUpdateError> {
+    Err(SoftwareUpdateError::ProviderMissing)
+}
+
+/// Current-user registered Microsoft App Installer, without following the
+/// WindowsApps execution-alias reparse point or trusting PATH text.
+#[cfg(windows)]
+fn registered_winget() -> Result<PathBuf, SoftwareUpdateError> {
+    super::msix::run_joined_mta(|| {
+        use windows::{
+            ApplicationModel::PackageSignatureKind, Management::Deployment::PackageManager,
+            core::HSTRING,
+        };
+        let sid =
+            super::msix::current_process_sid().map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+        let manager = PackageManager::new().map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+        let packages = manager
+            .FindPackagesByUserSecurityId(&HSTRING::from(sid))
+            .map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+        let iterator = packages
+            .First()
+            .map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+        let mut found = Vec::new();
+        let mut count = 0;
+        while iterator
+            .HasCurrent()
+            .map_err(|_| SoftwareUpdateError::ProviderMissing)?
+        {
+            count += 1;
+            if count > 4_096 {
+                return Err(SoftwareUpdateError::UnsupportedProvider);
+            }
+            let package = iterator
+                .Current()
+                .map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+            let id = package
+                .Id()
+                .map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+            if id
+                .FamilyName()
+                .map_err(|_| SoftwareUpdateError::ProviderMissing)?
+                == "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe"
+            {
+                if package.SignatureKind().ok() != Some(PackageSignatureKind::Store)
+                    || !package
+                        .Status()
+                        .and_then(|status| status.VerifyIsOK())
+                        .unwrap_or(false)
+                    || package.IsFramework().unwrap_or(true)
+                    || package.IsResourcePackage().unwrap_or(true)
+                {
+                    return Err(SoftwareUpdateError::UnsupportedProvider);
+                }
+                let root = package
+                    .InstalledPath()
+                    .map_err(|_| SoftwareUpdateError::ProviderMissing)?
+                    .to_string();
+                if root.is_empty() || root.len() > 32 * 1024 {
+                    return Err(SoftwareUpdateError::UnsupportedProvider);
+                }
+                found.push(PathBuf::from(root).join("winget.exe"));
+            }
+            iterator
+                .MoveNext()
+                .map_err(|_| SoftwareUpdateError::ProviderMissing)?;
+        }
+        if found.len() != 1 {
+            return Err(SoftwareUpdateError::ProviderMissing);
+        }
+        found.pop().ok_or(SoftwareUpdateError::ProviderMissing)
+    })
+    .map_err(|_| SoftwareUpdateError::ProviderMissing)?
 }
 
 fn is_preview_digest(value: &str) -> bool {
@@ -483,6 +913,10 @@ fn read_only_request<'a>(program: &OsStr, cancel: &'a dyn CancelObserver) -> Pro
         args: [
             OsString::from("upgrade"),
             OsString::from("--disable-interactivity"),
+            OsString::from("--scope"),
+            OsString::from(UPDATE_SCOPE),
+            OsString::from("--source"),
+            OsString::from(SUPPORTED_UPDATE_SOURCE),
         ]
         .into(),
         cwd: CwdPolicy::Neutral,
@@ -508,10 +942,14 @@ fn upgrade_request<'a>(
             OsString::from("--source"),
             OsString::from(&plan.source),
             OsString::from("--disable-interactivity"),
+            OsString::from("--exact"),
+            OsString::from("--silent"),
+            OsString::from("--scope"),
+            OsString::from(UPDATE_SCOPE),
         ]
         .into(),
         cwd: CwdPolicy::Neutral,
-        timeout: Some(DEFAULT_PROVIDER_PHASE_DEADLINE),
+        timeout: Some(DEFAULT_EXECUTOR_COMMAND_TIMEOUT),
         job_deadline: None,
         cancel,
     }
@@ -523,7 +961,36 @@ pub fn check_software_updates(
     cancel: Option<&Arc<FlagCancelObserver>>,
 ) -> SoftwareUpdatesV1 {
     let runner = ProcessRunner::default();
-    check_updates_with(|request| runner.run(request), inventory, cancel)
+    let mut run = |request: &ProcessRequest<'_>| runner.run(request);
+    let binding = match bind_update_provider(OsStr::new(WINGET_PROGRAM), &mut run) {
+        Ok(binding) => binding,
+        Err(error) => {
+            return SoftwareUpdatesV1::Unavailable {
+                version: SOFTWARE_UPDATES_VERSION,
+                observed_at_unix_ms: unix_ms(SystemTime::now()),
+                reason_code: if matches!(error, SoftwareUpdateError::ProviderMissing) {
+                    SoftwareUpdatesReason::WingetMissing
+                } else {
+                    SoftwareUpdatesReason::ProviderUnsupported
+                },
+            };
+        }
+    };
+    check_updates_with(
+        |request| {
+            let request = ProcessRequest {
+                program: binding.file.path.as_os_str().to_os_string(),
+                args: request.args.clone(),
+                cwd: request.cwd.clone(),
+                timeout: request.timeout,
+                job_deadline: request.job_deadline,
+                cancel: request.cancel,
+            };
+            runner.run(&request)
+        },
+        inventory,
+        cancel,
+    )
 }
 
 fn check_updates_with(
@@ -587,7 +1054,7 @@ fn classify(result: &ProcessResult) -> Result<Vec<ParsedRow>, SoftwareUpdatesRea
         }
         ProcessStatus::Success => {}
     }
-    if result.output.stdout_truncated {
+    if result.output.stdout_truncated || result.output.stderr_truncated {
         return Err(SoftwareUpdatesReason::OutputTruncated);
     }
     let stdout = std::str::from_utf8(&result.output.stdout)
@@ -989,7 +1456,11 @@ mod tests {
             args,
             vec![
                 OsString::from("upgrade"),
-                OsString::from("--disable-interactivity")
+                OsString::from("--disable-interactivity"),
+                OsString::from("--scope"),
+                OsString::from("user"),
+                OsString::from("--source"),
+                OsString::from("winget"),
             ]
         );
         assert_eq!(cwd, CwdPolicy::Neutral);
@@ -1009,6 +1480,604 @@ mod tests {
             ["power", "shell"].concat(),
         ] {
             assert!(!production.contains(&forbidden), "{forbidden}");
+        }
+    }
+
+    const HELP: &str = "--id --version --source --exact --scope --silent --disable-interactivity";
+    const SOURCE: &str = r#"{"Arg":"https://cdn.winget.microsoft.com/cache","Data":"Microsoft.Winget.Source_8wekyb3d8bbwe","Explicit":false,"Identifier":"Microsoft.Winget.Source_8wekyb3d8bbwe","Name":"winget","TrustLevel":["Trusted","StoreOrigin"],"Type":"Microsoft.PreIndexed.Package"}"#;
+
+    #[test]
+    fn same_name_source_replacement_and_ambiguous_exports_never_acquire_authority() {
+        assert!(source_identity(SOURCE).is_ok());
+        for (field, value) in [
+            (
+                "Arg",
+                serde_json::json!("https://example.invalid/private?token=secret"),
+            ),
+            ("Type", serde_json::json!("Microsoft.Rest")),
+            ("Identifier", serde_json::json!("replaced")),
+            ("Data", serde_json::json!("replaced")),
+            ("TrustLevel", serde_json::json!(["Trusted"])),
+        ] {
+            let mut source: serde_json::Value = serde_json::from_str(SOURCE).expect("source");
+            source[field] = value;
+            assert!(matches!(
+                source_identity(&source.to_string()),
+                Err(SoftwareUpdateError::UnsupportedSource)
+            ));
+        }
+        assert!(source_identity(&format!("[{SOURCE}] ")).is_err());
+        assert!(source_identity(&format!("{SOURCE}\n{SOURCE}")).is_err());
+        let mut source: serde_json::Value = serde_json::from_str(SOURCE).expect("source");
+        source["Updated"] = serde_json::json!(123);
+        assert!(
+            source_identity(&source.to_string()).is_err(),
+            "unknown schema is unavailable, not silently fingerprinted"
+        );
+    }
+
+    fn native_fixture(root: &Path) -> PathBuf {
+        let path = root.join("update-tool.exe");
+        let header = if cfg!(windows) { b"MZxx" } else { b"\x7fELF" };
+        std::fs::write(&path, header).expect("native header fixture");
+        path
+    }
+
+    fn fake_probe(request: &ProcessRequest<'_>) -> ProcessResult {
+        if request.args.first().is_some_and(|arg| arg == "source") {
+            success(SOURCE)
+        } else if request.args == [OsString::from("--version")] {
+            success("v1.8.1911\n")
+        } else if request.args == [OsString::from("upgrade"), OsString::from("--help")] {
+            success(HELP)
+        } else {
+            success(ENGLISH)
+        }
+    }
+
+    fn bound_plan(path: &Path) -> SoftwareUpdatePlanV1 {
+        let binding =
+            bind_update_provider(path.as_os_str(), &mut fake_probe).expect("fixture binding");
+        SoftwareUpdatePlanV1 {
+            version: 1,
+            package_id: "Bandisoft.Bandizip".into(),
+            source: "winget".into(),
+            installed_version: "7.43".into(),
+            available_version: "7.46".into(),
+            provider_fingerprint: binding.fingerprint,
+        }
+    }
+
+    fn fixture_digest(plan: &SoftwareUpdatePlanV1) -> String {
+        update_digest(plan, &parse_winget_upgrade(ENGLISH).expect("table")[0]).expect("digest")
+    }
+
+    #[test]
+    fn update_binding_rejects_replaced_binary_version_capability_and_legacy_authority() {
+        let root = tempfile::tempdir().expect("fixture");
+        let path = native_fixture(root.path());
+        let plan = bound_plan(&path);
+        let binding = bind_update_provider(path.as_os_str(), &mut fake_probe).expect("binding");
+        assert!(bound_update_row(&mut fake_probe, &binding, &plan).is_ok());
+        drop(binding);
+        std::fs::write(
+            &path,
+            if cfg!(windows) {
+                b"MZyy".as_slice()
+            } else {
+                b"\x7fELFy".as_slice()
+            },
+        )
+        .expect("replace same path");
+        let changed = bind_update_provider(path.as_os_str(), &mut fake_probe).expect("binding");
+        assert!(matches!(
+            bound_update_row(&mut fake_probe, &changed, &plan),
+            Err(SoftwareUpdateError::ProviderChanged)
+        ));
+        drop(changed);
+        for version in [
+            "v0.9.0",
+            "v2.0.0",
+            "v1.8.0-preview",
+            "v1.+8.0",
+            "v1.8.0\nv1.9.0",
+            "not winget",
+        ] {
+            let mut run = |request: &ProcessRequest<'_>| {
+                if request.args == [OsString::from("--version")] {
+                    success(version)
+                } else {
+                    fake_probe(request)
+                }
+            };
+            assert!(matches!(
+                bind_update_provider(path.as_os_str(), &mut run),
+                Err(SoftwareUpdateError::UnsupportedProvider)
+            ));
+        }
+        for help in [
+            "--id --version --source --exact --scope --silent",
+            "--identity --version --source --exact --scope --silent --disable-interactivity-extra",
+        ] {
+            let mut run = |request: &ProcessRequest<'_>| {
+                if request.args == [OsString::from("upgrade"), OsString::from("--help")] {
+                    success(help)
+                } else {
+                    fake_probe(request)
+                }
+            };
+            assert!(matches!(
+                bind_update_provider(path.as_os_str(), &mut run),
+                Err(SoftwareUpdateError::UnsupportedProvider)
+            ));
+        }
+        let mut localized = |request: &ProcessRequest<'_>| {
+            if request.args == [OsString::from("upgrade"), OsString::from("--help")] {
+                success(&format!("选项\n{HELP}\n说明"))
+            } else {
+                fake_probe(request)
+            }
+        };
+        assert!(bind_update_provider(path.as_os_str(), &mut localized).is_ok());
+        let mut legacy = plan;
+        legacy.provider_fingerprint = format!(
+            "sha256:{}",
+            hex_digest(Sha256::digest(path.as_os_str().as_encoded_bytes()))
+        );
+        let live = bind_update_provider(path.as_os_str(), &mut fake_probe).expect("binding");
+        let encoded = serde_json::to_vec(&legacy).expect("legacy plan");
+        let decoded = serde_json::from_slice::<SoftwareUpdatePlanV1>(&encoded)
+            .expect("legacy remains readable");
+        assert!(matches!(
+            bound_update_row(&mut fake_probe, &live, &decoded),
+            Err(SoftwareUpdateError::ProviderChanged)
+        ));
+    }
+
+    #[test]
+    fn unsuccessful_or_truncated_provider_evidence_refuses_before_targeted_upgrade() {
+        for phase in [
+            vec![OsString::from("--version")],
+            vec![OsString::from("upgrade"), OsString::from("--help")],
+            [
+                "source",
+                "export",
+                "--name",
+                "winget",
+                "--disable-interactivity",
+            ]
+            .map(OsString::from)
+            .into(),
+        ] {
+            for (status, stdout_truncated, stderr_truncated) in [
+                (ProcessStatus::Exit { code: Some(1) }, false, false),
+                (ProcessStatus::Success, true, false),
+                (ProcessStatus::Success, false, true),
+            ] {
+                let root = tempfile::tempdir().expect("fixture");
+                let path = native_fixture(root.path());
+                let plan = bound_plan(&path);
+                let digest = fixture_digest(&plan);
+                let audit = root.path().join("audit/software.jsonl");
+                let mut observed = false;
+                let mut run = |request: &ProcessRequest<'_>| {
+                    assert!(!request.args.contains(&OsString::from("--id")));
+                    assert_eq!(request.timeout, Some(DEFAULT_PROVIDER_PHASE_DEADLINE));
+                    let mut result = fake_probe(request);
+                    if request.args == phase {
+                        observed = true;
+                        result.status = status.clone();
+                        result.output.stdout_truncated = stdout_truncated;
+                        result.output.stderr_truncated = stderr_truncated;
+                    }
+                    result
+                };
+                assert!(matches!(
+                    execute_software_update_with(
+                        &mut run,
+                        path.as_os_str(),
+                        &plan,
+                        &digest,
+                        &audit,
+                        SupportAppendFault::NONE,
+                        &NoopCancelObserver,
+                    ),
+                    Err(SoftwareUpdateError::UnsupportedProvider)
+                ));
+                assert!(observed, "the failing provider phase was actually observed");
+                assert!(!audit.exists());
+            }
+        }
+    }
+
+    #[test]
+    fn cancel_during_initial_or_late_preflight_never_submits_a_targeted_upgrade() {
+        // Each binding has version/help/source plus a target-free row query.
+        // The second binding follows the durable started record.
+        for cancel_after_probe in 1..=8 {
+            let root = tempfile::tempdir().expect("fixture");
+            let path = native_fixture(root.path());
+            let plan = bound_plan(&path);
+            let digest = fixture_digest(&plan);
+            let cancel = FlagCancelObserver::new();
+            let mut probes = 0;
+            let mut run = |request: &ProcessRequest<'_>| {
+                assert!(!request.args.contains(&OsString::from("--id")));
+                probes += 1;
+                let result = fake_probe(request);
+                if probes == cancel_after_probe {
+                    cancel.request_cancel();
+                    assert!(
+                        request.cancel.is_cancel_requested(),
+                        "job observer reaches probes"
+                    );
+                }
+                result
+            };
+            let result = execute_software_update_with(
+                &mut run,
+                path.as_os_str(),
+                &plan,
+                &digest,
+                &root.path().join("audit/software.jsonl"),
+                SupportAppendFault::NONE,
+                &cancel,
+            );
+            assert!(matches!(
+                result,
+                Err(SoftwareUpdateError::CanceledBeforeStart)
+            ));
+            assert_eq!(probes, cancel_after_probe, "no probes after cancellation");
+            let support = root.path().join("audit/software-support.jsonl");
+            if cancel_after_probe <= 4 {
+                assert!(!support.exists(), "initial preflight has no dispatch start");
+            } else {
+                let records = std::fs::read_to_string(support).expect("cancellation terminal");
+                let records = records
+                    .lines()
+                    .map(|line| serde_json::from_str::<serde_json::Value>(line).expect("audit row"))
+                    .collect::<Vec<_>>();
+                assert_eq!(records.len(), 2);
+                assert_eq!(records[0]["phase"], "started");
+                assert_eq!(records[1]["phase"], "terminal");
+                assert_eq!(records[1]["result"], "refused");
+                assert_eq!(records[1]["error_code"], "canceled_before_start");
+            }
+        }
+    }
+
+    #[test]
+    fn cancellation_after_target_commit_does_not_cancel_the_installer_or_observation() {
+        let root = tempfile::tempdir().expect("fixture");
+        let path = native_fixture(root.path());
+        let plan = bound_plan(&path);
+        let digest = fixture_digest(&plan);
+        let cancel = FlagCancelObserver::new();
+        let mut dispatched = false;
+        let mut observations = 0;
+        let mut run = |request: &ProcessRequest<'_>| {
+            if request.args.contains(&OsString::from("--id")) {
+                dispatched = true;
+                cancel.request_cancel();
+                assert!(
+                    !request.cancel.is_cancel_requested(),
+                    "committed installer is not canceled"
+                );
+                success("completed")
+            } else if dispatched {
+                observations += 1;
+                assert!(
+                    !request.cancel.is_cancel_requested(),
+                    "terminal observation is retained"
+                );
+                if request.args.contains(&OsString::from("--scope")) {
+                    success("No available upgrade found.")
+                } else {
+                    fake_probe(request)
+                }
+            } else {
+                fake_probe(request)
+            }
+        };
+        let report = execute_software_update_with(
+            &mut run,
+            path.as_os_str(),
+            &plan,
+            &digest,
+            &root.path().join("audit/software.jsonl"),
+            SupportAppendFault::NONE,
+            &cancel,
+        )
+        .expect("real terminal survives cancellation");
+        assert!(dispatched);
+        assert_eq!(observations, 4);
+        assert_eq!(report.outcome, SoftwareUpdateOutcome::Updated);
+        assert!(report.updated);
+    }
+
+    #[test]
+    fn update_execute_audits_before_dispatch_and_reports_terminal_write_uncertainty() {
+        for fault in [
+            SupportAppendFault {
+                fail_started: true,
+                fail_terminal: false,
+            },
+            SupportAppendFault {
+                fail_started: false,
+                fail_terminal: true,
+            },
+            SupportAppendFault::NONE,
+        ] {
+            let root = tempfile::tempdir().expect("fixture");
+            let path = native_fixture(root.path());
+            let plan = bound_plan(&path);
+            let digest = fixture_digest(&plan);
+            let audit = root.path().join("audit/software.jsonl");
+            let mut calls = 0;
+            let mut dispatched = false;
+            let mut run = |request: &ProcessRequest<'_>| {
+                assert!(Path::new(&request.program).is_absolute());
+                if request.args.contains(&OsString::from("--id")) {
+                    calls += 1;
+                    dispatched = true;
+                    let records =
+                        std::fs::read_to_string(root.path().join("audit/software-support.jsonl"))
+                            .expect("durable started before dispatch");
+                    assert!(records.contains("started") && !records.contains("terminal"));
+                    assert!(request.args.ends_with(&[
+                        OsString::from("--exact"),
+                        OsString::from("--silent"),
+                        OsString::from("--scope"),
+                        OsString::from("user")
+                    ]));
+                    assert_eq!(request.timeout, Some(DEFAULT_EXECUTOR_COMMAND_TIMEOUT));
+                    success("updated")
+                } else if dispatched && request.args.contains(&OsString::from("--scope")) {
+                    success("No available upgrade found.")
+                } else {
+                    fake_probe(request)
+                }
+            };
+            let result = execute_software_update_with(
+                &mut run,
+                path.as_os_str(),
+                &plan,
+                &digest,
+                &audit,
+                fault,
+                &NoopCancelObserver,
+            );
+            if fault.fail_started {
+                assert!(matches!(result, Err(SoftwareUpdateError::AuditUnavailable)));
+                assert_eq!(calls, 0);
+            } else {
+                let report = result.expect("report");
+                assert_eq!(calls, 1);
+                assert_eq!(
+                    report.outcome,
+                    if fault.fail_terminal {
+                        SoftwareUpdateOutcome::Unknown
+                    } else {
+                        SoftwareUpdateOutcome::Updated
+                    }
+                );
+                assert_eq!(report.updated, !fault.fail_terminal);
+            }
+        }
+    }
+
+    #[test]
+    fn stale_digest_unconfirmed_and_late_row_changes_never_dispatch() {
+        let root = tempfile::tempdir().expect("fixture");
+        let path = native_fixture(root.path());
+        let plan = bound_plan(&path);
+        assert!(matches!(
+            execute_software_update(path.as_os_str(), &plan, "", false),
+            Err(SoftwareUpdateError::ConfirmationRequired)
+        ));
+        let digest = fixture_digest(&plan);
+        let audit = root.path().join("audit/software.jsonl");
+        let stale = format!("sha256:{}", "0".repeat(64));
+        assert!(matches!(
+            execute_software_update_with(
+                fake_probe,
+                path.as_os_str(),
+                &plan,
+                &stale,
+                &audit,
+                SupportAppendFault::NONE,
+                &NoopCancelObserver,
+            ),
+            Err(SoftwareUpdateError::StaleConfirmation)
+        ));
+        assert!(!audit.exists());
+        let mut probes = 0;
+        let mut run = |request: &ProcessRequest<'_>| {
+            assert!(
+                !request.args.contains(&OsString::from("--id")),
+                "late changed row must never dispatch"
+            );
+            if request.args.contains(&OsString::from("--scope")) {
+                probes += 1;
+                if probes > 1 {
+                    return success(&ENGLISH.replace("7.46", "7.99"));
+                }
+            }
+            fake_probe(request)
+        };
+        assert!(matches!(
+            execute_software_update_with(
+                &mut run,
+                path.as_os_str(),
+                &plan,
+                &digest,
+                &audit,
+                SupportAppendFault::NONE,
+                &NoopCancelObserver,
+            ),
+            Err(SoftwareUpdateError::VersionChanged)
+        ));
+        let audit = std::fs::read_to_string(root.path().join("audit/software-support.jsonl"))
+            .expect("refusal terminal");
+        assert!(audit.contains("refused") && audit.contains("version_changed"));
+    }
+
+    #[test]
+    fn update_exit_and_requery_evidence_never_promote_failures_or_unknown_to_success() {
+        for (status, expected) in [
+            (ProcessStatus::Success, SoftwareUpdateOutcome::Updated),
+            (
+                ProcessStatus::Exit {
+                    code: Some(0x8A15_0109_u32 as i32),
+                },
+                SoftwareUpdateOutcome::RestartRequired,
+            ),
+            (
+                ProcessStatus::Exit { code: Some(1) },
+                SoftwareUpdateOutcome::Failed,
+            ),
+            (ProcessStatus::Timeout, SoftwareUpdateOutcome::Unknown),
+            (ProcessStatus::Canceled, SoftwareUpdateOutcome::Unknown),
+            (
+                ProcessStatus::Exit { code: None },
+                SoftwareUpdateOutcome::Unknown,
+            ),
+        ] {
+            let root = tempfile::tempdir().expect("fixture");
+            let path = native_fixture(root.path());
+            let plan = bound_plan(&path);
+            let digest = fixture_digest(&plan);
+            let mut dispatched = false;
+            let mut run = |request: &ProcessRequest<'_>| {
+                if request.args.contains(&OsString::from("--id")) {
+                    dispatched = true;
+                    ProcessResult {
+                        status: status.clone(),
+                        ..success("restart_required")
+                    }
+                } else if dispatched && request.args.contains(&OsString::from("--scope")) {
+                    success("No available upgrade found.")
+                } else {
+                    fake_probe(request)
+                }
+            };
+            let report = execute_software_update_with(
+                &mut run,
+                path.as_os_str(),
+                &plan,
+                &digest,
+                &root.path().join("audit/software.jsonl"),
+                SupportAppendFault::NONE,
+                &NoopCancelObserver,
+            )
+            .expect("report");
+            assert_eq!(report.outcome, expected);
+            assert_eq!(report.updated, expected == SoftwareUpdateOutcome::Updated);
+        }
+    }
+
+    #[test]
+    fn post_dispatch_source_configuration_change_makes_success_observation_unknown() {
+        let root = tempfile::tempdir().expect("fixture");
+        let path = native_fixture(root.path());
+        let plan = bound_plan(&path);
+        let digest = fixture_digest(&plan);
+        let mut dispatched = false;
+        let mut run = |request: &ProcessRequest<'_>| {
+            if request.args.contains(&OsString::from("--id")) {
+                dispatched = true;
+                success("completed")
+            } else if dispatched && request.args.first().is_some_and(|arg| arg == "source") {
+                success(&SOURCE.replace("\"Explicit\":false", "\"Explicit\":true"))
+            } else if dispatched && request.args.contains(&OsString::from("--scope")) {
+                success("No available upgrade found.")
+            } else {
+                fake_probe(request)
+            }
+        };
+        let report = execute_software_update_with(
+            &mut run,
+            path.as_os_str(),
+            &plan,
+            &digest,
+            &root.path().join("audit/software.jsonl"),
+            SupportAppendFault::NONE,
+            &NoopCancelObserver,
+        )
+        .expect("report");
+        assert_eq!(report.outcome, SoftwareUpdateOutcome::Unknown);
+        assert!(!report.updated);
+        assert_eq!(report.error_code.as_deref(), Some("provider_changed"));
+    }
+
+    #[test]
+    fn failed_or_ambiguous_post_dispatch_observations_preserve_unknown_reason() {
+        let updated = ENGLISH.replace("7.43", "7.46");
+        let target = updated.lines().nth(2).expect("target fixture row");
+        for (observation, code) in [
+            (
+                ProcessResult {
+                    status: ProcessStatus::Timeout,
+                    ..success("")
+                },
+                "probe_failed",
+            ),
+            (
+                ProcessResult {
+                    output: ProcessOutput {
+                        stderr_truncated: true,
+                        ..success("No available upgrade found.").output
+                    },
+                    ..success("")
+                },
+                "probe_failed",
+            ),
+            (success("unrecognized output"), "probe_failed"),
+            (
+                success(&updated.replace("winget", "msstore")),
+                "unsupported_source",
+            ),
+            (
+                success(&updated.replace(target, &format!("{target}\n{target}"))),
+                "ambiguous_package",
+            ),
+        ] {
+            let root = tempfile::tempdir().expect("fixture");
+            let path = native_fixture(root.path());
+            let plan = bound_plan(&path);
+            let digest = fixture_digest(&plan);
+            let mut dispatches = 0;
+            let mut run = |request: &ProcessRequest<'_>| {
+                if request.args.contains(&OsString::from("--id")) {
+                    dispatches += 1;
+                    assert_eq!(request.timeout, Some(DEFAULT_EXECUTOR_COMMAND_TIMEOUT));
+                    success("completed")
+                } else if dispatches > 0 && request.args.contains(&OsString::from("--scope")) {
+                    observation.clone()
+                } else {
+                    fake_probe(request)
+                }
+            };
+            let report = execute_software_update_with(
+                &mut run,
+                path.as_os_str(),
+                &plan,
+                &digest,
+                &root.path().join("audit/software.jsonl"),
+                SupportAppendFault::NONE,
+                &NoopCancelObserver,
+            )
+            .expect("post-dispatch report");
+            assert_eq!(dispatches, 1);
+            assert_eq!(report.outcome, SoftwareUpdateOutcome::Unknown, "{code}");
+            assert!(!report.updated, "{code}");
+            assert_eq!(report.error_code.as_deref(), Some(code));
+            let records = std::fs::read_to_string(root.path().join("audit/software-support.jsonl"))
+                .expect("durable result");
+            assert!(
+                records.contains("unknown") && records.contains(code),
+                "{records}"
+            );
         }
     }
 

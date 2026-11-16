@@ -396,6 +396,7 @@ fn leftover_preview_matches_the_core_service() {
             last_used: SoftwareLastUsedEvidence::Unknown {
                 reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
             },
+            msi_registration: None,
             launch: None,
         }],
         fingerprint: format!("sha256:{}", "0".repeat(64)),
@@ -706,6 +707,7 @@ fn leftover_preview_refusal_matches_the_core_service() {
             last_used: SoftwareLastUsedEvidence::Unknown {
                 reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
             },
+            msi_registration: None,
             launch: None,
         }],
         fingerprint: format!("sha256:{}", "0".repeat(64)),

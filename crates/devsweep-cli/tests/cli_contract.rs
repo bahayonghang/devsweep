@@ -105,6 +105,120 @@ fn software_inventory_v1_optional_evidence_and_legacy_contract() {
 }
 
 #[test]
+fn software_msi_saved_plan_and_closed_optional_registration_contract() {
+    use devsweep_core::software::{
+        MsiContext, MsiRegistrationEvidenceV1, SoftwareEligibility, SoftwareEligibilityReason,
+        SoftwareEligibilityState, SoftwareIdentity, SoftwareInventoryV1, software_entry_id,
+        software_inventory_fingerprint,
+    };
+    let mut inventory: SoftwareInventoryV1 = serde_json::from_str(include_str!(
+        "../../devsweep-core/tests/fixtures/software/inventory-legacy.json"
+    ))
+    .unwrap();
+    let identity = SoftwareIdentity::Msi {
+        product_code: "{12345678-1234-1234-1234-1234567890AB}".to_string(),
+        context: MsiContext::UserUnmanaged,
+    };
+    inventory.observed_at_unix_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+    inventory.entries[0].identity = identity;
+    inventory.entries[0].id = software_entry_id(&inventory.entries[0].identity).unwrap();
+    inventory.entries[0].eligibility = SoftwareEligibility {
+        state: SoftwareEligibilityState::Selectable,
+        reason: SoftwareEligibilityReason::EligibleCurrentUserMsi,
+    };
+    inventory.entries[0].msi_registration = Some(MsiRegistrationEvidenceV1 {
+        user_sid: "S-1-5-21-100".to_string(),
+        package_code: "{12345678-1234-1234-1234-1234567890AB}".to_string(),
+        registration_digest: format!("sha256:{}", "a".repeat(64)),
+        tool_digest: format!("sha256:{}", "b".repeat(64)),
+    });
+    inventory.fingerprint = software_inventory_fingerprint(&inventory).unwrap();
+    let mut value = serde_json::to_value(&inventory).unwrap();
+    assert_eq!(
+        value["entries"][0]["msi_registration"]
+            .as_object()
+            .unwrap()
+            .len(),
+        4
+    );
+    assert_eq!(
+        serde_json::from_value::<SoftwareInventoryV1>(value.clone()).unwrap(),
+        inventory
+    );
+    value["entries"][0]["msi_registration"]["program"] = "untrusted".into();
+    assert!(serde_json::from_value::<SoftwareInventoryV1>(value).is_err());
+    let directory = TempDir::new().unwrap();
+    let input = directory.path().join("inventory.json");
+    let output = directory.path().join("plan.json");
+    fs::write(&input, serde_json::to_vec(&inventory).unwrap()).unwrap();
+    let result = devsweep(&[
+        "software",
+        "plan",
+        "--inventory",
+        input.to_str().unwrap(),
+        "--select",
+        &inventory.entries[0].id,
+        "--output",
+        output.to_str().unwrap(),
+    ]);
+    assert_eq!(result.status.code(), Some(0), "{}", stderr(&result));
+    let saved = fs::read_to_string(&output).unwrap();
+    for forbidden in [
+        "msi_registration",
+        "S-1-5",
+        "tool_digest",
+        "program",
+        "argv",
+    ] {
+        assert!(!saved.contains(forbidden));
+    }
+    for argv in [
+        vec!["software", "uninstall", "--plan", "plan.json", "--confirm"],
+        vec![
+            "software",
+            "uninstall",
+            "--plan",
+            "plan.json",
+            "--preview-digest",
+            "sha256:invalid",
+        ],
+    ] {
+        assert_eq!(devsweep(&argv).status.code(), Some(2));
+    }
+    if let SoftwareIdentity::Msi { product_code, .. } = &mut inventory.entries[0].identity {
+        product_code.push_str(" /i injected");
+    }
+    inventory.entries[0].id = software_entry_id(&inventory.entries[0].identity).unwrap();
+    inventory.fingerprint = software_inventory_fingerprint(&inventory).unwrap();
+    fs::write(&input, serde_json::to_vec(&inventory).unwrap()).unwrap();
+    let rejected = directory.path().join("rejected.json");
+    let result = devsweep(&[
+        "software",
+        "plan",
+        "--inventory",
+        input.to_str().unwrap(),
+        "--select",
+        &inventory.entries[0].id,
+        "--output",
+        rejected.to_str().unwrap(),
+    ]);
+    assert!(!result.status.success());
+    assert!(!rejected.exists());
+}
+
+#[test]
+fn history_help_includes_the_status_audit_domain() {
+    let output = devsweep(&["history", "list", "--help"]);
+    assert!(output.status.success());
+    let text = stdout(&output);
+    assert!(text.contains("status"));
+    assert!(text.contains("software"));
+}
+
+#[test]
 fn software_plan_reads_incremental_evidence_without_adding_it_to_execution_authority() {
     use devsweep_core::software::{SoftwareInventoryV1, software_inventory_fingerprint};
     let mut inventory: SoftwareInventoryV1 = serde_json::from_str(include_str!(

@@ -1,4 +1,4 @@
-//! Frozen-grammar Software preview and current-user MSIX uninstall handlers.
+//! Frozen-grammar Software preview and current-user MSIX/MSI uninstall handlers.
 
 use std::{
     fs,
@@ -26,16 +26,27 @@ pub(super) fn run_preview(
     locale: Locale,
     cli: &Cli,
 ) -> Result<(), ApplicationError> {
+    run_preview_with(command, locale, cli, |plan| {
+        let live = inventory_software(SoftwareInventorySource::All, None).map_err(|error| {
+            ApplicationError::new(
+                ExitClass::Unavailable,
+                "software_revalidation_unavailable",
+                format!("Software live revalidation failed: {error:#}"),
+            )
+        })?;
+        preview_selection_plan_live(plan, &live, unix_ms(SystemTime::now()))
+            .map_err(super::inventory::map_plan_error)
+    })
+}
+
+fn run_preview_with(
+    command: &PlanPresentationCommand,
+    locale: Locale,
+    cli: &Cli,
+    preview: impl FnOnce(&SoftwareSelectionPlanV1) -> Result<SoftwarePreviewV1, ApplicationError>,
+) -> Result<(), ApplicationError> {
     let plan = load_plan(&command.plan)?;
-    let live = inventory_software(SoftwareInventorySource::Msix, None).map_err(|error| {
-        ApplicationError::new(
-            ExitClass::Unavailable,
-            "software_revalidation_unavailable",
-            format!("Software live revalidation failed: {error:#}"),
-        )
-    })?;
-    let preview = preview_selection_plan_live(&plan, &live, unix_ms(SystemTime::now()))
-        .map_err(super::inventory::map_plan_error)?;
+    let preview = preview(&plan)?;
     emit_preview(cli, locale, &preview)
 }
 
@@ -44,6 +55,19 @@ pub(super) fn run_uninstall(
     locale: Locale,
     cli: &Cli,
 ) -> Result<(), ApplicationError> {
+    run_uninstall_with(command, locale, cli, |request| {
+        SoftwareExecutor::default().execute(request)
+    })
+}
+
+fn run_uninstall_with(
+    command: &PlanExecutionCommand,
+    locale: Locale,
+    cli: &Cli,
+    execute: impl FnOnce(
+        SoftwareExecutionRequest<'_>,
+    ) -> Result<SoftwareExecutionReportV1, SoftwareExecutionError>,
+) -> Result<(), ApplicationError> {
     if !command.confirm {
         return Err(ApplicationError::usage(
             "confirmation_required",
@@ -51,14 +75,13 @@ pub(super) fn run_uninstall(
         ));
     }
     let plan = load_plan(&command.plan)?;
-    let report = SoftwareExecutor::default()
-        .execute(SoftwareExecutionRequest {
-            plan: &plan,
-            expected_preview_digest: &command.preview_digest,
-            confirmed: command.confirm,
-            cancel: None,
-        })
-        .map_err(map_execution_error)?;
+    let report = execute(SoftwareExecutionRequest {
+        plan: &plan,
+        expected_preview_digest: &command.preview_digest,
+        confirmed: command.confirm,
+        cancel: None,
+    })
+    .map_err(map_execution_error)?;
     emit_execution(cli, locale, &report)?;
 
     if report
@@ -204,6 +227,9 @@ fn map_execution_error(error: SoftwareExecutionError) -> ApplicationError {
                 error.to_string(),
             )
         }
+        SoftwareExecutionError::AuditAfterDispatch(_) => {
+            ApplicationError::failed("software_unknown_after_dispatch", error.to_string())
+        }
         SoftwareExecutionError::Audit(_)
         | SoftwareExecutionError::PermitPoisoned
         | SoftwareExecutionError::CrashInjected(_) => {
@@ -335,6 +361,7 @@ mod tests {
             version: 1,
             irreversible: true,
             outcomes: vec![devsweep_core::software::SoftwareActionOutcomeV1 {
+                msi: None,
                 operation_id: "op".to_string(),
                 software_id: "software:v1:msix:fixture".to_string(),
                 outcome: SoftwareExecutionOutcome::UnknownAfterDispatch,
@@ -360,5 +387,134 @@ mod tests {
         );
         assert!(error.output_already_emitted);
         assert_eq!(error.exit, ExitClass::Failed);
+    }
+}
+
+#[cfg(test)]
+mod msi_contract_tests {
+    use super::*;
+    use crate::application::cli::{Command, SoftwareCommand};
+    use clap::Parser;
+    use devsweep_core::software::{
+        MsiExecutionEvidenceV1, MsiProcessEvidenceV1, SoftwareActionOutcomeV1,
+        SoftwareInstalledState, SoftwareRebootEvidence,
+    };
+    use tempfile::TempDir;
+
+    fn plan() -> SoftwareSelectionPlanV1 {
+        SoftwareSelectionPlanV1 {
+            version: 1,
+            inventory_fingerprint: format!("sha256:{}", "a".repeat(64)),
+            inventory_observed_at_unix_ms: 1,
+            expires_at_unix_ms: 900001,
+            selected_ids: vec!["software:v1:msi:fixture".to_string()],
+        }
+    }
+    fn report() -> SoftwareExecutionReportV1 {
+        SoftwareExecutionReportV1 {
+            version: 1,
+            irreversible: true,
+            outcomes: vec![SoftwareActionOutcomeV1 {
+                msi: Some(MsiExecutionEvidenceV1 {
+                    user_sid: "S-1-5-21-100".to_string(),
+                    process: Some(MsiProcessEvidenceV1 {
+                        exit_code: Some(1641),
+                        interruption: None,
+                    }),
+                }),
+                operation_id: "msi-op".to_string(),
+                software_id: "software:v1:msi:fixture".to_string(),
+                outcome: SoftwareExecutionOutcome::RebootRequired,
+                installed_state: Some(SoftwareInstalledState::Present),
+                reboot_evidence: SoftwareRebootEvidence::Required,
+                error_code: None,
+                irreversible: true,
+            }],
+        }
+    }
+    #[test]
+    fn msi_handlers_forward_saved_plan_digest_and_confirmation_without_an_env_override() {
+        let temp = TempDir::new().unwrap();
+        let input = temp.path().join("plan.json");
+        let output = temp.path().join("result.json");
+        fs::write(&input, serde_json::to_vec(&plan()).unwrap()).unwrap();
+        let digest = format!("sha256:{}", "b".repeat(64));
+        let cli = Cli::try_parse_from([
+            "devsweep",
+            "software",
+            "uninstall",
+            "--plan",
+            input.to_str().unwrap(),
+            "--preview-digest",
+            &digest,
+            "--confirm",
+            "--format",
+            "json",
+            "--output",
+            output.to_str().unwrap(),
+        ])
+        .unwrap();
+        let Some(Command::Software(group)) = &cli.command else {
+            panic!()
+        };
+        let SoftwareCommand::Uninstall(command) = &group.command else {
+            panic!()
+        };
+        run_uninstall_with(command, Locale::En, &cli, |request| {
+            assert!(request.confirmed);
+            assert_eq!(request.expected_preview_digest, digest);
+            assert_eq!(request.plan, &plan());
+            Ok(report())
+        })
+        .unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
+        assert_eq!(value["command"], "software.uninstall");
+        assert_eq!(
+            value["data"]["outcomes"][0]["msi"]["process"]["exit_code"],
+            1641
+        );
+        let mut rejected = Cli::try_parse_from([
+            "devsweep",
+            "software",
+            "uninstall",
+            "--plan",
+            input.to_str().unwrap(),
+            "--preview-digest",
+            &digest,
+            "--confirm",
+        ])
+        .unwrap();
+        if let Some(Command::Software(group)) = &mut rejected.command
+            && let SoftwareCommand::Uninstall(command) = &mut group.command
+        {
+            command.confirm = false;
+        }
+        let Some(Command::Software(group)) = &rejected.command else {
+            panic!()
+        };
+        let SoftwareCommand::Uninstall(command) = &group.command else {
+            panic!()
+        };
+        let error = run_uninstall_with(command, Locale::En, &rejected, |_| {
+            panic!("unconfirmed handler called executor")
+        })
+        .unwrap_err();
+        assert_eq!(error.code, "confirmation_required");
+    }
+    #[test]
+    fn msi_result_is_bilingual_and_numeric_reboot_initiated_evidence_survives_closed_wire() {
+        let en =
+            super::super::super::super::presentation::software::execution(Locale::En, &report())
+                .unwrap();
+        let zh =
+            super::super::super::super::presentation::software::execution(Locale::ZhCn, &report())
+                .unwrap();
+        assert!(en.contains("1641") && en.contains("already initiated"));
+        assert!(zh.contains("1641") && zh.contains("已触发重启"));
+        let mut value = serde_json::to_value(report()).unwrap();
+        let decoded: SoftwareExecutionReportV1 = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(decoded, report());
+        value["outcomes"][0]["msi"]["process"]["command"] = "forbidden".into();
+        assert!(serde_json::from_value::<SoftwareExecutionReportV1>(value).is_err());
     }
 }

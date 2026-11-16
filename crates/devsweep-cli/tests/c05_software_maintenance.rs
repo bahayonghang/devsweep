@@ -8,12 +8,11 @@ use std::{
 };
 
 use devsweep_core::software::{
-    REGISTRY_RESIDUE_KEY_NAME, SOFTWARE_UPDATE_PLAN_VERSION, STARTUP_FIXTURE_HIVE_VERSION,
-    SoftwareRegistryResiduePlanV1, SoftwareRegistryResidueReportV1,
-    SoftwareRegistryResidueRestorePlanV1, SoftwareStartupLocation, SoftwareUpdateOutcome,
-    SoftwareUpdatePlanV1, SoftwareUpdateReportV1, StartupFixtureClass, StartupFixtureEntryV1,
-    StartupFixtureHiveV1, StartupHiveExecuteReportV1, StartupRestorePlanV1, StartupTogglePlanV1,
-    execute_registry_residue, execute_registry_residue_restore, execute_software_update,
+    REGISTRY_RESIDUE_KEY_NAME, STARTUP_FIXTURE_HIVE_VERSION, SoftwareRegistryResiduePlanV1,
+    SoftwareRegistryResidueReportV1, SoftwareRegistryResidueRestorePlanV1, SoftwareStartupLocation,
+    SoftwareUpdateOutcome, SoftwareUpdatePlanV1, SoftwareUpdateReportV1, StartupFixtureClass,
+    StartupFixtureEntryV1, StartupFixtureHiveV1, StartupHiveExecuteReportV1, StartupRestorePlanV1,
+    StartupTogglePlanV1, execute_registry_residue, execute_registry_residue_restore,
     execute_startup_hive, execute_startup_restore, plan_registry_residue,
     plan_registry_residue_restore, plan_software_update, plan_startup_hive, plan_startup_restore,
     preview_registry_residue, preview_registry_residue_restore, preview_software_update,
@@ -31,13 +30,6 @@ fn sha256_hex(bytes: &[u8]) -> String {
     hex
 }
 
-fn provider_fingerprint(program: &Path) -> String {
-    format!(
-        "sha256:{}",
-        sha256_hex(program.as_os_str().as_encoded_bytes())
-    )
-}
-
 fn startup_entry_id(tag: &str, name: &str) -> String {
     format!(
         "startup:v1:{}",
@@ -50,8 +42,16 @@ fn path_arg(path: &Path) -> String {
 }
 
 fn run(args: &[String]) -> Output {
+    let isolated = TempDir::new().expect("isolated CLI stores");
+    let local = args
+        .windows(2)
+        .find(|pair| pair[0] == "--provider")
+        .and_then(|pair| Path::new(&pair[1]).parent())
+        .unwrap_or(isolated.path())
+        .join("appdata");
     Command::new(env!("CARGO_BIN_EXE_devsweep"))
         .args(args)
+        .env("LOCALAPPDATA", &local)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -136,9 +136,29 @@ fn row(name: &str, id: &str, installed: &str, available: &str) -> Value {
 fn assert_read_only(calls: &[Vec<String>]) {
     assert!(!calls.is_empty(), "read-only probe did not run");
     for call in calls {
+        if call == &["--version"]
+            || call == &["upgrade", "--help"]
+            || call
+                == &[
+                    "source",
+                    "export",
+                    "--name",
+                    "winget",
+                    "--disable-interactivity",
+                ]
+        {
+            continue;
+        }
         assert_eq!(
             call,
-            &vec!["upgrade".to_string(), "--disable-interactivity".to_string()]
+            &vec![
+                "upgrade".to_string(),
+                "--disable-interactivity".to_string(),
+                "--scope".to_string(),
+                "user".to_string(),
+                "--source".to_string(),
+                "winget".to_string(),
+            ]
         );
         assert!(call.iter().all(|arg| !arg.contains("accept")));
     }
@@ -156,6 +176,10 @@ fn assert_upgrade_argv(call: &[String], id: &str, version: &str, source: &str) {
             "--source".to_string(),
             source.to_string(),
             "--disable-interactivity".to_string(),
+            "--exact".to_string(),
+            "--silent".to_string(),
+            "--scope".to_string(),
+            "user".to_string(),
         ]
     );
     assert!(call.iter().all(|arg| !arg.contains("accept")));
@@ -175,14 +199,19 @@ fn plan_file(
     source: &str,
     version: &str,
 ) -> SoftwareUpdatePlanV1 {
-    SoftwareUpdatePlanV1 {
-        version: SOFTWARE_UPDATE_PLAN_VERSION,
-        package_id: package_id.to_string(),
-        source: source.to_string(),
-        installed_version: "1.0".to_string(),
-        available_version: version.to_string(),
-        provider_fingerprint: provider_fingerprint(&double.program),
-    }
+    let config = double.root.join("update-double.json");
+    let original = fs::read(&config).expect("fixture config");
+    fs::write(
+        &config,
+        serde_json::to_vec(&json!({ "rows": [row("Contoso", package_id, "1.0", version)] }))
+            .expect("plan fixture"),
+    )
+    .expect("write fixture");
+    let mut plan = plan_software_update(double.program.as_os_str(), package_id, "winget", version)
+        .expect("fresh bound plan");
+    fs::write(&config, original).expect("restore fixture");
+    plan.source = source.to_string();
+    plan
 }
 
 fn write_plan(path: &Path, plan: &SoftwareUpdatePlanV1) {
@@ -271,6 +300,10 @@ impl Coded for devsweep_core::software::SoftwareLeftoverError {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "WinGet HRESULT fixture requires Windows process exit codes"
+)]
 fn ac1_update_refusals_and_restart_are_explicit() {
     let ambiguous = Double::new(json!({
         "rows": [
@@ -366,8 +399,28 @@ fn ac1_update_refusals_and_restart_are_explicit() {
         .expect("restart plan");
     let preview =
         preview_software_update(restart.program.as_os_str(), &plan).expect("restart preview");
-    let report = execute_software_update(restart.program.as_os_str(), &plan, &preview.digest, true)
-        .expect("restart execute");
+    let first_plan = restart.root.join("first-plan.json");
+    write_plan(&first_plan, &plan);
+    let first_report = restart.root.join("first-report.json");
+    let first = run(&[
+        "software".into(),
+        "updates".into(),
+        "execute".into(),
+        "--provider".into(),
+        path_arg(&restart.program),
+        "--plan".into(),
+        path_arg(&first_plan),
+        "--preview-digest".into(),
+        preview.digest.clone(),
+        "--confirm".into(),
+        "--format".into(),
+        "json".into(),
+        "--output".into(),
+        path_arg(&first_report),
+    ]);
+    assert_status(&first, 0);
+    let report: SoftwareUpdateReportV1 =
+        serde_json::from_value(read_json(&first_report)["data"].clone()).expect("restart report");
     assert_eq!(report.outcome, SoftwareUpdateOutcome::RestartRequired);
     assert!(!report.updated);
     let upgrade_calls = restart
@@ -428,7 +481,9 @@ fn ac1_update_refusals_and_restart_are_explicit() {
     );
     let cli_report: SoftwareUpdateReportV1 =
         serde_json::from_value(envelope["data"].clone()).expect("cli report");
-    assert_eq!(cli_report, report);
+    assert_eq!(cli_report.outcome, report.outcome);
+    assert_eq!(cli_report.package_id, report.package_id);
+    assert!(cli_report.operation_id.is_some());
     let human_execute = restart.root.join("execute.txt");
     let human_execute_run = run(&[
         "software".to_string(),
@@ -456,12 +511,32 @@ fn ac1_update_refusals_and_restart_are_explicit() {
     );
     assert!(human_execute_text.contains("false"), "{human_execute_text}");
     for call in restart.calls() {
+        if call == ["--version"]
+            || call == ["upgrade", "--help"]
+            || call
+                == [
+                    "source",
+                    "export",
+                    "--name",
+                    "winget",
+                    "--disable-interactivity",
+                ]
+        {
+            continue;
+        }
         if call.iter().any(|arg| arg == "--id") {
             assert_upgrade_argv(&call, "Contoso.App", "2.0", "winget");
         } else {
             assert_eq!(
                 call,
-                vec!["upgrade".to_string(), "--disable-interactivity".to_string()]
+                vec![
+                    "upgrade".to_string(),
+                    "--disable-interactivity".to_string(),
+                    "--scope".to_string(),
+                    "user".to_string(),
+                    "--source".to_string(),
+                    "winget".to_string(),
+                ]
             );
         }
     }

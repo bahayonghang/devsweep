@@ -52,6 +52,7 @@ fn entry(id: &str, selectable_entry: bool) -> SoftwareEntryV1 {
         last_used: SoftwareLastUsedEvidence::Unknown {
             reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
         },
+        msi_registration: None,
         launch: None,
     }
 }
@@ -137,6 +138,7 @@ fn restart_audit_accepts_only_matching_operation_and_preserves_unknown() {
         version: 1,
         irreversible: true,
         outcomes: vec![SoftwareActionOutcomeV1 {
+            msi: None,
             operation_id: "core-op".to_string(),
             software_id: "eligible".to_string(),
             outcome: SoftwareExecutionOutcome::UnknownAfterDispatch,
