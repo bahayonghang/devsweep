@@ -94,8 +94,16 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/software/evidence.rs` - pure optional icon/date parsing and shared
   validated date projection; display metadata never grants host-action authority.
 - `crates/devsweep-core/src/software/plan.rs` - Software selection plan validation.
-- `crates/devsweep-core/src/software/execution/mod.rs` - current-user MSIX dispatch only.
-- `crates/devsweep-core/src/software/updates.rs` - read-only `winget upgrade` probe and table parser.
+- `crates/devsweep-core/src/software/execution/mod.rs` - private live MSIX/MSI
+  authorization, durable dispatch and exact-identity requery/recovery.
+- `crates/devsweep-core/src/software/execution/msi.rs`,
+  `crates/devsweep-core/src/software/msi_authority.rs` -
+  current-user unmanaged MSI qualification, fixed system Installer dispatch,
+  typed SID/context proof and MSI-specific outcome evidence.
+- `crates/devsweep-core/src/software/file_authority.rs` - bounded read-only
+  physical-file/content binding and retained no-reparse path guards.
+- `crates/devsweep-core/src/software/updates.rs` - read-only upgrade observations
+  plus reviewed one-package execution with tool/capability/source binding and audit.
 - `crates/devsweep-core/src/software/startup.rs` - startup items; current-user `StartupApproved` write only.
 - `crates/devsweep-core/src/software/leftovers.rs` - leftover discovery, plan digest, and Recycle Bin move.
 - `crates/devsweep-core/src/optimize/mod.rs` - closed eight-id Windows maintenance catalogue.
@@ -106,8 +114,17 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-core/src/status/sampler.rs` - snapshot/live producer and lifecycle events.
 - `crates/devsweep-core/src/status/channel.rs` - bounded lossless Status delivery with cancellation and terminal reserves.
 - `crates/devsweep-core/src/status/pdh.rs` - read-only PDH probe for GPU engine and thermal-zone counters.
-- `crates/devsweep-core/src/history/mod.rs` - inspect-only reader for the three fixed V1 audit
-  stores.
+- `crates/devsweep-core/src/status/keep_awake.rs`, `keep_awake_session.rs` -
+  core finite request plans/digests and same-thread ownership with the shared
+  explicit loopback session protocol; no daemon or liveness receipt.
+- `crates/devsweep-core/src/status/keep_awake_audit.rs` - redacted bounded Status
+  action journal, distinct from session-control credentials.
+- `crates/devsweep-core/src/status/process_action.rs`,
+  `crates/devsweep-core/src/status/process_action_audit.rs` -
+  PID/creation-time-bound process review, protected classes and audited termination;
+  process-specific events share the Status journal without becoming liveness proof.
+- `crates/devsweep-core/src/history/mod.rs` - inspect-only reader for the fixed
+  Clean/Software/Optimize/Status V1 domains, including Software support lifecycle.
 
 ### CLI And TUI
 
@@ -124,7 +141,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-cli/src/application/commands/software/mod.rs` - `software {inventory,plan,preview,uninstall}`.
 - `crates/devsweep-cli/src/application/commands/optimize.rs` - `optimize {list,plan,preview,run}`.
 - `crates/devsweep-cli/src/application/commands/analyze.rs` - `analyze scan`.
-- `crates/devsweep-cli/src/application/commands/status.rs` - `status {snapshot,live}`.
+- `crates/devsweep-cli/src/application/commands/status.rs` - Status snapshot/live
+  and the thin shared-core keep-awake session adapter.
 - `crates/devsweep-cli/src/application/commands/history.rs` - `history {list,show}`.
 - `crates/devsweep-cli/src/application/commands/protect.rs` - `clean protect {list,add,remove}`.
 - `crates/devsweep-cli/src/application/commands/rules.rs` - `clean rules {list,show}`.
@@ -150,14 +168,23 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 
 ### GPUI desktop (`desktop-gpui/`, standalone workspace)
 
-- `desktop-gpui/src/main.rs` - native entry; loads preferences, then `view::run`.
+- `desktop-gpui/src/main.rs` - native entry; loads preferences, then `view::run`;
+  explicit Clean review fixtures use an isolated unbacked session and fail closed.
 - `desktop-gpui/src/ui.rs` - design tokens (dark/light/high contrast), components, packaged icon table.
 - `desktop-gpui/src/view.rs` - `ShellView`: actions, key bindings, top bar, fallback focus and background-job dispatch; `panel_entries` is a test-only text projection.
 - `desktop-gpui/src/fonts.rs` - cached local font catalogue, bounded searchable choices and missing-family detection; Settings owns enumeration and selection.
 - `desktop-gpui/src/view/page_*.rs` - Clean, Software/Optimize, Analyze, Status, and Settings/support pages.
 - `desktop-gpui/src/shell.rs` - `Session` state machine and the generation-guarded `BackgroundJob` queue.
-- `desktop-gpui/src/clean_workbench.rs`, `clean_ai.rs`, `clean_map.rs` - Clean review, AI subview, disk-map projection.
+- `desktop-gpui/src/clean_workbench.rs` - Clean requested/effective scope, cached
+  grouped recycle-only selection, preview authority and per-target completion.
+- `desktop-gpui/src/clean_ai.rs`, `clean_map.rs` - Clean AI subview and
+  confidence-qualified disk-map projection; no execution authority.
 - `desktop-gpui/src/software_review.rs`, `optimize_board.rs`, `workbench_review.rs` - Software/Optimize review models; host reads only in `load_host`.
+- `desktop-gpui/src/host_review.rs`, `view/host_review.rs` - immutable host review,
+  core previews, explicit confirmation, results and fixed actions for the
+  currently approved startup/update/keep-awake/process scope.
+- `desktop-gpui/src/host_action_tests.rs` - fake-executor Session regressions for
+  stale authority, inverse startup review, finite leases and lifecycle cleanup.
 - `desktop-gpui/src/software_icons.rs` - bounded positive/negative icon cache and
   local fixed-drive, no-reparse resource reads for background Software jobs.
 - `desktop-gpui/src/analyze*.rs`, `status_panel.rs` - Analyze board/window and Status projections.

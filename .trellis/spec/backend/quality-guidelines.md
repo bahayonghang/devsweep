@@ -329,17 +329,21 @@ CommandRequest {
 #### 3. Contracts
 
 - `SoftwareExecutionRequest` cannot carry a serialized or caller-constructed
-  inventory. The executor acquires current-user MSIX inventory through its
+  inventory. The executor acquires supported current-user MSIX/MSI inventory through its
   private live provider behind process single-flight and audit locking, after
   reconciling pending dispatches.
 - `ValidatedSoftwareAction` is opaque and non-deserializable. Only a matching
-  live eligible current-user MSIX identity and preview digest can construct it;
+  live eligible current-user identity and preview digest can construct it;
   explicit confirmation is also required at the core boundary.
-- MSI, registry-only, machine/other-user, protected, stale, malformed, and
+- Unsupported MSI, registry-only, machine/other-user, protected, stale, malformed, and
   unsupported identities fail before the removal adapter. No vendor command,
   shell text, elevation fallback, or serialized argv participates.
+- Production MSI additionally requires the exact positive registration/package/
+  policy/tool proof and separate exit/requery matrix in
+  [Software Host Actions](./software-host-actions.md). Never enable a fixture
+  strategy as its live authority.
 - The fixed versioned Software journal durably syncs `dispatch_started` before
-  `RemovePackageAsync`, holds an exclusive sidecar lock, enforces monotonic
+  MSIX removal or the fixed MSI process, holds an exclusive sidecar lock, enforces monotonic
   transitions and exactly one terminal, and contains tagged identity plus
   stable codes without localized or executable text.
 - Startup recovery re-queries pending exact identities and never redispatches.
@@ -360,10 +364,11 @@ CommandRequest {
 - Cancellation before durable dispatch -> `canceled_before_start`, no adapter
   call. Cancellation, timeout, crash, or unfinished adapter after dispatch ->
   authoritative requery or `unknown_after_dispatch`, never canceled.
-- Exact identity absent -> `removed`, except documented reboot evidence wins as
+- For legacy MSIX, exact identity absent -> `removed`, except documented reboot evidence wins as
   `reboot_required`. Present plus definitive failure -> `failed`; present plus
   success -> `still_present`; unavailable/conflicting evidence ->
-  `unknown_after_dispatch` unless reboot evidence has higher precedence.
+  `unknown_after_dispatch` unless reboot evidence has higher precedence. New MSI
+  never promotes failure/unknown to Removed just because registration disappeared.
 - Unknown audit version, corrupt transition order, repeated terminal, or a
   terminal inconsistent with accumulated evidence -> fail closed without a new
   dispatch.
@@ -433,20 +438,30 @@ SoftwareExecutionRequest {
 - `check_software_updates(inventory, cancel) -> SoftwareUpdatesV1`
   (`state: available { rows } | unavailable { reason_code }`).
 - `list_startup_entries() -> SoftwareStartupListV1` and
-  `set_startup_enabled(entry_id, enabled, confirmed)`.
+  strict `plan_startup_toggle(entry_id, requested_enabled) -> StartupTogglePlanV1`,
+  `preview_startup_toggle(&plan) -> StartupTogglePreviewV1`,
+  `execute_startup_toggle(&plan, expected_preview_digest, confirmed)
+  -> StartupToggleStrictReportV1`. GUI/CLI execution uses this chain rather than
+  the legacy `set_startup_enabled` convenience helper.
 - `discover_software_leftovers`, `plan_software_leftovers`, and
   `execute_software_leftovers(SoftwareLeftoverExecutionRequest { plan,
   expected_preview_digest, confirmed, cancel })`.
 - Audit: `SoftwareSupportAuditRecordV1` tagged by `record_kind`
-  (`startup_toggled`, `leftover_moved`) in the same fixed Software journal.
+  (`startup_toggled`, `leftover_moved`) in the fixed Software journal, plus
+  `SoftwareSupportLifecycleRecordV1` tagged by `phase` in
+  `software-support.jsonl` for Update/StartupToggle/LeftoverMove started and
+  terminal evidence. History reads both under the Software domain.
 
 #### 3. Contracts
 
-- The update probe runs program `winget` with argv
-  `["upgrade", "--disable-interactivity"]` through `ProcessRunner`, neutral cwd,
-  and the 30-second provider deadline. Never pass
-  `--accept-source-agreements` or `--accept-package-agreements`, and never run
-  an upgrade.
+- Update check/plan/preview never install. Use `ProcessRunner`, neutral cwd and
+  the 30-second provider deadline for bounded version/help/source and target-free
+  upgrade listing; select the exact offered row in memory. Live execution binds
+  the physical supported tool and official source/current-user scope, then uses
+  the five-minute executor budget only after saved plan, live digest, confirm
+  and durable started. Never pass agreement acceptance, force, reboot, shell or
+  elevation fallback. Exact argv, source identity and refusal tests are in
+  [Software Host Actions](./software-host-actions.md).
 - The parser reads column starts from display-width offsets of the header
   tokens above the dash separator (East Asian Wide/Fullwidth count as 2),
   requires exactly five columns, and never interprets header words. Only the
@@ -463,11 +478,14 @@ SoftwareExecutionRequest {
   `%PROGRAMDATA%` (uncertain, unselected by default). Protected paths, system
   roots, shared vendor folders, and the running executable are never
   candidates.
-- Leftover removal needs a terminal `removed` or `reboot_required` uninstall
+- Leftover removal needs a terminal `removed` uninstall
   audit for the same identity and operation, a live plan digest, and explicit
   confirmation. Execution rediscovers live, rechecks each path, moves it to the
   Recycle Bin, and appends one `leftover_moved` record per item. Sizes are
   "moved to the Recycle Bin", never "freed".
+- New MSI Removed additionally requires numeric exit 0 and authoritative
+  same-SID/context absence; legacy missing MSI evidence is readable history,
+  not new leftover authority. RebootRequired does not open leftovers.
 - Support records carry no path, command, argv, or localized text.
 
 #### 4. Validation & Error Matrix

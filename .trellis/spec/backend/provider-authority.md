@@ -7,6 +7,14 @@ configured cache roots, plan reconstruction, preview digests or dispatch.
 `rules/definitions.rs` remains the sole catalogue; this guide is not a second
 source of rule IDs or supported-version ranges.
 
+Software MSI/update execution follows the same live-binding principle; see
+[Software Host Actions](./software-host-actions.md) for its exact identity,
+restriction, tool and result contracts. Display metadata and fixture execution
+strategies do not become Software host authority.
+Status termination uses a different live identity: PID plus creation FILETIME,
+checked again on the actual process handle. See [Process Actions](./process-actions.md);
+sampling rows and historical actions do not grant termination authority.
+
 ## 2. Boundaries
 
 - `rules/configuration.rs` resolves the closed configured-root policy and

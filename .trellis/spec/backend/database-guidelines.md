@@ -58,12 +58,28 @@ before command or trash side effects.
 Software removal uses a separate fixed
 `%LOCALAPPDATA%\DevSweep\audit\v1\software.jsonl` contract. Each append is
 flushed and synced, and an exclusive `software.lock` sidecar serializes writers
-across processes. Records contain the exact tagged current-user MSIX identity,
+across processes. Records contain the exact tagged current-user MSIX/MSI identity,
 inventory fingerprint, preview digest, transition, stable status/error codes,
 reboot evidence, and installed-state requery result. They never contain vendor
 commands, argv, environment, localized text, raw deployment output, or an
 execution `partial`. Recovery may reconstruct only identity-only requery work;
 it cannot reconstruct or redispatch a removal strategy from the journal.
+
+New optional MSI evidence preserves old decoding but must be validated with the
+MSI-specific exit/requery matrix; missing legacy MSI proof cannot grant new
+removal/leftover permission. Software support lifecycle and terminal events cover
+startup and updates without becoming uninstall receipts. See
+[Software Host Actions](./software-host-actions.md).
+
+The fixed `status.jsonl` action journal records finite keep-awake actions and
+reviewed process termination through History's Status domain. Optional V1
+`process` details are required only for `process_terminate` (zero duration plus
+preview digest); power actions retain finite duration and no process details.
+See [Process Actions](./process-actions.md) for identity and durable dispatch.
+The journal is neither a lease discovery file nor
+an owner-lifetime receipt. It never stores endpoint/token/owner credentials and
+cannot turn an unreachable endpoint into an off-state proof. See
+[Keep-awake Session](./keep-awake-session.md) for the closed V1 and failure rules.
 
 ---
 

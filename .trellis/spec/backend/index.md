@@ -20,6 +20,7 @@ domain model, scanner, and future execution/audit code.
 | [Scan Coverage](./scan-coverage.md) | Root/provider accounting and legacy report compatibility | Shared CLI/TUI/GPUI observation contract |
 | [Project Occupancy](./project-occupancy.md) | Observational ownership, overlap and qualified mbx reporting | Pure snapshot projection and shared Cargo refusal |
 | [Clean Advisories](./clean-advisories.md) | Confidence-aware project capacity warnings and focused threshold persistence | Pure snapshot projection, closed V1 DTO and store |
+| [Clean Review](./clean-review.md) | GPUI grouped review, recycle-only selection and completion evidence | Explicit scope consent, preview invalidation and native tri-state |
 | [Scan Preferences](./scan-preferences.md) | Explicit desktop scan roots, persistence and session scope | Closed V1 store |
 | [Provider Authority](./provider-authority.md) | Live global tool, footprint, version and configuration binding | Shared preview and execution digest |
 | [Runtime Publication](./runtime-publication.md) | Scan observer cadence, raw preview validation and bounded sizing | Equal-coverage performance contract |
@@ -27,6 +28,9 @@ domain model, scanner, and future execution/audit code.
 | [Desktop Runtime](./desktop-runtime.md) | GPUI native focus, Status live lifecycle and window material | Standalone `desktop-gpui` workspace |
 | [Desktop Preferences](./desktop-preferences.md) | Desktop store and GPUI consumer | Closed V2 and read-only V1 migration |
 | [Software Evidence](./software-evidence.md) | Optional icon/date metadata and read-only directory preview | V1 compatibility, bilingual CLI and bounded GPUI loading |
+| [Software Host Actions](./software-host-actions.md) | MSI proof, update binding, startup review and result history | Live authority, optional V1 evidence and fixture-only execution tests |
+| [Keep-awake Session](./keep-awake-session.md) | Shared core preview/session transport and Status action history | Same-thread power lifecycle and truthful unavailable state |
+| [Process Actions](./process-actions.md) | Reviewed process termination and shared Status history | PID/creation-time binding, protected classes and durable dispatch |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | anyhow CLI/scanner conventions |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Foundation, plan validation, and scanner conventions |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | tracing to stderr |

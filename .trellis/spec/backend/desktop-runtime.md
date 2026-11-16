@@ -10,6 +10,19 @@ read-only directory preview, also read [Software Evidence](./software-evidence.m
 Those background reads share the Session job queue and never grant host-action
 authority.
 
+For Clean scope dispatch, grouped selection, preview invalidation and completion
+evidence, also read [Clean Review](./clean-review.md). Native tri-state controls
+must expose Toggle/Mixed semantics; scan observations and display totals never
+grant execution authority.
+
+For Software host review/dispatch read [Software Host Actions](./software-host-actions.md).
+For the finite Status power request read [Keep-awake Session](./keep-awake-session.md).
+For Status process review and action history read [Process Actions](./process-actions.md).
+The GUI retains core plans and live digests, uses explicit second confirmation,
+and holds same-domain execution locks through real worker terminals. The current
+host-action gate permits startup, updates, keep-awake and reviewed process
+termination; software removal stays disabled until its separate task review gates.
+
 ## GPUI native control focus
 
 In `desktop-gpui`, mode tabs use real per-control keyboard focus through
