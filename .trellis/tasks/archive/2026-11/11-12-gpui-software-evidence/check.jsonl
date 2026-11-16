@@ -2,3 +2,5 @@
 {"file": ".trellis/spec/backend/provider-authority.md", "reason": "授权依据与执行边界"}
 {"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "质量与契约测试要求"}
 {"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "core、CLI、GPUI 跨层变更检查"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-software-evidence/research/contract.md", "reason": "检查证据格式、日期语义、V1 兼容、图标路径边界与残留预览只读性"}
+{"file": ".trellis/spec/backend/software-evidence.md", "reason": "显示元数据、旧指纹与安全读取的可执行规范"}

@@ -3,3 +3,5 @@
 {"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引"}
 {"file": ".trellis/spec/backend/provider-authority.md", "reason": "授权依据与执行边界"}
 {"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "core、CLI、GPUI 跨层变更检查"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-software-evidence/research/contract.md", "reason": "步骤 1 的证据解析、V1 兼容、图标安全与只读相关目录契约；用户评审后用于实施"}
+{"file": ".trellis/spec/backend/software-evidence.md", "reason": "已确认的软件显示证据与只读目录预览跨层契约"}

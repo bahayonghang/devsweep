@@ -1,6 +1,6 @@
 # Software：清单证据、图标与列表体验
 
-父任务：[11-12-gpui-mole-parity-airy-glass](../11-12-gpui-mole-parity-airy-glass/prd.md)。差距编号 W1、W2 见父任务 `research/gap-analysis.md`。
+父任务：[11-12-gpui-mole-parity-airy-glass](../../../11-12-gpui-mole-parity-airy-glass/prd.md)。差距编号 W1、W2 见父任务 `research/gap-analysis.md`。
 
 ## 目标
 

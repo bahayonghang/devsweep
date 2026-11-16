@@ -9,9 +9,13 @@
 
 ## 波次
 
-1. [ ] 波次 1：启动并完成 `11-12-gpui-airy-glass-shell`。它的步骤 5 之后有一次前后对照截图的用户评审。
-2. [ ] 波次 0（可与波次 1 并行）：status-dashboard、software-evidence、analyze-insights、optimize-batch、tray-panel 的 core 与 CLI 部分。第一个完成数据契约版本调研的子任务把结论写到本目录 `research/contract-versioning.md`。
+1. [x] 波次 1：启动并完成 `11-12-gpui-airy-glass-shell`。已完成并归档；前后对照截图与验收记录见归档任务。
+2. [ ] 波次 0（可与波次 1 并行）：status-dashboard、software-evidence、analyze-insights、optimize-batch、tray-panel 的 core 与 CLI 部分。共用版本结论见本目录 `research/status-version-strategy.md`。
+   - [x] status-dashboard 的 core 与 CLI：已完成并归档；版本结论见 `research/status-version-strategy.md`。
+   - [x] software-evidence 的 core 与 CLI：V1 增量与双语契约已完成并归档。
 3. [ ] 波次 2：status-dashboard、software-evidence、clean-review-flow 的界面部分。
+   - [x] status-dashboard 的 GPUI：已完成并归档。
+   - [x] software-evidence 的 GPUI：已完成并归档；原生验收及 WindowsApps 图标回退限制见[子任务记录](../archive/2026-11/11-12-gpui-software-evidence/evidence/native-acceptance.md)。
 4. [ ] 波次 3：host-actions。
 5. [ ] 波次 4：analyze-insights、optimize-batch、tray-panel 的界面部分；clean-windows-cache-coverage。这三个 P2 子任务和缓存扩展各有自己的规划关口（D4、D5、D6），到时再问。
 

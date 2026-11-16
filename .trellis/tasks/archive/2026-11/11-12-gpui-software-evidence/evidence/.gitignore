@@ -1,0 +1,13 @@
+*.png
+/runtime/
+*.jpg
+!software-en-dark-list.jpg
+!software-en-dark-sort.jpg
+!software-en-dark-filter.jpg
+!software-en-dark-related.jpg
+!software-zh-light-list.jpg
+!software-zh-light-sort.jpg
+!software-zh-light-filter.jpg
+!software-zh-light-related.jpg
+!software-en-light-list.jpg
+!software-zh-dark-list.jpg
