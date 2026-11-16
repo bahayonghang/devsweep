@@ -391,6 +391,8 @@ fn leftover_preview_matches_the_core_service() {
             size: SoftwareSizeEvidence::Unknown {
                 reason_code: "measurement_unavailable".to_string(),
             },
+            icon: None,
+            installed_on: None,
             last_used: SoftwareLastUsedEvidence::Unknown {
                 reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
             },
@@ -699,6 +701,8 @@ fn leftover_preview_refusal_matches_the_core_service() {
             size: SoftwareSizeEvidence::Unknown {
                 reason_code: "measurement_unavailable".to_string(),
             },
+            icon: None,
+            installed_on: None,
             last_used: SoftwareLastUsedEvidence::Unknown {
                 reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
             },

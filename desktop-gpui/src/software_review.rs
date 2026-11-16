@@ -1,9 +1,8 @@
-//! Isolated Software review for Uninstall, Updates, and Startup.
+//! Software evidence projections and isolated action reviews.
 //!
-//! Search, sort, filter, and refresh read only an injected inventory, an
-//! updates document, or a temporary startup hive. This module does not scan
-//! the host uninstall list, list host startup keys, probe winget, or construct
-//! a host software executor.
+//! Host inventory reads stay in `load_host`; related directories are requested
+//! explicitly through the session's read-only job. Search, sort and filtering
+//! use the retained inventory. No host mutation is authorized by display data.
 
 use std::{
     fs,
@@ -12,14 +11,14 @@ use std::{
 };
 
 use devsweep_core::software::{
-    SOFTWARE_INVENTORY_VERSION, SoftwareEligibilityReason, SoftwareEligibilityState,
-    SoftwareEntryV1, SoftwareIdentity, SoftwareInventoryV1, SoftwarePlanError,
-    SoftwareSelectionPlanV1, SoftwareSourceEvidence, SoftwareSourceState, SoftwareStartupError,
-    SoftwareStartupListV1, SoftwareStartupLocation, SoftwareStartupState, SoftwareUpdateError,
-    SoftwareUpdateRowV1, SoftwareUpdatesV1, StartupFixtureClass, StartupFixtureHiveV1,
-    build_selection_plan, plan_software_update, plan_startup_hive, preview_selection_plan_live,
-    preview_startup_hive, software_entry_id, software_inventory_fingerprint,
-    startup_fixture_entry_id,
+    IconEvidenceV1, SOFTWARE_INVENTORY_VERSION, SoftwareEligibilityReason,
+    SoftwareEligibilityState, SoftwareEntryV1, SoftwareIdentity, SoftwareInventoryV1,
+    SoftwareLeftoverPreviewV1, SoftwarePlanError, SoftwareSelectionPlanV1, SoftwareSourceEvidence,
+    SoftwareSourceState, SoftwareStartupError, SoftwareStartupListV1, SoftwareStartupLocation,
+    SoftwareStartupState, SoftwareUpdateError, SoftwareUpdateRowV1, SoftwareUpdatesV1,
+    StartupFixtureClass, StartupFixtureHiveV1, build_selection_plan, plan_software_update,
+    plan_startup_hive, preview_selection_plan_live, preview_startup_hive, software_entry_id,
+    software_inventory_fingerprint, startup_fixture_entry_id, validated_installed_on,
 };
 
 use crate::copy::{self, Locale};
@@ -41,6 +40,36 @@ pub enum SoftwareSort {
     Version,
     /// Largest qualified size first; rows without a size sort last.
     Size,
+    /// Most recent installer/servicing date first; unknown dates are last.
+    InstalledOn,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SoftwareSourceFilter {
+    #[default]
+    All,
+    Arp,
+    Msi,
+    Msix,
+}
+
+impl SoftwareSourceFilter {
+    pub fn label(self, locale: Locale) -> &'static str {
+        match self {
+            Self::All => copy::pick(locale, "All sources", "全部来源"),
+            Self::Arp => copy::pick(locale, "Uninstall registry", "卸载注册表"),
+            Self::Msi => copy::pick(locale, "Windows Installer", "Windows 安装程序"),
+            Self::Msix => copy::pick(locale, "MSIX packages", "MSIX 程序包"),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct RelatedDirectories {
+    pub id: String,
+    pub name: String,
+    /// None while the read-only discovery job is pending.
+    pub result: Option<Result<SoftwareLeftoverPreviewV1, String>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -68,6 +97,9 @@ pub struct SoftwareItem {
     pub size: Option<SoftwareSize>,
     /// Updates only: the installed version the available one replaces.
     pub installed_version: Option<String>,
+    pub publisher: Option<String>,
+    pub installed_on: Option<String>,
+    pub icon: Option<IconEvidenceV1>,
 }
 
 /// How much an install size can be trusted. The window always shows the
@@ -83,7 +115,9 @@ pub enum SoftwareSize {
 }
 
 impl SoftwareSize {
-    fn from_evidence(evidence: &devsweep_core::software::SoftwareSizeEvidence) -> Option<Self> {
+    pub(crate) fn from_evidence(
+        evidence: &devsweep_core::software::SoftwareSizeEvidence,
+    ) -> Option<Self> {
         use devsweep_core::software::{SoftwareSizeBasis, SoftwareSizeEvidence};
         match evidence {
             SoftwareSizeEvidence::Available {
@@ -104,6 +138,18 @@ impl SoftwareSize {
     pub fn bytes(self) -> u64 {
         match self {
             Self::Estimate(value) | Self::Measured(value) | Self::AtLeast(value) => value,
+        }
+    }
+
+    pub fn description(self, locale: Locale) -> String {
+        let bytes = crate::ui::bytes(self.bytes());
+        match self {
+            Self::Estimate(_) => format!(
+                "{bytes}, {}",
+                copy::pick(locale, "installer estimate", "安装程序估算")
+            ),
+            Self::Measured(_) => format!("{bytes}, {}", copy::pick(locale, "measured", "实测")),
+            Self::AtLeast(_) => format!("{} {bytes}", copy::pick(locale, "at least", "至少")),
         }
     }
 }
@@ -182,6 +228,8 @@ pub struct SoftwareReview {
     query: String,
     sort: SoftwareSort,
     filter: SoftwareFilter,
+    source_filter: SoftwareSourceFilter,
+    related: Option<RelatedDirectories>,
     lines: Vec<String>,
     pending: Option<PendingUninstall>,
     stale: bool,
@@ -206,6 +254,8 @@ impl SoftwareReview {
             query: String::new(),
             sort: SoftwareSort::Name,
             filter: SoftwareFilter::All,
+            source_filter: SoftwareSourceFilter::All,
+            related: None,
             lines: Vec::new(),
             pending: None,
             stale: false,
@@ -251,6 +301,7 @@ impl SoftwareReview {
         self.source = ReviewSource::None;
         self.items.clear();
         self.pending = None;
+        self.related = None;
         self.loading = true;
         self.lines = vec![copy::software_loading(locale, segment_key(segment)).to_string()];
     }
@@ -260,6 +311,7 @@ impl SoftwareReview {
     pub fn apply_host_load(&mut self, load: SoftwareHostLoad, locale: Locale) {
         self.loading = false;
         self.pending = None;
+        self.related = None;
         match load {
             SoftwareHostLoad::Inventory(Ok(inventory)) => {
                 self.segment = Some(SoftwareSegment::Uninstall);
@@ -319,12 +371,76 @@ impl SoftwareReview {
 
     #[must_use]
     pub fn sort(&self) -> SoftwareSort {
-        self.sort
+        if self.sort == SoftwareSort::InstalledOn
+            && self.segment != Some(SoftwareSegment::Uninstall)
+        {
+            SoftwareSort::Name
+        } else {
+            self.sort
+        }
     }
 
     #[must_use]
     pub fn filter(&self) -> SoftwareFilter {
         self.filter
+    }
+
+    pub fn source_filter(&self) -> SoftwareSourceFilter {
+        self.source_filter
+    }
+
+    pub fn cycle_source_filter(&mut self) {
+        self.source_filter = match self.source_filter {
+            SoftwareSourceFilter::All => SoftwareSourceFilter::Arp,
+            SoftwareSourceFilter::Arp => SoftwareSourceFilter::Msi,
+            SoftwareSourceFilter::Msi => SoftwareSourceFilter::Msix,
+            SoftwareSourceFilter::Msix => SoftwareSourceFilter::All,
+        };
+    }
+
+    pub fn set_sort(&mut self, sort: SoftwareSort) {
+        self.sort = sort;
+    }
+
+    pub fn inventory(&self) -> Option<&SoftwareInventoryV1> {
+        match &self.source {
+            ReviewSource::Inventory { inventory, .. } => Some(inventory),
+            _ => None,
+        }
+    }
+
+    pub fn related(&self) -> Option<&RelatedDirectories> {
+        self.related.as_ref()
+    }
+
+    pub fn clear_related(&mut self) {
+        self.related = None;
+    }
+
+    /// Focus is independent from uninstall eligibility. No plan is built here.
+    pub fn begin_related(&mut self, id: &str, locale: Locale) -> Option<SoftwareInventoryV1> {
+        let inventory = self.inventory()?.clone();
+        let item = self.item(id)?;
+        self.related = Some(RelatedDirectories {
+            id: id.to_string(),
+            name: item.name.clone(),
+            result: None,
+        });
+        self.pending = None;
+        self.lines = self.summary_lines(locale);
+        Some(inventory)
+    }
+
+    pub fn apply_related(
+        &mut self,
+        id: &str,
+        result: Result<SoftwareLeftoverPreviewV1, String>,
+    ) -> bool {
+        let Some(related) = self.related.as_mut().filter(|related| related.id == id) else {
+            return false;
+        };
+        related.result = Some(result);
+        true
     }
 
     pub fn query(&self) -> &str {
@@ -505,10 +621,14 @@ impl SoftwareReview {
     }
 
     pub fn cycle_sort(&mut self) {
-        self.sort = match self.sort {
+        self.sort = match self.sort() {
             SoftwareSort::Name => SoftwareSort::Source,
             SoftwareSort::Source => SoftwareSort::Version,
+            SoftwareSort::Version if self.segment == Some(SoftwareSegment::Uninstall) => {
+                SoftwareSort::InstalledOn
+            }
             SoftwareSort::Version => SoftwareSort::Size,
+            SoftwareSort::InstalledOn => SoftwareSort::Size,
             SoftwareSort::Size => SoftwareSort::Name,
         };
     }
@@ -564,7 +684,7 @@ impl SoftwareReview {
             .cloned()
             .collect::<Vec<_>>();
         items.sort_by(|left, right| {
-            let order = match self.sort {
+            let order = match self.sort() {
                 SoftwareSort::Name => left.name.cmp(&right.name),
                 SoftwareSort::Source => left.source.cmp(&right.source),
                 SoftwareSort::Version => left.version.cmp(&right.version),
@@ -572,6 +692,7 @@ impl SoftwareReview {
                     .size
                     .map(SoftwareSize::bytes)
                     .cmp(&left.size.map(SoftwareSize::bytes)),
+                SoftwareSort::InstalledOn => right.installed_on.cmp(&left.installed_on),
             };
             order.then_with(|| left.id.cmp(&right.id))
         });
@@ -597,6 +718,55 @@ impl SoftwareReview {
             item.version,
             item.permission,
             item.skip
+        ))
+    }
+
+    /// Spoken row identity uses the same readable evidence as the painted row.
+    pub fn accessible_row(&self, id: &str, locale: Locale) -> Option<String> {
+        let item = self.item(id)?;
+        if self.segment == Some(SoftwareSegment::Updates) {
+            return Some(format!(
+                "{}, {} → {}, {}, {}",
+                item.name,
+                item.installed_version.as_deref().unwrap_or("?"),
+                item.version,
+                copy::software_source_label(locale, &item.source),
+                copy::pick(locale, "Update available", "有可用更新")
+            ));
+        }
+        if self.segment == Some(SoftwareSegment::Startup) {
+            let state = match item.version.as_str() {
+                "enabled" => copy::pick(locale, "Enabled", "已启用"),
+                "disabled" => copy::pick(locale, "Disabled", "已禁用"),
+                _ => copy::pick(locale, "Unknown", "未知"),
+            };
+            return Some(format!(
+                "{}, {state}, {}",
+                item.name,
+                copy::startup_location_label(locale, &item.source)
+            ));
+        }
+        Some(format!(
+            "{}, {}, {}, {}, {}, {}: {}",
+            item.name,
+            copy::software_version_label(locale, &item.version),
+            copy::software_source_label(locale, &item.source),
+            item.publisher.as_deref().unwrap_or(copy::pick(
+                locale,
+                "Publisher unknown",
+                "发布者未知"
+            )),
+            item.size
+                .map(|size| size.description(locale))
+                .unwrap_or_else(|| copy::pick(locale, "Size unknown", "容量未知").to_string()),
+            if item.source == "msix_current_user" {
+                copy::pick(locale, "Installed / updated (UTC)", "安装/更新（UTC）")
+            } else {
+                copy::pick(locale, "Installed / serviced", "安装/维护日期")
+            },
+            item.installed_on
+                .as_deref()
+                .unwrap_or(copy::pick(locale, "Date unknown", "日期未知"))
         ))
     }
 
@@ -901,9 +1071,10 @@ impl SoftwareReview {
     }
 
     fn rebuild_items(&mut self, locale: Locale) {
+        self.related = None;
         let last = copy::workbench_not_run(locale).to_string();
         self.items = match &self.source {
-            ReviewSource::Inventory { inventory, .. } => inventory_items(inventory, &last),
+            ReviewSource::Inventory { inventory, .. } => inventory_items(inventory, &last, locale),
             ReviewSource::Updates { rows, .. } => update_items(rows, &last),
             ReviewSource::Hive { path } => hive_items(path, locale, &last),
             ReviewSource::Startup { list } => startup_items(list, &last),
@@ -975,15 +1146,23 @@ impl SoftwareReview {
     }
 
     fn filter_matches(&self, item: &SoftwareItem) -> bool {
-        match self.filter {
-            SoftwareFilter::All => true,
-            SoftwareFilter::Selectable => item.selectable,
-            SoftwareFilter::Protected => item.permission.contains("protected"),
-            SoftwareFilter::PermissionDenied => {
-                item.permission.contains("permission")
-                    || item.permission.contains("requires_administrator")
+        let source_matches = self.segment != Some(SoftwareSegment::Uninstall)
+            || match self.source_filter {
+                SoftwareSourceFilter::All => true,
+                SoftwareSourceFilter::Arp => item.source.starts_with("arp:"),
+                SoftwareSourceFilter::Msi => item.source.starts_with("msi:"),
+                SoftwareSourceFilter::Msix => item.source == "msix_current_user",
+            };
+        source_matches
+            && match self.filter {
+                SoftwareFilter::All => true,
+                SoftwareFilter::Selectable => item.selectable,
+                SoftwareFilter::Protected => item.permission.contains("protected"),
+                SoftwareFilter::PermissionDenied => {
+                    item.permission.contains("permission")
+                        || item.permission.contains("requires_administrator")
+                }
             }
-        }
     }
 
     fn query_matches(&self, item: &SoftwareItem) -> bool {
@@ -996,13 +1175,18 @@ impl SoftwareReview {
             item.name.as_str(),
             item.source.as_str(),
             item.version.as_str(),
+            item.publisher.as_deref().unwrap_or_default(),
         ]
         .iter()
         .any(|field| field.to_lowercase().contains(&query))
     }
 }
 
-fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareItem> {
+fn inventory_items(
+    inventory: &SoftwareInventoryV1,
+    last: &str,
+    locale: Locale,
+) -> Vec<SoftwareItem> {
     inventory
         .entries
         .iter()
@@ -1018,7 +1202,10 @@ fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareI
                 name: entry
                     .display_name
                     .clone()
-                    .unwrap_or_else(|| entry.id.clone()),
+                    .filter(|name| !name.trim().is_empty())
+                    .unwrap_or_else(|| {
+                        copy::pick(locale, "Unnamed application", "未命名应用").to_string()
+                    }),
                 identity: identity_token(&entry.identity),
                 count: entry.provenance.len() as u64,
                 source: entry
@@ -1036,6 +1223,10 @@ fn inventory_items(inventory: &SoftwareInventoryV1, last: &str) -> Vec<SoftwareI
                 selectable: entry.eligibility.is_selectable(),
                 size: SoftwareSize::from_evidence(&entry.size),
                 installed_version: None,
+                publisher: entry.publisher.clone(),
+                installed_on: validated_installed_on(entry.installed_on.as_deref())
+                    .map(str::to_string),
+                icon: entry.icon.clone(),
             }
         })
         .collect()
@@ -1060,6 +1251,9 @@ fn update_items(rows: &[SoftwareUpdateRowV1], last: &str) -> Vec<SoftwareItem> {
             selectable: false,
             size: None,
             installed_version: Some(row.installed_version.clone()),
+            publisher: None,
+            installed_on: None,
+            icon: None,
         })
         .collect()
 }
@@ -1105,6 +1299,9 @@ fn hive_items(path: &Path, locale: Locale, last: &str) -> Vec<SoftwareItem> {
                     && entry.location == SoftwareStartupLocation::CurrentUserRun,
                 size: None,
                 installed_version: None,
+                publisher: None,
+                installed_on: None,
+                icon: None,
             }
         })
         .collect()
@@ -1134,6 +1331,9 @@ fn startup_items(list: &SoftwareStartupListV1, last: &str) -> Vec<SoftwareItem> 
                 selectable: false,
                 size: None,
                 installed_version: None,
+                publisher: None,
+                installed_on: None,
+                icon: None,
             }
         })
         .collect()
@@ -1378,6 +1578,8 @@ mod tests {
             size: SoftwareSizeEvidence::Unknown {
                 reason_code: "fixture".to_string(),
             },
+            icon: None,
+            installed_on: None,
             last_used: SoftwareLastUsedEvidence::default(),
             launch: None,
         }
@@ -1408,6 +1610,8 @@ mod tests {
             size: SoftwareSizeEvidence::Unknown {
                 reason_code: "fixture".to_string(),
             },
+            icon: None,
+            installed_on: None,
             last_used: SoftwareLastUsedEvidence::default(),
             launch: None,
         }
@@ -1433,6 +1637,228 @@ mod tests {
             source: SoftwareSourceId::MsixCurrentUser,
             state,
             reason_code: Some(reason.to_string()),
+        }
+    }
+
+    #[test]
+    fn date_evidence_sorts_unknown_last_and_filters_compose_with_publisher_search() {
+        let mut recent = msix("Recent", "2");
+        recent.installed_on = Some("2026-11-15".to_string());
+        recent.publisher = Some("Copper Workshop".to_string());
+        let recent_id = recent.id.clone();
+        let mut older = msix("Older", "1");
+        older.installed_on = Some("2024-02-29".to_string());
+        let older_id = older.id.clone();
+        let mut invalid = msix("Invalid", "1");
+        invalid.installed_on = Some("2026-02-30".to_string());
+        let invalid_id = invalid.id.clone();
+        let mut arp = protected_entry();
+        arp.publisher = Some("Copper Workshop".to_string());
+        let arp_id = arp.id.clone();
+        let stored = inventory(vec![recent, older, invalid, arp], Vec::new());
+        let fingerprint = stored.fingerprint.clone();
+        let mut review = SoftwareReview::new();
+        review.open_inventory(stored, Locale::ZhCn);
+        assert_eq!(review.item(&invalid_id).expect("item").installed_on, None);
+        let unmodified = review.inventory().expect("inventory");
+        assert_eq!(unmodified.fingerprint, fingerprint);
+        assert_eq!(
+            unmodified.entries[2].installed_on.as_deref(),
+            Some("2026-02-30")
+        );
+        review.set_sort(SoftwareSort::InstalledOn);
+        assert_eq!(&review.filtered_ids()[..2], &[recent_id.clone(), older_id]);
+        review.set_query("copper");
+        assert_eq!(
+            review.filtered_ids().len(),
+            2,
+            "publisher participates in search"
+        );
+        review.cycle_source_filter();
+        assert_eq!(
+            review.filtered_ids().as_slice(),
+            std::slice::from_ref(&arp_id),
+            "ARP source composes with publisher query"
+        );
+        review.cycle_filter();
+        assert!(
+            review.filtered_ids().is_empty(),
+            "protected ARP cannot pass eligible filter"
+        );
+        review.cycle_filter();
+        assert_eq!(review.filtered_ids(), [arp_id]);
+        review.cycle_source_filter();
+        assert!(
+            review.filtered_ids().is_empty(),
+            "no MSI evidence in fixture"
+        );
+        review.cycle_source_filter();
+        assert!(
+            review.filtered_ids().is_empty(),
+            "protected filter excludes MSIX fixture"
+        );
+        review.cycle_filter();
+        review.cycle_filter();
+        assert_eq!(
+            review.filtered_ids().as_slice(),
+            std::slice::from_ref(&recent_id)
+        );
+        let spoken = review
+            .accessible_row(&recent_id, Locale::ZhCn)
+            .expect("spoken row");
+        assert!(
+            spoken.contains("Copper Workshop")
+                && spoken.contains("容量未知")
+                && spoken.contains("UTC")
+        );
+        assert!(!spoken.contains("software:v1:") && !spoken.contains("msix_current_user"));
+    }
+
+    #[test]
+    fn update_sort_cycle_keeps_the_existing_source_and_version_choices() {
+        let mut review = SoftwareReview::new();
+        review.open_updates(Vec::new(), Locale::En);
+        for expected in [
+            SoftwareSort::Source,
+            SoftwareSort::Version,
+            SoftwareSort::Size,
+            SoftwareSort::Name,
+        ] {
+            review.cycle_sort();
+            assert_eq!(review.sort(), expected);
+        }
+    }
+
+    #[test]
+    fn inventory_source_and_date_choices_do_not_hide_other_segments() {
+        use devsweep_core::software::{SoftwareStartupEntryV1, SoftwareStartupToggle};
+        let stored = inventory(vec![msix("Inventory", "1")], Vec::new());
+        for source_steps in 1..=3 {
+            let mut review = SoftwareReview::new();
+            review.open_inventory(stored.clone(), Locale::En);
+            for _ in 0..source_steps {
+                review.cycle_source_filter();
+            }
+            let source = review.source_filter();
+            review.set_sort(SoftwareSort::InstalledOn);
+            review.open_updates(
+                vec![SoftwareUpdateRowV1 {
+                    id: "Git.Git".to_string(),
+                    name: "Git".to_string(),
+                    name_truncated: false,
+                    installed_version: "2.46.0".to_string(),
+                    available_version: "2.47.1".to_string(),
+                    source: "winget".to_string(),
+                    matched_software_ids: Vec::new(),
+                }],
+                Locale::En,
+            );
+            assert_eq!(review.filtered_ids(), ["Git.Git"], "source {source:?}");
+            let spoken = review
+                .accessible_row("Git.Git", Locale::ZhCn)
+                .expect("update label");
+            assert!(spoken.contains("2.46.0 → 2.47.1") && spoken.contains("有可用更新"));
+            assert!(!spoken.contains("安装") && !spoken.contains("发布者"));
+            assert_eq!(review.sort(), SoftwareSort::Name);
+            review.cycle_sort();
+            assert_eq!(review.sort(), SoftwareSort::Source);
+            review.open_inventory(stored.clone(), Locale::En);
+            assert_eq!(review.source_filter(), source, "inventory choice retained");
+            review.set_sort(SoftwareSort::InstalledOn);
+            review.apply_host_load(
+                SoftwareHostLoad::Startup(SoftwareStartupListV1 {
+                    version: 1,
+                    observed_at_unix_ms: 1,
+                    sources: Vec::new(),
+                    entries: vec![SoftwareStartupEntryV1 {
+                        id: "startup-fixture".to_string(),
+                        name: "Startup fixture".to_string(),
+                        location: SoftwareStartupLocation::CurrentUserRun,
+                        scope: SoftwareScope::CurrentUser,
+                        state: SoftwareStartupState::Enabled,
+                        toggle: SoftwareStartupToggle::Allowed,
+                    }],
+                }),
+                Locale::En,
+            );
+            assert_eq!(
+                review.filtered_ids(),
+                ["startup-fixture"],
+                "source {source:?}"
+            );
+            let spoken = review
+                .accessible_row("startup-fixture", Locale::ZhCn)
+                .expect("startup label");
+            assert!(spoken.contains("已启用"));
+            assert!(
+                !spoken.contains("enabled")
+                    && !spoken.contains("安装")
+                    && !spoken.contains("发布者")
+            );
+            assert_eq!(review.sort(), SoftwareSort::Name);
+            review.cycle_sort();
+            assert_eq!(review.sort(), SoftwareSort::Source);
+        }
+    }
+
+    #[test]
+    fn related_preview_accepts_manual_entry_without_building_or_retaining_a_plan() {
+        let entry = protected_entry();
+        let id = entry.id.clone();
+        let stored = inventory(vec![entry], Vec::new());
+        let expected = stored.clone();
+        let mut review = SoftwareReview::new();
+        review.open_inventory(stored, Locale::En);
+        let supplied = review
+            .begin_related(&id, Locale::ZhCn)
+            .expect("read-only preview of manual entry");
+        assert_eq!(supplied, expected);
+        assert!(review.pending_id().is_none());
+        assert_eq!(review.executor_calls(), 0);
+        assert!(!review.lines().join(" ").contains("sha256:"));
+        assert!(
+            review
+                .related()
+                .expect("pending related preview")
+                .result
+                .is_none()
+        );
+        assert!(!review.apply_related(
+            "another-id",
+            Ok(SoftwareLeftoverPreviewV1 {
+                version: 1,
+                apps: Vec::new()
+            })
+        ));
+        assert!(review.apply_related(&id, Err("protection_unavailable".to_string())));
+        assert!(
+            review
+                .related()
+                .expect("related")
+                .result
+                .as_ref()
+                .expect("result")
+                .is_err()
+        );
+        let source = crate::source_lf(include_str!("software_review.rs"));
+        let body = source
+            .split("pub fn begin_related(")
+            .nth(1)
+            .expect("method")
+            .split("pub fn apply_related(")
+            .next()
+            .expect("body");
+        for forbidden in [
+            "build_selection_plan(",
+            "plan_software_leftovers(",
+            "fs::",
+            "audit::",
+            "execute_",
+        ] {
+            assert!(
+                !body.contains(forbidden),
+                "preview must not use {forbidden}"
+            );
         }
     }
 

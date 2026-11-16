@@ -241,6 +241,16 @@ pub enum SoftwareLastUsedReason {
     NoSupportedExactSource,
 }
 
+/// Optional local icon location, with no loading or execution authority.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct IconEvidenceV1 {
+    /// Local absolute location evidence only; consumers must validate before reading.
+    pub path: String,
+    /// Nonnegative ordinal or negative Windows resource identifier.
+    pub index: i32,
+}
+
 /// One exact inventory entry.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -255,6 +265,11 @@ pub struct SoftwareEntryV1 {
     pub publisher: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<IconEvidenceV1>,
+    /// Installer-reported servicing date, or MSIX installed/updated UTC date.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub installed_on: Option<String>,
     pub provenance: Vec<SoftwareSourceId>,
     pub eligibility: SoftwareEligibility,
     pub size: SoftwareSizeEvidence,
@@ -346,6 +361,8 @@ pub(crate) struct SoftwareObservation {
     pub display_name: Option<String>,
     pub publisher: Option<String>,
     pub version: Option<String>,
+    pub icon: Option<IconEvidenceV1>,
+    pub installed_on: Option<String>,
     pub provenance: Vec<SoftwareSourceId>,
     pub size: SoftwareSizeEvidence,
     pub flags: EligibilityFlags,

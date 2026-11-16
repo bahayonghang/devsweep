@@ -10,7 +10,7 @@ use devsweep_core::software::{
     SoftwareSourceState, SoftwareStartupListV1, SoftwareStartupLocation, SoftwareStartupState,
     SoftwareUpdateOutcome, SoftwareUpdatePreviewV1, SoftwareUpdateReportV1, SoftwareUpdatesReason,
     SoftwareUpdatesV1, StartupHiveExecuteReportV1, StartupRestorePreviewV1, StartupStrictOutcome,
-    StartupTogglePreviewV1, StartupToggleStrictReportV1,
+    StartupTogglePreviewV1, StartupToggleStrictReportV1, validated_installed_on,
 };
 
 use super::render;
@@ -74,6 +74,20 @@ pub(crate) fn inventory(
         let eligibility = static_text(locale, eligibility_key(entry.eligibility.reason))?;
         let size = size(locale, &entry.size)?;
         let last_used = last_used(locale, entry.last_used)?;
+        let installed_on = validated_installed_on(entry.installed_on.as_deref())
+            .map(str::to_string)
+            .map_or_else(
+                || static_text(locale, "software.v1.installed_on.unknown"),
+                Ok,
+            )?;
+        let date_note = static_text(
+            locale,
+            if matches!(entry.identity, SoftwareIdentity::Msix { .. }) {
+                "software.v1.installed_on.msix"
+            } else {
+                "software.v1.installed_on.arp"
+            },
+        )?;
         lines.push(render(
             locale,
             "software.v1.inventory.entry",
@@ -85,6 +99,8 @@ pub(crate) fn inventory(
                 ("eligibility", &eligibility),
                 ("size", &size),
                 ("last_used", &last_used),
+                ("installed_on", &installed_on),
+                ("date_note", &date_note),
             ],
             None,
         )?);

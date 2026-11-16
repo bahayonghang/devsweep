@@ -458,6 +458,8 @@ mod tests {
                 size: SoftwareSizeEvidence::Unknown {
                     reason_code: "not_measured".to_string(),
                 },
+                icon: None,
+                installed_on: None,
                 last_used: SoftwareLastUsedEvidence::default(),
                 launch: None,
             }],

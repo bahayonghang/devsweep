@@ -265,4 +265,69 @@ mod tests {
             .contains("InstallDate")
         );
     }
+
+    #[test]
+    fn inventory_emits_optional_evidence_and_bilingual_qualified_dates() {
+        let directory = TempDir::new().unwrap();
+        let mut inventory: SoftwareInventoryV1 = serde_json::from_str(include_str!(
+            "../../../../../devsweep-core/tests/fixtures/software/inventory-evidence.json"
+        ))
+        .unwrap();
+        for (locale, label, note, unknown) in [
+            (
+                Locale::En,
+                "Installed / serviced",
+                "Installed / last updated (UTC)",
+                "Unknown",
+            ),
+            (
+                Locale::ZhCn,
+                "安装/维护日期",
+                "安装或最近更新（UTC）",
+                "未知",
+            ),
+        ] {
+            let output = directory.path().join(format!("human-{}.txt", locale.tag()));
+            let cli = parse(&[
+                "devsweep",
+                "software",
+                "inventory",
+                "--output",
+                output.to_str().unwrap(),
+            ]);
+            emit_inventory(&cli, locale, &inventory).unwrap();
+            let text = fs::read_to_string(output).unwrap();
+            assert!(text.contains(&format!("{label}: 2024-02-29")), "{text}");
+            assert!(text.contains(note));
+
+            let mut invalid = inventory.clone();
+            invalid.entries[0].installed_on = Some("2024-02-30".to_string());
+            let text = presentation::software::inventory(locale, &invalid).unwrap();
+            assert!(text.contains(&format!("{label}: {unknown}")), "{text}");
+            assert!(!text.contains("2024-02-30"));
+        }
+        let output = directory.path().join("inventory.json");
+        let cli = parse(&[
+            "devsweep",
+            "software",
+            "inventory",
+            "--format",
+            "json",
+            "--output",
+            output.to_str().unwrap(),
+        ]);
+        emit_inventory(&cli, Locale::En, &inventory).unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["command"], "software.inventory");
+        assert_eq!(json["data"]["entries"][0]["icon"]["index"], -101);
+        assert_eq!(json["data"]["entries"][0]["installed_on"], "2024-02-29");
+
+        inventory.entries[0].installed_on = None;
+        assert!(
+            presentation::software::inventory(Locale::ZhCn, &inventory)
+                .unwrap()
+                .contains("安装/维护日期: 未知")
+        );
+    }
 }

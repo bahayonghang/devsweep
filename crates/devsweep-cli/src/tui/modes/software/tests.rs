@@ -47,6 +47,8 @@ fn entry(id: &str, selectable_entry: bool) -> SoftwareEntryV1 {
         size: SoftwareSizeEvidence::Unknown {
             reason_code: "not_reported".to_string(),
         },
+        icon: None,
+        installed_on: None,
         last_used: SoftwareLastUsedEvidence::Unknown {
             reason_code: SoftwareLastUsedReason::NoSupportedExactSource,
         },

@@ -76,6 +76,8 @@ fn inventory_from_msix(result: MtaResult, sizes: Vec<SoftwareSizeEvidence>) -> S
                 display_name: package.display_name,
                 publisher: package.publisher,
                 version: Some(package.version),
+                icon: package.icon,
+                installed_on: package.installed_on,
                 provenance: vec![source.clone()],
                 size,
                 flags: EligibilityFlags {
@@ -163,6 +165,8 @@ struct EnumeratedMsixPackage {
     publisher: Option<String>,
     version: String,
     installed_path: Option<String>,
+    icon: Option<IconEvidenceV1>,
+    installed_on: Option<String>,
     hidden: bool,
     system: bool,
     dependency: bool,
@@ -259,6 +263,8 @@ struct RawPackage {
     publisher: Option<String>,
     version: String,
     installed_path: Option<String>,
+    icon: Option<IconEvidenceV1>,
+    installed_on: Option<String>,
     framework: bool,
     resource: bool,
     optional: bool,
@@ -332,6 +338,15 @@ fn enumerate_on_mta(
                     .ok()
                     .and_then(|path| bounded_hstring(path, 32 * 1024).ok())
                     .filter(|path| !path.is_empty()),
+                icon: package
+                    .Logo()
+                    .ok()
+                    .and_then(|uri| uri.AbsoluteUri().ok())
+                    .and_then(|uri| bounded_hstring(uri, 32 * 1024).ok())
+                    .and_then(|uri| super::evidence::parse_msix_logo(Some(&uri))),
+                installed_on: super::evidence::parse_msix_installed_date(
+                    package.InstalledDate().ok().map(|date| date.UniversalTime),
+                ),
                 framework: package.IsFramework()?,
                 resource: package.IsResourcePackage()?,
                 optional: package.IsOptional()?,
@@ -379,6 +394,8 @@ fn finish_enumeration(raw: Vec<RawPackage>, partial: bool) -> MtaResult {
                 publisher: package.publisher,
                 version: package.version,
                 installed_path: package.installed_path,
+                icon: package.icon,
+                installed_on: package.installed_on,
                 hidden,
                 system: package.system,
                 dependency,
@@ -742,6 +759,8 @@ mod overlap_tests {
             publisher: Some("fixture".to_string()),
             version: "1.0.0.0".to_string(),
             installed_path: path,
+            icon: None,
+            installed_on: None,
             framework: false,
             resource: false,
             optional: false,
@@ -789,6 +808,38 @@ mod overlap_tests {
                 .observations
                 .iter()
                 .all(|row| row.flags.source_incomplete)
+        );
+    }
+
+    #[test]
+    fn optional_logo_and_date_failures_do_not_downgrade_packages() {
+        let mut present = raw("Evidence_1.0.0.0_x64__publisher", None, &[]);
+        present.icon =
+            super::super::evidence::parse_msix_logo(Some("file:///C:/Apps/split/Logo.png"));
+        present.installed_on =
+            super::super::evidence::parse_msix_installed_date(Some(134_075_520_000_000_000));
+        let missing = raw("Missing_1.0.0.0_x64__publisher", None, &[]);
+        let result = finish_enumeration(vec![present, missing], false);
+        let unknown = || SoftwareSizeEvidence::Unknown {
+            reason_code: "fixture".to_string(),
+        };
+        let inventory = inventory_from_msix(result, vec![unknown(), unknown()]);
+        assert_eq!(inventory.evidence[0].state, SoftwareSourceState::Available);
+        assert_eq!(
+            inventory.observations[0].icon.as_ref().unwrap().path,
+            r"C:\Apps\split\Logo.png"
+        );
+        assert_eq!(
+            inventory.observations[0].installed_on.as_deref(),
+            Some("2025-11-14")
+        );
+        assert_eq!(inventory.observations[1].icon, None);
+        assert_eq!(inventory.observations[1].installed_on, None);
+        assert!(
+            inventory
+                .observations
+                .iter()
+                .all(|entry| !entry.flags.source_incomplete)
         );
     }
 

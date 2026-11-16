@@ -23,6 +23,8 @@ fn observation(identity: SoftwareIdentity, flags: EligibilityFlags) -> SoftwareO
         display_name: Some("Fixture".to_string()),
         publisher: Some("Fixture Publisher".to_string()),
         version: Some("1.0".to_string()),
+        icon: None,
+        installed_on: None,
         provenance: vec![SoftwareSourceId::MsixCurrentUser],
         size: SoftwareSizeEvidence::Unknown {
             reason_code: "fixture".to_string(),
@@ -309,4 +311,86 @@ fn reported_kib_uses_checked_integer_arithmetic() {
         ),
         SoftwareSizeEvidence::Unknown { .. }
     ));
+}
+
+#[test]
+fn legacy_inventory_keeps_its_fixed_fingerprint_and_omits_absent_evidence() {
+    let raw = include_str!("../../tests/fixtures/software/inventory-legacy.json");
+    let inventory: SoftwareInventoryV1 = serde_json::from_str(raw).unwrap();
+    assert_eq!(
+        inventory.fingerprint,
+        "sha256:78020d9bcae6440a1857e3e9de9b8c83d52c9663ed2164a03821b6afbbd30457"
+    );
+    assert_eq!(
+        inventory_fingerprint(&inventory).unwrap(),
+        inventory.fingerprint
+    );
+    assert_eq!(inventory.entries[0].icon, None);
+    assert_eq!(inventory.entries[0].installed_on, None);
+    assert_eq!(
+        serde_json::to_value(&inventory).unwrap(),
+        serde_json::from_str::<serde_json::Value>(raw).unwrap()
+    );
+}
+
+#[test]
+fn optional_evidence_round_trips_without_command_fields_or_identity_changes() {
+    let raw = include_str!("../../tests/fixtures/software/inventory-evidence.json");
+    let inventory: SoftwareInventoryV1 = serde_json::from_str(raw).unwrap();
+    assert_eq!(
+        inventory_fingerprint(&inventory).unwrap(),
+        inventory.fingerprint
+    );
+    assert_eq!(inventory.entries[0].icon.as_ref().unwrap().index, -101);
+    assert_eq!(
+        validated_installed_on(inventory.entries[0].installed_on.as_deref()),
+        Some("2024-02-29")
+    );
+    let mut absent = inventory.clone();
+    absent.entries[0].icon = None;
+    absent.entries[0].installed_on = None;
+    assert_eq!(absent.entries[0].id, inventory.entries[0].id);
+    assert_eq!(
+        absent.entries[0].eligibility,
+        inventory.entries[0].eligibility
+    );
+    assert_ne!(
+        inventory_fingerprint(&absent).unwrap(),
+        inventory.fingerprint
+    );
+    let json = serde_json::to_value(&inventory).unwrap();
+    for forbidden in [
+        ["Uninstall", "String"].concat(),
+        ["Quiet", "Uninstall", "String"].concat(),
+        "program".to_string(),
+        "argv".to_string(),
+    ] {
+        assert!(!serde_json::to_string(&json).unwrap().contains(&forbidden));
+    }
+    assert_eq!(
+        serde_json::from_value::<SoftwareInventoryV1>(json).unwrap(),
+        inventory
+    );
+}
+
+#[test]
+fn conflicting_display_evidence_becomes_unknown_without_eligibility_refusal() {
+    let mut first = msix(
+        "Evidence_1.0.0.0_x64__publisher",
+        EligibilityFlags::default(),
+    );
+    first.icon = Some(IconEvidenceV1 {
+        path: r"C:\Apps\first.ico".to_string(),
+        index: 0,
+    });
+    first.installed_on = Some("2026-11-01".to_string());
+    let mut second = first.clone();
+    second.icon.as_mut().unwrap().index = 1;
+    second.installed_on = Some("2026-11-02".to_string());
+    let left = assemble_inventory(1, vec![], vec![first.clone(), second.clone()]).unwrap();
+    let right = assemble_inventory(1, vec![], vec![second, first]).unwrap();
+    assert_eq!(left, right);
+    assert_eq!(left.entries[0].icon, None);
+    assert_eq!(left.entries[0].installed_on, None);
+    assert!(left.entries[0].eligibility.is_selectable());
 }

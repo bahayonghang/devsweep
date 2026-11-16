@@ -31,6 +31,7 @@ use crate::{
         self, DesktopFont, DesktopMotion, DesktopPatch, DesktopPreferences, DesktopTheme,
         LanguageTag, PreferenceFiles, StoreError,
     },
+    software_icons::{IconRequest, SoftwareIcons},
     software_review::SoftwareReview,
     status_panel::{ProcessSort, StatusPanel, StatusPhase},
     workbench_review::WorkbenchReview,
@@ -1166,12 +1167,26 @@ pub struct Session {
     jobs: Vec<BackgroundJob>,
     job_generation: u64,
     software_job: Option<u64>,
+    software_icons: SoftwareIcons,
+    software_icon_job: Option<u64>,
+    software_related_job: Option<(u64, Arc<FlagCancelObserver>)>,
     status_job: Option<u64>,
     analyze_job: Option<(u64, PathBuf, Arc<FlagCancelObserver>)>,
 }
 
 /// One slow, read-only operation the window runs on a worker thread.
 pub enum BackgroundJob {
+    SoftwareIcons {
+        generation: u64,
+        cache_generation: u64,
+        requests: Vec<IconRequest>,
+    },
+    SoftwareRelated {
+        generation: u64,
+        inventory: Box<devsweep_core::software::SoftwareInventoryV1>,
+        id: String,
+        cancel: Arc<FlagCancelObserver>,
+    },
     SoftwareHost {
         generation: u64,
         segment: crate::workbench::SoftwareSegment,
@@ -1188,6 +1203,16 @@ pub enum BackgroundJob {
 
 /// The finished result of one [`BackgroundJob`].
 pub enum JobResult {
+    SoftwareIcons {
+        generation: u64,
+        cache_generation: u64,
+        results: Vec<crate::software_icons::IconResult>,
+    },
+    SoftwareRelated {
+        generation: u64,
+        id: String,
+        result: Result<devsweep_core::software::SoftwareLeftoverPreviewV1, String>,
+    },
     SoftwareHost {
         generation: u64,
         load: Option<crate::software_review::SoftwareHostLoad>,
@@ -1208,6 +1233,33 @@ impl BackgroundJob {
     #[must_use]
     pub fn run(self) -> JobResult {
         match self {
+            Self::SoftwareIcons {
+                generation,
+                cache_generation,
+                requests,
+            } => JobResult::SoftwareIcons {
+                generation,
+                cache_generation,
+                results: crate::software_icons::load_batch(requests),
+            },
+            Self::SoftwareRelated {
+                generation,
+                inventory,
+                id,
+                cancel,
+            } => {
+                let result = devsweep_core::software::discover_software_leftovers(
+                    &inventory,
+                    std::slice::from_ref(&id),
+                    Some(&cancel),
+                )
+                .map_err(|error| error.code().to_string());
+                JobResult::SoftwareRelated {
+                    generation,
+                    id,
+                    result,
+                }
+            }
             Self::SoftwareHost {
                 generation,
                 segment,
@@ -1329,6 +1381,9 @@ impl Session {
             jobs: Vec::new(),
             job_generation: 0,
             software_job: None,
+            software_icons: SoftwareIcons::default(),
+            software_icon_job: None,
+            software_related_job: None,
             status_job: None,
             analyze_job: None,
         }
@@ -1380,6 +1435,31 @@ impl Session {
     /// the outstanding request (superseded or canceled) are dropped.
     pub fn apply_job(&mut self, result: JobResult) -> bool {
         match result {
+            JobResult::SoftwareIcons {
+                generation,
+                cache_generation,
+                results,
+            } => {
+                if self.software_icon_job != Some(generation) {
+                    return false;
+                }
+                self.software_icon_job = None;
+                self.software_icons.apply(cache_generation, results)
+            }
+            JobResult::SoftwareRelated {
+                generation,
+                id,
+                result,
+            } => {
+                if self.software_related_job.as_ref().map(|job| job.0) != Some(generation) {
+                    return false;
+                }
+                self.software_related_job = None;
+                if self.shell.selection(Mode::Software) != Some(id.as_str()) {
+                    return false;
+                }
+                self.software_review.apply_related(&id, result)
+            }
             JobResult::SoftwareHost { generation, load } => {
                 if self.software_job != Some(generation) {
                     return false;
@@ -1657,6 +1737,8 @@ impl Session {
     }
 
     fn queue_software_load(&mut self, segment: crate::workbench::SoftwareSegment, locale: Locale) {
+        self.software_close_related();
+        self.software_icons.invalidate();
         self.software_review.begin_host_load(segment, locale);
         self.sync_software_rows();
         let generation = self.next_generation();
@@ -1672,6 +1754,10 @@ impl Session {
             return true;
         }
         if self.shell.mode() == Mode::Software {
+            if self.software_review.related().is_some() {
+                self.software_close_related();
+                return true;
+            }
             return self.software_review.cancel_review(self.locale());
         }
         if self.shell.mode() == Mode::Optimize && self.optimize_board.group().is_some() {
@@ -1691,8 +1777,15 @@ impl Session {
 
     fn sync_software_rows(&mut self) {
         if self.software_review.is_open() {
-            self.shell
-                .set_row_ids(Mode::Software, self.software_review.filtered_ids());
+            let ids = self.software_review.filtered_ids();
+            if self
+                .software_review
+                .related()
+                .is_some_and(|related| !ids.contains(&related.id))
+            {
+                self.software_close_related();
+            }
+            self.shell.set_row_ids(Mode::Software, ids);
         }
     }
 
@@ -1878,6 +1971,7 @@ impl Session {
         if self.software_review.segment() == Some(segment) {
             return;
         }
+        self.software_close_related();
         self.software_job = None;
         self.jobs
             .retain(|job| !matches!(job, BackgroundJob::SoftwareHost { .. }));
@@ -1902,6 +1996,7 @@ impl Session {
     pub fn select_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
         let id = id.into();
         if mode == Mode::Software && self.shell.selection(mode) != Some(id.as_str()) {
+            self.software_close_related();
             self.software_review.cancel_review(self.locale());
         }
         self.shell.select(mode, id);
@@ -2196,6 +2291,93 @@ impl Session {
         self.sync_software_rows();
     }
 
+    pub fn software_set_sort(&mut self, sort: crate::software_review::SoftwareSort) {
+        self.software_review.set_sort(sort);
+        self.sync_software_rows();
+    }
+
+    pub fn software_cycle_source_filter(&mut self) {
+        self.software_review.cycle_source_filter();
+        self.sync_software_rows();
+    }
+
+    /// Small batches are queued after text is installed. There is at most one
+    /// icon worker, even when refresh supersedes the cache generation.
+    pub fn software_prepare_icons(&mut self) {
+        self.software_icons.synchronize(
+            self.software_review
+                .inventory()
+                .map(|inventory| inventory.fingerprint.as_str()),
+        );
+        if !self.background_jobs
+            || self.software_icon_job.is_some()
+            || self.shell.mode() != Mode::Software
+            || self.shell.surface() != Surface::Mode
+        {
+            return;
+        }
+        let requests = self.software_icons.next_batch(
+            self.shell
+                .visible_row_ids(Mode::Software)
+                .iter()
+                .filter_map(|id| {
+                    Some(IconRequest {
+                        id: id.clone(),
+                        evidence: self.software_review.item(id)?.icon.clone()?,
+                    })
+                }),
+        );
+        if requests.is_empty() {
+            return;
+        }
+        let generation = self.next_generation();
+        self.software_icon_job = Some(generation);
+        self.jobs.push(BackgroundJob::SoftwareIcons {
+            generation,
+            cache_generation: self.software_icons.generation(),
+            requests,
+        });
+    }
+
+    pub fn software_icon(&self, id: &str) -> Option<Arc<gpui::RenderImage>> {
+        self.software_icons.image(&IconRequest {
+            id: id.to_string(),
+            evidence: self.software_review.item(id)?.icon.clone()?,
+        })
+    }
+
+    /// Explicit, read-only discovery for the focused row. Eligibility to
+    /// uninstall is deliberately irrelevant and no selection plan is created.
+    pub fn software_preview_related(&mut self, id: &str) {
+        if self.shell.selection(Mode::Software) != Some(id)
+            || self.software_review.segment() != Some(crate::workbench::SoftwareSegment::Uninstall)
+        {
+            return;
+        }
+        self.software_close_related();
+        let Some(inventory) = self.software_review.begin_related(id, self.locale()) else {
+            return;
+        };
+        let generation = self.next_generation();
+        let cancel = Arc::new(FlagCancelObserver::default());
+        self.software_related_job = Some((generation, cancel.clone()));
+        self.jobs.push(BackgroundJob::SoftwareRelated {
+            generation,
+            inventory: Box::new(inventory),
+            id: id.to_string(),
+            cancel,
+        });
+    }
+
+    pub fn software_close_related(&mut self) {
+        if let Some((_, cancel)) = self.software_related_job.take() {
+            cancel.request_cancel();
+        }
+        self.jobs
+            .retain(|job| !matches!(job, BackgroundJob::SoftwareRelated { .. }));
+        self.software_review.clear_related();
+    }
+
     pub fn software_cycle_filter(&mut self) {
         self.software_review.cycle_filter();
         self.sync_software_rows();
@@ -2206,6 +2388,8 @@ impl Session {
         if self.software_review.loading() {
             return;
         }
+        self.software_close_related();
+        self.software_icons.invalidate();
         if self.background_jobs
             && let Some(segment) = self.software_review.segment()
             && !SoftwareReview::has_fixture(segment)
@@ -2570,6 +2754,9 @@ impl Session {
     }
 
     pub fn show_mode(&mut self, mode: Mode) {
+        if mode != Mode::Software {
+            self.software_close_related();
+        }
         self.shell.show_mode(mode);
         self.ensure_workbench_rows();
     }
@@ -3721,6 +3908,158 @@ mod tests {
             result: Err("late".to_string()),
         }));
         assert!(session.analyze_window().is_none());
+    }
+
+    #[test]
+    fn software_icons_are_text_first_single_flight_and_ignore_refreshed_evidence() {
+        use crate::software_icons::{IconRequest, IconResult};
+        let mut inventory: devsweep_core::software::SoftwareInventoryV1 =
+            serde_json::from_str(include_str!(
+                "../../crates/devsweep-core/tests/fixtures/software/inventory-evidence.json"
+            ))
+            .expect("fixture");
+        let id = inventory.entries[0].id.clone();
+        let old_evidence = inventory.entries[0].icon.clone().expect("icon");
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Software);
+        session
+            .software_review
+            .open_inventory(inventory.clone(), Locale::En);
+        session.sync_software_rows();
+        session.enable_background_jobs();
+        assert_eq!(
+            session.software_review.item_count(),
+            1,
+            "text is installed before an icon is queued"
+        );
+        assert!(session.software_icon(&id).is_none());
+        session.software_prepare_icons();
+        let jobs = session.take_jobs();
+        let [
+            BackgroundJob::SoftwareIcons {
+                generation,
+                cache_generation,
+                requests,
+            },
+        ] = jobs.as_slice()
+        else {
+            panic!("one icon job");
+        };
+        assert_eq!(requests.len(), 1);
+        session.software_prepare_icons();
+        assert!(
+            session.take_jobs().is_empty(),
+            "only one icon loader may be active"
+        );
+        inventory.entries[0].icon.as_mut().expect("icon").index = 2;
+        crate::software_review::seal_inventory(&mut inventory).expect("seal");
+        session
+            .software_review
+            .open_inventory(inventory, Locale::En);
+        session.software_prepare_icons();
+        assert!(
+            session.take_jobs().is_empty(),
+            "refresh waits for the previous bounded batch"
+        );
+        assert!(!session.apply_job(JobResult::SoftwareIcons {
+            generation: *generation,
+            cache_generation: *cache_generation,
+            results: vec![IconResult {
+                request: IconRequest {
+                    id: id.clone(),
+                    evidence: old_evidence
+                },
+                pixels: Some(image::RgbaImage::new(1, 1))
+            }]
+        }));
+        assert!(
+            session.software_icon(&id).is_none(),
+            "obsolete pixels cannot replace refreshed evidence"
+        );
+        session.software_prepare_icons();
+        assert_eq!(
+            session.take_jobs().len(),
+            1,
+            "new evidence is retried after old work settles"
+        );
+    }
+
+    #[test]
+    fn related_directory_jobs_are_read_only_and_canceled_when_focus_changes() {
+        let mut inventory: devsweep_core::software::SoftwareInventoryV1 =
+            serde_json::from_str(include_str!(
+                "../../crates/devsweep-core/tests/fixtures/software/inventory-evidence.json"
+            ))
+            .expect("fixture");
+        // A real ARP-shaped manual entry remains inspectable without uninstall authority.
+        let identity = devsweep_core::software::SoftwareIdentity::Arp {
+            hive: devsweep_core::software::RegistryHive::CurrentUser,
+            view: devsweep_core::software::RegistryView::Registry64,
+            subkey: "ReadOnlyDirectoryFixture".to_string(),
+        };
+        let id = crate::software_review::entry_id(&identity).expect("ARP id");
+        inventory.entries[0].identity = identity;
+        inventory.entries[0].id = id.clone();
+        inventory.entries[0].eligibility = devsweep_core::software::SoftwareEligibility {
+            state: devsweep_core::software::SoftwareEligibilityState::Manual,
+            reason: devsweep_core::software::SoftwareEligibilityReason::RegistryOnlyManual,
+        };
+        crate::software_review::seal_inventory(&mut inventory).expect("seal");
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Software);
+        session
+            .software_review
+            .open_inventory(inventory.clone(), Locale::ZhCn);
+        session.sync_software_rows();
+        session.select_mode_row(Mode::Software, id.clone());
+        session.software_preview_related(&id);
+        assert!(session.software_review.pending_id().is_none());
+        assert_eq!(session.software_review.executor_calls(), 0);
+        let jobs = session.take_jobs();
+        let [
+            BackgroundJob::SoftwareRelated {
+                generation,
+                inventory: supplied,
+                id: requested,
+                cancel,
+            },
+        ] = jobs.as_slice()
+        else {
+            panic!("read-only related directory job");
+        };
+        assert_eq!(supplied.as_ref(), &inventory);
+        assert_eq!(requested, &id);
+        session.select_mode_row(Mode::Software, "another-row");
+        assert!(cancel.is_cancel_requested());
+        assert!(session.software_review.related().is_none());
+        assert!(!session.apply_job(JobResult::SoftwareRelated {
+            generation: *generation,
+            id,
+            result: Ok(devsweep_core::software::SoftwareLeftoverPreviewV1 {
+                version: 1,
+                apps: Vec::new()
+            })
+        }));
+        let source = crate::source_lf(include_str!("shell.rs"));
+        let branch = source
+            .split("Self::SoftwareRelated {")
+            .nth(1)
+            .expect("related job")
+            .split("Self::SoftwareHost {")
+            .next()
+            .expect("branch");
+        assert!(branch.contains("discover_software_leftovers("));
+        for forbidden in [
+            "plan_software_leftovers(",
+            "execute_software_leftovers(",
+            "build_selection_plan(",
+            "audit::",
+        ] {
+            assert!(
+                !branch.contains(forbidden),
+                "read-only job must not use {forbidden}"
+            );
+        }
     }
 
     #[test]

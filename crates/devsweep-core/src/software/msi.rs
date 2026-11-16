@@ -81,6 +81,8 @@ fn windows_inventory(observed_at_unix_ms: u64) -> SourceInventory {
                 display_name: record.display_name.clone(),
                 publisher: record.publisher,
                 version: record.version,
+                icon: None,
+                installed_on: None,
                 provenance: vec![source.clone()],
                 size: reported_size(
                     record.estimated_size_kib,

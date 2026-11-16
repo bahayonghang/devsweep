@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "observed_at_unix_ms": 1700000000000,
+  "sources": [
+    {
+      "source": {
+        "source": "msix_current_user"
+      },
+      "state": "available"
+    }
+  ],
+  "entries": [
+    {
+      "id": "software:v1:msix:f2a42eb078501f7359d3bf6416f5f01bc01d478488d5fe0903a033f0a8b5053e",
+      "identity": {
+        "source": "msix",
+        "package_full_name": "EvidenceFixture_1.0.0.0_x64__publisher"
+      },
+      "scope": "current_user",
+      "display_name": "Evidence Fixture",
+      "publisher": "Fixture Publisher",
+      "version": "1.0.0.0",
+      "icon": {
+        "path": "C:\\Fixture Apps\\Evidence.exe",
+        "index": -101
+      },
+      "installed_on": "2024-02-29",
+      "provenance": [
+        {
+          "source": "msix_current_user"
+        }
+      ],
+      "eligibility": {
+        "state": "selectable",
+        "reason": "eligible_current_user_msix"
+      },
+      "size": {
+        "state": "unknown",
+        "reason_code": "not_reported"
+      },
+      "last_used": {
+        "state": "unknown",
+        "reason_code": "no_supported_exact_source"
+      }
+    }
+  ],
+  "fingerprint": "sha256:679f62bdd2eed1ba48e3ced4faaf8849bb6580ba552389e79b18db004709a984"
+}

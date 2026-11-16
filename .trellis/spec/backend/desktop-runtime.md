@@ -5,6 +5,11 @@ workspace outside `just ci`; its gate is `just gpui`): native control focus, the
 Status live lifecycle, or window material. Operation cancellation and cleanup
 authority remain owned by `devsweep-core` and the GPUI `Session` job queue.
 
+For Software inventory icons, date/source presentation and the pre-uninstall
+read-only directory preview, also read [Software Evidence](./software-evidence.md).
+Those background reads share the Session job queue and never grant host-action
+authority.
+
 ## GPUI native control focus
 
 In `desktop-gpui`, mode tabs use real per-control keyboard focus through

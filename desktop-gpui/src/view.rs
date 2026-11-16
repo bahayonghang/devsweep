@@ -196,6 +196,7 @@ pub struct ShellView {
     search: Entity<TextInput>,
     font_search: Entity<TextInput>,
     fonts: crate::fonts::FontCatalogue,
+    software_sort_open: bool,
 }
 
 /// Route a resolved mode action to the session.
@@ -357,7 +358,11 @@ impl ShellView {
     }
 
     fn back(&mut self, _: &Back, _: &mut Window, cx: &mut Context<Self>) {
-        self.session.apply_key(crate::shell::NavKey::Escape);
+        if self.software_sort_open && self.session.shell().mode() == Mode::Software {
+            self.software_sort_open = false;
+        } else {
+            self.session.apply_key(crate::shell::NavKey::Escape);
+        }
         cx.notify();
     }
 
@@ -675,6 +680,7 @@ impl Render for ShellView {
         if selected == Mode::Analyze {
             self.session.prepare_analyze_landing();
         }
+        self.session.software_prepare_icons();
         self.dispatch_jobs(cx);
         // Status samples while its page is on screen and stops when it is not.
         let status_main = selected == Mode::Status && surface == Surface::Mode;
@@ -2570,6 +2576,7 @@ pub fn run(session: Session) {
                             search: search.clone(),
                             font_search: font_search.clone(),
                             fonts: crate::fonts::FontCatalogue::default(),
+                            software_sort_open: false,
                         });
                         view.update(cx, |_view, cx| {
                             cx.observe(&font_search, |this, observed, cx| {

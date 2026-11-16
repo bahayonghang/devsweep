@@ -29,6 +29,124 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
+fn software_inventory_v1_optional_evidence_and_legacy_contract() {
+    use devsweep_core::software::{
+        SoftwareInventoryV1, software_inventory_fingerprint, validated_installed_on,
+    };
+    let legacy = include_str!("../../devsweep-core/tests/fixtures/software/inventory-legacy.json");
+    let populated =
+        include_str!("../../devsweep-core/tests/fixtures/software/inventory-evidence.json");
+    for (raw, has_evidence) in [(legacy, false), (populated, true)] {
+        let inventory: SoftwareInventoryV1 = serde_json::from_str(raw).unwrap();
+        assert_eq!(inventory.version, 1);
+        assert_eq!(
+            software_inventory_fingerprint(&inventory).unwrap(),
+            inventory.fingerprint
+        );
+        let value = serde_json::to_value(&inventory).unwrap();
+        assert_eq!(
+            value,
+            serde_json::from_str::<serde_json::Value>(raw).unwrap()
+        );
+        let row = &value["entries"][0];
+        let mut expected = vec![
+            "display_name",
+            "eligibility",
+            "id",
+            "identity",
+            "last_used",
+            "provenance",
+            "publisher",
+            "scope",
+            "size",
+            "version",
+        ];
+        if has_evidence {
+            expected.extend(["icon", "installed_on"]);
+            assert_eq!(row["icon"]["path"], r"C:\Fixture Apps\Evidence.exe");
+            assert_eq!(row["icon"]["index"], -101);
+            assert_eq!(
+                validated_installed_on(inventory.entries[0].installed_on.as_deref()),
+                Some("2024-02-29")
+            );
+            assert_eq!(row["icon"].as_object().unwrap().len(), 2);
+        } else {
+            assert_eq!(
+                inventory.fingerprint,
+                "sha256:78020d9bcae6440a1857e3e9de9b8c83d52c9663ed2164a03821b6afbbd30457"
+            );
+            assert!(inventory.entries[0].icon.is_none());
+            assert!(inventory.entries[0].installed_on.is_none());
+        }
+        expected.sort_unstable();
+        assert_eq!(
+            row.as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            expected
+        );
+        for forbidden in ["UninstallString", "QuietUninstallString", "program", "argv"] {
+            assert!(!raw.contains(forbidden));
+        }
+    }
+
+    let mut value: serde_json::Value = serde_json::from_str(populated).unwrap();
+    for wrong in [serde_json::json!("-101"), serde_json::json!(2147483648_u64)] {
+        value["entries"][0]["icon"]["index"] = wrong;
+        assert!(serde_json::from_value::<SoftwareInventoryV1>(value.clone()).is_err());
+    }
+    value["entries"][0]["icon"] = serde_json::Value::Null;
+    value["entries"][0]["installed_on"] = serde_json::Value::Null;
+    let absent: SoftwareInventoryV1 = serde_json::from_value(value).unwrap();
+    assert!(absent.entries[0].icon.is_none());
+    assert!(absent.entries[0].installed_on.is_none());
+}
+
+#[test]
+fn software_plan_reads_incremental_evidence_without_adding_it_to_execution_authority() {
+    use devsweep_core::software::{SoftwareInventoryV1, software_inventory_fingerprint};
+    let mut inventory: SoftwareInventoryV1 = serde_json::from_str(include_str!(
+        "../../devsweep-core/tests/fixtures/software/inventory-evidence.json"
+    ))
+    .unwrap();
+    inventory.observed_at_unix_ms = u64::try_from(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis(),
+    )
+    .unwrap();
+    // A saved malformed decoration remains fingerprint input; it is never a command.
+    inventory.entries[0].installed_on = Some("invalid-date".to_string());
+    inventory.fingerprint = software_inventory_fingerprint(&inventory).unwrap();
+    let directory = TempDir::new().unwrap();
+    let input = directory.path().join("inventory.json");
+    let output = directory.path().join("plan.json");
+    fs::write(&input, serde_json::to_vec(&inventory).unwrap()).unwrap();
+    let result = devsweep(&[
+        "software",
+        "plan",
+        "--inventory",
+        input.to_str().unwrap(),
+        "--select",
+        &inventory.entries[0].id,
+        "--output",
+        output.to_str().unwrap(),
+    ]);
+    assert_eq!(result.status.code(), Some(0), "{}", stderr(&result));
+    let plan: serde_json::Value = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
+    assert_eq!(plan["version"], 1);
+    assert_eq!(plan["inventory_fingerprint"], inventory.fingerprint);
+    assert_eq!(plan["selected_ids"][0], inventory.entries[0].id);
+    let text = serde_json::to_string(&plan).unwrap();
+    for absent in ["icon", "installed_on", "Evidence.exe", "invalid-date"] {
+        assert!(!text.contains(absent));
+    }
+}
+
+#[test]
 fn help_exposes_only_the_frozen_roots_in_english_and_chinese() {
     let english = devsweep(&["--help"]);
     assert_eq!(english.status.code(), Some(0));

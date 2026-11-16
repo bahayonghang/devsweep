@@ -28,6 +28,7 @@ mod preferences;
 mod process_spawn;
 #[cfg_attr(not(test), allow(dead_code))]
 mod shell;
+mod software_icons;
 #[cfg_attr(not(test), allow(dead_code))]
 mod software_review;
 #[cfg_attr(not(test), allow(dead_code))]

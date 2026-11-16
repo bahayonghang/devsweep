@@ -91,6 +91,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
   confirmed `analyze.trash` Recycle Bin plan run by the Clean executor.
 - `crates/devsweep-core/src/software/mod.rs` - installed-software inventory and preview planning.
   Never reads vendor uninstall command fields as authority.
+- `crates/devsweep-core/src/software/evidence.rs` - pure optional icon/date parsing and shared
+  validated date projection; display metadata never grants host-action authority.
 - `crates/devsweep-core/src/software/plan.rs` - Software selection plan validation.
 - `crates/devsweep-core/src/software/execution/mod.rs` - current-user MSIX dispatch only.
 - `crates/devsweep-core/src/software/updates.rs` - read-only `winget upgrade` probe and table parser.
@@ -156,6 +158,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `desktop-gpui/src/shell.rs` - `Session` state machine and the generation-guarded `BackgroundJob` queue.
 - `desktop-gpui/src/clean_workbench.rs`, `clean_ai.rs`, `clean_map.rs` - Clean review, AI subview, disk-map projection.
 - `desktop-gpui/src/software_review.rs`, `optimize_board.rs`, `workbench_review.rs` - Software/Optimize review models; host reads only in `load_host`.
+- `desktop-gpui/src/software_icons.rs` - bounded positive/negative icon cache and
+  local fixed-drive, no-reparse resource reads for background Software jobs.
 - `desktop-gpui/src/analyze*.rs`, `status_panel.rs` - Analyze board/window and Status projections.
 - `desktop-gpui/assets/` - beaver master PNG/ICO, licensed Earth still (see `desktop-gpui/THIRD_PARTY_NOTICES.txt`), original `icons/*.svg`.
 - `desktop-gpui/vendor/gpui_windows/` - patched GPUI Windows backend.

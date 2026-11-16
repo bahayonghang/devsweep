@@ -106,6 +106,8 @@ struct ArpRecord {
     display_name: Option<String>,
     display_version: Option<String>,
     publisher: Option<String>,
+    display_icon: Option<String>,
+    install_date: Option<String>,
     estimated_size_kib: Option<u64>,
     no_remove: bool,
     system_component: bool,
@@ -149,6 +151,8 @@ fn observation_from_record(
         display_name: record.display_name.clone(),
         publisher: record.publisher,
         version: record.display_version,
+        icon: super::evidence::parse_display_icon(record.display_icon.as_deref()),
+        installed_on: super::evidence::parse_install_date(record.install_date.as_deref()),
         provenance: vec![source],
         size: reported_size(
             record.estimated_size_kib,
@@ -233,6 +237,8 @@ fn enumerate_source(hive: RegistryHive, view: RegistryView) -> EnumeratedArp {
         let publisher = read_string("Publisher");
         let release_type = read_string("ReleaseType");
         let parent_key_name = read_string("ParentKeyName");
+        // Optional display decorations cannot invalidate source/identity evidence.
+        let (display_icon, install_date) = optional_display_metadata(&key);
         let estimated_size_kib = match key.dword("EstimatedSize") {
             Ok(value) => value.map(u64::from),
             Err(()) => {
@@ -260,6 +266,8 @@ fn enumerate_source(hive: RegistryHive, view: RegistryView) -> EnumeratedArp {
             display_name,
             display_version,
             publisher,
+            display_icon,
+            install_date,
             estimated_size_kib,
             no_remove,
             system_component,
@@ -281,6 +289,14 @@ fn enumerate_source(hive: RegistryHive, view: RegistryView) -> EnumeratedArp {
         },
         records,
     }
+}
+
+#[cfg(windows)]
+fn optional_display_metadata(key: &native_registry::RegKey) -> (Option<String>, Option<String>) {
+    (
+        key.string("DisplayIcon").ok().flatten(),
+        key.string("InstallDate").ok().flatten(),
+    )
 }
 
 #[cfg(windows)]
@@ -647,13 +663,79 @@ pub(super) mod native_registry {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(windows)]
     #[test]
-    fn adapter_allowlist_contains_no_command_or_icon_fields() {
+    fn non_string_optional_registry_values_are_unknown() {
+        use super::{native_registry::*, *};
+        let unique = tempfile::tempdir().unwrap();
+        let root = format!(
+            r"Software\DevSweepTests\SoftwareEvidence-{}",
+            unique.path().file_name().unwrap().to_string_lossy()
+        );
+        struct KeyCleanup(String);
+        impl Drop for KeyCleanup {
+            fn drop(&mut self) {
+                let _ = delete_tree(predefined_hive(RegistryHive::CurrentUser), &self.0);
+            }
+        }
+        let _cleanup = KeyCleanup(root.clone());
+        let key = RegKey::create_writable(
+            predefined_hive(RegistryHive::CurrentUser),
+            &root,
+            RegistryView::Registry64,
+        )
+        .unwrap();
+        key.set_typed("DisplayIcon", 4, &1_u32.to_le_bytes())
+            .unwrap();
+        key.set_typed("InstallDate", 3, b"invalid typed date")
+            .unwrap();
+        assert_eq!(optional_display_metadata(&key), (None, None));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn optional_metadata_is_parsed_without_changing_identity_or_source_eligibility() {
+        use super::*;
+        for (icon, date, expected_icon, expected_date) in [
+            (
+                Some(r#""C:\Apps\fixture.exe",-7"#),
+                Some("20240229"),
+                true,
+                Some("2024-02-29"),
+            ),
+            (None, None, false, None),
+            (Some(r"\\server\fixture.ico"), Some("20260230"), false, None),
+        ] {
+            let observation = observation_from_record(
+                RegistryHive::CurrentUser,
+                RegistryView::Registry64,
+                SoftwareSourceId::Arp {
+                    hive: RegistryHive::CurrentUser,
+                    view: RegistryView::Registry64,
+                },
+                ArpRecord {
+                    subkey: "fixture".to_string(),
+                    display_name: Some("Fixture".to_string()),
+                    display_icon: icon.map(str::to_string),
+                    install_date: date.map(str::to_string),
+                    ..ArpRecord::default()
+                },
+                true,
+                1,
+            );
+            assert_eq!(observation.icon.is_some(), expected_icon);
+            assert_eq!(observation.installed_on.as_deref(), expected_date);
+            assert!(!observation.flags.source_incomplete);
+            assert!(!observation.flags.conflicting_identity);
+        }
+    }
+
+    #[test]
+    fn adapter_allowlist_contains_no_command_fields() {
         let source = include_str!("arp.rs");
         for forbidden in [
             ["Quiet", "Uninstall", "String"].concat(),
             ["Uninstall", "String"].concat(),
-            ["Display", "Icon"].concat(),
         ] {
             assert!(!source.contains(&forbidden));
         }

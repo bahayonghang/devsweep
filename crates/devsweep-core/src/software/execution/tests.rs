@@ -161,6 +161,8 @@ fn entry(identity: SoftwareIdentity) -> SoftwareEntryV1 {
         size: SoftwareSizeEvidence::Unknown {
             reason_code: "fixture".to_string(),
         },
+        icon: None,
+        installed_on: None,
         last_used: SoftwareLastUsedEvidence::default(),
         launch: None,
     }
@@ -982,6 +984,8 @@ fn named_observation(identity: SoftwareIdentity, name: &str) -> SoftwareObservat
         display_name: Some(name.to_string()),
         publisher: Some("Publisher".to_string()),
         version: Some("1.0".to_string()),
+        icon: None,
+        installed_on: None,
         provenance: Vec::new(),
         size: SoftwareSizeEvidence::Unknown {
             reason_code: "not_reported".to_string(),

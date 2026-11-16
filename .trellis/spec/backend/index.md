@@ -26,6 +26,7 @@ domain model, scanner, and future execution/audit code.
 | [Bounded Delivery](./bounded-delivery.md) | Lossless Status backpressure and ordered TUI worker delivery | Cancellation, join and dirty redraw |
 | [Desktop Runtime](./desktop-runtime.md) | GPUI native focus, Status live lifecycle and window material | Standalone `desktop-gpui` workspace |
 | [Desktop Preferences](./desktop-preferences.md) | Desktop store and GPUI consumer | Closed V2 and read-only V1 migration |
+| [Software Evidence](./software-evidence.md) | Optional icon/date metadata and read-only directory preview | V1 compatibility, bilingual CLI and bounded GPUI loading |
 | [Error Handling](./error-handling.md) | Error types, handling strategies | anyhow CLI/scanner conventions |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | Foundation, plan validation, and scanner conventions |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | tracing to stderr |

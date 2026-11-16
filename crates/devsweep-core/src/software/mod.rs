@@ -15,6 +15,7 @@ use crate::process::FlagCancelObserver;
 mod arp;
 #[path = "execution/audit.rs"]
 mod audit;
+mod evidence;
 mod execution;
 mod launch;
 mod leftovers;
@@ -26,6 +27,7 @@ mod startup;
 mod updates;
 
 pub use audit::SoftwareSupportAuditRecordV1;
+pub use evidence::validated_installed_on;
 pub use execution::{
     AdapterOutcome, MSIX_CANCEL_GRACE, MSIX_MONITOR_TIMEOUT, MSIX_REQUERY_OFFSETS,
     SOFTWARE_AUDIT_VERSION, SOFTWARE_EXECUTION_VERSION, SoftwareActionOutcomeV1,
@@ -51,7 +53,7 @@ pub use leftovers::{
     preview_registry_residue_restore, preview_software_leftover_plan,
 };
 pub use model::{
-    FixtureLaunch, FixtureLaunchKind, MsiContext, RegistryHive, RegistryView,
+    FixtureLaunch, FixtureLaunchKind, IconEvidenceV1, MsiContext, RegistryHive, RegistryView,
     SOFTWARE_INVENTORY_VERSION, SOFTWARE_PLAN_VERSION, SOFTWARE_PREVIEW_VERSION,
     SoftwareActionClass, SoftwareEligibility, SoftwareEligibilityReason, SoftwareEligibilityState,
     SoftwareEntryV1, SoftwareIdentity, SoftwareInventorySource, SoftwareInventoryV1,
@@ -242,6 +244,12 @@ fn assemble_inventory(
                 };
                 existing.flags.conflicting_identity = true;
             }
+            if existing.icon != observation.icon {
+                existing.icon = None;
+            }
+            if existing.installed_on != observation.installed_on {
+                existing.installed_on = None;
+            }
             merge_flags(&mut existing.flags, observation.flags);
             existing.provenance.extend(observation.provenance);
             existing.provenance.sort();
@@ -261,6 +269,8 @@ fn assemble_inventory(
             display_name: observation.display_name,
             publisher: observation.publisher,
             version: observation.version,
+            icon: observation.icon,
+            installed_on: observation.installed_on,
             provenance: observation.provenance,
             eligibility,
             size: observation.size,
