@@ -1897,3 +1897,74 @@ Completed the four-child Rust architecture migration: untangled core contracts, 
 ### Status
 
 [OK] **Completed**
+
+
+## Session 65: Software evidence core CLI and GPUI completion
+<!-- trellis-session: v=2 fp=6193295c527ac6db -->
+
+**Date**: 2026-11-15
+**Task**: Software evidence core CLI and GPUI completion
+**Branch**: `dev`
+
+### Summary
+
+Completed and archived software-evidence without committing, as explicitly requested. Parent is 3/9 complete.
+
+### Main Changes
+
+- Optional V1 icon/date evidence, legacy fingerprint compatibility and bilingual CLI contracts.
+- GPUI bounded icon loading, date/source filters and read-only related-directory preview; independent review fixed parser and cross-segment regressions.
+- Retained ten native JPEGs and executable Software Evidence spec; WindowsApps permission fallback is explicit.
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] just ci passed; just gpui passed with 204 tests; Python 23 tests only two predeclared gitignore subtest failures.
+- [OK] Native EN/zh dark/light real inventory and isolated no-write directory/fallback checks completed; frame-accurate icon arrival was not measured.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Await explicit user commit instruction; no commit or push. clean-review-flow remains planning.
+
+
+## Session 66: Software evidence authorized local commits
+<!-- trellis-session: v=2 fp=ca50798ca0827068 -->
+
+**Date**: 2026-11-15
+**Task**: Software evidence authorized local commits
+**Branch**: `dev`
+
+### Summary
+
+The user authorized local commits after the uncommitted implementation checkpoint. Feature e8336dc and archive 9d4445a are complete; no push was requested or performed.
+
+### Main Changes
+
+- Committed the reviewed Software V1 evidence, bilingual CLI, GPUI icons/filtering and read-only preview as e8336dc.
+- Committed archive receipts, ten referenced JPEGs, parent 3/9 status and the task product-commit pointer as 9d4445a.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e8336dc` | feat(software): ✨ 补全软件证据与 GPUI 列表只读预览 |
+
+### Testing
+
+- [OK] Reused task receipts: just ci and just gpui passed with 204 GPUI tests; Python 23 tests retained exactly two known gitignore subtest failures.
+- [OK] Precommit staged-scope, whitespace, archived context, native JPEG references and release-binary hash checks passed.
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Do not push. Await the next explicit user instruction; clean-review-flow remains planning.

@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 64
-- **Last Active**: 2026-11-06
+- **Total Sessions**: 66
+- **Last Active**: 2026-11-15
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1899 | Active |
+| `journal-1.md` | ~1970 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,8 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 66 | 2026-11-15 | Software evidence authorized local commits | `e8336dc` | `dev` |
+| 65 | 2026-11-15 | Software evidence core CLI and GPUI completion | - | `dev` |
 | 64 | 2026-11-06 | GPUI 易用性优化实施与归档 | `4fc8a64` | `dev` |
 | 63 | 2026-11-04 | GPUI 标题栏主题切换与设置入口 | `9005902` | `dev` |
 | 62 | 2026-11-04 | GPUI 轻盈毛玻璃重构与 Windows 原生验收 | `760ee22` | `dev` |
