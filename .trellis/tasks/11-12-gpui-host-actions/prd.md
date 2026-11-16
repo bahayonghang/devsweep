@@ -26,7 +26,7 @@ ARP 与 MSI 条目在 core 里是"manual"。core 不把注册表里的厂商卸�
 | 编号 | 层 | 需求 |
 | --- | --- | --- |
 | R1 | GPUI | 当前用户 MSIX 应用的卸载：选择、计划、预览摘要、二次确认、结果。 |
-| R2 | core、CLI | 新增 MSI 卸载：按清单里的产品代码调用 `msiexec /x`，程序与参数分离，纳入 `software plan / preview / uninstall`。不读取注册表里的卸载命令字符串。 |
+| R2 | core、CLI | 新增 MSI 卸载：仅开放正向资格证据完整、当前用户非托管且上下文唯一的条目；系统绝对路径 `msiexec.exe`，独立参数固定为 `/x {GUID} /qn /norestart`，纳入 `software plan / preview / uninstall`。不读取注册表里的卸载命令字符串。 |
 | R3 | GPUI | MSI 卸载接入（在 R2 之后）。 |
 | R4 | GPUI | ARP 条目不执行。行上提供"在 Windows 已安装的应用中打开"，并说明原因。 |
 | R5 | GPUI | winget 更新的执行：选择更新、计划、预览、确认、逐项结果。 |
@@ -35,7 +35,7 @@ ARP 与 MSI 条目在 core 里是"manual"。core 不把注册表里的厂商卸�
 | R8 | GPUI | 结束进程：进程行的动作，预览后确认。受保护进程不提供该动作并说明原因。 |
 | R9 | GPUI | 保持唤醒开关，显示当前状态；应用退出时释放。 |
 | R10 | — | 每个动作的预览摘要在选择或主机状态变化后失效。没有有效摘要不能确认。 |
-| R11 | — | 界面不弹出提权。需要提权的动作显示原因，并给出等价的 CLI 命令供复制。 |
+| R11 | — | DevSweep 不主动请求提权、不使用 `runas` 或提权回退，固定关闭 Installer 内部 UI；不对任意第三方 MSI 自定义动作作绝对零 UAC 承诺。已知需管理员、机器级、托管、其他用户、多上下文或身份/限制证据不完整的 MSI 拒绝，并说明原因。等价 CLI 指引不隐含提权或绕过资格限制。 |
 | R12 | — | 每个执行结果写入历史，失败如实显示原因。 |
 
 ## 验收
@@ -44,10 +44,10 @@ ARP 与 MSI 条目在 core 里是"manual"。core 不把注册表里的厂商卸�
 - AC2（R2）：core 测试断言 MSI 卸载的程序是 `msiexec`、参数是分离的数组、产品代码通过格式校验；非法产品代码被拒。CLI 契约测试覆盖计划、预览、执行，缺少摘要或 `--confirm` 时拒绝。
 - AC3（R2）：代码里没有读取或执行 `UninstallString`、`QuietUninstallString` 的路径；有检索证据和测试。
 - AC4（R4）：ARP 条目没有卸载按钮，只有系统设置跳转。
-- AC5（R7）：没有成功卸载记录时，残留清理不可用。文件只进回收站。
+- AC5（R7）：没有成功卸载记录时，残留清理不可用。新的 MSI 仅 `0` 且确认同一 SID/context 登记消失可记为 `Removed` 并获得残留权限；`3010/1641`、失败、未知或仅观察到消失都不能开放残留。文件只进回收站，保持旧 MSIX 历史解释兼容。
 - AC6（R8）：受保护名单里的进程在界面和 core 两层都被拒。进程在预览后退出或 PID 被复用时，执行被拒。
-- AC7（R9）：开启后 `status keep-awake status` 报告为开启；关闭或退出应用后报告为关闭。
-- AC8（R11）：未提权时触发需要提权的动作，界面显示原因，不出现 UAC 提示。
+- AC7（R9）：应用仍运行时，CLI 通过显式 endpoint/token/owner 查询指定 GUI 会话为 active/stopped；停止后端点保持可查询，只有清除成功才报告 stopped/off。GUI 退出在同一 owner 线程清除自身请求并 join；旧端点不可达时 CLI 报告 unavailable/unknown，不把连接失败当作 off。不影响独立 owner，不新增生命周期收据或常驻服务。
+- AC8（R11）：已知需要提权或不符合已批准 MSI 资格的动作在派发前拒绝并显示原因；DevSweep 不发起提权或交互 Installer 回退。测试断言拒绝时无执行调用。第三方自定义动作不在绝对零 UAC 保证内；未做实机测试时不宣称原生 UAC 验收通过。
 - AC9：父任务的"等价 CLI"检查通过：每个动作在 `design.md` 的表里有对应命令。
 - AC10：`just ci` 与 `just gpui` 通过。英文与中文原生截图覆盖每个动作的审阅与结果状态。
 
@@ -60,3 +60,11 @@ ARP 与 MSI 条目在 core 里是"manual"。core 不把注册表里的厂商卸�
 - 界面在 airy-glass-shell、software-evidence（列表）和 status-dashboard（进程表）之后。
 - R2 可以先做。
 - 完成后 tray-panel 才显示保持唤醒开关。
+
+## 步骤 2 已确认（2026-11-15）
+
+用户确认固定参数、MSI 结果/残留规则、R11 提权边界和修订后的 AC7，授权继续步骤 3–8。完整决定见 `research/step-2-review.md`；步骤 9 前与步骤 10 前仍分别评审。测试仅用夹具和测试执行器，不使用 Computer Use，不做真实主机变更，不提交或推送。
+
+## 步骤 9 已确认（2026-11-16）
+
+用户按 `research/step-9-review.md` 批准进程动作的 core/CLI 审计与 GPUI 接入，实施和检查仍由 Trellis 子代理完成，只用夹具，不使用 Computer Use。完成门禁后停在步骤 10 前；不提交或推送。

@@ -2,3 +2,7 @@
 {"file": ".trellis/spec/backend/clean-advisories.md", "reason": "Clean 提示与审阅语义"}
 {"file": ".trellis/spec/backend/desktop-runtime.md", "reason": "GPUI 焦点规则与窗口材质矩阵"}
 {"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "质量与契约测试要求"}
+{"file": "desktop-gpui/DESIGN.md", "reason": "已交付的 GPUI 视觉与具名 Token 守卫"}
+{"file": ".trellis/spec/backend/scan-coverage.md", "reason": "范围、覆盖、未知与下界数字的展示语义"}
+{"file": ".trellis/tasks/11-12-gpui-clean-review-flow/research/current-flow-review.md", "reason": "已批准的 AC6 和回收站边界、原生和夹具验收限制"}
+{"file": ".trellis/spec/backend/clean-review.md", "reason": "本任务确认的 All 范围、分组、回收站选择、摘要失效与历史证据契约"}

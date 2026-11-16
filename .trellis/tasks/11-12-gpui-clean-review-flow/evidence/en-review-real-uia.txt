@@ -1,0 +1,50 @@
+Window: "DevSweep", App: devsweep-gpui-clean-review.exe.
+	0 window (region) DevSweep Secondary Actions: Raise
+		1 title bar (settable, string) Value: DevSweep
+			2 menu bar System ID: MenuBar
+				61 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+		7 pane (application) DevSweep ID: shell-root
+			8 button DevSweep menu
+			9 tab Modes
+				10 tab item (selectable) Clean ID: mode-clean
+				11 tab item (selectable) Software ID: mode-software
+				12 tab item (selectable) Optimize ID: mode-optimize
+				13 tab item (selectable) Analyze ID: mode-analyze
+				14 tab item (selectable) Status ID: mode-status
+			15 button Switch to dark theme ID: titlebar-theme
+			16 button Settings ID: titlebar-settings
+			17 button Minimize
+			18 button Maximize
+			19 button Close
+			20 pane (tab panel) Clean
+				21 status bar (status)
+				22 button AI tools
+				44 button Preview digest
+				36 tab Scan scope
+					37 tab item (selectable) Project artifacts
+					38 tab item (selectable) Global caches
+					39 tab item (selectable) All
+				45 group Recommendations
+					46 text field (edit) (settable, string) Search rows Description: Search rows ID: clean-search-input
+					47 button Sort: report order
+					48 button Select recommended
+					49 button Clear selection
+					50 list
+						51 checkbox (check box) Python · Test cache · 4.0 KiB · 1 targets in full scope · All selected · 1/1 ID: clean-group-python-testcache
+						52 list item (selectable) [x] python.pytest_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\en\.pytest_cache · 4.0 KiB (4096 B) · verified size · rebuild: pytest recreates it on the next test run. ID: clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\en\.pytest_cache
+						53 checkbox (check box) Python · Tool cache · 8.0 KiB · 2 targets in full scope · Partially selected · 1/2 ID: clean-group-python-toolcache
+						54 list item (selectable) > [x] python.mypy_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\en\.mypy_cache · 4.0 KiB (4096 B) · verified size · rebuild: mypy re-analyses and recreates it on the next type-check. ID: clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\en\.mypy_cache
+						55 list item (selectable) [ ] python.ruff_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\en\.ruff_cache · 4.0 KiB (4096 B) · verified size · rebuild: ruff recreates it on the next lint run. ID: clean-row-python.ruff_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\en\.ruff_cache
+				40 group Disk map
+					41 button Safe to clear .mypy_cache 4.0 KiB Needs review [x]
+					42 button Safe to clear .ruff_cache 4.0 KiB Needs review [ ]
+					43 button Safe to clear .pytest_cache 4.0 KiB Needs review [x]
+				59 button Protect row
+				60 button Ignore row
+				56 button Preview digest
+				57 button (disabled) Confirm move · 2 of 3 targets selected.
+
+The focused UI element is 7 pane (application) DevSweep ID: shell-root.

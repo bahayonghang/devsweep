@@ -1,0 +1,50 @@
+Window: "DevSweep", App: devsweep-gpui-clean-review.exe.
+	0 window (region) DevSweep Secondary Actions: Raise
+		1 title bar (settable, string) Value: DevSweep
+			2 menu bar System ID: MenuBar
+				3 menu item System
+			4 button Minimize
+			5 button Maximize
+			6 button Close
+		7 pane (application) DevSweep ID: shell-root
+			8 button DevSweep 菜单
+			9 tab 模式
+				10 tab item (selectable) 清理 ID: mode-clean
+				11 tab item (selectable) 软件 ID: mode-software
+				12 tab item (selectable) 优化 ID: mode-optimize
+				13 tab item (selectable) 分析 ID: mode-analyze
+				14 tab item (selectable) 状态 ID: mode-status
+			15 button 切换到深色主题 ID: titlebar-theme
+			16 button 设置 ID: titlebar-settings
+			17 button 最小化
+			18 button 最大化
+			19 button 关闭
+			20 pane (tab panel) 清理
+				21 status bar (status)
+				22 button AI 工具
+				38 button 预览摘要
+				24 tab 扫描范围
+					25 tab item (selectable) 项目产物
+					26 tab item (selectable) 全局缓存
+					27 tab item (selectable) 全部
+				39 group 清理建议
+					40 text field (edit) (settable, string) 搜索行 Description: 搜索行 ID: clean-search-input
+					41 button 排序：报告顺序
+					42 button 选择推荐项
+					43 button 清除选择
+					44 list
+						45 checkbox (check box) Python · 测试缓存 · 4.0 KiB · 1 个目标（完整范围） · 未选 · 0/1 ID: clean-group-python-testcache
+						46 list item (selectable) [ ] python.pytest_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.pytest_cache · 4.0 KiB (4096 B) · 已验证大小 · 重建：pytest 会在下次测试运行时重新生成。 ID: clean-row-python.pytest_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.pytest_cache
+						47 checkbox (check box) Python · 工具缓存 · 8.0 KiB · 2 个目标（完整范围） · 部分选中 · 1/2 ID: clean-group-python-toolcache
+						48 list item (selectable) > [x] python.mypy_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.mypy_cache · 4.0 KiB (4096 B) · 已验证大小 · 重建：mypy 会在下次类型检查时重新分析并生成。 ID: clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.mypy_cache
+						49 list item (selectable) [ ] python.ruff_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.ruff_cache · 4.0 KiB (4096 B) · 已验证大小 · 重建：ruff 会在下次检查运行中重新生成。 ID: clean-row-python.ruff_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.ruff_cache
+				34 group 磁盘地图
+					35 button 可清理缓存 .mypy_cache 4.0 KiB 需要复查 [x]
+					36 button 可清理缓存 .ruff_cache 4.0 KiB 需要复查 [ ]
+					37 button 可清理缓存 .pytest_cache 4.0 KiB 需要复查 [ ]
+				52 button 保护此行
+				53 button 忽略此行
+				50 button 预览摘要
+				51 button (disabled) 确认移出 · 已选择 3 个目标中的 1 个。
+
+The focused UI element is 48 list item (selectable) > [x] python.mypy_cache · C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.mypy_cache · 4.0 KiB (4096 B) · 已验证大小 · 重建：mypy 会在下次类型检查时重新分析并生成。 ID: clean-row-python.mypy_cache:\\?\C:\Users\lyh\AppData\Local\Temp\devsweep-gpui-clean-review-20261115-c145696e\zh\.mypy_cache.

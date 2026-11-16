@@ -1,0 +1,17 @@
+# Native captures are retained only when referenced by the acceptance record.
+*.jpg
+*.png
+*-uia.txt
+!en-unscanned.jpg
+!zh-unscanned.jpg
+!zh-scanning.jpg
+!en-scanned.jpg
+!zh-scanned.jpg
+!en-review-real.jpg
+!zh-review.jpg
+!en-review.jpg
+!en-previewed.jpg
+!en-digest-invalidated.jpg
+!zh-all-unconfirmed.jpg
+!en-review-real-uia.txt
+!zh-review-uia.txt

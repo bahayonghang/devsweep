@@ -1,3 +1,11 @@
 {"file": ".trellis/tasks/11-12-gpui-mole-parity-airy-glass/design.md", "reason": "跨子任务契约：CLI 先行、授权链、JSON 兼容"}
 {"file": ".trellis/spec/backend/provider-authority.md", "reason": "授权依据与执行边界"}
 {"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "质量与契约测试要求"}
+{"file": ".trellis/spec/backend/desktop-runtime.md", "reason": "GPUI 与 core 授权分层、运行时生命周期"}
+{"file": "desktop-gpui/DESIGN.md", "reason": "确认流程的现有视觉与本地化契约"}
+{"file": ".trellis/tasks/11-12-gpui-host-actions/research/msi.md", "reason": "步骤 1 历史证据与未采纳建议；以批准的步骤 2 决定为准"}
+{"file": ".trellis/tasks/11-12-gpui-host-actions/research/step-2-review.md", "reason": "用户已批准的固定参数、结果及 R11/AC7 产品边界；仅授权步骤 3–8"}
+{"file": ".trellis/spec/backend/software-host-actions.md", "reason": "真实正向资格、MSI分类/兼容、更新绑定和共用审阅门禁"}
+{"file": ".trellis/spec/backend/keep-awake-session.md", "reason": "core预览、同线程生命周期、脱敏动作历史与不可达语义"}
+{"file": ".trellis/tasks/11-12-gpui-host-actions/research/step-9-review.md", "reason": "用户已批准的步骤 9 范围；身份复用拒绝、双层保护、审计失效、只用夹具与步骤 10 关口"}
+{"file": ".trellis/spec/backend/process-actions.md", "reason": "进程动作新增代码规范；独立核对双层保护、审计/兼容、过期投递与夹具隔离"}
