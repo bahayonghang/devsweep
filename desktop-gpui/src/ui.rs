@@ -871,6 +871,19 @@ pub fn segment(
 /// Checkbox glyph.
 #[must_use]
 pub fn checkbox(t: &Theme, checked: bool, enabled: bool) -> Div {
+    checkbox_state(
+        t,
+        if checked {
+            gpui::Toggled::True
+        } else {
+            gpui::Toggled::False
+        },
+        enabled,
+    )
+}
+
+pub fn checkbox_state(t: &Theme, state: gpui::Toggled, enabled: bool) -> Div {
+    let checked = state != gpui::Toggled::False;
     let border = if checked { t.accent } else { t.border_strong };
     div()
         .flex()
@@ -883,8 +896,11 @@ pub fn checkbox(t: &Theme, checked: bool, enabled: bool) -> Div {
         .border_color(rgb(border))
         .when(checked, |c| c.bg(rgb(t.accent)))
         .when(!enabled, |c| c.opacity(0.4))
-        .when(checked, |c| {
+        .when(state == gpui::Toggled::True, |c| {
             c.child(icon("check", t.pill_text).size(rems(0.8)))
+        })
+        .when(state == gpui::Toggled::Mixed, |c| {
+            c.child(div().w(rems(0.5)).h(px(2.0)).bg(rgb(t.pill_text)))
         })
 }
 

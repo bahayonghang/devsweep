@@ -583,10 +583,7 @@ mod tests {
 
         review.activate("updates", Locale::En);
         let updates = review.lines().join("\n");
-        assert!(
-            updates.contains("probe_failed") || updates.contains("update provider probe failed"),
-            "{updates}"
-        );
+        assert!(updates.contains("provider_missing"), "{updates}");
         assert!(!updates.to_ascii_lowercase().contains("succeed"));
 
         review.activate("startup", Locale::En);

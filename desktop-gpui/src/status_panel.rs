@@ -694,16 +694,12 @@ pub enum ProcessClass {
 
 #[must_use]
 pub fn process_class(name: &str) -> ProcessClass {
-    use devsweep_core::status::{ProtectedClass, protected_process_names};
-    let lower = name.to_lowercase();
-    protected_process_names()
-        .iter()
-        .find(|(protected, _)| *protected == lower)
-        .map_or(ProcessClass::Unlisted, |(_, class)| match class {
-            ProtectedClass::Critical => ProcessClass::Critical,
-            ProtectedClass::Shared => ProcessClass::Shared,
-            ProtectedClass::System => ProcessClass::System,
-        })
+    use devsweep_core::status::{ProtectedClass, protected_process_class};
+    protected_process_class(name).map_or(ProcessClass::Unlisted, |class| match class {
+        ProtectedClass::Critical => ProcessClass::Critical,
+        ProtectedClass::Shared => ProcessClass::Shared,
+        ProtectedClass::System => ProcessClass::System,
+    })
 }
 
 /// The row the user picked, keyed by PID and name. A PID can be reused by a
@@ -834,11 +830,11 @@ pub fn process_explanation(
 
     let pid = match locale {
         Locale::En => format!(
-            "PID {} only labels this row in this sample. DevSweep does not end processes from this list.",
+            "PID {} only labels this sample row. Ending a process requires a fresh identity check and separate confirmation.",
             row.pid
         ),
         Locale::ZhCn => format!(
-            "PID {} 只用于标记本次采样中的这一行。DevSweep 不会从此列表结束进程。",
+            "PID {} 只标记本次采样行。结束进程前必须重新检查身份并单独确认。",
             row.pid
         ),
     };
@@ -1378,7 +1374,7 @@ mod tests {
     }
 
     #[test]
-    fn a_picked_process_is_explained_locally_and_offers_no_action() {
+    fn a_picked_process_explanation_is_local_and_grants_no_authority() {
         use crate::copy::Locale;
         use crate::shell::Session;
 
@@ -1406,7 +1402,10 @@ mod tests {
             text.contains("6.2% of 16.0 GiB") || text.contains("% of 16"),
             "{text}"
         );
-        assert!(text.contains("does not end processes"), "{text}");
+        assert!(
+            text.contains("fresh identity check and separate confirmation"),
+            "{text}"
+        );
         for verb in ["terminate", "kill", "End task"] {
             assert!(!text.contains(verb), "{verb} in {text}");
         }

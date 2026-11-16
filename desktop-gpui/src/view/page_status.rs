@@ -680,6 +680,30 @@ impl ShellView {
             }
         };
         let mut actions = Vec::new();
+        actions.push(ui::any(
+            ui::button(
+                t,
+                "status-keep-awake",
+                copy::pick(locale, "Keep awake", "保持唤醒"),
+                if self.session.host_action_busy() {
+                    ButtonKind::Disabled
+                } else {
+                    ButtonKind::Secondary
+                },
+            )
+            .accessibility_id("status-keep-awake")
+            .on_click(cx.listener(|this, _, _, cx| {
+                this.session.keep_awake_preview_toggle();
+                cx.notify();
+            }))
+            .on_a11y_action(
+                gpui::AccessibleAction::Click,
+                on_view_a11y(cx, |this, cx| {
+                    this.session.keep_awake_preview_toggle();
+                    cx.notify();
+                }),
+            ),
+        ));
         if live {
             actions.push(ui::any(
                 ui::icon_button(
@@ -743,6 +767,19 @@ impl ShellView {
             .flex_col()
             .gap(ui::SPACE_4)
             .children(self.shared_banners(t));
+        page = page.child(ui::muted(t, self.session.keep_awake_line()));
+        if let Some(connection) = self.session.keep_awake_connection() {
+            page = page.child(ui::muted(
+                t,
+                format!(
+                    "{}: status keep-awake status --endpoint {} --token {} --owner {}",
+                    copy::pick(locale, "CLI session query", "CLI 会话查询"),
+                    connection.endpoint,
+                    connection.token,
+                    connection.owner
+                ),
+            ));
+        }
         if fault.is_some() {
             page = page.child(ui::banner(
                 t,
@@ -800,7 +837,7 @@ impl ShellView {
                 empty = empty.child(ui::progress_track(t));
             }
             let body = page.child(empty).into_any_element();
-            return sheet_frame(bar, body, None);
+            return sheet_frame(bar, body, self.host_review_bar(t, cx));
         };
         let snapshot = snapshot.clone();
         let body = page
@@ -808,7 +845,7 @@ impl ShellView {
             .child(self.status_processes(t, &snapshot, cx))
             .child(self.status_volumes(t, &snapshot))
             .into_any_element();
-        sheet_frame(bar, body, None)
+        sheet_frame(bar, body, self.host_review_bar(t, cx))
     }
 
     /// Eight tiles in rows of `columns`.
@@ -1239,8 +1276,8 @@ impl ShellView {
                 t,
                 copy::pick(
                     locale,
-                    "Read-only. A listed PID is information, not permission to end a process.",
-                    "只读。列出的 PID 只是信息，不是结束进程的依据。",
+                    "Choose a process to inspect it. Ending it requires a fresh identity check and confirmation.",
+                    "选择进程查看详情，结束进程前必须重新检查身份并确认。",
                 ),
             ))
             .children(
@@ -1266,8 +1303,7 @@ impl ShellView {
             .into_any_element()
     }
 
-    /// Local explanation for the picked row. Read-only: there is no action
-    /// button, and the PID shown here is never passed to a process action.
+    /// Local explanation and an entry into the separate reviewed action.
     fn status_process_detail(
         &self,
         t: &Theme,
@@ -1328,9 +1364,40 @@ impl ShellView {
                 .to_string(),
             ],
         };
+        let error = self.session.status_process_action_error();
+        let can_review = error.is_none() && !self.session.host_action_busy();
+        let action = ui::button(
+            t,
+            "status-process-review",
+            copy::pick(locale, "Review ending process", "审阅结束进程"),
+            if can_review {
+                ButtonKind::Danger
+            } else {
+                ButtonKind::Disabled
+            },
+        )
+        .accessibility_id("status-process-review")
+        .when(can_review, |button| {
+            button
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.session.status_preview_process_termination();
+                    cx.notify();
+                }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, |this, cx| {
+                        this.session.status_preview_process_termination();
+                        cx.notify();
+                    }),
+                )
+        });
         Some(
             panel
                 .child(header)
+                .child(action)
+                .children(
+                    error.map(|code| ui::muted(t, crate::host_review::result_label(locale, code))),
+                )
                 .children(
                     lines
                         .into_iter()

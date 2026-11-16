@@ -341,7 +341,7 @@ impl SoftwareReview {
                 self.items.clear();
                 self.lines = vec![
                     copy::software_updates_unavailable(locale).to_string(),
-                    format!("probe_failed: {reason_code:?}"),
+                    update_unavailable_line(reason_code, locale),
                 ];
             }
             SoftwareHostLoad::Startup(list) => {
@@ -406,6 +406,66 @@ impl SoftwareReview {
         match &self.source {
             ReviewSource::Inventory { inventory, .. } => Some(inventory),
             _ => None,
+        }
+    }
+
+    /// An observed selector only. The worker builds and previews a fresh core
+    /// plan; a display fixture cannot request a production update.
+    pub fn host_intent(&self, id: &str) -> Result<Option<crate::host_review::Intent>, String> {
+        use crate::host_review::{Intent, StartupSource};
+        let Some(item) = self.item(id) else {
+            return Ok(None);
+        };
+        match &self.source {
+            ReviewSource::Startup { .. } | ReviewSource::Hive { .. } => {
+                if item.permission.contains("protected") {
+                    return Err("protected".to_string());
+                }
+                if item.permission.contains("administrator") {
+                    return Err("requires_administrator".to_string());
+                }
+                let enabled = match item.version.as_str() {
+                    "enabled" => false,
+                    "disabled" => true,
+                    _ => return Err("startup_source_unavailable".to_string()),
+                };
+                let source = match &self.source {
+                    ReviewSource::Hive { path } => StartupSource::Hive(path.clone()),
+                    _ => StartupSource::Host,
+                };
+                Ok(Some(Intent::Startup {
+                    source,
+                    id: id.to_string(),
+                    name: item.name.clone(),
+                    enabled,
+                }))
+            }
+            ReviewSource::Updates { path: Some(_), .. } => Err("fixture_read_only".to_string()),
+            ReviewSource::Updates { rows, .. } => Ok(rows
+                .iter()
+                .find(|row| row.id == id)
+                .cloned()
+                .map(|row| Intent::Update { row })),
+            _ => Ok(None),
+        }
+    }
+
+    pub fn apply_host_action(&mut self, result: &crate::host_review::ActionResult, locale: Locale) {
+        if let Some(item) = self
+            .items
+            .iter_mut()
+            .find(|item| item.id == result.intent.id())
+        {
+            item.last = crate::host_review::result_label(locale, &result.code);
+            if let crate::host_review::Intent::Startup { enabled, .. } = &result.intent {
+                item.version =
+                    if matches!(result.code.as_str(), "succeeded" | "already_in_state") {
+                        if *enabled { "enabled" } else { "disabled" }
+                    } else {
+                        "unknown"
+                    }
+                    .to_string();
+            }
         }
     }
 
@@ -596,7 +656,7 @@ impl SoftwareReview {
                 self.items.clear();
                 self.lines = vec![
                     copy::software_updates_unavailable(locale).to_string(),
-                    format!("probe_failed: {reason_code:?}"),
+                    update_unavailable_line(reason_code, locale),
                 ];
             }
             Err(error) => {
@@ -1450,6 +1510,10 @@ fn eligibility_token(reason: SoftwareEligibilityReason) -> &'static str {
         SoftwareEligibilityReason::StubPackage => "stub_package",
         SoftwareEligibilityReason::UnhealthyPackage => "unhealthy_package",
         SoftwareEligibilityReason::MsiExecutionNotSupportedV1 => "msi_execution_not_supported",
+        SoftwareEligibilityReason::EligibleCurrentUserMsi => "eligible_current_user_msi",
+        SoftwareEligibilityReason::MsiAuthorityUnavailable => "msi_authority_unavailable",
+        SoftwareEligibilityReason::MsiContextUnsupported => "msi_context_unsupported",
+        SoftwareEligibilityReason::MsiRequiresAdministrator => "msi_requires_administrator",
         SoftwareEligibilityReason::RegistryOnlyManual => "registry_only_manual",
         SoftwareEligibilityReason::UnsupportedSource => "unsupported_source",
         SoftwareEligibilityReason::EligibleCurrentUserMsix => "eligible_current_user_msix",
@@ -1457,6 +1521,20 @@ fn eligibility_token(reason: SoftwareEligibilityReason) -> &'static str {
         SoftwareEligibilityReason::EligibleVendorUninstaller => "eligible_vendor_uninstaller",
         SoftwareEligibilityReason::EligibleScoopApp => "eligible_scoop_app",
     }
+}
+
+fn update_unavailable_line(
+    reason: devsweep_core::software::SoftwareUpdatesReason,
+    locale: Locale,
+) -> String {
+    use devsweep_core::software::SoftwareUpdatesReason;
+    let code = match reason {
+        SoftwareUpdatesReason::WingetMissing => "provider_missing",
+        SoftwareUpdatesReason::ProviderUnsupported => "unsupported_provider",
+        SoftwareUpdatesReason::SourceAgreementPending => "source_agreement_pending",
+        _ => "probe_failed",
+    };
+    crate::host_review::result_label(locale, code)
 }
 
 fn location_token(location: SoftwareStartupLocation) -> &'static str {
@@ -1564,6 +1642,7 @@ mod tests {
         };
         let id = entry_id(&identity).expect("id");
         SoftwareEntryV1 {
+            msi_registration: None,
             id,
             identity,
             scope: SoftwareScope::CurrentUser,
@@ -1593,6 +1672,7 @@ mod tests {
         };
         let id = entry_id(&identity).expect("id");
         SoftwareEntryV1 {
+            msi_registration: None,
             id,
             identity,
             scope: SoftwareScope::CurrentUser,
@@ -2143,7 +2223,7 @@ mod tests {
         assert!(
             unchecked.contains("not checked")
                 || unchecked.contains("尚未检查")
-                || unchecked.contains("probe_failed"),
+                || unchecked.contains("provider_missing"),
             "{unchecked}"
         );
     }

@@ -15,7 +15,7 @@ impl ShellView {
     ) -> gpui::AnyElement {
         let locale = self.session.locale();
         let segment = self.session.software_review().segment();
-        let loading = self.session.software_review().loading();
+        let loading = self.session.software_review().loading() || self.session.host_action_busy();
         let refresh = ui::icon_button(
             t,
             "software-refresh",
@@ -127,7 +127,7 @@ impl ShellView {
             bar,
             page.child(self.software_review_card(t, row_height, cx))
                 .into_any_element(),
-            None,
+            self.host_review_bar(t, cx),
         )
     }
 
@@ -356,8 +356,19 @@ impl ShellView {
             let review_access_id = id.clone();
             let related_id = id.clone();
             let related_access_id = id.clone();
-            let awaiting = pending.as_deref() == Some(id.as_str());
-            let preview_only = awaiting && review.host_backed();
+            let host_ready = self.session.host_review().phase == crate::host_review::Phase::Ready
+                && self
+                    .session
+                    .host_review()
+                    .intents
+                    .iter()
+                    .any(|intent| intent.id() == id);
+            let awaiting = pending.as_deref() == Some(id.as_str()) || host_ready;
+            let preview_only = (awaiting && review.host_backed() && !host_ready)
+                || self.session.host_action_busy()
+                || (review.segment() == Some(SoftwareSegment::Startup)
+                    && item.permission != "allowed")
+                || (review.segment() == Some(SoftwareSegment::Updates) && item.source != "winget");
             let initial = item
                 .name
                 .chars()

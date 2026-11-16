@@ -26,6 +26,7 @@ use crate::{
         CleanWorkbench, execute_clean_plan, scan_clean_rows,
     },
     copy::{Locale, StoreName},
+    host_review::{self, ActionExecutor, HostReview, Intent as HostIntent, Phase as HostPhase},
     optimize_board::OptimizeBoard,
     preferences::{
         self, DesktopFont, DesktopMotion, DesktopPatch, DesktopPreferences, DesktopTheme,
@@ -41,10 +42,13 @@ use devsweep_core::{
     execution::ExecutionReport,
     optimize::PrecheckReason,
     process::{CancelObserver as _, FlagCancelObserver},
-    scan::ScanOptions,
     software::{AdapterOutcome, SoftwareExecutionOutcome, SoftwarePlanError},
     status::{LiveControl, StatusEventV1, StatusSnapshotV1},
 };
+
+#[cfg(test)]
+#[path = "host_action_tests.rs"]
+mod host_action_tests;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -1132,6 +1136,15 @@ pub struct Session {
     status_lines: Vec<String>,
     workbench_review: WorkbenchReview,
     software_review: SoftwareReview,
+    host_review: HostReview,
+    host_executor: Option<Arc<dyn ActionExecutor>>,
+    host_job: Option<(u64, Arc<FlagCancelObserver>)>,
+    host_running: Vec<HostIntent>,
+    awake_snapshot: Option<host_review::AwakeSnapshot>,
+    awake_error: Option<String>,
+    awake_poll_job: Option<u64>,
+    awake_poll_request: bool,
+    awake_poll_started: bool,
     optimize_board: OptimizeBoard,
     analyze_roots: Vec<AnalyzeRootChoice>,
     analyze_notice: Option<String>,
@@ -1158,6 +1171,7 @@ pub struct Session {
     /// Out-of-band scan progress. Progress never occupies the mailbox, so the
     /// only event a woken drain can observe is a terminal payload.
     clean_progress: Option<Arc<AtomicUsize>>,
+    clean_observations: Option<Arc<Mutex<Option<crate::clean_workbench::CleanScanProgress>>>>,
     clean_progress_seen: usize,
     protection_session_only: bool,
     /// When true (the running window), slow read-only work is queued as
@@ -1174,8 +1188,41 @@ pub struct Session {
     analyze_job: Option<(u64, PathBuf, Arc<FlagCancelObserver>)>,
 }
 
-/// One slow, read-only operation the window runs on a worker thread.
+impl Drop for Session {
+    fn drop(&mut self) {
+        if let Some((_, cancel)) = &self.host_job {
+            cancel.request_cancel();
+        }
+        // A pending status-query worker may still hold an executor Arc. Clear
+        // and join explicitly instead of relying on the last Arc being dropped
+        // before the native app exits.
+        if let Some(executor) = &self.host_executor
+            && let Err(error) = executor.shutdown()
+        {
+            eprintln!("keep-awake shutdown: {error}");
+        }
+    }
+}
+
+/// One slow operation run on a worker. Host dispatch holds an immutable
+/// reviewed plan; the other variants carry read-only observations.
 pub enum BackgroundJob {
+    AwakeStatus {
+        generation: u64,
+        executor: Arc<dyn ActionExecutor>,
+    },
+    HostPreview {
+        generation: u64,
+        intents: Vec<HostIntent>,
+        executor: Arc<dyn ActionExecutor>,
+        cancel: Arc<FlagCancelObserver>,
+    },
+    HostExecute {
+        generation: u64,
+        prepared: Vec<host_review::Prepared>,
+        executor: Arc<dyn ActionExecutor>,
+        cancel: Arc<FlagCancelObserver>,
+    },
     SoftwareIcons {
         generation: u64,
         cache_generation: u64,
@@ -1203,6 +1250,19 @@ pub enum BackgroundJob {
 
 /// The finished result of one [`BackgroundJob`].
 pub enum JobResult {
+    AwakeStatus {
+        generation: u64,
+        result: Result<Option<host_review::AwakeSnapshot>, String>,
+    },
+    HostPreview {
+        generation: u64,
+        result: Result<Vec<host_review::Prepared>, String>,
+    },
+    HostExecute {
+        generation: u64,
+        results: Vec<host_review::ActionResult>,
+        awake: Result<Option<host_review::AwakeSnapshot>, String>,
+    },
     SoftwareIcons {
         generation: u64,
         cache_generation: u64,
@@ -1229,10 +1289,90 @@ pub enum JobResult {
 }
 
 impl BackgroundJob {
+    pub fn spawn_failure(&self) -> Option<JobResult> {
+        match self {
+            Self::AwakeStatus { generation, .. } => Some(JobResult::AwakeStatus {
+                generation: *generation,
+                result: Err("worker_unavailable".to_string()),
+            }),
+            Self::HostPreview { generation, .. } => Some(JobResult::HostPreview {
+                generation: *generation,
+                result: Err("worker_unavailable".to_string()),
+            }),
+            Self::HostExecute {
+                generation,
+                prepared,
+                ..
+            } => Some(JobResult::HostExecute {
+                generation: *generation,
+                results: prepared
+                    .iter()
+                    .map(|item| host_review::ActionResult {
+                        intent: item.intent.clone(),
+                        code: "worker_unavailable".to_string(),
+                        reverse: None,
+                    })
+                    .collect(),
+                awake: Err("worker_unavailable".to_string()),
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn panic_result(&self) -> Option<JobResult> {
+        if let Self::HostExecute {
+            generation,
+            prepared,
+            ..
+        } = self
+        {
+            Some(JobResult::HostExecute {
+                generation: *generation,
+                results: prepared
+                    .iter()
+                    .map(|item| host_review::ActionResult {
+                        intent: item.intent.clone(),
+                        code: "unknown_after_dispatch".to_string(),
+                        reverse: None,
+                    })
+                    .collect(),
+                awake: Err("unknown_after_dispatch".to_string()),
+            })
+        } else {
+            self.spawn_failure()
+        }
+    }
+
     /// Runs the job. Blocking; call it from a worker thread only.
     #[must_use]
     pub fn run(self) -> JobResult {
         match self {
+            Self::AwakeStatus {
+                generation,
+                executor,
+            } => JobResult::AwakeStatus {
+                generation,
+                result: executor.query_awake(),
+            },
+            Self::HostPreview {
+                generation,
+                intents,
+                executor,
+                cancel,
+            } => JobResult::HostPreview {
+                generation,
+                result: host_review::run_previews(executor.as_ref(), intents, cancel.as_ref()),
+            },
+            Self::HostExecute {
+                generation,
+                prepared,
+                executor,
+                cancel,
+            } => JobResult::HostExecute {
+                generation,
+                results: host_review::run_actions(executor.clone(), prepared, cancel.as_ref()),
+                awake: executor.query_awake(),
+            },
             Self::SoftwareIcons {
                 generation,
                 cache_generation,
@@ -1308,6 +1448,9 @@ impl Session {
     }
 
     fn from_loaded(files: Option<PreferenceFiles>, loaded: preferences::LoadedStores) -> Self {
+        let host_executor = files
+            .as_ref()
+            .map(|_| Arc::new(host_review::CoreExecutor::default()) as Arc<dyn ActionExecutor>);
         let locale = match loaded.language {
             Some(LanguageTag::ZhCn) => Locale::ZhCn,
             Some(LanguageTag::En) | None => Locale::En,
@@ -1354,6 +1497,15 @@ impl Session {
             status_lines: Vec::new(),
             workbench_review: WorkbenchReview::new(),
             software_review: SoftwareReview::new(),
+            host_review: HostReview::default(),
+            host_executor,
+            host_job: None,
+            host_running: Vec::new(),
+            awake_snapshot: None,
+            awake_error: None,
+            awake_poll_job: None,
+            awake_poll_request: false,
+            awake_poll_started: false,
             optimize_board: OptimizeBoard::new(),
             analyze_roots: Vec::new(),
             analyze_notice: None,
@@ -1375,6 +1527,7 @@ impl Session {
             clean_ai: CleanAiView::new(),
             clean_cancel: None,
             clean_progress: None,
+            clean_observations: None,
             clean_progress_seen: 0,
             protection_session_only: false,
             background_jobs: false,
@@ -1406,7 +1559,10 @@ impl Session {
 
     /// True while any background job is outstanding.
     pub fn background_busy(&self) -> bool {
-        self.software_job.is_some() || self.status_job.is_some() || self.analyze_job.is_some()
+        self.host_job.is_some()
+            || self.software_job.is_some()
+            || self.status_job.is_some()
+            || self.analyze_job.is_some()
     }
 
     /// True while a Status snapshot is being sampled off the UI thread.
@@ -1435,6 +1591,58 @@ impl Session {
     /// the outstanding request (superseded or canceled) are dropped.
     pub fn apply_job(&mut self, result: JobResult) -> bool {
         match result {
+            JobResult::AwakeStatus { generation, result } => {
+                if self.awake_poll_job != Some(generation) {
+                    return false;
+                }
+                self.awake_poll_job = None;
+                self.apply_awake_status(result);
+                true
+            }
+            JobResult::HostPreview { generation, result } => {
+                if self.host_job.as_ref().map(|job| job.0) != Some(generation) {
+                    return false;
+                }
+                self.host_job = None;
+                self.host_running.clear();
+                self.host_review.apply_preview(generation, result)
+            }
+            JobResult::HostExecute {
+                generation,
+                results,
+                awake,
+            } => {
+                if self.host_job.as_ref().map(|job| job.0) != Some(generation) {
+                    return false;
+                }
+                self.host_job = None;
+                self.host_running.clear();
+                if results
+                    .iter()
+                    .any(|result| matches!(result.intent, HostIntent::KeepAwake { .. }))
+                {
+                    let failure = results
+                        .iter()
+                        .find(|result| {
+                            matches!(result.intent, HostIntent::KeepAwake { .. })
+                                && !matches!(
+                                    result.code.as_str(),
+                                    "active" | "stopped" | "expired" | "canceled"
+                                )
+                        })
+                        .map(|result| result.code.clone());
+                    self.apply_awake_status(failure.map_or(awake, Err));
+                    self.awake_poll_request = true;
+                }
+                if self.host_review.generation != generation {
+                    return false;
+                }
+                let locale = self.locale();
+                for result in &results {
+                    self.software_review.apply_host_action(result, locale);
+                }
+                self.host_review.apply_results(generation, results)
+            }
             JobResult::SoftwareIcons {
                 generation,
                 cache_generation,
@@ -1587,8 +1795,34 @@ impl Session {
     }
 
     pub fn apply_key(&mut self, key: NavKey) {
+        if self.clean.native_fixture().is_some()
+            && (self.shell.menu_open()
+                || matches!(
+                    key,
+                    NavKey::Left | NavKey::Right | NavKey::Up | NavKey::Down
+                ))
+        {
+            return;
+        }
         if self.shell.screen_covered() {
             self.shell.apply_key(key);
+            return;
+        }
+        if key == NavKey::Enter
+            && self.host_review.phase == HostPhase::Ready
+            && self.shell.surface() == Surface::Mode
+            && !self.shell.menu_open()
+        {
+            // Process termination requires its explicitly labelled Confirm
+            // control. Root/search Enter must not turn Review into dispatch.
+            if !self
+                .host_review
+                .intents
+                .iter()
+                .any(|intent| matches!(intent, HostIntent::Process { .. }))
+            {
+                self.host_confirm(true);
+            }
             return;
         }
         // Escape from Settings returns to the workbench that opened it.
@@ -1621,6 +1855,7 @@ impl Session {
                 )
                 && self.slide_workbench_row(key)
             {
+                self.host_cancel();
                 if self.shell.mode() == Mode::Analyze {
                     self.sync_analyze_board_selection();
                 }
@@ -1629,6 +1864,7 @@ impl Session {
         }
         self.shell.apply_key(key);
         if self.shell.mode() != mode_before {
+            self.host_cancel();
             self.ensure_workbench_rows();
         }
         self.note_history_opened(before);
@@ -1699,11 +1935,44 @@ impl Session {
     }
 
     fn software_enter(&mut self, id: &str, locale: Locale) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         if id == "leftovers" {
             self.workbench_review.activate(id, locale);
             return;
         }
         if self.software_review.is_open() {
+            if matches!(
+                self.software_review.segment(),
+                Some(
+                    crate::workbench::SoftwareSegment::Startup
+                        | crate::workbench::SoftwareSegment::Updates
+                )
+            ) {
+                if self.host_review.phase == HostPhase::Ready
+                    && self
+                        .host_review
+                        .intents
+                        .iter()
+                        .any(|intent| intent.id() == id)
+                {
+                    self.host_confirm(true);
+                } else if self.host_job.is_none() {
+                    match self.software_review.host_intent(id) {
+                        Ok(Some(intent)) => {
+                            self.host_preview(vec![intent]);
+                        }
+                        Err(error) => {
+                            self.host_review.invalidate();
+                            self.host_review.phase = HostPhase::Finished;
+                            self.host_review.error = Some(error);
+                        }
+                        _ => {}
+                    }
+                }
+                return;
+            }
             if !self
                 .shell
                 .filtered_row_ids(Mode::Software)
@@ -1750,6 +2019,10 @@ impl Session {
     }
 
     fn close_nested_review(&mut self) -> bool {
+        if self.host_review.phase != HostPhase::Idle {
+            self.host_cancel();
+            return true;
+        }
         if self.shell.mode() == Mode::Analyze && self.analyze_cancel_scan() {
             return true;
         }
@@ -1949,10 +2222,13 @@ impl Session {
     /// the same Enter activation the keyboard uses. Activation plans and
     /// previews; it never confirms on the first press.
     pub fn activate_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
+        if self.clean.native_fixture().is_some() && mode != Mode::Clean {
+            return;
+        }
         if self.shell.mode() != mode || self.shell.surface() != Surface::Mode {
             return;
         }
-        self.shell.select(mode, id);
+        self.select_mode_row(mode, id);
         if mode == Mode::Analyze {
             self.sync_analyze_board_selection();
         }
@@ -1961,6 +2237,9 @@ impl Session {
 
     /// Switches the one Software workspace. Repeated tab activation is a no-op.
     pub fn software_open_segment(&mut self, segment: crate::workbench::SoftwareSegment) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         if self.shell.mode() != Mode::Software || self.shell.surface() != Surface::Mode {
             return;
         }
@@ -1971,6 +2250,7 @@ impl Session {
         if self.software_review.segment() == Some(segment) {
             return;
         }
+        self.host_cancel();
         self.software_close_related();
         self.software_job = None;
         self.jobs
@@ -1996,6 +2276,7 @@ impl Session {
     pub fn select_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
         let id = id.into();
         if mode == Mode::Software && self.shell.selection(mode) != Some(id.as_str()) {
+            self.host_cancel();
             self.software_close_related();
             self.software_review.cancel_review(self.locale());
         }
@@ -2277,9 +2558,244 @@ impl Session {
         &self.software_review
     }
 
+    pub fn host_review(&self) -> &HostReview {
+        &self.host_review
+    }
+
+    pub fn host_action_busy(&self) -> bool {
+        self.host_job.is_some()
+    }
+
+    pub fn host_review_lines(&self) -> Vec<String> {
+        let lines = self.host_review.lines(self.locale());
+        if !lines.is_empty() || self.host_job.is_none() {
+            return lines;
+        }
+        let mut lines = vec![
+            crate::copy::pick(
+                self.locale(),
+                "Waiting for the current worker. Dispatched changes cannot be undone by canceling.",
+                "正在等待当前任务结束，取消不会撤销已派发的更改。",
+            )
+            .to_string(),
+        ];
+        lines.extend(
+            self.host_running
+                .iter()
+                .map(|intent| intent.label(self.locale())),
+        );
+        lines
+    }
+
+    pub fn keep_awake_line(&self) -> String {
+        let locale = self.locale();
+        if let Some(error) = &self.awake_error {
+            return host_review::result_label(locale, error);
+        }
+        match &self.awake_snapshot {
+            Some(snapshot) => format!(
+                "{} · {} {}",
+                host_review::result_label(locale, &snapshot.state),
+                snapshot.remaining_ms / 1_000,
+                crate::copy::pick(locale, "seconds remaining", "秒剩余")
+            ),
+            None => crate::copy::pick(
+                locale,
+                "No keep-awake request from this session",
+                "此会话未请求保持唤醒",
+            )
+            .to_string(),
+        }
+    }
+
+    pub fn keep_awake_connection(&self) -> Option<&host_review::AwakeSnapshot> {
+        self.awake_snapshot.as_ref()
+    }
+
+    pub fn keep_awake_preview_toggle(&mut self) -> bool {
+        // A failed clear remains unknown until an explicit Stop retry succeeds.
+        // Polling that same error is observational, never a recovery action.
+        let enabled = if self.awake_error.is_some() {
+            self.awake_snapshot.is_none()
+        } else {
+            !self
+                .awake_snapshot
+                .as_ref()
+                .is_some_and(|snapshot| snapshot.state == "active")
+        };
+        self.host_preview(vec![HostIntent::KeepAwake { enabled }])
+    }
+
+    fn apply_awake_status(&mut self, result: Result<Option<host_review::AwakeSnapshot>, String>) {
+        let previous_error = self.awake_error.clone();
+        let previous = self
+            .awake_snapshot
+            .as_ref()
+            .map(|snapshot| snapshot.state.clone());
+        match result {
+            Ok(None) if self.awake_error.is_some() => {}
+            Ok(snapshot) => {
+                self.awake_snapshot = snapshot;
+                self.awake_error = None;
+            }
+            Err(error) => {
+                self.awake_error = Some(error);
+            }
+        }
+        let changed = previous
+            != self
+                .awake_snapshot
+                .as_ref()
+                .map(|snapshot| snapshot.state.clone())
+            || previous_error != self.awake_error;
+        if changed
+            && self.host_review.phase == HostPhase::Ready
+            && self
+                .host_review
+                .intents
+                .iter()
+                .any(|intent| matches!(intent, HostIntent::KeepAwake { .. }))
+        {
+            self.host_review.invalidate();
+        }
+    }
+
+    pub fn take_awake_poll_request(&mut self) -> bool {
+        let requested = std::mem::take(&mut self.awake_poll_request);
+        if self.awake_poll_started || !requested {
+            return false;
+        }
+        self.awake_poll_started = true;
+        true
+    }
+
+    pub fn awake_poll_current(&self) -> bool {
+        self.awake_poll_started && self.host_executor.is_some()
+    }
+
+    pub fn queue_awake_poll(&mut self) -> bool {
+        if self.clean.native_fixture().is_some()
+            || self.awake_poll_job.is_some()
+            || self.host_job.is_some()
+        {
+            return false;
+        }
+        let Some(executor) = self.host_executor.clone() else {
+            return false;
+        };
+        let generation = self.next_generation();
+        self.awake_poll_job = Some(generation);
+        self.jobs.push(BackgroundJob::AwakeStatus {
+            generation,
+            executor,
+        });
+        true
+    }
+
+    fn action_executor(&self, intents: &[HostIntent]) -> Option<Arc<dyn ActionExecutor>> {
+        if self.clean.native_fixture().is_some() {
+            return None;
+        }
+        self.host_executor.clone().or_else(|| {
+            intents
+                .iter()
+                .all(|intent| {
+                    matches!(
+                        intent,
+                        HostIntent::Startup {
+                            source: host_review::StartupSource::Hive(_),
+                            ..
+                        }
+                    )
+                })
+                .then(|| {
+                    Arc::new(host_review::CoreExecutor::for_startup_hive())
+                        as Arc<dyn ActionExecutor>
+                })
+        })
+    }
+
+    pub fn host_preview(&mut self, intents: Vec<HostIntent>) -> bool {
+        if self.clean.native_fixture().is_some() || self.host_job.is_some() || intents.is_empty() {
+            return false;
+        }
+        let Some(executor) = self.action_executor(&intents) else {
+            self.host_review.invalidate();
+            self.host_review.phase = HostPhase::Finished;
+            self.host_review.error = Some("unbacked_session".to_string());
+            return false;
+        };
+        let generation = self.host_review.begin(intents.clone());
+        self.host_running = intents.clone();
+        let cancel = Arc::new(FlagCancelObserver::new());
+        self.host_job = Some((generation, cancel.clone()));
+        self.jobs.push(BackgroundJob::HostPreview {
+            generation,
+            intents,
+            executor,
+            cancel,
+        });
+        true
+    }
+
+    pub fn host_confirm(&mut self, confirmed: bool) -> bool {
+        if self.clean.native_fixture().is_some() || self.host_job.is_some() {
+            return false;
+        }
+        let Some(executor) = self.action_executor(&self.host_review.intents) else {
+            return false;
+        };
+        let Some(prepared) = self.host_review.take_confirmed(confirmed) else {
+            return false;
+        };
+        if self
+            .host_review
+            .intents
+            .iter()
+            .any(|intent| matches!(intent, HostIntent::KeepAwake { .. }))
+        {
+            // A query sampled before this action cannot overwrite its later
+            // terminal state, including a failed clear reported as unknown.
+            self.awake_poll_job = None;
+        }
+        self.host_running = self.host_review.intents.clone();
+        let generation = self.host_review.generation;
+        let cancel = Arc::new(FlagCancelObserver::new());
+        self.host_job = Some((generation, cancel.clone()));
+        self.jobs.push(BackgroundJob::HostExecute {
+            generation,
+            prepared,
+            executor,
+            cancel,
+        });
+        true
+    }
+
+    /// Cancellation invalidates UI authority immediately. A dispatched core
+    /// call finishes truthfully; the token prevents later items from starting.
+    pub fn host_cancel(&mut self) {
+        if let Some((_, cancel)) = &self.host_job {
+            cancel.request_cancel();
+        }
+        self.host_review.invalidate();
+    }
+
+    /// Undo is a new reverse intent, not a direct registry restore. A worker
+    /// must build a new live plan/digest and the user confirms it again.
+    pub fn host_preview_restore(&mut self) -> bool {
+        let intents = self
+            .host_review
+            .results
+            .iter()
+            .filter_map(|result| result.reverse.clone())
+            .collect::<Vec<_>>();
+        self.host_preview(intents)
+    }
+
     pub fn software_set_query(&mut self, query: impl Into<String>) {
         let query = query.into();
         if self.software_review.query() != query {
+            self.host_cancel();
             self.software_review.cancel_review(self.locale());
         }
         self.software_review.set_query(query);
@@ -2297,6 +2813,7 @@ impl Session {
     }
 
     pub fn software_cycle_source_filter(&mut self) {
+        self.host_cancel();
         self.software_review.cycle_source_filter();
         self.sync_software_rows();
     }
@@ -2379,11 +2896,13 @@ impl Session {
     }
 
     pub fn software_cycle_filter(&mut self) {
+        self.host_cancel();
         self.software_review.cycle_filter();
         self.sync_software_rows();
     }
 
     pub fn software_refresh(&mut self) {
+        self.host_cancel();
         let locale = self.locale();
         if self.software_review.loading() {
             return;
@@ -2419,10 +2938,15 @@ impl Session {
     }
 
     pub fn status_set_query(&mut self, query: impl Into<String>) {
-        self.status_query = query.into();
+        let query = query.into();
+        if self.status_query != query {
+            self.invalidate_process_review();
+        }
+        self.status_query = query;
     }
 
     pub fn status_cycle_sort(&mut self) {
+        self.invalidate_process_review();
         self.status_sort = match self.status_sort {
             ProcessSort::Name => ProcessSort::Cpu,
             ProcessSort::Cpu => ProcessSort::Memory,
@@ -2466,8 +2990,9 @@ impl Session {
     }
 
     /// Pick a process row for its local explanation. Picking the same row
-    /// again closes it. A pick is presentation only; no process action reads it.
+    /// again closes it. It identifies the row to inspect, never execution authority.
     pub fn status_toggle_process(&mut self, row: &devsweep_core::status::ProcessV1) {
+        self.invalidate_process_review();
         let pick = crate::status_panel::ProcessPick::of(row);
         if self.status_pick.as_ref() == Some(&pick) {
             self.status_pick = None;
@@ -2477,7 +3002,56 @@ impl Session {
     }
 
     pub fn status_clear_process(&mut self) {
+        self.invalidate_process_review();
         self.status_pick = None;
+    }
+
+    fn invalidate_process_review(&mut self) {
+        if self
+            .host_review
+            .intents
+            .iter()
+            .chain(self.host_running.iter())
+            .any(|intent| matches!(intent, HostIntent::Process { .. }))
+        {
+            self.host_cancel();
+        }
+    }
+
+    pub fn status_process_action_error(&self) -> Option<&'static str> {
+        let Some(pick) = &self.status_pick else {
+            return Some("invalid_identity");
+        };
+        if devsweep_core::status::protected_process_class(&pick.name).is_some() {
+            return Some("protected");
+        }
+        if !self
+            .status_snapshot
+            .as_ref()
+            .is_some_and(|snapshot| pick.find(snapshot).is_some())
+        {
+            return Some("invalid_identity");
+        }
+        if self.clean.native_fixture().is_some() {
+            return Some("fixture_read_only");
+        }
+        if self.host_executor.is_none() {
+            return Some("unbacked_session");
+        }
+        None
+    }
+
+    pub fn status_preview_process_termination(&mut self) -> bool {
+        if self.status_process_action_error().is_some() || self.host_action_busy() {
+            return false;
+        }
+        let Some(pick) = &self.status_pick else {
+            return false;
+        };
+        self.host_preview(vec![HostIntent::Process {
+            pid: pick.pid,
+            name: pick.name.clone(),
+        }])
     }
 
     pub fn status_picked_process(&self) -> Option<&crate::status_panel::ProcessPick> {
@@ -2485,6 +3059,28 @@ impl Session {
     }
 
     pub fn apply_status_snapshot(&mut self, snapshot: StatusSnapshotV1) {
+        let process_missing = self
+            .host_review
+            .intents
+            .iter()
+            .chain(self.host_running.iter())
+            .any(|intent| match intent {
+                HostIntent::Process { pid, name } => crate::status_panel::ProcessPick {
+                    pid: *pid,
+                    name: name.clone(),
+                }
+                .find(&snapshot)
+                .is_none(),
+                _ => false,
+            });
+        if process_missing
+            && matches!(
+                self.host_review.phase,
+                HostPhase::Preparing | HostPhase::Ready | HostPhase::Running
+            )
+        {
+            self.invalidate_process_review();
+        }
         self.status_snapshot = Some(snapshot);
     }
 
@@ -2754,6 +3350,12 @@ impl Session {
     }
 
     pub fn show_mode(&mut self, mode: Mode) {
+        if self.clean.native_fixture().is_some() && mode != Mode::Clean {
+            return;
+        }
+        if mode != self.shell.mode() {
+            self.host_cancel();
+        }
         if mode != Mode::Software {
             self.software_close_related();
         }
@@ -2762,16 +3364,25 @@ impl Session {
     }
 
     pub fn toggle_menu(&mut self) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         self.shell.toggle_menu();
     }
 
     pub fn open_menu_item(&mut self, index: usize) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         let before = self.shell.surface();
         self.shell.open_menu_item(index);
         self.note_history_opened(before);
     }
 
     pub fn open_settings(&mut self) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         self.shell.open_surface(Surface::Settings);
     }
 
@@ -2812,6 +3423,7 @@ impl Session {
     }
 
     pub fn set_scan_roots(&mut self, roots: Vec<String>) {
+        self.host_cancel();
         self.shell.set_scan_roots(roots);
         self.clean.invalidate_review();
     }
@@ -2819,6 +3431,43 @@ impl Session {
     /// The accepted Clean scan projection owned by this session.
     pub fn clean_workbench(&self) -> &CleanWorkbench {
         &self.clean
+    }
+
+    pub fn install_clean_review_fixture(&mut self, scene: &str) -> bool {
+        let Some((locale, state)) = scene.split_once(':') else {
+            return false;
+        };
+        let locale = match locale {
+            "en" => Locale::En,
+            "zh" => Locale::ZhCn,
+            _ => return false,
+        };
+        if !self.clean.install_native_fixture(state) {
+            return false;
+        }
+        self.shell.locale = locale;
+        self.shell
+            .set_scan_roots(vec!["C:/review-fixture".to_string()]);
+        // The fixed display observations already match this display-only root.
+        // This does not clear production invalidations or grant a fixture plan.
+        self.shell.memories[Mode::Clean.index()].review = Review::Valid;
+        self.reset_clean_row_view();
+        if let Some(execution) = self.clean.execution() {
+            self.shell.set_row_ids(
+                Mode::Clean,
+                execution
+                    .groups
+                    .iter()
+                    .flat_map(|group| {
+                        group
+                            .outcomes
+                            .iter()
+                            .map(|outcome| outcome.target_id.as_str().to_string())
+                    })
+                    .collect(),
+            );
+        }
+        true
     }
 
     /// Installs an accepted Found report for tests and mirrors its ids.
@@ -2852,7 +3501,7 @@ impl Session {
                 self.clean.require_global_confirmation();
                 false
             }
-            CleanScope::Project => self.request_project_scan(),
+            CleanScope::Project | CleanScope::All => self.request_project_scan(),
         }
     }
 
@@ -2861,7 +3510,27 @@ impl Session {
         if !self.clean.take_global_confirmation() {
             return false;
         }
-        self.start_clean_scan(CleanScope::Global, Vec::new())
+        let scope = self.clean.selected_scope();
+        let roots = self.shell.scan_roots().iter().map(PathBuf::from).collect();
+        self.start_clean_scan(scope, roots, true)
+    }
+
+    /// Explicitly request a new global confirmation; choosing All alone never grants it.
+    pub fn clean_request_global_confirmation(&mut self) {
+        if self.shell.operation_id().is_some() || self.clean.selected_scope() == CleanScope::Project
+        {
+            return;
+        }
+        self.clean.reset_to_landing();
+        self.clean.require_global_confirmation();
+        self.reset_clean_row_view();
+    }
+
+    pub fn clean_begin_review(&mut self) {
+        self.clean.begin_review();
+    }
+    pub fn clean_toggle_group(&mut self, id: &str) {
+        self.clean.toggle_group(id);
     }
 
     /// Stores one explicitly picked project folder as the scan root.
@@ -2869,7 +3538,7 @@ impl Session {
     /// The folder is remembered through the existing scan-root store when one
     /// is available; otherwise it stays explicit for this session only.
     pub fn clean_pick_scan_root(&mut self, root: PathBuf) -> bool {
-        if self.shell.operation_id().is_some() || self.clean.selected_scope() != CleanScope::Project
+        if self.shell.operation_id().is_some() || self.clean.selected_scope() == CleanScope::Global
         {
             return false;
         }
@@ -2997,7 +3666,7 @@ impl Session {
 
     /// Opens the AI review subview from the Clean surface. Opening never scans.
     pub fn clean_ai_open(&mut self) -> bool {
-        if self.shell.operation_id().is_some() {
+        if self.clean.native_fixture().is_some() || self.shell.operation_id().is_some() {
             return false;
         }
         if !self.clean_ai.open_subview() {
@@ -3278,6 +3947,7 @@ impl Session {
     /// Scrolls the bounded row window by whole rows over the full id set.
     pub fn clean_scroll_rows(&mut self, delta: isize) -> bool {
         let reviewable = self.clean.phase() == CleanPhase::Found
+            || self.clean.execution().is_some()
             || (self.clean_ai.open() && self.clean_ai.phase() == AiSubviewPhase::Review);
         if !reviewable {
             return false;
@@ -3315,7 +3985,7 @@ impl Session {
     /// Retries the accepted scope. A failed global scan asks again first.
     pub fn clean_rescan(&mut self) -> bool {
         match self.clean.last_scope() {
-            Some(CleanScope::Project) => self.request_project_scan(),
+            Some(CleanScope::Project | CleanScope::All) => self.request_project_scan(),
             Some(CleanScope::Global) => {
                 self.clean.reset_to_landing();
                 self.clean.require_global_confirmation();
@@ -3349,30 +4019,51 @@ impl Session {
             }
             return false;
         }
-        self.start_clean_scan(CleanScope::Project, roots)
+        self.start_clean_scan(self.clean.selected_scope(), roots, false)
     }
 
-    fn start_clean_scan(&mut self, scope: CleanScope, roots: Vec<PathBuf>) -> bool {
+    fn start_clean_scan(
+        &mut self,
+        scope: CleanScope,
+        roots: Vec<PathBuf>,
+        confirmed_global: bool,
+    ) -> bool {
+        if self.clean.native_fixture().is_some() {
+            return false;
+        }
         if self.shell.operation_id().is_some() {
             return false;
         }
-        let options = ScanOptions {
-            include_projects: matches!(scope, CleanScope::Project),
-            include_global: matches!(scope, CleanScope::Global),
-            roots,
+        let Some(options) =
+            crate::clean_workbench::clean_scan_options(scope, confirmed_global, roots)
+        else {
+            self.clean
+                .require_root(devsweep_core::scan_preferences::scan_root_suggestions());
+            return false;
         };
         let id = self.shell.begin_operation(OperationClass::ReadOnly);
         self.clean.on_scan_started(scope);
+        self.clean
+            .set_effective_scope(if scope == CleanScope::All && !options.include_global {
+                CleanScope::Project
+            } else {
+                scope
+            });
         self.reset_clean_row_view();
         let cancel = Arc::new(FlagCancelObserver::new());
         self.clean_cancel = Some(Arc::clone(&cancel));
         let progress = Arc::new(AtomicUsize::new(0));
         self.clean_progress = Some(Arc::clone(&progress));
+        let observations = Arc::new(Mutex::new(None));
+        self.clean_observations = Some(Arc::clone(&observations));
         self.clean_progress_seen = 0;
         let mailbox = Arc::clone(&self.mailbox);
         dispatch_blocking(mailbox, move || {
-            let payload = scan_clean_rows(&options, &cancel, &mut |found| {
-                progress.store(found, Ordering::SeqCst);
+            let payload = scan_clean_rows(&options, &cancel, &mut |snapshot| {
+                progress.store(snapshot.found, Ordering::SeqCst);
+                *observations
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner()) = Some(snapshot);
             });
             MailEvent::CleanScan { id, payload }
         });
@@ -3380,6 +4071,9 @@ impl Session {
     }
 
     fn spawn_clean_execute(&mut self, start: CleanExecutionStart) -> bool {
+        if self.clean.native_fixture().is_some() {
+            return false;
+        }
         let id = self.shell.begin_operation(OperationClass::Mutating);
         let cancel = Arc::new(FlagCancelObserver::new());
         self.clean_cancel = Some(Arc::clone(&cancel));
@@ -3405,7 +4099,10 @@ impl Session {
                 }
             },
             CleanPhase::Found => {
-                if self.clean.preview_matches_current() {
+                if !self.clean.reviewing() {
+                    self.clean.begin_review();
+                    true
+                } else if self.clean.preview_matches_current() {
                     self.clean_confirm_execute()
                 } else {
                     self.clean_preview_selection()
@@ -3450,6 +4147,16 @@ impl Session {
     /// Samples the out-of-band scan progress into the workbench. Reports
     /// whether the observed discovery count changed.
     fn sync_clean_progress(&mut self) -> bool {
+        if let Some(snapshot) = self.clean_observations.as_ref().and_then(|observations| {
+            observations
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .take()
+        }) {
+            self.clean_progress_seen = snapshot.found;
+            self.clean.on_scan_observations(snapshot);
+            return true;
+        }
         let Some(progress) = self.clean_progress.as_ref() else {
             return false;
         };
@@ -3467,8 +4174,12 @@ impl Session {
             MailEvent::CleanScan { id, payload } => {
                 if self.shell.operation_id() == Some(*id) {
                     self.clean.on_scan_result(payload.clone());
+                    if payload.plan.is_some() {
+                        self.shell.memories[Mode::Clean.index()].review = Review::Valid;
+                    }
                     self.clean_cancel = None;
                     self.clean_progress = None;
+                    self.clean_observations = None;
                     self.clean_progress_seen = 0;
                     self.shell.finish_operation(*id);
                     self.reset_clean_row_view();
@@ -3480,6 +4191,23 @@ impl Session {
             MailEvent::CleanExecute { id, payload } => {
                 if self.shell.operation_id() == Some(*id) {
                     self.clean.on_execute_result(payload.clone());
+                    if let Some(execution) = self.clean.execution() {
+                        self.shell.set_row_query(Mode::Clean, "");
+                        self.shell.set_row_ids(
+                            Mode::Clean,
+                            execution
+                                .groups
+                                .iter()
+                                .flat_map(|group| {
+                                    group
+                                        .outcomes
+                                        .iter()
+                                        .map(|outcome| outcome.target_id.as_str().to_string())
+                                })
+                                .collect(),
+                        );
+                        self.shell.set_row_window_start(Mode::Clean, 0);
+                    }
                     if let Some(entry) = self.clean.history_entry(self.locale()) {
                         self.shell.push_history(entry);
                     }
@@ -5097,7 +5825,7 @@ mod tests {
         );
         assert_eq!(
             session.clean_outcome(),
-            Some(CleanOutcomeNotice::StalePreview)
+            Some(CleanOutcomeNotice::ConfirmationRequired)
         );
         assert_eq!(
             session.shell().activity(),
@@ -5109,13 +5837,78 @@ mod tests {
         let lines = crate::view::panel_lines(&session, None);
         assert_eq!(
             lines.last(),
-            Some(&crate::copy::clean_outcome_stale_preview(Locale::En).to_string())
+            Some(&crate::copy::clean_outcome_confirmation_required(Locale::En).to_string())
         );
         assert!(
             root.join(".pytest_cache").join("payload").is_file(),
             "a stale digest must never move the fixture"
         );
         workbench_cleanup(&root);
+    }
+
+    #[test]
+    fn clean_all_keeps_requested_and_effective_scope_separate_on_rescan() {
+        let root = isolated_multi_cache_project();
+        let mut session = Session::unbacked();
+        session.set_scan_roots(vec![root.display().to_string()]);
+        session.clean_choose_scope(CleanScope::All);
+        assert!(session.clean_start_selected_scope());
+        drain_until_idle(&mut session);
+        assert_eq!(session.clean.selected_scope(), CleanScope::All);
+        assert_eq!(session.clean.effective_scope(), Some(CleanScope::Project));
+        assert!(session.clean.global_omitted());
+        assert!(session.clean_rescan());
+        drain_until_idle(&mut session);
+        assert!(session.clean.global_omitted());
+        session.clean_request_global_confirmation();
+        assert!(session.clean.take_global_confirmation());
+        assert!(!session.clean.take_global_confirmation());
+        workbench_cleanup(&root);
+    }
+
+    #[test]
+    fn clean_native_fixture_blocks_dispatch_even_after_scope_and_root_edits() {
+        let mut session = Session::unbacked();
+        assert!(session.install_clean_review_fixture("en:review"));
+        session.clean_choose_scope(CleanScope::All);
+        assert!(!session.clean_start_selected_scope());
+        session.clean_request_global_confirmation();
+        assert!(!session.clean_confirm_global_scan());
+        assert!(session.shell.operation_id().is_none());
+        assert!(session.clean.native_fixture().is_some());
+        assert!(!session.clean_confirm_execute());
+    }
+
+    #[test]
+    fn clean_native_fixture_cannot_navigate_to_host_backed_surfaces() {
+        let mut session = Session::unbacked();
+        assert!(session.install_clean_review_fixture("en:review"));
+        session.enable_background_jobs();
+        for mode in [Mode::Software, Mode::Optimize, Mode::Analyze, Mode::Status] {
+            session.show_mode(mode);
+            assert_eq!(session.shell.mode(), Mode::Clean);
+        }
+        for key in [NavKey::Left, NavKey::Right, NavKey::Up, NavKey::Down] {
+            session.apply_key(key);
+            assert_eq!(session.shell.mode(), Mode::Clean);
+            assert!(!session.shell.menu_open());
+        }
+        session.toggle_menu();
+        assert!(!session.shell.menu_open());
+        for index in 0..MENU.len() {
+            session.open_menu_item(index);
+            assert_eq!(session.shell.surface(), Surface::Mode);
+        }
+        session.open_settings();
+        assert_eq!(session.shell.surface(), Surface::Mode);
+        assert!(!session.clean_ai_open());
+        assert!(session.jobs.is_empty());
+        assert!(session.shell.operation_id().is_none());
+        for invalid in ["", "en", "fr:review", "en:unknown", "en:review:extra"] {
+            let mut invalid_session = Session::unbacked();
+            assert!(!invalid_session.install_clean_review_fixture(invalid));
+            assert!(invalid_session.clean.native_fixture().is_none());
+        }
     }
 
     #[test]
@@ -5245,6 +6038,9 @@ mod tests {
                 bytes,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             }
         }
@@ -5310,6 +6106,9 @@ mod tests {
                 bytes: 4,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             }
         }
@@ -5424,6 +6223,9 @@ mod tests {
                 bytes: 1,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             })
             .collect::<Vec<_>>();

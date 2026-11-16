@@ -40,6 +40,7 @@ use crate::{
     ui::{self, ButtonKind, KeyboardFocus, Theme, Tone},
 };
 
+mod host_review;
 mod page_analyze;
 mod page_clean;
 mod page_status;
@@ -631,7 +632,7 @@ pub(crate) fn clean_review_is_active(session: &Session) -> bool {
     if session.clean_ai().open() {
         return session.clean_ai().phase() == AiSubviewPhase::Review;
     }
-    session.clean_workbench().phase() == CleanPhase::Found
+    session.clean_workbench().phase() == CleanPhase::Found && session.clean_workbench().reviewing()
 }
 
 impl Focusable for ShellView {
@@ -823,23 +824,54 @@ impl Render for ShellView {
 }
 
 impl ShellView {
-    /// Runs queued read-only jobs (host software lists, Status snapshots,
-    /// Analyze walks) on worker threads and applies each result back on the
-    /// UI thread. Session generations drop superseded results.
+    /// Runs queued observation and explicitly confirmed host jobs on workers.
+    /// Session generations reject superseded UI deliveries.
     fn dispatch_jobs(&mut self, cx: &mut Context<Self>) {
+        if self.session.take_awake_poll_request() {
+            cx.spawn(async move |this, cx| {
+                loop {
+                    cx.background_executor().timer(Duration::from_secs(1)).await;
+                    let current = this
+                        .update(cx, |this, cx| {
+                            if !this.session.awake_poll_current() {
+                                return false;
+                            }
+                            this.session.queue_awake_poll();
+                            cx.notify();
+                            true
+                        })
+                        .unwrap_or(false);
+                    if !current {
+                        break;
+                    }
+                }
+            })
+            .detach();
+        }
         for job in self.session.take_jobs() {
+            let spawn_failure = job.spawn_failure();
+            let panic_result = job.panic_result();
             let slot: std::sync::Arc<std::sync::Mutex<Option<crate::shell::JobResult>>> =
                 std::sync::Arc::default();
             let writer = slot.clone();
             let spawned = std::thread::Builder::new()
                 .name("devsweep-gpui-job".to_string())
                 .spawn(move || {
-                    let result = job.run();
+                    let result = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                        || job.run(),
+                    )) {
+                        Ok(result) => Some(result),
+                        Err(_) => panic_result,
+                    };
                     if let Ok(mut guard) = writer.lock() {
-                        *guard = Some(result);
+                        *guard = result;
                     }
                 });
             if spawned.is_err() {
+                if let Some(result) = spawn_failure {
+                    self.session.apply_job(result);
+                    cx.notify();
+                }
                 continue;
             }
             cx.spawn(async move |this, cx| {
@@ -1576,12 +1608,56 @@ fn clean_phase_line(session: &Session) -> Option<String> {
                 Some(copy::clean_global_confirm(locale).to_string())
             }
         },
-        CleanPhase::Scanning => Some(copy::clean_phase_scanning(locale, workbench.found_so_far())),
-        CleanPhase::Found => Some(copy::clean_phase_found(locale, workbench.rows().len())),
+        CleanPhase::Scanning => Some(format!(
+            "{} · {}",
+            copy::clean_phase_scanning(locale, workbench.found_so_far()),
+            workbench.scan_progress().capacity.label(locale)
+        )),
+        CleanPhase::Found => Some(if workbench.preview_matches_current() {
+            copy::pick(
+                locale,
+                "Preview ready · confirm Recycle Bin move",
+                "摘要已生成 · 确认移入回收站",
+            )
+            .to_string()
+        } else if workbench.native_fixture() == Some("previewed") {
+            copy::pick(
+                locale,
+                "Read-only preview scene · no executable digest",
+                "只读预览场景 · 无可执行摘要",
+            )
+            .to_string()
+        } else if workbench.reviewing() {
+            copy::clean_selected_capacity(locale, &workbench.selected_capacity().label(locale))
+        } else {
+            copy::clean_found_capacity(
+                locale,
+                &workbench.capacity().label(locale),
+                &workbench.recommended_capacity().label(locale),
+            )
+        }),
         CleanPhase::AllClean => Some(copy::clean_phase_all_clean(locale).to_string()),
         CleanPhase::Cleaning => Some(copy::clean_phase_cleaning(locale).to_string()),
-        CleanPhase::Completed => Some(copy::clean_phase_completed(locale).to_string()),
-        CleanPhase::Failed => Some(copy::clean_phase_failed(locale).to_string()),
+        CleanPhase::Completed => Some(
+            workbench
+                .execution()
+                .map(|execution| {
+                    copy::clean_moved_summary(
+                        locale,
+                        execution.moved_count,
+                        &execution.moved.label(locale),
+                    )
+                })
+                .unwrap_or_else(|| copy::clean_phase_completed(locale).to_string()),
+        ),
+        CleanPhase::Failed => Some(
+            workbench
+                .execution()
+                .map(|execution| {
+                    copy::clean_result_status(locale, execution.failed, execution.skipped)
+                })
+                .unwrap_or_else(|| copy::clean_phase_failed(locale).to_string()),
+        ),
     }
 }
 
@@ -1608,6 +1684,7 @@ fn map_inputs(session: &Session) -> Vec<MapInput<'_>> {
         .filter_map(|id| {
             let row = workbench.row(id)?;
             Some(MapInput {
+                group_id: workbench.group_for_row(id).map(|group| group.id.as_str()),
                 id: row.id.as_str(),
                 rule_id: row.rule_id.as_str(),
                 path: row.path.as_deref(),
@@ -1618,6 +1695,26 @@ fn map_inputs(session: &Session) -> Vec<MapInput<'_>> {
             })
         })
         .collect()
+}
+
+fn map_capacity(
+    rows: &[MapInput<'_>],
+    band: Option<ReviewBand>,
+) -> crate::clean_workbench::CleanCapacity {
+    rows.iter()
+        .filter(|row| {
+            band.is_none_or(|band| {
+                clean_map::review_band(row.selectable, row.selected_by_default) == band
+            })
+        })
+        .fold(
+            crate::clean_workbench::CleanCapacity::default(),
+            |mut total, row| {
+                total.bytes = total.bytes.saturating_add(row.bytes);
+                total.incomplete += usize::from(!row.size_complete);
+                total
+            },
+        )
 }
 
 #[cfg(test)]
@@ -2449,7 +2546,11 @@ fn caption_buttons(
                 copy::pick(locale, "Close", "关闭"),
                 WindowControlArea::Close,
             )
-            .on_click(cx.listener(|_, _, window, _| window.remove_window())),
+            .on_click(cx.listener(|this, _, window, _| {
+                if !this.session.host_action_busy() {
+                    window.remove_window();
+                }
+            })),
         )
         .into_any_element()
 }
@@ -2577,6 +2678,15 @@ pub fn run(session: Session) {
                             font_search: font_search.clone(),
                             fonts: crate::fonts::FontCatalogue::default(),
                             software_sort_open: false,
+                        });
+                        let closing_view = view.downgrade();
+                        window.on_window_should_close(cx, move |_, cx| {
+                            closing_view
+                                .update(cx, |this, cx| {
+                                    cx.notify();
+                                    !this.session.host_action_busy()
+                                })
+                                .unwrap_or(true)
                         });
                         view.update(cx, |_view, cx| {
                             cx.observe(&font_search, |this, observed, cx| {
@@ -3495,6 +3605,10 @@ mod tests {
         let files = [
             ("view.rs", production),
             (
+                "view/host_review.rs",
+                crate::source_lf(include_str!("view/host_review.rs")),
+            ),
+            (
                 "view/page_analyze.rs",
                 crate::source_lf(include_str!("view/page_analyze.rs")),
             ),
@@ -3657,6 +3771,10 @@ mod tests {
         );
         for (file, text) in [
             ("view.rs", source),
+            (
+                "host_review.rs",
+                crate::source_lf(include_str!("view/host_review.rs")),
+            ),
             (
                 "page_clean.rs",
                 crate::source_lf(include_str!("view/page_clean.rs")),
@@ -3880,6 +3998,9 @@ mod tests {
                 bytes: 13_800_000_000,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             },
             CleanRow {
@@ -3894,6 +4015,9 @@ mod tests {
                 bytes: 4_400_000_000,
                 size_complete: false,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: true,
             },
         ]);
@@ -3918,6 +4042,63 @@ mod tests {
     }
 
     #[test]
+    fn clean_group_controls_keep_toggle_semantics_and_fixed_actions() {
+        let source = crate::source_lf(include_str!("view/page_clean.rs"));
+        let group = source
+            .split_once("fn clean_group_header(")
+            .unwrap()
+            .1
+            .split_once("fn clean_row(")
+            .unwrap()
+            .0;
+        assert!(group.contains(".role(gpui::Role::CheckBox)"));
+        assert!(group.contains(".aria_toggled(toggled)"));
+        assert!(group.contains(".accessibility_id("));
+        assert!(group.contains(".on_a11y_action("));
+        assert!(group.contains("GroupSelection::Mixed"));
+        assert!(!group.contains("aria_selected"));
+        assert!(!group.contains("aria_active_descendant"));
+        assert!(source.contains("sheet_frame(bar, page.child(body).into_any_element(), footer)"));
+        assert!(source.contains("clean-header-preview") && source.contains("clean-header-confirm"));
+    }
+
+    #[test]
+    fn clean_map_capacities_preserve_confidence_and_filtered_scope() {
+        let mut session = Session::unbacked();
+        assert!(session.install_clean_review_fixture("en:review"));
+        let rows = map_inputs(&session);
+        assert_eq!(map_capacity(&rows, None).bytes, 40960);
+        assert_eq!(map_capacity(&rows, None).incomplete, 1);
+        assert_eq!(
+            map_capacity(&rows, Some(ReviewBand::Recommended)).bytes,
+            24576
+        );
+        assert_eq!(
+            map_capacity(&rows, Some(ReviewBand::Recommended)).incomplete,
+            1
+        );
+        assert_eq!(
+            map_capacity(&rows, Some(ReviewBand::NotSelectable)).bytes,
+            16384
+        );
+        assert_eq!(
+            map_capacity(&rows, Some(ReviewBand::NotSelectable)).incomplete,
+            0
+        );
+        session.set_search_query("fixture-2".to_string());
+        let filtered = map_inputs(&session);
+        assert_eq!(map_capacity(&filtered, None).bytes, 12288);
+        for locale in [copy::Locale::En, copy::Locale::ZhCn] {
+            assert!(
+                map_capacity(&filtered, None)
+                    .label(locale)
+                    .contains(copy::pick(locale, "At least", "至少"))
+            );
+        }
+        assert_eq!(session.clean_workbench().capacity().bytes, 40960);
+    }
+
+    #[test]
     fn disk_map_summary_does_not_replace_the_outcome_line() {
         let mut session = Session::unbacked();
         session.install_clean_rows_for_test(vec![CleanRow {
@@ -3932,6 +4113,9 @@ mod tests {
             bytes: 1024,
             size_complete: true,
             inspect_only: false,
+            ecosystem: devsweep_core::model::Ecosystem::Python,
+            kind: devsweep_core::model::TargetKind::ToolCache,
+            recycle_eligible: true,
             selected_by_default: true,
         }]);
         session.set_clean_outcome(Some(CleanOutcomeNotice::StalePreview));

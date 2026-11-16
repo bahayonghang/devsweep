@@ -56,11 +56,25 @@ impl ShellView {
             )
             .on_click(cx.listener(|this, _, _, cx| this.clean_ai_open(cx))),
         )];
+        if phase == CleanPhase::Landing
+            && self.session.clean_workbench().prompt() == CleanLandingPrompt::None
+        {
+            actions.push(ui::any(
+                ui::button(
+                    t,
+                    "clean-header-scan",
+                    copy::pick(locale, "Scan", "扫描"),
+                    ButtonKind::Primary,
+                )
+                .on_click(cx.listener(|this, _, _, cx| this.clean_start_scope(cx))),
+            ));
+        }
         if matches!(
             phase,
             CleanPhase::Found | CleanPhase::AllClean | CleanPhase::Completed | CleanPhase::Failed
-        ) {
-            if self.session.clean_workbench().selected_scope() == CleanScope::Project {
+        ) && !(phase == CleanPhase::Found && self.session.clean_workbench().reviewing())
+        {
+            if self.session.clean_workbench().selected_scope() != CleanScope::Global {
                 actions.push(ui::any(
                     ui::icon_button(
                         t,
@@ -87,20 +101,81 @@ impl ShellView {
                 .on_click(cx.listener(|this, _, _, cx| this.clean_retry(cx))),
             ));
         }
-        let figure = disk_map_active(&self.session).then(|| {
-            copy::clean_bytes_short(clean_map::summarize(&map_inputs(&self.session)).mapped_bytes)
-        });
+        if phase == CleanPhase::Found && !self.session.clean_workbench().reviewing() {
+            actions.push(ui::any(
+                ui::button(
+                    t,
+                    "clean-review-results",
+                    copy::clean_review_action(locale),
+                    ButtonKind::Primary,
+                )
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.session.clean_begin_review();
+                    cx.notify();
+                })),
+            ));
+        }
+        if phase == CleanPhase::Found && self.session.clean_workbench().reviewing() {
+            let workbench = self.session.clean_workbench();
+            let previewed = workbench.preview_matches_current()
+                || workbench.native_fixture() == Some("previewed");
+            let enabled = if previewed {
+                workbench.preview_matches_current()
+            } else {
+                workbench.selected_count() > 0 && workbench.native_fixture().is_none()
+            };
+            actions.push(ui::any(
+                ui::button(
+                    t,
+                    if previewed {
+                        "clean-header-confirm"
+                    } else {
+                        "clean-header-preview"
+                    },
+                    if previewed {
+                        copy::clean_confirm_action(locale)
+                    } else {
+                        copy::clean_preview_action(locale)
+                    },
+                    if !enabled {
+                        ButtonKind::Disabled
+                    } else if previewed {
+                        ButtonKind::Danger
+                    } else {
+                        ButtonKind::Primary
+                    },
+                )
+                .when(enabled, |button| {
+                    button.on_click(cx.listener(move |this, _, _, cx| {
+                        if previewed {
+                            this.clean_confirm_execute(cx);
+                        } else {
+                            this.clean_preview(cx);
+                        }
+                    }))
+                }),
+            ));
+        }
+        let figure = None;
         // Landing has no phase sentence of its own, so the first row states
         // the one fact there is: whether a folder is chosen and that nothing
         // has been scanned.
         let status = clean_phase_line(&self.session).or_else(|| {
             (phase == CleanPhase::Landing).then(|| {
-                let project =
-                    self.session.clean_workbench().selected_scope() == CleanScope::Project;
+                let project = self.session.clean_workbench().selected_scope() != CleanScope::Global;
                 copy::clean_landing_status(locale, project, self.session.shell().scan_roots().len())
             })
         });
+        let status = status.map(|status| {
+            if self.session.clean_workbench().global_omitted() {
+                format!("{status} · {}", copy::clean_global_omitted(locale))
+            } else {
+                status
+            }
+        });
         let bar = page_bar(t, status, figure, actions);
+        let footer = (phase == CleanPhase::Found && self.session.clean_workbench().reviewing())
+            .then(|| self.clean_action_bar(t, cx));
         if !matches!(phase, CleanPhase::Scanning | CleanPhase::Cleaning) {
             page = page.child(self.clean_scope_tabs(t, cx));
         }
@@ -120,22 +195,13 @@ impl ShellView {
                     "所选范围内目前没有需要审阅的项目。",
                 ),
             ))),
-            CleanPhase::Completed => {
-                let result = self.clean_result_card(t);
-                ui::any(
-                    div()
-                        .flex()
-                        .flex_col()
-                        .gap(ui::SPACE_4)
-                        .child(result)
-                        .when(disk_map_active(&self.session), |d| {
-                            d.child(self.clean_review(t, row_height, cx))
-                        }),
-                )
+            CleanPhase::Completed => self.clean_result_card(t, cx),
+            CleanPhase::Failed if self.session.clean_workbench().execution().is_some() => {
+                self.clean_result_card(t, cx)
             }
             CleanPhase::Failed => self.clean_failed(t),
         };
-        sheet_frame(bar, page.child(body).into_any_element(), None)
+        sheet_frame(bar, page.child(body).into_any_element(), footer)
     }
 
     /// Root, protection, outcome and failure banners for the Clean workflow.
@@ -143,6 +209,13 @@ impl ShellView {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
         let mut banners = Vec::new();
+        if workbench.native_fixture().is_some() {
+            banners.push(ui::any(ui::banner(
+                t,
+                Tone::Warning,
+                copy::clean_fixture_notice(locale),
+            )));
+        }
         if let Some(notice) = self.session.clean_outcome() {
             let tone = match notice {
                 CleanOutcomeNotice::TrashReported | CleanOutcomeNotice::Empty => Tone::Success,
@@ -176,7 +249,7 @@ impl ShellView {
     fn clean_landing(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
-        let project = workbench.selected_scope() == CleanScope::Project;
+        let project = workbench.selected_scope() != CleanScope::Global;
         let mut configuration = div().flex().flex_col().gap(ui::SPACE_2).child(ui::muted(
             t,
             copy::clean_scope_detail(locale, workbench.selected_scope().id()),
@@ -185,6 +258,20 @@ impl ShellView {
             return configuration
                 .child(self.clean_global_confirm(t, cx))
                 .into_any_element();
+        }
+        if workbench.selected_scope() == CleanScope::All {
+            configuration = configuration.child(
+                ui::button(
+                    t,
+                    "clean-include-global",
+                    copy::clean_include_global(locale),
+                    ButtonKind::Secondary,
+                )
+                .on_click(cx.listener(|this, _, _, cx| {
+                    this.session.clean_request_global_confirmation();
+                    cx.notify();
+                })),
+            );
         }
         if project {
             let roots = self.session.shell().scan_roots();
@@ -274,25 +361,30 @@ impl ShellView {
                     .id("clean-scopes")
                     .role(gpui::Role::TabList)
                     .aria_label(copy::clean_scope_prompt(locale))
-                    .children([CleanScope::Project, CleanScope::Global].map(|scope| {
-                        ui::segment(
-                            t,
-                            ElementId::Name(SharedString::from(format!(
-                                "clean-scope-{}",
-                                scope.id()
-                            ))),
-                            match scope {
-                                CleanScope::Project => copy::clean_scope_project(locale),
-                                CleanScope::Global => copy::clean_scope_global(locale),
-                            },
-                            self.session.clean_workbench().selected_scope() == scope,
-                        )
-                        .on_click(cx.listener(move |this, _, _, cx| this.clean_scope(scope, cx)))
-                        .on_a11y_action(
-                            gpui::AccessibleAction::Click,
-                            on_view_a11y(cx, move |this, cx| this.clean_scope(scope, cx)),
-                        )
-                    })),
+                    .children(
+                        [CleanScope::Project, CleanScope::Global, CleanScope::All].map(|scope| {
+                            ui::segment(
+                                t,
+                                ElementId::Name(SharedString::from(format!(
+                                    "clean-scope-{}",
+                                    scope.id()
+                                ))),
+                                match scope {
+                                    CleanScope::Project => copy::clean_scope_project(locale),
+                                    CleanScope::Global => copy::clean_scope_global(locale),
+                                    CleanScope::All => copy::clean_scope_all(locale),
+                                },
+                                self.session.clean_workbench().selected_scope() == scope,
+                            )
+                            .on_click(
+                                cx.listener(move |this, _, _, cx| this.clean_scope(scope, cx)),
+                            )
+                            .on_a11y_action(
+                                gpui::AccessibleAction::Click,
+                                on_view_a11y(cx, move |this, cx| this.clean_scope(scope, cx)),
+                            )
+                        }),
+                    ),
             )
             .into_any_element()
     }
@@ -422,6 +514,18 @@ impl ShellView {
                     ),
             )
             .child(ui::progress_track(t))
+            .children(workbench.scan_progress().groups.iter().map(
+                |(ecosystem, kind, count, capacity)| {
+                    ui::muted(
+                        t,
+                        format!(
+                            "{} · {count} · {}",
+                            copy::clean_group_title(locale, ecosystem, kind, false),
+                            capacity.label(locale)
+                        ),
+                    )
+                },
+            ))
             .child(ui::muted(
                 t,
                 copy::pick(
@@ -451,35 +555,137 @@ impl ShellView {
             .into_any_element()
     }
 
-    fn clean_result_card(&self, t: &Theme) -> gpui::AnyElement {
+    fn clean_result_card(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
+        use devsweep_core::execution::OutcomeStatus;
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
-        let (moved, total) = workbench.result_counts().unwrap_or((0, 0));
-        let tone = if moved == total { t.success } else { t.warning };
-        ui::card(t)
-            .flex_row()
-            .items_center()
+        let Some(execution) = workbench.execution() else {
+            return ui::any(div());
+        };
+        let mut card = ui::card(t)
+            .id("clean-results")
             .gap(ui::SPACE_3)
-            .child(ui::icon_tile(t, "check-circle", tone))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .flex_1()
-                    .child(
-                        div()
-                            .text_size(ui::TYPE_TITLE)
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(copy::clean_phase_completed(locale)),
+            .child(ui::card_header(t, copy::clean_phase_completed(locale)))
+            .child(ui::muted(
+                t,
+                copy::clean_moved_summary(
+                    locale,
+                    execution.moved_count,
+                    &execution.moved.label(locale),
+                ),
+            ))
+            .child(ui::muted(
+                t,
+                copy::clean_result_status(locale, execution.failed, execution.skipped),
+            ))
+            .child(ui::banner(
+                t,
+                if execution.history_incomplete {
+                    Tone::Warning
+                } else {
+                    Tone::Info
+                },
+                copy::clean_history_evidence(locale, execution.history_incomplete),
+            ));
+        let visible = self.session.shell().visible_row_ids(Mode::Clean);
+        for group in &execution.groups {
+            let mut details = div()
+                .flex()
+                .flex_col()
+                .gap(ui::SPACE_1)
+                .child(ui::card_header(t, group.group.title(locale)))
+                .child(ui::muted(
+                    t,
+                    copy::clean_moved_summary(
+                        locale,
+                        group.moved_count,
+                        &group.moved.label(locale),
+                    ),
+                ))
+                .child(ui::muted(
+                    t,
+                    copy::clean_result_status(locale, group.failed, group.skipped),
+                ));
+            for outcome in visible
+                .iter()
+                .filter_map(|id| execution.outcome(id))
+                .filter(|outcome| {
+                    workbench
+                        .group_for_row(outcome.target_id.as_str())
+                        .map(|entry| entry.id.as_str())
+                        .unwrap_or("unmatched")
+                        == group.group.id
+                })
+            {
+                let status = match &outcome.status {
+                    OutcomeStatus::Succeeded => copy::pick(locale, "Succeeded", "成功").to_string(),
+                    OutcomeStatus::Failed { message } => format!(
+                        "{}: {}",
+                        copy::pick(locale, "Failed", "失败"),
+                        crate::clean_workbench::bounded_detail(message)
+                    ),
+                    OutcomeStatus::Skipped { reason } => format!(
+                        "{}: {}",
+                        copy::pick(locale, "Skipped", "跳过"),
+                        crate::clean_workbench::bounded_detail(reason)
+                    ),
+                };
+                let title = workbench
+                    .row(outcome.target_id.as_str())
+                    .map(|row| {
+                        row.path
+                            .as_deref()
+                            .map(ui::display_path_text)
+                            .unwrap_or_else(|| row.rule_id.clone())
+                    })
+                    .unwrap_or_else(|| outcome.target_id.as_str().to_string());
+                details = details.child(ui::muted(t, format!("{title} · {status}")));
+            }
+            card = card.child(details);
+        }
+        let total = self.session.shell().filtered_row_ids(Mode::Clean).len();
+        let start = self.session.shell().row_window_start(Mode::Clean);
+        card.child(
+            div()
+                .flex()
+                .flex_row()
+                .gap(ui::SPACE_2)
+                .child(ui::muted(
+                    t,
+                    format!(
+                        "{}–{} / {total}",
+                        (start + 1).min(total),
+                        (start + visible.len()).min(total)
+                    ),
+                ))
+                .child(
+                    ui::button(
+                        t,
+                        "clean-result-prev",
+                        copy::pick(locale, "Previous", "上一页"),
+                        ButtonKind::Ghost,
                     )
-                    .when_some(workbench.result_counts(), |d, (moved, total)| {
-                        d.child(ui::muted(
-                            t,
-                            copy::clean_result_counts(locale, moved, total),
-                        ))
-                    }),
-            )
-            .into_any_element()
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.session
+                            .clean_scroll_rows(-(crate::shell::VISIBLE_ROW_CAPACITY as isize));
+                        cx.notify();
+                    })),
+                )
+                .child(
+                    ui::button(
+                        t,
+                        "clean-result-next",
+                        copy::pick(locale, "Next", "下一页"),
+                        ButtonKind::Ghost,
+                    )
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.session
+                            .clean_scroll_rows(crate::shell::VISIBLE_ROW_CAPACITY as isize);
+                        cx.notify();
+                    })),
+                ),
+        )
+        .into_any_element()
     }
 
     /// Found review puts the targets and staged actions before secondary maps.
@@ -490,7 +696,8 @@ impl ShellView {
         cx: &mut Context<Self>,
     ) -> gpui::AnyElement {
         let locale = self.session.locale();
-        let summary = clean_map::summarize(&map_inputs(&self.session));
+        let inputs = map_inputs(&self.session);
+        let summary = clean_map::summarize(&inputs);
         let stats = div()
             .id("clean-map-stats")
             .flex()
@@ -500,37 +707,60 @@ impl ShellView {
             .child(ui::stat(
                 t,
                 copy::clean_map_card_mapped(locale),
-                copy::clean_bytes_short(summary.mapped_bytes),
+                map_capacity(&inputs, None).label(locale),
                 copy::clean_map_count(locale, summary.mapped_count),
                 t.accent,
             ))
             .child(ui::stat(
                 t,
                 copy::clean_map_card_recommended(locale),
-                copy::clean_bytes_short(summary.recommended_bytes),
+                map_capacity(&inputs, Some(ReviewBand::Recommended)).label(locale),
                 copy::clean_map_count(locale, summary.recommended_count),
                 t.success,
             ))
             .child(ui::stat(
                 t,
                 copy::clean_map_card_review(locale),
-                copy::clean_bytes_short(summary.review_bytes),
+                map_capacity(&inputs, Some(ReviewBand::NeedsReview)).label(locale),
                 copy::clean_map_count(locale, summary.review_count),
                 t.warning,
             ))
             .child(ui::stat(
                 t,
                 copy::clean_map_card_blocked(locale),
-                copy::clean_bytes_short(summary.blocked_bytes),
+                map_capacity(&inputs, Some(ReviewBand::NotSelectable)).label(locale),
                 copy::clean_map_count(locale, summary.blocked_count),
                 t.text_muted,
             ));
+        let workbench = self.session.clean_workbench();
+        let overview = ui::card(t)
+            .gap(ui::SPACE_2)
+            .children(workbench.groups().iter().map(|group| {
+                ui::any(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .justify_between()
+                        .gap(ui::SPACE_2)
+                        .child(ui::muted(t, group.title(locale)))
+                        .child(ui::muted(t, group.capacity.label(locale))),
+                )
+            }))
+            .child(ui::muted(t, copy::clean_review_only_detail(locale)));
         div()
             .flex()
             .flex_col()
             .gap(ui::SPACE_4)
-            .child(self.clean_rows_card(t, row_height, cx))
+            .child(if workbench.reviewing() {
+                self.clean_rows_card(t, row_height, cx)
+            } else {
+                overview.into_any_element()
+            })
             .child(stats)
+            .when(
+                !self.session.shell().row_query(Mode::Clean).is_empty(),
+                |d| d.child(ui::muted(t, copy::clean_map_filtered_note(locale))),
+            )
             .when(disk_map_active(&self.session), |d| {
                 d.child(self.clean_disk_map(t, cx))
             })
@@ -570,7 +800,12 @@ impl ShellView {
             let title = if group.other {
                 copy::clean_map_other(locale, group.represented)
             } else {
-                group.title.clone()
+                workbench
+                    .groups()
+                    .iter()
+                    .find(|review| review.id == group.title)
+                    .map(|review| review.title(locale))
+                    .unwrap_or_else(|| group.title.clone())
             };
             let group_label = format!(
                 "{} {} {}",
@@ -814,10 +1049,17 @@ impl ShellView {
             .overflow_y_scroll()
             .flex()
             .flex_col();
+        let mut last_group: Option<&str> = None;
         for id in shell.visible_row_ids(Mode::Clean) {
             let Some(row) = workbench.row(id) else {
                 continue;
             };
+            if let Some(group) = workbench.group_for_row(id)
+                && last_group != Some(group.id.as_str())
+            {
+                rows = rows.child(self.clean_group_header(t, group, cx));
+                last_group = Some(group.id.as_str());
+            }
             let focused = cursor.as_deref() == Some(id.as_str());
             rows = rows.child(self.clean_row(t, row, focused, cx));
         }
@@ -888,11 +1130,75 @@ impl ShellView {
                     .child(ui::muted(t, copy::clean_map_recommendations_hint(locale))),
             )
             .child(toolbar)
-            .when(found, |c| c.child(self.clean_action_bar(t, cx)))
             .child(ui::divider(t))
             .child(rows)
             .children(pager)
             .into_any_element()
+    }
+
+    fn clean_group_header(
+        &self,
+        t: &Theme,
+        group: &crate::clean_workbench::CleanGroup,
+        cx: &mut Context<Self>,
+    ) -> gpui::AnyElement {
+        use crate::clean_workbench::GroupSelection;
+        let locale = self.session.locale();
+        let toggled = match group.selection {
+            GroupSelection::None => gpui::Toggled::False,
+            GroupSelection::Mixed => gpui::Toggled::Mixed,
+            GroupSelection::All => gpui::Toggled::True,
+        };
+        let enabled = !group.selectable_ids.is_empty()
+            && self.session.clean_workbench().phase() == CleanPhase::Found;
+        let id = group.id.clone();
+        let accessible_id = id.clone();
+        let label = format!(
+            "{} · {} · {} {}",
+            group.title(locale),
+            group.capacity.label(locale),
+            group.ids.len(),
+            copy::pick(locale, "targets in full scope", "个目标（完整范围）")
+        );
+        let selection_label = match group.selection {
+            GroupSelection::None => copy::pick(locale, "None selected", "未选"),
+            GroupSelection::Mixed => copy::pick(locale, "Partially selected", "部分选中"),
+            GroupSelection::All => copy::pick(locale, "All selected", "全选"),
+        };
+        let label = format!(
+            "{label} · {selection_label} · {}/{}",
+            group.selected_count,
+            group.selectable_ids.len()
+        );
+        ui::button(
+            t,
+            ElementId::Name(format!("clean-group-{}", group.id).into()),
+            label,
+            if enabled {
+                ButtonKind::Secondary
+            } else {
+                ButtonKind::Disabled
+            },
+        )
+        .accessibility_id(SharedString::from(format!("clean-group-{}", group.id)))
+        .role(gpui::Role::CheckBox)
+        .aria_toggled(toggled)
+        .child(ui::checkbox_state(t, toggled, enabled))
+        .when(enabled, |button| {
+            button
+                .on_click(cx.listener(move |this, _, _, cx| {
+                    this.session.clean_toggle_group(&id);
+                    cx.notify();
+                }))
+                .on_a11y_action(
+                    gpui::AccessibleAction::Click,
+                    on_view_a11y(cx, move |this, cx| {
+                        this.session.clean_toggle_group(&accessible_id);
+                        cx.notify();
+                    }),
+                )
+        })
+        .into_any_element()
     }
 
     fn clean_row(
@@ -1005,9 +1311,7 @@ impl ShellView {
     fn clean_action_bar(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
-        let selected_bytes = workbench.selected_ids().iter().fold(0u64, |total, id| {
-            total.saturating_add(workbench.row(id).map(|row| row.bytes).unwrap_or(0))
-        });
+        let selected_capacity = workbench.selected_capacity();
         let ready = workbench.preview_matches_current();
         let mut focused_actions = Vec::new();
         if let Some(cursor) = self.session.clean_focused_row_id() {
@@ -1080,7 +1384,7 @@ impl ShellView {
                                 div()
                                     .text_size(ui::TYPE_TITLE)
                                     .font_weight(FontWeight::SEMIBOLD)
-                                    .child(copy::clean_bytes_short(selected_bytes)),
+                                    .child(selected_capacity.label(locale)),
                             )
                             .child(ui::muted(t, selection.clone())),
                     )

@@ -605,7 +605,7 @@ pub fn clean_preview_digest_line(locale: Locale, digest: &str, count: usize) -> 
 pub fn clean_confirm_action(locale: Locale) -> &'static str {
     match locale {
         Locale::En => "Confirm move",
-        Locale::ZhCn => "确认移出",
+        Locale::ZhCn => "确认移入回收站",
     }
 }
 
@@ -616,6 +616,125 @@ pub fn clean_confirm_required_line(locale: Locale) -> &'static str {
         }
         Locale::ZhCn => "必须先生成与当前选择一致的预览。过期摘要不会移出任何文件。",
     }
+}
+
+pub fn clean_capacity(locale: Locale, bytes: u64, lower_bound: bool) -> String {
+    let size = clean_bytes_short(bytes);
+    if lower_bound {
+        match locale {
+            Locale::En => format!(
+                "At least {size}{}",
+                if bytes == 0 { " · size unknown" } else { "" }
+            ),
+            Locale::ZhCn => format!("至少 {size}{}", if bytes == 0 { " · 容量未知" } else { "" }),
+        }
+    } else {
+        size
+    }
+}
+
+pub fn clean_scope_all(locale: Locale) -> &'static str {
+    pick(locale, "All", "全部")
+}
+pub fn clean_global_omitted(locale: Locale) -> &'static str {
+    pick(
+        locale,
+        "All requested · projects only; global scan not confirmed",
+        "已请求全部 · 仅扫描项目；尚未确认全局扫描",
+    )
+}
+pub fn clean_include_global(locale: Locale) -> &'static str {
+    pick(locale, "Include global caches…", "包含全局缓存…")
+}
+pub fn clean_review_action(locale: Locale) -> &'static str {
+    pick(locale, "Review results", "审阅结果")
+}
+pub fn clean_review_only(locale: Locale) -> &'static str {
+    pick(locale, "Review only", "仅供审阅")
+}
+pub fn clean_review_only_detail(locale: Locale) -> &'static str {
+    pick(
+        locale,
+        "Commands and inspect-only findings cannot enter this Recycle Bin flow.",
+        "命令型与只读目标不能通过本页移入回收站。",
+    )
+}
+pub fn clean_group_title(
+    locale: Locale,
+    ecosystem: &devsweep_core::model::Ecosystem,
+    kind: &devsweep_core::model::TargetKind,
+    review_only: bool,
+) -> String {
+    use devsweep_core::model::{Ecosystem, TargetKind};
+    if review_only {
+        return clean_review_only(locale).to_string();
+    }
+    let ecosystem = match ecosystem {
+        Ecosystem::Rust => "Rust",
+        Ecosystem::Node => "Node.js",
+        Ecosystem::Python => "Python",
+        Ecosystem::Docker => "Docker",
+        Ecosystem::Generic => pick(locale, "Other tools", "其他工具"),
+    };
+    let kind = match kind {
+        TargetKind::PackageCache => pick(locale, "Package cache", "包缓存"),
+        TargetKind::BuildArtifacts => pick(locale, "Build output", "构建产物"),
+        TargetKind::DependencyDirectory => pick(locale, "Dependencies", "依赖目录"),
+        TargetKind::VirtualEnv => pick(locale, "Environment", "虚拟环境"),
+        TargetKind::TestCache => pick(locale, "Test cache", "测试缓存"),
+        TargetKind::ToolCache => pick(locale, "Tool cache", "工具缓存"),
+    };
+    format!("{ecosystem} · {kind}")
+}
+pub fn clean_found_capacity(locale: Locale, found: &str, recommended: &str) -> String {
+    match locale {
+        Locale::En => format!("Found {found} · Recommended {recommended}"),
+        Locale::ZhCn => format!("找到 {found} · 建议清理 {recommended}"),
+    }
+}
+pub fn clean_selected_capacity(locale: Locale, selected: &str) -> String {
+    match locale {
+        Locale::En => format!("Selected {selected}"),
+        Locale::ZhCn => format!("已选 {selected}"),
+    }
+}
+pub fn clean_moved_summary(locale: Locale, count: usize, capacity: &str) -> String {
+    match locale {
+        Locale::En => format!(
+            "Moved to Recycle Bin: {capacity} · {count} targets (estimated data, not freed space)."
+        ),
+        Locale::ZhCn => {
+            format!("已移入回收站：{capacity} · {count} 个目标（估算数据量，并非已释放空间）。")
+        }
+    }
+}
+pub fn clean_result_status(locale: Locale, failed: usize, skipped: usize) -> String {
+    match locale {
+        Locale::En => format!("{failed} failed · {skipped} skipped"),
+        Locale::ZhCn => format!("{failed} 个失败 · {skipped} 个跳过"),
+    }
+}
+pub fn clean_history_evidence(locale: Locale, incomplete: bool) -> &'static str {
+    if incomplete {
+        pick(
+            locale,
+            "Full run report / session record. Durable history may be incomplete after cancellation or audit failure; unrecorded items cannot be reconstructed.",
+            "完整的本次报告／会话记录。取消或审计异常后，持久历史可能不完整，无法重建未记录条目。",
+        )
+    } else {
+        pick(
+            locale,
+            "This run report and session record share one result. Compare corresponding recorded Recycle Bin moves; cumulative history is a different scope.",
+            "本次报告与会话记录来自同一结果。核对相应的回收站移动记录；累计历史属于不同范围。",
+        )
+    }
+}
+pub fn clean_fixture_notice(locale: Locale) -> &'static str {
+    pick(
+        locale,
+        "Read-only review fixture · synthetic observations/results · execution disabled",
+        "只读审阅夹具 · 模拟观察／结果 · 执行已禁用",
+    )
 }
 
 pub fn clean_result_counts(locale: Locale, moved: usize, total: usize) -> String {
@@ -1259,8 +1378,8 @@ pub fn clean_map_subtitle(locale: Locale) -> &'static str {
 
 pub fn clean_map_filtered_note(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "The map follows the current search.",
-        Locale::ZhCn => "地图只显示当前搜索结果。",
+        Locale::En => "Map figures follow the current search; group totals cover the full scan.",
+        Locale::ZhCn => "地图数字只统计当前搜索结果；分组小计覆盖完整扫描。",
     }
 }
 
@@ -1281,9 +1400,9 @@ pub fn clean_map_recommendations(locale: Locale) -> &'static str {
 pub fn clean_map_recommendations_hint(locale: Locale) -> &'static str {
     match locale {
         Locale::En => {
-            "Tick a row to include it in review. Preview and confirm still do not move files."
+            "Select rows for review. Preview moves nothing; confirming moves the selected targets to the Recycle Bin."
         }
-        Locale::ZhCn => "勾选一行只是纳入复查。预览和确认本身不会移动文件。",
+        Locale::ZhCn => "勾选行以审阅。预览不会移动文件；确认后会将所选目标移入回收站。",
     }
 }
 
@@ -1791,9 +1910,8 @@ pub fn clean_landing_status(locale: Locale, project: bool, roots: usize) -> Stri
     match (locale, project, roots) {
         (Locale::En, true, 0) => "No folder chosen".to_string(),
         (Locale::ZhCn, true, 0) => "尚未选择文件夹".to_string(),
-        (Locale::En, true, 1) => "Not scanned yet · 1 folder chosen".to_string(),
-        (Locale::En, true, roots) => format!("Not scanned yet · {roots} folders chosen"),
-        (Locale::ZhCn, true, roots) => format!("尚未扫描 · 已选择 {roots} 个文件夹"),
+        (Locale::En, true, _) => "Not scanned yet · folders chosen".to_string(),
+        (Locale::ZhCn, true, _) => "尚未扫描 · 已选择文件夹".to_string(),
         (Locale::En, false, _) => "Not scanned yet".to_string(),
         (Locale::ZhCn, false, _) => "尚未扫描".to_string(),
     }
@@ -2126,6 +2244,11 @@ pub fn optimize_class_label(locale: Locale, class: &str) -> &'static str {
 #[must_use]
 pub fn clean_scope_detail(locale: Locale, scope: &str) -> &'static str {
     match scope {
+        "all" => pick(
+            locale,
+            "Explicit project folders. Global caches are included only after a new confirmation.",
+            "显式项目目录；只有再次明确确认后才包含全局缓存。",
+        ),
         "project" => pick(
             locale,
             "Build outputs and dependency folders inside the project folders you choose.",
@@ -2444,11 +2567,11 @@ mod tests {
         );
         assert_eq!(
             clean_landing_status(Locale::En, true, 1),
-            "Not scanned yet · 1 folder chosen"
+            "Not scanned yet · folders chosen"
         );
         assert_eq!(
             clean_landing_status(Locale::En, true, 3),
-            "Not scanned yet · 3 folders chosen"
+            "Not scanned yet · folders chosen"
         );
         assert_eq!(
             clean_landing_status(Locale::En, false, 3),
@@ -2460,7 +2583,7 @@ mod tests {
         );
         assert_eq!(
             clean_landing_status(Locale::ZhCn, true, 2),
-            "尚未扫描 · 已选择 2 个文件夹"
+            "尚未扫描 · 已选择文件夹"
         );
         assert_eq!(clean_landing_status(Locale::ZhCn, false, 0), "尚未扫描");
     }
