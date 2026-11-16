@@ -61,6 +61,22 @@ pub(crate) fn show(locale: Locale, detail: &HistoryDetailV1) -> Result<String, C
             &[("kind", kind), ("code", code.as_str())],
             None,
         )?);
+        if let HistoryRecordV1::Status { record } = record
+            && let Some(process) = &record.process
+        {
+            let pid = process.pid.to_string();
+            lines.push(render(
+                locale,
+                "status.v1.process.history",
+                &[
+                    ("name", &process.name),
+                    ("pid", &pid),
+                    ("created", &process.creation_time_filetime),
+                    ("error", process.error_code.as_deref().unwrap_or("-")),
+                ],
+                None,
+            )?);
+        }
     }
     Ok(lines.join("\n"))
 }
@@ -114,6 +130,28 @@ fn record_kind_and_code(record: &HistoryRecordV1) -> (&'static str, String) {
                 .ok()
                 .and_then(|value| value.as_str().map(str::to_string))
                 .unwrap_or_else(|| "unknown".to_string()),
+        ),
+        HistoryRecordV1::Status { record } => (
+            "status",
+            serde_json::to_value(record.status_code)
+                .ok()
+                .and_then(|value| value.as_str().map(str::to_string))
+                .unwrap_or_else(|| "unknown".into()),
+        ),
+        HistoryRecordV1::SoftwareLifecycle { record } => (
+            "software",
+            match record {
+                devsweep_core::software::SoftwareSupportLifecycleRecordV1::Started { .. } => {
+                    "dispatch_started".into()
+                }
+                devsweep_core::software::SoftwareSupportLifecycleRecordV1::Terminal {
+                    result,
+                    ..
+                } => serde_json::to_value(result)
+                    .ok()
+                    .and_then(|value| value.as_str().map(str::to_string))
+                    .unwrap_or_else(|| "unknown".into()),
+            },
         ),
         HistoryRecordV1::Unsupported { reason_code, .. } => {
             ("unsupported", (*reason_code).to_string())

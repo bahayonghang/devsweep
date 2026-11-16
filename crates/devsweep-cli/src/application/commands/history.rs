@@ -31,6 +31,7 @@ fn map_domain(domain: CliHistoryDomain) -> HistoryDomain {
         CliHistoryDomain::Clean => HistoryDomain::Clean,
         CliHistoryDomain::Software => HistoryDomain::Software,
         CliHistoryDomain::Optimize => HistoryDomain::Optimize,
+        CliHistoryDomain::Status => HistoryDomain::Status,
     }
 }
 
@@ -49,7 +50,7 @@ fn run_list(
     limit: u32,
 ) -> Result<(), ApplicationError> {
     let listed = list_history(HistoryListOptions { domain, limit })
-        .map_err(|error| map_history_error(locale, error))?;
+        .map_err(|error| map_history_error(locale, error, domain))?;
     match cli.result_format() {
         ResultFormat::Human => {
             let text = presentation::history::list(locale, &listed).map_err(|error| {
@@ -69,7 +70,8 @@ fn run_list(
 }
 
 fn run_show(cli: &Cli, locale: Locale, operation_id: &str) -> Result<(), ApplicationError> {
-    let detail = show_history(operation_id).map_err(|error| map_history_error(locale, error))?;
+    let detail =
+        show_history(operation_id).map_err(|error| map_history_error(locale, error, None))?;
     match cli.result_format() {
         ResultFormat::Human => {
             let text = presentation::history::show(locale, &detail).map_err(|error| {
@@ -88,7 +90,11 @@ fn run_show(cli: &Cli, locale: Locale, operation_id: &str) -> Result<(), Applica
     }
 }
 
-fn map_history_error(locale: Locale, error: HistoryError) -> ApplicationError {
+fn map_history_error(
+    locale: Locale,
+    error: HistoryError,
+    domain: Option<HistoryDomain>,
+) -> ApplicationError {
     let message = match &error {
         HistoryError::NotFound {
             stores_incomplete: false,
@@ -101,7 +107,11 @@ fn map_history_error(locale: Locale, error: HistoryError) -> ApplicationError {
             )
             .unwrap_or_else(|_| error.to_string()),
         _ => catalogue(locale)
-            .render("history.v1.store.unavailable", &[("domain", "clean")], None)
+            .render(
+                "history.v1.store.unavailable",
+                &[("domain", domain.map_or("history", HistoryDomain::as_str))],
+                None,
+            )
             .unwrap_or_else(|_| error.to_string()),
     };
     let exit = match &error {
@@ -151,6 +161,23 @@ mod tests {
 
     fn parse(args: &[&str]) -> Cli {
         Cli::try_parse_from(args).expect("cli parses")
+    }
+
+    #[test]
+    fn history_io_errors_name_the_requested_status_domain_in_both_locales() {
+        for locale in [Locale::En, Locale::ZhCn] {
+            let error = map_history_error(
+                locale,
+                HistoryError::LocalAppDataUnavailable,
+                Some(HistoryDomain::Status),
+            );
+            assert!(error.message.contains("status"));
+            assert!(!error.message.contains("clean"));
+            assert_eq!(error.exit, ExitClass::Unavailable);
+            if locale == Locale::ZhCn {
+                assert!(error.message.contains("不可用"));
+            }
+        }
     }
 
     struct IsolatedLocalAppData {

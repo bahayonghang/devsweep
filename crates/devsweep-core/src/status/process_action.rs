@@ -8,8 +8,6 @@ use sha2::{Digest, Sha256};
 
 use crate::digest_encoding::hex_digest;
 
-use super::PROCESS_ENUMERATION_CEILING;
-
 /// Plan document version.
 pub const PROCESS_TERMINATION_PLAN_VERSION: u32 = 1;
 
@@ -37,6 +35,8 @@ pub enum ProcessActionError {
     ConfirmRequired,
     StaleDigest,
     InvalidPlan,
+    AuditFailed { after_dispatch: bool },
+    CanceledBeforeDispatch,
 }
 
 impl fmt::Display for ProcessActionError {
@@ -59,11 +59,52 @@ impl fmt::Display for ProcessActionError {
             Self::ConfirmRequired => write!(formatter, "process termination requires confirm"),
             Self::StaleDigest => write!(formatter, "process termination preview digest is stale"),
             Self::InvalidPlan => write!(formatter, "process termination plan is invalid"),
+            Self::CanceledBeforeDispatch => {
+                write!(formatter, "process termination canceled before dispatch")
+            }
+            Self::AuditFailed {
+                after_dispatch: false,
+            } => {
+                write!(
+                    formatter,
+                    "process action history is unavailable; no termination dispatched"
+                )
+            }
+            Self::AuditFailed {
+                after_dispatch: true,
+            } => {
+                write!(
+                    formatter,
+                    "process action result could not be recorded after dispatch; outcome is unknown"
+                )
+            }
         }
     }
 }
 
 impl std::error::Error for ProcessActionError {}
+
+impl ProcessActionError {
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::Protected { .. } => "protected",
+            Self::IdentityMismatch | Self::NotFound => "invalid_identity",
+            Self::PermissionDenied => "identity_unavailable",
+            Self::Unsupported => "unsupported_platform",
+            Self::ConfirmRequired => "confirmation_required",
+            Self::StaleDigest => "stale_confirmation",
+            Self::InvalidPlan => "invalid_plan",
+            Self::CanceledBeforeDispatch => "canceled_before_start",
+            Self::AuditFailed {
+                after_dispatch: false,
+            } => "audit_unavailable",
+            Self::AuditFailed {
+                after_dispatch: true,
+            } => "unknown_after_dispatch",
+        }
+    }
+}
 
 /// Saved termination plan. Creation time is a decimal Windows FILETIME.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -167,6 +208,9 @@ pub fn bind_process_termination_plan(
     creation_time_filetime: u64,
     name: &str,
 ) -> Result<ProcessTerminationPlanV1, ProcessActionError> {
+    if name.chars().any(char::is_control) {
+        return Err(ProcessActionError::InvalidPlan);
+    }
     let name = base_name(name);
     validate_identity(pid, &creation_time_filetime.to_string(), &name)?;
     if let Some(class) = protected_class(&name) {
@@ -227,10 +271,130 @@ pub fn terminate_bound_process(
     })
 }
 
+/// Production CLI/GUI execution. Prechecks do not open history; a durable
+/// Started then precedes the final core/handle check. Never automatically retry.
+pub fn terminate_bound_process_audited(
+    plan: &ProcessTerminationPlanV1,
+    digest: &str,
+    confirm: bool,
+    probe: &dyn ProcessProbe,
+    killer: &mut dyn ProcessKiller,
+    audit: &mut dyn super::process_action_audit::ProcessActionAudit,
+) -> Result<ProcessTerminationReportV1, ProcessActionError> {
+    terminate_bound_process_audited_cancellable(
+        plan,
+        digest,
+        confirm,
+        probe,
+        killer,
+        audit,
+        &crate::process::NoopCancelObserver,
+    )
+}
+
+/// Cancellation is observed only before the one irreversible killer call.
+pub fn terminate_bound_process_audited_cancellable(
+    plan: &ProcessTerminationPlanV1,
+    digest: &str,
+    confirm: bool,
+    probe: &dyn ProcessProbe,
+    killer: &mut dyn ProcessKiller,
+    audit: &mut dyn super::process_action_audit::ProcessActionAudit,
+    cancel: &dyn crate::process::CancelObserver,
+) -> Result<ProcessTerminationReportV1, ProcessActionError> {
+    use super::keep_awake_audit::{
+        ProcessActionAuditDetailsV1, StatusActionAuditAction, StatusActionAuditCode,
+        StatusActionAuditRecordV1,
+    };
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    if !confirm {
+        return Err(ProcessActionError::ConfirmRequired);
+    }
+    if cancel.is_cancel_requested() {
+        return Err(ProcessActionError::CanceledBeforeDispatch);
+    }
+    let preview = preview_bound_process(plan, probe)?;
+    if preview.digest != digest {
+        return Err(ProcessActionError::StaleDigest);
+    }
+    static NEXT_OPERATION: AtomicU64 = AtomicU64::new(0);
+    let now = || {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+    };
+    let operation_id = format!(
+        "process-{}-{}-{}",
+        std::process::id(),
+        now().as_nanos(),
+        NEXT_OPERATION.fetch_add(1, Ordering::Relaxed),
+    );
+    let record = |status_code, error_code: Option<String>| StatusActionAuditRecordV1 {
+        schema_version: 1,
+        domain: "status".into(),
+        operation_id: operation_id.clone(),
+        timestamp_unix_ms: u64::try_from(now().as_millis()).unwrap_or(u64::MAX),
+        action: StatusActionAuditAction::ProcessTerminate,
+        status_code,
+        duration_ms: 0,
+        preview_digest: Some(digest.into()),
+        process: Some(ProcessActionAuditDetailsV1 {
+            pid: preview.pid,
+            creation_time_filetime: preview.creation_time_filetime.clone(),
+            name: preview.name.clone(),
+            error_code,
+        }),
+    };
+    audit
+        .append(record(StatusActionAuditCode::DispatchStarted, None))
+        .map_err(|_| ProcessActionError::AuditFailed {
+            after_dispatch: false,
+        })?;
+    struct Dispatch<'a> {
+        killer: &'a mut dyn ProcessKiller,
+        called: bool,
+        cancel: &'a dyn crate::process::CancelObserver,
+    }
+    impl ProcessKiller for Dispatch<'_> {
+        fn terminate(&mut self, pid: u32, creation: u64) -> Result<(), ProcessActionError> {
+            if self.cancel.is_cancel_requested() {
+                return Err(ProcessActionError::CanceledBeforeDispatch);
+            }
+            self.called = true;
+            self.killer.terminate(pid, creation)
+        }
+    }
+    let mut dispatch = Dispatch {
+        killer,
+        called: false,
+        cancel,
+    };
+    let result = terminate_bound_process(plan, digest, confirm, probe, &mut dispatch);
+    let code = match &result {
+        Ok(_) => StatusActionAuditCode::Succeeded,
+        Err(_) if dispatch.called => StatusActionAuditCode::BackendFailed,
+        Err(_) => StatusActionAuditCode::Refused,
+    };
+    audit
+        .append(record(
+            code,
+            result.as_ref().err().map(|error| error.code().into()),
+        ))
+        .map_err(|_| ProcessActionError::AuditFailed {
+            after_dispatch: dispatch.called,
+        })?;
+    result
+}
+
 fn checked_plan(
     plan: &ProcessTerminationPlanV1,
 ) -> Result<ProcessTerminationPlanV1, ProcessActionError> {
     if plan.version != PROCESS_TERMINATION_PLAN_VERSION {
+        return Err(ProcessActionError::InvalidPlan);
+    }
+    if plan.name.chars().any(char::is_control) {
         return Err(ProcessActionError::InvalidPlan);
     }
     let name = base_name(&plan.name);
@@ -248,7 +412,7 @@ fn validate_identity(
     creation_time_filetime: &str,
     name: &str,
 ) -> Result<(), ProcessActionError> {
-    if pid == 0 || name.is_empty() || name.len() > 260 {
+    if pid == 0 || name.is_empty() || name.len() > 260 || name.chars().any(char::is_control) {
         return Err(ProcessActionError::InvalidPlan);
     }
     parse_filetime(creation_time_filetime)?;
@@ -292,12 +456,16 @@ fn refuse_protected(name: &str) -> Result<(), ProcessActionError> {
     }
 }
 
-fn protected_class(name: &str) -> Option<ProtectedClass> {
+pub fn protected_process_class(name: &str) -> Option<ProtectedClass> {
     let name = base_name(name).to_ascii_lowercase();
     PROTECTED_NAMES
         .iter()
         .find(|(candidate, _)| *candidate == name)
         .map(|(_, class)| *class)
+}
+
+fn protected_class(name: &str) -> Option<ProtectedClass> {
+    protected_process_class(name)
 }
 
 fn names_equal(live: &str, planned: &str) -> bool {
@@ -319,7 +487,11 @@ fn parse_filetime(value: &str) -> Result<u64, ProcessActionError> {
     {
         return Err(ProcessActionError::InvalidPlan);
     }
-    value.parse().map_err(|_| ProcessActionError::InvalidPlan)
+    value
+        .parse()
+        .ok()
+        .filter(|parsed: &u64| *parsed != 0 && parsed.to_string() == value)
+        .ok_or(ProcessActionError::InvalidPlan)
 }
 
 fn preview_digest(plan: &ProcessTerminationPlanV1) -> Result<String, ProcessActionError> {
@@ -346,15 +518,7 @@ fn preview_digest(plan: &ProcessTerminationPlanV1) -> Result<String, ProcessActi
 
 #[cfg(windows)]
 fn host_lookup(pid: u32) -> Result<Option<ObservedProcess>, ProcessActionError> {
-    let Some(name) = windows_process_name(pid)? else {
-        return Ok(None);
-    };
-    let creation = windows_creation_time(pid)?;
-    Ok(Some(ObservedProcess {
-        pid,
-        creation_time_filetime: creation,
-        name,
-    }))
+    windows_observation(pid).map(Some)
 }
 
 #[cfg(not(windows))]
@@ -431,102 +595,52 @@ fn host_terminate(pid: u32, creation_time_filetime: u64) -> Result<(), ProcessAc
 }
 
 #[cfg(windows)]
-fn windows_creation_time(pid: u32) -> Result<u64, ProcessActionError> {
+fn windows_observation(pid: u32) -> Result<ObservedProcess, ProcessActionError> {
     use windows_sys::Win32::Foundation::{CloseHandle, FILETIME};
     use windows_sys::Win32::System::Threading::{
-        GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+        GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
     };
-
-    // SAFETY: query-limited rights only.
-    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
-    if handle.is_null() {
+    // Name and creation time must come from the same process handle. A name
+    // from Toolhelp followed by a separately opened reused PID is not identity.
+    // SAFETY: query-limited rights only, never elevation.
+    let raw = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if raw.is_null() {
         return Err(windows_open_error());
     }
     struct Owned(windows_sys::Win32::Foundation::HANDLE);
     impl Drop for Owned {
         fn drop(&mut self) {
-            // SAFETY: `OpenProcess` returned this handle.
+            // SAFETY: owns the handle returned by OpenProcess.
             unsafe {
                 let _ = CloseHandle(self.0);
             }
         }
     }
-    let handle = Owned(handle);
+    let handle = Owned(raw);
     let mut creation = FILETIME {
         dwLowDateTime: 0,
         dwHighDateTime: 0,
     };
-    let mut exit = FILETIME {
-        dwLowDateTime: 0,
-        dwHighDateTime: 0,
-    };
-    let mut kernel = FILETIME {
-        dwLowDateTime: 0,
-        dwHighDateTime: 0,
-    };
-    let mut user = FILETIME {
-        dwLowDateTime: 0,
-        dwHighDateTime: 0,
-    };
-    // SAFETY: the FILETIME pointers are writable locals.
-    let ok = unsafe { GetProcessTimes(handle.0, &mut creation, &mut exit, &mut kernel, &mut user) };
-    if ok == 0 {
+    let mut exit = creation;
+    let mut kernel = creation;
+    let mut user = creation;
+    // SAFETY: the handle is owned and output pointers are writable locals.
+    if unsafe { GetProcessTimes(handle.0, &mut creation, &mut exit, &mut kernel, &mut user) } == 0 {
         return Err(windows_open_error());
     }
-    Ok(filetime_u64(creation))
-}
-
-#[cfg(windows)]
-fn windows_process_name(pid: u32) -> Result<Option<String>, ProcessActionError> {
-    use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
-    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
-        TH32CS_SNAPPROCESS,
-    };
-
-    // SAFETY: a process snapshot does not modify the target.
-    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
-    if snapshot == INVALID_HANDLE_VALUE || snapshot.is_null() {
-        return Err(ProcessActionError::NotFound);
+    let mut image = [0_u16; 32_768];
+    let mut length = image.len() as u32;
+    // SAFETY: bounded output array and its length, same still-owned handle.
+    if unsafe { QueryFullProcessImageNameW(handle.0, 0, image.as_mut_ptr(), &mut length) } == 0 {
+        return Err(windows_open_error());
     }
-    struct Snapshot(windows_sys::Win32::Foundation::HANDLE);
-    impl Drop for Snapshot {
-        fn drop(&mut self) {
-            // SAFETY: `CreateToolhelp32Snapshot` returned this handle.
-            unsafe {
-                let _ = CloseHandle(self.0);
-            }
-        }
-    }
-    let snapshot = Snapshot(snapshot);
-    // SAFETY: the entry must advertise its size before the first read.
-    let mut entry: PROCESSENTRY32W = unsafe { std::mem::zeroed() };
-    entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
-    // SAFETY: `snapshot` is live and `entry` is sized.
-    let mut ok = unsafe { Process32FirstW(snapshot.0, &mut entry) };
-    if ok == 0 {
-        return Err(ProcessActionError::NotFound);
-    }
-    let mut seen = 0_u32;
-    loop {
-        if seen >= PROCESS_ENUMERATION_CEILING {
-            break;
-        }
-        seen += 1;
-        if entry.th32ProcessID == pid {
-            let name = utf16_lossy(&entry.szExeFile);
-            if name.is_empty() {
-                return Ok(None);
-            }
-            return Ok(Some(name));
-        }
-        // SAFETY: the same snapshot and entry remain valid.
-        ok = unsafe { Process32NextW(snapshot.0, &mut entry) };
-        if ok == 0 {
-            break;
-        }
-    }
-    Ok(None)
+    let name = base_name(&String::from_utf16_lossy(&image[..length as usize]));
+    validate_identity(pid, &filetime_u64(creation).to_string(), &name)?;
+    Ok(ObservedProcess {
+        pid,
+        creation_time_filetime: filetime_u64(creation),
+        name,
+    })
 }
 
 #[cfg(windows)]
@@ -545,15 +659,6 @@ fn windows_open_error() -> ProcessActionError {
 #[cfg(windows)]
 fn filetime_u64(time: windows_sys::Win32::Foundation::FILETIME) -> u64 {
     (u64::from(time.dwHighDateTime) << 32) | u64::from(time.dwLowDateTime)
-}
-
-#[cfg(windows)]
-fn utf16_lossy(units: &[u16]) -> String {
-    let len = units
-        .iter()
-        .position(|unit| *unit == 0)
-        .unwrap_or(units.len());
-    String::from_utf16_lossy(&units[..len])
 }
 
 #[cfg(test)]
@@ -595,6 +700,50 @@ mod tests {
             pid,
             creation_time_filetime: creation,
             name: name.to_string(),
+        }
+    }
+
+    #[test]
+    fn noncanonical_filetime_and_control_names_refuse_before_audit_or_kill() {
+        let probe = Scripted {
+            live: Some(live(42, 1000, "fixture.exe")),
+            error: None,
+        };
+        for creation in ["0", "01000", "+1000", "-1000", "1000 "] {
+            let plan = ProcessTerminationPlanV1 {
+                version: 1,
+                pid: 42,
+                creation_time_filetime: creation.into(),
+                name: "fixture.exe".into(),
+            };
+            let mut killer = Spy { calls: 0 };
+            let mut audit = super::super::RecordingProcessActionAudit::default();
+            assert_eq!(
+                preview_bound_process(&plan, &probe),
+                Err(ProcessActionError::InvalidPlan)
+            );
+            assert_eq!(
+                terminate_bound_process_audited(&plan, "", true, &probe, &mut killer, &mut audit),
+                Err(ProcessActionError::InvalidPlan)
+            );
+            assert_eq!(killer.calls, 0);
+            assert!(audit.0.is_empty());
+        }
+        for name in ["\nfixture.exe", "fixture.exe\n", "folder\n/fixture.exe"] {
+            assert_eq!(
+                bind_process_termination_plan(42, 1000, name),
+                Err(ProcessActionError::InvalidPlan)
+            );
+            let plan = ProcessTerminationPlanV1 {
+                version: 1,
+                pid: 42,
+                creation_time_filetime: "1000".into(),
+                name: name.into(),
+            };
+            assert_eq!(
+                preview_bound_process(&plan, &probe),
+                Err(ProcessActionError::InvalidPlan)
+            );
         }
     }
 

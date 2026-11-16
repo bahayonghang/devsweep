@@ -976,6 +976,7 @@ pub(super) enum HistoryDomain {
     Clean,
     Software,
     Optimize,
+    Status,
 }
 
 #[derive(Debug, Args)]

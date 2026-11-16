@@ -1,8 +1,8 @@
 //! Frozen-grammar Status snapshot, live, health, process, and keep-awake handlers.
 
-use std::io::{self, Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::io;
 use std::path::Path;
+#[cfg(test)]
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::RecvTimeoutError;
@@ -10,10 +10,11 @@ use std::thread;
 use std::time::Duration;
 
 use devsweep_core::status::{
-    HostProcessControl, KeepAwakeError, KeepAwakeService, KeepAwakeStatusV1, LiveRequest,
-    ProcessActionError, ProcessTerminationPlanV1, StatusError, StatusEventV1, StatusSnapshotV1,
-    TerminalReason, bind_process_termination_plan, capture_snapshot, explain_health,
-    preview_bound_process, spawn_live, terminate_bound_process,
+    HostProcessControl, KeepAwakeError, KeepAwakeService, KeepAwakeSession, KeepAwakeStatusV1,
+    KeepAwakeVerb, LiveRequest, ProcessActionAudit, ProcessActionError, ProcessTerminationPlanV1,
+    StatusError, StatusEventV1, StatusSnapshotV1, TerminalReason, bind_process_termination_plan,
+    capture_snapshot, explain_health, preview_bound_process, query_keep_awake, spawn_live,
+    terminate_bound_process_audited,
 };
 #[cfg(test)]
 use devsweep_core::status::{RecordingBackend, SystemClock};
@@ -25,7 +26,10 @@ use super::super::{
         StatusKeepAwakeTokenCommand, StatusLiveCommand, StatusProcessCommand,
         StatusProcessPlanCommand, StatusSnapshotCommand,
     },
-    output::{ApplicationError, ExitClass, OutputSink, ResultFormat, from_domain_code, write_json},
+    output::{
+        ApplicationError, ExitClass, OutputSink, ResultFormat, ensure_output_absent,
+        from_domain_code, write_json,
+    },
     presentation,
 };
 use crate::i18n::{CatalogueError, Locale, catalogue};
@@ -41,13 +45,14 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
             StatusCommand::Snapshot(command) => run_snapshot(cli, locale, command),
             StatusCommand::Live(command) => run_live(cli, locale, command),
             StatusCommand::Health(command) => run_health(cli, locale, command),
-            StatusCommand::Process(group) => match &group.command {
+            StatusCommand::Process(group) => (match &group.command {
                 StatusProcessCommand::Plan(command) => run_process_plan(command),
                 StatusProcessCommand::Preview(command) => run_process_preview(cli, locale, command),
                 StatusProcessCommand::Terminate(command) => {
                     run_process_terminate(cli, locale, command)
                 }
-            },
+            })
+            .map_err(|error| localize_process_action_error(cli, locale, error)),
             StatusCommand::KeepAwake(group) => match &group.command {
                 StatusKeepAwakeCommand::Run(command) => run_keep_awake(cli, locale, command),
                 StatusKeepAwakeCommand::Status(command) => {
@@ -302,12 +307,44 @@ fn run_process_terminate(
     let plan = load_process_plan(&command.plan)?;
     let probe = HostProcessControl;
     let mut killer = HostProcessControl;
-    let report = terminate_bound_process(
+    run_process_terminate_with(
+        cli,
+        locale,
+        command,
         &plan,
-        &command.preview_digest,
-        command.confirm,
         &probe,
         &mut killer,
+        &mut process_audit(),
+    )
+}
+
+#[cfg(not(test))]
+fn process_audit() -> devsweep_core::status::FileProcessActionAudit {
+    devsweep_core::status::FileProcessActionAudit::production()
+}
+
+#[cfg(test)]
+fn process_audit() -> devsweep_core::status::RecordingProcessActionAudit {
+    devsweep_core::status::RecordingProcessActionAudit::default()
+}
+
+fn run_process_terminate_with(
+    cli: &Cli,
+    locale: Locale,
+    command: &PlanExecutionCommand,
+    plan: &ProcessTerminationPlanV1,
+    probe: &dyn devsweep_core::status::ProcessProbe,
+    killer: &mut dyn devsweep_core::status::ProcessKiller,
+    audit: &mut dyn ProcessActionAudit,
+) -> Result<(), ApplicationError> {
+    ensure_output_absent(cli.output_path())?;
+    let report = terminate_bound_process_audited(
+        plan,
+        &command.preview_digest,
+        command.confirm,
+        probe,
+        killer,
+        audit,
     )
     .map_err(map_process_action)?;
     let data = serde_json::to_value(&report)
@@ -342,16 +379,29 @@ fn write_plan(path: &Path, plan: &ProcessTerminationPlanV1) -> Result<(), Applic
 }
 
 fn map_process_action(error: ProcessActionError) -> ApplicationError {
-    let code = match error {
-        ProcessActionError::Protected { .. } => "protected",
-        ProcessActionError::IdentityMismatch | ProcessActionError::NotFound => "invalid_identity",
-        ProcessActionError::PermissionDenied => "identity_unavailable",
-        ProcessActionError::Unsupported => "unsupported_platform",
-        ProcessActionError::ConfirmRequired => "confirmation_required",
-        ProcessActionError::StaleDigest => "stale_confirmation",
-        ProcessActionError::InvalidPlan => "invalid_plan",
+    from_domain_code(error.code(), error.to_string())
+}
+
+fn localize_process_action_error(
+    cli: &Cli,
+    locale: Locale,
+    mut error: ApplicationError,
+) -> ApplicationError {
+    if cli.result_format() != ResultFormat::Human {
+        return error;
+    }
+    let key = match error.code {
+        "protected" => "status.v1.process.error.protected",
+        "invalid_identity" | "stale_confirmation" => "status.v1.process.error.identity",
+        "confirmation_required" => "status.v1.process.error.confirmation",
+        "audit_unavailable" => "status.v1.process.error.audit",
+        "unknown_after_dispatch" => "status.v1.process.error.unknown",
+        _ => "status.v1.process.error.unavailable",
     };
-    from_domain_code(code, error.to_string())
+    error.message = catalogue(locale)
+        .render(key, &[("detail", &error.message)], None)
+        .unwrap_or(error.message);
+    error
 }
 
 fn run_keep_awake(
@@ -361,22 +411,32 @@ fn run_keep_awake(
 ) -> Result<(), ApplicationError> {
     install_ctrl_c_handler();
     CTRL_C.store(false, Ordering::SeqCst);
-    let service = Arc::new(session_service());
-    let session = open_keep_awake_session(
-        &service,
+    let session = KeepAwakeSession::open(
+        session_service(),
         &command.owner,
         Duration::from_millis(command.duration_ms),
         command.confirm,
-    )?;
+    )
+    .map_err(|error| localize_keep_awake_error(cli, locale, map_keep_awake(error)))?;
+    let lease = session
+        .status()
+        .map_err(|error| localize_keep_awake_error(cli, locale, map_keep_awake(error)))?;
     emit_keep_awake(
         cli,
         locale,
         "status.keep-awake.run",
-        &session.endpoint,
-        &session.lease,
+        session.endpoint(),
+        &lease,
     )?;
-    hold_keep_awake_session(session, &CTRL_C);
-    Ok(())
+    hold_keep_awake_session(session, &CTRL_C)
+        .map_err(|error| keep_awake_after_output(localize_keep_awake_error(cli, locale, error)))
+}
+
+fn keep_awake_after_output(error: ApplicationError) -> ApplicationError {
+    // The initial lease document is already complete. Preserve its single-document
+    // contract while still reporting later session/cleanup failures and their exit.
+    eprintln!("{}: {}", error.code, error.message);
+    ApplicationError::after_output(error.exit, error.code, error.message)
 }
 
 fn run_keep_awake_query(
@@ -385,7 +445,18 @@ fn run_keep_awake_query(
     command: &StatusKeepAwakeTokenCommand,
     verb: &str,
 ) -> Result<(), ApplicationError> {
-    let lease = query_keep_awake(&command.endpoint, verb, &command.token, &command.owner)?;
+    let protocol_verb = if verb == "STOP" {
+        KeepAwakeVerb::Stop
+    } else {
+        KeepAwakeVerb::Status
+    };
+    let lease = query_keep_awake(
+        &command.endpoint,
+        protocol_verb,
+        &command.token,
+        &command.owner,
+    )
+    .map_err(|error| localize_keep_awake_error(cli, locale, map_keep_awake(error)))?;
     let command_name = if verb == "STOP" {
         "status.keep-awake.stop"
     } else {
@@ -407,271 +478,24 @@ fn session_service() -> KeepAwakeService {
     }
 }
 
-struct KeepAwakeSession {
-    service: Arc<KeepAwakeService>,
-    listener: TcpListener,
-    endpoint: String,
-    token: String,
-    owner: String,
-    lease: KeepAwakeStatusV1,
-}
-
-impl Drop for KeepAwakeSession {
-    fn drop(&mut self) {
-        let _ = self.service.owner_exit(&self.owner);
-    }
-}
-
-fn open_keep_awake_session(
-    service: &Arc<KeepAwakeService>,
-    owner: &str,
-    duration: Duration,
-    confirm: bool,
-) -> Result<KeepAwakeSession, ApplicationError> {
-    if !service.is_supported() {
-        return Err(map_keep_awake(KeepAwakeError::CapabilityGap {
-            reason: "platform_unsupported",
-        }));
-    }
-    let listener = TcpListener::bind("127.0.0.1:0").map_err(|error| {
-        ApplicationError::failed(
-            "output_open_failed",
-            format!("failed to bind keep-awake loopback listener: {error}"),
-        )
-    })?;
-    listener.set_nonblocking(true).map_err(|error| {
-        ApplicationError::failed(
-            "output_open_failed",
-            format!("failed to set keep-awake listener nonblocking: {error}"),
-        )
-    })?;
-    let port = listener
-        .local_addr()
-        .map_err(|error| {
-            ApplicationError::failed(
-                "output_open_failed",
-                format!("failed to read keep-awake listener address: {error}"),
-            )
-        })?
-        .port();
-    let endpoint = format!("127.0.0.1:{port}");
-    let lease = service
-        .run(owner, duration, confirm)
-        .map_err(map_keep_awake)?;
-    Ok(KeepAwakeSession {
-        service: Arc::clone(service),
-        listener,
-        endpoint,
-        token: lease.token.clone(),
-        owner: owner.to_string(),
-        lease,
-    })
-}
-
-fn hold_keep_awake_session(session: KeepAwakeSession, cancel: &AtomicBool) {
-    loop {
+fn hold_keep_awake_session(
+    mut session: KeepAwakeSession,
+    cancel: &AtomicBool,
+) -> Result<(), ApplicationError> {
+    let outcome = loop {
         if cancel.load(Ordering::SeqCst) {
-            let _ = session.service.cancel(&session.token, &session.owner);
-            break;
+            break session.cancel().map(|_| ()).map_err(map_keep_awake);
         }
-        match session.service.status(&session.token, &session.owner) {
-            Ok(status) if status.state == "active" => {}
-            _ => break,
-        }
-        match session.listener.accept() {
-            Ok((stream, address)) => {
-                if address.ip().is_loopback()
-                    && serve_keep_awake_client(&session, stream) == ClientEffect::Release
-                {
-                    break;
-                }
-            }
-            Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
-                thread::sleep(Duration::from_millis(20));
-            }
-            Err(_) => thread::sleep(Duration::from_millis(20)),
-        }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum ClientEffect {
-    Continue,
-    Release,
-}
-
-fn serve_keep_awake_client(session: &KeepAwakeSession, mut stream: TcpStream) -> ClientEffect {
-    let _ = stream.set_nonblocking(false);
-    let _ = stream.set_read_timeout(Some(Duration::from_millis(400)));
-    let _ = stream.set_write_timeout(Some(Duration::from_millis(400)));
-    let request = match read_session_line(&mut stream) {
-        Ok(line) => line,
-        Err(_) => return ClientEffect::Continue,
-    };
-    let Some((verb, token, owner)) = parse_session_line(&request) else {
-        let _ = write_session_reply(&mut stream, false, None, Some("invalid_request"), None);
-        return ClientEffect::Continue;
-    };
-    let result = match verb {
-        "STATUS" => session.service.status(token, owner),
-        "STOP" => session.service.stop(token, owner),
-        "CANCEL" => session.service.cancel(token, owner),
-        _ => {
-            let _ = write_session_reply(&mut stream, false, None, Some("invalid_request"), None);
-            return ClientEffect::Continue;
+        match session.status() {
+            Ok(status) if status.state == "active" => thread::sleep(Duration::from_millis(20)),
+            Ok(_) => break Ok(()),
+            Err(error) => break Err(map_keep_awake(error)),
         }
     };
-    match result {
-        Ok(status) => {
-            let release = verb != "STATUS" && status.state != "active";
-            let _ = write_session_reply(&mut stream, true, Some(&status), None, None);
-            if release {
-                ClientEffect::Release
-            } else {
-                ClientEffect::Continue
-            }
-        }
-        Err(error) => {
-            let _ = write_session_reply(
-                &mut stream,
-                false,
-                None,
-                Some(keep_awake_code(&error)),
-                Some(error.to_string()),
-            );
-            ClientEffect::Continue
-        }
-    }
-}
-
-fn query_keep_awake(
-    endpoint: &str,
-    verb: &str,
-    token: &str,
-    owner: &str,
-) -> Result<KeepAwakeStatusV1, ApplicationError> {
-    let address = parse_loopback_endpoint(endpoint)?;
-    let mut stream =
-        TcpStream::connect_timeout(&address, Duration::from_secs(2)).map_err(|error| {
-            from_domain_code(
-                "network_unavailable",
-                format!("keep-awake endpoint unavailable: {error}"),
-            )
-        })?;
-    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
-    let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
-    stream
-        .write_all(format!("{verb} {token} {owner}\n").as_bytes())
-        .map_err(|error| {
-            ApplicationError::failed(
-                "output_write_failed",
-                format!("failed to write keep-awake request: {error}"),
-            )
-        })?;
-    let line = read_session_line(&mut stream).map_err(|error| {
-        ApplicationError::failed(
-            "plan_read_failed",
-            format!("failed to read keep-awake reply: {error}"),
-        )
-    })?;
-    let reply: serde_json::Value = serde_json::from_str(&line)
-        .map_err(|_| ApplicationError::usage("invalid_plan", "keep-awake reply is invalid"))?;
-    if reply["ok"].as_bool() == Some(true) {
-        let status = serde_json::from_value(reply["status"].clone()).map_err(|_| {
-            ApplicationError::usage("invalid_plan", "keep-awake reply omitted the lease")
-        })?;
-        return Ok(status);
-    }
-    let code = reply["code"].as_str().unwrap_or("invalid_request");
-    let message = reply["message"]
-        .as_str()
-        .unwrap_or("keep-awake request was refused")
-        .to_string();
-    Err(match code {
-        "unknown_token" | "owner_mismatch" => from_domain_code("invalid_identity", message),
-        "capability_gap" => from_domain_code("unsupported_platform", message),
-        "confirmation_required" => from_domain_code("confirmation_required", message),
-        _ => ApplicationError::usage("invalid_plan", message),
-    })
-}
-
-fn parse_loopback_endpoint(endpoint: &str) -> Result<SocketAddr, ApplicationError> {
-    let address: SocketAddr = endpoint.parse().map_err(|_| {
-        ApplicationError::usage(
-            "invalid_endpoint",
-            "keep-awake endpoint must be a loopback socket address",
-        )
-    })?;
-    if !address.ip().is_loopback() {
-        return Err(ApplicationError::usage(
-            "invalid_endpoint",
-            "keep-awake endpoint must be a loopback socket address",
-        ));
-    }
-    Ok(address)
-}
-
-fn parse_session_line(line: &str) -> Option<(&str, &str, &str)> {
-    let mut parts = line.split_whitespace();
-    let verb = parts.next()?;
-    let token = parts.next()?;
-    let owner = parts.next()?;
-    if parts.next().is_some() || !matches!(verb, "STATUS" | "STOP" | "CANCEL") {
-        return None;
-    }
-    Some((verb, token, owner))
-}
-
-fn read_session_line(stream: &mut TcpStream) -> io::Result<String> {
-    let mut data = Vec::new();
-    let mut buffer = [0_u8; 256];
-    loop {
-        if data.len() >= 512 || data.contains(&b'\n') {
-            break;
-        }
-        match stream.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(count) => data.extend_from_slice(&buffer[..count]),
-            Err(error)
-                if error.kind() == io::ErrorKind::WouldBlock
-                    || error.kind() == io::ErrorKind::TimedOut =>
-            {
-                break;
-            }
-            Err(error) => return Err(error),
-        }
-    }
-    let text = String::from_utf8_lossy(&data);
-    Ok(text.trim().to_string())
-}
-
-fn write_session_reply(
-    stream: &mut TcpStream,
-    ok: bool,
-    status: Option<&KeepAwakeStatusV1>,
-    code: Option<&str>,
-    message: Option<String>,
-) -> io::Result<()> {
-    let reply = serde_json::json!({
-        "ok": ok,
-        "status": status,
-        "code": code,
-        "message": message,
-    });
-    let mut bytes = serde_json::to_vec(&reply).unwrap_or_else(|_| b"{}".to_vec());
-    bytes.push(b'\n');
-    stream.write_all(&bytes)
-}
-
-fn keep_awake_code(error: &KeepAwakeError) -> &'static str {
-    match error {
-        KeepAwakeError::CapabilityGap { .. } => "capability_gap",
-        KeepAwakeError::ConfirmRequired => "confirmation_required",
-        KeepAwakeError::DurationNotFinite => "duration_not_finite",
-        KeepAwakeError::InvalidOwner => "invalid_owner",
-        KeepAwakeError::UnknownToken => "unknown_token",
-        KeepAwakeError::OwnerMismatch => "owner_mismatch",
-    }
+    let closed = session.shutdown().map_err(map_keep_awake);
+    outcome?;
+    closed?;
+    Ok(())
 }
 
 fn map_keep_awake(error: KeepAwakeError) -> ApplicationError {
@@ -680,8 +504,55 @@ fn map_keep_awake(error: KeepAwakeError) -> ApplicationError {
         KeepAwakeError::ConfirmRequired => "confirmation_required",
         KeepAwakeError::DurationNotFinite | KeepAwakeError::InvalidOwner => "invalid_plan",
         KeepAwakeError::UnknownToken | KeepAwakeError::OwnerMismatch => "invalid_identity",
+        KeepAwakeError::BackendFailed { .. } => "keep_awake_backend_failed",
+        KeepAwakeError::WorkerUnavailable => "keep_awake_worker_unavailable",
+        KeepAwakeError::SessionIo { .. } => "output_open_failed",
+        KeepAwakeError::InvalidEndpoint => "invalid_endpoint",
+        KeepAwakeError::InvalidRequest | KeepAwakeError::InvalidReply => "invalid_plan",
+        KeepAwakeError::NetworkUnavailable { .. } => "network_unavailable",
+        KeepAwakeError::StaleConfirmation => "stale_confirmation",
+        KeepAwakeError::AuditFailed {
+            after_dispatch: false,
+            ..
+        } => "audit_unavailable",
+        KeepAwakeError::AuditFailed {
+            after_dispatch: true,
+            ..
+        } => "unknown_after_dispatch",
     };
+    if code == "invalid_endpoint" {
+        return ApplicationError::usage(code, error.to_string());
+    }
     from_domain_code(code, error.to_string())
+}
+
+fn localize_keep_awake_error(
+    cli: &Cli,
+    locale: Locale,
+    mut error: ApplicationError,
+) -> ApplicationError {
+    if cli.result_format() != ResultFormat::Human {
+        return error;
+    }
+    let key = match error.code {
+        "unsupported_platform" => "status.v1.keep_awake.error.platform",
+        "confirmation_required" => "status.v1.keep_awake.error.confirmation",
+        "invalid_plan" => "status.v1.keep_awake.error.request",
+        "invalid_identity" => "status.v1.keep_awake.error.identity",
+        "invalid_endpoint" => "status.v1.keep_awake.error.endpoint",
+        "network_unavailable" => "status.v1.keep_awake.error.network",
+        "stale_confirmation" => "status.v1.keep_awake.error.stale",
+        "audit_unavailable" => "status.v1.keep_awake.error.audit",
+        "unknown_after_dispatch" => "status.v1.keep_awake.error.unknown",
+        "keep_awake_backend_failed" => "status.v1.keep_awake.error.backend",
+        "keep_awake_worker_unavailable" => "status.v1.keep_awake.error.worker",
+        "output_open_failed" => "status.v1.keep_awake.error.io",
+        _ => return error,
+    };
+    error.message = catalogue(locale)
+        .render(key, &[("detail", &error.message)], None)
+        .unwrap_or(error.message);
+    error
 }
 
 fn emit_keep_awake(
@@ -788,6 +659,235 @@ mod tests {
 
     fn parse(args: &[&str]) -> Cli {
         Cli::try_parse_from(args).expect("status CLI parses")
+    }
+
+    struct ProcessProbeFixture;
+    impl devsweep_core::status::ProcessProbe for ProcessProbeFixture {
+        fn lookup(
+            &self,
+            _: u32,
+        ) -> Result<Option<devsweep_core::status::ObservedProcess>, ProcessActionError> {
+            Ok(Some(devsweep_core::status::ObservedProcess {
+                pid: 42,
+                creation_time_filetime: 1000,
+                name: "fixture.exe".into(),
+            }))
+        }
+    }
+    #[derive(Default)]
+    struct ProcessKillerFixture(usize);
+    impl devsweep_core::status::ProcessKiller for ProcessKillerFixture {
+        fn terminate(&mut self, pid: u32, creation: u64) -> Result<(), ProcessActionError> {
+            assert_eq!((pid, creation), (42, 1000));
+            self.0 += 1;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn process_fixture_execution_keeps_json_locale_invariant_and_requires_confirmation_and_live_digest()
+     {
+        use devsweep_core::status::RecordingProcessActionAudit;
+        let root = TempDir::new().expect("isolated outputs");
+        let plan = bind_process_termination_plan(42, 1000, "fixture.exe").expect("plan");
+        let digest = preview_bound_process(&plan, &ProcessProbeFixture)
+            .expect("preview")
+            .digest;
+        let mut envelopes = Vec::new();
+        for (index, locale) in [Locale::En, Locale::ZhCn].into_iter().enumerate() {
+            let output = root.path().join(format!("{index}.json"));
+            let args = [
+                "devsweep",
+                "status",
+                "process",
+                "terminate",
+                "--plan",
+                "fixture.json",
+                "--preview-digest",
+                &digest,
+                "--confirm",
+                "--format",
+                "json",
+                "--output",
+                output.to_str().expect("path"),
+            ];
+            let cli = parse(&args);
+            let Some(Command::Status(group)) = &cli.command else {
+                panic!("status");
+            };
+            let StatusCommand::Process(group) = &group.command else {
+                panic!("process");
+            };
+            let StatusProcessCommand::Terminate(command) = &group.command else {
+                panic!("terminate");
+            };
+            let mut killer = ProcessKillerFixture::default();
+            let mut audit = RecordingProcessActionAudit::default();
+            run_process_terminate_with(
+                &cli,
+                locale,
+                command,
+                &plan,
+                &ProcessProbeFixture,
+                &mut killer,
+                &mut audit,
+            )
+            .expect("fake termination");
+            assert_eq!(killer.0, 1);
+            assert_eq!(audit.0.len(), 2);
+            envelopes.push(
+                serde_json::from_slice::<serde_json::Value>(
+                    &std::fs::read(&output).expect("output"),
+                )
+                .expect("JSON"),
+            );
+            let mut refused_killer = ProcessKillerFixture::default();
+            let mut refused_audit = RecordingProcessActionAudit::default();
+            assert_eq!(
+                run_process_terminate_with(
+                    &cli,
+                    locale,
+                    command,
+                    &plan,
+                    &ProcessProbeFixture,
+                    &mut refused_killer,
+                    &mut refused_audit,
+                )
+                .expect_err("existing output refuses before termination")
+                .code,
+                "output_exists"
+            );
+            assert_eq!(refused_killer.0, 0);
+            assert!(refused_audit.0.is_empty());
+            std::fs::remove_file(&output).expect("remove owned output for refusal cases");
+            let mut stale =
+                bind_process_termination_plan(42, 1001, "fixture.exe").expect("reused plan");
+            let mut never = ProcessKillerFixture::default();
+            let mut never_audit = RecordingProcessActionAudit::default();
+            assert_eq!(
+                run_process_terminate_with(
+                    &cli,
+                    locale,
+                    command,
+                    &stale,
+                    &ProcessProbeFixture,
+                    &mut never,
+                    &mut never_audit
+                )
+                .expect_err("PID reused")
+                .code,
+                "invalid_identity"
+            );
+            stale.creation_time_filetime = "1000".into();
+            stale.name = "different.exe".into();
+            assert!(
+                run_process_terminate_with(
+                    &cli,
+                    locale,
+                    command,
+                    &stale,
+                    &ProcessProbeFixture,
+                    &mut never,
+                    &mut never_audit
+                )
+                .is_err()
+            );
+            assert_eq!(never.0, 0);
+            assert!(never_audit.0.is_empty());
+        }
+        assert_eq!(envelopes[0], envelopes[1]);
+        assert_eq!(envelopes[0]["data"]["outcome"], "terminated");
+        assert!(
+            Cli::try_parse_from([
+                "devsweep",
+                "status",
+                "process",
+                "terminate",
+                "--plan",
+                "fixture.json",
+                "--preview-digest",
+                &digest
+            ])
+            .is_err()
+        );
+        assert!(
+            Cli::try_parse_from([
+                "devsweep",
+                "status",
+                "process",
+                "terminate",
+                "--plan",
+                "fixture.json",
+                "--confirm"
+            ])
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn process_bilingual_preview_results_and_errors_keep_machine_identity_unchanged() {
+        let plan = bind_process_termination_plan(42, 1000, "fixture.exe").expect("plan");
+        let preview = preview_bound_process(&plan, &ProcessProbeFixture).expect("preview");
+        let en = presentation::status::process_preview(Locale::En, &preview).expect("English");
+        let zh = presentation::status::process_preview(Locale::ZhCn, &preview).expect("Chinese");
+        assert!(en.contains("unsaved work"));
+        assert!(zh.contains("未保存") && !zh.contains("unsaved work"));
+        for line in [&en, &zh] {
+            assert!(
+                line.contains("fixture.exe")
+                    && line.contains("42")
+                    && line.contains(&preview.digest)
+            );
+        }
+        let cli = parse(&[
+            "devsweep",
+            "status",
+            "process",
+            "preview",
+            "--plan",
+            "fixture.json",
+        ]);
+        let json = parse(&[
+            "devsweep",
+            "status",
+            "process",
+            "preview",
+            "--plan",
+            "fixture.json",
+            "--format",
+            "json",
+        ]);
+        let error = || {
+            map_process_action(ProcessActionError::AuditFailed {
+                after_dispatch: true,
+            })
+        };
+        let en = localize_process_action_error(&cli, Locale::En, error());
+        let zh = localize_process_action_error(&cli, Locale::ZhCn, error());
+        assert!(en.message.contains("unknown"));
+        assert!(zh.message.contains("结果未知"));
+        assert_eq!(en.code, zh.code);
+        assert_eq!(
+            localize_process_action_error(&json, Locale::En, error()).message,
+            localize_process_action_error(&json, Locale::ZhCn, error()).message
+        );
+        let report = devsweep_core::status::ProcessTerminationReportV1 {
+            version: 1,
+            pid: 42,
+            creation_time_filetime: "1000".into(),
+            name: "fixture.exe".into(),
+            outcome: "terminated".into(),
+        };
+        assert!(
+            presentation::status::process_report(Locale::En, &report)
+                .expect("English result")
+                .contains("requested")
+        );
+        assert!(
+            presentation::status::process_report(Locale::ZhCn, &report)
+                .expect("Chinese result")
+                .contains("已请求")
+        );
     }
 
     #[test]
@@ -958,161 +1058,88 @@ mod tests {
     #[test]
     fn keep_awake_unsupported_platform_returns_a_capability_gap_and_changes_nothing() {
         let (backend, log) = RecordingBackend::pair();
-        let clock = Arc::new(devsweep_core::status::FakeClock::new());
-        let service = Arc::new(KeepAwakeService::new(
-            Arc::clone(&clock) as Arc<dyn devsweep_core::status::KeepAwakeClock>,
-            Box::new(backend),
-            false,
-        ));
-        let error =
-            match open_keep_awake_session(&service, "owner-a", Duration::from_millis(50), true) {
-                Err(error) => error,
-                Ok(_) => panic!("unsupported platform stored a lease"),
-            };
+        let service = KeepAwakeService::new(Arc::new(SystemClock), Box::new(backend), false);
+        let error = match KeepAwakeSession::open(service, "owner-a", Duration::from_secs(1), true) {
+            Err(error) => map_keep_awake(error),
+            Ok(_) => panic!("unsupported platform stored a lease"),
+        };
         assert_eq!(error.code, "unsupported_platform");
         assert_eq!(error.exit, ExitClass::Unavailable);
-        assert_eq!(service.stored_lease_count(), 0);
         assert!(log.lock().expect("log").is_empty());
     }
 
     #[test]
-    fn keep_awake_lease_expiry_token_ownership_cancellation_and_owner_exit() {
-        use devsweep_core::status::{BackendCall, FakeClock, KeepAwakeClock};
-
+    fn keep_awake_shared_protocol_preserves_cli_stop_cancel_expiry_and_error_classes() {
+        use devsweep_core::status::{BackendCall, FakeClock};
         let clock = Arc::new(FakeClock::new());
         let (backend, log) = RecordingBackend::pair();
-        let service = Arc::new(KeepAwakeService::new(
-            Arc::clone(&clock) as Arc<dyn KeepAwakeClock>,
-            Box::new(backend),
-            true,
-        ));
-        let refused =
-            match open_keep_awake_session(&service, "owner-a", Duration::from_millis(0), true) {
-                Err(error) => error,
-                Ok(_) => panic!("zero duration stored a lease"),
-            };
-        assert_eq!(refused.code, "invalid_plan");
-        assert_eq!(service.stored_lease_count(), 0);
-
-        let session = open_keep_awake_session(&service, "owner-a", Duration::from_millis(50), true)
-            .expect("lease");
-        assert!(!session.lease.power_settings_changed);
-        let exited_token = session.token.clone();
-        drop(session);
+        let service = KeepAwakeService::new(clock.clone(), Box::new(backend), true);
+        let session = KeepAwakeSession::open(service, "cli-a", Duration::from_millis(50), true)
+            .expect("session");
+        let endpoint = session.endpoint().to_string();
+        let token = session.token().to_string();
+        let wrong = query_keep_awake(&endpoint, KeepAwakeVerb::Stop, &token, "other-owner")
+            .expect_err("owner mismatch");
+        assert_eq!(map_keep_awake(wrong).code, "invalid_identity");
         assert_eq!(
-            service
-                .status(&exited_token, "owner-a")
-                .expect("owner exit")
+            query_keep_awake(&endpoint, KeepAwakeVerb::Status, &token, "cli-a")
+                .expect("active")
                 .state,
-            "owner_exited"
-        );
-
-        let left = open_keep_awake_session(&service, "owner-a", Duration::from_secs(30), true)
-            .expect("left");
-        let right = open_keep_awake_session(&service, "owner-b", Duration::from_secs(30), true)
-            .expect("right");
-        let right_token = right.token.clone();
-        let right_endpoint = right.endpoint.clone();
-        let left_token = left.token.clone();
-        let left_endpoint = left.endpoint.clone();
-        let left_flag = Arc::new(AtomicBool::new(false));
-        let right_flag = Arc::new(AtomicBool::new(false));
-        let right_cancel = Arc::clone(&right_flag);
-        let left_thread = thread::spawn(move || hold_keep_awake_session(left, &left_flag));
-        let right_thread = thread::spawn(move || hold_keep_awake_session(right, &right_cancel));
-        let wait_status = |endpoint: &str, token: &str, owner: &str| {
-            let deadline = std::time::Instant::now() + Duration::from_secs(3);
-            let mut last = String::new();
-            while std::time::Instant::now() < deadline {
-                match query_keep_awake(endpoint, "STATUS", token, owner) {
-                    Ok(status) => return status,
-                    Err(error) if error.code == "network_unavailable" => {
-                        last = error.message;
-                        thread::sleep(Duration::from_millis(20));
-                    }
-                    Err(error) => panic!("{} {}", error.code, error.message),
-                }
-            }
-            panic!("keep-awake status timed out: {last}");
-        };
-
-        let active = wait_status(&left_endpoint, &left_token, "owner-a");
-        assert_eq!(active.state, "active");
-        assert!(!active.power_settings_changed);
-        let wrong = query_keep_awake(&left_endpoint, "STOP", &left_token, "owner-b");
-        assert_eq!(wrong.expect_err("owner").code, "invalid_identity");
-        assert_eq!(
-            wait_status(&right_endpoint, &right_token, "owner-b").state,
-            "active"
-        );
-        let stopped =
-            query_keep_awake(&left_endpoint, "STOP", &left_token, "owner-a").expect("stop left");
-        assert_eq!(stopped.state, "stopped");
-        left_thread.join().expect("left hold");
-        assert_eq!(
-            service
-                .status(&right_token, "owner-b")
-                .expect("right after left stop")
-                .state,
-            "active"
-        );
-        let _ = query_keep_awake(&right_endpoint, "STOP", &right_token, "owner-b");
-        right_flag.store(true, Ordering::SeqCst);
-        right_thread.join().expect("right hold");
-
-        let short = open_keep_awake_session(&service, "owner-d", Duration::from_millis(50), true)
-            .expect("short lease");
-        let short_token = short.token.clone();
-        let short_endpoint = short.endpoint.clone();
-        let short_flag = Arc::new(AtomicBool::new(false));
-        let short_cancel = Arc::clone(&short_flag);
-        let short_thread = thread::spawn(move || hold_keep_awake_session(short, &short_cancel));
-        assert_eq!(
-            wait_status(&short_endpoint, &short_token, "owner-d").state,
             "active"
         );
         clock.advance(Duration::from_millis(50));
-        assert_eq!(
-            service
-                .status(&short_token, "owner-d")
-                .expect("expiry")
-                .state,
-            "expired"
-        );
-        short_flag.store(true, Ordering::SeqCst);
-        short_thread.join().expect("short hold");
-
-        let fresh = open_keep_awake_session(&service, "owner-c", Duration::from_secs(30), true)
-            .expect("cancel lease");
-        let fresh_token = fresh.token.clone();
-        let flag = Arc::new(AtomicBool::new(true));
-        hold_keep_awake_session(fresh, &flag);
-        assert_eq!(
-            service
-                .status(&fresh_token, "owner-c")
-                .expect("canceled")
-                .state,
-            "canceled"
+        hold_keep_awake_session(session, &AtomicBool::new(false)).expect("expiry exits CLI hold");
+        let closed = query_keep_awake(&endpoint, KeepAwakeVerb::Status, &token, "cli-a")
+            .expect_err("closed endpoint remains unknown");
+        assert_eq!(map_keep_awake(closed).exit, ExitClass::Unavailable);
+        assert!(
+            log.lock()
+                .expect("log")
+                .iter()
+                .any(|call| matches!(call, BackendCall::Release(_)))
         );
 
-        let releases = log
-            .lock()
-            .expect("log")
-            .iter()
-            .filter(|call| matches!(call, BackendCall::Release(_)))
-            .count();
-        assert!(releases >= 1);
-        let endpoint_error = query_keep_awake("8.8.8.8:9", "STATUS", "ka-1-1", "owner-a");
+        let service = session_service();
+        let session = KeepAwakeSession::open(service, "cli-b", Duration::from_secs(30), true)
+            .expect("session");
+        let tuple = (session.endpoint().to_string(), session.token().to_string());
+        let hold = thread::spawn(move || hold_keep_awake_session(session, &AtomicBool::new(false)));
         assert_eq!(
-            endpoint_error.expect_err("endpoint").code,
+            query_keep_awake(&tuple.0, KeepAwakeVerb::Stop, &tuple.1, "cli-b")
+                .expect("stop")
+                .state,
+            "stopped"
+        );
+        hold.join()
+            .expect("hold joined")
+            .expect("stop exits CLI hold");
+
+        let session =
+            KeepAwakeSession::open(session_service(), "cli-c", Duration::from_secs(30), true)
+                .expect("session");
+        hold_keep_awake_session(session, &AtomicBool::new(true)).expect("cancel exits CLI hold");
+        assert_eq!(
+            map_keep_awake(KeepAwakeError::InvalidEndpoint).code,
             "invalid_endpoint"
+        );
+        assert_eq!(
+            map_keep_awake(KeepAwakeError::InvalidEndpoint).exit,
+            ExitClass::Usage
+        );
+        assert_eq!(
+            map_keep_awake(KeepAwakeError::BackendFailed {
+                operation: "release",
+                message: "fixture".into(),
+            })
+            .exit,
+            ExitClass::Failed
         );
     }
 
     #[cfg(windows)]
     #[test]
     fn fixture_owned_process_is_the_only_native_termination_target() {
-        use devsweep_core::status::ProcessProbe;
+        use devsweep_core::status::{ProcessKiller, ProcessProbe};
         use std::process::{Command, Stdio};
         use std::time::Instant;
 
@@ -1143,6 +1170,15 @@ mod tests {
             .expect("lookup")
             .expect("spawned process is visible");
         assert!(observed.name.eq_ignore_ascii_case("ping.exe"));
+        assert_eq!(
+            HostProcessControl.terminate(
+                observed.pid,
+                observed.creation_time_filetime.wrapping_add(1)
+            ),
+            Err(ProcessActionError::IdentityMismatch),
+            "the actual kill handle must reject a changed creation time"
+        );
+        assert!(child.try_wait().expect("owned child still live").is_none());
         let temp = TempDir::new().unwrap();
         let plan_path = temp.path().join("plan.json");
         let preview_path = temp.path().join("preview.json");
@@ -1239,5 +1275,112 @@ mod tests {
             }
             thread::sleep(Duration::from_millis(20));
         }
+    }
+    #[test]
+    fn keep_awake_errors_localize_human_details_and_keep_machine_messages_unchanged() {
+        let human = Cli::try_parse_from([
+            "devsweep",
+            "status",
+            "keep-awake",
+            "status",
+            "--endpoint",
+            "127.0.0.1:1",
+            "--token",
+            "test",
+            "--owner",
+            "test",
+        ])
+        .expect("human CLI");
+        let json = Cli::try_parse_from([
+            "devsweep",
+            "status",
+            "keep-awake",
+            "status",
+            "--endpoint",
+            "127.0.0.1:1",
+            "--token",
+            "test",
+            "--owner",
+            "test",
+            "--format",
+            "json",
+        ])
+        .expect("JSON CLI");
+        let failure = || {
+            map_keep_awake(KeepAwakeError::BackendFailed {
+                operation: "release",
+                message: "fixture native error 123".into(),
+            })
+        };
+        let native = failure();
+        let english = localize_keep_awake_error(&human, Locale::En, failure());
+        let chinese = localize_keep_awake_error(&human, Locale::ZhCn, failure());
+        assert!(english.message.contains("operating-system"));
+        assert!(chinese.message.contains("操作系统"));
+        for localized in [&english, &chinese] {
+            assert!(localized.message.contains("fixture native error 123"));
+            assert_eq!(localized.code, native.code);
+            assert_eq!(localized.exit, ExitClass::Failed);
+        }
+        let machine = localize_keep_awake_error(&json, Locale::ZhCn, failure());
+        assert_eq!(machine.message, native.message);
+    }
+
+    #[test]
+    fn keep_awake_late_cleanup_failure_keeps_the_emitted_json_and_real_exit() {
+        struct FailingClear;
+        impl devsweep_core::status::AwakeBackend for FailingClear {
+            fn acquire(&mut self, _: &str) -> Result<(), KeepAwakeError> {
+                Ok(())
+            }
+            fn release(&mut self, _: &str) -> Result<(), KeepAwakeError> {
+                Err(KeepAwakeError::BackendFailed {
+                    operation: "release",
+                    message: "fixture clear failure".into(),
+                })
+            }
+        }
+        let isolated = tempfile::TempDir::new().expect("isolated output");
+        let path = isolated.path().join("lease.json");
+        let cli = Cli::try_parse_from([
+            "devsweep",
+            "status",
+            "keep-awake",
+            "run",
+            "--owner",
+            "fixture",
+            "--duration-ms",
+            "30000",
+            "--confirm",
+            "--format",
+            "json",
+            "--output",
+            path.to_str().expect("path"),
+        ])
+        .expect("run CLI");
+        let service = KeepAwakeService::new(Arc::new(SystemClock), Box::new(FailingClear), true);
+        let session = KeepAwakeSession::open(service, "fixture", Duration::from_secs(30), true)
+            .expect("fake lease");
+        emit_keep_awake(
+            &cli,
+            Locale::En,
+            "status.keep-awake.run",
+            session.endpoint(),
+            &session.status().expect("lease"),
+        )
+        .expect("single document");
+        let before = std::fs::read(&path).expect("output");
+        let error = keep_awake_after_output(
+            hold_keep_awake_session(session, &AtomicBool::new(true)).expect_err("clear failure"),
+        );
+        assert!(
+            error.output_already_emitted,
+            "top-level must not open the output again"
+        );
+        assert_eq!(error.exit, ExitClass::Failed);
+        assert_eq!(error.code, "keep_awake_backend_failed");
+        assert!(error.message.contains("fixture clear failure"));
+        assert_eq!(std::fs::read(&path).expect("unchanged"), before);
+        serde_json::from_slice::<serde_json::Value>(&before).expect("exactly one JSON document");
     }
 }

@@ -200,13 +200,16 @@ pub(crate) fn process_preview(
     preview: &ProcessTerminationPreviewV1,
 ) -> Result<String, CatalogueError> {
     let pid = preview.pid.to_string();
+    let data_loss = render(locale, "status.v1.process.data_loss", &[], None)?;
     render(
         locale,
         "status.v1.process.preview",
         &[
             ("created", preview.creation_time_filetime.as_str()),
-            ("data_loss", preview.data_loss_text.as_str()),
+            ("data_loss", &data_loss),
             ("pid", pid.as_str()),
+            ("name", &preview.name),
+            ("digest", &preview.digest),
         ],
         None,
     )
@@ -217,10 +220,15 @@ pub(crate) fn process_report(
     report: &ProcessTerminationReportV1,
 ) -> Result<String, CatalogueError> {
     let pid = report.pid.to_string();
+    let outcome = if report.outcome == "terminated" {
+        render(locale, "status.v1.process.terminated", &[], None)?
+    } else {
+        report.outcome.clone()
+    };
     render(
         locale,
         "status.v1.process.report",
-        &[("outcome", report.outcome.as_str()), ("pid", pid.as_str())],
+        &[("outcome", &outcome), ("pid", pid.as_str())],
         None,
     )
 }

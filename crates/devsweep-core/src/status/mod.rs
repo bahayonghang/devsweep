@@ -13,10 +13,13 @@ mod channel;
 mod health;
 mod host;
 mod keep_awake;
+mod keep_awake_audit;
+mod keep_awake_session;
 mod network;
 mod pdh;
 mod process;
 mod process_action;
+mod process_action_audit;
 mod sampler;
 mod system;
 
@@ -26,16 +29,26 @@ mod tests;
 pub use channel::StatusEventReceiver;
 pub use health::{HealthEvidenceV1, HealthExplanationV1, STALE_SAMPLE_AGE_MS, explain_health};
 pub use keep_awake::{
-    AwakeBackend, BackendCall, FakeClock, KeepAwakeClock, KeepAwakeError, KeepAwakeOwner,
-    KeepAwakeService, KeepAwakeStatusV1, MAX_KEEP_AWAKE_MS, NoopBackend, RecordingBackend,
-    SystemClock,
+    AwakeBackend, BackendCall, FakeClock, KeepAwakeAction, KeepAwakeClock, KeepAwakeError,
+    KeepAwakeOwner, KeepAwakePlan, KeepAwakePreviewV1, KeepAwakeService, KeepAwakeStatusV1,
+    MAX_KEEP_AWAKE_MS, NoopBackend, RecordingBackend, SystemClock,
 };
+pub use keep_awake_audit::{
+    KeepAwakeAudit, KeepAwakeAuditAction, ProcessActionAuditDetailsV1, RecordingKeepAwakeAudit,
+    StatusActionAuditAction, StatusActionAuditCode, StatusActionAuditRecordV1,
+    status_audit_v1_path,
+};
+pub use keep_awake_session::{KeepAwakeSession, KeepAwakeVerb, query_keep_awake};
 pub use process_action::{
     HostProcessControl, ObservedProcess, PROCESS_TERMINATION_DATA_LOSS_TEXT,
     PROCESS_TERMINATION_PLAN_VERSION, ProcessActionError, ProcessKiller, ProcessProbe,
     ProcessTerminationPlanV1, ProcessTerminationPreviewV1, ProcessTerminationReportV1,
-    ProtectedClass, bind_process_termination_plan, preview_bound_process, protected_process_names,
-    terminate_bound_process,
+    ProtectedClass, bind_process_termination_plan, preview_bound_process, protected_process_class,
+    protected_process_names, terminate_bound_process, terminate_bound_process_audited,
+    terminate_bound_process_audited_cancellable,
+};
+pub use process_action_audit::{
+    FileProcessActionAudit, ProcessActionAudit, RecordingProcessActionAudit,
 };
 pub use sampler::{LiveControl, StatusError, StatusSampler, spawn_live};
 pub use system::{cpu_utilization_basis_points, memory_from_physical};

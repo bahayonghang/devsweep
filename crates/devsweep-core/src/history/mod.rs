@@ -1,8 +1,9 @@
-//! Versioned, non-replayable Clean/Software/Optimize audit history.
+//! Versioned, non-replayable Clean/Software/Optimize/Status action history.
 
 use std::{
     collections::BTreeMap,
     fs, io,
+    io::Read,
     path::{Path, PathBuf},
 };
 
@@ -16,9 +17,12 @@ use crate::{
     optimize::{OptimizeAuditError, OptimizeAuditRecordV1, optimize_audit_v1_path},
     software::{
         SoftwareAuditError, SoftwareAuditRecordV1, SoftwareSupportAuditRecordV1,
-        software_audit_v1_path,
+        SoftwareSupportLifecycleRecordV1, software_audit_v1_path,
     },
+    status::{StatusActionAuditRecordV1, status_audit_v1_path},
 };
+
+const MAX_NEW_AUDIT_BYTES: u64 = 16 * 1024 * 1024;
 
 const FORBIDDEN_KEYS: &[&str] = &[
     "argv",
@@ -34,23 +38,25 @@ const FORBIDDEN_KEYS: &[&str] = &[
     "path",
 ];
 
-/// The three fixed V1 audit domains.
+/// The fixed V1 audit domains.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HistoryDomain {
     Clean,
     Software,
     Optimize,
+    Status,
 }
 
 impl HistoryDomain {
-    const ALL: [Self; 3] = [Self::Clean, Self::Software, Self::Optimize];
+    const ALL: [Self; 4] = [Self::Clean, Self::Software, Self::Optimize, Self::Status];
 
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Clean => "clean",
             Self::Software => "software",
             Self::Optimize => "optimize",
+            Self::Status => "status",
         }
     }
 }
@@ -103,6 +109,12 @@ pub enum HistoryRecordV1 {
     },
     Optimize {
         record: OptimizeAuditRecordV1,
+    },
+    Status {
+        record: StatusActionAuditRecordV1,
+    },
+    SoftwareLifecycle {
+        record: SoftwareSupportLifecycleRecordV1,
     },
     Unsupported {
         domain: HistoryDomain,
@@ -224,12 +236,13 @@ impl std::error::Error for HistoryError {
     }
 }
 
-/// The three fixed store paths from the shared application-data resolver.
+/// The fixed store paths from the shared application-data resolver.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HistoryStorePaths {
     pub clean: PathBuf,
     pub software: PathBuf,
     pub optimize: PathBuf,
+    pub status: PathBuf,
 }
 
 impl HistoryStorePaths {
@@ -238,19 +251,22 @@ impl HistoryStorePaths {
             HistoryDomain::Clean => &self.clean,
             HistoryDomain::Software => &self.software,
             HistoryDomain::Optimize => &self.optimize,
+            HistoryDomain::Status => &self.status,
         }
     }
 }
 
-/// Resolve the three fixed V1 stores. This never probes legacy audit files.
+/// Resolve the fixed V1 stores. This never probes legacy audit files.
 pub fn history_store_paths() -> Result<HistoryStorePaths, HistoryError> {
     let clean = clean_audit_v1_path().map_err(map_clean_path_error)?;
     let software = software_audit_v1_path().map_err(map_software_path_error)?;
     let optimize = optimize_audit_v1_path().map_err(map_optimize_path_error)?;
+    let status = status_audit_v1_path().map_err(|_| HistoryError::LocalAppDataUnavailable)?;
     Ok(HistoryStorePaths {
         clean,
         software,
         optimize,
+        status,
     })
 }
 
@@ -287,7 +303,7 @@ fn map_optimize_path_error(error: OptimizeAuditError) -> HistoryError {
     }
 }
 
-/// List redacted operations from the three fixed stores.
+/// List redacted operations from the fixed stores.
 pub fn list_history(options: HistoryListOptions) -> Result<HistoryListV1, HistoryError> {
     list_history_at(&history_store_paths()?, options)
 }
@@ -351,7 +367,7 @@ pub(crate) fn list_history_at(
         .map(|domain| vec![domain])
         .unwrap_or_else(|| HistoryDomain::ALL.to_vec());
     for domain in domains {
-        let (status, records) = read_store(domain, paths.for_domain(domain))?;
+        let (status, records) = read_domain_store(paths, domain)?;
         stores.push(status);
         operations.extend(summaries_from(domain, &records));
     }
@@ -375,7 +391,7 @@ pub(crate) fn show_history_at(
     let mut found = None;
     let mut stores_incomplete = false;
     for domain in HistoryDomain::ALL {
-        let (status, records) = read_store(domain, paths.for_domain(domain))?;
+        let (status, records) = read_domain_store(paths, domain)?;
         if matches!(
             status.state,
             HistoryStoreState::Unavailable | HistoryStoreState::Unsupported
@@ -407,6 +423,31 @@ pub(crate) fn show_history_at(
     }
 }
 
+fn read_domain_store(
+    paths: &HistoryStorePaths,
+    domain: HistoryDomain,
+) -> Result<(HistoryStoreStatusV1, Vec<HistoryRecordV1>), HistoryError> {
+    let (mut status, mut records) = read_store(domain, paths.for_domain(domain))?;
+    if domain == HistoryDomain::Software {
+        let (support_status, support_records) = read_store(
+            domain,
+            &paths.software.with_file_name("software-support.jsonl"),
+        )?;
+        records.extend(support_records);
+        if support_status.reason_code.is_some()
+            || matches!(
+                support_status.state,
+                HistoryStoreState::Unavailable | HistoryStoreState::Unsupported
+            )
+        {
+            status = support_status;
+        } else if !records.is_empty() && status.state == HistoryStoreState::Empty {
+            status.state = HistoryStoreState::Available;
+        }
+    }
+    Ok((status, records))
+}
+
 fn read_store(
     domain: HistoryDomain,
     path: &Path,
@@ -421,11 +462,34 @@ fn read_store(
             Vec::new(),
         ));
     }
-    let bytes = fs::read(path).map_err(|source| HistoryError::Io {
+    let bounded = domain == HistoryDomain::Status
+        || path
+            .file_name()
+            .is_some_and(|name| name == "software-support.jsonl");
+    let bytes = (if bounded {
+        let mut bytes = Vec::new();
+        fs::File::open(path).and_then(|file| {
+            file.take(MAX_NEW_AUDIT_BYTES + 1).read_to_end(&mut bytes)?;
+            Ok(bytes)
+        })
+    } else {
+        fs::read(path)
+    })
+    .map_err(|source| HistoryError::Io {
         stage: "read_store",
         path: path.to_path_buf(),
         source,
     })?;
+    if bounded && bytes.len() as u64 > MAX_NEW_AUDIT_BYTES {
+        return Ok((
+            HistoryStoreStatusV1 {
+                domain,
+                state: HistoryStoreState::Unavailable,
+                reason_code: Some("store_too_large".into()),
+            },
+            Vec::new(),
+        ));
+    }
     let Ok(text) = std::str::from_utf8(&bytes) else {
         return Ok((
             HistoryStoreStatusV1 {
@@ -436,9 +500,18 @@ fn read_store(
             Vec::new(),
         ));
     };
+    // Status appends publish complete newline-delimited records. A reader racing
+    // an append must not promote an unterminated terminal into durable success.
+    let incomplete_status =
+        domain == HistoryDomain::Status && !text.is_empty() && !text.ends_with('\n');
+    let text = if incomplete_status {
+        text.rsplit_once('\n').map_or("", |(complete, _)| complete)
+    } else {
+        text
+    };
     let mut records = Vec::new();
     let mut saw_unsupported = false;
-    let mut saw_corrupt = false;
+    let mut saw_corrupt = incomplete_status;
     for line in text.lines() {
         if line.is_empty() {
             continue;
@@ -523,6 +596,11 @@ fn decode_line(domain: HistoryDomain, line: &str) -> LineDecode {
         HistoryDomain::Clean => serde_json::from_str::<CleanAuditRecordV1>(line)
             .ok()
             .map(|record| HistoryRecordV1::Clean { record }),
+        HistoryDomain::Software if value.get("phase").is_some() => {
+            serde_json::from_str::<SoftwareSupportLifecycleRecordV1>(line)
+                .ok()
+                .map(|record| HistoryRecordV1::SoftwareLifecycle { record })
+        }
         HistoryDomain::Software if value.get("record_kind").is_some() => {
             serde_json::from_str::<SoftwareSupportAuditRecordV1>(line)
                 .ok()
@@ -534,6 +612,10 @@ fn decode_line(domain: HistoryDomain, line: &str) -> LineDecode {
         HistoryDomain::Optimize => serde_json::from_str::<OptimizeAuditRecordV1>(line)
             .ok()
             .map(|record| HistoryRecordV1::Optimize { record }),
+        HistoryDomain::Status => serde_json::from_str::<StatusActionAuditRecordV1>(line)
+            .ok()
+            .filter(StatusActionAuditRecordV1::is_valid)
+            .map(|record| HistoryRecordV1::Status { record }),
     };
     match decoded {
         Some(record) => LineDecode::Record(record),
@@ -586,6 +668,8 @@ fn record_domain(record: &HistoryRecordV1) -> HistoryDomain {
             HistoryDomain::Software
         }
         HistoryRecordV1::Optimize { .. } => HistoryDomain::Optimize,
+        HistoryRecordV1::Status { .. } => HistoryDomain::Status,
+        HistoryRecordV1::SoftwareLifecycle { .. } => HistoryDomain::Software,
         HistoryRecordV1::Unsupported { domain, .. } => *domain,
     }
 }
@@ -599,6 +683,13 @@ fn record_operation_id(record: &HistoryRecordV1) -> Option<String> {
         HistoryRecordV1::Software { record } => Some(record.operation_id.clone()),
         HistoryRecordV1::SoftwareSupport { record } => Some(record.operation_id().to_string()),
         HistoryRecordV1::Optimize { record } => Some(record.operation_id.clone()),
+        HistoryRecordV1::Status { record } => Some(record.operation_id.clone()),
+        HistoryRecordV1::SoftwareLifecycle { record } => Some(match record {
+            SoftwareSupportLifecycleRecordV1::Started { operation_id, .. }
+            | SoftwareSupportLifecycleRecordV1::Terminal { operation_id, .. } => {
+                operation_id.clone()
+            }
+        }),
         HistoryRecordV1::Unsupported { operation_id, .. } => operation_id.clone(),
     }
 }
@@ -616,6 +707,15 @@ fn record_timestamp(record: &HistoryRecordV1) -> u64 {
         HistoryRecordV1::Software { record } => record.timestamp_unix_ms,
         HistoryRecordV1::SoftwareSupport { record } => record.timestamp_unix_ms(),
         HistoryRecordV1::Optimize { record } => record.timestamp_unix_ms,
+        HistoryRecordV1::Status { record } => record.timestamp_unix_ms,
+        HistoryRecordV1::SoftwareLifecycle { record } => match record {
+            SoftwareSupportLifecycleRecordV1::Started {
+                timestamp_unix_ms, ..
+            }
+            | SoftwareSupportLifecycleRecordV1::Terminal {
+                timestamp_unix_ms, ..
+            } => *timestamp_unix_ms,
+        },
         HistoryRecordV1::Unsupported { .. } => 0,
     }
 }
@@ -640,6 +740,11 @@ fn record_codes(record: &HistoryRecordV1) -> Vec<String> {
         HistoryRecordV1::Software { record } => vec![json_code(record.status_code)],
         HistoryRecordV1::SoftwareSupport { record } => vec![json_code(record.outcome_code())],
         HistoryRecordV1::Optimize { record } => vec![json_code(record.status_code)],
+        HistoryRecordV1::Status { record } => vec![json_code(record.status_code)],
+        HistoryRecordV1::SoftwareLifecycle { record } => vec![match record {
+            SoftwareSupportLifecycleRecordV1::Started { .. } => "dispatch_started".into(),
+            SoftwareSupportLifecycleRecordV1::Terminal { result, .. } => json_code(result),
+        }],
         HistoryRecordV1::Unsupported { reason_code, .. } => vec![(*reason_code).to_string()],
     }
 }
@@ -681,18 +786,30 @@ fn summaries_from(
             let unsupported = group
                 .iter()
                 .any(|record| matches!(record, HistoryRecordV1::Unsupported { .. }));
-            let unknown = stable_codes.iter().any(|code| {
-                code.contains("unknown") || code == "unsupported" || code == "unknown_schema"
-            });
+            let pending = stable_codes
+                .last()
+                .is_some_and(|code| code == "dispatch_started")
+                && (domain == HistoryDomain::Status
+                    || group
+                        .iter()
+                        .any(|record| matches!(record, HistoryRecordV1::SoftwareLifecycle { .. })));
+            let unknown = pending
+                || stable_codes.iter().any(|code| {
+                    code.contains("unknown") || code == "unsupported" || code == "unknown_schema"
+                });
             let partial = matches!(domain, HistoryDomain::Clean)
                 && stable_codes.iter().any(|code| code == "failed")
                 && stable_codes
                     .iter()
                     .any(|code| code == "succeeded" || code == "committed" || code == "started");
-            let outcome_code = stable_codes
-                .last()
-                .cloned()
-                .unwrap_or_else(|| "unknown".to_string());
+            let outcome_code = if pending {
+                "unknown_after_dispatch".into()
+            } else {
+                stable_codes
+                    .last()
+                    .cloned()
+                    .unwrap_or_else(|| "unknown".to_string())
+            };
             HistoryOperationSummaryV1 {
                 domain,
                 operation_id,
@@ -726,11 +843,12 @@ mod tests {
             clean: root.join("DevSweep/audit/v1/clean.jsonl"),
             software: root.join("DevSweep/audit/v1/software.jsonl"),
             optimize: root.join("DevSweep/audit/v1/optimize.jsonl"),
+            status: root.join("DevSweep/audit/v1/status.jsonl"),
         }
     }
 
     #[test]
-    fn history_reader_opens_only_the_three_fixed_v1_stores() {
+    fn history_reader_opens_only_the_fixed_v1_stores() {
         let fixture = TempDir::new().expect("temp");
         let stores = paths(fixture.path());
         let legacy = fixture.path().join("devsweep/audit.jsonl");
@@ -757,6 +875,171 @@ mod tests {
                 .expect("explicit")
                 .contains("argv")
         );
+    }
+
+    #[test]
+    fn status_action_history_and_software_support_pending_are_truthful_and_never_replay() {
+        use crate::status::{KeepAwakeAuditAction, StatusActionAuditCode};
+        let fixture = TempDir::new().expect("isolated stores");
+        let stores = paths(fixture.path());
+        let started = StatusActionAuditRecordV1 {
+            schema_version: 1,
+            domain: "status".into(),
+            operation_id: "awake-fixture".into(),
+            timestamp_unix_ms: 100,
+            action: KeepAwakeAuditAction::Start,
+            status_code: StatusActionAuditCode::DispatchStarted,
+            duration_ms: 30_000,
+            preview_digest: Some(format!("sha256:{}", "a".repeat(64))),
+            process: None,
+        };
+        write(
+            &stores.status,
+            &format!(
+                "{}\n",
+                serde_json::to_string(&started).expect("started JSON")
+            ),
+        );
+        let pending = show_history_at(&stores, "awake-fixture").expect("pending action");
+        assert!(pending.summary.unknown);
+        assert_eq!(pending.summary.outcome_code, "unknown_after_dispatch");
+        let mut succeeded = started.clone();
+        succeeded.timestamp_unix_ms = 101;
+        succeeded.status_code = StatusActionAuditCode::Succeeded;
+        write(
+            &stores.status,
+            &format!(
+                "{}\n{}\n",
+                serde_json::to_string(&started).expect("started"),
+                serde_json::to_string(&succeeded).expect("terminal")
+            ),
+        );
+        let complete = show_history_at(&stores, "awake-fixture").expect("completed action");
+        assert_eq!(complete.summary.domain, HistoryDomain::Status);
+        assert!(!complete.summary.unknown);
+        assert_eq!(complete.summary.outcome_code, "succeeded");
+        assert_eq!(complete.records.len(), 2);
+
+        let support = stores.software.with_file_name("software-support.jsonl");
+        write(
+            &support,
+            &format!(
+                "{}\n",
+                serde_json::json!({
+                    "phase": "started", "schema_version": 1, "domain": "software_support", "operation": "update",
+                    "operation_id": "update-fixture", "timestamp_unix_ms": 102,
+                    "plan_identity": "a".repeat(64), "preview_digest": format!("sha256:{}", "b".repeat(64))
+                })
+            ),
+        );
+        let pending = show_history_at(&stores, "update-fixture").expect("support lifecycle");
+        assert_eq!(pending.summary.domain, HistoryDomain::Software);
+        assert_eq!(pending.summary.outcome_code, "unknown_after_dispatch");
+        assert!(pending.summary.unknown);
+        assert!(matches!(
+            pending.records[0],
+            HistoryRecordV1::SoftwareLifecycle { .. }
+        ));
+        let listed = list_history_at(
+            &stores,
+            HistoryListOptions {
+                domain: Some(HistoryDomain::Status),
+                limit: 10,
+            },
+        )
+        .expect("status filter");
+        assert_eq!(listed.operations.len(), 1);
+        assert_eq!(listed.stores.len(), 1);
+        let encoded = serde_json::to_string(&listed).expect("redacted history");
+        for key in ["token", "endpoint", "owner", "argv", "program", "path"] {
+            assert!(!encoded.contains(&format!("\"{key}\"")));
+        }
+        assert!(
+            !fixture
+                .path()
+                .join("DevSweep/audit/v1/status.lock")
+                .exists(),
+            "reader must not create a writer lock"
+        );
+    }
+
+    #[test]
+    fn history_new_action_stores_reject_oversized_and_invalid_status_records() {
+        let fixture = TempDir::new().expect("isolated history");
+        let stores = paths(fixture.path());
+        for path in [
+            &stores.status,
+            &stores.software.with_file_name("software-support.jsonl"),
+        ] {
+            fs::create_dir_all(path.parent().expect("parent")).expect("directory");
+            fs::File::create(path)
+                .expect("file")
+                .set_len(MAX_NEW_AUDIT_BYTES + 1)
+                .expect("oversized store");
+            let domain = if path == &stores.status {
+                HistoryDomain::Status
+            } else {
+                HistoryDomain::Software
+            };
+            let (store, records) = read_store(domain, path).expect("bounded read");
+            assert_eq!(store.state, HistoryStoreState::Unavailable);
+            assert_eq!(store.reason_code.as_deref(), Some("store_too_large"));
+            assert!(records.is_empty());
+        }
+        let valid = serde_json::json!({
+            "schema_version": 1, "domain": "status", "operation_id": "finite-action",
+            "timestamp_unix_ms": 1, "action": "start", "status_code": "dispatch_started",
+            "duration_ms": 1000, "preview_digest": format!("sha256:{}", "a".repeat(64))
+        });
+        for (key, invalid) in [
+            ("duration_ms", serde_json::json!(0)),
+            (
+                "duration_ms",
+                serde_json::json!(crate::status::MAX_KEEP_AWAKE_MS + 1),
+            ),
+            ("preview_digest", serde_json::json!("sha256:INVALID")),
+            ("endpoint", serde_json::json!("sensitive-endpoint")),
+            ("schema_version", serde_json::json!(2)),
+        ] {
+            let mut record = valid.clone();
+            record[key] = invalid;
+            write(&stores.status, &format!("{record}\n"));
+            let (store, records) =
+                read_store(HistoryDomain::Status, &stores.status).expect("closed reader");
+            assert_eq!(store.state, HistoryStoreState::Unsupported, "{key}");
+            assert!(
+                !records
+                    .iter()
+                    .any(|record| matches!(record, HistoryRecordV1::Status { .. }))
+            );
+            assert!(
+                !serde_json::to_string(&records)
+                    .expect("redacted")
+                    .contains("sensitive-endpoint")
+            );
+        }
+    }
+
+    #[test]
+    fn history_unterminated_status_terminal_does_not_complete_a_started_action() {
+        let fixture = TempDir::new().expect("isolated history");
+        let stores = paths(fixture.path());
+        let mut record = serde_json::json!({
+            "schema_version": 1, "domain": "status", "operation_id": "interrupted-status",
+            "timestamp_unix_ms": 1, "action": "stop", "status_code": "dispatch_started",
+            "duration_ms": 1000, "preview_digest": null
+        });
+        let started = format!("{record}\n");
+        record["status_code"] = serde_json::json!("succeeded");
+        write(&stores.status, &format!("{started}{record}"));
+        let detail =
+            show_history_at(&stores, "interrupted-status").expect("started remains visible");
+        assert_eq!(detail.records.len(), 1);
+        assert!(detail.summary.unknown);
+        assert_eq!(detail.summary.outcome_code, "unknown_after_dispatch");
+        let (store, _) =
+            read_store(HistoryDomain::Status, &stores.status).expect("incomplete record");
+        assert_eq!(store.reason_code.as_deref(), Some("corrupt_record"));
     }
 
     #[test]

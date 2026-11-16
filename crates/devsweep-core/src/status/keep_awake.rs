@@ -2,10 +2,19 @@
 //! explicit finite duration. Stop, expiry, and owner exit release only the
 //! matching token. This module does not call a persistent power-setting API.
 
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+use super::keep_awake_audit::{
+    FileKeepAwakeAudit, KeepAwakeAudit, KeepAwakeAuditAction, RecordingKeepAwakeAudit,
+    StatusActionAuditCode, StatusActionAuditRecordV1,
+};
 
 /// Longest accepted lease. The duration is still explicit on each request.
 pub const MAX_KEEP_AWAKE_MS: u64 = 12 * 60 * 60 * 1_000;
@@ -24,12 +33,34 @@ pub struct KeepAwakeStatusV1 {
 /// Keep-awake refusal. A capability gap stores nothing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeepAwakeError {
-    CapabilityGap { reason: &'static str },
+    CapabilityGap {
+        reason: &'static str,
+    },
     ConfirmRequired,
     DurationNotFinite,
     InvalidOwner,
     UnknownToken,
     OwnerMismatch,
+    BackendFailed {
+        operation: &'static str,
+        message: String,
+    },
+    WorkerUnavailable,
+    SessionIo {
+        operation: &'static str,
+        message: String,
+    },
+    InvalidEndpoint,
+    InvalidRequest,
+    NetworkUnavailable {
+        message: String,
+    },
+    InvalidReply,
+    StaleConfirmation,
+    AuditFailed {
+        after_dispatch: bool,
+        message: String,
+    },
 }
 
 impl fmt::Display for KeepAwakeError {
@@ -47,11 +78,97 @@ impl fmt::Display for KeepAwakeError {
             Self::OwnerMismatch => {
                 write!(formatter, "keep-awake token belongs to another owner")
             }
+            Self::BackendFailed { operation, message } => {
+                write!(formatter, "keep-awake {operation} failed: {message}")
+            }
+            Self::WorkerUnavailable => write!(formatter, "keep-awake owner worker is unavailable"),
+            Self::SessionIo { operation, message } => {
+                write!(
+                    formatter,
+                    "keep-awake session {operation} failed: {message}"
+                )
+            }
+            Self::InvalidEndpoint => write!(
+                formatter,
+                "keep-awake endpoint must be a loopback socket address"
+            ),
+            Self::InvalidRequest => write!(formatter, "keep-awake request is invalid"),
+            Self::NetworkUnavailable { message } => {
+                write!(formatter, "keep-awake endpoint unavailable: {message}")
+            }
+            Self::InvalidReply => write!(formatter, "keep-awake reply is invalid"),
+            Self::StaleConfirmation => {
+                write!(formatter, "keep-awake preview changed; review again")
+            }
+            Self::AuditFailed { message, .. } => write!(
+                formatter,
+                "keep-awake action audit failed; result is unconfirmed: {message}"
+            ),
         }
     }
 }
 
 impl std::error::Error for KeepAwakeError {}
+
+impl KeepAwakeError {
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::CapabilityGap { .. } => "unsupported_platform",
+            Self::ConfirmRequired => "confirmation_required",
+            Self::DurationNotFinite
+            | Self::InvalidOwner
+            | Self::InvalidRequest
+            | Self::InvalidReply => "invalid_plan",
+            Self::UnknownToken | Self::OwnerMismatch => "invalid_identity",
+            Self::StaleConfirmation => "stale_confirmation",
+            Self::BackendFailed {
+                operation: "acquire",
+                ..
+            } => "keep_awake_acquire_failed",
+            Self::BackendFailed { .. } => "keep_awake_clear_failed",
+            Self::WorkerUnavailable => "keep_awake_worker_unavailable",
+            Self::SessionIo { .. } => "output_open_failed",
+            Self::InvalidEndpoint => "invalid_endpoint",
+            Self::NetworkUnavailable { .. } => "network_unavailable",
+            Self::AuditFailed {
+                after_dispatch: false,
+                ..
+            } => "audit_unavailable",
+            Self::AuditFailed {
+                after_dispatch: true,
+                ..
+            } => "unknown_after_dispatch",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeepAwakeAction {
+    Start,
+    Stop,
+}
+
+/// Immutable in-memory request, bound to the live service generation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeepAwakePlan {
+    service_id: String,
+    generation: u64,
+    action: KeepAwakeAction,
+    owner: String,
+    duration: Duration,
+    token: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct KeepAwakePreviewV1 {
+    pub action: KeepAwakeAction,
+    pub owner: String,
+    pub duration_ms: u64,
+    pub current_state: String,
+    pub digest: String,
+}
 
 /// Clock used by lease expiry. Tests supply a fake clock.
 pub trait KeepAwakeClock: Send + Sync {
@@ -60,8 +177,8 @@ pub trait KeepAwakeClock: Send + Sync {
 
 /// Optional display request. The default recorder does not change power settings.
 pub trait AwakeBackend: Send {
-    fn acquire(&mut self, token: &str);
-    fn release(&mut self, token: &str);
+    fn acquire(&mut self, token: &str) -> Result<(), KeepAwakeError>;
+    fn release(&mut self, token: &str) -> Result<(), KeepAwakeError>;
 }
 
 /// Wall clock.
@@ -137,18 +254,20 @@ impl RecordingBackend {
 }
 
 impl AwakeBackend for RecordingBackend {
-    fn acquire(&mut self, token: &str) {
+    fn acquire(&mut self, token: &str) -> Result<(), KeepAwakeError> {
         self.log
             .lock()
             .expect("keep-awake backend lock")
             .push(BackendCall::Acquire(token.to_string()));
+        Ok(())
     }
 
-    fn release(&mut self, token: &str) {
+    fn release(&mut self, token: &str) -> Result<(), KeepAwakeError> {
         self.log
             .lock()
             .expect("keep-awake backend lock")
             .push(BackendCall::Release(token.to_string()));
+        Ok(())
     }
 }
 
@@ -157,9 +276,13 @@ impl AwakeBackend for RecordingBackend {
 pub struct NoopBackend;
 
 impl AwakeBackend for NoopBackend {
-    fn acquire(&mut self, _token: &str) {}
+    fn acquire(&mut self, _token: &str) -> Result<(), KeepAwakeError> {
+        Ok(())
+    }
 
-    fn release(&mut self, _token: &str) {}
+    fn release(&mut self, _token: &str) -> Result<(), KeepAwakeError> {
+        Ok(())
+    }
 }
 
 /// Windows display request. This is a thread execution state, not a power scheme.
@@ -171,33 +294,25 @@ struct ExecutionStateBackend {
 
 #[cfg(windows)]
 impl AwakeBackend for ExecutionStateBackend {
-    fn acquire(&mut self, _token: &str) {
-        self.held = self.held.saturating_add(1);
-        if self.held == 1 {
-            set_execution_state(true);
-        }
-    }
-
-    fn release(&mut self, _token: &str) {
-        self.held = self.held.saturating_sub(1);
+    fn acquire(&mut self, _token: &str) -> Result<(), KeepAwakeError> {
         if self.held == 0 {
-            set_execution_state(false);
+            set_execution_state(true)?;
         }
+        self.held += 1;
+        Ok(())
+    }
+
+    fn release(&mut self, _token: &str) -> Result<(), KeepAwakeError> {
+        if self.held == 1 {
+            set_execution_state(false)?;
+        }
+        self.held = self.held.saturating_sub(1);
+        Ok(())
     }
 }
 
 #[cfg(windows)]
-impl Drop for ExecutionStateBackend {
-    fn drop(&mut self) {
-        if self.held > 0 {
-            self.held = 0;
-            set_execution_state(false);
-        }
-    }
-}
-
-#[cfg(windows)]
-fn set_execution_state(active: bool) {
+fn set_execution_state(active: bool) -> Result<(), KeepAwakeError> {
     use windows_sys::Win32::System::Power::{
         ES_CONTINUOUS, ES_DISPLAY_REQUIRED, ES_SYSTEM_REQUIRED, SetThreadExecutionState,
     };
@@ -208,9 +323,13 @@ fn set_execution_state(active: bool) {
         ES_CONTINUOUS
     };
     // SAFETY: the flag is a thread execution request. It does not write a power scheme.
-    unsafe {
-        let _ = SetThreadExecutionState(flags);
+    if unsafe { SetThreadExecutionState(flags) } == 0 {
+        return Err(KeepAwakeError::BackendFailed {
+            operation: if active { "acquire" } else { "release" },
+            message: std::io::Error::last_os_error().to_string(),
+        });
     }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -240,17 +359,31 @@ struct Lease {
     duration: Duration,
     started: Instant,
     state: LeaseState,
+    error: Option<KeepAwakeError>,
+    expiry_attempted: bool,
 }
 
 struct Inner {
     leases: Vec<Lease>,
     backend: Box<dyn AwakeBackend>,
+    clock: Arc<dyn KeepAwakeClock>,
+    service_id: String,
+    generations: BTreeMap<String, u64>,
+    audit: Box<dyn KeepAwakeAudit>,
 }
 
-/// Process-local lease table.
+type OwnerTask = Box<dyn FnOnce(&mut Inner) + Send>;
+
+enum OwnerMessage {
+    Task(OwnerTask),
+    Shutdown,
+}
+
+/// Process-local leases whose backend is used exclusively by one joined thread.
+/// No caller, including the transport thread, invokes a backend directly.
 pub struct KeepAwakeService {
-    inner: Mutex<Inner>,
-    clock: Arc<dyn KeepAwakeClock>,
+    sender: Sender<OwnerMessage>,
+    worker: Mutex<Option<JoinHandle<Result<(), KeepAwakeError>>>>,
     supported: bool,
 }
 
@@ -261,12 +394,48 @@ impl KeepAwakeService {
         backend: Box<dyn AwakeBackend>,
         supported: bool,
     ) -> Self {
-        Self {
-            inner: Mutex::new(Inner {
+        Self::new_with_audit(
+            clock,
+            backend,
+            supported,
+            Box::new(RecordingKeepAwakeAudit::default()),
+        )
+    }
+
+    /// Injects a backend and journal; production uses the fixed durable Status store.
+    #[must_use]
+    pub fn new_with_audit(
+        clock: Arc<dyn KeepAwakeClock>,
+        backend: Box<dyn AwakeBackend>,
+        supported: bool,
+        audit: Box<dyn KeepAwakeAudit>,
+    ) -> Self {
+        let (sender, receiver) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            let mut inner = Inner {
                 leases: Vec::new(),
                 backend,
-            }),
-            clock,
+                clock,
+                service_id: new_token(),
+                generations: BTreeMap::new(),
+                audit,
+            };
+            loop {
+                match receiver.recv_timeout(Duration::from_millis(20)) {
+                    Ok(OwnerMessage::Task(task)) => {
+                        task(&mut inner);
+                        inner.refresh();
+                    }
+                    Ok(OwnerMessage::Shutdown) | Err(RecvTimeoutError::Disconnected) => {
+                        return inner.close();
+                    }
+                    Err(RecvTimeoutError::Timeout) => inner.refresh(),
+                }
+            }
+        });
+        Self {
+            sender,
+            worker: Mutex::new(Some(worker)),
             supported,
         }
     }
@@ -276,15 +445,21 @@ impl KeepAwakeService {
     pub fn production() -> Self {
         #[cfg(windows)]
         {
-            Self::new(
+            Self::new_with_audit(
                 Arc::new(SystemClock),
                 Box::new(ExecutionStateBackend::default()),
                 true,
+                Box::new(FileKeepAwakeAudit::production()),
             )
         }
         #[cfg(not(windows))]
         {
-            Self::new(Arc::new(SystemClock), Box::new(NoopBackend), false)
+            Self::new_with_audit(
+                Arc::new(SystemClock),
+                Box::new(NoopBackend),
+                false,
+                Box::new(FileKeepAwakeAudit::production()),
+            )
         }
     }
 
@@ -295,7 +470,7 @@ impl KeepAwakeService {
 
     #[must_use]
     pub fn stored_lease_count(&self) -> usize {
-        self.inner.lock().expect("keep-awake lock").leases.len()
+        self.request(|inner| Ok(inner.leases.len())).unwrap_or(0)
     }
 
     pub fn run(
@@ -312,58 +487,202 @@ impl KeepAwakeService {
         if !confirm {
             return Err(KeepAwakeError::ConfirmRequired);
         }
+        let plan = self.plan_start(owner, duration)?;
+        let preview = self.preview(&plan)?;
+        self.execute_start(&plan, &preview.digest, confirm)
+    }
+
+    pub fn plan_start(
+        &self,
+        owner: &str,
+        duration: Duration,
+    ) -> Result<KeepAwakePlan, KeepAwakeError> {
+        self.validate_request(owner, duration)?;
+        let owner = owner.to_string();
+        self.request(move |inner| {
+            inner.refresh();
+            Ok(KeepAwakePlan {
+                service_id: inner.service_id.clone(),
+                generation: inner.generation(&owner),
+                action: KeepAwakeAction::Start,
+                owner,
+                duration,
+                token: None,
+            })
+        })
+    }
+
+    pub(crate) fn plan_existing(
+        &self,
+        token: &str,
+        owner: &str,
+        action: KeepAwakeAction,
+        duration: Option<Duration>,
+    ) -> Result<KeepAwakePlan, KeepAwakeError> {
+        if let Some(duration) = duration {
+            self.validate_request(owner, duration)?;
+        }
+        let token = token.to_string();
+        let owner = owner.to_string();
+        self.request(move |inner| {
+            inner.refresh();
+            let lease = find_lease(&inner.leases, &token, &owner)?;
+            if action == KeepAwakeAction::Start
+                && let Some(error) = &lease.error
+            {
+                return Err(error.clone());
+            }
+            if (action == KeepAwakeAction::Start
+                && !matches!(
+                    lease.state,
+                    LeaseState::Stopped | LeaseState::Expired | LeaseState::Canceled
+                ))
+                || (action == KeepAwakeAction::Stop && lease.state != LeaseState::Active)
+            {
+                return Err(KeepAwakeError::InvalidRequest);
+            }
+            Ok(KeepAwakePlan {
+                service_id: inner.service_id.clone(),
+                generation: inner.generation(&owner),
+                action,
+                owner,
+                duration: duration.unwrap_or(lease.duration),
+                token: Some(token),
+            })
+        })
+    }
+
+    pub fn preview(&self, plan: &KeepAwakePlan) -> Result<KeepAwakePreviewV1, KeepAwakeError> {
+        let plan = plan.clone();
+        self.request(move |inner| inner.preview(&plan))
+    }
+
+    pub(crate) fn execute_start(
+        &self,
+        plan: &KeepAwakePlan,
+        expected_digest: &str,
+        confirmed: bool,
+    ) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
+        if !confirmed {
+            return Err(KeepAwakeError::ConfirmRequired);
+        }
+        let plan = plan.clone();
+        let expected_digest = expected_digest.to_string();
+        self.request(move |inner| {
+            let preview = inner.preview(&plan)?;
+            if plan.action != KeepAwakeAction::Start || preview.digest != expected_digest {
+                return Err(KeepAwakeError::StaleConfirmation);
+            }
+            inner.start(&plan, &preview.digest)
+        })
+    }
+
+    pub(crate) fn execute_stop(
+        &self,
+        plan: &KeepAwakePlan,
+        expected_digest: &str,
+        confirmed: bool,
+    ) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
+        if !confirmed {
+            return Err(KeepAwakeError::ConfirmRequired);
+        }
+        let plan = plan.clone();
+        let expected_digest = expected_digest.to_string();
+        self.request(move |inner| {
+            let preview = inner.preview(&plan)?;
+            if plan.action != KeepAwakeAction::Stop || preview.digest != expected_digest {
+                return Err(KeepAwakeError::StaleConfirmation);
+            }
+            inner.finish(
+                plan.token
+                    .as_deref()
+                    .ok_or(KeepAwakeError::InvalidRequest)?,
+                &plan.owner,
+                LeaseState::Stopped,
+                Some(&preview.digest),
+            )
+        })
+    }
+
+    fn validate_request(&self, owner: &str, duration: Duration) -> Result<(), KeepAwakeError> {
+        if !self.supported {
+            return Err(KeepAwakeError::CapabilityGap {
+                reason: "platform_unsupported",
+            });
+        }
         let duration_ms = u64::try_from(duration.as_millis()).unwrap_or(u64::MAX);
-        if duration_ms == 0 || duration_ms > MAX_KEEP_AWAKE_MS {
+        if duration_ms == 0
+            || duration > Duration::from_millis(MAX_KEEP_AWAKE_MS)
+            || !duration.as_nanos().is_multiple_of(1_000_000)
+        {
             return Err(KeepAwakeError::DurationNotFinite);
         }
         if !valid_owner(owner) {
             return Err(KeepAwakeError::InvalidOwner);
         }
-        let token = new_token();
-        let started = self.clock.now();
-        let mut inner = self.inner.lock().expect("keep-awake lock");
-        inner.backend.acquire(&token);
-        inner.leases.push(Lease {
-            token: token.clone(),
-            owner: owner.to_string(),
-            duration,
-            started,
-            state: LeaseState::Active,
-        });
-        drop(inner);
-        self.status(&token, owner)
+        Ok(())
     }
 
     pub fn status(&self, token: &str, owner: &str) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
-        self.refresh();
-        let inner = self.inner.lock().expect("keep-awake lock");
-        let lease = find_lease(&inner.leases, token, owner)?;
-        Ok(view(lease, self.clock.now()))
+        let token = token.to_string();
+        let owner = owner.to_string();
+        self.request(move |inner| {
+            inner.refresh();
+            let lease = find_lease(&inner.leases, &token, &owner)?;
+            if let Some(error) = &lease.error {
+                return Err(error.clone());
+            }
+            Ok(view(lease, inner.clock.now()))
+        })
     }
 
     pub fn stop(&self, token: &str, owner: &str) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
-        self.finish(token, owner, LeaseState::Stopped)
+        // Existing explicit tuple protocol is the CLI confirmation surface.
+        // Repeated STOP stays idempotent; fresh active STOP uses the shared chain.
+        match self.status(token, owner) {
+            Ok(status) if status.state != "active" => return Ok(status),
+            Ok(_)
+            | Err(KeepAwakeError::BackendFailed { .. } | KeepAwakeError::AuditFailed { .. }) => {}
+            Err(error) => return Err(error),
+        }
+        let plan = self.plan_existing(token, owner, KeepAwakeAction::Stop, None)?;
+        let preview = self.preview(&plan)?;
+        self.execute_stop(&plan, &preview.digest, true)
     }
 
     pub fn cancel(&self, token: &str, owner: &str) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
         self.finish(token, owner, LeaseState::Canceled)
     }
 
-    /// Release every active lease for `owner` and leave every other owner in place.
-    pub fn owner_exit(&self, owner: &str) -> Vec<String> {
-        self.refresh();
-        let mut inner = self.inner.lock().expect("keep-awake lock");
-        let mut released = Vec::new();
-        for lease in inner.leases.iter_mut().filter(|lease| lease.owner == owner) {
-            if lease.state == LeaseState::Active {
-                lease.state = LeaseState::OwnerExited;
-                released.push(lease.token.clone());
+    /// Releases only this owner's leases. A failed clear remains nonterminal.
+    pub fn owner_exit(&self, owner: &str) -> Result<Vec<String>, KeepAwakeError> {
+        let owner = owner.to_string();
+        self.request(move |inner| {
+            let tokens = inner
+                .leases
+                .iter()
+                .filter(|lease| lease.owner == owner && lease.state == LeaseState::Active)
+                .map(|lease| lease.token.clone())
+                .collect::<Vec<_>>();
+            let mut first_error = None;
+            for token in &tokens {
+                if let Err(error) = inner.finish(token, &owner, LeaseState::OwnerExited, None) {
+                    first_error.get_or_insert(error);
+                }
             }
-        }
-        for token in &released {
-            inner.backend.release(token);
-        }
-        released
+            first_error.map_or(Ok(tokens), Err)
+        })
+    }
+
+    /// Clears remaining requests on their owner thread and joins it, even on failure.
+    pub fn shutdown(&self) -> Result<(), KeepAwakeError> {
+        let Some(worker) = self.worker.lock().expect("keep-awake worker lock").take() else {
+            return Ok(());
+        };
+        let _ = self.sender.send(OwnerMessage::Shutdown);
+        worker
+            .join()
+            .map_err(|_| KeepAwakeError::WorkerUnavailable)?
     }
 
     fn finish(
@@ -372,41 +691,311 @@ impl KeepAwakeService {
         owner: &str,
         next: LeaseState,
     ) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
-        self.refresh();
-        let now = self.clock.now();
-        let mut inner = self.inner.lock().expect("keep-awake lock");
-        let current = find_lease(&inner.leases, token, owner)?.state;
-        if current != LeaseState::Active {
-            let lease = find_lease(&inner.leases, token, owner)?;
-            return Ok(view(lease, now));
-        }
-        let status = {
-            let lease = find_lease_mut(&mut inner.leases, token, owner)?;
-            lease.state = next;
-            view(lease, now)
-        };
-        inner.backend.release(token);
-        Ok(status)
+        let token = token.to_string();
+        let owner = owner.to_string();
+        self.request(move |inner| inner.finish(&token, &owner, next, None))
     }
 
-    fn refresh(&self) {
+    fn request<T: Send + 'static>(
+        &self,
+        action: impl FnOnce(&mut Inner) -> Result<T, KeepAwakeError> + Send + 'static,
+    ) -> Result<T, KeepAwakeError> {
+        let (sender, receiver) = mpsc::sync_channel(0);
+        self.sender
+            .send(OwnerMessage::Task(Box::new(move |inner| {
+                let _ = sender.send(action(inner));
+            })))
+            .map_err(|_| KeepAwakeError::WorkerUnavailable)?;
+        receiver
+            .recv()
+            .map_err(|_| KeepAwakeError::WorkerUnavailable)?
+    }
+}
+
+impl Drop for KeepAwakeService {
+    fn drop(&mut self) {
+        if let Err(error) = self.shutdown() {
+            tracing::error!(%error, "keep-awake owner shutdown failed; release is unconfirmed");
+        }
+    }
+}
+
+impl Inner {
+    fn generation(&self, owner: &str) -> u64 {
+        self.generations.get(owner).copied().unwrap_or(0)
+    }
+
+    fn advance(&mut self, owner: &str) {
+        *self.generations.entry(owner.to_string()).or_default() += 1;
+    }
+
+    fn preview(&mut self, plan: &KeepAwakePlan) -> Result<KeepAwakePreviewV1, KeepAwakeError> {
+        self.refresh();
+        if plan.service_id != self.service_id || plan.generation != self.generation(&plan.owner) {
+            return Err(KeepAwakeError::StaleConfirmation);
+        }
+        let current_state = if let Some(token) = &plan.token {
+            let lease = find_lease(&self.leases, token, &plan.owner)?;
+            if plan.action == KeepAwakeAction::Start
+                && !matches!(
+                    lease.state,
+                    LeaseState::Stopped | LeaseState::Expired | LeaseState::Canceled
+                )
+            {
+                return Err(KeepAwakeError::StaleConfirmation);
+            }
+            if plan.action == KeepAwakeAction::Stop && lease.state != LeaseState::Active {
+                return Err(KeepAwakeError::StaleConfirmation);
+            }
+            lease.state.as_str()
+        } else {
+            "idle"
+        };
+        let duration_ms = u64::try_from(plan.duration.as_millis()).unwrap_or(u64::MAX);
+        let preimage = serde_json::to_vec(&(
+            "devsweep.keep-awake.v1",
+            &plan.service_id,
+            plan.generation,
+            plan.action,
+            &plan.owner,
+            duration_ms,
+            &plan.token,
+            current_state,
+        ))
+        .map_err(|_| KeepAwakeError::InvalidRequest)?;
+        let digest = format!(
+            "sha256:{}",
+            crate::digest_encoding::hex_digest(Sha256::digest(preimage))
+        );
+        Ok(KeepAwakePreviewV1 {
+            action: plan.action,
+            owner: plan.owner.clone(),
+            duration_ms,
+            current_state: current_state.into(),
+            digest,
+        })
+    }
+
+    fn record(
+        &mut self,
+        operation_id: &str,
+        action: KeepAwakeAuditAction,
+        status_code: StatusActionAuditCode,
+        duration: Duration,
+        digest: Option<&str>,
+    ) -> Result<(), KeepAwakeError> {
+        self.audit.append(StatusActionAuditRecordV1 {
+            schema_version: 1,
+            domain: "status".into(),
+            operation_id: operation_id.into(),
+            timestamp_unix_ms: unix_now_ms(),
+            action,
+            status_code,
+            duration_ms: u64::try_from(duration.as_millis()).unwrap_or(u64::MAX),
+            preview_digest: digest.map(str::to_string),
+            process: None,
+        })
+    }
+
+    fn start(
+        &mut self,
+        plan: &KeepAwakePlan,
+        digest: &str,
+    ) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
+        let operation_id = new_operation_id();
+        self.record(
+            &operation_id,
+            KeepAwakeAuditAction::Start,
+            StatusActionAuditCode::DispatchStarted,
+            plan.duration,
+            Some(digest),
+        )?;
+        let token = plan.token.clone().unwrap_or_else(new_token);
+        let acquired = self.backend.acquire(&token);
+        self.advance(&plan.owner);
+        if let Err(error) = acquired {
+            self.record(
+                &operation_id,
+                KeepAwakeAuditAction::Start,
+                StatusActionAuditCode::BackendFailed,
+                plan.duration,
+                Some(digest),
+            )
+            .map_err(|audit| after_dispatch_with_backend(audit, Some(&error)))?;
+            return Err(error);
+        }
+        let lease = Lease {
+            token: token.clone(),
+            owner: plan.owner.clone(),
+            duration: plan.duration,
+            started: self.clock.now(),
+            state: LeaseState::Active,
+            error: None,
+            expiry_attempted: false,
+        };
+        if let Some(current) = self
+            .leases
+            .iter_mut()
+            .find(|current| current.token == token)
+        {
+            *current = lease;
+        } else {
+            self.leases.push(lease);
+        }
+        let terminal = self
+            .record(
+                &operation_id,
+                KeepAwakeAuditAction::Start,
+                StatusActionAuditCode::Succeeded,
+                plan.duration,
+                Some(digest),
+            )
+            .map_err(after_dispatch);
+        if let Err(error) = terminal {
+            find_lease_mut(&mut self.leases, &token, &plan.owner)?.error = Some(error.clone());
+            return Err(error);
+        }
+        Ok(view(
+            find_lease(&self.leases, &token, &plan.owner)?,
+            self.clock.now(),
+        ))
+    }
+
+    fn finish(
+        &mut self,
+        token: &str,
+        owner: &str,
+        next: LeaseState,
+        digest: Option<&str>,
+    ) -> Result<KeepAwakeStatusV1, KeepAwakeError> {
+        let lease = find_lease(&self.leases, token, owner)?;
+        if lease.state != LeaseState::Active {
+            if let Some(error) = &lease.error {
+                return Err(error.clone());
+            }
+            return Ok(view(lease, self.clock.now()));
+        }
+        let duration = lease.duration;
+        let action = match next {
+            LeaseState::Stopped => KeepAwakeAuditAction::Stop,
+            LeaseState::Expired => KeepAwakeAuditAction::Expiry,
+            LeaseState::Canceled => KeepAwakeAuditAction::Cancel,
+            _ => KeepAwakeAuditAction::OwnerExit,
+        };
+        let operation_id = new_operation_id();
+        let started = self.record(
+            &operation_id,
+            action,
+            StatusActionAuditCode::DispatchStarted,
+            duration,
+            digest,
+        );
+        // Explicit actions require a durable started record. Safety cleanup on
+        // expiry/exit/cancellation still clears even if the audit became unavailable.
+        if next == LeaseState::Stopped {
+            started.clone()?;
+        }
+        let released = self.backend.release(token);
+        self.advance(owner);
+        let outcome = if released.is_ok() {
+            StatusActionAuditCode::Succeeded
+        } else {
+            StatusActionAuditCode::BackendFailed
+        };
+        let audited = if started.is_ok() {
+            self.record(&operation_id, action, outcome, duration, digest)
+        } else {
+            started
+        };
+        let backend_error = released.err();
+        let error = audited
+            .err()
+            .map(|audit| after_dispatch_with_backend(audit, backend_error.as_ref()))
+            .or(backend_error);
+        let lease = find_lease_mut(&mut self.leases, token, owner)?;
+        if outcome == StatusActionAuditCode::Succeeded {
+            lease.state = next;
+        }
+        lease.error = error.clone();
+        if let Some(error) = error {
+            return Err(error);
+        }
+        Ok(view(lease, self.clock.now()))
+    }
+
+    fn refresh(&mut self) {
         let now = self.clock.now();
-        let mut inner = self.inner.lock().expect("keep-awake lock");
-        let expired = inner
+        let expired = self
             .leases
             .iter()
             .filter(|lease| {
-                lease.state == LeaseState::Active && now >= lease.started + lease.duration
+                lease.state == LeaseState::Active
+                    && !lease.expiry_attempted
+                    && now >= lease.started + lease.duration
             })
-            .map(|lease| lease.token.clone())
+            .map(|lease| (lease.token.clone(), lease.owner.clone()))
             .collect::<Vec<_>>();
-        for token in &expired {
-            if let Some(lease) = inner.leases.iter_mut().find(|lease| lease.token == *token) {
-                lease.state = LeaseState::Expired;
+        for (token, owner) in expired {
+            // A failed clear is retained for explicit retry/shutdown; no false off
+            // result and no unbounded background retry/audit loop.
+            if let Ok(lease) = find_lease_mut(&mut self.leases, &token, &owner) {
+                lease.expiry_attempted = true;
             }
-            inner.backend.release(token);
+            let _ = self.finish(&token, &owner, LeaseState::Expired, None);
         }
     }
+
+    fn close(&mut self) -> Result<(), KeepAwakeError> {
+        let active = self
+            .leases
+            .iter()
+            .filter(|lease| lease.state == LeaseState::Active)
+            .map(|lease| (lease.token.clone(), lease.owner.clone()))
+            .collect::<Vec<_>>();
+        let mut first_error = None;
+        for (token, owner) in active {
+            if let Err(error) = self.finish(&token, &owner, LeaseState::OwnerExited, None) {
+                first_error.get_or_insert(error);
+            }
+        }
+        if first_error.is_none() {
+            first_error = self.leases.iter().find_map(|lease| lease.error.clone());
+        }
+        first_error.map_or(Ok(()), Err)
+    }
+}
+
+fn unix_now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|value| value.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+fn new_operation_id() -> String {
+    format!("status-{}-{}", std::process::id(), new_token())
+}
+
+fn after_dispatch(error: KeepAwakeError) -> KeepAwakeError {
+    match error {
+        KeepAwakeError::AuditFailed { message, .. } => KeepAwakeError::AuditFailed {
+            after_dispatch: true,
+            message,
+        },
+        other => other,
+    }
+}
+
+fn after_dispatch_with_backend(
+    audit: KeepAwakeError,
+    backend: Option<&KeepAwakeError>,
+) -> KeepAwakeError {
+    let mut error = after_dispatch(audit);
+    if let (KeepAwakeError::AuditFailed { message, .. }, Some(backend)) = (&mut error, backend) {
+        message.push_str("; ");
+        message.push_str(&backend.to_string());
+    }
+    error
 }
 
 /// Drops by releasing only this owner's active tokens.
@@ -427,7 +1016,9 @@ impl KeepAwakeOwner {
 
 impl Drop for KeepAwakeOwner {
     fn drop(&mut self) {
-        let _ = self.service.owner_exit(&self.owner);
+        if let Err(error) = self.service.owner_exit(&self.owner) {
+            tracing::error!(%error, "keep-awake owner release failed; release is unconfirmed");
+        }
     }
 }
 
