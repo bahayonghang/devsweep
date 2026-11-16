@@ -7,9 +7,9 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-1.md`
-- **Total Sessions**: 66
-- **Last Active**: 2026-11-15
+- **Active File**: `journal-2.md`
+- **Total Sessions**: 71
+- **Last Active**: 2026-11-16
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,8 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1970 | Active |
+| `journal-2.md` | ~201 | Active |
+| `journal-1.md` | ~1970 | Archived |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +30,11 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 71 | 2026-11-16 | 分批提交 Clean 与 Host Actions 阶段成果并交接后续评审 | `9991d81`, `755a296`, `2c5b879`, `f92367f`, `3f68b6d` | `dev` |
+| 70 | 2026-11-16 | Host Actions 步骤 9 实施检查完成，停在步骤 10 前 | - | `dev` |
+| 69 | 2026-11-15 | Host Actions 步骤 3–8 实施与检查完成，等待步骤 9 评审 | - | `dev` |
+| 68 | 2026-11-15 | 启动 Host Actions 并完成 MSI 调研，等待步骤2评审 | - | `dev` |
+| 67 | 2026-11-15 | GPUI Clean 审阅实现与门禁完成，原生验收延后 | - | `dev` |
 | 66 | 2026-11-15 | Software evidence authorized local commits | `e8336dc` | `dev` |
 | 65 | 2026-11-15 | Software evidence core CLI and GPUI completion | - | `dev` |
 | 64 | 2026-11-06 | GPUI 易用性优化实施与归档 | `4fc8a64` | `dev` |
