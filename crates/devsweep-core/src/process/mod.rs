@@ -321,56 +321,15 @@ fn cleanup_neutral_dir(dir: Option<&PathBuf>) {
 /// Shared test helpers for locating the process_fixture binary.
 #[cfg(test)]
 pub(crate) mod test_support {
-    use std::{env, ffi::OsString, path::PathBuf, process::Command, sync::Once};
-
-    static ENSURE_FIXTURE: Once = Once::new();
+    use std::{path::PathBuf, sync::OnceLock};
 
     pub(crate) fn process_fixture_exe() -> PathBuf {
-        ENSURE_FIXTURE.call_once(|| {
-            let path = fixture_path();
-            if path.is_file() {
-                return;
-            }
-            let target_dir = path
-                .parent()
-                .and_then(|profile_dir| profile_dir.parent())
-                .expect("process fixture path must be under <target>/<profile>");
-            let cargo = env::var_os("CARGO").unwrap_or_else(|| OsString::from("cargo"));
-            let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-            let status = Command::new(cargo)
-                .arg("build")
-                .args(["-p", "devsweep-cli"])
-                .arg("--bin")
-                .arg("process_fixture")
-                .arg("--target-dir")
-                .arg(target_dir)
-                .arg("--quiet")
-                .current_dir(workspace_root)
-                .status()
-                .expect("spawn cargo build -p devsweep-cli --bin process_fixture");
-            assert!(
-                status.success(),
-                "cargo build -p devsweep-cli --bin process_fixture failed with {status}"
-            );
-        });
-        let path = fixture_path();
-        assert!(
-            path.is_file(),
-            "process_fixture binary missing at {}",
-            path.display()
-        );
-        path
-    }
-
-    fn fixture_path() -> PathBuf {
-        let mut path = env::current_exe().expect("current test executable");
-        // target/debug/deps/<test> -> target/debug/process_fixture.exe
-        path.pop();
-        if path.file_name().and_then(|name| name.to_str()) == Some("deps") {
-            path.pop();
-        }
-        path.push(format!("process_fixture{}", env::consts::EXE_SUFFIX));
-        path
+        static FIXTURE: OnceLock<PathBuf> = OnceLock::new();
+        FIXTURE
+            .get_or_init(|| {
+                crate::test_support::build_test_binary("devsweep-cli", "process_fixture")
+            })
+            .clone()
     }
 }
 
