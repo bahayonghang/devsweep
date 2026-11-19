@@ -171,7 +171,7 @@ impl ShellView {
                     .gap(ui::SPACE_1)
                     .w(rems(20.0))
                     .max_w_full()
-                    .child(ui::icon("search", t.text_muted))
+                    .child(ui::icon("search", t.muted))
                     .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
@@ -345,8 +345,8 @@ impl ShellView {
                             .justify_center()
                             .size(rems(2.0))
                             .rounded(ui::RADIUS_ITEM)
-                            .bg(t.tint(t.accent, 0x22))
-                            .text_color(rgb(t.accent))
+                            .bg(t.tint(t.input, 0x22))
+                            .text_color(rgb(t.input))
                             .font_weight(FontWeight::SEMIBOLD)
                             .child(initial),
                     )
@@ -380,7 +380,7 @@ impl ShellView {
                                 .child(
                                     div()
                                         .text_size(ui::TYPE_META)
-                                        .text_color(rgb(t.text_muted))
+                                        .text_color(rgb(t.muted))
                                         .child(note),
                                 ),
                         )
@@ -503,7 +503,7 @@ impl ShellView {
                 .children(lines.iter().map(|line| {
                     div()
                         .text_size(ui::TYPE_BODY)
-                        .text_color(rgb(t.text_muted))
+                        .text_color(rgb(t.muted))
                         .child(line.clone())
                 })),
         ))
@@ -642,7 +642,7 @@ impl ShellView {
                             .flex_row()
                             .items_center()
                             .gap(ui::SPACE_2)
-                            .child(ui::icon_tile(t, icon, t.accent))
+                            .child(ui::icon_tile(t, icon, t.input))
                             .child(
                                 div()
                                     .flex()

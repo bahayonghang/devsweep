@@ -182,6 +182,12 @@ dev:
 gpui-dev:
     cd desktop-gpui; cargo run --locked -p devsweep-gpui-spike
 
+# The airy-glass recipes on the pinned GPUI, in one window with no product
+# code. Arguments go to the gallery, for example `just gpui-gallery --dark`.
+# Open the material gallery
+gpui-gallery *args:
+    cd desktop-gpui; cargo run --locked --example material_gallery -- {{ args }}
+
 docs:
     npm run docs:dev
 

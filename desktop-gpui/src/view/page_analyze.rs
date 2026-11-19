@@ -76,7 +76,7 @@ impl ShellView {
                             .flex_row()
                             .items_center()
                             .gap(ui::SPACE_3)
-                            .child(ui::icon_tile(t, "search", t.accent))
+                            .child(ui::icon_tile(t, "search", t.input))
                             .child(ui::two_line(
                                 t,
                                 copy::pick(locale, "Mapping folder…", "正在分析文件夹…"),
@@ -132,8 +132,8 @@ impl ShellView {
                 .normalized
                 .clone()
                 .unwrap_or_else(|| choice.input.clone());
-            let hover = t.accent;
-            let hover_fill = t.surface_alt;
+            let hover = t.input;
+            let hover_fill = t.control_fill.color();
             let high_contrast = t.high_contrast;
             div()
                 .id(ElementId::Name(SharedString::from(format!(
@@ -154,18 +154,15 @@ impl ShellView {
                 .rounded(ui::RADIUS_WELL)
                 // A filled well; fill carries the boundary. High contrast
                 // keeps the 1px border.
-                .bg(rgb(t.surface))
-                .when(t.high_contrast, |c| {
-                    c.border_1()
-                        .border_color(rgb(if ready { t.border_strong } else { t.border }))
-                })
+                .bg(t.well.color())
+                .when(t.high_contrast, |c| c.border_1().border_color(rgb(t.ink)))
                 .when(ready, |c| {
                     c.cursor_pointer()
                         .hover(move |s| {
                             if high_contrast {
                                 s.border_color(rgb(hover))
                             } else {
-                                s.bg(rgb(hover_fill))
+                                s.bg(hover_fill)
                             }
                         })
                         .keyboard_focus(t)
@@ -180,7 +177,7 @@ impl ShellView {
                 .child(ui::icon_tile(
                     t,
                     "drive",
-                    if ready { t.accent } else { t.text_muted },
+                    if ready { t.input } else { t.muted },
                 ))
                 .child(ui::two_line(
                     t,
@@ -191,7 +188,7 @@ impl ShellView {
                         choice.error.clone().unwrap_or_default()
                     },
                 ))
-                .when(ready, |c| c.child(ui::icon("chevron-right", t.text_muted)))
+                .when(ready, |c| c.child(ui::icon("chevron-right", t.muted)))
         });
         div()
             .flex()
@@ -253,7 +250,7 @@ impl ShellView {
             .h(px(TREEMAP_H))
             .rounded(ui::RADIUS_ITEM)
             .overflow_hidden()
-            .bg(rgb(t.surface_alt));
+            .bg(t.control_fill.color());
         // Tile labels are rem sized, so their fit thresholds follow the text
         // scale while the map geometry stays in pixels.
         let text_scale = f32::from(self.session.text_scale()) / 100.0;
@@ -288,9 +285,9 @@ impl ShellView {
                 .px(ui::SPACE_1)
                 .bg(t.tint(hue, if is_selected { 0x30 } else { 0x18 }))
                 .border_1()
-                .border_color(if is_selected { rgb(t.text) } else { rgb(hue) })
+                .border_color(if is_selected { rgb(t.ink) } else { rgb(hue) })
                 .cursor_pointer()
-                .hover(|s| s.border_color(rgb(t.text)))
+                .hover(|s| s.border_color(rgb(t.ink)))
                 .on_click(cx.listener(move |this, _, _, cx| {
                     this.session.analyze_select(id);
                     cx.notify();
@@ -301,14 +298,14 @@ impl ShellView {
                         .truncate()
                         .text_size(ui::TYPE_META)
                         .font_weight(FontWeight::MEDIUM)
-                        .text_color(rgb(t.text))
+                        .text_color(rgb(t.ink))
                         .child(SharedString::from(child.name.clone())),
                 );
                 if h >= 38.0 * text_scale {
                     tile = tile.child(
                         div()
                             .text_size(ui::TYPE_META)
-                            .text_color(rgb(t.text))
+                            .text_color(rgb(t.ink))
                             .child(SharedString::from(ui::bytes(child.bytes))),
                     );
                 }
@@ -377,10 +374,7 @@ impl ShellView {
                     }
                     cx.notify();
                 }))
-                .child(ui::icon(
-                    icon,
-                    if drillable { t.accent } else { t.text_muted },
-                ))
+                .child(ui::icon(icon, if drillable { t.input } else { t.muted }))
                 .child(
                     div()
                         .flex()
@@ -413,10 +407,10 @@ impl ShellView {
                                         .child(SharedString::from(ui::bytes(child.bytes))),
                                 ),
                         )
-                        .child(ui::meter(t, share, t.accent)),
+                        .child(ui::meter(t, share, t.input)),
                 )
                 .when(drillable, |row| {
-                    row.child(ui::icon("chevron-right", t.text_muted))
+                    row.child(ui::icon("chevron-right", t.muted))
                 }),
             );
         }

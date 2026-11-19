@@ -10,8 +10,14 @@
 use std::{collections::BTreeSet, collections::HashMap, path::Path, path::PathBuf, sync::Arc};
 
 use devsweep_core::{
-    execution::{ConfirmationDigest, ExecutionError, ExecutionReport, ExecutionRequest, Executor},
-    model::{CleanupIntent, ScanReport, Scope, TargetId, UntrustedPlan, UntrustedTarget},
+    execution::{
+        ActionKind, CapacityEstimate, ConfirmationDigest, ExecutionError, ExecutionReport,
+        ExecutionRequest, Executor, OutcomeStatus, TargetOutcome,
+    },
+    model::{
+        CleanupIntent, Ecosystem, ScanPreviewSnapshot, ScanReport, Scope, TargetId, TargetKind,
+        UntrustedPlan, UntrustedTarget,
+    },
     plan::validate_plan,
     process::{CancelObserver as _, FlagCancelObserver},
     scan::{ScanOptions, ScanReportRunOutcome, Sweeper},
@@ -62,6 +68,29 @@ pub enum CleanScope {
     Project,
     /// Real global provider caches. Requires an explicit confirmation.
     Global,
+    /// Explicit projects plus globals only after a fresh confirmation.
+    All,
+}
+
+/// Requested scope and one-shot global consent stay separate. Desktop roots
+/// must always be explicit; All without consent is only a project scan.
+pub fn clean_scan_options(
+    scope: CleanScope,
+    confirmed_global: bool,
+    roots: Vec<PathBuf>,
+) -> Option<ScanOptions> {
+    let projects = scope != CleanScope::Global;
+    if projects && roots.is_empty() {
+        return None;
+    }
+    if scope == CleanScope::Global && !confirmed_global {
+        return None;
+    }
+    Some(ScanOptions {
+        include_projects: projects,
+        include_global: scope != CleanScope::Project && confirmed_global,
+        roots: if projects { roots } else { Vec::new() },
+    })
 }
 
 impl CleanScope {
@@ -69,6 +98,7 @@ impl CleanScope {
         match self {
             Self::Project => "project",
             Self::Global => "global",
+            Self::All => "all",
         }
     }
 }
@@ -135,6 +165,10 @@ pub struct CleanRow {
     pub size_complete: bool,
     /// True when the target has no cleanup authority.
     pub inspect_only: bool,
+    /// Typed scan metadata; neither a rule name nor a path grants trash authority.
+    pub ecosystem: Ecosystem,
+    pub kind: TargetKind,
+    pub recycle_eligible: bool,
     /// Conservative scanner recommendation for initial selection.
     pub selected_by_default: bool,
 }
@@ -142,7 +176,7 @@ pub struct CleanRow {
 impl CleanRow {
     /// Returns whether the row can enter a cleanup selection.
     pub fn selectable(&self) -> bool {
-        !self.inspect_only
+        self.recycle_eligible && !self.inspect_only
     }
 
     /// Returns the confidence label for the size estimate.
@@ -174,6 +208,9 @@ pub fn clean_row_from_untrusted(target: &UntrustedTarget, plan_index: usize) -> 
         bytes: target.estimated_bytes,
         size_complete: target.size_complete,
         inspect_only: matches!(target.intent, CleanupIntent::InspectOnly { .. }),
+        ecosystem: target.ecosystem.clone(),
+        kind: target.kind.clone(),
+        recycle_eligible: matches!(target.intent, CleanupIntent::TrashProjectArtifact { .. }),
         selected_by_default: target.selected_by_default,
     }
 }
@@ -181,6 +218,165 @@ pub fn clean_row_from_untrusted(target: &UntrustedTarget, plan_index: usize) -> 
 /// Provider/group tag for a rule id. The namespace prefix is the provider.
 pub fn provider_of(rule_id: &str) -> &str {
     rule_id.split('.').next().unwrap_or(rule_id)
+}
+
+/// Observed capacity, never a measurement of physical free space.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct CleanCapacity {
+    pub bytes: u64,
+    pub incomplete: usize,
+}
+
+impl CleanCapacity {
+    fn add(&mut self, bytes: u64, complete: bool) {
+        self.bytes = self.bytes.saturating_add(bytes);
+        self.incomplete += usize::from(!complete);
+    }
+
+    pub fn label(self, locale: Locale) -> String {
+        copy::clean_capacity(locale, self.bytes, self.incomplete > 0)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GroupSelection {
+    None,
+    Mixed,
+    All,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CleanGroup {
+    pub id: String,
+    pub ecosystem: Ecosystem,
+    pub kind: TargetKind,
+    pub review_only: bool,
+    pub ids: Vec<String>,
+    pub selectable_ids: Vec<String>,
+    pub capacity: CleanCapacity,
+    pub recommended: CleanCapacity,
+    pub selection: GroupSelection,
+    pub selected_count: usize,
+}
+
+impl CleanGroup {
+    pub fn title(&self, locale: Locale) -> String {
+        copy::clean_group_title(locale, &self.ecosystem, &self.kind, self.review_only)
+    }
+}
+
+fn row_group_id(row: &CleanRow) -> String {
+    if !row.selectable() {
+        "review-only".to_string()
+    } else {
+        format!("{:?}-{:?}", row.ecosystem, row.kind).to_ascii_lowercase()
+    }
+}
+
+/// Pure whole-report projection. Filtering and paging never change group authority.
+pub fn project_clean_groups(
+    rows: &[CleanRow],
+    selected: &BTreeSet<String>,
+    blocked: &BTreeSet<String>,
+) -> Vec<CleanGroup> {
+    let mut groups: Vec<CleanGroup> = Vec::new();
+    let mut index = HashMap::new();
+    for row in rows {
+        let id = row_group_id(row);
+        let position = *index.entry(id.clone()).or_insert_with(|| {
+            groups.push(CleanGroup {
+                id,
+                ecosystem: row.ecosystem.clone(),
+                kind: row.kind.clone(),
+                review_only: !row.selectable(),
+                ids: Vec::new(),
+                selectable_ids: Vec::new(),
+                capacity: CleanCapacity::default(),
+                recommended: CleanCapacity::default(),
+                selection: GroupSelection::None,
+                selected_count: 0,
+            });
+            groups.len() - 1
+        });
+        let group = &mut groups[position];
+        group.ids.push(row.id.clone());
+        group.capacity.add(row.bytes, row.size_complete);
+        if row.selectable() && !blocked.contains(&row.id) {
+            group.selectable_ids.push(row.id.clone());
+            if row.selected_by_default {
+                group.recommended.add(row.bytes, row.size_complete);
+            }
+        }
+    }
+    for group in &mut groups {
+        let count = group
+            .selectable_ids
+            .iter()
+            .filter(|id| selected.contains(*id))
+            .count();
+        group.selected_count = count;
+        group.selection = if count == 0 {
+            GroupSelection::None
+        } else if count == group.selectable_ids.len() {
+            GroupSelection::All
+        } else {
+            GroupSelection::Mixed
+        };
+    }
+    groups
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CleanResultGroup {
+    pub group: CleanGroup,
+    pub outcomes: Vec<TargetOutcome>,
+    pub moved: CleanCapacity,
+    pub moved_count: usize,
+    pub failed: usize,
+    pub skipped: usize,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct CleanScanProgress {
+    pub found: usize,
+    pub capacity: CleanCapacity,
+    pub groups: Vec<(Ecosystem, TargetKind, usize, CleanCapacity)>,
+}
+
+impl CleanScanProgress {
+    fn from_snapshot(snapshot: ScanPreviewSnapshot) -> Self {
+        let mut progress = Self {
+            found: snapshot.targets.len(),
+            ..Self::default()
+        };
+        for target in snapshot.targets {
+            progress
+                .capacity
+                .add(target.estimated_bytes, target.size_complete);
+            let position = progress
+                .groups
+                .iter()
+                .position(|(ecosystem, kind, _, _)| {
+                    *ecosystem == target.ecosystem && *kind == target.kind
+                })
+                .unwrap_or_else(|| {
+                    progress.groups.push((
+                        target.ecosystem,
+                        target.kind,
+                        0,
+                        CleanCapacity::default(),
+                    ));
+                    progress.groups.len() - 1
+                });
+            progress.groups[position].2 += 1;
+            progress.groups[position]
+                .3
+                .add(target.estimated_bytes, target.size_complete);
+        }
+        // An in-flight observation is always a lower bound on the requested scan.
+        progress.capacity.incomplete = progress.capacity.incomplete.max(1);
+        progress
+    }
 }
 
 /// One row line. The same text is the visible row and its accessible name.
@@ -207,7 +403,7 @@ pub fn row_text(
     text.push_str(&row.rule_id);
     text.push_str(" · ");
     match &row.path {
-        Some(path) => text.push_str(path),
+        Some(path) => text.push_str(&crate::ui::display_path_text(path)),
         None => text.push_str(copy::clean_row_global(locale)),
     }
     text.push_str(" · ");
@@ -282,6 +478,12 @@ pub struct CleanExecutePayload {
 /// Counts kept for the truthful history entry and result line.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CleanExecutionSummary {
+    pub report: ExecutionReport,
+    pub groups: Vec<CleanResultGroup>,
+    pub moved: CleanCapacity,
+    pub moved_count: usize,
+    pub history_incomplete: bool,
+    outcome_index: HashMap<String, (usize, usize)>,
     /// Number of validated targets selected by the request.
     pub selected: usize,
     /// Number of successful target actions.
@@ -294,6 +496,13 @@ pub struct CleanExecutionSummary {
     pub digest: Option<String>,
     /// Whether cooperative cancellation was requested for this run.
     pub canceled: bool,
+}
+
+impl CleanExecutionSummary {
+    pub fn outcome(&self, id: &str) -> Option<&TargetOutcome> {
+        let (group, index) = self.outcome_index.get(id)?;
+        self.groups.get(*group)?.outcomes.get(*index)
+    }
 }
 
 /// The saved plan snapshot and live digest shown by the confirm surface.
@@ -338,11 +547,17 @@ pub struct CleanWorkbench {
     rows: Vec<CleanRow>,
     row_index: HashMap<String, usize>,
     cached_ids: Vec<String>,
+    groups: Vec<CleanGroup>,
+    group_index: HashMap<String, usize>,
+    reviewing: bool,
+    native_fixture: Option<String>,
+    effective_scope: Option<CleanScope>,
     plan: Option<UntrustedPlan>,
     plan_epoch: u64,
     selected: BTreeSet<String>,
     sort: CleanSort,
     found_so_far: usize,
+    scan_progress: CleanScanProgress,
     preview: Option<CleanPreview>,
     notice: Option<CleanOutcomeNotice>,
     failure_detail: Option<String>,
@@ -365,11 +580,17 @@ impl CleanWorkbench {
             rows: Vec::new(),
             row_index: HashMap::new(),
             cached_ids: Vec::new(),
+            groups: Vec::new(),
+            group_index: HashMap::new(),
+            reviewing: false,
+            native_fixture: None,
+            effective_scope: None,
             plan: None,
             plan_epoch: 0,
             selected: BTreeSet::new(),
             sort: CleanSort::ReportOrder,
             found_so_far: 0,
+            scan_progress: CleanScanProgress::default(),
             preview: None,
             notice: None,
             failure_detail: None,
@@ -416,6 +637,108 @@ impl CleanWorkbench {
 
     pub fn rows(&self) -> &[CleanRow] {
         &self.rows
+    }
+
+    pub fn groups(&self) -> &[CleanGroup] {
+        &self.groups
+    }
+    pub fn native_fixture(&self) -> Option<&str> {
+        self.native_fixture.as_deref()
+    }
+    pub fn group_for_row(&self, id: &str) -> Option<&CleanGroup> {
+        self.group_index
+            .get(id)
+            .and_then(|index| self.groups.get(*index))
+    }
+    pub fn reviewing(&self) -> bool {
+        self.reviewing
+    }
+    pub fn begin_review(&mut self) {
+        if self.phase == CleanPhase::Found {
+            self.reviewing = true;
+        }
+    }
+    pub fn execution(&self) -> Option<&CleanExecutionSummary> {
+        self.execution.as_ref()
+    }
+    #[cfg(test)]
+    pub fn effective_scope(&self) -> Option<CleanScope> {
+        self.effective_scope
+    }
+    pub fn set_effective_scope(&mut self, scope: CleanScope) {
+        self.effective_scope = Some(scope);
+    }
+    pub fn global_omitted(&self) -> bool {
+        self.selected_scope == CleanScope::All && self.effective_scope == Some(CleanScope::Project)
+    }
+    pub fn capacity(&self) -> CleanCapacity {
+        self.groups
+            .iter()
+            .fold(CleanCapacity::default(), |mut total, group| {
+                total.bytes = total.bytes.saturating_add(group.capacity.bytes);
+                total.incomplete += group.capacity.incomplete;
+                total
+            })
+    }
+    pub fn recommended_capacity(&self) -> CleanCapacity {
+        self.groups
+            .iter()
+            .fold(CleanCapacity::default(), |mut total, group| {
+                total.bytes = total.bytes.saturating_add(group.recommended.bytes);
+                total.incomplete += group.recommended.incomplete;
+                total
+            })
+    }
+    pub fn selected_capacity(&self) -> CleanCapacity {
+        self.selected.iter().filter_map(|id| self.row(id)).fold(
+            CleanCapacity::default(),
+            |mut total, row| {
+                total.add(row.bytes, row.size_complete);
+                total
+            },
+        )
+    }
+    fn rebuild_groups(&mut self) {
+        let blocked = self
+            .rows
+            .iter()
+            .filter(|row| !self.row_selectable(row))
+            .map(|row| row.id.clone())
+            .collect();
+        self.groups = project_clean_groups(&self.rows, &self.selected, &blocked);
+        self.group_index.clear();
+        self.cached_ids.clear();
+        for (index, group) in self.groups.iter().enumerate() {
+            for id in &group.ids {
+                self.group_index.insert(id.clone(), index);
+                self.cached_ids.push(id.clone());
+            }
+        }
+    }
+    pub fn toggle_group(&mut self, id: &str) {
+        if self.phase != CleanPhase::Found {
+            return;
+        }
+        let Some(group) = self.groups.iter().find(|group| group.id == id) else {
+            return;
+        };
+        if group.selectable_ids.is_empty() {
+            return;
+        }
+        let remove = group.selection == GroupSelection::All;
+        for id in group.selectable_ids.clone() {
+            if remove {
+                self.selected.remove(&id);
+            } else {
+                self.selected.insert(id);
+            }
+        }
+        self.selection_changed();
+    }
+    fn selection_changed(&mut self) {
+        self.preview = None;
+        self.reviewing = true;
+        self.rebuild_groups();
     }
 
     /// Row lookup through the cached index. O(1), so the bounded window can
@@ -466,6 +789,7 @@ impl CleanWorkbench {
         if !trusted {
             self.selected.clear();
             self.preview = None;
+            self.rebuild_groups();
             return;
         }
         let dropped = self
@@ -480,6 +804,7 @@ impl CleanWorkbench {
         if self.preview.is_some() {
             self.preview = None;
         }
+        self.rebuild_groups();
     }
 
     /// Toggles one row's ignore state. Returns the new state, or `None` when
@@ -488,16 +813,16 @@ impl CleanWorkbench {
     pub fn toggle_ignored(&mut self, id: &str) -> Option<bool> {
         self.row(id)?;
         if self.ignored.remove(id) {
+            self.selection_changed();
             return Some(false);
         }
         self.ignored.insert(id.to_string());
         self.selected.remove(id);
-        if self.preview.is_some() {
-            self.preview = None;
-        }
+        self.selection_changed();
         Some(true)
     }
 
+    #[cfg(test)]
     pub fn selected_ids(&self) -> &BTreeSet<String> {
         &self.selected
     }
@@ -516,6 +841,15 @@ impl CleanWorkbench {
 
     pub fn found_so_far(&self) -> usize {
         self.found_so_far
+    }
+    pub fn scan_progress(&self) -> &CleanScanProgress {
+        &self.scan_progress
+    }
+    pub fn on_scan_observations(&mut self, progress: CleanScanProgress) {
+        if self.phase == CleanPhase::Scanning {
+            self.on_scan_progress(progress.found);
+            self.scan_progress = progress;
+        }
     }
 
     pub fn preview(&self) -> Option<&CleanPreview> {
@@ -545,11 +879,14 @@ impl CleanWorkbench {
     pub fn invalidate_review(&mut self) {
         self.selected.clear();
         self.preview = None;
+        self.rebuild_groups();
     }
 
     /// Returns to scope configuration and drops the review projection.
     pub fn reset_to_landing(&mut self) {
         self.phase = CleanPhase::Landing;
+        self.reviewing = false;
+        self.effective_scope = None;
         self.prompt = CleanLandingPrompt::None;
         self.set_rows(Vec::new());
         self.plan = None;
@@ -566,6 +903,7 @@ impl CleanWorkbench {
         self.failure_detail.as_deref()
     }
 
+    #[cfg(test)]
     pub fn result_counts(&self) -> Option<(usize, usize)> {
         self.result_counts
     }
@@ -626,6 +964,8 @@ impl CleanWorkbench {
 
     /// Records that a scope was accepted and a worker scan is starting.
     pub fn on_scan_started(&mut self, scope: CleanScope) {
+        self.scan_progress = CleanScanProgress::default();
+        self.scan_progress.capacity.incomplete = 1;
         self.selected_scope = scope;
         self.phase = CleanPhase::Scanning;
         self.prompt = CleanLandingPrompt::None;
@@ -639,6 +979,8 @@ impl CleanWorkbench {
         self.execution = None;
         self.found_so_far = 0;
         self.last_scope = Some(scope);
+        self.reviewing = false;
+        self.effective_scope = Some(scope);
     }
 
     /// Latest in-flight discovery count. Older counts never move backwards.
@@ -693,6 +1035,8 @@ impl CleanWorkbench {
             }
         }
         self.failure_detail = detail;
+        self.reviewing = false;
+        self.rebuild_groups();
     }
 
     /// True when the row entered the cleanup selection. Inspect-only, protected,
@@ -704,12 +1048,14 @@ impl CleanWorkbench {
         if !self.row_selectable(row) {
             return false;
         }
-        if self.selected.remove(id) {
+        let selected = if self.selected.remove(id) {
             false
         } else {
             self.selected.insert(id.to_string());
             true
-        }
+        };
+        self.selection_changed();
+        selected
     }
 
     /// Selects every conservatively recommended row. Returns the new count.
@@ -720,11 +1066,13 @@ impl CleanWorkbench {
         for id in self.recommended_ids() {
             self.selected.insert(id);
         }
+        self.selection_changed();
         self.selected.len()
     }
 
     pub fn clear_selected(&mut self) {
         self.selected.clear();
+        self.selection_changed();
     }
 
     /// Cycles the row sort and reorders the display projection.
@@ -765,10 +1113,24 @@ impl CleanWorkbench {
             self.row_index.insert(row.id.clone(), index);
             self.cached_ids.push(row.id.clone());
         }
+        self.rebuild_groups();
     }
 
     fn saved_plan_for_selection(&self) -> Option<UntrustedPlan> {
+        if self.native_fixture.is_some() {
+            return None;
+        }
         let plan = self.plan.as_ref()?;
+        // This page only authorizes Recycle Bin moves, even if a caller
+        // accidentally installs an inconsistent row/selection projection.
+        if self.selected.iter().any(|id| {
+            !plan.targets.iter().any(|target| {
+                target.id.as_str() == id
+                    && matches!(target.intent, CleanupIntent::TrashProjectArtifact { .. })
+            })
+        }) {
+            return None;
+        }
         let targets = plan
             .targets
             .iter()
@@ -845,6 +1207,7 @@ impl CleanWorkbench {
         if self.phase != CleanPhase::Found || self.selected.is_empty() {
             return None;
         }
+        self.saved_plan_for_selection()?;
         let stale = match self.preview.as_ref() {
             None => {
                 self.set_notice(Some(CleanOutcomeNotice::ConfirmationRequired));
@@ -917,13 +1280,110 @@ impl CleanWorkbench {
                 } else {
                     CleanPhase::Completed
                 };
+                let mut groups = Vec::<CleanResultGroup>::new();
+                let by_id: HashMap<_, _> = self
+                    .groups
+                    .iter()
+                    .flat_map(|group| group.ids.iter().map(move |id| (id.as_str(), group)))
+                    .collect();
+                for outcome in &report.outcomes {
+                    let original = by_id.get(outcome.target_id.as_str()).copied();
+                    let group_id = original
+                        .map(|group| group.id.as_str())
+                        .unwrap_or("unmatched");
+                    let position = groups
+                        .iter()
+                        .position(|entry| entry.group.id == group_id)
+                        .unwrap_or_else(|| {
+                            let group = original.cloned().unwrap_or(CleanGroup {
+                                id: "unmatched".to_string(),
+                                ecosystem: Ecosystem::Generic,
+                                kind: TargetKind::ToolCache,
+                                review_only: true,
+                                ids: Vec::new(),
+                                selectable_ids: Vec::new(),
+                                capacity: CleanCapacity::default(),
+                                recommended: CleanCapacity::default(),
+                                selection: GroupSelection::None,
+                                selected_count: 0,
+                            });
+                            groups.push(CleanResultGroup {
+                                group,
+                                outcomes: Vec::new(),
+                                moved: CleanCapacity::default(),
+                                moved_count: 0,
+                                failed: 0,
+                                skipped: 0,
+                            });
+                            groups.len() - 1
+                        });
+                    let entry = &mut groups[position];
+                    match &outcome.status {
+                        OutcomeStatus::Succeeded
+                            if outcome.action == ActionKind::MoveToTrash && !report.dry_run =>
+                        {
+                            entry.moved_count += 1;
+                            match outcome.estimated_recoverable {
+                                CapacityEstimate::Verified { bytes } => {
+                                    entry.moved.add(bytes, true)
+                                }
+                                CapacityEstimate::Partial { lower_bound_bytes } => {
+                                    entry.moved.add(lower_bound_bytes, false)
+                                }
+                                CapacityEstimate::Unknown => entry.moved.add(0, false),
+                            }
+                        }
+                        OutcomeStatus::Failed { .. } => entry.failed += 1,
+                        OutcomeStatus::Skipped { .. } => entry.skipped += 1,
+                        _ => {}
+                    }
+                    entry.outcomes.push(outcome.clone());
+                }
+                let moved = groups
+                    .iter()
+                    .fold(CleanCapacity::default(), |mut sum, group| {
+                        sum.bytes = sum.bytes.saturating_add(group.moved.bytes);
+                        sum.incomplete += group.moved.incomplete;
+                        sum
+                    });
+                let moved_count = groups.iter().map(|group| group.moved_count).sum();
+                let history_incomplete = payload.canceled
+                    || report.outcomes.iter().any(|outcome| {
+                        let message = match &outcome.status {
+                            OutcomeStatus::Failed { message } => message,
+                            OutcomeStatus::Skipped { reason } => reason,
+                            _ => return false,
+                        };
+                        message.contains("audit")
+                            || message.contains("canceled")
+                            || message.contains("halted")
+                    });
+                let outcome_index = groups
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(group_index, group)| {
+                        group
+                            .outcomes
+                            .iter()
+                            .enumerate()
+                            .map(move |(index, outcome)| {
+                                (outcome.target_id.as_str().to_string(), (group_index, index))
+                            })
+                    })
+                    .collect();
                 self.execution = Some(CleanExecutionSummary {
+                    outcome_index,
+                    groups,
+                    moved,
+                    moved_count,
+                    history_incomplete,
                     selected: report.selected,
                     succeeded: report.succeeded,
                     failed: report.failed,
                     skipped: report.skipped,
                     digest: Some(format!("sha256:{}", report.confirmation_digest.as_str())),
                     canceled: payload.canceled,
+                    report,
                 });
             }
         }
@@ -950,7 +1410,167 @@ impl CleanWorkbench {
                 execution.digest.as_deref().unwrap_or(""),
             )
         };
-        Some(entry)
+        Some(format!(
+            "{entry} {} {}",
+            copy::clean_moved_summary(
+                locale,
+                execution.moved_count,
+                &execution.moved.label(locale)
+            ),
+            copy::clean_history_evidence(locale, execution.history_incomplete)
+        ))
+    }
+
+    /// Explicit display-only native scenes. They contain no executable plan;
+    /// neither scanning nor execution is allowed while this marker is present.
+    pub fn install_native_fixture(&mut self, state: &str) -> bool {
+        if !matches!(
+            state,
+            "landing"
+                | "scanning"
+                | "scanned"
+                | "review"
+                | "previewed"
+                | "complete"
+                | "mixed"
+                | "canceled"
+                | "audit-failed"
+        ) {
+            return false;
+        }
+        *self = Self::new();
+        self.native_fixture = Some(state.to_string());
+        if state == "landing" {
+            return true;
+        }
+        let rows = (0..4)
+            .map(|index| CleanRow {
+                id: format!("fixture-{index}"),
+                plan_index: index,
+                rule_id: if index == 3 {
+                    "rust.target"
+                } else {
+                    "python.pytest_cache"
+                }
+                .to_string(),
+                provider: if index == 3 { "rust" } else { "python" }.to_string(),
+                scope: CleanRowScope::Project {
+                    root: "C:/review-fixture".to_string(),
+                },
+                path: Some(format!("C:/review-fixture/project-{index}/.pytest_cache")),
+                bytes: 4096 * (u64::from(index) + 1),
+                size_complete: index != 2,
+                inspect_only: false,
+                ecosystem: if index == 3 {
+                    Ecosystem::Rust
+                } else {
+                    Ecosystem::Python
+                },
+                kind: TargetKind::TestCache,
+                recycle_eligible: index != 3,
+                selected_by_default: true,
+            })
+            .collect::<Vec<_>>();
+        self.on_scan_result(CleanScanPayload {
+            rows,
+            plan: None,
+            outcome: CleanScanOutcome::Completed,
+            detail: None,
+        });
+        self.last_scope = Some(CleanScope::Project);
+        self.effective_scope = Some(CleanScope::Project);
+        if state == "scanning" {
+            let observations = CleanScanProgress {
+                found: 3,
+                capacity: CleanCapacity {
+                    bytes: 24576,
+                    incomplete: 1,
+                },
+                groups: vec![(
+                    Ecosystem::Python,
+                    TargetKind::TestCache,
+                    3,
+                    CleanCapacity {
+                        bytes: 24576,
+                        incomplete: 1,
+                    },
+                )],
+            };
+            self.phase = CleanPhase::Scanning;
+            self.on_scan_observations(observations);
+        } else if matches!(state, "review" | "previewed") {
+            self.toggle_selected("fixture-0");
+        } else if matches!(state, "complete" | "mixed" | "canceled" | "audit-failed") {
+            let mut report = ExecutionReport {
+                dry_run: false,
+                selected: 3,
+                attempted: 3,
+                succeeded: 0,
+                failed: 0,
+                skipped: 0,
+                failures: Vec::new(),
+                outcomes: Vec::new(),
+                notes: Vec::new(),
+                estimated_recoverable: Default::default(),
+                confirmation_digest: ConfirmationDigest::new("00".repeat(32)),
+                audit_log: None,
+            };
+            for index in 0..3 {
+                let target_id = TargetId::new(format!("fixture-{index}"));
+                let status = if state == "audit-failed" && index == 0 {
+                    OutcomeStatus::Failed {
+                        message:
+                            "fixture: audit terminal persistence failed; physical result unknown"
+                                .to_string(),
+                    }
+                } else if state == "canceled" || (state == "audit-failed" && index > 0) {
+                    OutcomeStatus::Skipped {
+                        reason: "fixture: canceled or halted before action started".to_string(),
+                    }
+                } else if state == "mixed" && index == 1 {
+                    OutcomeStatus::Failed {
+                        message: "fixture: simulated access denied".to_string(),
+                    }
+                } else if state == "mixed" && index == 2 {
+                    OutcomeStatus::Skipped {
+                        reason: "fixture: simulated safety skip".to_string(),
+                    }
+                } else {
+                    OutcomeStatus::Succeeded
+                };
+                match &status {
+                    OutcomeStatus::Succeeded => report.succeeded += 1,
+                    OutcomeStatus::Failed { message } => {
+                        report.failed += 1;
+                        report
+                            .failures
+                            .push(devsweep_core::execution::ActionFailure {
+                                target_id: target_id.clone(),
+                                message: message.clone(),
+                            });
+                    }
+                    OutcomeStatus::Skipped { .. } => report.skipped += 1,
+                }
+                report.outcomes.push(TargetOutcome {
+                    target_id,
+                    action: ActionKind::MoveToTrash,
+                    status,
+                    estimated_recoverable: if index == 2 {
+                        CapacityEstimate::Unknown
+                    } else {
+                        CapacityEstimate::Verified {
+                            bytes: 4096 * (index + 1),
+                        }
+                    },
+                });
+            }
+            self.on_execute_result(CleanExecutePayload {
+                report: Some(report),
+                failure: None,
+                canceled: state == "canceled",
+            });
+        }
+        true
     }
 
     /// Test-only accepted-report injection for window and selection tests.
@@ -962,6 +1582,7 @@ impl CleanWorkbench {
         self.set_rows(rows);
         self.plan_epoch += 1;
         self.phase = CleanPhase::Found;
+        self.reviewing = true;
         self.prompt = CleanLandingPrompt::None;
         self.selected.clear();
         self.preview = None;
@@ -1010,13 +1631,15 @@ pub fn bounded_detail(text: &str) -> String {
 pub fn scan_clean_rows(
     options: &ScanOptions,
     cancel: &Arc<FlagCancelObserver>,
-    on_progress: &mut dyn FnMut(usize),
+    on_progress: &mut dyn FnMut(CleanScanProgress),
 ) -> CleanScanPayload {
     let run = Sweeper::default().full_scan_report_run_with_cancel(
         options,
         &mut |progress| {
-            if let Some(partial) = progress.partial.as_ref() {
-                on_progress(partial.targets.len());
+            if let Some(partial) = progress.partial.as_ref()
+                && let Ok(snapshot) = devsweep_core::scan::scan_preview_from_plan(partial)
+            {
+                on_progress(CleanScanProgress::from_snapshot(snapshot));
             }
         },
         Some(cancel),
@@ -1087,6 +1710,17 @@ pub fn execute_clean_plan(
     expected_digest: &str,
     cancel: &Arc<FlagCancelObserver>,
 ) -> CleanExecutePayload {
+    if saved_plan
+        .targets
+        .iter()
+        .any(|target| !matches!(target.intent, CleanupIntent::TrashProjectArtifact { .. }))
+    {
+        return CleanExecutePayload {
+            report: None,
+            failure: Some(CleanExecuteFailure::Unavailable),
+            canceled: cancel.is_cancel_requested(),
+        };
+    }
     let plan = match validate_plan(saved_plan) {
         Ok(plan) => plan,
         Err(_) => {
@@ -1241,6 +1875,8 @@ mod tests {
         workbench.on_scan_progress(5);
         assert_eq!(workbench.found_so_far(), 0);
         workbench.on_scan_started(CleanScope::Project);
+        assert_eq!(workbench.scan_progress().capacity.bytes, 0);
+        assert_eq!(workbench.scan_progress().capacity.incomplete, 1);
         assert_eq!(workbench.phase(), CleanPhase::Scanning);
         workbench.on_scan_progress(5);
         workbench.on_scan_progress(2);
@@ -1486,7 +2122,11 @@ mod tests {
         assert!(workbench.toggle_selected(&mypy));
         workbench.set_notice(None);
         assert!(workbench.begin_execute().is_none());
-        assert_eq!(workbench.notice(), Some(CleanOutcomeNotice::StalePreview));
+        assert_eq!(
+            workbench.notice(),
+            Some(CleanOutcomeNotice::ConfirmationRequired)
+        );
+        assert!(workbench.preview().is_none());
         assert_eq!(workbench.phase(), CleanPhase::Found);
         assert!(
             workbench.preview().is_none(),
@@ -1666,7 +2306,8 @@ mod tests {
         let entry = workbench.history_entry(Locale::En).expect("history entry");
         assert!(entry.contains("1 succeeded"));
         assert!(entry.contains("sha256:"));
-        assert!(!entry.to_ascii_lowercase().contains("recycle bin"));
+        assert!(entry.contains("Moved to Recycle Bin"));
+        assert!(entry.contains("not freed space"));
 
         workbench.on_execute_result(payload(1, 1, 0));
         assert_eq!(workbench.notice(), Some(CleanOutcomeNotice::Mixed));
@@ -2090,6 +2731,288 @@ mod tests {
         );
     }
 
+    #[test]
+    fn clean_groups_cache_subtotals_tri_state_and_review_only_authority() {
+        let mut workbench = CleanWorkbench::new();
+        let mut a = test_row("a", 10);
+        a.selected_by_default = true;
+        let mut b = test_row("b", 20);
+        b.size_complete = false;
+        let mut command = test_row("command", 100);
+        command.recycle_eligible = false;
+        command.selected_by_default = true;
+        workbench.install_rows_for_test(vec![a, b, command, test_inspect_only_row("inspect")]);
+        assert_eq!(workbench.groups().len(), 2);
+        assert_eq!(workbench.capacity().bytes, 130);
+        assert_eq!(workbench.recommended_capacity().bytes, 10);
+        let group_id = workbench.groups()[0].id.clone();
+        assert_eq!(
+            workbench.groups()[0].capacity,
+            CleanCapacity {
+                bytes: 30,
+                incomplete: 1
+            }
+        );
+        assert_eq!(workbench.groups()[0].selection, GroupSelection::None);
+        workbench.toggle_selected("a");
+        assert_eq!(workbench.groups()[0].selection, GroupSelection::Mixed);
+        assert_eq!(workbench.groups()[0].selected_count, 1);
+        workbench.toggle_group(&group_id);
+        assert_eq!(workbench.groups()[0].selection, GroupSelection::All);
+        assert_eq!(workbench.groups()[0].selected_count, 2);
+        assert_eq!(workbench.selected_count(), 2);
+        workbench.toggle_group(&group_id);
+        assert!(workbench.selected_ids().is_empty());
+        assert!(!workbench.toggle_selected("command"));
+        assert!(!workbench.toggle_selected("inspect"));
+        workbench.toggle_group("review-only");
+        assert!(workbench.selected_ids().is_empty());
+        assert!(project_clean_groups(&[], &BTreeSet::new(), &BTreeSet::new()).is_empty());
+        workbench.toggle_ignored("a");
+        assert_eq!(workbench.recommended_capacity().bytes, 0);
+        assert_eq!(workbench.groups()[0].selectable_ids, ["b"]);
+    }
+
+    #[test]
+    fn clean_all_scope_requires_explicit_roots_and_fresh_global_consent() {
+        let roots = vec![PathBuf::from("C:/task-owned-project")];
+        let unconfirmed = clean_scan_options(CleanScope::All, false, roots.clone()).unwrap();
+        assert!(unconfirmed.include_projects);
+        assert!(!unconfirmed.include_global);
+        assert_eq!(unconfirmed.roots, roots);
+        let confirmed = clean_scan_options(CleanScope::All, true, roots).unwrap();
+        assert!(confirmed.include_projects && confirmed.include_global);
+        assert!(clean_scan_options(CleanScope::All, true, Vec::new()).is_none());
+        assert!(clean_scan_options(CleanScope::Global, false, Vec::new()).is_none());
+        let global = clean_scan_options(CleanScope::Global, true, Vec::new()).unwrap();
+        assert!(!global.include_projects && global.include_global);
+    }
+
+    #[test]
+    fn clean_preview_is_cleared_by_every_selection_edit_and_command_plan_is_refused() {
+        let root = isolated_multi_cache_project();
+        let mut workbench = CleanWorkbench::new();
+        workbench.on_scan_result(project_scan(&root));
+        // Fresh temporary files are not scanner recommendations. Set the hint
+        // explicitly to exercise the recommendation selection path deterministically.
+        for row in &mut workbench.rows {
+            row.selected_by_default = row.selectable();
+        }
+        workbench.rebuild_groups();
+        workbench.select_recommended();
+        assert!(workbench.preview_selection());
+        workbench.clear_selected();
+        assert!(workbench.preview().is_none());
+        workbench.select_recommended();
+        assert!(workbench.preview_selection());
+        let id = workbench.selected_ids().first().unwrap().clone();
+        workbench.toggle_selected(&id);
+        assert!(workbench.preview().is_none());
+        workbench.select_recommended();
+        assert!(workbench.preview_selection());
+        let group = workbench.group_for_row(&id).unwrap().id.clone();
+        workbench.toggle_group(&group);
+        assert!(workbench.preview().is_none());
+        // A corrupt UI projection cannot turn a command intent into trash authority.
+        let plan = workbench.plan.as_mut().unwrap();
+        let target = &mut plan.targets[0];
+        target.intent = CleanupIntent::RunBuiltInAction {
+            provider_id: "cargo".to_string(),
+            action_id: "clean".to_string(),
+        };
+        let id = target.id.as_str().to_string();
+        workbench.selected.insert(id);
+        assert!(!workbench.preview_selection());
+        assert!(workbench.begin_execute().is_none());
+        let cancel = Arc::new(FlagCancelObserver::new());
+        let result = execute_clean_plan(
+            workbench.plan.as_ref().unwrap(),
+            Vec::new(),
+            "sha256:invalid",
+            &cancel,
+        );
+        assert_eq!(result.failure, Some(CleanExecuteFailure::Unavailable));
+        cleanup(&root);
+    }
+
+    #[test]
+    fn clean_results_keep_reasons_and_exclude_commands_unknown_and_failed_capacity() {
+        let mut workbench = CleanWorkbench::new();
+        workbench.install_rows_for_test(
+            (0..5)
+                .map(|index| test_row(&format!("row-{index}"), 99))
+                .collect(),
+        );
+        let mut report = test_execution_report(3, 1, 1);
+        report.outcomes[0].estimated_recoverable = CapacityEstimate::Partial {
+            lower_bound_bytes: 10,
+        };
+        report.outcomes[1].estimated_recoverable = CapacityEstimate::Unknown;
+        report.outcomes[2].action = ActionKind::Command { irreversible: true };
+        workbench.on_execute_result(CleanExecutePayload {
+            report: Some(report.clone()),
+            failure: None,
+            canceled: false,
+        });
+        let execution = workbench.execution().unwrap();
+        assert_eq!(execution.report, report);
+        assert_eq!(execution.moved_count, 2);
+        assert_eq!(
+            execution.moved,
+            CleanCapacity {
+                bytes: 10,
+                incomplete: 2
+            }
+        );
+        assert_eq!((execution.failed, execution.skipped), (1, 1));
+        assert!(
+            matches!(&execution.groups[0].outcomes[3].status, OutcomeStatus::Failed { message } if message == "fixture failure")
+        );
+        assert!(
+            matches!(&execution.groups[0].outcomes[4].status, OutcomeStatus::Skipped { reason } if reason == "fixture skip")
+        );
+        for locale in [Locale::En, Locale::ZhCn] {
+            let entry = workbench.history_entry(locale).unwrap();
+            assert!(entry.contains(&copy::clean_moved_summary(
+                locale,
+                execution.moved_count,
+                &execution.moved.label(locale)
+            )));
+            assert!(entry.contains(copy::pick(locale, "At least", "至少")));
+        }
+    }
+
+    #[test]
+    fn clean_cancellation_and_audit_failure_do_not_claim_complete_history() {
+        for state in ["canceled", "audit-failed"] {
+            let mut workbench = CleanWorkbench::new();
+            assert!(workbench.install_native_fixture(state));
+            let execution = workbench.execution().unwrap();
+            assert!(execution.history_incomplete);
+            assert_eq!(execution.moved_count, 0);
+            assert_eq!(execution.report.outcomes.len(), 3);
+            assert!(
+                workbench
+                    .history_entry(Locale::En)
+                    .unwrap()
+                    .contains("may be incomplete")
+            );
+        }
+    }
+
+    #[test]
+    fn clean_normal_report_matches_corresponding_isolated_history_evidence() {
+        let root = isolated_multi_cache_project();
+        let store = root.join("local/DevSweep/audit/v1");
+        fs::create_dir_all(&store).unwrap();
+        let mut lines = Vec::new();
+        for (index, outcome) in ["succeeded", "failed", "skipped"].iter().enumerate() {
+            let record = serde_json::json!({
+                "record_kind": "execution_transition", "schema_version": 1, "domain": "clean",
+                "operation_id": "fixture-run", "timestamp_epoch_ms": index + 1, "transition": index + 1,
+                "outcome_code": outcome, "error_code": if index == 1 { Some("trash_failed") } else if index == 2 { Some("safety_skip") } else { None },
+                "evidence": { "target_identity_sha256": devsweep_core::execution::identity_sha256(&format!("row-{index}")), "action_kind": "move_to_trash", "irreversible": false,
+                    "capacity_class": "verified", "duration_ms": 1, }
+            });
+            let mut record = record;
+            if index < 2 {
+                let mut started = record.clone();
+                started["outcome_code"] = "started".into();
+                started["error_code"] = serde_json::Value::Null;
+                started["transition"] = (lines.len() + 1).into();
+                lines.push(started.to_string());
+            }
+            record["transition"] = (lines.len() + 1).into();
+            if index == 0 {
+                record["evidence"]["estimated_bytes"] = 1.into();
+            }
+            lines.push(record.to_string());
+        }
+        fs::write(store.join("clean.jsonl"), lines.join("\n") + "\n").unwrap();
+        // The subprocess gets its own environment. Parallel tests in this process
+        // never see a redirected audit store or a temporary LOCALAPPDATA value.
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "clean_workbench::tests::clean_isolated_history_child",
+                "--nocapture",
+            ])
+            .env("LOCALAPPDATA", root.join("local"))
+            .env("DEVSWEEP_CLEAN_HISTORY_TEST_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        cleanup(&root);
+    }
+
+    #[test]
+    fn clean_isolated_history_child() {
+        if std::env::var_os("DEVSWEEP_CLEAN_HISTORY_TEST_CHILD").is_none() {
+            return;
+        }
+        let detail = devsweep_core::history::show_history("fixture-run").unwrap();
+        let mut counts = (0, 0, 0);
+        let mut moved_bytes = 0;
+        for record in serde_json::to_value(detail.records)
+            .unwrap()
+            .as_array()
+            .unwrap()
+        {
+            if record["history_kind"] == "clean" {
+                let record = &record["record"];
+                match record["outcome_code"].as_str().unwrap() {
+                    "succeeded" => {
+                        counts.0 += 1;
+                        moved_bytes += record["evidence"]["estimated_bytes"].as_u64().unwrap();
+                    }
+                    "failed" => counts.1 += 1,
+                    "skipped" => counts.2 += 1,
+                    _ => {}
+                }
+            }
+        }
+        let mut workbench = CleanWorkbench::new();
+        workbench.on_execute_result(CleanExecutePayload {
+            report: Some(test_execution_report(1, 1, 1)),
+            failure: None,
+            canceled: false,
+        });
+        let execution = workbench.execution().unwrap();
+        assert_eq!(
+            counts,
+            (execution.moved_count, execution.failed, execution.skipped)
+        );
+        assert_eq!(moved_bytes, execution.moved.bytes);
+        assert!(!execution.history_incomplete);
+    }
+
+    #[test]
+    fn clean_native_fixtures_never_grant_plan_or_execution_authority() {
+        for state in [
+            "landing",
+            "scanning",
+            "scanned",
+            "review",
+            "previewed",
+            "complete",
+            "mixed",
+            "canceled",
+            "audit-failed",
+        ] {
+            let mut workbench = CleanWorkbench::new();
+            assert!(workbench.install_native_fixture(state));
+            assert!(workbench.plan.is_none());
+            assert!(!workbench.preview_selection());
+            assert!(workbench.begin_execute().is_none());
+            assert!(!workbench.preview_matches_current());
+        }
+    }
+
     fn test_row(id: &str, bytes: u64) -> CleanRow {
         test_row_with(id, "python.fixture_rule", bytes)
     }
@@ -2105,6 +3028,9 @@ mod tests {
             bytes,
             size_complete: true,
             inspect_only: false,
+            ecosystem: devsweep_core::model::Ecosystem::Python,
+            kind: devsweep_core::model::TargetKind::ToolCache,
+            recycle_eligible: true,
             selected_by_default: false,
         }
     }

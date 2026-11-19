@@ -40,7 +40,6 @@ use devsweep_core::{
     execution::ExecutionReport,
     optimize::PrecheckReason,
     process::{CancelObserver as _, FlagCancelObserver},
-    scan::ScanOptions,
     software::{AdapterOutcome, SoftwareExecutionOutcome, SoftwarePlanError},
     status::{LiveControl, StatusEventV1, StatusSnapshotV1},
 };
@@ -1157,6 +1156,7 @@ pub struct Session {
     /// Out-of-band scan progress. Progress never occupies the mailbox, so the
     /// only event a woken drain can observe is a terminal payload.
     clean_progress: Option<Arc<AtomicUsize>>,
+    clean_observations: Option<Arc<Mutex<Option<crate::clean_workbench::CleanScanProgress>>>>,
     clean_progress_seen: usize,
     protection_session_only: bool,
     /// When true (the running window), slow read-only work is queued as
@@ -1323,6 +1323,7 @@ impl Session {
             clean_ai: CleanAiView::new(),
             clean_cancel: None,
             clean_progress: None,
+            clean_observations: None,
             clean_progress_seen: 0,
             protection_session_only: false,
             background_jobs: false,
@@ -1507,6 +1508,15 @@ impl Session {
     }
 
     pub fn apply_key(&mut self, key: NavKey) {
+        if self.clean.native_fixture().is_some()
+            && (self.shell.menu_open()
+                || matches!(
+                    key,
+                    NavKey::Left | NavKey::Right | NavKey::Up | NavKey::Down
+                ))
+        {
+            return;
+        }
         if self.shell.screen_covered() {
             self.shell.apply_key(key);
             return;
@@ -1619,6 +1629,9 @@ impl Session {
     }
 
     fn software_enter(&mut self, id: &str, locale: Locale) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         if id == "leftovers" {
             self.workbench_review.activate(id, locale);
             return;
@@ -1856,6 +1869,9 @@ impl Session {
     /// the same Enter activation the keyboard uses. Activation plans and
     /// previews; it never confirms on the first press.
     pub fn activate_mode_row(&mut self, mode: Mode, id: impl Into<String>) {
+        if self.clean.native_fixture().is_some() && mode != Mode::Clean {
+            return;
+        }
         if self.shell.mode() != mode || self.shell.surface() != Surface::Mode {
             return;
         }
@@ -1868,6 +1884,9 @@ impl Session {
 
     /// Switches the one Software workspace. Repeated tab activation is a no-op.
     pub fn software_open_segment(&mut self, segment: crate::workbench::SoftwareSegment) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         if self.shell.mode() != Mode::Software || self.shell.surface() != Surface::Mode {
             return;
         }
@@ -2570,21 +2589,33 @@ impl Session {
     }
 
     pub fn show_mode(&mut self, mode: Mode) {
+        if self.clean.native_fixture().is_some() && mode != Mode::Clean {
+            return;
+        }
         self.shell.show_mode(mode);
         self.ensure_workbench_rows();
     }
 
     pub fn toggle_menu(&mut self) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         self.shell.toggle_menu();
     }
 
     pub fn open_menu_item(&mut self, index: usize) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         let before = self.shell.surface();
         self.shell.open_menu_item(index);
         self.note_history_opened(before);
     }
 
     pub fn open_settings(&mut self) {
+        if self.clean.native_fixture().is_some() {
+            return;
+        }
         self.shell.open_surface(Surface::Settings);
     }
 
@@ -2634,6 +2665,43 @@ impl Session {
         &self.clean
     }
 
+    pub fn install_clean_review_fixture(&mut self, scene: &str) -> bool {
+        let Some((locale, state)) = scene.split_once(':') else {
+            return false;
+        };
+        let locale = match locale {
+            "en" => Locale::En,
+            "zh" => Locale::ZhCn,
+            _ => return false,
+        };
+        if !self.clean.install_native_fixture(state) {
+            return false;
+        }
+        self.shell.locale = locale;
+        self.shell
+            .set_scan_roots(vec!["C:/review-fixture".to_string()]);
+        // The fixed display observations already match this display-only root.
+        // This does not clear production invalidations or grant a fixture plan.
+        self.shell.memories[Mode::Clean.index()].review = Review::Valid;
+        self.reset_clean_row_view();
+        if let Some(execution) = self.clean.execution() {
+            self.shell.set_row_ids(
+                Mode::Clean,
+                execution
+                    .groups
+                    .iter()
+                    .flat_map(|group| {
+                        group
+                            .outcomes
+                            .iter()
+                            .map(|outcome| outcome.target_id.as_str().to_string())
+                    })
+                    .collect(),
+            );
+        }
+        true
+    }
+
     /// Installs an accepted Found report for tests and mirrors its ids.
     #[cfg(test)]
     pub(crate) fn install_clean_rows_for_test(
@@ -2665,7 +2733,7 @@ impl Session {
                 self.clean.require_global_confirmation();
                 false
             }
-            CleanScope::Project => self.request_project_scan(),
+            CleanScope::Project | CleanScope::All => self.request_project_scan(),
         }
     }
 
@@ -2674,7 +2742,27 @@ impl Session {
         if !self.clean.take_global_confirmation() {
             return false;
         }
-        self.start_clean_scan(CleanScope::Global, Vec::new())
+        let scope = self.clean.selected_scope();
+        let roots = self.shell.scan_roots().iter().map(PathBuf::from).collect();
+        self.start_clean_scan(scope, roots, true)
+    }
+
+    /// Explicitly request a new global confirmation; choosing All alone never grants it.
+    pub fn clean_request_global_confirmation(&mut self) {
+        if self.shell.operation_id().is_some() || self.clean.selected_scope() == CleanScope::Project
+        {
+            return;
+        }
+        self.clean.reset_to_landing();
+        self.clean.require_global_confirmation();
+        self.reset_clean_row_view();
+    }
+
+    pub fn clean_begin_review(&mut self) {
+        self.clean.begin_review();
+    }
+    pub fn clean_toggle_group(&mut self, id: &str) {
+        self.clean.toggle_group(id);
     }
 
     /// Stores one explicitly picked project folder as the scan root.
@@ -2682,7 +2770,7 @@ impl Session {
     /// The folder is remembered through the existing scan-root store when one
     /// is available; otherwise it stays explicit for this session only.
     pub fn clean_pick_scan_root(&mut self, root: PathBuf) -> bool {
-        if self.shell.operation_id().is_some() || self.clean.selected_scope() != CleanScope::Project
+        if self.shell.operation_id().is_some() || self.clean.selected_scope() == CleanScope::Global
         {
             return false;
         }
@@ -2810,7 +2898,7 @@ impl Session {
 
     /// Opens the AI review subview from the Clean surface. Opening never scans.
     pub fn clean_ai_open(&mut self) -> bool {
-        if self.shell.operation_id().is_some() {
+        if self.clean.native_fixture().is_some() || self.shell.operation_id().is_some() {
             return false;
         }
         if !self.clean_ai.open_subview() {
@@ -3091,6 +3179,7 @@ impl Session {
     /// Scrolls the bounded row window by whole rows over the full id set.
     pub fn clean_scroll_rows(&mut self, delta: isize) -> bool {
         let reviewable = self.clean.phase() == CleanPhase::Found
+            || self.clean.execution().is_some()
             || (self.clean_ai.open() && self.clean_ai.phase() == AiSubviewPhase::Review);
         if !reviewable {
             return false;
@@ -3128,7 +3217,7 @@ impl Session {
     /// Retries the accepted scope. A failed global scan asks again first.
     pub fn clean_rescan(&mut self) -> bool {
         match self.clean.last_scope() {
-            Some(CleanScope::Project) => self.request_project_scan(),
+            Some(CleanScope::Project | CleanScope::All) => self.request_project_scan(),
             Some(CleanScope::Global) => {
                 self.clean.reset_to_landing();
                 self.clean.require_global_confirmation();
@@ -3162,30 +3251,51 @@ impl Session {
             }
             return false;
         }
-        self.start_clean_scan(CleanScope::Project, roots)
+        self.start_clean_scan(self.clean.selected_scope(), roots, false)
     }
 
-    fn start_clean_scan(&mut self, scope: CleanScope, roots: Vec<PathBuf>) -> bool {
+    fn start_clean_scan(
+        &mut self,
+        scope: CleanScope,
+        roots: Vec<PathBuf>,
+        confirmed_global: bool,
+    ) -> bool {
+        if self.clean.native_fixture().is_some() {
+            return false;
+        }
         if self.shell.operation_id().is_some() {
             return false;
         }
-        let options = ScanOptions {
-            include_projects: matches!(scope, CleanScope::Project),
-            include_global: matches!(scope, CleanScope::Global),
-            roots,
+        let Some(options) =
+            crate::clean_workbench::clean_scan_options(scope, confirmed_global, roots)
+        else {
+            self.clean
+                .require_root(devsweep_core::scan_preferences::scan_root_suggestions());
+            return false;
         };
         let id = self.shell.begin_operation(OperationClass::ReadOnly);
         self.clean.on_scan_started(scope);
+        self.clean
+            .set_effective_scope(if scope == CleanScope::All && !options.include_global {
+                CleanScope::Project
+            } else {
+                scope
+            });
         self.reset_clean_row_view();
         let cancel = Arc::new(FlagCancelObserver::new());
         self.clean_cancel = Some(Arc::clone(&cancel));
         let progress = Arc::new(AtomicUsize::new(0));
         self.clean_progress = Some(Arc::clone(&progress));
+        let observations = Arc::new(Mutex::new(None));
+        self.clean_observations = Some(Arc::clone(&observations));
         self.clean_progress_seen = 0;
         let mailbox = Arc::clone(&self.mailbox);
         dispatch_blocking(mailbox, move || {
-            let payload = scan_clean_rows(&options, &cancel, &mut |found| {
-                progress.store(found, Ordering::SeqCst);
+            let payload = scan_clean_rows(&options, &cancel, &mut |snapshot| {
+                progress.store(snapshot.found, Ordering::SeqCst);
+                *observations
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner()) = Some(snapshot);
             });
             MailEvent::CleanScan { id, payload }
         });
@@ -3193,6 +3303,9 @@ impl Session {
     }
 
     fn spawn_clean_execute(&mut self, start: CleanExecutionStart) -> bool {
+        if self.clean.native_fixture().is_some() {
+            return false;
+        }
         let id = self.shell.begin_operation(OperationClass::Mutating);
         let cancel = Arc::new(FlagCancelObserver::new());
         self.clean_cancel = Some(Arc::clone(&cancel));
@@ -3218,7 +3331,10 @@ impl Session {
                 }
             },
             CleanPhase::Found => {
-                if self.clean.preview_matches_current() {
+                if !self.clean.reviewing() {
+                    self.clean.begin_review();
+                    true
+                } else if self.clean.preview_matches_current() {
                     self.clean_confirm_execute()
                 } else {
                     self.clean_preview_selection()
@@ -3263,6 +3379,16 @@ impl Session {
     /// Samples the out-of-band scan progress into the workbench. Reports
     /// whether the observed discovery count changed.
     fn sync_clean_progress(&mut self) -> bool {
+        if let Some(snapshot) = self.clean_observations.as_ref().and_then(|observations| {
+            observations
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .take()
+        }) {
+            self.clean_progress_seen = snapshot.found;
+            self.clean.on_scan_observations(snapshot);
+            return true;
+        }
         let Some(progress) = self.clean_progress.as_ref() else {
             return false;
         };
@@ -3280,8 +3406,12 @@ impl Session {
             MailEvent::CleanScan { id, payload } => {
                 if self.shell.operation_id() == Some(*id) {
                     self.clean.on_scan_result(payload.clone());
+                    if payload.plan.is_some() {
+                        self.shell.memories[Mode::Clean.index()].review = Review::Valid;
+                    }
                     self.clean_cancel = None;
                     self.clean_progress = None;
+                    self.clean_observations = None;
                     self.clean_progress_seen = 0;
                     self.shell.finish_operation(*id);
                     self.reset_clean_row_view();
@@ -3293,6 +3423,23 @@ impl Session {
             MailEvent::CleanExecute { id, payload } => {
                 if self.shell.operation_id() == Some(*id) {
                     self.clean.on_execute_result(payload.clone());
+                    if let Some(execution) = self.clean.execution() {
+                        self.shell.set_row_query(Mode::Clean, "");
+                        self.shell.set_row_ids(
+                            Mode::Clean,
+                            execution
+                                .groups
+                                .iter()
+                                .flat_map(|group| {
+                                    group
+                                        .outcomes
+                                        .iter()
+                                        .map(|outcome| outcome.target_id.as_str().to_string())
+                                })
+                                .collect(),
+                        );
+                        self.shell.set_row_window_start(Mode::Clean, 0);
+                    }
                     if let Some(entry) = self.clean.history_entry(self.locale()) {
                         self.shell.push_history(entry);
                     }
@@ -4758,7 +4905,7 @@ mod tests {
         );
         assert_eq!(
             session.clean_outcome(),
-            Some(CleanOutcomeNotice::StalePreview)
+            Some(CleanOutcomeNotice::ConfirmationRequired)
         );
         assert_eq!(
             session.shell().activity(),
@@ -4770,13 +4917,78 @@ mod tests {
         let lines = crate::view::panel_lines(&session, None);
         assert_eq!(
             lines.last(),
-            Some(&crate::copy::clean_outcome_stale_preview(Locale::En).to_string())
+            Some(&crate::copy::clean_outcome_confirmation_required(Locale::En).to_string())
         );
         assert!(
             root.join(".pytest_cache").join("payload").is_file(),
             "a stale digest must never move the fixture"
         );
         workbench_cleanup(&root);
+    }
+
+    #[test]
+    fn clean_all_keeps_requested_and_effective_scope_separate_on_rescan() {
+        let root = isolated_multi_cache_project();
+        let mut session = Session::unbacked();
+        session.set_scan_roots(vec![root.display().to_string()]);
+        session.clean_choose_scope(CleanScope::All);
+        assert!(session.clean_start_selected_scope());
+        drain_until_idle(&mut session);
+        assert_eq!(session.clean.selected_scope(), CleanScope::All);
+        assert_eq!(session.clean.effective_scope(), Some(CleanScope::Project));
+        assert!(session.clean.global_omitted());
+        assert!(session.clean_rescan());
+        drain_until_idle(&mut session);
+        assert!(session.clean.global_omitted());
+        session.clean_request_global_confirmation();
+        assert!(session.clean.take_global_confirmation());
+        assert!(!session.clean.take_global_confirmation());
+        workbench_cleanup(&root);
+    }
+
+    #[test]
+    fn clean_native_fixture_blocks_dispatch_even_after_scope_and_root_edits() {
+        let mut session = Session::unbacked();
+        assert!(session.install_clean_review_fixture("en:review"));
+        session.clean_choose_scope(CleanScope::All);
+        assert!(!session.clean_start_selected_scope());
+        session.clean_request_global_confirmation();
+        assert!(!session.clean_confirm_global_scan());
+        assert!(session.shell.operation_id().is_none());
+        assert!(session.clean.native_fixture().is_some());
+        assert!(!session.clean_confirm_execute());
+    }
+
+    #[test]
+    fn clean_native_fixture_cannot_navigate_to_host_backed_surfaces() {
+        let mut session = Session::unbacked();
+        assert!(session.install_clean_review_fixture("en:review"));
+        session.enable_background_jobs();
+        for mode in [Mode::Software, Mode::Optimize, Mode::Analyze, Mode::Status] {
+            session.show_mode(mode);
+            assert_eq!(session.shell.mode(), Mode::Clean);
+        }
+        for key in [NavKey::Left, NavKey::Right, NavKey::Up, NavKey::Down] {
+            session.apply_key(key);
+            assert_eq!(session.shell.mode(), Mode::Clean);
+            assert!(!session.shell.menu_open());
+        }
+        session.toggle_menu();
+        assert!(!session.shell.menu_open());
+        for index in 0..MENU.len() {
+            session.open_menu_item(index);
+            assert_eq!(session.shell.surface(), Surface::Mode);
+        }
+        session.open_settings();
+        assert_eq!(session.shell.surface(), Surface::Mode);
+        assert!(!session.clean_ai_open());
+        assert!(session.jobs.is_empty());
+        assert!(session.shell.operation_id().is_none());
+        for invalid in ["", "en", "fr:review", "en:unknown", "en:review:extra"] {
+            let mut invalid_session = Session::unbacked();
+            assert!(!invalid_session.install_clean_review_fixture(invalid));
+            assert!(invalid_session.clean.native_fixture().is_none());
+        }
     }
 
     #[test]
@@ -4906,6 +5118,9 @@ mod tests {
                 bytes,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             }
         }
@@ -4971,6 +5186,9 @@ mod tests {
                 bytes: 4,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             }
         }
@@ -5085,6 +5303,9 @@ mod tests {
                 bytes: 1,
                 size_complete: true,
                 inspect_only: false,
+                ecosystem: devsweep_core::model::Ecosystem::Python,
+                kind: devsweep_core::model::TargetKind::ToolCache,
+                recycle_eligible: true,
                 selected_by_default: false,
             })
             .collect::<Vec<_>>();

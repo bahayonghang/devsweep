@@ -26,7 +26,7 @@ impl ShellView {
         let locale = self.session.locale();
         let selected = self.session.font().clone();
         let selected_label = match &selected {
-            DesktopFont::System {} => copy::pick(locale, "System default", "系统默认").to_owned(),
+            DesktopFont::System {} => copy::pick(locale, "App default", "应用默认").to_owned(),
             DesktopFont::Installed { family } => family.clone(),
         };
         let mut section = div().flex().flex_col().gap(ui::SPACE_2).child(
@@ -68,8 +68,8 @@ impl ShellView {
         );
         if self.fonts.missing(&selected) {
             section = section.child(ui::banner(t, Tone::Warning, copy::pick(locale,
-                "The saved font is unavailable. Using the system font without changing your preference.",
-                "保存的字体当前不可用，已回退为系统字体，原偏好仍保留。")));
+                "The saved font is unavailable. Using the app default without changing your preference.",
+                "保存的字体当前不可用，已回退为应用默认字体，原偏好仍保留。")));
         }
         if self.fonts.open {
             let busy = self.fonts.loading;
@@ -85,7 +85,7 @@ impl ShellView {
                 ui::button(
                     t,
                     "settings-font-system",
-                    copy::pick(locale, "System default", "系统默认"),
+                    copy::pick(locale, "App default", "应用默认"),
                     if system_selected {
                         ButtonKind::Secondary
                     } else {
@@ -93,7 +93,7 @@ impl ShellView {
                     },
                 )
                 .aria_selected(system_selected)
-                .when(system_selected, |button| button.border_color(rgb(t.accent)))
+                .when(system_selected, |button| button.border_color(rgb(t.input)))
                 .accessibility_id("settings-font-system")
                 .on_click(cx.listener(|this, _, _, cx| {
                     let _ = this.session.set_font(DesktopFont::System {});
@@ -126,7 +126,7 @@ impl ShellView {
                         },
                     )
                     .aria_selected(chosen)
-                    .when(chosen, |button| button.border_color(rgb(t.accent)))
+                    .when(chosen, |button| button.border_color(rgb(t.input)))
                     .accessibility_id(SharedString::from(format!("settings-font-{select}")))
                     .on_click(cx.listener(move |this, _, _, cx| {
                         if let Err(error) = this.session.set_font(DesktopFont::Installed {
@@ -195,8 +195,8 @@ impl ShellView {
                     t,
                     copy::pick(
                         locale,
-                        "No local font families were reported. System default remains available.",
-                        "未读取到本机字体，仍可选择系统默认字体。",
+                        "No local font families were reported. App default remains available.",
+                        "未读取到本机字体，仍可选择应用默认字体。",
                     ),
                 ));
             } else if self.fonts.count() == 0 {
@@ -551,8 +551,8 @@ impl ShellView {
                             .px(ui::SPACE_2)
                             .py(ui::SPACE_1)
                             .rounded(ui::RADIUS_ITEM)
-                            .bg(rgb(t.surface_alt))
-                            .child(ui::icon("folder", t.accent))
+                            .bg(t.control_fill.color())
+                            .child(ui::icon("folder", t.input))
                             .child(
                                 div()
                                     .flex_1()
@@ -697,7 +697,7 @@ impl ShellView {
                             .px(ui::SPACE_2)
                             .py(ui::SPACE_1)
                             .rounded(ui::RADIUS_ITEM)
-                            .child(ui::icon(row_icon, t.text_muted))
+                            .child(ui::icon(row_icon, t.muted))
                             .child(
                                 div()
                                     .flex_1()

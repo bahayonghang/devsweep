@@ -42,3 +42,9 @@ gpui_windows = { path = "vendor/gpui_windows" }
 # Opt-in X11 backend so the shell can be rendered and screenshotted on a Linux
 # review host (for example under Xvfb). Not a delivery target.
 linux-preview = ["gpui_platform/x11"]
+
+# The material gallery carries the token maths for the airy-glass recipe, so
+# `cargo test` runs its unit tests with the rest of the gate.
+[[example]]
+name = "material_gallery"
+test = true
