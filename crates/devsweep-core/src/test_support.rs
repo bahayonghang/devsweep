@@ -1,5 +1,38 @@
 //! Shared helpers for unit-test fixtures.
 
+/// Ask Cargo for the built executable. Unit-test paths can be in a separate
+/// build directory and do not identify where Cargo put a package's binaries.
+pub(crate) fn build_test_binary(package: &str, name: &str) -> std::path::PathBuf {
+    let output = std::process::Command::new(env!("CARGO"))
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .args([
+            "build",
+            "--locked",
+            "-p",
+            package,
+            "--bin",
+            name,
+            "--message-format=json",
+        ])
+        .stderr(std::process::Stdio::inherit())
+        .output()
+        .expect("run cargo build for test binary");
+    assert!(output.status.success(), "building {name} failed");
+    String::from_utf8(output.stdout)
+        .expect("Cargo JSON output is UTF-8")
+        .lines()
+        .find_map(|line| {
+            let message: serde_json::Value =
+                serde_json::from_str(line).expect("Cargo JSON message");
+            if message["reason"] == "compiler-artifact" && message["target"]["name"] == name {
+                message["executable"].as_str().map(std::path::PathBuf::from)
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| panic!("Cargo did not report an executable for {name}"))
+}
+
 /// Creates a temporary directory for fixtures that ownership and no-follow
 /// safety checks must accept.
 ///

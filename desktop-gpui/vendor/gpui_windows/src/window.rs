@@ -2123,40 +2123,12 @@ fn dwm_set_window_composition_attribute(hwnd: HWND, backdrop_type: u32) {
     }
 }
 
-/// Switch the renderer to composited alpha and enable acrylic only when both
-/// the HWND swap chain and the compositor support it. GPUI's generic setter
-/// cannot report failure to callers that need to paint an opaque fallback.
-///
-/// DevSweep patch: `tint` is the acrylic gradient colour as (red, green, blue,
-/// alpha). The caller passes its field colour so the desktop behind the
-/// window cannot grey the field out.
-pub fn try_enable_window_blur(window: &Window, tint: (u8, u8, u8, u8)) -> bool {
-    use rwh::{HasWindowHandle, RawWindowHandle};
-    let Ok(handle) = HasWindowHandle::window_handle(window) else {
-        return false;
-    };
-    let RawWindowHandle::Win32(handle) = handle.as_raw() else {
-        return false;
-    };
-    let hwnd = HWND(handle.hwnd.get() as *mut _);
-    if unsafe { get_window_long(hwnd, GWL_EXSTYLE) } as u32 & WS_EX_NOREDIRECTIONBITMAP.0 == 0 {
-        return false;
-    }
-    window.set_background_appearance(WindowBackgroundAppearance::Transparent);
-    if set_window_composition_attribute(hwnd, Some(tint), 4) {
-        true
-    } else {
-        window.set_background_appearance(WindowBackgroundAppearance::Opaque);
-        false
-    }
-}
-
-fn set_window_composition_attribute(hwnd: HWND, color: Option<Color>, state: u32) -> bool {
+fn set_window_composition_attribute(hwnd: HWND, color: Option<Color>, state: u32) {
     let mut version = unsafe { std::mem::zeroed() };
     let status = unsafe { windows::Wdk::System::SystemServices::RtlGetVersion(&mut version) };
 
     if !status.is_ok() || version.dwBuildNumber < 17763 {
-        return false;
+        return;
     }
 
     unsafe {
@@ -2170,7 +2142,7 @@ fn set_window_composition_attribute(hwnd: HWND, color: Option<Color>, state: u32
             let func_name = PCSTR::from_raw(c"SetWindowCompositionAttribute".as_ptr() as *const u8);
             let Some(raw_set_window_composition_attribute) = GetProcAddress(user32, func_name)
             else {
-                return false;
+                return;
             };
             let set_window_composition_attribute: SetWindowCompositionAttributeType =
                 std::mem::transmute(raw_set_window_composition_attribute);
@@ -2193,10 +2165,9 @@ fn set_window_composition_attribute(hwnd: HWND, color: Option<Color>, state: u32
                 pv_data: &accent as *const _ as *mut _,
                 cb_data: std::mem::size_of::<AccentPolicy>(),
             };
-            return set_window_composition_attribute(hwnd, &mut data as *mut _ as _).as_bool();
+            let _ = set_window_composition_attribute(hwnd, &mut data as *mut _ as _);
         }
     }
-    false
 }
 
 // When the platform title bar is hidden, Windows may think that our application is meant to appear 'fullscreen'

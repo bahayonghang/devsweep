@@ -85,6 +85,8 @@ impl ReviewBand {
 /// One accepted row borrowed for a single projection.
 #[derive(Clone, Copy, Debug)]
 pub struct MapInput<'a> {
+    /// Cached review-group identity when supplied by the Clean workbench.
+    pub group_id: Option<&'a str>,
     pub id: &'a str,
     pub rule_id: &'a str,
     pub path: Option<&'a str>,
@@ -264,7 +266,10 @@ pub fn project_disk_map(rows: &[MapInput<'_>], bounds: MapBounds) -> DiskMap {
     let mut grouped: HashMap<String, RawGroup> = HashMap::new();
     for index in &indexed[..detail_end] {
         let row = &rows[*index];
-        let (key, title) = group_identity(row.rule_id, row.path);
+        let (key, title) = row
+            .group_id
+            .map(|id| (id.to_string(), id.to_string()))
+            .unwrap_or_else(|| group_identity(row.rule_id, row.path));
         let group = grouped.entry(key).or_insert_with(|| RawGroup {
             title,
             bytes: 0,
@@ -833,6 +838,7 @@ mod tests {
         selectable: bool,
     ) -> MapInput<'a> {
         MapInput {
+            group_id: None,
             id,
             rule_id,
             path,
