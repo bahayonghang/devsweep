@@ -2481,6 +2481,59 @@ mod tests {
     }
 
     #[test]
+    fn chromium_preview_channel_scan_rows_reach_grouped_global_review() {
+        use devsweep_core::model::{RiskLevel, ScanHealth};
+        let mut plan = UntrustedPlan::empty();
+        for (id, channel) in [
+            ("windows.chrome_beta.cache", "Chrome Beta"),
+            ("windows.chrome_canary.cache", "Chrome SxS"),
+            ("windows.edge_beta.cache", "Edge Beta"),
+            ("windows.edge_dev.cache", "Edge Dev"),
+        ] {
+            let path = PathBuf::from(format!("C:/Local/{channel}/User Data/Default/Code Cache"));
+            plan.targets.push(UntrustedTarget {
+                id: TargetId::new(format!("{id}:{}", path.display())),
+                rule_id: id.into(),
+                scope: Scope::Global,
+                ecosystem: Ecosystem::Generic,
+                kind: TargetKind::ToolCache,
+                path: Some(path),
+                estimated_bytes: 1024,
+                size_complete: true,
+                sizing_warnings: vec![],
+                last_modified: None,
+                risk: RiskLevel::Medium,
+                reversible: true,
+                selected_by_default: false,
+                evidence: vec![],
+                intent: CleanupIntent::TrashProjectArtifact { rule_id: id.into() },
+            });
+        }
+        let mut workbench = CleanWorkbench::new();
+        workbench.on_scan_started(CleanScope::Global);
+        workbench.on_scan_result(scan_payload_from_report(ScanReport::new(
+            plan,
+            ScanHealth::complete(),
+        )));
+        workbench.begin_review();
+        assert!(workbench.reviewing());
+        assert_eq!(workbench.selected_count(), 0);
+        assert_eq!(workbench.rows().len(), 4);
+        for row in workbench.rows() {
+            assert_eq!(row.scope, CleanRowScope::Global);
+            assert!(workbench.group_for_row(&row.id).is_some());
+            assert!(workbench.row_selectable(row));
+            for locale in [Locale::En, Locale::ZhCn] {
+                let label = row_text(locale, row, false, false, false, false);
+                assert!(
+                    label.contains(&row.rule_id) && label.contains("Code Cache"),
+                    "{label}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn row_text_uses_locale_copy_and_row_metadata() {
         let mut row = test_row("python.pytest_cache:root", 1536);
         row.rule_id = "python.pytest_cache".to_string();

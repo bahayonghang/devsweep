@@ -7,8 +7,8 @@ use devsweep_core::analysis::{
     AnalyzeRunOutcome, AnalyzeSavedError, AnalyzeSnapshotV1, AnalyzeTrashPlanV1,
     AnalyzeTrashStrictPreviewV1, AnalyzeTrashStrictReportV1, analyze_path,
     decode_analyze_trash_plan, execute_analyze_trash_plan, explain_analyze_node,
-    list_analyze_children, list_analyze_roots, plan_analyze_trash, preview_analyze_trash_plan,
-    reveal_saved_analyze_node,
+    largest_analyze_files, list_analyze_children, list_analyze_roots, plan_analyze_trash,
+    preview_analyze_trash_plan, reveal_saved_analyze_node,
 };
 
 use super::super::{
@@ -38,6 +38,22 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
             }
             AnalyzeCommand::Roots(command) => run_roots(command, locale, cli),
             AnalyzeCommand::List(command) => run_list(command, locale, cli),
+            AnalyzeCommand::Largest(command) => {
+                let snapshot = load_snapshot(&command.snapshot)?;
+                let result = largest_analyze_files(&snapshot, command.min_bytes, command.limit)
+                    .map_err(map_observe)?;
+                let outcome = if result.scan_complete() {
+                    "succeeded"
+                } else {
+                    "partial"
+                };
+                let value = serde_json::to_value(&result).map_err(|error| {
+                    ApplicationError::failed("analyze_serialize_failed", error.to_string())
+                })?;
+                emit_data(cli, locale, "analyze.largest", outcome, value, |locale| {
+                    presentation::analyze::largest(locale, &result)
+                })
+            }
             AnalyzeCommand::Explain(command) => run_explain(command, locale, cli),
             AnalyzeCommand::Reveal(command) => run_reveal(command, locale, cli),
             AnalyzeCommand::TrashPlan(command) => run_trash_plan(command),
@@ -224,7 +240,9 @@ fn finish_observed(
 
 fn map_observe(error: AnalyzeObserveError) -> ApplicationError {
     match error {
-        AnalyzeObserveError::UnknownNode(_) | AnalyzeObserveError::InvalidSnapshot => {
+        AnalyzeObserveError::UnknownNode(_)
+        | AnalyzeObserveError::InvalidSnapshot
+        | AnalyzeObserveError::InvalidLimit => {
             ApplicationError::usage(error.code(), error.to_string())
         }
         AnalyzeObserveError::RootsUnavailable => {

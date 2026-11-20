@@ -1,6 +1,11 @@
 //! Shared host-action review. Only a worker may prepare or dispatch an action.
 //! Display fixtures never become production update or startup authority.
 
+mod leftovers;
+pub(crate) use leftovers::Leftovers;
+mod uninstall;
+pub(crate) use uninstall::UninstallSelection;
+
 use std::{
     ffi::OsStr,
     path::PathBuf,
@@ -27,6 +32,8 @@ pub enum StartupSource {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Intent {
+    Uninstall(uninstall::UninstallSelection),
+    Leftovers(Leftovers),
     KeepAwake {
         enabled: bool,
     },
@@ -48,6 +55,8 @@ pub enum Intent {
 impl Intent {
     pub fn id(&self) -> &str {
         match self {
+            Self::Uninstall(row) => &row.id,
+            Self::Leftovers(row) => &row.id,
             Self::KeepAwake { .. } => "keep-awake",
             Self::Startup { id, .. } => id,
             Self::Update { row } => &row.id,
@@ -57,6 +66,17 @@ impl Intent {
 
     pub fn label(&self, locale: Locale) -> String {
         match self {
+            Self::Leftovers(row) => row.label(locale),
+            Self::Uninstall(row) => format!(
+                "{} {} · {}",
+                copy::pick(
+                    locale,
+                    "Uninstall for the current user:",
+                    "为当前用户卸载："
+                ),
+                row.name,
+                row.identity_label()
+            ),
             Self::KeepAwake { enabled } => if *enabled {
                 copy::pick(
                     locale,
@@ -96,6 +116,9 @@ impl Intent {
 
 #[derive(Clone, Debug)]
 pub enum Plan {
+    Uninstall(software::SoftwareSelectionPlanV1),
+    LeftoverChoices(Vec<software::SoftwareLeftoverCandidateV1>),
+    Leftover(software::SoftwareLeftoverPlanV1),
     KeepAwake(KeepAwakePlan),
     Startup(StartupTogglePlanV1),
     Update(SoftwareUpdatePlanV1),
@@ -114,6 +137,7 @@ pub struct ActionResult {
     pub intent: Intent,
     pub code: String,
     pub reverse: Option<Intent>,
+    pub uninstall: Option<software::SoftwareActionOutcomeV1>,
 }
 
 #[derive(Clone, Debug)]
@@ -150,7 +174,7 @@ pub trait ActionExecutor: Send + Sync {
         &self,
         prepared: &Prepared,
         confirmed: bool,
-        cancel: &dyn CancelObserver,
+        cancel: &Arc<FlagCancelObserver>,
     ) -> Result<ActionResult, String> {
         if cancel.is_cancel_requested() {
             return Err("canceled_before_start".to_string());
@@ -256,6 +280,14 @@ impl ActionExecutor for CoreExecutor {
     fn prepare(&self, intent: Intent) -> Result<Prepared, String> {
         self.check_intent(&intent)?;
         let (plan, digest) = match &intent {
+            Intent::Leftovers(row) => return row.prepare(),
+            Intent::Uninstall(row) => {
+                let inventory = software::inventory_software(row.source(), None)
+                    .map_err(|_| "software_revalidation_unavailable")?;
+                let (plan, digest) =
+                    row.preview(&inventory, crate::software_review::unix_now_ms())?;
+                (Plan::Uninstall(plan), digest)
+            }
             Intent::Process { pid, name } => {
                 let process = self
                     .process
@@ -360,14 +392,14 @@ impl ActionExecutor for CoreExecutor {
     }
 
     fn execute(&self, prepared: &Prepared, confirmed: bool) -> Result<ActionResult, String> {
-        self.execute_cancellable(prepared, confirmed, &FlagCancelObserver::new())
+        self.execute_cancellable(prepared, confirmed, &Arc::default())
     }
 
     fn execute_cancellable(
         &self,
         prepared: &Prepared,
         confirmed: bool,
-        cancel: &dyn CancelObserver,
+        cancel: &Arc<FlagCancelObserver>,
     ) -> Result<ActionResult, String> {
         if !confirmed {
             return Err("confirmation_required".to_string());
@@ -378,6 +410,25 @@ impl ActionExecutor for CoreExecutor {
         self.check_intent(&prepared.intent)?;
         let (code, reverse) =
             match (&prepared.intent, &prepared.plan) {
+                (Intent::Leftovers(row), Plan::Leftover(plan)) => (
+                    row.execute(
+                        plan,
+                        &prepared.digest,
+                        confirmed,
+                        cancel,
+                        software::execute_software_leftover_plan,
+                    )?,
+                    None,
+                ),
+                (Intent::Uninstall(row), Plan::Uninstall(plan)) => {
+                    return row.execute(
+                        plan,
+                        &prepared.digest,
+                        confirmed,
+                        Arc::clone(cancel),
+                        |request| software::SoftwareExecutor::default().execute(request),
+                    );
+                }
                 (Intent::Process { pid, name }, Plan::Process(plan)) => {
                     if *pid != plan.pid || !name.eq_ignore_ascii_case(&plan.name) {
                         return Err("invalid_plan".into());
@@ -400,7 +451,7 @@ impl ActionExecutor for CoreExecutor {
                         probe.as_ref(),
                         killer.as_mut(),
                         audit.as_mut(),
-                        cancel,
+                        cancel.as_ref(),
                     )
                     .map_err(|error| error.code().to_string())?;
                     (report.outcome, None)
@@ -473,7 +524,7 @@ impl ActionExecutor for CoreExecutor {
                         plan,
                         &prepared.digest,
                         confirmed,
-                        cancel,
+                        cancel.as_ref(),
                     )
                     .map_err(|error| error.code().to_string())?;
                     let code = match report.outcome {
@@ -495,6 +546,7 @@ impl ActionExecutor for CoreExecutor {
             intent: prepared.intent.clone(),
             code,
             reverse,
+            uninstall: None,
         })
     }
 
@@ -539,6 +591,7 @@ pub enum Phase {
     #[default]
     Idle,
     Preparing,
+    Choosing,
     Ready,
     Running,
     Finished,
@@ -580,6 +633,11 @@ impl HostReview {
             return false;
         }
         match result {
+            Ok(prepared) if matches!(prepared.as_slice(), [Prepared { intent: Intent::Leftovers(Leftovers { candidate: None, .. }), plan: Plan::LeftoverChoices(_), digest }] if digest.is_empty()) =>
+            {
+                self.prepared = prepared;
+                self.phase = Phase::Choosing;
+            }
             Ok(prepared)
                 if !prepared.is_empty()
                     && prepared.iter().all(|item| valid_digest(&item.digest)) =>
@@ -603,6 +661,8 @@ impl HostReview {
         if !confirmed || self.phase != Phase::Ready || self.prepared.is_empty() {
             return None;
         }
+        // A delayed preview delivery must not release the execution worker's lock.
+        self.generation = self.generation.wrapping_add(1);
         self.phase = Phase::Running;
         Some(std::mem::take(&mut self.prepared))
     }
@@ -625,6 +685,11 @@ impl HostReview {
                 Phase::Preparing => {
                     copy::pick(locale, "Checking the live plan…", "正在检查实时计划…")
                 }
+                Phase::Choosing => copy::pick(
+                    locale,
+                    "Choose a directory to review. Name matches can include personal files.",
+                    "选择要审阅的目录。名称匹配可能包含个人文件。",
+                ),
                 Phase::Ready => copy::pick(
                     locale,
                     "Review these changes, then confirm.",
@@ -641,6 +706,32 @@ impl HostReview {
         ];
         lines.extend(self.intents.iter().map(|intent| intent.label(locale)));
         for item in &self.prepared {
+            if let Plan::LeftoverChoices(choices) = &item.plan {
+                if choices.is_empty() {
+                    lines.push(
+                        copy::pick(
+                            locale,
+                            "No matching directories found.",
+                            "未找到匹配的目录。",
+                        )
+                        .into(),
+                    );
+                }
+                lines.push(copy::pick(locale, "Registry residue: the CLI supports backup and conditional restore of its DevSweepResidue fixture.", "注册表残留：CLI 支持备份 DevSweepResidue 夹具，并在状态匹配时恢复。").into());
+            }
+            if let Plan::Leftover(_) = &item.plan {
+                lines.push(
+                    copy::pick(
+                        locale,
+                        "Confirm only after checking this exact directory and its contents.",
+                        "请先核对这个目录及其内容，再确认移入回收站。",
+                    )
+                    .into(),
+                );
+            }
+            if let Plan::Uninstall(_) = &item.plan {
+                lines.push(copy::pick(locale, "Windows will remove this app for the current user. This action cannot be undone.", "Windows 将为当前用户卸载此应用，无法撤销。").into());
+            }
             if let Plan::Process(plan) = &item.plan {
                 lines.push(format!(
                     "{} · PID {} · {} {}",
@@ -662,6 +753,7 @@ impl HostReview {
         lines.extend(
             self.prepared
                 .iter()
+                .filter(|item| !item.digest.is_empty())
                 .map(|item| format!("{}…", item.digest.chars().take(23).collect::<String>())),
         );
         lines.extend(self.results.iter().map(|result| {
@@ -671,6 +763,13 @@ impl HostReview {
                 result_label(locale, &result.code)
             )
         }));
+        for outcome in self
+            .results
+            .iter()
+            .filter_map(|result| result.uninstall.as_ref())
+        {
+            lines.extend(uninstall::evidence_lines(outcome, locale));
+        }
         if let Some(error) = &self.error {
             lines.push(result_label(locale, error));
         }
@@ -697,7 +796,7 @@ pub fn run_previews(
 pub fn run_actions(
     executor: Arc<dyn ActionExecutor>,
     prepared: Vec<Prepared>,
-    cancel: &FlagCancelObserver,
+    cancel: &Arc<FlagCancelObserver>,
 ) -> Vec<ActionResult> {
     prepared
         .into_iter()
@@ -707,6 +806,7 @@ pub fn run_actions(
                     intent: item.intent,
                     code: "canceled_before_start".to_string(),
                     reverse: None,
+                    uninstall: None,
                 };
             }
             executor
@@ -715,6 +815,7 @@ pub fn run_actions(
                     intent: item.intent,
                     code,
                     reverse: None,
+                    uninstall: None,
                 })
         })
         .collect()
@@ -732,6 +833,80 @@ fn valid_digest(digest: &str) -> bool {
 pub fn result_label(locale: Locale, code: &str) -> String {
     let label = match code.split_once(':').map_or(code, |(kind, _)| kind) {
         "succeeded" | "updated" => copy::pick(locale, "Completed", "已完成"),
+        "removed" => copy::pick(locale, "Uninstalled", "已卸载"),
+        "leftover_audit_unknown" => copy::pick(
+            locale,
+            "The final move could not be verified in history",
+            "无法通过历史记录验证最终移动结果",
+        ),
+        "leftover_moved" => copy::pick(locale, "Moved to Recycle Bin", "已移入回收站"),
+        "leftover_missing" => copy::pick(
+            locale,
+            "Skipped because the directory is gone",
+            "已跳过，目录已不存在",
+        ),
+        "leftover_protected" => copy::pick(
+            locale,
+            "Skipped because the directory is protected",
+            "已跳过，目录受保护",
+        ),
+        "leftover_unsafe" => copy::pick(
+            locale,
+            "Skipped because the path is unsafe",
+            "已跳过，路径不安全",
+        ),
+        "leftover_skipped" => copy::pick(locale, "Skipped the directory", "已跳过该目录"),
+        "leftover_failed" => copy::pick(
+            locale,
+            "The directory could not be moved",
+            "目录未能移入回收站",
+        ),
+        "stale_candidate" | "candidate_changed" | "digest_mismatch" => copy::pick(
+            locale,
+            "The directory changed. Review it again.",
+            "目录已变化，请重新审阅。",
+        ),
+        "uninstall_not_succeeded" => copy::pick(
+            locale,
+            "The software history has no matching successful uninstall",
+            "软件历史中未找到对应的成功卸载记录",
+        ),
+        "protection_unavailable" => copy::pick(
+            locale,
+            "Directory protection could not be verified",
+            "无法验证目录保护状态",
+        ),
+        "still_present" => copy::pick(locale, "The app is still installed", "应用仍已安装"),
+        "msi_context_unsupported" => copy::pick(
+            locale,
+            "Only a unique, unmanaged installation for this user can be removed here",
+            "此处只能卸载当前用户唯一的非托管安装",
+        ),
+        "msi_authority_unavailable" => copy::pick(
+            locale,
+            "Windows could not verify this installation and its restrictions",
+            "Windows 无法验证这项安装及其限制",
+        ),
+        "conflicting_identity" => copy::pick(
+            locale,
+            "Conflicting installation identities",
+            "安装身份存在冲突",
+        ),
+        "arp_settings_only" => copy::pick(
+            locale,
+            "Manage this registry entry in Windows Installed apps",
+            "请在 Windows 已安装的应用中管理此注册表条目",
+        ),
+        "software_not_eligible" => copy::pick(
+            locale,
+            "This app cannot be uninstalled here",
+            "此处无法卸载该应用",
+        ),
+        "software_revalidation_unavailable" => copy::pick(
+            locale,
+            "Windows could not verify the selected app",
+            "Windows 无法验证所选应用",
+        ),
         "terminated" => copy::pick(locale, "Process termination requested", "已请求结束进程"),
         "active" => copy::pick(locale, "Keep awake active", "正在保持唤醒"),
         "stopped" => copy::pick(locale, "Keep awake stopped", "已停止保持唤醒"),
@@ -892,6 +1067,7 @@ mod tests {
                 }
                 .into(),
                 reverse: None,
+                uninstall: None,
             })
         }
     }
@@ -1220,11 +1396,12 @@ mod tests {
         assert!(review.lines(Locale::En).join("\n").contains("sha256:"));
         review.take_confirmed(true);
         review.apply_results(
-            generation,
+            review.generation,
             vec![ActionResult {
                 intent: update("App"),
                 code: "failed".into(),
                 reverse: None,
+                uninstall: None,
             }],
         );
         assert!(review.lines(Locale::En).join("\n").contains("Failed"));

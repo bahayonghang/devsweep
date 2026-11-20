@@ -703,6 +703,62 @@ fn audit_lock_failure_occurs_before_adapter_call() {
 }
 
 #[test]
+fn msix_durable_dispatch_and_terminal_write_failures_preserve_recovery_evidence() {
+    for after_dispatch in [false, true] {
+        let temp = TempDir::new().unwrap();
+        let path = temp.path().join("software.jsonl");
+        let live = fixture_inventory();
+        let (plan, digest) = plan_and_digest(&live);
+        let (mut executor, calls, _) = test_executor_with_inventory(
+            path.clone(),
+            AdapterEvidence::success(),
+            SoftwareInstalledState::Absent,
+            live,
+        );
+        executor.append_fault = super::super::audit::SupportAppendFault {
+            fail_started: !after_dispatch,
+            fail_terminal: after_dispatch,
+        };
+        let error = execute_fixture(&executor, &plan, &digest, None).unwrap_err();
+        assert_eq!(
+            matches!(error, SoftwareExecutionError::AuditAfterDispatch(_)),
+            after_dispatch
+        );
+        assert_eq!(calls.load(Ordering::SeqCst), usize::from(after_dispatch));
+        let records: Vec<SoftwareAuditRecordV1> = fs::read_to_string(&path)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        assert_eq!(
+            records
+                .iter()
+                .any(|record| record.transition == SoftwareAuditTransition::DispatchStarted),
+            after_dispatch
+        );
+        assert!(
+            !records.iter().any(|record| matches!(
+                record.transition,
+                SoftwareAuditTransition::Terminal { .. }
+            ))
+        );
+        executor.append_fault = Default::default();
+        let recovered = executor.recover_startup().unwrap();
+        assert_eq!(recovered.len(), 1);
+        assert_eq!(
+            recovered[0].outcome,
+            if after_dispatch {
+                SoftwareExecutionOutcome::Removed
+            } else {
+                SoftwareExecutionOutcome::CanceledBeforeStart
+            }
+        );
+        assert_eq!(recovered[0].operation_id, records[0].operation_id);
+        assert_eq!(calls.load(Ordering::SeqCst), usize::from(after_dispatch));
+    }
+}
+
+#[test]
 fn process_single_flight_serializes_concurrent_adapters() {
     let temp = TempDir::new().unwrap();
     let calls = Arc::new(AtomicUsize::new(0));

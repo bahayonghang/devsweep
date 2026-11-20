@@ -18,11 +18,13 @@ clap = { version = "4.6.7", features = ["derive"] }
 crossterm = "0.29.0"
 devsweep-core = { path = "../devsweep-core" }
 ratatui = { version = "0.30.2", features = ["crossterm"] }
+serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 tracing-subscriber = "0.3.23"
 unicode-width = "0.2.2"
 
 [dev-dependencies]
+devsweep-core = { path = "../devsweep-core", features = ["optimize-fixtures"] }
 sha2 = "0.11.1"
 tempfile = "3.27.0"
 

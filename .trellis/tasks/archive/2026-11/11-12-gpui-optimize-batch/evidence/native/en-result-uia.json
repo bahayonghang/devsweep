@@ -1,0 +1,249 @@
+[
+    {
+        "id":  "shell-root",
+        "type":  "ControlType.Pane",
+        "name":  "DevSweep",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "49,40,1550,1025"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "DevSweep menu",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,54,192,46"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Tab",
+        "name":  "Modes",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "491,52,681,50"
+    },
+    {
+        "id":  "mode-clean",
+        "type":  "ControlType.TabItem",
+        "name":  "Clean",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "495,56,118,41"
+    },
+    {
+        "id":  "mode-software",
+        "type":  "ControlType.TabItem",
+        "name":  "Software",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "615,56,145,41"
+    },
+    {
+        "id":  "mode-optimize",
+        "type":  "ControlType.TabItem",
+        "name":  "Optimize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "762,56,145,41"
+    },
+    {
+        "id":  "mode-analyze",
+        "type":  "ControlType.TabItem",
+        "name":  "Analyze",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "909,56,134,41"
+    },
+    {
+        "id":  "mode-status",
+        "type":  "ControlType.TabItem",
+        "name":  "Status",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1045,56,123,41"
+    },
+    {
+        "id":  "titlebar-theme",
+        "type":  "ControlType.Button",
+        "name":  "Switch to dark theme",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1305,55,44,44"
+    },
+    {
+        "id":  "titlebar-settings",
+        "type":  "ControlType.Button",
+        "name":  "Settings",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1359,55,44,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Minimize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1428,55,56,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Maximize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1485,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Close",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1542,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Pane",
+        "name":  "Optimize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,115,1490,920"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.StatusBar",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,146,1268,93"
+    },
+    {
+        "id":  "optimize-batch-review",
+        "type":  "ControlType.Button",
+        "name":  "Review plan",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1398,170,140,45"
+    },
+    {
+        "id":  "optimize-isolated-fixture",
+        "type":  "ControlType.StatusBar",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,259,1428,27"
+    },
+    {
+        "id":  "optimize-batch-results",
+        "type":  "ControlType.Group",
+        "name":  "Maintenance results",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,302,1428,254"
+    },
+    {
+        "id":  "optimize-result-maintenance.clock_probe",
+        "type":  "ControlType.ListItem",
+        "name":  "Check clock offset · Failed · Operation reported failure",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,322,1388,52"
+    },
+    {
+        "id":  "optimize-result-maintenance.retrim",
+        "type":  "ControlType.ListItem",
+        "name":  "Retrim SSD volumes · Skipped · Administrator privileges required",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,384,1388,52"
+    },
+    {
+        "id":  "optimize-result-dns.flush",
+        "type":  "ControlType.ListItem",
+        "name":  "Flush DNS cache · Succeeded",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,446,1388,52"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Text",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,508,1388,28"
+    },
+    {
+        "id":  "optimize-check-dns.flush",
+        "type":  "ControlType.CheckBox",
+        "name":  "Flush DNS cache · Refresh the DNS resolver cache",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,633,1388,74",
+        "toggle":  "On"
+    },
+    {
+        "id":  "optimize-check-maintenance.retrim",
+        "type":  "ControlType.CheckBox",
+        "name":  "Retrim SSD volumes · Retrim an eligible SSD · Administrator",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,717,1388,74",
+        "toggle":  "On"
+    },
+    {
+        "id":  "optimize-check-maintenance.clock_probe",
+        "type":  "ControlType.CheckBox",
+        "name":  "Check clock offset · Request three samples from time.windows.com",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,801,1388,74",
+        "toggle":  "On"
+    },
+    {
+        "id":  "optimize-check-maintenance.clock_sync",
+        "type":  "ControlType.CheckBox",
+        "name":  "Resync system clock · Resynchronize the system clock · Administrator",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,885,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-check-maintenance.image_scan",
+        "type":  "ControlType.CheckBox",
+        "name":  "Scan Windows image · Scan the Windows image · Administrator",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,969,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-check-maintenance.image_repair",
+        "type":  "ControlType.CheckBox",
+        "name":  "Repair Windows image · Repair a verified repairable image · Administrator",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,1053,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-check-maintenance.dead_startup",
+        "type":  "ControlType.CheckBox",
+        "name":  "Broken startup entries · Back up and remove missing-target startup entries · Administrator",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,1137,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-guidance",
+        "type":  "ControlType.Button",
+        "name":  "Guidance and system settings",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,1266,1388,45"
+    }
+]

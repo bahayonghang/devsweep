@@ -20,6 +20,7 @@ pub(super) fn run(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
             HistoryCommand::List(command) => {
                 run_list(cli, locale, command.domain.map(map_domain), command.limit)
             }
+            HistoryCommand::Totals(_) => run_totals(cli, locale),
             HistoryCommand::Show(command) => run_show(cli, locale, &command.operation_id),
         },
         _ => Err(mode_unavailable(cli, locale)),
@@ -67,6 +68,33 @@ fn run_list(
             })?,
         ),
     }
+}
+
+fn run_totals(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
+    let totals = devsweep_core::history::history_totals()
+        .map_err(|error| map_history_error(locale, error, None))?;
+    let partial = totals.partial();
+    if cli.result_format() == ResultFormat::Human {
+        let text = presentation::history::totals(locale, &totals).map_err(|error| {
+            ApplicationError::failed("catalogue_render_failed", error.to_string())
+        })?;
+        write_human(cli, &text)?;
+    } else {
+        write_envelope(
+            cli,
+            "history.totals",
+            if partial { "partial" } else { "succeeded" },
+            serde_json::json!(totals),
+        )?;
+    }
+    if partial {
+        return Err(ApplicationError::after_output(
+            ExitClass::Partial,
+            "history_totals_partial",
+            "one or more totals are lower bounds",
+        ));
+    }
+    Ok(())
 }
 
 fn run_show(cli: &Cli, locale: Locale, operation_id: &str) -> Result<(), ApplicationError> {

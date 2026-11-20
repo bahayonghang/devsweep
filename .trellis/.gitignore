@@ -6,6 +6,7 @@
 
 # Session/window scoped runtime state
 .runtime/
+/hooks.local.json
 
 # Ralph Loop state file
 .ralph-state.json

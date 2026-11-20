@@ -12,6 +12,9 @@
 
 # Cargo, Node, and VitePress outputs
 target/
+# The two Cargo workspaces may point their target at a shared build cache.
+/target
+/desktop-gpui/target
 dist/
 node_modules/
 docs/.vitepress/cache/

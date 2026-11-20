@@ -416,7 +416,7 @@ fn power_tile(t: &Theme, locale: Locale, snapshot: &StatusSnapshotV1) -> Tile {
                     } else if fraction < 0.30 {
                         t.warning
                     } else {
-                        t.accent
+                        t.input
                     };
                     Tile {
                         id: "power",
@@ -481,7 +481,7 @@ fn free_space_tile(t: &Theme, locale: Locale, snapshot: &StatusSnapshotV1) -> Ti
             } else if fraction >= 0.75 {
                 t.warning
             } else {
-                t.accent
+                t.input
             };
             let name = volume.mount_points.first().map_or_else(
                 || volume.volume_id.clone(),
@@ -589,6 +589,32 @@ fn disk_activity_tile(locale: Locale, snapshot: &StatusSnapshotV1) -> Tile {
 
 /// The eight tiles in grid order: health first, then CPU, GPU, memory, power,
 /// free space, network and disk activity.
+#[cfg(windows)]
+pub(super) struct TrayReadings {
+    pub(super) health: String,
+    pub(super) machine: Vec<String>,
+    pub(super) metrics: [(&'static str, String); 4],
+}
+
+#[cfg(windows)]
+pub(super) fn tray_readings(
+    t: &Theme,
+    locale: Locale,
+    snapshot: &StatusSnapshotV1,
+) -> TrayReadings {
+    TrayReadings {
+        health: health_tile(locale, snapshot).figure,
+        machine: identity_lines(locale, snapshot),
+        metrics: [
+            cpu_tile(locale, snapshot),
+            gpu_tile(locale, snapshot),
+            memory_tile(locale, snapshot),
+            power_tile(t, locale, snapshot),
+        ]
+        .map(|tile| (tile.label, tile.figure)),
+    }
+}
+
 fn status_tiles(t: &Theme, locale: Locale, snapshot: &StatusSnapshotV1) -> Vec<Tile> {
     vec![
         health_tile(locale, snapshot),
@@ -607,8 +633,8 @@ fn status_tiles(t: &Theme, locale: Locale, snapshot: &StatusSnapshotV1) -> Vec<T
 fn trend_line(t: &Theme, metric: TrendMetric, trend: &Trend) -> gpui::AnyElement {
     let samples = trend.samples();
     let ceiling = metric.ceiling(trend);
-    let line = rgb(t.info);
-    let base = rgb(t.surface_active);
+    let line = rgb(t.output);
+    let base = t.control_fill.color();
     canvas(
         |_, _, _| {},
         move |bounds, (), window, _| {
@@ -905,7 +931,7 @@ impl ShellView {
                             div()
                                 .truncate()
                                 .text_size(ui::TYPE_META)
-                                .text_color(rgb(t.text))
+                                .text_color(rgb(t.ink))
                                 .child(line)
                         }))
                         .into_any_element(),
@@ -918,15 +944,15 @@ impl ShellView {
             Figure::Missing => figure
                 .text_size(ui::TYPE_TITLE)
                 .font_weight(FontWeight::SEMIBOLD)
-                .text_color(rgb(t.text_muted)),
+                .text_color(rgb(t.muted)),
             Figure::Reading | Figure::Plain => figure
                 .text_size(ui::TYPE_DISPLAY)
                 .font_weight(FontWeight::BOLD)
                 .font_features(ui::tabular_numerals())
                 .text_color(rgb(if tile.style == Figure::Reading {
-                    t.info
+                    t.output
                 } else {
-                    t.text
+                    t.ink
                 })),
         };
         div()
@@ -942,17 +968,15 @@ impl ShellView {
             .gap(ui::SPACE_1)
             .p(ui::SPACE_3)
             .rounded(ui::RADIUS_ITEM)
-            .bg(rgb(t.surface))
-            .when(t.high_contrast, |d| {
-                d.border_1().border_color(rgb(t.border))
-            })
+            .bg(t.well.color())
+            .when(t.high_contrast, |d| d.border_1().border_color(rgb(t.ink)))
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .items_center()
                     .gap(ui::SPACE_1)
-                    .child(ui::icon(tile.icon, t.text_muted))
+                    .child(ui::icon(tile.icon, t.muted))
                     .child(
                         div()
                             .flex_1()
@@ -973,7 +997,7 @@ impl ShellView {
             .child(
                 div()
                     .text_size(ui::TYPE_META)
-                    .text_color(rgb(t.text_muted))
+                    .text_color(rgb(t.muted))
                     .child(tile.detail),
             )
             .into_any_element()
@@ -992,7 +1016,7 @@ impl ShellView {
                     } else if fraction >= 0.75 {
                         t.warning
                     } else {
-                        t.accent
+                        t.input
                     };
                     let name = volume
                         .mount_points
@@ -1004,7 +1028,7 @@ impl ShellView {
                         .flex_row()
                         .items_center()
                         .gap(ui::SPACE_2)
-                        .child(ui::icon("drive", t.text_muted))
+                        .child(ui::icon("drive", t.muted))
                         .child(
                             div()
                                 .flex()
@@ -1074,7 +1098,7 @@ impl ShellView {
             let cell = div()
                 .text_size(ui::TYPE_META)
                 .font_weight(FontWeight::SEMIBOLD)
-                .text_color(rgb(if active { t.text } else { t.text_muted }));
+                .text_color(rgb(if active { t.ink } else { t.muted }));
             match width {
                 Some(w) => cell.w(rems(w)).flex_shrink_0().text_right().child(label),
                 None => cell.flex_1().child(label),
@@ -1144,8 +1168,8 @@ impl ShellView {
                     per_second(row.write_bytes_per_second)
                 )))
                 .border_1()
-                .border_color(rgb(if selected { t.border_strong } else { t.surface }))
-                .when(selected, |row| row.bg(rgb(t.surface_active)))
+                .border_color(ui::NO_EDGE)
+                .when(selected, |row| row.bg(rgb(t.input_wash)))
                 .cursor_pointer()
                 .keyboard_focus(t)
                 .on_click(cx.listener(move |this, _, _, cx| {
@@ -1166,7 +1190,7 @@ impl ShellView {
                 .px(ui::SPACE_2)
                 .py(ui::SPACE_1)
                 .rounded(ui::RADIUS_ITEM)
-                .when(!selected, |row| row.hover(|s| s.bg(rgb(t.surface_alt))))
+                .when(!selected, |row| row.hover(|s| s.bg(t.control_fill.color())))
                 .font_features(ui::tabular_numerals())
                 .child(
                     div()
@@ -1183,7 +1207,7 @@ impl ShellView {
                         .child(ui::meter(
                             t,
                             row.cpu_basis_points_of_one_logical_core as f32 / max_cpu as f32,
-                            t.accent,
+                            t.input,
                         )),
                 )
                 .child(
@@ -1208,7 +1232,7 @@ impl ShellView {
                         .flex_shrink_0()
                         .text_right()
                         .text_size(ui::TYPE_META)
-                        .text_color(rgb(t.text_muted))
+                        .text_color(rgb(t.muted))
                         .child(row.pid.to_string()),
                 )
                 .child(
@@ -1217,7 +1241,7 @@ impl ShellView {
                         .flex_shrink_0()
                         .text_right()
                         .text_size(ui::TYPE_META)
-                        .text_color(rgb(t.text_muted))
+                        .text_color(rgb(t.muted))
                         .child(per_second(row.read_bytes_per_second)),
                 )
                 .child(
@@ -1226,7 +1250,7 @@ impl ShellView {
                         .flex_shrink_0()
                         .text_right()
                         .text_size(ui::TYPE_META)
-                        .text_color(rgb(t.text_muted))
+                        .text_color(rgb(t.muted))
                         .child(per_second(row.write_bytes_per_second)),
                 );
             body.push(element.into_any_element());
@@ -1261,7 +1285,7 @@ impl ShellView {
                             .gap(ui::SPACE_1)
                             .w(rems(16.0))
                             .max_w_full()
-                            .child(ui::icon("search", t.text_muted))
+                            .child(ui::icon("search", t.muted))
                             .child(div().flex_1().min_w_0().child(self.search.clone())),
                     )
                     .child(
@@ -1334,16 +1358,14 @@ impl ShellView {
             .gap(ui::SPACE_1)
             .p(ui::SPACE_3)
             .rounded(ui::RADIUS_ITEM)
-            .bg(rgb(t.surface_alt))
-            .when(t.high_contrast, |d| {
-                d.border_1().border_color(rgb(t.border))
-            });
+            .bg(t.control_fill.color())
+            .when(t.high_contrast, |d| d.border_1().border_color(rgb(t.ink)));
         let header = div()
             .flex()
             .flex_row()
             .items_center()
             .gap(ui::SPACE_1)
-            .child(ui::icon("info", t.accent))
+            .child(ui::icon("info", t.input))
             .child(
                 div()
                     .flex_1()

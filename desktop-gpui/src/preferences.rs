@@ -16,6 +16,7 @@ use std::{
     time::Duration,
 };
 
+use devsweep_core::desktop_preferences::CloseBehavior;
 use serde::{Deserialize, Deserializer, Serialize, de};
 
 const TEXT_SCALES: &[u8] = &[100, 110, 125];
@@ -217,6 +218,9 @@ pub struct DesktopPreferences {
     pub status_process_limit: u8,
     #[serde(deserialize_with = "hud_interval")]
     pub hud_interval_seconds: u8,
+    /// Keep the process available from its notification icon when the main window closes.
+    #[serde(default, skip_serializing_if = "CloseBehavior::is_exit")]
+    pub close_behavior: CloseBehavior,
 }
 
 impl Default for DesktopPreferences {
@@ -231,6 +235,7 @@ impl Default for DesktopPreferences {
             status_interval_seconds: 2,
             status_process_limit: 15,
             hud_interval_seconds: 2,
+            close_behavior: CloseBehavior::Exit,
         }
     }
 }
@@ -267,6 +272,9 @@ pub enum DesktopPatch {
         #[serde(deserialize_with = "hud_interval")]
         value: u8,
     },
+    CloseBehavior {
+        value: CloseBehavior,
+    },
     ResetAppearance {},
     ResetPerformance {},
 }
@@ -282,6 +290,7 @@ impl DesktopPreferences {
             DesktopPatch::StatusIntervalSeconds { value } => self.status_interval_seconds = value,
             DesktopPatch::StatusProcessLimit { value } => self.status_process_limit = value,
             DesktopPatch::HudIntervalSeconds { value } => self.hud_interval_seconds = value,
+            DesktopPatch::CloseBehavior { value } => self.close_behavior = value,
             DesktopPatch::ResetAppearance {} => {
                 let defaults = Self::default();
                 self.theme = defaults.theme;
@@ -772,6 +781,7 @@ impl From<DesktopPreferencesV1> for DesktopPreferences {
             status_interval_seconds: value.status_interval_seconds,
             status_process_limit: value.status_process_limit,
             hud_interval_seconds: value.hud_interval_seconds,
+            close_behavior: CloseBehavior::Exit,
         }
     }
 }

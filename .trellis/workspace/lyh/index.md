@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 71
-- **Last Active**: 2026-11-16
+- **Total Sessions**: 78
+- **Last Active**: 2026-11-20
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~201 | Active |
+| `journal-2.md` | ~342 | Active |
 | `journal-1.md` | ~1970 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,13 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 78 | 2026-11-20 | 完成 Mole GPUI 整树集成验收与归档 | - | `integration/mole-parity-1120` |
+| 77 | 2026-11-20 | R8 批量维护授权与结果验收归档 | - | `integration/mole-parity-1120` |
+| 76 | 2026-11-20 | R9 托盘与累计统计验收归档 | - | `integration/mole-parity-1120` |
+| 75 | 2026-11-20 | R7 Analyze 验收归档 | - | `integration/mole-parity-1120` |
+| 74 | 2026-11-20 | R4 主机动作验收归档 | - | `integration/mole-parity-1120` |
+| 73 | 2026-11-20 | R6 四个浏览器通道验收归档 | - | `integration/mole-parity-1120` |
+| 72 | 2026-11-20 | R5 Clean 原生验收与归档 | - | `integration/mole-parity-1120` |
 | 71 | 2026-11-16 | 分批提交 Clean 与 Host Actions 阶段成果并交接后续评审 | `9991d81`, `755a296`, `2c5b879`, `f92367f`, `3f68b6d` | `dev` |
 | 70 | 2026-11-16 | Host Actions 步骤 9 实施检查完成，停在步骤 10 前 | - | `dev` |
 | 69 | 2026-11-15 | Host Actions 步骤 3–8 实施与检查完成，等待步骤 9 评审 | - | `dev` |

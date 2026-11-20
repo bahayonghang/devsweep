@@ -1,0 +1,14 @@
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-mole-parity-airy-glass/research/gap-analysis.md", "reason": "对标差距矩阵与证据"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-mole-parity-airy-glass/design.md", "reason": "跨子任务契约：CLI 先行、授权链、JSON 兼容"}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端规范索引"}
+{"file": ".trellis/spec/backend/provider-authority.md", "reason": "授权依据与执行边界"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "错误与不可用状态的表达"}
+{"file": ".trellis/spec/backend/desktop-runtime.md", "reason": "GPUI 运行时、焦点与进程内调用边界"}
+{"file": "desktop-gpui/DESIGN.md", "reason": "已交付的 GPUI 设计与确认组件规范"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-host-actions/research/msi.md", "reason": "步骤 1 历史研究；以用户已批准的 step-2-review.md 为准，绝对零 UAC 与 owner receipt 未采纳"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-host-actions/research/msi-review.md", "reason": "独立检查：原研究的无任意 UAC 保证与 owner receipt 不能直接作为可实施结论"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-host-actions/research/step-2-review.md", "reason": "用户已批准的步骤 2 决定；继续步骤 3–8，步骤 9 前停下"}
+{"file": ".trellis/spec/backend/software-host-actions.md", "reason": "步骤 3–8 的 MSI/更新/启动项授权与历史契约"}
+{"file": ".trellis/spec/backend/keep-awake-session.md", "reason": "共用有限租期计划/摘要、owner线程、端点与Status动作历史"}
+{"file": ".trellis/tasks/archive/2026-11/11-12-gpui-host-actions/research/step-9-review.md", "reason": "2026-11-16 用户已批准步骤 9：进程身份绑定/保护、core CLI 审计先行、夹具验证，步骤 10 前停下"}
+{"file": ".trellis/spec/backend/process-actions.md", "reason": "步骤 9 的进程计划/摘要、实际句柄身份、审计与 Status 历史合同"}

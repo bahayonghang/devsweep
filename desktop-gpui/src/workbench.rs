@@ -49,7 +49,7 @@ const OBSERVE_EXPLANATION: &str =
     "This catalogue row is observation only. It has no dispatch and cannot run.";
 const UNKNOWN_EXPLANATION: &str = "This identity is outside the published Optimize catalogue.";
 const LEFTOVERS_EXPLANATION: &str =
-    "Leftovers is not a software workbench segment. It is unavailable here.";
+    "Leftovers can be reviewed from the uninstall result after an app is removed.";
 
 /// Map a workbench action to an accepted CLI identity, or refuse it.
 pub fn resolve(action: WorkbenchAction<'_>) -> WorkbenchDecision {

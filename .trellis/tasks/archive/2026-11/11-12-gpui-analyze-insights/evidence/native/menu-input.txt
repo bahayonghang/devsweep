@@ -1,0 +1,29 @@
+r7-evidence-menu launch=[] fixture=[] binary_sha256=D325B433025E7912DA03482457369BCEE3881E55700D21F9649D4E9679CBF658 os=10.0.26300.0 transparency=1 apps_light=0
+r7-evidence-menu dpi=120 window=1568x1034 client=1550x1025 logical_client=1240x820
+r7-evidence-menu root name=DevSweep, class=Zed::Window, framework=AccessKit, control=ControlType.Window, pid=27324
+r7-evidence-menu uia=prime elements=0
+r7-evidence-menu key 9
+r7-evidence-menu click-id id=mode-analyze label=Analyze focused=False enabled=True bounds=908,56,134,41
+r7-evidence-menu click-name id=analyze-root-2 label=d:/ds-integrate-1120/dist/verify-1120/r7-evidence-menu/project Ready focused=False enabled=True bounds=950,250,400,92
+r7-evidence-menu wait-id id=analyze-row-2 label=analysis-1.bin 120 MB present focused=False enabled=True bounds=130,338,531,58
+r7-evidence-menu click-id id=analyze-row-2 label=analysis-1.bin 120 MB present focused=False enabled=True bounds=130,338,531,58
+r7-evidence-menu right-id id=analyze-row-2 label=analysis-1.bin 120 MB present focused=False enabled=True bounds=130,338,531,58
+r7-evidence-menu wait-id id=analyze-node-menu label= focused=False enabled=True bounds=395,366,259,187
+r7-evidence-menu captured right.png 1568x1034
+r7-evidence-menu key 27
+r7-evidence-menu focus-read id=analyze-row-2 label=analysis-1.bin 120 MB present focused=False enabled=True bounds=130,338,531,58
+r7-evidence-menu key 93
+r7-evidence-menu wait-id id=analyze-node-menu label= focused=False enabled=True bounds=146,273,259,187
+r7-evidence-menu captured apps.png 1568x1034
+r7-evidence-menu key 27
+r7-evidence-menu focus-read id=analyze-row-2 label=analysis-1.bin 120 MB present focused=False enabled=True bounds=130,338,531,58
+r7-evidence-menu private Shift+121 delivered=True
+r7-evidence-menu wait-id id=analyze-node-menu label= focused=False enabled=True bounds=146,273,259,187
+r7-evidence-menu captured shift.png 1568x1034
+r7-evidence-menu key 40
+r7-evidence-menu key 40
+r7-evidence-menu key 13
+r7-evidence-menu root name=DevSweep, class=Zed::Window, framework=AccessKit, control=ControlType.Window, pid=27324
+r7-evidence-menu uia=after elements=31
+r7-evidence-menu captured after.png 1568x1034
+r7-evidence-menu exit=0

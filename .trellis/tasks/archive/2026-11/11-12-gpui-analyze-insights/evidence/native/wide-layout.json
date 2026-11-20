@@ -1,0 +1,253 @@
+[
+    {
+        "id":  "shell-root",
+        "type":  "ControlType.Pane",
+        "name":  "DevSweep",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "49,40,1550,1025"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "DevSweep 菜单",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,54,192,46"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Tab",
+        "name":  "模式",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "558,52,546,50"
+    },
+    {
+        "id":  "mode-clean",
+        "type":  "ControlType.TabItem",
+        "name":  "清理",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "562,56,106,41"
+    },
+    {
+        "id":  "mode-software",
+        "type":  "ControlType.TabItem",
+        "name":  "软件",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "670,56,106,41"
+    },
+    {
+        "id":  "mode-optimize",
+        "type":  "ControlType.TabItem",
+        "name":  "优化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "778,56,106,41"
+    },
+    {
+        "id":  "mode-analyze",
+        "type":  "ControlType.TabItem",
+        "name":  "分析",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "886,56,105,41"
+    },
+    {
+        "id":  "mode-status",
+        "type":  "ControlType.TabItem",
+        "name":  "状态",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "994,56,106,41"
+    },
+    {
+        "id":  "titlebar-theme",
+        "type":  "ControlType.Button",
+        "name":  "切换到深色主题",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1305,55,44,44"
+    },
+    {
+        "id":  "titlebar-settings",
+        "type":  "ControlType.Button",
+        "name":  "设置",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1359,55,44,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "最小化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1428,55,56,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "最大化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1485,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "关闭",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1542,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Pane",
+        "name":  "分析",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,115,1490,920"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.StatusBar",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,154,1121,28"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "返回",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1251,146,106,45"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "选择文件夹…",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1367,146,171,45"
+    },
+    {
+        "id":  "analyze-folder",
+        "type":  "ControlType.Button",
+        "name":  "文件夹",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,211,95,45"
+    },
+    {
+        "id":  "analyze-largest",
+        "type":  "ControlType.Button",
+        "name":  "最大文件",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "220,211,112,45"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.List",
+        "name":  "无障碍目录列表",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,338,531,173"
+    },
+    {
+        "id":  "analyze-row-1",
+        "type":  "ControlType.ListItem",
+        "name":  "analysis-1.bin 120 MB 存在",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,338,531,58"
+    },
+    {
+        "id":  "analyze-check-1",
+        "type":  "ControlType.CheckBox",
+        "name":  "analysis-1.bin",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "146,356,22,22",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "analyze-row-2",
+        "type":  "ControlType.ListItem",
+        "name":  "analysis-2.bin 60.0 MB 存在",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,396,531,57"
+    },
+    {
+        "id":  "analyze-check-2",
+        "type":  "ControlType.CheckBox",
+        "name":  "analysis-2.bin",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "146,414,22,22",
+        "toggle":  "On"
+    },
+    {
+        "id":  "analyze-row-3",
+        "type":  "ControlType.ListItem",
+        "name":  "analysis-3.bin 30.0 MB 存在",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,454,531,58"
+    },
+    {
+        "id":  "analyze-check-3",
+        "type":  "ControlType.CheckBox",
+        "name":  "analysis-3.bin",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "146,472,22,22",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Group",
+        "name":  "当前目录矩形树图",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "721,343,797,375"
+    },
+    {
+        "id":  "analyze-tile-1",
+        "type":  "ControlType.Button",
+        "name":  "analysis-1.bin 120 MB",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "723,344,794,212"
+    },
+    {
+        "id":  "analyze-tile-2",
+        "type":  "ControlType.Button",
+        "name":  "analysis-2.bin 60.0 MB",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "723,559,794,105"
+    },
+    {
+        "id":  "analyze-tile-3",
+        "type":  "ControlType.Button",
+        "name":  "analysis-3.bin 30.0 MB",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "723,666,794,51"
+    },
+    {
+        "id":  "analyze-preview-recycle",
+        "type":  "ControlType.Button",
+        "name":  "预览移到回收站",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1353,939,165,45"
+    }
+]

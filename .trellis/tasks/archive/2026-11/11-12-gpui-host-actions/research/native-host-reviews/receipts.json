@@ -1,0 +1,184 @@
+{
+  "window": "DevSweep / Zed::Window / AccessKit",
+  "os_build": "Windows 10.0.26300.0",
+  "logical_client": [
+    860,
+    340
+  ],
+  "image_size": [
+    1093,
+    472
+  ],
+  "dpi": 120,
+  "method": "Win32 PrintWindow 2 on per-case non-input desktop",
+  "records": [
+    {
+      "scene": "awake-result-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "7df704dfd8efd0edce6a363b01366ac6e4262ce15ef050815ef1fff190777fba",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "awake-result-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "74bd4ebfd0ccbbae29fe5350aa478b2401eda9106132992c8ba9fc4010e8c691",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "awake-review-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "287db48db18faf26e8e8e06c930afdfb87daf03c57e490c399bb3e5955a36aee",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "awake-review-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "7a880ca5e8df8114c14d3cf0b1878de34158e571c1b4e3011b2f73e89585c119",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "leftovers-result-en",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "300009a85512ca970e674ceb5a3cd31f9668dbe6ec795240f5e07148611c27d2",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "leftovers-result-zh",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "9b958d25281ad5523fcdb33c7a84b02b4ad9732c569157a1261be842e4e9e197",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "leftovers-review-en",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "7eb6b538ca8f308f9cf6464c3c98255e579da87ae241c166f9c76d45096f15cf",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "leftovers-review-zh",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "dec989347d7ac8795f1953167d30a4cc33aeb9e499a67bab4cff63415a094a31",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msi-result-en",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "21108881ce8e1059905948d697d829a8d07db1306241f15d506cdad3bd7a0892",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msi-result-zh",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "64b66a3b09c4f8226c8c1d3cc15eea7d067c1bcbfde195e9907e08a331623485",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msi-review-en",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "ee0199ec56f0f741e140f57f98a48a19f99143c491d1c66533589a77689350dd",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msi-review-zh",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "d56e41a36f10b06ea34668076e3bbad96ae388ea74ed7525a0da0accb9daaa25",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msix-result-en",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "5d18eed96aa82d46ec527487ffd3dff9089235ff41926325d25188592a2b68c3",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msix-result-zh",
+      "binary_sha256": "1a87e17d86345490f2360ef15434daeb1944cacc7e9aefbe56f27ad5a20a3859",
+      "sha256": "25a6e0c54495d86236ac3b96181b09ac65e253c0a8eec64fbf4354ae43d27e5e",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msix-review-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "feca288c86a7257fa714b927d3add277c42b027b48e56ffc08ed4082da6f9a6c",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "msix-review-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "d324fbb75d32bbd6220d2a40f0e4649693d90ffd2aecc90a433dd7e84e43ab85",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "process-result-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "5227649a48d34c789443350fe0ab141e531aefdb5fd9091942f5189e924324de",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "process-result-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "fdd64847e18652541df4a4c75842846d075ef56f7b3c316c35a7b8d884047d11",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "process-review-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "182c780aa8442c0acb9299ab6b4887f8dfc5fbfd049199c15eb203668cbafabd",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "process-review-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "8ae97232595b20c71e77407632af768e323e6ca04a5a5ad1c1f0a6b1a969ff13",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "startup-result-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "a00130ead0b5ade9c10f1c0a7d8e4fd24d7d883d87deb19a2b660ae3420618de",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "startup-result-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "7eee6a2666dea4de6739d6ee795f39fd139f3d0d600344d0470606e2f37236b1",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "startup-review-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "a332ea48fa68d75ac551ac1c5291ddb569b5d807920db64cc73d57b1f8f7decf",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "startup-review-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "f6d522493ccb2b09ea8f7d94463bb782a5490e651af4af6730d9980d857f48a4",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "update-result-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "58cebbff4cb40a4af7f8d548870b108e76bf0be0651363893e82484f1fe949de",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "update-result-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "804b683db634630e66c614e30776e9b93ee03cdb735cc2a70256681a23a31908",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "update-review-en",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "d4ae4ffdd23d275e5c0e2873311fbb579d9ecde8f07076e16f580c3f292403f1",
+      "uia_descendants": 0
+    },
+    {
+      "scene": "update-review-zh",
+      "binary_sha256": "84b493a97a3e60f90a32cd96addf5ee1c38782e297eba27ee15e10644c985632",
+      "sha256": "d0784641d0300995e128d6a5b674f52b06ef54691679c7c9bdde93dea65cba75",
+      "uia_descendants": 0
+    }
+  ]
+}

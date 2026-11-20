@@ -33,7 +33,7 @@ pub(crate) fn list(locale: Locale, rules: &[RuleProjectionV1]) -> Result<String,
                 ("id", rule.id.as_str()),
                 ("safety", rule.safety_class),
                 ("risk", risk.as_str()),
-                ("summary", rule.rationale.as_str()),
+                ("summary", &rationale(locale, rule)?),
             ],
             None,
         )?);
@@ -56,7 +56,23 @@ pub(crate) fn show(locale: Locale, rule: &RuleProjectionV1) -> Result<String, Ca
         )?,
         render(locale, "rules.v1.source.shipped", &[], None)?,
         render(locale, "rules.v1.inspect_only", &[], None)?,
-        rule.rationale.clone(),
+        rationale(locale, rule)?,
     ]
     .join("\n"))
+}
+
+fn rationale(locale: Locale, rule: &RuleProjectionV1) -> Result<String, CatalogueError> {
+    let channel = match rule.id.as_str() {
+        "windows.chrome_beta.cache" => "Chrome Beta",
+        "windows.chrome_canary.cache" => "Chrome Canary",
+        "windows.edge_beta.cache" => "Edge Beta",
+        "windows.edge_dev.cache" => "Edge Dev",
+        _ => return Ok(rule.rationale.clone()),
+    };
+    render(
+        locale,
+        "rules.v1.chromium_channel",
+        &[("channel", channel)],
+        None,
+    )
 }

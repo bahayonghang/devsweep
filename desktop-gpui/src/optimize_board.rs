@@ -273,17 +273,6 @@ pub fn schedule_allowed(id: &str) -> bool {
     }
 }
 
-#[must_use]
-pub fn browse_ids() -> Vec<String> {
-    let mut ids = vec![
-        GROUP_STARTUP.to_string(),
-        GROUP_NETWORK.to_string(),
-        GROUP_MAINTENANCE.to_string(),
-    ];
-    ids.extend(crate::workbench_review::optimize_row_ids());
-    ids
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

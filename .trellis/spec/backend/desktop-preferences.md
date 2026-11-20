@@ -33,7 +33,7 @@ group on an explicit Save.
 
 The fixed disk path is
 `%LOCALAPPDATA%/DevSweep/settings/desktop-preferences-v2.json`.
-The disk document is the exact object above.
+The disk document accepts the fields above and optional `close_behavior`. A missing value means `exit`. Saving the default omits the optional field for compatibility with earlier V2 files.
 
 | Field | Closed values | Default |
 | --- | --- | --- |
@@ -45,6 +45,7 @@ The disk document is the exact object above.
 | status_interval_seconds | 1, 2, 5, 10, 30, 60 | 2 |
 | status_process_limit | 5, 15, 30, 50, 100 | 15 |
 | hud_interval_seconds | 2, 5, 10 | 2 |
+| close_behavior | exit, stay_in_tray | exit |
 
 `planet_fps` and `hud_interval_seconds` have no consumer since the Tauri
 desktop app was removed (2026-11-14). They stay in the closed V2 schema so

@@ -207,7 +207,7 @@ pub struct MaintenanceExecutionRequest<'a> {
 
 pub struct MaintenanceExecutor {
     dispatch: Arc<dyn MaintenanceDispatch>,
-    preflight: Arc<dyn LivePreflight>,
+    pub(super) preflight: Arc<dyn LivePreflight>,
     audit_path: Option<PathBuf>,
     timing: DispatchTiming,
 }
@@ -237,16 +237,7 @@ impl MaintenanceExecutor {
         if !request.confirmed {
             return Err(MaintenanceExecutionError::ConfirmationRequired);
         }
-        let _permit = EXECUTION_PERMIT
-            .get_or_init(|| Mutex::new(()))
-            .lock()
-            .map_err(|_| MaintenanceExecutionError::PermitPoisoned)?;
-        let path = match &self.audit_path {
-            Some(path) => path.clone(),
-            None => optimize_audit_v1_path()?,
-        };
-        let mut journal = OptimizeAuditJournal::open(&path)?;
-        self.recover_pending(&mut journal)?;
+        let (_permit, mut journal) = self.begin_execution()?;
         // Live authority is resolved behind both single-flight boundaries and
         // after pending dispatches are reconciled. Callers cannot substitute
         // a serialized or precomputed validated action.
@@ -262,6 +253,23 @@ impl MaintenanceExecutor {
             catalogue_version: action.catalogue_version,
             outcomes: vec![outcome],
         })
+    }
+
+    pub(super) fn begin_execution(
+        &self,
+    ) -> Result<(std::sync::MutexGuard<'static, ()>, OptimizeAuditJournal), MaintenanceExecutionError>
+    {
+        let _permit = EXECUTION_PERMIT
+            .get_or_init(|| Mutex::new(()))
+            .lock()
+            .map_err(|_| MaintenanceExecutionError::PermitPoisoned)?;
+        let path = match &self.audit_path {
+            Some(path) => path.clone(),
+            None => optimize_audit_v1_path()?,
+        };
+        let mut journal = OptimizeAuditJournal::open(&path)?;
+        self.recover_pending(&mut journal)?;
+        Ok((_permit, journal))
     }
 
     /// Reconciles durable nonterminal operations before accepting a new
@@ -281,7 +289,7 @@ impl MaintenanceExecutor {
         self.recover_pending(&mut journal)
     }
 
-    fn execute_one(
+    pub(super) fn execute_one(
         &self,
         journal: &mut OptimizeAuditJournal,
         action: &ValidatedMaintenanceAction,
@@ -406,7 +414,7 @@ impl MaintenanceExecutor {
         Ok(recovered)
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "optimize-fixtures"))]
     pub(super) fn for_test(
         audit_path: PathBuf,
         dispatch: Arc<dyn MaintenanceDispatch>,
@@ -502,7 +510,7 @@ fn action_outcome(
     }
 }
 
-fn next_operation_id() -> String {
+pub(super) fn next_operation_id() -> String {
     let sequence = OPERATION_COUNTER.fetch_add(1, Ordering::SeqCst);
     format!(
         "optimize-op-{:016x}-{:08x}-{sequence:016x}",
@@ -511,7 +519,7 @@ fn next_operation_id() -> String {
     )
 }
 
-fn unix_ms(time: SystemTime) -> u64 {
+pub(super) fn unix_ms(time: SystemTime) -> u64 {
     time.duration_since(UNIX_EPOCH).map_or(0, |duration| {
         u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
     })

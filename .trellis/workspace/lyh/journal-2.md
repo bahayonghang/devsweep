@@ -200,3 +200,143 @@
 - 新 session 从 research/next-session-prompt.md 恢复，复核 current/status/log，评审 research/step-10-review.md，用户确认后才实施。
 - Python 工具门禁仍有两个已知 gitignore 失败与额外 WinError5错误；独跑通过、全套复现，根因未证明，不宣称全套通过。
 - 保持 Clean/Host in_progress，不用 Computer Use，不对用户真实主机执行变更；不推送。
+
+
+## Session 72: R5 Clean 原生验收与归档
+<!-- trellis-session: v=2 fp=f665983db4e043a4 -->
+
+**Date**: 2026-11-20
+**Task**: R5 Clean 原生验收与归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+四种主题语言组合、两组键盘流程、三态 UIA 与 CLI 同次历史核对完成。在独立工作树归档 R5。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 73: R6 四个浏览器通道验收归档
+<!-- trellis-session: v=2 fp=c516b64ca42a03c3 -->
+
+**Date**: 2026-11-20
+**Task**: R6 四个浏览器通道验收归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+核对四个预发布通道、受保护数据、占用与损坏登记。CLI、TUI、GPUI 夹具通过。集成 just ci 全部完成，940 项通过，3 项忽略。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 74: R4 主机动作验收归档
+<!-- trellis-session: v=2 fp=fef5a9c70bb581ab -->
+
+**Date**: 2026-11-20
+**Task**: R4 主机动作验收归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+全部十五步、七类动作和二十八张双语原生图完成。复核修正受保护目录被跳过时的错误完成提示。根门禁与桌面门禁通过。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 75: R7 Analyze 验收归档
+<!-- trellis-session: v=2 fp=689912480f2c4bbd -->
+
+**Date**: 2026-11-20
+**Task**: R7 Analyze 验收归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+最大文件、配额口径、多选及失效摘要、宽窄布局、三种原生菜单启动方式通过。根和桌面门禁均已通过。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 76: R9 托盘与累计统计验收归档
+<!-- trellis-session: v=2 fp=992e2de12c8432ad -->
+
+**Date**: 2026-11-20
+**Task**: R9 托盘与累计统计验收归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+四组 125% 原生窗口验收，覆盖共享采样、驻留或退出、真实菜单、UIA 与模拟消息重注册。在集成门禁复验暂停趋势和损坏历史结果。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 77: R8 批量维护授权与结果验收归档
+<!-- trellis-session: v=2 fp=88ac8be286223e2d -->
+
+**Date**: 2026-11-20
+**Task**: R8 批量维护授权与结果验收归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+核对有序计划、同名目标变化、逐项结果、边界取消与批次历史。两个最终原生批次产生九条同批次事件、三个终态与一个成功统计。集成根 943 项、桌面 266 项、Python 23 项通过。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**
+
+
+## Session 78: 完成 Mole GPUI 整树集成验收与归档
+<!-- trellis-session: v=2 fp=2492fa14be4eb7ed -->
+
+**Date**: 2026-11-20
+**Task**: 完成 Mole GPUI 整树集成验收与归档
+**Branch**: `integration/mole-parity-1120`
+
+### Summary
+
+父任务 AC1–AC8、9 个子任务、33 项差距、24 个原生矩阵链接逐项验证，十组归档上下文清单校验通过。最终 just ci 943 项通过 3 忽略，just gpui 266 项通过 2 个按需原生测试，工具 23 项通过。分支保存未提交的合并与本次改动。
+
+### Git Commits
+
+(No commits - planning session)
+
+### Status
+
+[OK] **Completed**

@@ -740,6 +740,12 @@ fn validate_support_record(
     Ok(())
 }
 
+impl SoftwareAuditRecordV1 {
+    pub(crate) fn valid_for_history(&self) -> bool {
+        validate_record(self).is_ok()
+    }
+}
+
 fn validate_record(record: &SoftwareAuditRecordV1) -> Result<(), SoftwareAuditError> {
     if record.schema_version != SOFTWARE_AUDIT_VERSION
         || record.domain != SOFTWARE_AUDIT_DOMAIN

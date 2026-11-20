@@ -1074,6 +1074,30 @@ mod tests {
         assert_eq!(TrendMetric::Cpu.ceiling(&quiet), 100.0);
     }
 
+    #[test]
+    fn a_paused_status_trend_stays_frozen_while_the_tray_receives_new_readings() {
+        let mut session = Session::unbacked();
+        session.show_mode(Mode::Status);
+        session.status_set_main_visible(true);
+        session.status_set_tray_visible(true);
+        session.status_receive_live(fixture_snapshot());
+        session.status_pause();
+
+        let mut next = fixture_snapshot();
+        next.snapshot_id = "tray-while-paused".to_string();
+        session.status_receive_live(next);
+        assert_eq!(
+            session.status_snapshot().unwrap().snapshot_id,
+            "tray-while-paused"
+        );
+        assert_eq!(session.status_trends().map(StatusTrends::len), Some(1));
+        assert_eq!(session.status_subscription_starts(), 1);
+        assert_eq!(session.status_subscription_stops(), 0);
+
+        session.status_set_tray_visible(false);
+        assert_eq!(session.status_subscription_stops(), 1);
+    }
+
     /// AC4 and AC5 in the session: entering samples at once, every render
     /// keeps one subscription, pause stops it and freezes the trends, leaving
     /// stops it and no later sample is read.

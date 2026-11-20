@@ -22,6 +22,9 @@ use crate::{
     status::{StatusActionAuditRecordV1, status_audit_v1_path},
 };
 
+mod totals;
+pub use totals::{HistoryTotalsV1, SuccessTotalV1, history_totals};
+
 const MAX_NEW_AUDIT_BYTES: u64 = 16 * 1024 * 1024;
 
 const FORBIDDEN_KEYS: &[&str] = &[
@@ -319,41 +322,7 @@ pub fn clean_moved_totals() -> Result<CleanMovedTotalsV1, HistoryError> {
 }
 
 pub(crate) fn clean_moved_totals_at(path: &Path) -> Result<CleanMovedTotalsV1, HistoryError> {
-    let (status, records) = read_store(HistoryDomain::Clean, path)?;
-    let mut totals = CleanMovedTotalsV1 {
-        known_bytes: 0,
-        unknown_records: 0,
-        lower_bound: status.reason_code.is_some(),
-    };
-    for record in &records {
-        let HistoryRecordV1::Clean {
-            record:
-                CleanAuditRecordV1::ExecutionTransition {
-                    outcome_code: ExecutionOutcomeCode::Succeeded,
-                    evidence,
-                    ..
-                },
-        } = record
-        else {
-            continue;
-        };
-        if evidence.action_kind != RedactedActionKind::MoveToTrash {
-            continue;
-        }
-        match evidence.estimated_bytes {
-            Some(bytes) => {
-                totals.known_bytes = totals.known_bytes.saturating_add(bytes);
-                if evidence.capacity_class == CapacityClass::Partial {
-                    totals.lower_bound = true;
-                }
-            }
-            None => {
-                totals.unknown_records = totals.unknown_records.saturating_add(1);
-                totals.lower_bound = true;
-            }
-        }
-    }
-    Ok(totals)
+    totals::clean_at(path)
 }
 
 pub(crate) fn list_history_at(
@@ -400,17 +369,25 @@ pub(crate) fn show_history_at(
         }
         let matched: Vec<HistoryRecordV1> = records
             .into_iter()
-            .filter(|record| record_operation_id(record).as_deref() == Some(operation_id))
+            .filter(|row| {
+                record_operation_id(row).as_deref() == Some(operation_id)
+                    || optimize_batch_id(row) == Some(operation_id)
+            })
             .collect();
         if !matched.is_empty() {
             let summaries = summaries_from(domain, &matched);
-            found = Some((
+            let summary = if matched
+                .iter()
+                .any(|row| optimize_batch_id(row) == Some(operation_id))
+            {
+                optimize_batch_summary(operation_id, &matched, summaries)
+            } else {
                 summaries
                     .into_iter()
                     .next()
-                    .expect("matching records form one summary"),
-                matched,
-            ));
+                    .expect("matching records form one summary")
+            };
+            found = Some((summary, matched));
             break;
         }
     }
@@ -420,6 +397,60 @@ pub(crate) fn show_history_at(
             operation_id: operation_id.to_string(),
             stores_incomplete,
         }),
+    }
+}
+
+fn optimize_batch_id(row: &HistoryRecordV1) -> Option<&str> {
+    match row {
+        HistoryRecordV1::Optimize { record } => record.batch_id.as_deref(),
+        _ => None,
+    }
+}
+
+fn optimize_batch_summary(
+    batch_id: &str,
+    rows: &[HistoryRecordV1],
+    items: Vec<HistoryOperationSummaryV1>,
+) -> HistoryOperationSummaryV1 {
+    let complete = OptimizeAuditRecordV1::complete_batch(rows.iter().filter_map(|row| match row {
+        HistoryRecordV1::Optimize { record } => Some(record),
+        _ => None,
+    }));
+    let mut first = u64::MAX;
+    let mut last = 0;
+    let mut stable_codes = Vec::new();
+    let mut outcomes = std::collections::BTreeSet::new();
+    for item in items {
+        first = first.min(item.first_timestamp_unix_ms);
+        last = last.max(item.last_timestamp_unix_ms);
+        for code in item.stable_codes {
+            if !stable_codes.contains(&code) {
+                stable_codes.push(code);
+            }
+        }
+        outcomes.insert(item.outcome_code);
+    }
+    let outcome = if !complete {
+        "unknown"
+    } else if outcomes.contains("unknown_after_dispatch") {
+        "unknown_after_dispatch"
+    } else if outcomes.contains("failed") {
+        "failed"
+    } else if outcomes.len() == 1 {
+        outcomes.first().expect("one outcome").as_str()
+    } else {
+        "partial"
+    };
+    HistoryOperationSummaryV1 {
+        domain: HistoryDomain::Optimize,
+        operation_id: batch_id.to_string(),
+        first_timestamp_unix_ms: first,
+        last_timestamp_unix_ms: last,
+        outcome_code: outcome.to_string(),
+        stable_codes,
+        partial: !complete || outcomes.len() > 1,
+        unknown: !complete || outcomes.contains("unknown_after_dispatch"),
+        unsupported: false,
     }
 }
 
@@ -452,7 +483,11 @@ fn read_store(
     domain: HistoryDomain,
     path: &Path,
 ) -> Result<(HistoryStoreStatusV1, Vec<HistoryRecordV1>), HistoryError> {
-    if !path.exists() {
+    if !path.try_exists().map_err(|source| HistoryError::Io {
+        stage: "open_store",
+        path: path.into(),
+        source,
+    })? {
         return Ok((
             HistoryStoreStatusV1 {
                 domain,
@@ -848,6 +883,87 @@ mod tests {
     }
 
     #[test]
+    fn optimize_batch_detail_summarizes_all_recorded_items_and_marks_missing_evidence() {
+        use crate::{
+            optimize::{MaintenanceExecutor, MaintenancePlanV2},
+            process::FlagCancelObserver,
+        };
+        let fixture = TempDir::new().unwrap();
+        let stores = paths(fixture.path());
+        let executor = MaintenanceExecutor::isolated_batch_fixture(&stores.optimize);
+        let run = |ids: &[&str], cancel: Option<&FlagCancelObserver>| {
+            let ids = ids.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+            let plan = MaintenancePlanV2::new(&ids).unwrap();
+            let preview = executor.preview_batch(&plan).unwrap();
+            executor
+                .execute_batch(
+                    &plan,
+                    &preview.digest,
+                    true,
+                    cancel.map(|flag| flag as &dyn crate::process::CancelObserver),
+                    |_, _| {},
+                )
+                .unwrap()
+        };
+        let success = run(&["dns.flush"], None);
+        let complete = show_history_at(&stores, &success.batch_id).unwrap().summary;
+        assert_eq!(complete.operation_id, success.batch_id);
+        assert_eq!(complete.outcome_code, "succeeded");
+        assert!(!complete.partial && !complete.unknown);
+
+        let canceled = FlagCancelObserver::new();
+        canceled.request_cancel();
+        let skipped = run(&["dns.flush", "maintenance.clock_probe"], Some(&canceled));
+        let summary = show_history_at(&stores, &skipped.batch_id).unwrap().summary;
+        assert_eq!(summary.outcome_code, "skipped");
+        assert!(!summary.partial && !summary.unknown);
+
+        let mixed = run(
+            &["dns.flush", "maintenance.retrim", "maintenance.clock_probe"],
+            None,
+        );
+        let detail = show_history_at(&stores, &mixed.batch_id).unwrap();
+        assert_eq!(detail.records.len(), 9);
+        assert_eq!(detail.summary.operation_id, mixed.batch_id);
+        assert_eq!(detail.summary.outcome_code, "failed");
+        assert!(detail.summary.partial && !detail.summary.unknown);
+        for code in ["failed", "succeeded", "skipped"] {
+            assert!(detail.summary.stable_codes.iter().any(|s| s == code));
+        }
+        let first = &mixed.outcomes[0].operation_id;
+        let single = show_history_at(&stores, first).unwrap();
+        assert_eq!(single.summary.operation_id, *first);
+        assert_eq!(single.summary.outcome_code, "succeeded");
+        assert_eq!(single.records.len(), 4);
+
+        let original = fs::read_to_string(&stores.optimize).unwrap();
+        let last = &mixed.outcomes[2].operation_id;
+        let missing_last: String = original
+            .lines()
+            .filter(|line| !line.contains(last))
+            .map(|line| format!("{line}\n"))
+            .collect();
+        write(&stores.optimize, &missing_last);
+        let partial = show_history_at(&stores, &mixed.batch_id).unwrap().summary;
+        assert!(partial.partial && partial.unknown);
+        assert_eq!(partial.outcome_code, "unknown");
+
+        let legacy: String = original
+            .lines()
+            .map(|line| {
+                let mut row: serde_json::Value = serde_json::from_str(line).unwrap();
+                row.as_object_mut().unwrap().remove("batch_size");
+                format!("{row}\n")
+            })
+            .collect();
+        write(&stores.optimize, &legacy);
+        let legacy = show_history_at(&stores, &success.batch_id).unwrap().summary;
+        assert!(legacy.partial && legacy.unknown);
+        assert_eq!(legacy.outcome_code, "unknown");
+        assert!(legacy.stable_codes.iter().any(|s| s == "succeeded"));
+    }
+
+    #[test]
     fn history_reader_opens_only_the_fixed_v1_stores() {
         let fixture = TempDir::new().expect("temp");
         let stores = paths(fixture.path());
@@ -1169,7 +1285,7 @@ mod tests {
         let exact = [
             transition("a", "succeeded", "move_to_trash", "verified", Some(1_000)),
             transition("a", "started", "move_to_trash", "verified", None),
-            transition("a", "failed", "move_to_trash", "verified", None),
+            transition("failed-item", "failed", "move_to_trash", "verified", None),
             transition("b", "succeeded", "move_to_trash", "verified", Some(24)),
             transition("b", "succeeded", "command", "verified", None),
         ]
@@ -1213,6 +1329,20 @@ mod tests {
             encoded,
             serde_json::json!({"known_bytes": 8, "unknown_records": 0, "lower_bound": true})
         );
+    }
+
+    #[test]
+    fn clean_totals_deduplicate_moves_and_exclude_conflicting_size_evidence() {
+        let root = TempDir::new().unwrap();
+        let store = paths(root.path()).clean;
+        let one = transition("old", "succeeded", "move_to_trash", "verified", Some(90));
+        let two = transition("old", "succeeded", "move_to_trash", "verified", Some(100));
+        write(&store, &format!("{one}{one}"));
+        assert_eq!(clean_moved_totals_at(&store).unwrap().known_bytes, 90);
+        write(&store, &format!("{one}{two}"));
+        let total = clean_moved_totals_at(&store).unwrap();
+        assert_eq!(total.known_bytes, 0);
+        assert!(total.lower_bound);
     }
 
     #[test]

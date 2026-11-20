@@ -2,6 +2,8 @@
 //! selection. Recycle reports that selection only; it does not delete, move,
 //! or preview.
 
+use std::{collections::BTreeSet, sync::Arc};
+
 use devsweep_core::analysis::{
     AnalyzeEvidence, AnalyzeNodeKind, AnalyzeNodeV1, AnalyzeWarningClass,
 };
@@ -28,16 +30,20 @@ impl NodeFace {
 /// not walk a filesystem.
 #[derive(Clone, Debug)]
 pub struct AnalyzeBoard {
-    nodes: Vec<AnalyzeNodeV1>,
+    nodes: Arc<[AnalyzeNodeV1]>,
     selection: Option<u32>,
+    checked: BTreeSet<u32>,
+    anchor: Option<u32>,
 }
 
 impl AnalyzeBoard {
     #[must_use]
     pub fn new(nodes: Vec<AnalyzeNodeV1>) -> Self {
         Self {
-            nodes,
+            nodes: nodes.into(),
             selection: None,
+            checked: BTreeSet::new(),
+            anchor: None,
         }
     }
 
@@ -73,13 +79,13 @@ impl AnalyzeBoard {
 
     #[must_use]
     pub fn face(&self, id: u32) -> Option<NodeFace> {
-        self.nodes.iter().find(|node| node.id == id).map(classify)
+        self.node(id).map(classify)
     }
 
-    /// Selected id only. Does not delete, move, or preview.
+    /// Checked node ids in stable snapshot id order.
     #[must_use]
     pub fn recycle_ids(&self) -> Vec<u32> {
-        self.selection.into_iter().collect()
+        self.checked.iter().copied().collect()
     }
 
     #[must_use]
@@ -89,10 +95,90 @@ impl AnalyzeBoard {
         Some(format!("{id} {}", face.as_str()))
     }
 
-    fn select(&mut self, id: u32) {
-        if self.nodes.iter().any(|node| node.id == id) {
+    pub fn checked_count(&self) -> usize {
+        self.checked.len()
+    }
+
+    pub fn is_checked(&self, id: u32) -> bool {
+        self.checked.contains(&id)
+    }
+
+    pub fn node(&self, id: u32) -> Option<&AnalyzeNodeV1> {
+        self.nodes
+            .get(id as usize)
+            .filter(|node| node.id == id)
+            .or_else(|| self.nodes.iter().find(|node| node.id == id))
+    }
+
+    pub fn eligible(&self, id: u32) -> bool {
+        id != 0
+            && self.node(id).is_some_and(|node| {
+                node.kind != AnalyzeNodeKind::Reparse && node.evidence == AnalyzeEvidence::Complete
+            })
+    }
+
+    pub fn focus_node(&mut self, id: u32) {
+        if self.node(id).is_some() {
             self.selection = Some(id);
         }
+    }
+
+    fn select(&mut self, id: u32) {
+        if self.node(id).is_some() {
+            self.selection = Some(id);
+            self.anchor = Some(id);
+            self.checked.clear();
+            if self.eligible(id) {
+                self.checked.insert(id);
+            }
+        }
+    }
+
+    pub fn toggle(&mut self, id: u32) {
+        if self.eligible(id) {
+            self.selection = Some(id);
+            self.anchor = Some(id);
+            if !self.checked.remove(&id) {
+                self.checked.insert(id);
+            }
+        }
+    }
+
+    /// The range uses the currently displayed order, including size-ranked files.
+    pub fn range(&mut self, id: u32, order: &[u32]) {
+        let start = self
+            .anchor
+            .and_then(|anchor| order.iter().position(|item| *item == anchor));
+        let end = order.iter().position(|item| *item == id);
+        if let (Some(start), Some(end)) = (start, end) {
+            self.checked.clear();
+            for &candidate in &order[start.min(end)..=start.max(end)] {
+                if self.eligible(candidate) {
+                    self.checked.insert(candidate);
+                }
+            }
+            self.selection = Some(id);
+        } else {
+            self.select(id);
+        }
+    }
+
+    /// Count overlapping directories once when displaying selected logical bytes.
+    pub fn selected_bytes(&self) -> u64 {
+        self.checked
+            .iter()
+            .filter_map(|id| self.node(*id))
+            .filter(|node| {
+                let mut parent = node.parent_id;
+                while let Some(id) = parent {
+                    if self.checked.contains(&id) {
+                        return false;
+                    }
+                    parent = self.node(id).and_then(|ancestor| ancestor.parent_id);
+                }
+                true
+            })
+            .fold(0u64, |sum, node| sum.saturating_add(node.bytes))
     }
 
     fn node_ids(&self) -> Vec<u32> {

@@ -278,8 +278,10 @@ pub fn analyze_class_label(locale: Locale, class: &str) -> &'static str {
 
 pub fn software_leftovers_unavailable(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "Leftovers is not a software workbench segment. It is unavailable here.",
-        Locale::ZhCn => "残留项不是软件工作台分段，这里不可用。",
+        Locale::En => {
+            "Leftovers can be reviewed from the uninstall result after an app is removed."
+        }
+        Locale::ZhCn => "卸载应用后，可从卸载结果中审阅残留目录。",
     }
 }
 
@@ -389,8 +391,8 @@ pub fn clean_outcome_mixed(locale: Locale) -> &'static str {
 
 pub fn clean_outcome_trash_reported(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "The isolated trash move was reported.",
-        Locale::ZhCn => "已报告隔离的移出。",
+        Locale::En => "The move was recorded.",
+        Locale::ZhCn => "已记录移动结果。",
     }
 }
 
@@ -700,9 +702,12 @@ pub fn clean_selected_capacity(locale: Locale, selected: &str) -> String {
 }
 pub fn clean_moved_summary(locale: Locale, count: usize, capacity: &str) -> String {
     match locale {
-        Locale::En => format!(
-            "Moved to Recycle Bin: {capacity} · {count} targets (estimated data, not freed space)."
-        ),
+        Locale::En => {
+            let noun = if count == 1 { "target" } else { "targets" };
+            format!(
+                "Moved to Recycle Bin: {capacity} · {count} {noun} (estimated data, not freed space)."
+            )
+        }
         Locale::ZhCn => {
             format!("已移入回收站：{capacity} · {count} 个目标（估算数据量，并非已释放空间）。")
         }
@@ -1621,20 +1626,18 @@ pub fn software_empty_title(locale: Locale) -> &'static str {
 
 pub fn software_empty_detail(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => {
-            "Inventory is read-only. Only exact eligible current-user MSIX apps can be selected later."
-        }
-        Locale::ZhCn => "清点过程只读；后续只能选择精确且符合条件的当前用户 MSIX 应用。",
+        Locale::En => "Load an inventory to review eligible current-user MSIX and MSI apps.",
+        Locale::ZhCn => "读取清单后可审阅符合条件的当前用户 MSIX 和 MSI 应用。",
     }
 }
 
 pub fn software_preview_summary(locale: Locale, count: usize, digest: &str) -> String {
     match locale {
         Locale::En => format!(
-            "Software preview: {count} exact current-user MSIX package(s). Digest: {digest}. Uninstall is irreversible from DevSweep's perspective."
+            "Software preview: {count} current-user software selection(s). Digest: {digest}. Uninstall is irreversible from DevSweep's perspective."
         ),
         Locale::ZhCn => format!(
-            "软件预览：{count} 个精确的当前用户 MSIX 包。摘要：{digest}。从 DevSweep 的角度看，卸载不可逆。"
+            "软件预览：{count} 个当前用户软件项目。摘要：{digest}。从 DevSweep 的角度看，卸载不可逆。"
         ),
     }
 }
@@ -1706,8 +1709,8 @@ pub fn software_startup_requires_admin(locale: Locale) -> &'static str {
 
 pub fn software_isolated_executor_unavailable(locale: Locale) -> &'static str {
     match locale {
-        Locale::En => "No isolated uninstall executor is installed. Host uninstall is refused.",
-        Locale::ZhCn => "没有安装隔离卸载执行器。已拒绝卸载主机软件。",
+        Locale::En => "This inventory supports preview only.",
+        Locale::ZhCn => "此清单仅支持预览。",
     }
 }
 
@@ -2486,6 +2489,16 @@ mod tests {
             assert!(zh.contains(needle), "chinese hint missing {needle}: {zh}");
         }
         assert_ne!(en, zh);
+    }
+
+    #[test]
+    fn recycle_bin_result_counts_the_moved_targets_in_both_languages() {
+        for (count, label) in [(0, "0 targets"), (1, "1 target"), (2, "2 targets")] {
+            let en = clean_moved_summary(Locale::En, count, "12 B");
+            assert!(en.contains(&format!("{label} (")), "{en}");
+            let zh = clean_moved_summary(Locale::ZhCn, count, "12 B");
+            assert!(zh.contains(&format!("{count} 个目标")), "{zh}");
+        }
     }
 
     #[test]

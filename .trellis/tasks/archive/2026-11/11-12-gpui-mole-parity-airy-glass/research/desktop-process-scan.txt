@@ -1,0 +1,24 @@
+desktop-gpui/src\analyze_window.rs:271:        let program = "explorer.exe".to_string();
+desktop-gpui/src\analyze_window.rs:618:        let _ = crate::process_spawn::command_without_window("icacls")
+desktop-gpui/src\analyze_window.rs:674:        let output = crate::process_spawn::command_without_window(&cli)
+desktop-gpui/src\analyze_window.rs:703:        let _ = crate::process_spawn::command_without_window("icacls")
+desktop-gpui/src\analyze_window.rs:747:        assert_eq!(program, "explorer.exe");
+desktop-gpui/src\analyze_window.rs:903:        let output = crate::process_spawn::command_without_window("cargo")
+desktop-gpui/src\clean.rs:1140:        let output = crate::process_spawn::command_without_window("cargo")
+desktop-gpui/src\clean.rs:1169:        crate::process_spawn::command_without_window(bin)
+desktop-gpui/src\clean.rs:1183:        crate::process_spawn::command_without_window(bin)
+desktop-gpui/src\clean.rs:1238:        crate::process_spawn::command_without_window(bin)
+desktop-gpui/src\analyze.rs:742:        let output = crate::process_spawn::command_without_window("cargo")
+desktop-gpui/src\analyze.rs:771:        crate::process_spawn::command_without_window(bin)
+desktop-gpui/src\analyze.rs:808:        crate::process_spawn::command_without_window(bin)
+desktop-gpui/src\clean_workbench.rs:2987:        let output = std::process::Command::new(std::env::current_exe().unwrap())
+desktop-gpui/src\process_spawn.rs:13:pub(crate) fn command_without_window(program: impl AsRef<OsStr>) -> Command {
+desktop-gpui/src\process_spawn.rs:14:    let mut command = Command::new(program);
+desktop-gpui/src\process_spawn.rs:36:        let output = command_without_window("cmd")
+desktop-gpui/src\status_panel.rs:1406:        assert_eq!(process_class("explorer.exe"), ProcessClass::Shared);
+desktop-gpui/src\view\page_support.rs:316:                            cx.listener(|_, _, _, cx| cx.open_url(env!("CARGO_PKG_REPOSITORY"))),
+desktop-gpui/src\view\page_support.rs:319:                            cx.open_url(env!("CARGO_PKG_REPOSITORY"))
+desktop-gpui/src\view\page_support.rs:330:                            cx.open_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues"))
+desktop-gpui/src\view\page_support.rs:335:                                cx.open_url(concat!(env!("CARGO_PKG_REPOSITORY"), "/issues"))
+desktop-gpui/src\view\page_workbench.rs:529:                                            .on_click(cx.listener(|_, _, _, cx| cx.open_url(crate::software_review::INSTALLED_APPS_URI)))
+desktop-gpui/src\view\page_workbench.rs:530:                                            .on_a11y_action(gpui::AccessibleAction::Click, on_view_a11y(cx, |_, cx| cx.open_url(crate::software_review::INSTALLED_APPS_URI))))

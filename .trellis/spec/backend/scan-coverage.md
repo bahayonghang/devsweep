@@ -65,6 +65,17 @@ embedded untrusted cleanup plan remains version 2.
 - An unsafe Windows cache root that cannot be represented by the trusted rule
   registry belongs in typed coverage, not in an invalid Inspect Only target
   that would make healthy siblings fail whole-plan validation.
+- The Windows cache catalogue covers Chrome and Edge stable, Firefox, VS Code,
+  Cursor, stale user Temp and four Chromium preview channels. Chrome Beta,
+  Chrome Canary (Chrome SxS), Edge Beta and Edge Dev cover only the direct
+  `Cache` and `Code Cache` children of profiles with an object entry in
+  Local State's `profile.info_cache` and valid Preferences in their default
+  current-user layout. A malformed entry excludes only that profile. Preserve GPU/shader caches,
+  unregistered profiles, sessions, extensions, logins and offline site data.
+  Each preview channel shares its stable product's executable name. For a
+  present channel with busy or unknown ownership, emit coverage with zero
+  targets, ask the user to close the browser and rescan, and skip profile reads.
+  Recheck registration, contents and the live owner at preview and dispatch.
 - Bounded project-marker enumeration must distinguish exhausted/unreadable
   discovery from verified absence. A .NET marker beyond the cap yields an
   incomplete budget outcome; it must not silently disappear into empty coverage.

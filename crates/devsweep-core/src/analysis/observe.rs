@@ -85,6 +85,19 @@ pub enum AnalyzeRootErrorCode {
     Inaccessible,
 }
 
+/// Windows volume capacity visible to the calling user (both values respect quotas).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum AnalyzeVolumeCapacityV1 {
+    Available {
+        total_bytes: u64,
+        available_bytes: u64,
+    },
+    Unavailable {
+        reason: AnalyzeRootErrorCode,
+    },
+}
+
 /// One volume root the snapshot source could see, or the error for that root.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -93,6 +106,8 @@ pub struct AnalyzeRootRecordV1 {
     pub normalized: Option<String>,
     pub volume: Option<String>,
     pub alias_of: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capacity: Option<AnalyzeVolumeCapacityV1>,
     pub error: Option<AnalyzeRootErrorCode>,
 }
 
@@ -166,6 +181,7 @@ pub enum AnalyzeObserveError {
     UnknownNode(u32),
     InvalidSnapshot,
     RootsUnavailable,
+    InvalidLimit,
 }
 
 impl std::fmt::Display for AnalyzeObserveError {
@@ -173,6 +189,9 @@ impl std::fmt::Display for AnalyzeObserveError {
         match self {
             Self::UnknownNode(id) => write!(formatter, "unknown analysis node {id}"),
             Self::InvalidSnapshot => formatter.write_str("analysis snapshot is invalid"),
+            Self::InvalidLimit => {
+                formatter.write_str("analysis result limit must be between 1 and 1000")
+            }
             Self::RootsUnavailable => formatter.write_str("analysis volume roots are unavailable"),
         }
     }
@@ -188,6 +207,7 @@ impl AnalyzeObserveError {
             Self::UnknownNode(_) => "unknown_node",
             Self::InvalidSnapshot => "invalid_snapshot",
             Self::RootsUnavailable => "roots_unavailable",
+            Self::InvalidLimit => "invalid_limit",
         }
     }
 }
@@ -202,6 +222,11 @@ pub(crate) enum CloudEvidence {
 trait RootSource {
     fn list_mounts(&self) -> Result<Vec<PathBuf>, ()>;
     fn volume_id(&self, path: &Path) -> Result<String, FsFail>;
+    fn capacity(&self, _path: &Path) -> AnalyzeVolumeCapacityV1 {
+        AnalyzeVolumeCapacityV1::Unavailable {
+            reason: AnalyzeRootErrorCode::Inaccessible,
+        }
+    }
 }
 
 struct NativeRootSource;
@@ -213,6 +238,39 @@ impl RootSource for NativeRootSource {
 
     fn volume_id(&self, path: &Path) -> Result<String, FsFail> {
         walker::native_volume_id(path)
+    }
+
+    #[cfg(windows)]
+    fn capacity(&self, path: &Path) -> AnalyzeVolumeCapacityV1 {
+        use std::os::windows::ffi::OsStrExt;
+        use windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
+        let wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+        let mut total = 0;
+        let mut available = 0;
+        // SAFETY: wide is NUL-terminated and the first two outputs are writable locals.
+        let ok = unsafe {
+            GetDiskFreeSpaceExW(
+                wide.as_ptr(),
+                &mut available,
+                &mut total,
+                std::ptr::null_mut(),
+            )
+        };
+        caller_capacity(ok != 0, total, available)
+    }
+}
+
+#[cfg(any(windows, test))]
+fn caller_capacity(read: bool, total: u64, available: u64) -> AnalyzeVolumeCapacityV1 {
+    if read && available <= total {
+        AnalyzeVolumeCapacityV1::Available {
+            total_bytes: total,
+            available_bytes: available,
+        }
+    } else {
+        AnalyzeVolumeCapacityV1::Unavailable {
+            reason: AnalyzeRootErrorCode::Inaccessible,
+        }
     }
 }
 
@@ -255,6 +313,7 @@ fn probe_root(source: &dyn RootSource, input: &Path) -> AnalyzeRootRecordV1 {
             normalized: None,
             volume: None,
             alias_of: None,
+            capacity: None,
             error: Some(AnalyzeRootErrorCode::Inaccessible),
         };
     };
@@ -264,6 +323,7 @@ fn probe_root(source: &dyn RootSource, input: &Path) -> AnalyzeRootRecordV1 {
             normalized: None,
             volume: None,
             alias_of: None,
+            capacity: None,
             error: Some(AnalyzeRootErrorCode::Missing),
         };
     }
@@ -274,6 +334,7 @@ fn probe_root(source: &dyn RootSource, input: &Path) -> AnalyzeRootRecordV1 {
             normalized,
             volume: Some(volume),
             alias_of: None,
+            capacity: Some(source.capacity(&absolute)),
             error: None,
         },
         Err(FsFail::NotFound) => AnalyzeRootRecordV1 {
@@ -281,6 +342,7 @@ fn probe_root(source: &dyn RootSource, input: &Path) -> AnalyzeRootRecordV1 {
             normalized: None,
             volume: None,
             alias_of: None,
+            capacity: None,
             error: Some(AnalyzeRootErrorCode::Missing),
         },
         Err(FsFail::AccessDenied | FsFail::Io) => AnalyzeRootRecordV1 {
@@ -288,6 +350,7 @@ fn probe_root(source: &dyn RootSource, input: &Path) -> AnalyzeRootRecordV1 {
             normalized: None,
             volume: None,
             alias_of: None,
+            capacity: None,
             error: Some(AnalyzeRootErrorCode::Inaccessible),
         },
     }
@@ -821,6 +884,19 @@ mod tests {
             Ok(self.mounts.clone())
         }
 
+        fn capacity(&self, path: &Path) -> AnalyzeVolumeCapacityV1 {
+            if self.mounts.first().is_some_and(|first| first == path) {
+                AnalyzeVolumeCapacityV1::Available {
+                    total_bytes: 512,
+                    available_bytes: 0,
+                }
+            } else {
+                AnalyzeVolumeCapacityV1::Unavailable {
+                    reason: AnalyzeRootErrorCode::Inaccessible,
+                }
+            }
+        }
+
         fn volume_id(&self, path: &Path) -> Result<String, FsFail> {
             self.volumes
                 .get(path)
@@ -846,6 +922,25 @@ mod tests {
         assert_eq!(report.roots[0].input, missing.to_string_lossy());
         assert!(report.roots[0].volume.is_none());
         assert!(!report.roots[0].input.contains("profile"));
+    }
+
+    #[test]
+    fn zero_caller_quota_is_known_only_after_a_successful_capacity_read() {
+        assert_eq!(
+            caller_capacity(true, 0, 0),
+            AnalyzeVolumeCapacityV1::Available {
+                total_bytes: 0,
+                available_bytes: 0,
+            }
+        );
+        for capacity in [caller_capacity(false, 0, 0), caller_capacity(true, 0, 1)] {
+            assert_eq!(
+                capacity,
+                AnalyzeVolumeCapacityV1::Unavailable {
+                    reason: AnalyzeRootErrorCode::Inaccessible,
+                }
+            );
+        }
     }
 
     #[test]
@@ -880,6 +975,27 @@ mod tests {
         assert!(report.roots[0].error.is_none());
         assert_eq!(report.roots[1].volume.as_deref(), Some("same"));
         assert!(report.roots[1].alias_of.is_some());
+        assert_eq!(
+            report.roots[0].capacity,
+            Some(AnalyzeVolumeCapacityV1::Available {
+                total_bytes: 512,
+                available_bytes: 0
+            })
+        );
+        assert_eq!(
+            report.roots[1].capacity,
+            Some(AnalyzeVolumeCapacityV1::Unavailable {
+                reason: AnalyzeRootErrorCode::Inaccessible
+            })
+        );
+        let mut legacy = serde_json::to_value(&report.roots[0]).unwrap();
+        legacy.as_object_mut().unwrap().remove("capacity");
+        assert_eq!(
+            serde_json::from_value::<AnalyzeRootRecordV1>(legacy)
+                .unwrap()
+                .capacity,
+            None
+        );
         assert_ne!(
             report.roots[1].alias_of.as_deref(),
             Some(r"C:\Users\profile")

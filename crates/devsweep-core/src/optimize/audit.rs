@@ -24,6 +24,7 @@ const OPTIMIZE_AUDIT_DOMAIN: &str = "optimize";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum OptimizeAuditStatusCode {
+    Skipped,
     Validated,
     DispatchStarted,
     AdapterSucceeded,
@@ -52,6 +53,9 @@ pub enum OptimizeAuditErrorCode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum OptimizeAuditTransition {
+    Skipped {
+        reason: super::BatchSkipReason,
+    },
     Validated,
     DispatchStarted,
     AdapterCompleted,
@@ -62,7 +66,7 @@ pub enum OptimizeAuditTransition {
 
 impl OptimizeAuditTransition {
     pub(super) fn is_terminal(self) -> bool {
-        matches!(self, Self::Terminal { .. })
+        matches!(self, Self::Terminal { .. } | Self::Skipped { .. })
     }
 }
 
@@ -74,6 +78,10 @@ pub struct OptimizeAuditRecordV1 {
     pub schema_version: u32,
     pub domain: String,
     pub operation_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub batch_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub batch_size: Option<usize>,
     pub timestamp_unix_ms: u64,
     pub catalogue_version: u32,
     pub catalogue_id: String,
@@ -100,6 +108,8 @@ impl OptimizeAuditRecordV1 {
             schema_version: OPTIMIZE_AUDIT_VERSION,
             domain: OPTIMIZE_AUDIT_DOMAIN.to_string(),
             operation_id: operation_id.to_string(),
+            batch_id: None,
+            batch_size: None,
             timestamp_unix_ms,
             catalogue_version: catalogue_generation(catalogue_id)
                 .unwrap_or(OPTIMIZE_CATALOGUE_VERSION),
@@ -276,6 +286,8 @@ pub(super) struct PendingOperation {
 
 #[derive(Debug, Clone)]
 struct OperationState {
+    batch_id: Option<String>,
+    batch_size: Option<usize>,
     catalogue_id: String,
     action_class: MaintenanceActionClass,
     preview_digest: String,
@@ -299,6 +311,8 @@ pub(super) struct OptimizeAuditJournal {
     path: PathBuf,
     file: File,
     _lock: SidecarLock,
+    pub(super) batch_id: Option<String>,
+    pub(super) batch_size: Option<usize>,
     states: BTreeMap<String, OperationState>,
 }
 
@@ -331,14 +345,24 @@ impl OptimizeAuditJournal {
             path: path.to_path_buf(),
             file,
             _lock: lock,
+            batch_id: None,
+            batch_size: None,
             states,
         })
     }
 
     pub(super) fn append(
         &mut self,
-        record: OptimizeAuditRecordV1,
+        mut record: OptimizeAuditRecordV1,
     ) -> Result<(), OptimizeAuditError> {
+        let (batch_id, batch_size) = self
+            .states
+            .get(&record.operation_id)
+            .map_or((&self.batch_id, self.batch_size), |state| {
+                (&state.batch_id, state.batch_size)
+            });
+        record.batch_id = batch_id.clone();
+        record.batch_size = batch_size;
         validate_record(&record)?;
         let mut next = self.states.clone();
         apply_record(&mut next, &record)?;
@@ -401,10 +425,55 @@ fn parse_journal(
     Ok(states)
 }
 
+impl OptimizeAuditRecordV1 {
+    pub(crate) fn valid_for_history(&self) -> bool {
+        validate_record(self).is_ok()
+    }
+
+    /// Validate every recorded transition and the number of distinct, completed items.
+    pub(crate) fn complete_batch<'a>(rows: impl Iterator<Item = &'a Self>) -> bool {
+        let mut rows = rows.peekable();
+        let Some((Some(expected), Some(batch_id))) =
+            rows.peek().map(|r| (r.batch_size, r.batch_id.as_deref()))
+        else {
+            return false;
+        };
+        let mut states = BTreeMap::new();
+        for row in rows {
+            if row.batch_id.as_deref() != Some(batch_id)
+                || row.batch_size != Some(expected)
+                || !row.valid_for_history()
+                || apply_record(&mut states, row).is_err()
+            {
+                return false;
+            }
+        }
+        let mut catalogue_ids = std::collections::HashSet::new();
+        states.len() == expected
+            && states.values().all(|state| {
+                state.last_transition.is_terminal() && catalogue_ids.insert(&state.catalogue_id)
+            })
+    }
+}
+
 fn validate_record(record: &OptimizeAuditRecordV1) -> Result<(), OptimizeAuditError> {
     if record.schema_version != OPTIMIZE_AUDIT_VERSION
         || record.domain != OPTIMIZE_AUDIT_DOMAIN
         || record.operation_id.is_empty()
+        || record.batch_size.is_some_and(|n| {
+            record.batch_id.is_none()
+                || n == 0
+                || n > super::published_entries()
+                    .iter()
+                    .filter(|entry| entry.action_class == MaintenanceActionClass::Execute)
+                    .count()
+        })
+        || record.batch_id.as_ref().is_some_and(|id| {
+            id.is_empty()
+                || id.len() > 96
+                || !id.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'-')
+                || record.action_class != MaintenanceActionClass::Execute
+        })
         || !is_sha256(&record.preview_digest)
     {
         return Err(OptimizeAuditError::InvalidTransition {
@@ -441,6 +510,12 @@ fn validate_record(record: &OptimizeAuditRecordV1) -> Result<(), OptimizeAuditEr
         });
     }
     let transition_shape_valid = match record.transition {
+        OptimizeAuditTransition::Skipped { .. } => {
+            record.status_code == OptimizeAuditStatusCode::Skipped
+                && record.batch_id.is_some()
+                && record.adapter_outcome.is_none()
+                && record.error_code.is_none()
+        }
         OptimizeAuditTransition::Validated => {
             record.status_code == OptimizeAuditStatusCode::Validated
                 && record.adapter_outcome.is_none()
@@ -529,7 +604,10 @@ fn apply_record(
     let operation_id = &record.operation_id;
     match states.get_mut(operation_id) {
         None => {
-            if record.transition != OptimizeAuditTransition::Validated {
+            if !matches!(
+                record.transition,
+                OptimizeAuditTransition::Validated | OptimizeAuditTransition::Skipped { .. }
+            ) {
                 return Err(OptimizeAuditError::InvalidTransition {
                     operation_id: operation_id.clone(),
                     detail: "first transition must be validated",
@@ -538,6 +616,8 @@ fn apply_record(
             states.insert(
                 operation_id.clone(),
                 OperationState {
+                    batch_id: record.batch_id.clone(),
+                    batch_size: record.batch_size,
                     catalogue_id: record.catalogue_id.clone(),
                     action_class: record.action_class,
                     preview_digest: record.preview_digest.clone(),
@@ -548,7 +628,9 @@ fn apply_record(
             Ok(())
         }
         Some(state) => {
-            if state.catalogue_id != record.catalogue_id
+            if state.batch_id != record.batch_id
+                || state.batch_size != record.batch_size
+                || state.catalogue_id != record.catalogue_id
                 || state.action_class != record.action_class
                 || state.preview_digest != record.preview_digest
             {

@@ -8,6 +8,18 @@ use super::*;
 const MAP_WIDTH: f32 = 640.0;
 const MAP_HEIGHT: f32 = 260.0;
 
+fn reveal_vertical_range(scroll: &gpui::ScrollHandle, top: gpui::Pixels, bottom: gpui::Pixels) {
+    let viewport = scroll.bounds();
+    let delta = if top < viewport.top() {
+        viewport.top() - top
+    } else {
+        (viewport.bottom() - bottom).min(px(0.0))
+    };
+    let mut offset = scroll.offset();
+    offset.y = (offset.y + delta).clamp(-scroll.max_offset().y, px(0.0));
+    scroll.set_offset(offset);
+}
+
 fn preview_status(
     t: &Theme,
     locale: copy::Locale,
@@ -45,7 +57,9 @@ impl ShellView {
         // remaining height. Short lists stay compact and long lists scroll.
         let row_height =
             (window.viewport_size().height - window.rem_size() * 26.0).max(window.rem_size() * 8.0);
-        let mut page = div().flex().flex_col().gap(ui::SPACE_4);
+        // The page column sits on the field. Each child is a paper, or `ink`
+        // text and controls that may sit on the field directly.
+        let mut page = div().flex().flex_col().gap(ui::SPACE_3);
         let mut actions = vec![ui::any(
             ui::icon_button(
                 t,
@@ -173,19 +187,19 @@ impl ShellView {
                 status
             }
         });
-        let bar = page_bar(t, status, figure, actions);
+        let bar = page_bar_on_field(t, status, figure, actions);
         let footer = (phase == CleanPhase::Found && self.session.clean_workbench().reviewing())
             .then(|| self.clean_action_bar(t, cx));
         if !matches!(phase, CleanPhase::Scanning | CleanPhase::Cleaning) {
             page = page.child(self.clean_scope_tabs(t, cx));
         }
-        page = page.children(self.shared_banners(t));
+        page = page.children(self.shared_notices(t));
         page = page.children(self.clean_context_banners(t));
         let body = match phase {
             CleanPhase::Landing => self.clean_landing(t, cx),
             CleanPhase::Scanning | CleanPhase::Cleaning => self.clean_progress(t, cx),
             CleanPhase::Found => self.clean_review(t, row_height, cx),
-            CleanPhase::AllClean => ui::any(ui::card(t).child(ui::empty_state(
+            CleanPhase::AllClean => ui::any(ui::paper(t).child(ui::empty_state(
                 t,
                 "check-circle",
                 copy::clean_phase_all_clean(locale),
@@ -201,7 +215,12 @@ impl ShellView {
             }
             CleanPhase::Failed => self.clean_failed(t),
         };
-        sheet_frame(bar, page.child(body).into_any_element(), footer)
+        scrollable_frame(
+            bar,
+            page.child(body).into_any_element(),
+            footer,
+            Some(&self.clean_page_scroll),
+        )
     }
 
     /// Root, protection, outcome and failure banners for the Clean workflow.
@@ -210,7 +229,7 @@ impl ShellView {
         let workbench = self.session.clean_workbench();
         let mut banners = Vec::new();
         if workbench.native_fixture().is_some() {
-            banners.push(ui::any(ui::banner(
+            banners.push(ui::any(ui::notice(
                 t,
                 Tone::Warning,
                 copy::clean_fixture_notice(locale),
@@ -223,21 +242,21 @@ impl ShellView {
                 CleanOutcomeNotice::Canceled => Tone::Neutral,
                 _ => Tone::Warning,
             };
-            banners.push(ui::any(ui::banner(
+            banners.push(ui::any(ui::notice(
                 t,
                 tone,
                 clean_outcome_line(locale, notice),
             )));
         }
         if workbench.root_session_only() {
-            banners.push(ui::any(ui::banner(
+            banners.push(ui::any(ui::notice(
                 t,
                 Tone::Info,
                 copy::clean_root_session_only(locale),
             )));
         }
         if self.session.protection_session_only() {
-            banners.push(ui::any(ui::banner(
+            banners.push(ui::any(ui::notice(
                 t,
                 Tone::Info,
                 copy::clean_protection_session_only(locale),
@@ -250,29 +269,39 @@ impl ShellView {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
         let project = workbench.selected_scope() != CleanScope::Global;
-        let mut configuration = div().flex().flex_col().gap(ui::SPACE_2).child(ui::muted(
-            t,
-            copy::clean_scope_detail(locale, workbench.selected_scope().id()),
-        ));
+        // Two papers on the field: what the scope covers, then the folders
+        // and the action that starts the scan.
+        let mut scope = ui::paper(t)
+            .p(ui::SPACE_3)
+            .gap(ui::SPACE_2)
+            .child(ui::muted(
+                t,
+                copy::clean_scope_detail(locale, workbench.selected_scope().id()),
+            ));
+        let column = div().flex().flex_col().gap(ui::SPACE_3);
         if workbench.prompt() == CleanLandingPrompt::ConfirmGlobal {
-            return configuration
+            return column
+                .child(scope)
                 .child(self.clean_global_confirm(t, cx))
                 .into_any_element();
         }
         if workbench.selected_scope() == CleanScope::All {
-            configuration = configuration.child(
-                ui::button(
-                    t,
-                    "clean-include-global",
-                    copy::clean_include_global(locale),
-                    ButtonKind::Secondary,
-                )
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.session.clean_request_global_confirmation();
-                    cx.notify();
-                })),
+            scope = scope.child(
+                div().flex().child(
+                    ui::button(
+                        t,
+                        "clean-include-global",
+                        copy::clean_include_global(locale),
+                        ButtonKind::Secondary,
+                    )
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.session.clean_request_global_confirmation();
+                        cx.notify();
+                    })),
+                ),
             );
         }
+        let mut configuration = ui::paper(t).p(ui::SPACE_3).gap(ui::SPACE_2);
         if project {
             let roots = self.session.shell().scan_roots();
             configuration = configuration.child(
@@ -283,7 +312,7 @@ impl ShellView {
                     .children(roots.iter().enumerate().map(|(index, root)| {
                         div().id(ElementId::named_usize("clean-saved-root", index))
                             .flex().items_center().gap(ui::SPACE_1).min_w_0()
-                            .child(ui::icon("folder", t.accent))
+                            .child(ui::icon("folder", t.input))
                             .child(div().flex_1().min_w_0().overflow_hidden().text_size(ui::TYPE_BODY)
                                 .child(ui::display_path_text(root)))
                     })),
@@ -349,7 +378,7 @@ impl ShellView {
         if workbench.prompt() == CleanLandingPrompt::RootRequired {
             configuration = configuration.child(self.clean_root_picker(t, cx));
         }
-        configuration.into_any_element()
+        column.child(scope).child(configuration).into_any_element()
     }
 
     fn clean_scope_tabs(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
@@ -357,8 +386,7 @@ impl ShellView {
         div()
             .flex()
             .child(
-                ui::segmented(t)
-                    .id("clean-scopes")
+                self.reveal_clean_section(ui::segmented(t).id("clean-scopes"), cx)
                     .role(gpui::Role::TabList)
                     .aria_label(copy::clean_scope_prompt(locale))
                     .children(
@@ -406,9 +434,9 @@ impl ShellView {
             .on_click(
                 cx.listener(move |this, _, _, cx| this.clean_pick_suggestion(root.clone(), cx)),
             )
-            .child(ui::icon("folder", t.accent))
+            .child(ui::icon("folder", t.input))
             .child(div().flex_1().min_w_0().truncate().child(shown))
-            .child(ui::icon("chevron-right", t.text_muted))
+            .child(ui::icon("chevron-right", t.muted))
         });
         div()
             .flex()
@@ -421,7 +449,8 @@ impl ShellView {
 
     fn clean_global_confirm(&self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
         let locale = self.session.locale();
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .w_full()
             .max_w(rems(40.0))
             .gap(ui::SPACE_3)
@@ -479,7 +508,8 @@ impl ShellView {
         } else {
             (copy::clean_phase_cleaning(locale).to_string(), "trash")
         };
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .id("clean-progress")
             .role(gpui::Role::Status)
             .aria_label(SharedString::from(title.clone()))
@@ -491,7 +521,7 @@ impl ShellView {
                     .flex_row()
                     .items_center()
                     .gap(ui::SPACE_3)
-                    .child(ui::icon_tile(t, icon, t.accent))
+                    .child(ui::icon_tile(t, icon, t.input))
                     .child(
                         div()
                             .flex_1()
@@ -545,7 +575,8 @@ impl ShellView {
             .failure_detail()
             .map(str::to_string)
             .unwrap_or_default();
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .child(ui::empty_state(
                 t,
                 "alert",
@@ -562,7 +593,8 @@ impl ShellView {
         let Some(execution) = workbench.execution() else {
             return ui::any(div());
         };
-        let mut card = ui::card(t)
+        let mut card = ui::paper(t)
+            .p(ui::SPACE_3)
             .id("clean-results")
             .gap(ui::SPACE_3)
             .child(ui::card_header(t, copy::clean_phase_completed(locale)))
@@ -703,37 +735,43 @@ impl ShellView {
             .flex()
             .flex_row()
             .flex_wrap()
-            .gap(ui::SPACE_2)
-            .child(ui::stat(
+            // Four small papers on the field, with the field between them.
+            .gap(ui::SPACE_3)
+            .child(ui::stat_on(
+                ui::paper(t),
                 t,
                 copy::clean_map_card_mapped(locale),
                 map_capacity(&inputs, None).label(locale),
                 copy::clean_map_count(locale, summary.mapped_count),
-                t.accent,
+                t.input,
             ))
-            .child(ui::stat(
+            .child(ui::stat_on(
+                ui::paper(t),
                 t,
                 copy::clean_map_card_recommended(locale),
                 map_capacity(&inputs, Some(ReviewBand::Recommended)).label(locale),
                 copy::clean_map_count(locale, summary.recommended_count),
-                t.success,
+                t.input,
             ))
-            .child(ui::stat(
+            .child(ui::stat_on(
+                ui::paper(t),
                 t,
                 copy::clean_map_card_review(locale),
                 map_capacity(&inputs, Some(ReviewBand::NeedsReview)).label(locale),
                 copy::clean_map_count(locale, summary.review_count),
                 t.warning,
             ))
-            .child(ui::stat(
+            .child(ui::stat_on(
+                ui::paper(t),
                 t,
                 copy::clean_map_card_blocked(locale),
                 map_capacity(&inputs, Some(ReviewBand::NotSelectable)).label(locale),
                 copy::clean_map_count(locale, summary.blocked_count),
-                t.text_muted,
+                t.muted,
             ));
         let workbench = self.session.clean_workbench();
-        let overview = ui::card(t)
+        let overview = ui::paper(t)
+            .p(ui::SPACE_3)
             .gap(ui::SPACE_2)
             .children(workbench.groups().iter().map(|group| {
                 ui::any(
@@ -750,7 +788,7 @@ impl ShellView {
         div()
             .flex()
             .flex_col()
-            .gap(ui::SPACE_4)
+            .gap(ui::SPACE_3)
             .child(if workbench.reviewing() {
                 self.clean_rows_card(t, row_height, cx)
             } else {
@@ -759,7 +797,14 @@ impl ShellView {
             .child(stats)
             .when(
                 !self.session.shell().row_query(Mode::Clean).is_empty(),
-                |d| d.child(ui::muted(t, copy::clean_map_filtered_note(locale))),
+                |d| {
+                    d.child(
+                        div()
+                            .text_size(ui::TYPE_BODY)
+                            .text_color(rgb(t.ink))
+                            .child(copy::clean_map_filtered_note(locale)),
+                    )
+                },
             )
             .when(disk_map_active(&self.session), |d| {
                 d.child(self.clean_disk_map(t, cx))
@@ -785,7 +830,7 @@ impl ShellView {
             .h(px(MAP_HEIGHT))
             .overflow_hidden()
             .rounded(ui::RADIUS_ITEM)
-            .bg(rgb(t.surface_alt));
+            .bg(t.well.color());
         if map.groups.is_empty() {
             canvas = canvas.child(
                 div()
@@ -843,7 +888,7 @@ impl ShellView {
                         .truncate()
                         .text_size(ui::TYPE_META)
                         .font_weight(FontWeight::SEMIBOLD)
-                        .text_color(rgb(t.text_muted))
+                        .text_color(rgb(t.muted))
                         .child(SharedString::from(format!(
                             "{title} · {}",
                             copy::clean_bytes_short(group.bytes)
@@ -893,13 +938,13 @@ impl ShellView {
                     .px(ui::SPACE_1)
                     .bg(t.tint(hue, if selected { 0x30 } else { 0x18 }))
                     .border_1()
-                    .border_color(if selected { rgb(t.text) } else { rgb(hue) })
+                    .border_color(if selected { rgb(t.ink) } else { rgb(hue) })
                     .aria_label(SharedString::from(label));
                 if let Some(id) = leaf.id.clone() {
                     tile = tile
                         .role(gpui::Role::Button)
                         .cursor_pointer()
-                        .hover(|s| s.border_color(rgb(t.text)))
+                        .hover(|s| s.border_color(rgb(t.ink)))
                         .on_click(cx.listener(move |this, _, _, cx| {
                             this.session.clean_click_row(&id);
                             cx.notify();
@@ -911,14 +956,14 @@ impl ShellView {
                             .truncate()
                             .text_size(ui::TYPE_META)
                             .font_weight(FontWeight::MEDIUM)
-                            .text_color(rgb(t.text))
+                            .text_color(rgb(t.ink))
                             .child(SharedString::from(leaf_title)),
                     );
                     if h >= 40.0 * text_scale {
                         tile = tile.child(
                             div()
                                 .text_size(ui::TYPE_META)
-                                .text_color(rgb(t.text))
+                                .text_color(rgb(t.ink))
                                 .child(SharedString::from(copy::clean_bytes_short(leaf.bytes))),
                         );
                     }
@@ -951,11 +996,12 @@ impl ShellView {
                     .child(
                         div()
                             .text_size(ui::TYPE_META)
-                            .text_color(rgb(t.text_muted))
+                            .text_color(rgb(t.muted))
                             .child(copy::clean_map_category(locale, category.as_str())),
                     )
             }));
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .id("clean-disk-map")
             .role(gpui::Role::Group)
             .aria_label(copy::clean_map_title(locale))
@@ -999,7 +1045,8 @@ impl ShellView {
             CleanSort::Name => copy::clean_sort_name(locale),
             CleanSort::Size => copy::clean_sort_size(locale),
         };
-        let toolbar = div()
+        let toolbar = self
+            .reveal_clean_section(div().id("clean-review-toolbar"), cx)
             .flex()
             .flex_row()
             .flex_wrap()
@@ -1013,7 +1060,7 @@ impl ShellView {
                     .gap(ui::SPACE_1)
                     .w(rems(20.0))
                     .max_w_full()
-                    .child(ui::icon("search", t.text_muted))
+                    .child(ui::icon("search", t.muted))
                     .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
@@ -1042,13 +1089,7 @@ impl ShellView {
                 )
             });
         let cursor = shell.selection(Mode::Clean).map(str::to_string);
-        let mut rows = div()
-            .id("clean-rows")
-            .role(gpui::Role::List)
-            .max_h(row_height)
-            .overflow_y_scroll()
-            .flex()
-            .flex_col();
+        let mut items = Vec::new();
         let mut last_group: Option<&str> = None;
         for id in shell.visible_row_ids(Mode::Clean) {
             let Some(row) = workbench.row(id) else {
@@ -1057,17 +1098,30 @@ impl ShellView {
             if let Some(group) = workbench.group_for_row(id)
                 && last_group != Some(group.id.as_str())
             {
-                rows = rows.child(self.clean_group_header(t, group, cx));
+                items.push(self.clean_group_header(t, group, cx));
                 last_group = Some(group.id.as_str());
             }
             let focused = cursor.as_deref() == Some(id.as_str());
-            rows = rows.child(self.clean_row(t, row, focused, cx));
+            items.push(self.clean_row(t, row, focused, cx));
         }
+        let rows = div()
+            .id("clean-rows")
+            .track_scroll(&self.clean_rows_scroll)
+            .role(gpui::Role::List)
+            .max_h(row_height)
+            .overflow_y_scroll()
+            .flex()
+            .flex_col()
+            .children(items.into_iter().enumerate().map(|(index, item)| {
+                item.on_action(cx.listener(move |this, _: &RevealCleanFocus, _, cx| {
+                    this.reveal_clean_row(index, cx);
+                }))
+            }));
         let total = shell.filtered_row_ids(Mode::Clean).len();
         let start = shell.row_window_start(Mode::Clean);
         let shown = shell.visible_row_ids(Mode::Clean).len();
         let pager = (total > shown).then(|| {
-            div()
+            self.reveal_clean_section(div().id("clean-review-pager"), cx)
                 .flex()
                 .flex_row()
                 .items_center()
@@ -1117,7 +1171,8 @@ impl ShellView {
                         ),
                 )
         });
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .id("clean-map-recommendations")
             .role(gpui::Role::Group)
             .aria_label(copy::clean_map_recommendations(locale))
@@ -1136,12 +1191,43 @@ impl ShellView {
             .into_any_element()
     }
 
+    /// Bring the focused toolbar or scope chooser back after tabbing out of a scrolled list.
+    fn reveal_clean_section(
+        &self,
+        section: gpui::Stateful<gpui::Div>,
+        cx: &mut Context<Self>,
+    ) -> gpui::Stateful<gpui::Div> {
+        let geometry = gpui::ScrollHandle::new();
+        section.track_scroll(&geometry).on_action(cx.listener(
+            move |this, _: &RevealCleanFocus, _, cx| {
+                let bounds = geometry.bounds();
+                reveal_vertical_range(&this.clean_page_scroll, bounds.top(), bounds.bottom());
+                cx.notify();
+            },
+        ))
+    }
+
+    /// A row can be clipped by both the list and the page above the fixed footer.
+    fn reveal_clean_row(&self, index: usize, cx: &mut Context<Self>) {
+        let rows = &self.clean_rows_scroll;
+        let Some(bounds) = rows.bounds_for_item(index) else {
+            return;
+        };
+        let old_y = rows.offset().y;
+        let top = bounds.top() + old_y;
+        let bottom = bounds.bottom() + old_y;
+        reveal_vertical_range(rows, top, bottom);
+        let shift = rows.offset().y - old_y;
+        reveal_vertical_range(&self.clean_page_scroll, top + shift, bottom + shift);
+        cx.notify();
+    }
+
     fn clean_group_header(
         &self,
         t: &Theme,
         group: &crate::clean_workbench::CleanGroup,
         cx: &mut Context<Self>,
-    ) -> gpui::AnyElement {
+    ) -> gpui::Stateful<gpui::Div> {
         use crate::clean_workbench::GroupSelection;
         let locale = self.session.locale();
         let toggled = match group.selection {
@@ -1198,7 +1284,6 @@ impl ShellView {
                     }),
                 )
         })
-        .into_any_element()
     }
 
     fn clean_row(
@@ -1207,7 +1292,7 @@ impl ShellView {
         row: &CleanRow,
         focused: bool,
         cx: &mut Context<Self>,
-    ) -> gpui::AnyElement {
+    ) -> gpui::Stateful<gpui::Div> {
         let locale = self.session.locale();
         let workbench = self.session.clean_workbench();
         let selected = workbench.is_selected(&row.id);
@@ -1291,7 +1376,7 @@ impl ShellView {
                             .child(
                                 div()
                                     .text_size(ui::TYPE_META)
-                                    .text_color(rgb(t.text_muted))
+                                    .text_color(rgb(t.muted))
                                     .child(copy::clean_row_rebuild_cost(locale, &row.rule_id)),
                             ),
                     ),
@@ -1304,7 +1389,6 @@ impl ShellView {
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(copy::clean_bytes_short(row.bytes)),
             )
-            .into_any_element()
     }
 
     /// Selection summary and the staged preview/confirm actions.
@@ -1356,17 +1440,11 @@ impl ShellView {
         }
         let selection =
             copy::clean_selection_count(locale, workbench.selected_count(), workbench.rows().len());
-        div()
+        // L4: the fixed action bar is an overlay, more solid than paper.
+        ui::overlay(t)
             .id("clean-actions")
-            .flex()
-            .flex_col()
             .gap(ui::SPACE_1)
             .p(ui::SPACE_3)
-            .rounded(ui::RADIUS_ITEM)
-            .bg(rgb(t.surface_alt))
-            .when(t.high_contrast, |d| {
-                d.border_1().border_color(rgb(t.border))
-            })
             .child(
                 div()
                     .flex()
@@ -1464,25 +1542,33 @@ impl ShellView {
             .aria_label(copy::clean_ai_title(locale))
             .flex()
             .flex_col()
-            .gap(ui::SPACE_4)
-            .child(ui::muted(t, copy::clean_ai_subtitle(locale)))
-            .children(self.shared_banners(t));
+            .gap(ui::SPACE_3)
+            // Secondary text does not sit on the field: the subtitle and the
+            // profile line share one paper.
+            .child(
+                ui::paper(t)
+                    .p(ui::SPACE_3)
+                    .gap(ui::SPACE_1)
+                    .child(ui::muted(t, copy::clean_ai_subtitle(locale)))
+                    .when_some(view.home(), |intro, home| {
+                        intro.child(ui::muted(
+                            t,
+                            copy::clean_ai_home_line(locale, &ui::display_path(home)),
+                        ))
+                    }),
+            )
+            .children(self.shared_notices(t));
         if let Some(notice) = view.notice() {
-            page = page.child(ui::banner(
+            page = page.child(ui::notice(
                 t,
                 Tone::Warning,
                 clean_outcome_line(locale, notice),
             ));
         }
-        if let Some(home) = view.home() {
-            page = page.child(ui::muted(
-                t,
-                copy::clean_ai_home_line(locale, &ui::display_path(home)),
-            ));
-        }
         let body = match phase {
             AiSubviewPhase::Landing => ui::any(
-                ui::card(t)
+                ui::paper(t)
+                    .p(ui::SPACE_3)
                     .items_center()
                     .child(ui::empty_state(
                         t,
@@ -1508,7 +1594,8 @@ impl ShellView {
                     copy::clean_ai_phase_cleaning(locale)
                 };
                 ui::any(
-                    ui::card(t)
+                    ui::paper(t)
+                        .p(ui::SPACE_3)
                         .gap(ui::SPACE_3)
                         .child(
                             div()
@@ -1516,7 +1603,7 @@ impl ShellView {
                                 .flex_row()
                                 .items_center()
                                 .gap(ui::SPACE_3)
-                                .child(ui::icon_tile(t, "search", t.accent))
+                                .child(ui::icon_tile(t, "search", t.input))
                                 .child(
                                     div()
                                         .flex_1()
@@ -1547,11 +1634,12 @@ impl ShellView {
                     (
                         "check-circle",
                         copy::clean_ai_phase_completed(locale),
-                        t.success,
+                        t.input,
                     )
                 };
                 ui::any(
-                    ui::card(t)
+                    ui::paper(t)
+                        .p(ui::SPACE_3)
                         .flex_row()
                         .items_center()
                         .gap(ui::SPACE_3)
@@ -1665,7 +1753,8 @@ impl ShellView {
         let ready = view.preview_matches_current();
         let selection =
             copy::clean_ai_selection_count(locale, view.selected_count(), view.selectable_count());
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .gap(ui::SPACE_3)
             .child(
                 div()
@@ -1689,7 +1778,7 @@ impl ShellView {
                             .gap(ui::SPACE_1)
                             .w(rems(16.0))
                             .max_w_full()
-                            .child(ui::icon("search", t.text_muted))
+                            .child(ui::icon("search", t.muted))
                             .child(div().flex_1().min_w_0().child(self.search.clone())),
                     ),
             )
@@ -1714,10 +1803,8 @@ impl ShellView {
                     .gap(ui::SPACE_1)
                     .p(ui::SPACE_3)
                     .rounded(ui::RADIUS_ITEM)
-                    .bg(rgb(t.surface_alt))
-                    .when(t.high_contrast, |d| {
-                        d.border_1().border_color(rgb(t.border))
-                    })
+                    .bg(t.well.color())
+                    .when(t.high_contrast, |d| d.border_1().border_color(rgb(t.ink)))
                     .child(div().flex_1().child(ui::muted(t, selection.clone())))
                     .child(
                         ui::button(
@@ -1787,8 +1874,8 @@ impl ShellView {
                     .px(ui::SPACE_2)
                     .py(ui::SPACE_1)
                     .rounded(ui::RADIUS_ITEM)
-                    .bg(rgb(t.surface_alt))
-                    .child(ui::icon("history", t.text_muted))
+                    .bg(t.well.color())
+                    .child(ui::icon("history", t.muted))
                     .child(ui::two_line(
                         t,
                         bundle.relative_path.clone(),
@@ -1825,7 +1912,8 @@ impl ShellView {
                 format!("{} {bundle}", copy::clean_ai_restore_refused(locale)),
             ));
         }
-        ui::card(t)
+        ui::paper(t)
+            .p(ui::SPACE_3)
             .gap(ui::SPACE_2)
             .child(
                 ui::card_header(t, copy::clean_ai_recovery_title(locale)).child(

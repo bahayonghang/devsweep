@@ -92,6 +92,48 @@ fn representative_state_renders_with_targets_details_and_jobs() {
 }
 
 #[test]
+fn chromium_preview_channel_targets_render_in_the_global_list() {
+    let channels = [
+        ("windows.chrome_beta.cache", "Chrome Beta"),
+        ("windows.chrome_canary.cache", "Chrome SxS"),
+        ("windows.edge_beta.cache", "Edge Beta"),
+        ("windows.edge_dev.cache", "Edge Dev"),
+    ];
+    let targets = channels
+        .iter()
+        .map(|(rule, channel)| {
+            let path = PathBuf::from(format!("C:/Local/{channel}/User Data/Default/Cache"));
+            target(
+                rule,
+                Scope::Global,
+                Ecosystem::Generic,
+                TargetKind::ToolCache,
+                Some(path.clone()),
+                1024,
+                RiskLevel::Medium,
+                false,
+                true,
+                CleanAction::MoveToTrash { path },
+            )
+        })
+        .collect();
+    let mut app = App::with_plan(CleanupPlan {
+        version: CLEANUP_PLAN_VERSION,
+        targets,
+    });
+    for (rule, channel) in channels {
+        let screen = render_text_with_size(&app, 180, 32);
+        assert!(screen.contains("Scope: Global"));
+        assert!(
+            screen.contains(rule) && screen.contains(channel),
+            "{screen}"
+        );
+        assert!(app.selected_ids.is_empty());
+        app.update(key(KeyCode::Down));
+    }
+}
+
+#[test]
 fn representative_state_renders_at_full_supported_size() {
     let app = App::with_plan(representative_plan());
     let rendered = render_text_with_size(&app, 100, 28);

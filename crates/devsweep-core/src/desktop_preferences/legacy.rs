@@ -66,6 +66,7 @@ impl From<DesktopPreferencesV1> for DesktopPreferencesV2 {
             status_interval_seconds: value.status_interval_seconds,
             status_process_limit: value.status_process_limit,
             hud_interval_seconds: value.hud_interval_seconds,
+            close_behavior: super::CloseBehavior::Exit,
         }
     }
 }

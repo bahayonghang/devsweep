@@ -1,4 +1,0 @@
-{"file": ".trellis/tasks/11-12-gpui-mole-parity-airy-glass/design.md", "reason": "跨子任务契约：CLI 先行、授权链、JSON 兼容"}
-{"file": ".trellis/spec/backend/desktop-runtime.md", "reason": "GPUI 焦点规则与窗口材质矩阵"}
-{"file": ".trellis/spec/backend/desktop-preferences.md", "reason": "偏好文件兼容规则"}
-{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "质量与契约测试要求"}

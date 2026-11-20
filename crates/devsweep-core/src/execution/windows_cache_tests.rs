@@ -430,6 +430,25 @@ mod windows_cache_pipeline {
         let scenario = scenario.to_str().unwrap();
         let root = PathBuf::from(std::env::var_os("DEVSWEEP_WINDOWS_CACHE_FIXTURE_ROOT").unwrap());
         let (mut approved, retained) = make_fixture(&root);
+        let preview_channels = [
+            ("Google/Chrome Beta", "windows.chrome_beta.cache"),
+            ("Google/Chrome SxS", "windows.chrome_canary.cache"),
+            ("Microsoft/Edge Beta", "windows.edge_beta.cache"),
+            ("Microsoft/Edge Dev", "windows.edge_dev.cache"),
+        ];
+        for (vendor, _) in preview_channels {
+            let data = root.join("Local").join(vendor).join("User Data");
+            write(
+                &data.join("Local State"),
+                r#"{"profile":{"info_cache":{"Default":{}}}}"#,
+            );
+            write(&data.join("Default/Preferences"), "{}");
+            for leaf in ["Cache", "Code Cache"] {
+                let path = data.join("Default").join(leaf);
+                write(&path.join("payload"), "cache fixture");
+                approved.push(path);
+            }
+        }
         if scenario == "unsafe-root" {
             let malformed = root.join("Local/Google/Chrome/User Data/Default/Cache");
             fs::remove_dir_all(&malformed).unwrap(); // Disposable fixture only.
@@ -528,6 +547,15 @@ mod windows_cache_pipeline {
                 } else {
                     crate::model::ScanCoverageStatus::OwnershipUnknown
                 };
+                for (_, rule) in preview_channels {
+                    assert!(!app_targets.iter().any(|target| target.rule_id == rule));
+                    let unit = report.health.coverage.iter()
+                        .find(|unit| unit.id == rule)
+                        .unwrap();
+                    assert_eq!(unit.status, expected);
+                    assert_eq!(unit.target_count, 0);
+                    assert!(unit.detail.contains("rescan"));
+                }
                 assert!(
                     report
                         .health
@@ -587,7 +615,7 @@ mod windows_cache_pipeline {
                 assert_eq!(
                     plan.targets.len(),
                     approved.len(),
-                    "all six families are executable in the positive fixture"
+                    "the positive fixture must contain precisely the approved cache paths"
                 );
                 let plan = serde_json::from_slice(&serde_json::to_vec(&plan).unwrap())
                     .expect("saved v2 plan");
@@ -769,6 +797,22 @@ mod windows_cache_pipeline {
         let catalogue = crate::rules::rule_catalogue();
         let json = serde_json::to_string(&report).unwrap();
         assert!(!json.contains("delete_permanently"));
+        for excluded in [
+            "windows.wer.reports",
+            "windows.update.download",
+            "windows.delivery_optimization",
+            "windows.user_downloads",
+            "windows.shader.cache",
+            "ai.claude.cache",
+            "ai.codex.cache",
+            "ai.cursor.sessions",
+        ] {
+            assert!(
+                crate::rules::WINDOWS_CACHE_COVERAGE_OMISSIONS.iter()
+                    .any(|(id, _)| *id == excluded),
+                "{excluded}"
+            );
+        }
         for (id, detail) in crate::rules::WINDOWS_CACHE_COVERAGE_OMISSIONS {
             let rows: Vec<_> = report
                 .health

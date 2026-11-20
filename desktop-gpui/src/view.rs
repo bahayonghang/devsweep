@@ -18,8 +18,7 @@ use std::{
 use gpui::{
     Action, App, AssetSource, Bounds, Context, ElementId, Entity, FocusHandle, Focusable,
     FontWeight, KeyBinding, PathPromptOptions, SharedString, TitlebarOptions, Window, WindowBounds,
-    WindowControlArea, WindowOptions, actions, div, img, linear_color_stop, linear_gradient,
-    prelude::*, px, rems, rgb, size,
+    WindowControlArea, WindowOptions, actions, div, img, prelude::*, px, rems, rgb, size,
 };
 use gpui_platform::application;
 #[cfg(windows)]
@@ -41,11 +40,16 @@ use crate::{
 };
 
 mod host_review;
+#[cfg(all(windows, test))]
+pub(crate) use host_review::receipt::run_host_receipt;
 mod page_analyze;
 mod page_clean;
+mod page_optimize;
 mod page_status;
 mod page_support;
 mod page_workbench;
+#[cfg(windows)]
+mod tray_panel;
 
 const ICON_NAME: &str = "devsweep-icon-master.png";
 const COPY_NAME: &str = "copy.txt";
@@ -87,16 +91,16 @@ fn windows_high_contrast_on() -> bool {
     queried.is_ok() && contrast.dwFlags.contains(HCF_HIGHCONTRASTON)
 }
 
+/// System preferences that pick the colour group and the paper opacity. The
+/// window itself is always opaque: the application paints the field, and no
+/// system backdrop is requested (`desktop-gpui/DESIGN.md`, "Window").
 #[derive(Default)]
 struct WindowMaterial {
     high_contrast: bool,
     /// Windows app mode as reported by the window; resolves the `system` theme.
     system_dark: bool,
-    transparency: bool,
-    blur_requested: bool,
-    blur_active: bool,
-    /// Tint last handed to the compositor; a theme change sends a new one.
-    blur_tint: Option<(u8, u8, u8, u8)>,
+    /// Windows "Transparency effects" is off: paper is painted opaque.
+    reduce_transparency: bool,
 }
 
 impl WindowMaterial {
@@ -104,36 +108,40 @@ impl WindowMaterial {
         self.high_contrast = system_high_contrast();
         #[cfg(windows)]
         {
-            self.transparency = windows::UI::ViewManagement::UISettings::new()
+            // A failed query keeps the translucent paper: the field under it
+            // is the application's own opaque paint, so nothing can show
+            // through from outside the window.
+            self.reduce_transparency = windows::UI::ViewManagement::UISettings::new()
                 .and_then(|settings| settings.AdvancedEffectsEnabled())
-                .unwrap_or(false);
+                .is_ok_and(|enabled| !enabled);
+        }
+        self.apply_preview_override();
+    }
+
+    /// Debug builds only: `DEVSWEEP_PREVIEW_MATERIAL=solid` or
+    /// `high-contrast` forces that state, so a review host can look at it
+    /// without changing a Windows setting. Release builds never read it.
+    #[cfg(debug_assertions)]
+    fn apply_preview_override(&mut self) {
+        match std::env::var("DEVSWEEP_PREVIEW_MATERIAL").as_deref() {
+            Ok("solid") => self.reduce_transparency = true,
+            Ok("high-contrast") => self.high_contrast = true,
+            _ => {}
         }
     }
 
-    fn wants_blur(&self, width: gpui::Pixels) -> bool {
-        self.transparency && !self.high_contrast && width >= px(960.0)
-    }
+    #[cfg(not(debug_assertions))]
+    fn apply_preview_override(&mut self) {}
 
-    fn update(&mut self, window: &Window, tint: (u8, u8, u8, u8)) {
-        let requested = self.wants_blur(window.viewport_size().width);
-        let tint = requested.then_some(tint);
-        if requested == self.blur_requested && tint == self.blur_tint {
-            return;
-        }
-        // A request that failed stays failed until the window leaves and
-        // re-enters the blur condition; a new tint does not retry it.
-        let retint = requested && self.blur_requested && self.blur_active;
-        let entering = requested && !self.blur_requested;
-        self.blur_requested = requested;
-        self.blur_tint = tint;
-        if entering || retint {
-            #[cfg(windows)]
-            if let Some(tint) = tint {
-                self.blur_active = gpui_windows::try_enable_window_blur(window, tint);
-            }
-        } else if !requested {
-            window.set_background_appearance(gpui::WindowBackgroundAppearance::Opaque);
-            self.blur_active = false;
+    /// The tokens for a saved theme under these system preferences. High
+    /// contrast wins over the saved theme; reduced transparency keeps the
+    /// colour group and makes its paper opaque.
+    fn theme(&self, saved: DesktopTheme) -> Theme {
+        let theme = Theme::for_preferences(saved, self.system_dark, self.high_contrast);
+        if self.reduce_transparency {
+            theme.with_solid_paper()
+        } else {
+            theme
         }
     }
 }
@@ -157,6 +165,12 @@ actions!(
         CycleCleanSort,
         OpenAiReview,
         ToggleCleanScreen,
+        RevealCleanFocus,
+        AnalyzeContextMenu,
+        AnalyzeMenuNext,
+        AnalyzeMenuPrevious,
+        AnalyzeMenuClose,
+        AnalyzeMenuChoose,
         FocusNextControl,
         FocusPrevControl
     ]
@@ -192,12 +206,17 @@ impl AssetSource for PackagedAssets {
 pub struct ShellView {
     focus_handle: FocusHandle,
     material: WindowMaterial,
+    /// The bundled default face registered at startup.
+    bundled_font: bool,
     session: Session,
     save_error: Option<String>,
     search: Entity<TextInput>,
     font_search: Entity<TextInput>,
     fonts: crate::fonts::FontCatalogue,
     software_sort_open: bool,
+    analyze_menu: Option<page_analyze::NodeMenu>,
+    clean_page_scroll: gpui::ScrollHandle,
+    clean_rows_scroll: gpui::ScrollHandle,
 }
 
 /// Route a resolved mode action to the session.
@@ -318,6 +337,9 @@ impl ShellView {
         cx: &mut Context<Self>,
     ) {
         window.focus_next(cx);
+        if self.clean_review_active() {
+            window.dispatch_action(Box::new(RevealCleanFocus), cx);
+        }
     }
 
     fn focus_prev_control(
@@ -327,6 +349,9 @@ impl ShellView {
         cx: &mut Context<Self>,
     ) {
         window.focus_prev(cx);
+        if self.clean_review_active() {
+            window.dispatch_action(Box::new(RevealCleanFocus), cx);
+        }
     }
 
     /// F7 cycles Clean sort in the Found phase only. It does not change mode.
@@ -358,7 +383,11 @@ impl ShellView {
         cx.notify();
     }
 
-    fn back(&mut self, _: &Back, _: &mut Window, cx: &mut Context<Self>) {
+    fn back(&mut self, _: &Back, host: &mut Window, cx: &mut Context<Self>) {
+        if self.analyze_menu.is_some() {
+            self.close_analyze_menu(host, cx);
+            return;
+        }
         if self.software_sort_open && self.session.shell().mode() == Mode::Software {
             self.software_sort_open = false;
         } else {
@@ -649,14 +678,7 @@ impl Render for ShellView {
             window.appearance(),
             gpui::WindowAppearance::Dark | gpui::WindowAppearance::VibrantDark
         );
-        let t = Theme::for_preferences(
-            self.session.theme(),
-            self.material.system_dark,
-            self.material.high_contrast,
-        );
-        self.material.update(window, t.backdrop_tint());
-        let glass = self.material.blur_active;
-        let (field_start, field_end) = t.field(glass);
+        let t = self.material.theme(self.session.theme());
         // Spacing and type are rem based, so the stored text scale scales the
         // whole layout, not only the root font.
         window.set_rem_size(px(16.0 * f32::from(self.session.text_scale()) / 100.0));
@@ -685,12 +707,20 @@ impl Render for ShellView {
         self.dispatch_jobs(cx);
         // Status samples while its page is on screen and stops when it is not.
         let status_main = selected == Mode::Status && surface == Surface::Mode;
+        #[cfg(windows)]
+        let status_main = status_main && crate::tray::main_visible(window);
         self.session.status_set_main_visible(status_main);
+        #[cfg(windows)]
+        if let Some(tray) = cx.try_global::<tray_panel::Runtime>() {
+            tray.tray.set_locale(locale);
+        }
         if let Some(generation) = self.session.take_status_poll_request() {
             self.start_status_poll(generation, cx);
         }
         let review_surface = self.clean_review_active();
-        let key_context = if menu_open {
+        let key_context = if self.analyze_menu.is_some() {
+            "ShellRoot AnalyzeMenu"
+        } else if menu_open {
             "ShellMenu"
         } else if review_surface {
             "ShellRoot CleanReview"
@@ -707,7 +737,18 @@ impl Render for ShellView {
             DesktopFont::Installed { family } if !self.fonts.missing(self.session.font()) => {
                 SharedString::from(family.clone())
             }
+            // The bundled Figtree is the default face. If it failed to
+            // register, the system UI font stands in.
+            _ if self.bundled_font => SharedString::from(ui::FONT_FAMILY),
             _ => gpui::TextStyle::default().font_family,
+        };
+        // Clean lays several papers straight onto the field. The other pages
+        // have not been reworked yet and keep one paper around the page.
+        let on_field = selected == Mode::Clean && surface == Surface::Mode;
+        let panel = if on_field {
+            div().flex().flex_col()
+        } else {
+            ui::paper(&t).p(if compact { ui::SPACE_3 } else { ui::SPACE_4 })
         };
 
         div()
@@ -727,6 +768,28 @@ impl Render for ShellView {
             .on_action(cx.listener(Self::cycle_clean_sort))
             .on_action(cx.listener(Self::clean_page_up))
             .on_action(cx.listener(Self::clean_page_down))
+            .on_action(cx.listener(|this, _: &AnalyzeMenuClose, host, cx| {
+                cx.stop_propagation();
+                this.close_analyze_menu(host, cx);
+            }))
+            .on_action(cx.listener(|this, _: &AnalyzeMenuNext, host, cx| {
+                cx.stop_propagation();
+                this.step_analyze_menu(false, host, cx);
+            }))
+            .on_action(cx.listener(|this, _: &AnalyzeMenuPrevious, host, cx| {
+                cx.stop_propagation();
+                this.step_analyze_menu(true, host, cx);
+            }))
+            .on_action(cx.listener(|this, _: &AnalyzeMenuChoose, host, cx| {
+                cx.stop_propagation();
+                if let Some(index) = this
+                    .analyze_menu
+                    .as_ref()
+                    .and_then(|m| m.items.iter().position(|item| item.is_focused(host)))
+                {
+                    this.choose_analyze_menu(index, host, cx);
+                }
+            }))
             .on_action(cx.listener(Self::back))
             .on_action(cx.listener(Self::activate))
             .on_action(cx.listener(Self::menu_toggle))
@@ -750,28 +813,28 @@ impl Render for ShellView {
             .size_full()
             .flex()
             .flex_col()
-            .bg(linear_gradient(
-                160.0,
-                linear_color_stop(field_start, 0.0),
-                linear_color_stop(field_end, 1.0),
-            ))
-            .text_color(rgb(t.text))
+            .text_color(rgb(t.ink))
             .font_family(font_family)
             .text_size(ui::TYPE_BODY)
+            // L1: the opaque field is the window's first child. Everything
+            // else paints over it.
+            .child(ui::field(&t))
             .child(top_bar)
             .child(
                 div()
+                    .relative()
                     .flex_1()
                     .min_h_0()
                     .w_full()
                     .flex()
                     .flex_col()
                     .items_center()
-                    .p(if compact { ui::SPACE_2 } else { ui::SPACE_4 })
+                    // The field stays visible at the window edge.
+                    .px(if compact { ui::SPACE_3 } else { ui::SPACE_4 })
+                    .pb(if compact { ui::SPACE_3 } else { ui::SPACE_4 })
                     .child(
-                        // The paper fills the window height; pages scroll
-                        // inside it through `sheet_frame`.
-                        div()
+                        // Pages scroll inside the panel through `sheet_frame`.
+                        panel
                             .id("mode-panel")
                             .role(gpui::Role::TabPanel)
                             .aria_label(panel_title(&self.session))
@@ -779,14 +842,6 @@ impl Render for ShellView {
                             .max_w(rems(76.0))
                             .flex_1()
                             .min_h_0()
-                            .bg(t.sheet(glass))
-                            .border_1()
-                            .border_color(t.sheet_edge(glass))
-                            .rounded(ui::RADIUS_SHEET)
-                            .when(!t.high_contrast, |sheet| sheet.shadow(ui::sheet_shadow()))
-                            .p(if compact { ui::SPACE_2 } else { ui::SPACE_4 })
-                            .flex()
-                            .flex_col()
                             .child(page),
                     ),
             )
@@ -812,7 +867,7 @@ impl Render for ShellView {
                             div()
                                 .text_size(ui::TYPE_META)
                                 .text_color(rgb(if t.high_contrast {
-                                    t.text
+                                    t.ink
                                 } else {
                                     ui::SCREEN_COVER_TEXT
                                 }))
@@ -849,6 +904,7 @@ impl ShellView {
             .detach();
         }
         for job in self.session.take_jobs() {
+            let batch_progress = matches!(&job, crate::shell::BackgroundJob::OptimizeBatch(_));
             let spawn_failure = job.spawn_failure();
             let panic_result = job.panic_result();
             let slot: std::sync::Arc<std::sync::Mutex<Option<crate::shell::JobResult>>> =
@@ -875,6 +931,7 @@ impl ShellView {
                 continue;
             }
             cx.spawn(async move |this, cx| {
+                let mut last_progress = None;
                 loop {
                     let ready = slot.lock().ok().and_then(|mut guard| guard.take());
                     if let Some(result) = ready {
@@ -883,6 +940,15 @@ impl ShellView {
                             cx.notify();
                         });
                         break;
+                    }
+                    if batch_progress {
+                        let _ = this.update(cx, |this, cx| {
+                            let current = this.session.batch().current();
+                            if current != last_progress {
+                                last_progress = current;
+                                cx.notify();
+                            }
+                        });
                     }
                     cx.background_executor()
                         .timer(Duration::from_millis(40))
@@ -898,13 +964,12 @@ impl ShellView {
         let percent = self.session.text_scale();
         let locale = self.session.locale();
         let base = InputStyle {
-            background: t.surface_alt,
-            border: t.border_strong,
-            focus_border: t.accent,
-            text: t.text,
-            placeholder: t.text_muted,
-            caret: t.accent,
-            selection: (t.accent << 8) | 0x55,
+            border: t.control_edge,
+            focus_border: t.input,
+            text: t.ink,
+            placeholder: t.muted,
+            caret: t.input,
+            selection: (t.input << 8) | 0x55,
             font_px: 14.0,
             line_px: 20.0,
         };
@@ -964,7 +1029,7 @@ impl ShellView {
             .map(|mode| {
                 let access = accessible_control(locale, AccessibleSlot::Mode(mode));
                 let active = mode == selected && surface == Surface::Mode;
-                let hover_text = t.text;
+                let hover_text = t.ink;
                 div()
                     .id(mode.element_id())
                     .role(gpui::Role::Tab)
@@ -984,27 +1049,31 @@ impl ShellView {
                     .font_weight(FontWeight::MEDIUM)
                     .cursor_pointer()
                     .border_1()
-                    .border_color(gpui::transparent_black())
+                    .border_color(ui::NO_EDGE)
                     .keyboard_focus(t)
+                    // A segmented item: the selected tab is the input wash
+                    // with an `input` label. The tabs sit on the field, so
+                    // the other labels are `ink`, not `muted`.
                     .when(active, |tab| {
-                        tab.bg(rgb(t.pill))
-                            .text_color(rgb(t.pill_text))
+                        tab.bg(rgb(t.input_wash))
+                            .text_color(rgb(t.input))
                             .font_weight(FontWeight::SEMIBOLD)
                     })
+                    .when(active && t.high_contrast, |tab| {
+                        tab.border_color(rgb(t.ink))
+                    })
                     .when(!active, |tab| {
-                        tab.text_color(rgb(t.text_muted))
-                            .hover(move |s| s.text_color(rgb(hover_text)).bg(rgb(t.surface_alt)))
+                        tab.text_color(rgb(hover_text))
+                            .hover(move |s| s.bg(t.well.color()))
+                            .active(move |s| s.bg(t.control_fill.color()))
                     })
                     .on_click(cx.listener(move |this, _, _, cx| {
                         this.session.show_mode(mode);
                         cx.notify();
                     }))
                     .child(
-                        ui::icon(
-                            mode_icon(mode),
-                            if active { t.pill_text } else { t.text_muted },
-                        )
-                        .size(rems(0.95)),
+                        ui::icon(mode_icon(mode), if active { t.input } else { t.ink })
+                            .size(rems(0.95)),
                     )
                     .when(tab_labels || active, |tab| tab.child(access.label))
                     .tooltip(move |_, cx| {
@@ -1017,7 +1086,9 @@ impl ShellView {
                                    icon: &'static str,
                                    label: &'static str,
                                    run: fn(&mut Session)| {
-            let hover_bg = t.surface_alt;
+            // An icon-only button on the field: no outline. The icon is the
+            // identifying mark and is `ink`.
+            let hover_bg = t.control_fill.color();
             div()
                 .id(id)
                 .occlude()
@@ -1030,9 +1101,10 @@ impl ShellView {
                 .size(rems(2.2))
                 .rounded_full()
                 .border_1()
-                .border_color(rgb(t.border_strong))
+                .border_color(ui::NO_EDGE)
+                .when(t.high_contrast, |b| b.border_color(rgb(t.ink)))
                 .cursor_pointer()
-                .hover(move |s| s.bg(rgb(hover_bg)))
+                .hover(move |s| s.bg(hover_bg))
                 .keyboard_focus(t)
                 .tooltip(move |_, cx| cx.new(|_| TooltipText(label.into(), tooltip_theme)).into())
                 .on_click(cx.listener(move |this, _, _, cx| {
@@ -1046,7 +1118,7 @@ impl ShellView {
                         cx.notify();
                     }),
                 )
-                .child(ui::icon(icon, t.text_muted).size(rems(1.0)))
+                .child(ui::icon(icon, t.ink).size(rems(1.0)))
         };
         // The direction is resolved against the palette on screen, so the
         // button also leaves `system` for the opposite of the current mode.
@@ -1073,19 +1145,11 @@ impl ShellView {
             copy::settings_title(locale),
             Session::open_settings,
         );
-        let tabs = div()
+        let tabs = ui::segmented(t)
             .id("mode-tabs")
             .occlude()
             .role(gpui::Role::TabList)
             .aria_label(copy::modes_label(locale))
-            .flex()
-            .flex_row()
-            .items_center()
-            .rounded_full()
-            .bg(rgb(t.surface))
-            .when(t.high_contrast, |d| {
-                d.border_1().border_color(rgb(t.border))
-            })
             .children(tabs);
         let (inline_tabs, lower_tabs) = if narrow {
             (None, Some(tabs))
@@ -1103,9 +1167,8 @@ impl ShellView {
             .h(rems(3.75))
             .pl(ui::SPACE_4)
             .when(!CUSTOM_CAPTION, |bar| bar.pr(ui::SPACE_4))
-            .bg(rgb(t.chrome))
-            .border_b_1()
-            .border_color(rgb(t.border))
+            // The bar has no fill and no rule: the field shows through, and
+            // only `ink` text and icons sit on it.
             // The bar is the custom title bar. Its blank area drags the window
             // and double-click maximizes (HTCAPTION). Every control inside
             // occludes it, so clicks on controls never start a drag.
@@ -1134,10 +1197,10 @@ impl ShellView {
                         .rounded(ui::RADIUS_ITEM)
                         .cursor_pointer()
                         .border_1()
-                        .border_color(gpui::transparent_black())
+                        .border_color(ui::NO_EDGE)
                         .keyboard_focus(t)
-                        .when(menu_open, |b| b.bg(rgb(t.surface_alt)))
-                        .hover(|s| s.bg(rgb(t.surface_alt)))
+                        .when(menu_open, |b| b.bg(t.control_fill.color()))
+                        .hover(|s| s.bg(t.control_fill.color()))
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.session.toggle_menu();
                             cx.notify();
@@ -1177,11 +1240,7 @@ impl ShellView {
                                     .child(WINDOW_TITLE),
                             )
                         })
-                        .child(
-                            ui::icon("chevron-right", t.text_muted)
-                                .size(rems(0.8))
-                                .when(menu_open, |i| i.text_color(rgb(t.text))),
-                        ),
+                        .child(ui::icon("chevron-right", t.ink).size(rems(0.8))),
                 ),
             )
             .children(inline_tabs)
@@ -1217,8 +1276,8 @@ impl ShellView {
         div()
             .flex()
             .flex_col()
+            .relative()
             .flex_shrink_0()
-            .bg(rgb(t.chrome))
             .child(bar)
             .when_some(lower_tabs, |shell, tabs| {
                 shell.child(div().flex().justify_center().pb(ui::SPACE_1).child(tabs))
@@ -1239,7 +1298,7 @@ impl ShellView {
             .map(|(index, item)| {
                 let access = accessible_control(locale, AccessibleSlot::Menu(item));
                 let highlighted = menu_index == index;
-                let hover_bg = t.surface_alt;
+                let hover_bg = t.well.color();
                 div()
                     .id(surface_element_id(item))
                     .role(gpui::Role::MenuItem)
@@ -1254,10 +1313,10 @@ impl ShellView {
                     .rounded(ui::RADIUS_ITEM)
                     .cursor_pointer()
                     .border_1()
-                    .border_color(gpui::transparent_black())
+                    .border_color(ui::NO_EDGE)
                     .keyboard_focus(t)
-                    .when(highlighted, |row| row.bg(rgb(t.surface_active)))
-                    .when(!highlighted, |row| row.hover(move |s| s.bg(rgb(hover_bg))))
+                    .when(highlighted, |row| row.bg(t.control_fill.color()))
+                    .when(!highlighted, |row| row.hover(move |s| s.bg(hover_bg)))
                     .on_click(cx.listener(move |this, _, _, cx| {
                         this.session.open_menu_item(index);
                         cx.notify();
@@ -1269,7 +1328,7 @@ impl ShellView {
                             cx.notify();
                         }),
                     )
-                    .child(ui::icon(surface_icon(item), t.text_muted))
+                    .child(ui::icon(surface_icon(item), t.muted))
                     .child(div().flex_1().text_size(ui::TYPE_BODY).child(access.label))
             })
             .collect::<Vec<_>>();
@@ -1292,7 +1351,9 @@ impl ShellView {
                     })),
             )
             .child(
-                div()
+                // L4 overlay: the solid fill, the paper edge and the one
+                // heavier shadow. No gray outline.
+                ui::overlay(t)
                     .id("brand-menu")
                     .role(gpui::Role::Menu)
                     .aria_label(copy::menu_label(locale))
@@ -1300,14 +1361,7 @@ impl ShellView {
                     .top(rems(0.35))
                     .left(rems(1.0))
                     .w(rems(15.0))
-                    .flex()
-                    .flex_col()
                     .p(ui::SPACE_1)
-                    .bg(rgb(t.surface))
-                    .border_1()
-                    .border_color(rgb(t.border_strong))
-                    .rounded(ui::RADIUS_ITEM)
-                    .shadow_lg()
                     .children(items)
                     .child(ui::divider(t))
                     .child(
@@ -1315,7 +1369,7 @@ impl ShellView {
                             .px(ui::SPACE_2)
                             .pt(ui::SPACE_1)
                             .text_size(ui::TYPE_META)
-                            .text_color(rgb(t.text_muted))
+                            .text_color(rgb(t.muted))
                             .child(copy::language_label(locale)),
                     )
                     .children(language),
@@ -1339,7 +1393,7 @@ impl ShellView {
         .into_iter()
         .map(|(id, label, choice)| {
             let active = locale == choice;
-            let hover_bg = t.surface_alt;
+            let hover_bg = t.well.color();
             div()
                 .id(id)
                 .accessibility_id(id)
@@ -1354,9 +1408,9 @@ impl ShellView {
                 .rounded(ui::RADIUS_ITEM)
                 .cursor_pointer()
                 .border_1()
-                .border_color(gpui::transparent_black())
+                .border_color(ui::NO_EDGE)
                 .keyboard_focus(t)
-                .hover(move |s| s.bg(rgb(hover_bg)))
+                .hover(move |s| s.bg(hover_bg))
                 .on_click(cx.listener(move |this, _, _, cx| {
                     this.session.set_locale(choice);
                     cx.notify();
@@ -1368,22 +1422,28 @@ impl ShellView {
                         cx.notify();
                     }),
                 )
-                .child(ui::icon("globe", t.text_muted))
+                .child(ui::icon("globe", t.muted))
                 .child(div().flex_1().text_size(ui::TYPE_BODY).child(label))
-                .when(active, |row| row.child(ui::icon("check", t.accent)))
+                .when(active, |row| row.child(ui::icon("check", t.input)))
                 .into_any_element()
         })
         .collect()
     }
 
     /// The page body for the active surface.
-    fn page(&mut self, t: &Theme, window: &Window, cx: &mut Context<Self>) -> gpui::AnyElement {
+    fn page(&mut self, t: &Theme, window: &mut Window, cx: &mut Context<Self>) -> gpui::AnyElement {
+        if self.session.shell().mode() != Mode::Analyze
+            || self.session.shell().surface() != Surface::Mode
+            || self.session.analyze_window().is_none()
+        {
+            self.analyze_menu = None;
+        }
         match self.session.shell().surface() {
             Surface::Mode => match self.session.shell().mode() {
                 Mode::Clean => self.clean_page(t, window, cx),
                 Mode::Software => self.software_page(t, window, cx),
                 Mode::Optimize => self.optimize_page(t, cx),
-                Mode::Analyze => self.analyze_page(t, cx),
+                Mode::Analyze => self.analyze_page(t, window, cx),
                 Mode::Status => self.status_page(t, window, cx),
             },
             Surface::Settings => self.settings_page(t, cx),
@@ -1393,41 +1453,52 @@ impl ShellView {
         }
     }
 
-    /// Session-wide banners shared by every page: preserved stores, a save
+    /// Session-wide notices shared by every page: preserved stores, a save
     /// error and stale review notices.
-    fn shared_banners(&self, t: &Theme) -> Vec<gpui::AnyElement> {
+    fn shared_banner_lines(&self) -> Vec<(Tone, String)> {
         let locale = self.session.locale();
-        let mut banners = Vec::new();
+        let mut lines = Vec::new();
         for notice in self.session.notices() {
-            banners.push(ui::any(ui::banner(
-                t,
+            lines.push((
                 Tone::Warning,
-                copy::preserved(locale, copy::store_name(locale, *notice)),
-            )));
+                copy::preserved(locale, copy::store_name(locale, *notice)).to_string(),
+            ));
         }
         if let Some(error) = self.save_error.as_deref() {
-            banners.push(ui::any(ui::banner(t, Tone::Danger, error.to_string())));
+            lines.push((Tone::Danger, error.to_string()));
         }
         if self.session.shell().surface() == Surface::Mode {
             let mode = self.session.shell().mode();
             match self.session.shell().review(mode) {
-                crate::shell::Review::StaleScanRoots => banners.push(ui::any(ui::banner(
-                    t,
-                    Tone::Warning,
-                    copy::stale_scan_roots(locale),
-                ))),
-                crate::shell::Review::StaleProtection => banners.push(ui::any(ui::banner(
-                    t,
-                    Tone::Warning,
-                    copy::stale_protection(locale),
-                ))),
+                crate::shell::Review::StaleScanRoots => {
+                    lines.push((Tone::Warning, copy::stale_scan_roots(locale).to_string()));
+                }
+                crate::shell::Review::StaleProtection => {
+                    lines.push((Tone::Warning, copy::stale_protection(locale).to_string()));
+                }
                 crate::shell::Review::Valid => {}
             }
             if let Some(report) = self.session.shell().report(mode) {
-                banners.push(ui::any(ui::banner(t, Tone::Info, report.to_string())));
+                lines.push((Tone::Info, report.to_string()));
             }
         }
-        banners
+        lines
+    }
+
+    /// The shared notices as wells, for a page that lives inside one paper.
+    fn shared_banners(&self, t: &Theme) -> Vec<gpui::AnyElement> {
+        self.shared_banner_lines()
+            .into_iter()
+            .map(|(tone, text)| ui::any(ui::banner(t, tone, text)))
+            .collect()
+    }
+
+    /// The shared notices as strips of paper, for a page laid on the field.
+    fn shared_notices(&self, t: &Theme) -> Vec<gpui::AnyElement> {
+        self.shared_banner_lines()
+            .into_iter()
+            .map(|(tone, text)| ui::any(ui::notice(t, tone, text)))
+            .collect()
     }
 
     /// Title row of a non-tab page (Settings, Protection, Rules, History and
@@ -1450,7 +1521,7 @@ impl ShellView {
                     .truncate()
                     .text_size(ui::TYPE_TITLE)
                     .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(rgb(t.text))
+                    .text_color(rgb(t.ink))
                     .child(title.into()),
             )
             .child(
@@ -1484,9 +1555,7 @@ impl ShellView {
                         if !this.session.status_poll_current(generation) {
                             return true;
                         }
-                        let visible = this.session.shell().mode() == Mode::Status
-                            && this.session.shell().surface() == Surface::Mode;
-                        if this.session.poll_status_live() && visible {
+                        if this.session.poll_status_live() {
                             cx.notify();
                         }
                         !this.session.status_poll_current(generation)
@@ -1514,6 +1583,27 @@ fn page_bar(
     figure: Option<String>,
     actions: Vec<gpui::AnyElement>,
 ) -> gpui::AnyElement {
+    page_bar_styled(t, status, figure, actions, false)
+}
+
+/// The first row of a page laid directly on the field. Secondary text does
+/// not sit on the field, so the status reads as the page title, in `ink`.
+fn page_bar_on_field(
+    t: &Theme,
+    status: Option<String>,
+    figure: Option<String>,
+    actions: Vec<gpui::AnyElement>,
+) -> gpui::AnyElement {
+    page_bar_styled(t, status, figure, actions, true)
+}
+
+fn page_bar_styled(
+    t: &Theme,
+    status: Option<String>,
+    figure: Option<String>,
+    actions: Vec<gpui::AnyElement>,
+    on_field: bool,
+) -> gpui::AnyElement {
     let status = status.filter(|status| !status.trim().is_empty());
     let figure = figure.filter(|figure| !figure.trim().is_empty());
     let lead = status.is_some() || figure.is_some();
@@ -1534,12 +1624,18 @@ fn page_bar(
                     .flex_1()
                     .min_w(rems(12.0))
                     .when_some(status, |column, status| {
-                        column.child(
+                        column.child(if on_field {
+                            div()
+                                .text_size(ui::TYPE_TITLE)
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(rgb(t.ink))
+                                .child(status)
+                        } else {
                             div()
                                 .text_size(ui::TYPE_BODY)
-                                .text_color(rgb(t.text_muted))
-                                .child(status),
-                        )
+                                .text_color(rgb(t.muted))
+                                .child(status)
+                        })
                     })
                     .when_some(figure, |column, figure| {
                         column.child(
@@ -1547,7 +1643,7 @@ fn page_bar(
                                 .text_size(ui::TYPE_DISPLAY)
                                 .font_weight(FontWeight::BOLD)
                                 .font_features(ui::tabular_numerals())
-                                .text_color(rgb(t.info))
+                                .text_color(rgb(t.output))
                                 .child(figure),
                         )
                     }),
@@ -1577,6 +1673,15 @@ fn sheet_frame(
     body: gpui::AnyElement,
     bottom: Option<gpui::AnyElement>,
 ) -> gpui::AnyElement {
+    scrollable_frame(top, body, bottom, None)
+}
+
+fn scrollable_frame(
+    top: gpui::AnyElement,
+    body: gpui::AnyElement,
+    bottom: Option<gpui::AnyElement>,
+    scroll: Option<&gpui::ScrollHandle>,
+) -> gpui::AnyElement {
     div()
         .flex()
         .flex_col()
@@ -1587,6 +1692,7 @@ fn sheet_frame(
         .child(
             div()
                 .id("page-scroll")
+                .when_some(scroll, |page, handle| page.track_scroll(handle))
                 .flex_1()
                 .min_h_0()
                 .overflow_y_scroll()
@@ -1739,10 +1845,15 @@ impl Render for TooltipText {
         div()
             .px(ui::SPACE_1)
             .rounded(ui::RADIUS_ITEM)
-            .bg(rgb(self.1.surface))
+            // A small overlay: the solid fill and the paper edge.
+            .bg(self.1.sheet_solid.color())
             .border_1()
-            .border_color(rgb(self.1.border_strong))
-            .text_color(rgb(self.1.text))
+            .border_color(if self.1.high_contrast {
+                rgb(self.1.ink)
+            } else {
+                self.1.sheet_edge.color()
+            })
+            .text_color(rgb(self.1.ink))
             .text_size(ui::TYPE_META)
             .child(self.0.clone())
     }
@@ -2487,12 +2598,12 @@ fn caption_buttons(
     maximized: bool,
     cx: &mut Context<ShellView>,
 ) -> gpui::AnyElement {
-    let hover_bg = t.surface_alt;
-    let fg = t.text_muted;
-    let text = t.text;
+    let hover_bg = t.control_fill.color();
+    let fg = t.ink;
+    let text = t.ink;
     let button = |id: &'static str, icon: &'static str, label: &'static str, area| {
         let (bg, ink) = if area == WindowControlArea::Close {
-            (ui::CAPTION_CLOSE_HOVER, ui::CAPTION_CLOSE_INK)
+            (rgb(ui::CAPTION_CLOSE_HOVER), ui::CAPTION_CLOSE_INK)
         } else {
             (hover_bg, text)
         };
@@ -2508,7 +2619,7 @@ fn caption_buttons(
             .justify_center()
             .w(px(46.0))
             .h_full()
-            .hover(move |s| s.bg(rgb(bg)))
+            .hover(move |s| s.bg(bg))
             .child(
                 ui::icon(icon, fg)
                     .size(px(16.0))
@@ -2546,8 +2657,8 @@ fn caption_buttons(
                 copy::pick(locale, "Close", "关闭"),
                 WindowControlArea::Close,
             )
-            .on_click(cx.listener(|this, _, window, _| {
-                if !this.session.host_action_busy() {
+            .on_click(cx.listener(|this, _, window, cx| {
+                if should_close_main(this, window, cx) {
                     window.remove_window();
                 }
             })),
@@ -2560,11 +2671,30 @@ fn preview_window_size() -> Option<(f32, f32)> {
     None
 }
 
-pub fn run(session: Session) {
-    // The tray lives for this blocking run and is dropped when the app exits.
-    // Unit tests do not call `run`, so they do not create a notification-area icon.
+fn should_close_main(
+    view: &mut ShellView,
+    _window: &mut Window,
+    cx: &mut Context<ShellView>,
+) -> bool {
+    if view.session.host_action_busy() {
+        return false;
+    }
     #[cfg(windows)]
-    let _tray = crate::tray::install_tray(crate::tray::RealTray::new());
+    if view.session.close_to_tray()
+        && cx
+            .try_global::<tray_panel::Runtime>()
+            .is_some_and(|r| r.tray.available())
+        && crate::tray::hide(_window)
+    {
+        cx.global::<tray_panel::Runtime>().tray.set_tucked(true);
+        view.session.status_set_main_visible(false);
+        cx.notify();
+        return false;
+    }
+    true
+}
+
+pub fn run(session: Session) {
     // Window HICONs also live for the whole run; `WM_SETICON` does not copy.
     #[cfg(windows)]
     let window_icons = crate::icon::WindowIcons::load();
@@ -2616,6 +2746,7 @@ pub fn run(session: Session) {
                 KeyBinding::new("ctrl-a", input::SelectAll, Some("SpikeInput")),
                 KeyBinding::new("ctrl-v", input::Paste, Some("SpikeInput")),
             ]);
+            cx.bind_keys(page_analyze::menu_bindings());
             cx.on_window_closed(|cx, _window_id| {
                 if cx.windows().is_empty() {
                     cx.quit();
@@ -2623,12 +2754,31 @@ pub fn run(session: Session) {
             })
             .detach();
 
+            // The default face ships inside the binary. A failure leaves the
+            // system UI font in place and is reported on stderr.
+            let bundled_font = match cx
+                .text_system()
+                .add_fonts(vec![Cow::Borrowed(ui::FONT_BYTES)])
+            {
+                Ok(()) => true,
+                Err(error) => {
+                    eprintln!("devsweep: bundled font not registered: {error}");
+                    false
+                }
+            };
             let (width, height) = preview_window_size().unwrap_or((1240.0, 820.0));
             let bounds = Bounds::centered(None, size(px(width), px(height)), cx);
             let window = cx
                 .open_window(
                     WindowOptions {
                         window_bounds: Some(WindowBounds::Windowed(bounds)),
+                        window_min_size: Some(size(
+                            px(ui::WINDOW_MIN_WIDTH),
+                            px(ui::WINDOW_MIN_HEIGHT),
+                        )),
+                        // The application paints an opaque field; no system
+                        // backdrop is requested.
+                        window_background: gpui::WindowBackgroundAppearance::Opaque,
                         titlebar: Some(TitlebarOptions {
                             title: Some(SharedString::from(WINDOW_TITLE)),
                             // Windows hides the system caption; the top bar
@@ -2666,25 +2816,35 @@ pub fn run(session: Session) {
                             )
                         });
                         // The window never blocks its UI thread on host reads.
-                        session.enable_background_jobs();
+                        #[cfg(windows)]
+                        let enable_workers = !tray_panel::fixture_enabled();
+                        #[cfg(not(windows))]
+                        let enable_workers = true;
+                        if enable_workers {
+                            session.enable_background_jobs();
+                        }
                         let mut material = WindowMaterial::default();
                         material.read_preferences();
                         let view = cx.new(|cx| ShellView {
                             material,
+                            bundled_font,
                             focus_handle: cx.focus_handle(),
                             session,
                             save_error: None,
                             search: search.clone(),
                             font_search: font_search.clone(),
                             fonts: crate::fonts::FontCatalogue::default(),
+                            analyze_menu: None,
+                            clean_page_scroll: gpui::ScrollHandle::new(),
+                            clean_rows_scroll: gpui::ScrollHandle::new(),
                             software_sort_open: false,
                         });
                         let closing_view = view.downgrade();
-                        window.on_window_should_close(cx, move |_, cx| {
+                        window.on_window_should_close(cx, move |window, cx| {
                             closing_view
                                 .update(cx, |this, cx| {
                                     cx.notify();
-                                    !this.session.host_action_busy()
+                                    should_close_main(this, window, cx)
                                 })
                                 .unwrap_or(true)
                         });
@@ -2731,6 +2891,8 @@ pub fn run(session: Session) {
                     cx.activate(true);
                 })
                 .expect("focus shell");
+            #[cfg(windows)]
+            tray_panel::install(window, cx);
         });
 }
 
@@ -2747,14 +2909,34 @@ mod tests {
     };
 
     #[test]
-    fn native_blur_requires_system_consent_and_a_wide_window() {
+    fn system_preferences_pick_the_paper_opacity_and_the_contrast_palette() {
         let mut material = WindowMaterial::default();
-        assert!(!material.wants_blur(px(1240.0)));
-        material.transparency = true;
-        assert!(material.wants_blur(px(960.0)));
-        assert!(!material.wants_blur(px(959.0)));
+        assert_eq!(material.theme(DesktopTheme::Light), ui::LIGHT);
+        assert!(material.theme(DesktopTheme::Light).sheet.alpha < 1.0);
+        material.reduce_transparency = true;
+        let solid = material.theme(DesktopTheme::Dark);
+        assert_eq!(solid.sheet, ui::DARK.sheet_solid);
+        assert_eq!(solid.field_start, ui::DARK.field_start);
         material.high_contrast = true;
-        assert!(!material.wants_blur(px(1240.0)));
+        assert_eq!(material.theme(DesktopTheme::Light), ui::HIGH_CONTRAST);
+    }
+
+    /// The window is opaque and no platform backdrop is requested: the field
+    /// is the application's own paint (bahayonghang/devsweep#6).
+    #[test]
+    fn the_window_requests_no_system_backdrop() {
+        let source = crate::source_lf(include_str!("view.rs"));
+        let production = source.split("#[cfg(test)]\nmod tests").next().unwrap();
+        assert!(production.contains("WindowBackgroundAppearance::Opaque"));
+        for forbidden in [
+            "try_enable_window_blur",
+            "WindowBackgroundAppearance::Blurred",
+            "WindowBackgroundAppearance::Transparent",
+            "MicaBackdrop",
+            "set_background_appearance",
+        ] {
+            assert!(!production.contains(forbidden), "{forbidden}");
+        }
     }
 
     #[test]
@@ -2894,9 +3076,9 @@ mod tests {
     fn light_theme_canvas_is_not_dark() {
         let light = Theme::for_preferences(DesktopTheme::Light, false, false);
         let dark = Theme::for_preferences(DesktopTheme::Dark, false, false);
-        assert_ne!(light.canvas, dark.canvas);
-        assert_ne!(light.text, dark.text);
-        assert_eq!(light.canvas, 0xe7f6f1);
+        assert_ne!(light.field_start, dark.field_start);
+        assert_ne!(light.ink, dark.ink);
+        assert_eq!(light, ui::LIGHT);
         assert!(!light.dark);
     }
 
@@ -2907,15 +3089,14 @@ mod tests {
         let dark = Theme::for_preferences(DesktopTheme::Dark, false, false);
         let light = Theme::for_preferences(DesktopTheme::Light, false, false);
 
-        assert_eq!(high_dark.canvas, 0x000000);
-        assert_eq!(high_dark.text, 0xffffff);
+        assert_eq!(high_dark, ui::HIGH_CONTRAST);
         assert_eq!(high_dark, high_light);
         assert_ne!(high_dark, dark);
         assert_ne!(high_dark, light);
         assert_ne!(dark, light);
         // Every themed system tone stays distinct from the high-contrast field.
         for tone in [Tone::Success, Tone::Warning, Tone::Danger, Tone::Info] {
-            assert_ne!(high_dark.tone(tone), high_dark.canvas);
+            assert_ne!(high_dark.tone(tone), high_dark.field_start);
         }
     }
 
@@ -3200,7 +3381,7 @@ mod tests {
             "The clean was canceled.".to_string(),
             "The preview digest is stale.".to_string(),
             "Confirmation is required.".to_string(),
-            "The isolated trash move was reported.".to_string(),
+            "The move was recorded.".to_string(),
             "Some targets moved and some did not.".to_string(),
         ];
         let zh = [
@@ -3211,7 +3392,7 @@ mod tests {
             "清理已取消。".to_string(),
             "预览摘要已过期。".to_string(),
             "需要确认。".to_string(),
-            "已报告隔离的移出。".to_string(),
+            "已记录移动结果。".to_string(),
             "部分目标已移出，部分目标未移出。".to_string(),
         ];
 
@@ -3628,6 +3809,10 @@ mod tests {
                 "view/page_workbench.rs",
                 crate::source_lf(include_str!("view/page_workbench.rs")),
             ),
+            (
+                "view/page_optimize.rs",
+                crate::source_lf(include_str!("view/page_optimize.rs")),
+            ),
         ];
         let mut faults = Vec::new();
         for (name, source) in files {
@@ -3782,6 +3967,10 @@ mod tests {
             (
                 "page_workbench.rs",
                 crate::source_lf(include_str!("view/page_workbench.rs")),
+            ),
+            (
+                "page_optimize.rs",
+                crate::source_lf(include_str!("view/page_optimize.rs")),
             ),
             (
                 "page_analyze.rs",
@@ -4058,7 +4247,7 @@ mod tests {
         assert!(group.contains("GroupSelection::Mixed"));
         assert!(!group.contains("aria_selected"));
         assert!(!group.contains("aria_active_descendant"));
-        assert!(source.contains("sheet_frame(bar, page.child(body).into_any_element(), footer)"));
+        assert!(source.contains("page.child(body).into_any_element(),\n            footer,"));
         assert!(source.contains("clean-header-preview") && source.contains("clean-header-confirm"));
     }
 

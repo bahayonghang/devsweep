@@ -12,7 +12,7 @@ use std::path::Path;
 
 use devsweep_core::optimize::{
     MaintenanceActionClass, MaintenancePlanV1, OptimizePlanError, PrecheckReason, catalogue_entry,
-    plan_operation, preview_maintenance_plan_live, published_entries,
+    plan_operation, preview_maintenance_plan_live,
 };
 use devsweep_core::software::{
     SOFTWARE_PLAN_VERSION, SoftwareExecutionError, SoftwareExecutionRequest, SoftwareExecutor,
@@ -79,6 +79,7 @@ impl WorkbenchReview {
     }
 
     #[must_use]
+    #[cfg(test)]
     pub fn pending_id(&self) -> Option<&str> {
         self.pending.as_ref().map(|pending| pending.id.as_str())
     }
@@ -103,14 +104,6 @@ impl WorkbenchReview {
     pub fn precheck(&self) -> Option<PrecheckReason> {
         self.precheck
     }
-}
-
-#[must_use]
-pub fn optimize_row_ids() -> Vec<String> {
-    published_entries()
-        .iter()
-        .map(|entry| entry.id.to_string())
-        .collect()
 }
 
 fn open_review(id: &str, locale: Locale) -> ReviewEffect {
@@ -578,7 +571,7 @@ mod tests {
         let mut review = WorkbenchReview::new();
         review.activate("leftovers", Locale::En);
         let leftovers = review.lines().join("\n");
-        assert!(leftovers.contains("unavailable") || leftovers.contains("Leftovers"));
+        assert_eq!(leftovers, copy::software_leftovers_unavailable(Locale::En));
         assert!(!leftovers.to_ascii_lowercase().contains("succeed"));
 
         review.activate("updates", Locale::En);
@@ -696,29 +689,16 @@ mod tests {
         not(windows),
         ignore = "Windows-only behavior (Recycle Bin, Win32 paths, cmd.exe or file locking)"
     )]
-    fn keyboard_enter_writes_the_domain_review_and_privilege_notice() {
+    fn keyboard_enter_selects_maintenance_without_running_and_opens_software_review() {
         let mut session = Session::unbacked();
         session.show_mode(Mode::Optimize);
         session.select_mode_row(Mode::Optimize, "maintenance.retrim");
         session.apply_key(NavKey::Enter);
-        let lines = crate::view::panel_lines(&session, None).join("\n");
-        assert!(
-            lines.contains("uac_declined")
-                || lines.contains("Elevation was declined")
-                || lines.contains("sha256:"),
-            "{lines}"
-        );
-        assert!(
-            lines.contains("last=not run") || lines.contains("未运行"),
-            "{lines}"
-        );
-        assert!(!lines.to_ascii_lowercase().contains("succeed"));
-        if lines.contains("uac_declined") {
-            assert_eq!(
-                session.workbench_notice(),
-                Some(&crate::shell::WorkbenchNotice::PrivilegeDecline)
-            );
-        }
+        assert_eq!(session.batch().selected, ["maintenance.retrim"]);
+        assert!(session.batch().review.is_none());
+        assert!(session.take_jobs().is_empty());
+        session.apply_key(NavKey::Enter);
+        assert!(session.batch().selected.is_empty());
 
         session.show_mode(Mode::Software);
         session.select_mode_row(Mode::Software, "leftovers");

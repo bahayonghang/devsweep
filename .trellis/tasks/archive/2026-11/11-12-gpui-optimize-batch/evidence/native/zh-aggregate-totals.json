@@ -1,0 +1,1 @@
+{"command":"history.totals","data":{"clean":{"known_bytes":0,"lower_bound":false,"unknown_records":0},"optimize":{"lower_bound":false,"succeeded":1},"software":{"lower_bound":false,"succeeded":0}},"error":null,"outcome":"succeeded","schema_version":1,"warnings":[]}

@@ -21,7 +21,7 @@ use crate::copy::{self, Locale};
 
 pub const ANALYZE_ROOT_ENV: &str = "DEVSWEEP_ANALYZE_ROOT";
 
-/// Snapshot plus the recycle preview bound to one node id.
+/// Snapshot and the recycle preview bound to the checked node ids.
 #[derive(Clone, Debug)]
 pub struct AnalyzeWindow {
     snapshot: AnalyzeSnapshotV1,
@@ -33,6 +33,12 @@ pub struct AnalyzeWindow {
     /// not a fresh one, so a changed file refuses.
     recycle_digest: Option<String>,
     stale: bool,
+    largest: devsweep_core::analysis::AnalyzeLargestV1,
+    largest_active: bool,
+    explanation: Option<(
+        u32,
+        Result<devsweep_core::analysis::AnalyzeExplainV1, String>,
+    )>,
 }
 
 /// One landing choice. A missing or unreadable root stays distinct from a scan.
@@ -41,6 +47,7 @@ pub struct AnalyzeRootChoice {
     pub input: String,
     pub normalized: Option<String>,
     pub error: Option<String>,
+    pub capacity: Option<devsweep_core::analysis::AnalyzeVolumeCapacityV1>,
 }
 
 impl AnalyzeWindow {
@@ -69,10 +76,24 @@ impl AnalyzeWindow {
             return Err("analyze root is missing".to_string());
         }
         let outcome = analyze_path(root, cancel, None).map_err(|error| error.to_string())?;
-        let snapshot = outcome.snapshot().clone();
+        let snapshot = match outcome {
+            devsweep_core::analysis::AnalyzeRunOutcome::Completed { snapshot } => snapshot,
+            devsweep_core::analysis::AnalyzeRunOutcome::Canceled { .. } => {
+                return Err("canceled".into());
+            }
+        };
         let board = AnalyzeBoard::new(snapshot.nodes.clone());
         let parent_id = snapshot.root_node().map(|node| node.id).unwrap_or(0);
+        let largest = devsweep_core::analysis::largest_analyze_files(
+            &snapshot,
+            devsweep_core::analysis::ANALYZE_LARGEST_MIN_BYTES,
+            devsweep_core::analysis::ANALYZE_LIST_DEFAULT_LIMIT,
+        )
+        .map_err(|err| err.code().to_string())?;
         Ok(Self {
+            largest,
+            largest_active: false,
+            explanation: None,
             snapshot,
             board,
             parent_id,
@@ -131,6 +152,7 @@ impl AnalyzeWindow {
             return Err(line);
         };
         if self.stale {
+            self.cancel_recycle();
             let line = recycle_error_line(locale, &AnalyzeSavedError::StaleConfirmation);
             self.recycle_line = Some(line.clone());
             return Err(line);
@@ -154,6 +176,7 @@ impl AnalyzeWindow {
                 if failed > 0 { Err(line) } else { Ok(line) }
             }
             Err(error) => {
+                self.cancel_recycle();
                 let line = recycle_error_line(locale, &error);
                 self.recycle_line = Some(line.clone());
                 Err(line)
@@ -173,6 +196,7 @@ impl AnalyzeWindow {
             return false;
         };
         self.select(id);
+        self.largest_active = false;
         if kind == devsweep_core::analysis::AnalyzeNodeKind::Directory {
             self.parent_id = id;
             true
@@ -183,17 +207,22 @@ impl AnalyzeWindow {
 
     #[must_use]
     pub fn child_ids(&self) -> Vec<u32> {
-        let mut ids = self
+        if self.largest_active {
+            return self.largest.files.iter().map(|file| file.node_id).collect();
+        }
+        let mut nodes: Vec<_> = self
             .snapshot
             .nodes
             .iter()
             .filter(|node| node.parent_id == Some(self.parent_id))
-            .map(|node| node.id)
-            .collect::<Vec<_>>();
-        if ids.is_empty() {
-            ids = self.board.list_ids();
-        }
-        ids
+            .collect();
+        nodes.sort_unstable_by(|a, b| {
+            b.bytes
+                .cmp(&a.bytes)
+                .then(a.name.cmp(&b.name))
+                .then(a.id.cmp(&b.id))
+        });
+        nodes.into_iter().map(|node| node.id).collect()
     }
 
     #[must_use]
@@ -274,6 +303,53 @@ impl AnalyzeWindow {
         self.refuse_unconfirmed(locale)
     }
 
+    pub fn show_largest(&mut self, largest: bool) {
+        if self.largest_active != largest {
+            self.largest_active = largest;
+            self.cancel_recycle();
+        }
+    }
+
+    pub fn largest_active(&self) -> bool {
+        self.largest_active
+    }
+
+    pub fn largest(&self) -> &devsweep_core::analysis::AnalyzeLargestV1 {
+        &self.largest
+    }
+
+    pub fn toggle(&mut self, id: u32) {
+        self.board.toggle(id);
+        self.cancel_recycle();
+    }
+
+    pub fn extend_range(&mut self, id: u32) {
+        let order = self.child_ids();
+        self.board.range(id, &order);
+        self.cancel_recycle();
+    }
+
+    pub fn explain(&mut self, id: u32) {
+        self.explanation = Some((
+            id,
+            explain_analyze_node(&self.snapshot, id).map_err(|error| error.code().to_string()),
+        ));
+    }
+
+    pub fn explanation(
+        &self,
+        id: u32,
+    ) -> Option<&Result<devsweep_core::analysis::AnalyzeExplainV1, String>> {
+        self.explanation
+            .as_ref()
+            .filter(|(node, _)| *node == id)
+            .map(|(_, result)| result)
+    }
+
+    pub fn focus_node(&mut self, id: u32) {
+        self.board.focus_node(id);
+    }
+
     pub fn select(&mut self, id: u32) {
         self.board.select_from_list(id);
         self.recycle_line = None;
@@ -302,6 +378,12 @@ impl AnalyzeWindow {
 
     /// Live trash preview for the selected node. Does not move or delete.
     pub fn preview_selected(&mut self, locale: Locale) -> Result<(), String> {
+        self.cancel_recycle();
+        if self.stale {
+            let line = recycle_error_line(locale, &AnalyzeSavedError::StaleConfirmation);
+            self.recycle_line = Some(line.clone());
+            return Err(line);
+        }
         let ids = self.board.recycle_ids();
         if ids.is_empty() {
             self.recycle_line = Some(recycle_error_line(
@@ -319,10 +401,21 @@ impl AnalyzeWindow {
         };
         match preview_analyze_trash_plan(&plan) {
             Ok(preview) => {
+                if let Some(refused) = preview.refused.first() {
+                    let line = format!(
+                        "{} · {} #{}",
+                        copy::pick(locale, "Selection refused", "所选项无法移入回收站"),
+                        refusal_label(locale, refused.reason_code),
+                        refused.node_id
+                    );
+                    self.recycle_line = Some(line.clone());
+                    return Err(line);
+                }
                 self.recycle_plan = Some(plan);
                 self.recycle_digest = Some(preview.digest.clone());
                 self.recycle_line = Some(format!(
-                    "recycle {} | {}",
+                    "{} {} | {}",
+                    copy::pick(locale, "recycle", "回收节点"),
                     ids.iter()
                         .map(|id| id.to_string())
                         .collect::<Vec<_>>()
@@ -420,6 +513,7 @@ pub fn landing_roots(paths: &[PathBuf]) -> Vec<AnalyzeRootChoice> {
             .map(|root| AnalyzeRootChoice {
                 input: root.input,
                 normalized: root.normalized,
+                capacity: root.capacity,
                 error: root
                     .error
                     .map(|error| format!("{error:?}").to_ascii_lowercase()),
@@ -428,15 +522,57 @@ pub fn landing_roots(paths: &[PathBuf]) -> Vec<AnalyzeRootChoice> {
         Err(error) => vec![AnalyzeRootChoice {
             input: String::new(),
             normalized: None,
+            capacity: None,
             error: Some(error.code().to_string()),
         }],
     }
 }
 
+pub fn refusal_label(
+    locale: Locale,
+    reason: devsweep_core::analysis::AnalyzeTrashRefusalCode,
+) -> &'static str {
+    use devsweep_core::analysis::AnalyzeTrashRefusalCode::*;
+    let (en, zh) = match reason {
+        Protected => ("Protected path", "路径已受保护"),
+        SystemLocation => ("System location", "系统位置"),
+        VolumeRoot => ("Volume root", "卷根目录"),
+        ProfileRoot => ("Profile directory", "用户配置目录"),
+        AnalysisRoot => ("Scan root", "扫描根目录"),
+        ReparsePoint => ("Reparse point", "重解析点"),
+        ChangedSinceSnapshot => ("Changed since the scan", "扫描后已发生变化"),
+        NotFound => ("Item is missing", "项目已不存在"),
+    };
+    copy::pick(locale, en, zh)
+}
+
+pub fn localized_error(locale: Locale, reason: &str) -> String {
+    if locale == Locale::En {
+        return reason.into();
+    }
+    match reason {
+        "missing" | "analyze root is missing" => "分析根目录已不存在。",
+        "inaccessible" | "roots_unavailable" => "无法读取所选位置。",
+        "invalid_snapshot" => "快照数据无效，请重新扫描。",
+        "reveal_unavailable" => "无法在资源管理器中显示该项目。",
+        "empty_selection" => "请选择至少一项。",
+        "confirmation_required" => "需要先预览并明确确认。",
+        "stale_confirmation" | "changed_since_snapshot" => "项目或摘要已变化，请重新扫描并预览。",
+        "incomplete_observation" | "identity_unavailable" => "无法确认项目的完整信息或当前身份。",
+        "protection_unavailable" => "无法读取保护列表，已停止操作。",
+        "path_outside_root" | "snapshot_root_mismatch" => "路径与保存的扫描根目录不一致。",
+        "unsupported_platform" => "当前系统不支持此操作。",
+        "canceled" => "操作已取消。",
+        "execution_failed" => "移动失败，请检查本次操作记录。",
+        _ => "无法完成分析操作，请检查路径和访问权限。",
+    }
+    .into()
+}
+
 fn recycle_error_line(locale: Locale, error: &AnalyzeSavedError) -> String {
     match locale {
         Locale::En => format!("{}: {error}", error.code()),
-        Locale::ZhCn => format!("{}：{error}", error.code()),
+        Locale::ZhCn => localized_error(locale, error.code()),
     }
 }
 
@@ -621,10 +757,59 @@ mod tests {
         window.preview_selected(Locale::En).expect("preview");
         window.arm_stale();
         let stale = window.confirm_recycle(Locale::ZhCn);
-        assert!(stale.contains("stale_confirmation"), "{stale}");
+        assert!(stale.contains("重新扫描"), "{stale}");
         assert!(!stale.contains("成功"));
         assert!(root.join("keep.bin").is_file());
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn three_checked_rows_bind_one_plan_and_replacing_the_selection_drops_its_digest() {
+        let fixture = isolated_root("three-checked");
+        for name in ["one.bin", "two.bin", "three.bin", "four.bin"] {
+            fs::write(fixture.join(name), name).expect("sample file");
+        }
+        let mut session = crate::shell::Session::unbacked();
+        session.show_mode(crate::shell::Mode::Analyze);
+        assert!(session.analyze_open_isolated_root(fixture.clone()));
+        let order = session.analyze_window().unwrap().child_ids();
+        assert_eq!(order.len(), 4);
+        for &id in &order[..3] {
+            session.analyze_mark(id, false);
+        }
+        assert!(session.analyze_preview_recycle());
+        let window = session.analyze_window().unwrap();
+        let mut checked = order[..3].to_vec();
+        checked.sort();
+        assert_eq!(window.recycle_plan().unwrap().selected_node_ids, checked);
+        assert_eq!(
+            window.board().selected_bytes(),
+            checked
+                .iter()
+                .map(|id| window.board().node(*id).unwrap().bytes)
+                .sum::<u64>()
+        );
+        assert!(window.recycle_digest().unwrap().starts_with("sha256:"));
+
+        session.analyze_context_focus(order[0]);
+        assert!(session.analyze_window().unwrap().recycle_digest().is_some());
+        session.analyze_select(order[0]);
+        let window = session.analyze_window().unwrap();
+        assert_eq!(window.board().recycle_ids(), vec![order[0]]);
+        assert!(window.recycle_digest().is_none());
+        assert!(session.analyze_confirm_recycle().is_err());
+        session.analyze_mark(order[2], true);
+        assert_eq!(
+            session.analyze_window().unwrap().board().recycle_ids(),
+            checked
+        );
+        assert!(session.analyze_preview_recycle());
+        session.analyze_mark(order[1], false);
+        assert!(session.analyze_window().unwrap().recycle_digest().is_none());
+        assert!(session.analyze_confirm_recycle().is_err());
+        assert_eq!(fs::read_dir(&fixture).unwrap().count(), 4);
+        fs::remove_dir_all(fixture).unwrap();
     }
 
     #[test]

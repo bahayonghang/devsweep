@@ -1,0 +1,133 @@
+{
+  "locale_theme": "en-dark",
+  "dpi": 120,
+  "scale_percent": 125,
+  "default_close_exit": false,
+  "close_to_tray": true,
+  "run": [
+    {
+      "event": "status",
+      "size": [
+        1568,
+        1034
+      ],
+      "dpi": 120,
+      "rect": [
+        496,
+        174,
+        2064,
+        1208
+      ]
+    },
+    {
+      "event": "panel",
+      "size": [
+        528,
+        704
+      ],
+      "dpi": 120,
+      "rect": [
+        732,
+        156,
+        1260,
+        860
+      ]
+    },
+    {
+      "event": "shared_sampler",
+      "starts": [
+        "tray-sampler start 1"
+      ],
+      "sample": "tray-sampler sample 1 snapshot-fixture"
+    },
+    {
+      "event": "escape_closed"
+    },
+    {
+      "event": "neither_visible",
+      "stops": [
+        "tray-sampler stop 1"
+      ],
+      "no_new_samples_ms": 800
+    },
+    {
+      "event": "keyboard_panel_while_minimized",
+      "panel_shown": true
+    },
+    {
+      "event": "taskbar_created",
+      "message": 49355,
+      "registered": 2
+    },
+    {
+      "event": "menu",
+      "size": [
+        223,
+        58
+      ],
+      "dpi": 120,
+      "rect": [
+        1037,
+        802,
+        1260,
+        860
+      ]
+    },
+    {
+      "event": "menu_open_restored"
+    },
+    {
+      "event": "closed_to_tray",
+      "running": true
+    },
+    {
+      "event": "reopened_after_close"
+    },
+    {
+      "event": "exit",
+      "code": 0,
+      "icon_removed": true
+    }
+  ],
+  "fixture_trace": [
+    "",
+    "running 1 test",
+    "tray-sampler start 1",
+    "tray-shell add",
+    "tray-shell version",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler sample 1 snapshot-fixture",
+    "tray-sampler stop 1",
+    "tray-sampler start 2",
+    "tray-sampler sample 2 snapshot-fixture",
+    "tray-sampler stop 2",
+    "tray-shell add",
+    "tray-shell version",
+    "tray-sampler start 3",
+    "tray-sampler sample 3 snapshot-fixture",
+    "tray-shell focus",
+    "tray-sampler stop 3",
+    "tray-sampler start 4",
+    "tray-sampler stop 4",
+    "tray-shell focus",
+    "tray-sampler start 5",
+    "tray-sampler sample 5 snapshot-fixture",
+    "tray-shell delete",
+    "test view::tray_panel::receipt::native_tray_receipt ... ok",
+    "",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 258 filtered out; finished in 5.19s",
+    ""
+  ],
+  "images": {
+    "en-dark-status.png": "3f9d170243ae24aaedf6f656c77345c47e02547e40368b83990e58830cec577d",
+    "en-dark-panel.png": "5d1d146919fd0155fcb786e7e79fa58046686f6992e5f91dfe0b04bd033ec3cb",
+    "en-dark-menu.png": "feb7112a161452880fe8399bf942fefb4a476f27f4116dc8d0edacd3917369b7"
+  }
+}

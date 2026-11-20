@@ -2,7 +2,6 @@
 //! Enter activation as the keyboard path; a first activation never confirms.
 
 use super::*;
-use crate::optimize_board::OptimizeGroup;
 use crate::software_review::{SoftwareFilter, SoftwareSize, SoftwareSort};
 use crate::workbench::SoftwareSegment;
 
@@ -174,7 +173,7 @@ impl ShellView {
                     .gap(ui::SPACE_1)
                     .w(ui::SPACE_6 * 5.0)
                     .max_w_full()
-                    .child(ui::icon("search", t.text_muted))
+                    .child(ui::icon("search", t.muted))
                     .child(div().flex_1().min_w_0().child(self.search.clone())),
             )
             .child(div().flex_1())
@@ -363,7 +362,10 @@ impl ShellView {
                     .intents
                     .iter()
                     .any(|intent| intent.id() == id);
-            let awaiting = pending.as_deref() == Some(id.as_str()) || host_ready;
+            let awaiting = pending.as_deref() == Some(id.as_str())
+                || (host_ready && review.segment() != Some(SoftwareSegment::Uninstall));
+            let settings_only = review.is_arp(id);
+            let cli_guidance = review.administrator_cli(id);
             let preview_only = (awaiting && review.host_backed() && !host_ready)
                 || self.session.host_action_busy()
                 || (review.segment() == Some(SoftwareSegment::Startup)
@@ -389,8 +391,8 @@ impl ShellView {
                     .justify_center()
                     .size(ui::SPACE_5)
                     .rounded(ui::RADIUS_ITEM)
-                    .bg(t.tint(t.accent, 0x22))
-                    .text_color(rgb(t.accent))
+                    .bg(rgb(t.input_wash))
+                    .text_color(rgb(t.input))
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(initial)
                     .into_any_element()
@@ -425,7 +427,7 @@ impl ShellView {
                                     .items_end()
                                     .flex_shrink_0()
                                     .text_size(ui::TYPE_META)
-                                    .text_color(rgb(t.text_muted))
+                                    .text_color(rgb(t.muted))
                                     .child(item.installed_on.clone().unwrap_or_else(|| {
                                         copy::pick(locale, "Date unknown", "日期未知").to_string()
                                     }))
@@ -470,7 +472,7 @@ impl ShellView {
                                 .child(
                                     div()
                                         .text_size(ui::TYPE_META)
-                                        .text_color(rgb(t.text_muted))
+                                        .text_color(rgb(t.muted))
                                         .child(note),
                                 ),
                         )
@@ -520,7 +522,22 @@ impl ShellView {
                                         )
                                     },
                                 )
-                                .child(
+                                .when(settings_only, |row| {
+                                    row.child(ui::muted(t, copy::pick(locale, "Registry entry. Manage this app in Windows Settings.", "这是注册表条目，请在 Windows 设置中管理。")))
+                                        .child(ui::button(t, "software-installed-apps", copy::pick(locale, "Open Windows Installed apps", "打开 Windows 已安装的应用"), ButtonKind::Secondary)
+                                            .accessibility_id("software-installed-apps")
+                                            .on_click(cx.listener(|_, _, _, cx| cx.open_url(crate::software_review::INSTALLED_APPS_URI)))
+                                            .on_a11y_action(gpui::AccessibleAction::Click, on_view_a11y(cx, |_, cx| cx.open_url(crate::software_review::INSTALLED_APPS_URI))))
+                                })
+                                .when_some(cli_guidance, |row, command| {
+                                    let accessible_command = command.clone();
+                                    row.child(ui::muted(t, copy::pick(locale, "Administrator access required. The CLI applies the same checks.", "需要管理员权限。CLI 会进行相同的资格检查。")))
+                                        .child(ui::button(t, "software-copy-cli", copy::pick(locale, "Copy equivalent CLI command", "复制等价 CLI 命令"), ButtonKind::Secondary)
+                                            .accessibility_id("software-copy-cli")
+                                            .on_click(cx.listener(move |_, _, _, cx| cx.write_to_clipboard(gpui::ClipboardItem::new_string(command.clone()))))
+                                            .on_a11y_action(gpui::AccessibleAction::Click, on_view_a11y(cx, move |_, cx| cx.write_to_clipboard(gpui::ClipboardItem::new_string(accessible_command.clone())))))
+                                })
+                                .when(!settings_only, |row| row.child(
                                     ui::button(
                                         t,
                                         "software-row-review",
@@ -560,7 +577,7 @@ impl ShellView {
                                             cx.notify();
                                         }),
                                     ),
-                                ),
+                                )),
                         )
                     }),
             );
@@ -633,9 +650,9 @@ impl ShellView {
                     })))
             })
             .child(ui::muted(t, match review.segment() {
-                Some(SoftwareSegment::Updates) => copy::pick(locale, "Checks for updates only; nothing is installed.", "仅检查更新，不会安装任何内容。"),
-                Some(SoftwareSegment::Startup) => copy::pick(locale, "Review startup entries and preview changes. Applying host changes is unavailable here.", "审阅启动项并预览更改；此处不能修改本机启动项。"),
-                _ => copy::pick(locale, "Review uninstall eligibility and preview a plan. Host uninstall is unavailable here.", "审阅卸载条件并预览计划；此处不能卸载本机应用。"),
+                Some(SoftwareSegment::Updates) => copy::pick(locale, "Review an update, then confirm to install it.", "审阅更新并确认后即可安装。"),
+                Some(SoftwareSegment::Startup) => copy::pick(locale, "Review the startup change and confirm to apply it.", "审阅启动项更改并确认后即可应用。"),
+                _ => copy::pick(locale, "Eligible current-user MSIX and MSI apps can be uninstalled after review and confirmation.", "符合条件的当前用户 MSIX 和 MSI 应用可在审阅并确认后卸载。"),
             }))
             .child(div().flex().flex_col().children(summary))
             .when_some(self.software_related_panel(t, cx), |card, panel| card.child(panel))
@@ -706,7 +723,7 @@ impl ShellView {
     }
 
     /// Domain review lines from the last activation, shown as a review panel.
-    fn workbench_review_card(&self, t: &Theme) -> Option<gpui::AnyElement> {
+    pub(super) fn workbench_review_card(&self, t: &Theme) -> Option<gpui::AnyElement> {
         let locale = self.session.locale();
         let lines = self.session.workbench_review_lines();
         if lines.is_empty() {
@@ -722,255 +739,9 @@ impl ShellView {
                 .children(lines.iter().map(|line| {
                     div()
                         .text_size(ui::TYPE_BODY)
-                        .text_color(rgb(t.text_muted))
+                        .text_color(rgb(t.muted))
                         .child(line.clone())
                 })),
         ))
-    }
-
-    pub(super) fn optimize_page(&mut self, t: &Theme, cx: &mut Context<Self>) -> gpui::AnyElement {
-        let locale = self.session.locale();
-        let board = self.session.optimize_board();
-        let phase = board.phase();
-        let landing = phase == crate::optimize_board::OptimizePhase::Landing;
-        // Landing states the catalogue. Any other phase is named once, as the
-        // status text; a failure or an admin wait also has its own banner.
-        let bar = if landing {
-            let ids: Vec<String> = OptimizeGroup::ALL
-                .into_iter()
-                .flat_map(crate::optimize_board::ids_in)
-                .collect();
-            let runnable = ids
-                .iter()
-                .filter(|id| {
-                    devsweep_core::optimize::catalogue_entry(id).is_some_and(|entry| {
-                        entry.action_class
-                            == devsweep_core::optimize::MaintenanceActionClass::Execute
-                    })
-                })
-                .count();
-            page_bar(
-                t,
-                Some(copy::optimize_catalogue_status(locale, ids.len(), runnable)),
-                None,
-                Vec::new(),
-            )
-        } else {
-            page_bar(
-                t,
-                Some(copy::optimize_phase_name(locale, phase.key()).to_string()),
-                None,
-                Vec::new(),
-            )
-        };
-        let mut page = div()
-            .flex()
-            .flex_col()
-            .gap(ui::SPACE_4)
-            .children(self.shared_banners(t));
-        if phase == crate::optimize_board::OptimizePhase::AdminWait {
-            page = page.child(ui::banner(
-                t,
-                Tone::Warning,
-                copy::optimize_admin_wait(locale),
-            ));
-        }
-        if let Some(notice) = self.session.workbench_notice() {
-            page = page.child(ui::banner(
-                t,
-                Tone::Warning,
-                workbench_notice_line(locale, notice),
-            ));
-        }
-        let cursor = self
-            .session
-            .shell()
-            .selection(Mode::Optimize)
-            .map(str::to_string);
-        let pending = self.session.workbench_pending_id().map(str::to_string);
-        let open_group = board.group();
-        let groups = OptimizeGroup::ALL
-            .into_iter()
-            .filter(|group| open_group.is_none_or(|open| open == *group));
-        let mut grid = div().flex().flex_col().gap(ui::SPACE_3);
-        for group in groups {
-            let ids = crate::optimize_board::ids_in(group);
-            let icon = match group {
-                OptimizeGroup::Startup => "rocket",
-                OptimizeGroup::NetworkAndSearch => "network",
-                OptimizeGroup::Maintenance => "wrench",
-            };
-            let group_id = match group {
-                OptimizeGroup::Startup => crate::optimize_board::GROUP_STARTUP,
-                OptimizeGroup::NetworkAndSearch => crate::optimize_board::GROUP_NETWORK,
-                OptimizeGroup::Maintenance => crate::optimize_board::GROUP_MAINTENANCE,
-            };
-            let mut rows = div()
-                .id(ElementId::Name(SharedString::from(format!(
-                    "optimize-rows-{}",
-                    group.key()
-                ))))
-                .role(gpui::Role::List)
-                .flex()
-                .flex_col();
-            for id in &ids {
-                rows = rows.child(self.optimize_row(
-                    t,
-                    id,
-                    cursor.as_deref() == Some(id.as_str()),
-                    pending.as_deref() == Some(id.as_str()),
-                    cx,
-                ));
-            }
-            let header_action = if open_group.is_some() {
-                ui::button(
-                    t,
-                    "optimize-close-group",
-                    copy::back_label(locale),
-                    ButtonKind::Ghost,
-                )
-                .on_click(cx.listener(|this, _, _, cx| {
-                    this.session.close_mode_detail();
-                    cx.notify();
-                }))
-            } else {
-                ui::icon_button(
-                    t,
-                    ElementId::Name(SharedString::from(format!("optimize-open-{}", group.key()))),
-                    "chevron-right",
-                    copy::pick(locale, "Focus", "聚焦"),
-                    ButtonKind::Ghost,
-                )
-                .on_click(cx.listener(move |this, _, _, cx| {
-                    this.session.activate_mode_row(Mode::Optimize, group_id);
-                    cx.notify();
-                }))
-            };
-            grid = grid.child(
-                ui::card(t)
-                    .id(ElementId::Name(SharedString::from(format!(
-                        "optimize-group-{}",
-                        group.key()
-                    ))))
-                    .role(gpui::Role::Group)
-                    .aria_label(copy::optimize_group_name(locale, group.key()))
-                    .gap(ui::SPACE_2)
-                    .child(
-                        div()
-                            .flex()
-                            .flex_row()
-                            .items_center()
-                            .gap(ui::SPACE_2)
-                            .child(ui::icon_tile(t, icon, t.accent))
-                            .child(
-                                div()
-                                    .flex()
-                                    .flex_col()
-                                    .flex_1()
-                                    .child(
-                                        div()
-                                            .font_weight(FontWeight::SEMIBOLD)
-                                            .child(copy::optimize_group_name(locale, group.key())),
-                                    )
-                                    .child(ui::muted(
-                                        t,
-                                        match locale {
-                                            copy::Locale::En if ids.len() == 1 => {
-                                                "1 task".to_string()
-                                            }
-                                            copy::Locale::En => format!("{} tasks", ids.len()),
-                                            copy::Locale::ZhCn => format!("{} 项任务", ids.len()),
-                                        },
-                                    )),
-                            )
-                            .child(header_action),
-                    )
-                    .child(ui::divider(t))
-                    .child(rows),
-            );
-        }
-        page = page.child(grid);
-        page = page.children(self.workbench_review_card(t));
-        sheet_frame(bar, page.into_any_element(), None)
-    }
-
-    fn optimize_row(
-        &self,
-        t: &Theme,
-        id: &str,
-        focused: bool,
-        awaiting: bool,
-        cx: &mut Context<Self>,
-    ) -> gpui::AnyElement {
-        let locale = self.session.locale();
-        let entry = devsweep_core::optimize::catalogue_entry(id);
-        let class = entry.map(|entry| match entry.action_class {
-            devsweep_core::optimize::MaintenanceActionClass::Execute => "execute",
-            devsweep_core::optimize::MaintenanceActionClass::SettingsHandoff => "settings_handoff",
-            devsweep_core::optimize::MaintenanceActionClass::Guidance => "guidance",
-            devsweep_core::optimize::MaintenanceActionClass::Observe => "observe",
-        });
-        let class = class.unwrap_or("observe");
-        let (tone, icon) = match class {
-            "execute" => (Tone::Accent, "play"),
-            "settings_handoff" => (Tone::Info, "external"),
-            "guidance" => (Tone::Neutral, "info"),
-            _ => (Tone::Neutral, "eye"),
-        };
-        let schedulable = crate::optimize_board::schedule_allowed(id);
-        let text = self
-            .session
-            .optimize_board()
-            .row_line(id, locale, focused)
-            .unwrap_or_else(|| id.to_string());
-        let element_id = SharedString::from(format!("optimize-row-{id}"));
-        let select_id = id.to_string();
-        let review_id = id.to_string();
-        ui::list_row(t, ElementId::Name(element_id.clone()), focused, focused)
-            .accessibility_id(element_id)
-            .aria_label(SharedString::from(text))
-            .on_click(cx.listener(move |this, _, _, cx| {
-                this.session
-                    .select_mode_row(Mode::Optimize, select_id.clone());
-                cx.notify();
-            }))
-            .child(ui::icon(icon, t.tone(tone)))
-            .child(ui::two_line(
-                t,
-                copy::optimize_task_title(locale, id),
-                copy::optimize_class_label(locale, class),
-            ))
-            .when(!schedulable, |row| {
-                row.child(ui::badge(
-                    t,
-                    copy::optimize_schedule_absent(locale),
-                    Tone::Neutral,
-                ))
-            })
-            .child(ui::badge(t, copy::workbench_not_run(locale), Tone::Neutral))
-            .when(focused, |row| {
-                row.child(
-                    ui::button(
-                        t,
-                        "optimize-row-review",
-                        if awaiting {
-                            copy::pick(locale, "Confirm", "确认")
-                        } else {
-                            copy::pick(locale, "Review", "审阅")
-                        },
-                        if awaiting {
-                            ButtonKind::Danger
-                        } else {
-                            ButtonKind::Secondary
-                        },
-                    )
-                    .on_click(cx.listener(move |this, _, _, cx| {
-                        this.session
-                            .activate_mode_row(Mode::Optimize, review_id.clone());
-                        cx.notify();
-                    })),
-                )
-            })
-            .into_any_element()
     }
 }

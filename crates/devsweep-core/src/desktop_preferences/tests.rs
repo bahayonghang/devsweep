@@ -7,6 +7,39 @@ const DEFAULT_BYTES: &[u8] = br#"{"schema_version":2,"theme":"dark","font":{"kin
 const LEGACY_BYTES: &[u8] = br#"{"schema_version":1,"theme":"light","font_family":"system","text_scale_percent":125,"motion":"reduced","planet_fps":15,"status_interval_seconds":60,"status_process_limit":100,"hud_interval_seconds":10}"#;
 
 #[test]
+fn close_behavior_is_additive_and_survives_unrelated_patches() {
+    let root = tempfile::tempdir().unwrap();
+    let path = path(root.path());
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, DEFAULT_BYTES).unwrap();
+    assert_eq!(
+        load_from_path(&path).unwrap().close_behavior,
+        CloseBehavior::Exit
+    );
+    update_at_path(
+        &path,
+        DesktopPreferencesPatch::CloseBehavior {
+            value: CloseBehavior::StayInTray,
+        },
+    )
+    .unwrap();
+    update_at_path(
+        &path,
+        DesktopPreferencesPatch::TextScalePercent { value: 125 },
+    )
+    .unwrap();
+    let reloaded = load_from_path(&path).unwrap();
+    assert_eq!(reloaded.close_behavior, CloseBehavior::StayInTray);
+    assert_eq!(reloaded.text_scale_percent, 125);
+    let mut invalid = serde_json::to_value(reloaded).unwrap();
+    invalid["close_behavior"] = "future".into();
+    let bytes = serde_json::to_vec(&invalid).unwrap();
+    fs::write(&path, &bytes).unwrap();
+    assert!(update_at_path(&path, DesktopPreferencesPatch::ResetAppearance {}).is_err());
+    assert_eq!(fs::read(&path).unwrap(), bytes);
+}
+
+#[test]
 fn all_theme_ids_survive_save_reload_and_keep_legacy_bytes() {
     let themes = [
         ("dark", DesktopTheme::Dark),

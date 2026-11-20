@@ -1,0 +1,249 @@
+[
+    {
+        "id":  "shell-root",
+        "type":  "ControlType.Pane",
+        "name":  "DevSweep",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "49,40,1550,1025"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "DevSweep 菜单",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,54,192,46"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Tab",
+        "name":  "模式",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "558,52,546,50"
+    },
+    {
+        "id":  "mode-clean",
+        "type":  "ControlType.TabItem",
+        "name":  "清理",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "562,56,106,41"
+    },
+    {
+        "id":  "mode-software",
+        "type":  "ControlType.TabItem",
+        "name":  "软件",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "670,56,106,41"
+    },
+    {
+        "id":  "mode-optimize",
+        "type":  "ControlType.TabItem",
+        "name":  "优化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "778,56,106,41"
+    },
+    {
+        "id":  "mode-analyze",
+        "type":  "ControlType.TabItem",
+        "name":  "分析",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "886,56,105,41"
+    },
+    {
+        "id":  "mode-status",
+        "type":  "ControlType.TabItem",
+        "name":  "状态",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "994,56,106,41"
+    },
+    {
+        "id":  "titlebar-theme",
+        "type":  "ControlType.Button",
+        "name":  "切换到浅色主题",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1305,55,44,44"
+    },
+    {
+        "id":  "titlebar-settings",
+        "type":  "ControlType.Button",
+        "name":  "设置",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1359,55,44,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "最小化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1428,55,56,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "最大化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1485,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "关闭",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1542,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Pane",
+        "name":  "优化",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,115,1490,920"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.StatusBar",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,146,1296,93"
+    },
+    {
+        "id":  "optimize-batch-confirm",
+        "type":  "ControlType.Button",
+        "name":  "确认维护",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1426,170,112,45"
+    },
+    {
+        "id":  "optimize-isolated-fixture",
+        "type":  "ControlType.StatusBar",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,259,1428,27"
+    },
+    {
+        "id":  "optimize-batch-preview",
+        "type":  "ControlType.Group",
+        "name":  "审阅维护计划",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,302,1428,254"
+    },
+    {
+        "id":  "optimize-preview-maintenance.clock_probe",
+        "type":  "ControlType.ListItem",
+        "name":  "检查时钟偏差 · 就绪",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,322,1388,52"
+    },
+    {
+        "id":  "optimize-preview-maintenance.retrim",
+        "type":  "ControlType.ListItem",
+        "name":  "SSD 重新修剪 · 已跳过 · 需要管理员权限",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,384,1388,52"
+    },
+    {
+        "id":  "optimize-preview-dns.flush",
+        "type":  "ControlType.ListItem",
+        "name":  "刷新 DNS 缓存 · 就绪",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,446,1388,52"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Text",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,508,1388,28"
+    },
+    {
+        "id":  "optimize-check-dns.flush",
+        "type":  "ControlType.CheckBox",
+        "name":  "刷新 DNS 缓存 · 刷新 DNS 解析缓存",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,633,1388,74",
+        "toggle":  "On"
+    },
+    {
+        "id":  "optimize-check-maintenance.retrim",
+        "type":  "ControlType.CheckBox",
+        "name":  "SSD 重新修剪 · 对符合条件的固态硬盘执行重新优化 · 管理员权限",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,717,1388,74",
+        "toggle":  "On"
+    },
+    {
+        "id":  "optimize-check-maintenance.clock_probe",
+        "type":  "ControlType.CheckBox",
+        "name":  "检查时钟偏差 · 向 time.windows.com 请求三次采样",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,801,1388,74",
+        "toggle":  "On"
+    },
+    {
+        "id":  "optimize-check-maintenance.clock_sync",
+        "type":  "ControlType.CheckBox",
+        "name":  "重新同步系统时钟 · 重新同步系统时间 · 管理员权限",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,885,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-check-maintenance.image_scan",
+        "type":  "ControlType.CheckBox",
+        "name":  "扫描 Windows 映像 · 扫描 Windows 映像 · 管理员权限",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,969,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-check-maintenance.image_repair",
+        "type":  "ControlType.CheckBox",
+        "name":  "修复 Windows 映像 · 修复已证实可修复的映像 · 管理员权限",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,1053,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-check-maintenance.dead_startup",
+        "type":  "ControlType.CheckBox",
+        "name":  "失效的启动项 · 备份并移除目标已丢失的启动项 · 管理员权限",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,1137,1388,74",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "optimize-guidance",
+        "type":  "ControlType.Button",
+        "name":  "指引与系统设置",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,1266,1388,45"
+    }
+]

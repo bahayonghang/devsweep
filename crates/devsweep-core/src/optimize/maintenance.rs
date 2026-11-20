@@ -40,7 +40,7 @@ const IMAGE_SCAN_ARGV: [&str; 3] = ["/Online", "/Cleanup-Image", "/ScanHealth"];
 const IMAGE_REPAIR_ARGV: [&str; 3] = ["/Online", "/Cleanup-Image", "/RestoreHealth"];
 
 /// One startup entry the dead-startup operation may delete.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub(crate) struct DeadStartupDeletion {
     pub name: String,
     pub kind: DeadStartupKind,
@@ -49,7 +49,7 @@ pub(crate) struct DeadStartupDeletion {
 }
 
 /// Run value or Startup-folder link.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub(crate) enum DeadStartupKind {
     RunValue,
     StartupLink,

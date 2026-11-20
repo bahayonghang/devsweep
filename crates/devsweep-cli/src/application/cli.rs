@@ -713,7 +713,7 @@ pub(super) struct SoftwarePlanCommand {
 pub(super) enum OptimizeCommand {
     /// List the fixed optimization catalogue.
     List(SnapshotOutputArgs),
-    /// Create a saved plan for one exact operation.
+    /// Create a single-operation or ordered batch maintenance plan.
     Plan(OptimizePlanCommand),
     /// Preview a saved optimization plan and calculate its live digest.
     Preview(PlanPresentationCommand),
@@ -725,9 +725,9 @@ pub(super) enum OptimizeCommand {
 
 #[derive(Debug, Args)]
 pub(super) struct OptimizePlanCommand {
-    /// Stable optimization operation identity.
-    #[arg(long, value_name = "OPERATION_ID")]
-    pub(super) operation: String,
+    /// Stable operation identity. Repeat to build an ordered executable batch.
+    #[arg(long, value_name = "OPERATION_ID", required = true)]
+    pub(super) operation: Vec<String>,
     /// New JSON plan file.
     #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
     pub(super) output: PathBuf,
@@ -741,6 +741,8 @@ pub(super) enum AnalyzeCommand {
     Roots(AnalyzeRootsCommand),
     /// List bounded children of one snapshot node.
     List(AnalyzeListCommand),
+    /// Rank the largest retained files in a saved snapshot.
+    Largest(AnalyzeLargestCommand),
     /// Explain one snapshot node. This command does not create a cleanup plan.
     Explain(AnalyzeExplainCommand),
     /// Show one snapshot node in Explorer.
@@ -786,6 +788,21 @@ pub(super) struct AnalyzeListCommand {
         value_parser = clap::value_parser!(u32).range(1..=1000),
         default_value_t = 100
     )]
+    pub(super) limit: u32,
+    #[command(flatten)]
+    pub(super) output: SnapshotOutputArgs,
+}
+
+#[derive(Debug, Args)]
+pub(super) struct AnalyzeLargestCommand {
+    /// Saved analysis snapshot JSON file.
+    #[arg(long, value_name = "FILE", value_parser = parse_regular_path)]
+    pub(super) snapshot: PathBuf,
+    /// Minimum recorded size in bytes. Defaults to 100 MiB.
+    #[arg(long, value_name = "BYTES", default_value_t = devsweep_core::analysis::ANALYZE_LARGEST_MIN_BYTES)]
+    pub(super) min_bytes: u64,
+    /// Maximum files (1 through 1000).
+    #[arg(id = "largest_limit", long = "limit", value_name = "LIMIT", value_parser = clap::value_parser!(u32).range(1..=1000), default_value_t = 100)]
     pub(super) limit: u32,
     #[command(flatten)]
     pub(super) output: SnapshotOutputArgs,
@@ -957,6 +974,8 @@ pub(super) enum HistoryCommand {
     List(HistoryListCommand),
     /// Show one audit operation.
     Show(HistoryShowCommand),
+    /// Sum successful actions across the fixed audit stores.
+    Totals(SnapshotOutputArgs),
 }
 
 #[derive(Debug, Args)]
@@ -1210,6 +1229,7 @@ impl Cli {
                 AnalyzeCommand::Scan(_)
                 | AnalyzeCommand::Roots(_)
                 | AnalyzeCommand::List(_)
+                | AnalyzeCommand::Largest(_)
                 | AnalyzeCommand::Explain(_)
                 | AnalyzeCommand::Reveal(_) => {}
                 AnalyzeCommand::TrashPlan(command) => {
@@ -1326,6 +1346,7 @@ impl Cli {
                 AnalyzeCommand::Scan(_) => "analyze.scan",
                 AnalyzeCommand::Roots(_) => "analyze.roots",
                 AnalyzeCommand::List(_) => "analyze.list",
+                AnalyzeCommand::Largest(_) => "analyze.largest",
                 AnalyzeCommand::Explain(_) => "analyze.explain",
                 AnalyzeCommand::Reveal(_) => "analyze.reveal",
                 AnalyzeCommand::TrashPlan(_) => "analyze.trash-plan",
@@ -1350,6 +1371,7 @@ impl Cli {
             Command::History(group) => Some(match &group.command {
                 HistoryCommand::List(_) => "history.list",
                 HistoryCommand::Show(_) => "history.show",
+                HistoryCommand::Totals(_) => "history.totals",
             }),
         }
     }
@@ -1437,6 +1459,7 @@ impl Cli {
                 AnalyzeCommand::Scan(command) => command.output.format.into(),
                 AnalyzeCommand::Roots(command) => command.output.format.into(),
                 AnalyzeCommand::List(command) => command.output.format.into(),
+                AnalyzeCommand::Largest(command) => command.output.format.into(),
                 AnalyzeCommand::Explain(command) => command.output.format.into(),
                 AnalyzeCommand::Reveal(command) => command.output.format.into(),
                 AnalyzeCommand::TrashPlan(_) => ResultFormat::PlanJson,
@@ -1464,6 +1487,7 @@ impl Cli {
             Some(Command::History(group)) => match &group.command {
                 HistoryCommand::List(command) => command.output.format.into(),
                 HistoryCommand::Show(command) => command.output.format.into(),
+                HistoryCommand::Totals(command) => command.format.into(),
             },
         }
     }
@@ -1561,6 +1585,7 @@ impl Cli {
                 AnalyzeCommand::Scan(command) => command.output.output.as_deref(),
                 AnalyzeCommand::Roots(command) => command.output.output.as_deref(),
                 AnalyzeCommand::List(command) => command.output.output.as_deref(),
+                AnalyzeCommand::Largest(command) => command.output.output.as_deref(),
                 AnalyzeCommand::Explain(command) => command.output.output.as_deref(),
                 AnalyzeCommand::Reveal(command) => command.output.output.as_deref(),
                 AnalyzeCommand::TrashPlan(command) => Some(command.output.as_path()),
@@ -1585,6 +1610,7 @@ impl Cli {
             Command::History(group) => match &group.command {
                 HistoryCommand::List(command) => command.output.output.as_deref(),
                 HistoryCommand::Show(command) => command.output.output.as_deref(),
+                HistoryCommand::Totals(command) => command.output.as_deref(),
             },
         }
     }
@@ -1704,6 +1730,7 @@ impl Cli {
                 AnalyzeCommand::Scan(command) => command.output.format == SnapshotFormat::Human,
                 AnalyzeCommand::Roots(command) => command.output.format == SnapshotFormat::Human,
                 AnalyzeCommand::List(command) => command.output.format == SnapshotFormat::Human,
+                AnalyzeCommand::Largest(command) => command.output.format == SnapshotFormat::Human,
                 AnalyzeCommand::Explain(command) => command.output.format == SnapshotFormat::Human,
                 AnalyzeCommand::Reveal(command) => command.output.format == SnapshotFormat::Human,
                 AnalyzeCommand::TrashPreview(command) => {
@@ -1740,6 +1767,7 @@ impl Cli {
             Some(Command::History(group)) => match &group.command {
                 HistoryCommand::List(command) => command.output.format == SnapshotFormat::Human,
                 HistoryCommand::Show(command) => command.output.format == SnapshotFormat::Human,
+                HistoryCommand::Totals(command) => command.format == SnapshotFormat::Human,
             },
         }
     }
@@ -1963,13 +1991,14 @@ fn chinese_command_description(path: &[String]) -> &'static str {
         "software leftovers registry-restore-execute" => "仅当现场字节仍匹配时恢复一个残留键。",
         "optimize" => "检查和规划一个受限 Windows 优化。",
         "optimize list" => "列出冻结的优化目录。",
-        "optimize plan" => "为一个精确操作创建保存的计划。",
+        "optimize plan" => "创建单项或有序批量维护计划。",
         "optimize preview" => "实时预览保存的优化计划并计算摘要。",
         "optimize run" => "运行已确认的优化计划。",
         "optimize health" => "打印只读磁盘健康。此命令不修复。",
         "analyze" => "分析磁盘占用，并在明确确认后把选定节点移入回收站。",
         "analyze scan" => "分析一个磁盘根目录。",
         "analyze roots" => "列出现有快照来源能看到的卷。缺失的根只记为该根的错误。",
+        "analyze largest" => "按大小列出快照中保留的文件。",
         "analyze list" => "列出一个快照节点的有界子项。",
         "analyze explain" => "解释一个快照节点。此命令不创建清理计划。",
         "analyze reveal" => "在资源管理器中显示一个快照节点。",
@@ -1991,6 +2020,7 @@ fn chinese_command_description(path: &[String]) -> &'static str {
         "history" => "读取固定的 DevSweep 审计存储。",
         "history list" => "列出审计操作。",
         "history show" => "显示一条审计操作。",
+        "history totals" => "汇总已成功完成的操作。",
         _ => "DevSweep 命令。",
     }
 }
@@ -2019,6 +2049,8 @@ fn chinese_argument_description(id: &str) -> &'static str {
         "snapshot" => "保存的分析快照 JSON 文件",
         "node" => "快照节点 ID",
         "child_offset" => "跳过的子节点行数",
+        "min_bytes" => "最小文件字节数，默认 100 MiB",
+        "largest_limit" => "最多返回的文件数",
         "child_limit" => "最大子节点行数",
         "operation" => "稳定优化操作 ID",
         "process_limit" => "最大进程行数",
@@ -2058,7 +2090,7 @@ fn chinese_numeric_range(id: &str) -> Option<&'static str> {
         "process_limit" => Some("1..100"),
         "interval" => Some("1..60"),
         "duration_ms" => Some("1..43200000"),
-        "limit" | "child_limit" => Some("1..1000"),
+        "limit" | "child_limit" | "largest_limit" => Some("1..1000"),
         _ => None,
     }
 }

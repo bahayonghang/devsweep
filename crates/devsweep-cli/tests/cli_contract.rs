@@ -29,6 +29,167 @@ fn stderr(output: &Output) -> String {
 }
 
 #[test]
+fn optimize_repeat_flags_save_order_and_require_explicit_run_authority() {
+    let root = TempDir::new().unwrap();
+    let path = root.path().join("batch.json");
+    let file = path.to_str().unwrap();
+    let planned = devsweep(&[
+        "optimize",
+        "plan",
+        "--operation",
+        "maintenance.clock_probe",
+        "--operation",
+        "dns.flush",
+        "--output",
+        file,
+    ]);
+    assert!(planned.status.success(), "{}", stderr(&planned));
+    let plan: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(plan["version"], 2);
+    assert_eq!(
+        plan["operations"][0]["operation_id"],
+        "maintenance.clock_probe"
+    );
+    assert_eq!(plan["operations"][1]["operation_id"], "dns.flush");
+    let digest = format!("sha256:{}", "f".repeat(64));
+    for tail in [vec!["--confirm"], vec!["--preview-digest", &digest]] {
+        let mut args = vec!["optimize", "run", "--plan", file];
+        args.extend(tail);
+        assert_eq!(devsweep(&args).status.code(), Some(2));
+    }
+    let bad = root.path().join("bad.json");
+    for rejected in ["dns.flush", "settings.search", "guidance.drive_optimize"] {
+        let result = devsweep(&[
+            "optimize",
+            "plan",
+            "--operation",
+            "dns.flush",
+            "--operation",
+            rejected,
+            "--output",
+            bad.to_str().unwrap(),
+        ]);
+        assert!(!result.status.success());
+        assert!(!bad.exists());
+    }
+}
+
+#[test]
+fn analyze_largest_ranks_retained_files_and_reports_snapshot_coverage() {
+    let fixture = TempDir::new().unwrap();
+    let root = fixture.path().join("rank");
+    fs::create_dir(&root).unwrap();
+    for (name, size) in [("z.bin", 9), ("a.bin", 9), ("b.bin", 8), ("x.bin", 3)] {
+        fs::write(root.join(name), vec![0; size]).unwrap();
+    }
+    let scanned = devsweep(&[
+        "analyze",
+        "scan",
+        "--root",
+        root.to_str().unwrap(),
+        "--format",
+        "json",
+    ]);
+    assert!(scanned.status.success(), "{}", stderr(&scanned));
+    let mut envelope: serde_json::Value = serde_json::from_slice(&scanned.stdout).unwrap();
+    envelope["data"]["completeness"] = "partial_budget".into();
+    let file = fixture.path().join("saved.json");
+    fs::write(&file, serde_json::to_vec(&envelope).unwrap()).unwrap();
+    let path = file.to_str().unwrap();
+    let args = [
+        "analyze",
+        "largest",
+        "--snapshot",
+        path,
+        "--min-bytes",
+        "8",
+        "--limit",
+        "2",
+    ];
+    let output = devsweep(&[&args[..], &["--format", "json"]].concat());
+    assert!(output.status.success(), "{}", stderr(&output));
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["command"], "analyze.largest");
+    assert_eq!(value["outcome"], "partial");
+    let data = &value["data"];
+    assert_eq!(data["retained_files_only"], true);
+    assert_eq!(data["matching_files"], 3);
+    assert_eq!(data["files"].as_array().unwrap().len(), 2);
+    assert!(
+        data["files"][0]["path"]
+            .as_str()
+            .unwrap()
+            .ends_with("a.bin")
+    );
+    assert!(
+        data["files"][1]["path"]
+            .as_str()
+            .unwrap()
+            .ends_with("z.bin")
+    );
+    for (lang, expected) in [
+        ("en", "retained in the snapshot"),
+        ("zh-CN", "仅限快照中保留的文件"),
+    ] {
+        let human = devsweep(&[&args[..], &["--language", lang]].concat());
+        let rendered = stdout(&human);
+        assert!(rendered.contains(expected));
+        assert!(rendered.contains(if lang == "en" {
+            "Some paths were not observed"
+        } else {
+            "部分路径未能扫描"
+        }));
+    }
+    let empty = devsweep(&["analyze", "largest", "--snapshot", path, "--format", "json"]);
+    let value: serde_json::Value = serde_json::from_slice(&empty.stdout).unwrap();
+    assert_eq!(value["data"]["files"], serde_json::json!([]));
+    assert!(
+        !devsweep(&["analyze", "largest", "--snapshot", path, "--limit", "1001"])
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn chromium_preview_channel_rules_are_listed_and_explained_in_both_languages() {
+    let channels = [
+        ("windows.chrome_beta.cache", "Chrome Beta"),
+        ("windows.chrome_canary.cache", "Chrome Canary"),
+        ("windows.edge_beta.cache", "Edge Beta"),
+        ("windows.edge_dev.cache", "Edge Dev"),
+    ];
+    let machine = devsweep(&["clean", "rules", "list", "--format", "json"]);
+    assert!(machine.status.success(), "{}", stderr(&machine));
+    let json: serde_json::Value = serde_json::from_slice(&machine.stdout).unwrap();
+    assert_eq!(json["schema_version"], 1);
+    let rules = json["data"]["rules"].as_array().unwrap();
+    for (id, _) in channels {
+        let rule = rules.iter().find(|rule| rule["id"] == id).unwrap();
+        assert_eq!(rule["scope"], "global");
+        assert_eq!(rule["platform_applicability"], "windows");
+        assert_eq!(rule["safety_class"], "trash");
+        assert_eq!(rule["risk"], "medium");
+    }
+    for (language, evidence) in [("en", "registered profiles"), ("zh-CN", "已登记配置文件")]
+    {
+        let list = devsweep(&["--language", language, "clean", "rules", "list"]);
+        assert!(list.status.success(), "{}", stderr(&list));
+        let list = stdout(&list);
+        for (id, channel) in channels {
+            let line = list.lines().find(|line| line.contains(id)).unwrap();
+            assert!(line.contains(channel) && line.contains(evidence), "{line}");
+            let show = devsweep(&["--language", language, "clean", "rules", "show", "--id", id]);
+            assert!(show.status.success(), "{}", stderr(&show));
+            let show = stdout(&show);
+            assert!(
+                show.contains(id) && show.contains(channel) && show.contains(evidence),
+                "{show}"
+            );
+        }
+    }
+}
+
+#[test]
 fn software_inventory_v1_optional_evidence_and_legacy_contract() {
     use devsweep_core::software::{
         SoftwareInventoryV1, software_inventory_fingerprint, validated_installed_on,
@@ -207,6 +368,76 @@ fn software_msi_saved_plan_and_closed_optional_registration_contract() {
     ]);
     assert!(!result.status.success());
     assert!(!rejected.exists());
+}
+
+#[test]
+fn history_totals_known_and_legacy_unknown_moves_are_localized() {
+    let root = TempDir::new().unwrap();
+    let journal = root.path().join("DevSweep/audit/v1/clean.jsonl");
+    fs::create_dir_all(journal.parent().unwrap()).unwrap();
+    let execute = |args: &[&str]| {
+        Command::new(env!("CARGO_BIN_EXE_devsweep"))
+            .args(["history", "totals"])
+            .args(args)
+            .env("LOCALAPPDATA", root.path())
+            .env("APPDATA", root.path())
+            .output()
+            .unwrap()
+    };
+    let record = include_str!(
+        "../../devsweep-core/tests/fixtures/history/clean-v1/execution-transition.jsonl"
+    )
+    .lines()
+    .last()
+    .unwrap()
+    .replace("\"command\"", "\"move_to_trash\"");
+    let known = record.replace(
+        "\"duration_ms\":12",
+        "\"duration_ms\":12,\"estimated_bytes\":512",
+    );
+    for (content, expected, unknown) in [
+        (String::new(), 0, 0),
+        (format!("{known}\n"), 512, 0),
+        (
+            format!(
+                "{known}\n{}\n",
+                record.replace("op-clean-v1-fixture", "older")
+            ),
+            512,
+            1,
+        ),
+    ] {
+        fs::write(&journal, content).unwrap();
+        let result = execute(&["--format", "json"]);
+        let expected_exit = if unknown == 0 { 0 } else { 5 };
+        assert_eq!(
+            result.status.code(),
+            Some(expected_exit),
+            "{}",
+            stderr(&result)
+        );
+        let value: serde_json::Value = serde_json::from_slice(&result.stdout).unwrap();
+        assert_eq!(
+            value["outcome"],
+            if unknown == 0 { "succeeded" } else { "partial" }
+        );
+        assert_eq!(
+            value["data"]["clean"],
+            serde_json::json!({"known_bytes":expected, "unknown_records":unknown, "lower_bound":unknown != 0})
+        );
+        assert_eq!(value["data"]["software"]["succeeded"], 0);
+        assert_eq!(value["data"]["optimize"]["succeeded"], 0);
+        for (locale, minimum) in [("en", "at least"), ("zh-CN", "至少")] {
+            let result = execute(&["--language", locale]);
+            assert_eq!(
+                result.status.code(),
+                Some(expected_exit),
+                "{}",
+                stderr(&result)
+            );
+            assert_eq!(stdout(&result).contains(minimum), unknown != 0);
+        }
+    }
 }
 
 #[test]

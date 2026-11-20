@@ -82,6 +82,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 
 ### Five-mode core
 
+- `crates/devsweep-core/src/analysis/largest.rs` - bounded size ranking of retained snapshot files.
 - `crates/devsweep-core/src/analysis/mod.rs` - bounded read-only Analyze walker and snapshots.
   The walker never creates cleanup authority.
 - `crates/devsweep-core/src/analysis/model.rs` - Analyze V1 snapshot, node, warning, and budget
@@ -123,6 +124,8 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
   `crates/devsweep-core/src/status/process_action_audit.rs` -
   PID/creation-time-bound process review, protected classes and audited termination;
   process-specific events share the Status journal without becoming liveness proof.
+- `crates/devsweep-core/src/optimize/batch.rs` - ordered maintenance plans, live batch previews and per-item audit outcomes.
+- `crates/devsweep-core/src/history/totals.rs` - aggregate terminal results by domain and track incomplete evidence.
 - `crates/devsweep-core/src/history/mod.rs` - inspect-only reader for the fixed
   Clean/Software/Optimize/Status V1 domains, including Software support lifecycle.
 
@@ -140,7 +143,7 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
 - `crates/devsweep-cli/src/application/commands/clean.rs` - `clean {scan,plan,preview,execute}`.
 - `crates/devsweep-cli/src/application/commands/software/mod.rs` - `software {inventory,plan,preview,uninstall}`.
 - `crates/devsweep-cli/src/application/commands/optimize.rs` - `optimize {list,plan,preview,run}`.
-- `crates/devsweep-cli/src/application/commands/analyze.rs` - `analyze scan`.
+- `crates/devsweep-cli/src/application/commands/analyze.rs` - Analyze scan, saved-snapshot queries, and reviewed recycle plans.
 - `crates/devsweep-cli/src/application/commands/status.rs` - Status snapshot/live
   and the thin shared-core keep-awake session adapter.
 - `crates/devsweep-cli/src/application/commands/history.rs` - `history {list,show}`.
@@ -187,6 +190,9 @@ workspace with reusable core and CLI/TUI crates plus Trellis/Codex scaffolding.
   stale authority, inverse startup review, finite leases and lifecycle cleanup.
 - `desktop-gpui/src/software_icons.rs` - bounded positive/negative icon cache and
   local fixed-drive, no-reparse resource reads for background Software jobs.
+- `desktop-gpui/src/host_review/` - reviewed uninstall identity and receipt-bound leftover moves.
+- `desktop-gpui/src/shell/optimize_batch.rs`, `desktop-gpui/src/view/page_optimize.rs` - maintenance selection, worker progress and result rows.
+- `desktop-gpui/src/tray/windows.rs`, `desktop-gpui/src/view/tray_panel.rs` - Windows notification callbacks, panel visibility and shared Status samples.
 - `desktop-gpui/src/analyze*.rs`, `status_panel.rs` - Analyze board/window and Status projections.
 - `desktop-gpui/assets/` - beaver master PNG/ICO, licensed Earth still (see `desktop-gpui/THIRD_PARTY_NOTICES.txt`), original `icons/*.svg`.
 - `desktop-gpui/vendor/gpui_windows/` - patched GPUI Windows backend.

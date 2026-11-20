@@ -13,6 +13,7 @@ repository = "https://github.com/bahayonghang/devsweep"
 # Do not use a branch, a "*" version, or crates.io gpui 0.2.2.
 [dependencies]
 anyhow = "1.0.104"
+async-channel = "2"
 devsweep-core = { path = "../crates/devsweep-core" }
 gpui = { git = "https://github.com/zed-industries/zed", rev = "322cd509dcccaee1f6bc44725d270598ae8171ad" }
 gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "322cd509dcccaee1f6bc44725d270598ae8171ad" }
@@ -37,12 +38,20 @@ windows = { version = "=0.62.2", features = [
 ] }
 
 [dev-dependencies]
+devsweep-core = { path = "../crates/devsweep-core", features = ["optimize-fixtures"] }
 sha2 = "0.11.1"
 
 [patch."https://github.com/zed-industries/zed"]
 gpui_windows = { path = "vendor/gpui_windows" }
 
 [features]
+optimize-fixtures = ["devsweep-core/optimize-fixtures"]
 # Opt-in X11 backend so the shell can be rendered and screenshotted on a Linux
 # review host (for example under Xvfb). Not a delivery target.
 linux-preview = ["gpui_platform/x11"]
+
+# The material gallery carries the token maths for the airy-glass recipe, so
+# `cargo test` runs its unit tests with the rest of the gate.
+[[example]]
+name = "material_gallery"
+test = true

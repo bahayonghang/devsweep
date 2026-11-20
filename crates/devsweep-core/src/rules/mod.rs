@@ -224,9 +224,20 @@ pub fn rule_catalogue() -> Vec<RuleDoc> {
     }
 
     docs.push(PYCACHE_RULE_DOC);
-    for (id, _) in WINDOWS_CACHE_RULES {
-        docs.push(RuleDoc { id, ecosystem: Ecosystem::Generic, scope: RuleScope::Global, risk: RiskLevel::Medium,
-            action: "trash", summary: "Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access" });
+    for (id, family) in WINDOWS_CACHE_RULES {
+        let summary = if family.is_chromium_preview_channel() {
+            "HTTP Cache and Code Cache in registered profiles. Close all channels of this browser and rescan."
+        } else {
+            "Exact Windows current-user cache child; owner must be idle and contents verified; stale Temp requires seven-day age and exclusive access"
+        };
+        docs.push(RuleDoc {
+            id,
+            ecosystem: Ecosystem::Generic,
+            scope: RuleScope::Global,
+            risk: RiskLevel::Medium,
+            action: "trash",
+            summary,
+        });
     }
     for rule in GENERATED_PROJECT_RULES {
         docs.push(RuleDoc { id: rule.id, ecosystem: rule.ecosystem.clone(), scope: RuleScope::Project,

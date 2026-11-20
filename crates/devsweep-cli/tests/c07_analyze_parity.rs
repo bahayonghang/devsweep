@@ -110,6 +110,27 @@ fn node_id(snapshot: &AnalyzeSnapshotV1, name: &str) -> u32 {
         .id
 }
 
+// Capacity may change between the child process and the in-process observation.
+fn compare_root_observations(
+    mut from_cli: serde_json::Value,
+    from_core: &devsweep_core::analysis::AnalyzeRootsV1,
+) {
+    let mut expected = serde_json::to_value(from_core).unwrap();
+    for value in [&mut from_cli, &mut expected] {
+        for root in value["roots"].as_array_mut().unwrap() {
+            if root["capacity"]["status"] == "available" {
+                let available = root["capacity"]["available_bytes"].as_u64().unwrap();
+                assert!(available <= root["capacity"]["total_bytes"].as_u64().unwrap());
+                root["capacity"]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("available_bytes");
+            }
+        }
+    }
+    assert_eq!(from_cli, expected);
+}
+
 #[test]
 fn roots_list_and_explain_match_the_core_service() {
     let fixture = fixture();
@@ -133,10 +154,7 @@ fn roots_list_and_explain_match_the_core_service() {
     assert_eq!(roots_run.status, Some(0), "{}", roots_run.stderr);
     let service_roots =
         list_analyze_roots(std::slice::from_ref(&fixture.root)).expect("service roots");
-    assert_eq!(
-        data_of(&roots_out, &roots_run),
-        serde_json::to_value(&service_roots).expect("roots json")
-    );
+    compare_root_observations(data_of(&roots_out, &roots_run), &service_roots);
     assert!(service_roots.roots.iter().all(|root| root.error.is_none()));
 
     let mixed_out = out_dir.join("mixed.json");
@@ -156,10 +174,7 @@ fn roots_list_and_explain_match_the_core_service() {
     let service_mixed =
         list_analyze_roots(&[fixture.root.clone(), fixture.missing.clone()]).expect("mixed");
     let mixed = data_of(&mixed_out, &mixed_run);
-    assert_eq!(
-        mixed,
-        serde_json::to_value(&service_mixed).expect("mixed json")
-    );
+    compare_root_observations(mixed.clone(), &service_mixed);
     assert_eq!(mixed["roots"].as_array().map(Vec::len), Some(2));
     assert_eq!(mixed["roots"][1]["error"], "missing");
 

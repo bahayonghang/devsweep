@@ -7,6 +7,9 @@
 //! have no dispatch representation anywhere in this module tree.
 
 mod audit;
+mod batch;
+#[cfg(any(test, feature = "optimize-fixtures"))]
+mod batch_fixture;
 mod catalogue;
 mod execution;
 mod maintenance;
@@ -19,6 +22,7 @@ pub use audit::{
     OPTIMIZE_AUDIT_VERSION, OptimizeAuditError, OptimizeAuditErrorCode, OptimizeAuditRecordV1,
     OptimizeAuditStatusCode, OptimizeAuditTransition, optimize_audit_v1_path,
 };
+pub use batch::*;
 pub use catalogue::{
     DNS_FLUSH_ID, GUIDANCE_DRIVE_OPTIMIZE_ID, GUIDANCE_FILESYSTEM_CHECK_ID,
     GUIDANCE_NETWORK_RESET_ID, GUIDANCE_SYSTEM_INTEGRITY_ID, MaintenanceActionClass,

@@ -9,6 +9,40 @@ use devsweep_core::history::{
 #[cfg(test)]
 pub(super) struct Route;
 
+pub(crate) fn totals(
+    locale: Locale,
+    totals: &devsweep_core::history::HistoryTotalsV1,
+) -> Result<String, CatalogueError> {
+    let number = |value: u64, lower: bool| {
+        let value = value.to_string();
+        if lower {
+            render(
+                locale,
+                "history.v1.totals.minimum",
+                &[("value", &value)],
+                None,
+            )
+        } else {
+            Ok(value)
+        }
+    };
+    let bytes = number(totals.clean.known_bytes, totals.clean.lower_bound)?;
+    let unknown = totals.clean.unknown_records.to_string();
+    let software = number(totals.software.succeeded, totals.software.lower_bound)?;
+    let optimize = number(totals.optimize.succeeded, totals.optimize.lower_bound)?;
+    render(
+        locale,
+        "history.v1.totals.summary",
+        &[
+            ("bytes", &bytes),
+            ("unknown", &unknown),
+            ("software", &software),
+            ("optimize", &optimize),
+        ],
+        None,
+    )
+}
+
 pub(crate) fn list(locale: Locale, listed: &HistoryListV1) -> Result<String, CatalogueError> {
     let count = listed.operations.len().to_string();
     let mut lines = Vec::new();

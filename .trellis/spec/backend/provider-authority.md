@@ -141,6 +141,24 @@ same-path content changes, relative selectors and rc argument refusal. Record
 all simulated provider calls so discovery and preview tests prove refusal
 before even a version/cache query, not merely before simulated cleanup.
 
+## Desktop software authority
+
+The GPUI Software worker passes one exact current-user MSIX or unmanaged
+MSI selector to core live inventory, preview and execution. A file-loaded
+inventory cannot supply a production uninstall intent. MSI review binds the
+observed user registration and tool evidence. Execution reacquires authority
+through the same core executor as the CLI. ARP uses only the fixed
+`ms-settings:appsfeatures` URI. Neither ARP metadata nor display strings enter
+an executable or clipboard plan command.
+
+Post-uninstall folder moves retain the original inventory, software identity
+and durable uninstall operation ID. A selected candidate goes through strict
+live plan, digest validation, audit and Recycle Bin execution. MSI needs
+exit 0, uninterrupted monitoring and verified absence for the exact SID and
+identity. Registry residue in the existing CLI is a closed file fixture named
+`DevSweepResidue` with verified backup and conditional restore. It grants no
+Windows registry subtree authority.
+
 ## 7. Wrong and correct
 
 Wrong: execute a saved `program` string, trust an old cache path, infer shell
@@ -149,3 +167,13 @@ identity.
 
 Correct: reconstruct a closed command, query and hash current authority, compare
 the current confirmation digest, then perform the same live checks at dispatch.
+
+## Ordered Optimize batches
+
+A single CLI `optimize plan --operation ID` retains the V1 plan, digest, run output and Settings-handoff contract. Repeating the flag produces a V2 plan containing distinct Execute catalogue IDs in selection order. Validate the saved plan before resolving any row. The V2 live digest binds the catalogue version, order, executable identities and skip reasons. Dead-startup review additionally binds the original backup content, deletion kinds and target/link paths. Raw facts do not leave the digest.
+
+`MaintenanceExecutor::execute_batch` requires explicit confirmation, acquires the one-operation permit and journal lock, recovers pending operations, and recomputes the entire live preview. A mismatch aborts before dispatch. Before each remaining ready item, preflight and compare its identity again. Keep previously skipped rows skipped. The cancellation token is checked between items and is not passed into an already running adapter.
+
+The Optimize V1 journal accepts an optional `batch_id`. Each item owns its own operation ID. A never-dispatched row records a single closed `Skipped { reason }` transition. An executed row keeps the V1 validated, dispatch, completion and terminal transitions. `history show --operation-id` accepts an item ID or the batch ID. Only confirmed durable successes contribute to history totals. Audit errors stop further dispatch and preserve recovery evidence.
+
+New batches also record their selected item count in `batch_size`. A batch detail uses the requested batch ID and summarizes every member's lifecycle. A missing count, missing member, or incomplete lifecycle leaves the aggregate partial and unknown. Earlier audit rows remain readable. Their individual operation details retain the recorded outcomes.

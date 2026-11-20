@@ -1,0 +1,13 @@
+{
+  "ui_automation": {
+    "event": "awake_opens_existing_review",
+    "control": "host-action-confirm",
+    "confirmed": false
+  },
+  "menu_exit": {
+    "event": "exit",
+    "code": 0,
+    "icon_removed": true
+  },
+  "sha256": "6340cb640f7535ec533129ea67d82d797ca12ca161f150df5e45351fba647006"
+}

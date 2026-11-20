@@ -17,11 +17,24 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum WindowsCacheFamily {
     Chrome,
+    ChromeBeta,
+    ChromeCanary,
     Edge,
+    EdgeBeta,
+    EdgeDev,
     Firefox,
     VsCode,
     Cursor,
     UserTemp,
+}
+
+impl WindowsCacheFamily {
+    pub(super) fn is_chromium_preview_channel(self) -> bool {
+        matches!(
+            self,
+            Self::ChromeBeta | Self::ChromeCanary | Self::EdgeBeta | Self::EdgeDev
+        )
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,7 +60,7 @@ pub(crate) struct WindowsCacheDiscovery {
     pub unavailable: Vec<WindowsCacheUnavailable>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Failure(ScanCoverageStatus, &'static str);
 type Check<T> = Result<T, Failure>;
 const CHILD_LIMIT: usize = 4096;
@@ -107,7 +120,11 @@ impl Roots {
         use WindowsCacheFamily::*;
         let (base, relative) = match family {
             Chrome => (&self.local, "Google/Chrome/User Data"),
+            ChromeBeta => (&self.local, "Google/Chrome Beta/User Data"),
+            ChromeCanary => (&self.local, "Google/Chrome SxS/User Data"),
             Edge => (&self.local, "Microsoft/Edge/User Data"),
+            EdgeBeta => (&self.local, "Microsoft/Edge Beta/User Data"),
+            EdgeDev => (&self.local, "Microsoft/Edge Dev/User Data"),
             Firefox => (&self.local, "Mozilla/Firefox"),
             VsCode => (&self.roaming, "Code"),
             Cursor => (&self.roaming, "Cursor"),
@@ -139,8 +156,8 @@ impl Roots {
 fn owner_names(family: WindowsCacheFamily) -> &'static [&'static str] {
     use WindowsCacheFamily::*;
     match family {
-        Chrome => &["chrome.exe"],
-        Edge => &["msedge.exe"],
+        Chrome | ChromeBeta | ChromeCanary => &["chrome.exe"],
+        Edge | EdgeBeta | EdgeDev => &["msedge.exe"],
         Firefox => &["firefox.exe"],
         VsCode => &["Code.exe"],
         Cursor => &["Cursor.exe"],
@@ -181,19 +198,19 @@ pub(crate) fn validate_windows_cache(
         owner_state(owner_names(family)),
         Some(path),
     );
-    if !outcome
-        .candidates
-        .iter()
-        .any(|candidate| paths_equal(candidate, path))
-    {
-        anyhow::bail!("path is not a recognized current-user cache child; rescan required")
-    }
     if let Some(issue) = outcome
         .unavailable
         .iter()
         .find(|issue| issue.path.as_os_str().is_empty() || path_is_within(&issue.path, path))
     {
         anyhow::bail!("{}", issue.detail)
+    }
+    if !outcome
+        .candidates
+        .iter()
+        .any(|candidate| paths_equal(candidate, path))
+    {
+        anyhow::bail!("path is not a recognized current-user cache child; rescan required")
     }
     Ok(())
 }
@@ -243,6 +260,29 @@ fn discover(
             return result;
         }
     };
+    // These channels share executable names with other installations. With
+    // no idle proof, report coverage without reading any profile or cache.
+    let owner_check = match owner {
+        OwnerState::Idle => Ok(()),
+        OwnerState::Busy => Err(Failure(
+            ScanCoverageStatus::Busy,
+            "application is running; close it and rescan",
+        )),
+        OwnerState::Unknown => Err(Failure(
+            ScanCoverageStatus::OwnershipUnknown,
+            "application activity could not be verified; close the application and rescan",
+        )),
+    };
+    if family.is_chromium_preview_channel()
+        && let Err(error) = owner_check
+    {
+        issue(
+            &mut result,
+            root.clone(),
+            directory(&root).err().unwrap_or(error),
+        );
+        return result;
+    }
     let resolved = resolve(roots, family, &root, &mut budget, &mut result);
     let paths = match resolved {
         Ok(paths) => paths,
@@ -264,17 +304,7 @@ fn discover(
         let state = if family == WindowsCacheFamily::UserTemp {
             Ok(())
         } else {
-            match owner {
-                OwnerState::Idle => Ok(()),
-                OwnerState::Busy => Err(Failure(
-                    ScanCoverageStatus::Busy,
-                    "application is running; close it and rescan",
-                )),
-                OwnerState::Unknown => Err(Failure(
-                    ScanCoverageStatus::OwnershipUnknown,
-                    "application activity could not be verified",
-                )),
-            }
+            owner_check
         };
         let checked = state.and_then(|()| {
             verify_tree(
@@ -502,7 +532,7 @@ fn resolve(
     let mut paths = Vec::new();
     use WindowsCacheFamily::*;
     match family {
-        Chrome | Edge => {
+        Chrome | ChromeBeta | ChromeCanary | Edge | EdgeBeta | EdgeDev => {
             let metadata = json_metadata(&root.join("Local State"))?;
             let profiles = metadata
                 .pointer("/profile/info_cache")
@@ -517,7 +547,7 @@ fn resolve(
                     "registered profile budget exhausted",
                 ));
             }
-            for name in profiles.keys() {
+            for (name, registration) in profiles {
                 budget.spend()?;
                 if !leaf(name) {
                     return Err(Failure(
@@ -527,6 +557,12 @@ fn resolve(
                 }
                 let profile = root.join(name);
                 let checked = (|| {
+                    if family.is_chromium_preview_channel() && !registration.is_object() {
+                        return Err(Failure(
+                            ScanCoverageStatus::OwnershipUnknown,
+                            "registered Chromium profile metadata is invalid",
+                        ));
+                    }
                     directory(&profile)?;
                     if !json_metadata(&profile.join("Preferences"))?.is_object() {
                         return Err(Failure(
@@ -534,7 +570,12 @@ fn resolve(
                             "profile preferences are invalid",
                         ));
                     }
-                    cache_children(&profile, &["Cache", "Code Cache", "GPUCache"], &mut paths)
+                    let names: &[&str] = if family.is_chromium_preview_channel() {
+                        &["Cache", "Code Cache"]
+                    } else {
+                        &["Cache", "Code Cache", "GPUCache"]
+                    };
+                    cache_children(&profile, names, &mut paths)
                 })();
                 if let Err(error) = checked {
                     issue(result, profile, error);
@@ -1207,6 +1248,93 @@ mod tests {
             assert_eq!(
                 fs::read_to_string(root.join("Default/Service Worker/db")).unwrap(),
                 "keep"
+            );
+        }
+    }
+
+    #[test]
+    fn chromium_preview_channels_require_registered_profiles_exact_leaves_and_idle_owner() {
+        use WindowsCacheFamily::{ChromeBeta, ChromeCanary, EdgeBeta, EdgeDev};
+        for (family, relative, owner) in [
+            (ChromeBeta, "Google/Chrome Beta", "chrome.exe"),
+            (ChromeCanary, "Google/Chrome SxS", "chrome.exe"),
+            (EdgeBeta, "Microsoft/Edge Beta", "msedge.exe"),
+            (EdgeDev, "Microsoft/Edge Dev", "msedge.exe"),
+        ] {
+            let (_directory, roots) = fixture();
+            let root = chromium(&roots, family);
+            assert_eq!(
+                root,
+                roots
+                    .local
+                    .as_ref()
+                    .unwrap()
+                    .join(relative)
+                    .join("User Data")
+            );
+            assert_eq!(owner_names(family), &[owner]);
+            for sentinel in [
+                "Bookmarks",
+                "Sessions/Session_1",
+                "Extensions/a/manifest.json",
+                "Service Worker/CacheStorage/offline",
+                "ShaderCache/data",
+                "AI/session",
+            ] {
+                file(&root.join("Default").join(sentinel), "keep");
+            }
+            let expected = [
+                "Default/Cache",
+                "Default/Code Cache",
+                "Profile 1/Cache",
+                "Profile 1/Code Cache",
+            ]
+            .map(|relative| root.join(relative));
+            let idle = discover(&roots, family, OwnerState::Idle, None);
+            assert_eq!(idle.candidates, expected);
+            assert!(idle.unavailable.is_empty());
+            for (activity, status) in [
+                (OwnerState::Busy, ScanCoverageStatus::Busy),
+                (OwnerState::Unknown, ScanCoverageStatus::OwnershipUnknown),
+            ] {
+                let refused = discover(&roots, family, activity, None);
+                assert!(refused.candidates.is_empty());
+                assert_eq!(refused.unavailable.len(), 1);
+                assert_eq!(refused.unavailable[0].status, status);
+                assert!(refused.unavailable[0].detail.contains("rescan"));
+            }
+            file(&root.join("Profile 1/Preferences"), "null");
+            let partial = discover(&roots, family, OwnerState::Idle, None);
+            assert_eq!(partial.candidates, expected[..2]);
+            assert_eq!(
+                partial.unavailable[0].status,
+                ScanCoverageStatus::OwnershipUnknown
+            );
+            file(&root.join("Profile 1/Preferences"), "{}");
+            file(
+                &root.join("Local State"),
+                r#"{"profile":{"info_cache":{"Default":null,"Profile 1":{}}}}"#,
+            );
+            let corrupt_registration = discover(&roots, family, OwnerState::Idle, None);
+            assert_eq!(corrupt_registration.candidates, expected[2..]);
+            assert_eq!(corrupt_registration.unavailable.len(), 1);
+            assert_eq!(
+                corrupt_registration.unavailable[0].path,
+                root.join("Default")
+            );
+            assert_eq!(
+                corrupt_registration.unavailable[0].status,
+                ScanCoverageStatus::OwnershipUnknown
+            );
+            file(
+                &root.join("Local State"),
+                r#"{"profile":{"info_cache":{"../outside":{}}}}"#,
+            );
+            let malformed = discover(&roots, family, OwnerState::Idle, None);
+            assert!(malformed.candidates.is_empty());
+            assert_eq!(
+                malformed.unavailable[0].status,
+                ScanCoverageStatus::OwnershipUnknown
             );
         }
     }

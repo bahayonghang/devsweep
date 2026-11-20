@@ -4,6 +4,9 @@
 //! authority. A completion applies only when its operation id is still current
 //! and has not been canceled.
 
+mod optimize_batch;
+pub(crate) use optimize_batch::{BatchDelivery, BatchError, BatchJob, BatchState};
+
 use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
@@ -494,6 +497,7 @@ struct LiveOperation {
 
 #[derive(Clone, Debug)]
 struct Draft {
+    close_to_tray: bool,
     committed: DesktopPreferences,
     theme: DesktopTheme,
     font: DesktopFont,
@@ -518,6 +522,9 @@ impl Draft {
         }
         if self.motion == self.committed.motion {
             self.motion = saved.motion;
+        }
+        if self.close_to_tray != self.committed.close_behavior.is_exit() {
+            self.close_to_tray = !saved.close_behavior.is_exit();
         }
         self.committed = saved;
     }
@@ -1146,6 +1153,7 @@ pub struct Session {
     awake_poll_request: bool,
     awake_poll_started: bool,
     optimize_board: OptimizeBoard,
+    optimize_batch: BatchState,
     analyze_roots: Vec<AnalyzeRootChoice>,
     analyze_notice: Option<String>,
     analyze_landing_prepared: bool,
@@ -1154,6 +1162,8 @@ pub struct Session {
     status_query: String,
     status_sort: ProcessSort,
     status_pick: Option<crate::status_panel::ProcessPick>,
+    #[cfg(test)]
+    status_fixture: Option<StatusSnapshotV1>,
     status_live: Option<LiveControl>,
     status_receiver: Option<devsweep_core::status::StatusEventReceiver>,
     status_subscription_starts: u32,
@@ -1190,6 +1200,7 @@ pub struct Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
+        self.optimize_batch.cancel();
         if let Some((_, cancel)) = &self.host_job {
             cancel.request_cancel();
         }
@@ -1207,6 +1218,7 @@ impl Drop for Session {
 /// One slow operation run on a worker. Host dispatch holds an immutable
 /// reviewed plan; the other variants carry read-only observations.
 pub enum BackgroundJob {
+    OptimizeBatch(BatchJob),
     AwakeStatus {
         generation: u64,
         executor: Arc<dyn ActionExecutor>,
@@ -1250,6 +1262,10 @@ pub enum BackgroundJob {
 
 /// The finished result of one [`BackgroundJob`].
 pub enum JobResult {
+    OptimizeBatch {
+        generation: u64,
+        result: Result<BatchDelivery, BatchError>,
+    },
     AwakeStatus {
         generation: u64,
         result: Result<Option<host_review::AwakeSnapshot>, String>,
@@ -1291,6 +1307,7 @@ pub enum JobResult {
 impl BackgroundJob {
     pub fn spawn_failure(&self) -> Option<JobResult> {
         match self {
+            Self::OptimizeBatch(job) => Some(job.failure(false)),
             Self::AwakeStatus { generation, .. } => Some(JobResult::AwakeStatus {
                 generation: *generation,
                 result: Err("worker_unavailable".to_string()),
@@ -1311,6 +1328,7 @@ impl BackgroundJob {
                         intent: item.intent.clone(),
                         code: "worker_unavailable".to_string(),
                         reverse: None,
+                        uninstall: None,
                     })
                     .collect(),
                 awake: Err("worker_unavailable".to_string()),
@@ -1320,6 +1338,9 @@ impl BackgroundJob {
     }
 
     pub fn panic_result(&self) -> Option<JobResult> {
+        if let Self::OptimizeBatch(job) = self {
+            return Some(job.failure(true));
+        }
         if let Self::HostExecute {
             generation,
             prepared,
@@ -1334,6 +1355,7 @@ impl BackgroundJob {
                         intent: item.intent.clone(),
                         code: "unknown_after_dispatch".to_string(),
                         reverse: None,
+                        uninstall: None,
                     })
                     .collect(),
                 awake: Err("unknown_after_dispatch".to_string()),
@@ -1347,6 +1369,7 @@ impl BackgroundJob {
     #[must_use]
     pub fn run(self) -> JobResult {
         match self {
+            Self::OptimizeBatch(job) => job.run(),
             Self::AwakeStatus {
                 generation,
                 executor,
@@ -1370,7 +1393,7 @@ impl BackgroundJob {
                 cancel,
             } => JobResult::HostExecute {
                 generation,
-                results: host_review::run_actions(executor.clone(), prepared, cancel.as_ref()),
+                results: host_review::run_actions(executor.clone(), prepared, &cancel),
                 awake: executor.query_awake(),
             },
             Self::SoftwareIcons {
@@ -1448,6 +1471,7 @@ impl Session {
     }
 
     fn from_loaded(files: Option<PreferenceFiles>, loaded: preferences::LoadedStores) -> Self {
+        let optimize_batch = BatchState::new(files.is_some());
         let host_executor = files
             .as_ref()
             .map(|_| Arc::new(host_review::CoreExecutor::default()) as Arc<dyn ActionExecutor>);
@@ -1478,6 +1502,7 @@ impl Session {
             mailbox: Arc::new(SharedMailbox::new()),
             files,
             draft: Draft {
+                close_to_tray: !loaded.desktop.close_behavior.is_exit(),
                 theme: loaded.desktop.theme,
                 font: loaded.desktop.font.clone(),
                 text_scale_percent: loaded.desktop.text_scale_percent,
@@ -1507,6 +1532,7 @@ impl Session {
             awake_poll_request: false,
             awake_poll_started: false,
             optimize_board: OptimizeBoard::new(),
+            optimize_batch,
             analyze_roots: Vec::new(),
             analyze_notice: None,
             analyze_landing_prepared: false,
@@ -1515,6 +1541,8 @@ impl Session {
             status_query: String::new(),
             status_sort: ProcessSort::Name,
             status_pick: None,
+            #[cfg(test)]
+            status_fixture: None,
             status_live: None,
             status_receiver: None,
             status_subscription_starts: 0,
@@ -1559,7 +1587,8 @@ impl Session {
 
     /// True while any background job is outstanding.
     pub fn background_busy(&self) -> bool {
-        self.host_job.is_some()
+        self.host_action_busy()
+            || self.optimize_batch.previewing()
             || self.software_job.is_some()
             || self.status_job.is_some()
             || self.analyze_job.is_some()
@@ -1591,6 +1620,7 @@ impl Session {
     /// the outstanding request (superseded or canceled) are dropped.
     pub fn apply_job(&mut self, result: JobResult) -> bool {
         match result {
+            JobResult::OptimizeBatch { generation, result } => self.apply_batch(generation, result),
             JobResult::AwakeStatus { generation, result } => {
                 if self.awake_poll_job != Some(generation) {
                     return false;
@@ -1813,14 +1843,16 @@ impl Session {
             && self.shell.surface() == Surface::Mode
             && !self.shell.menu_open()
         {
-            // Process termination requires its explicitly labelled Confirm
+            // Irreversible actions require their explicitly labelled Confirm
             // control. Root/search Enter must not turn Review into dispatch.
-            if !self
-                .host_review
-                .intents
-                .iter()
-                .any(|intent| matches!(intent, HostIntent::Process { .. }))
-            {
+            if !self.host_review.intents.iter().any(|intent| {
+                matches!(
+                    intent,
+                    HostIntent::Process { .. }
+                        | HostIntent::Uninstall(_)
+                        | HostIntent::Leftovers(_)
+                )
+            }) {
                 self.host_confirm(true);
             }
             return;
@@ -1863,6 +1895,13 @@ impl Session {
             }
         }
         self.shell.apply_key(key);
+        if mode_before == Mode::Optimize
+            && (self.shell.mode() != mode_before
+                || self.shell.surface() != before
+                || self.shell.menu_open())
+        {
+            self.leave_batch();
+        }
         if self.shell.mode() != mode_before {
             self.host_cancel();
             self.ensure_workbench_rows();
@@ -1914,6 +1953,12 @@ impl Session {
             return;
         }
         if mode == Mode::Optimize {
+            if devsweep_core::optimize::catalogue_entry(&id).is_some_and(|entry| {
+                entry.action_class == devsweep_core::optimize::MaintenanceActionClass::Execute
+            }) {
+                self.toggle_batch_item(&id);
+                return;
+            }
             if let Some(group) = crate::optimize_board::group_from_id(&id) {
                 self.optimize_board.open_group(group);
                 self.sync_optimize_rows();
@@ -1939,18 +1984,33 @@ impl Session {
             return;
         }
         if id == "leftovers" {
+            self.cancel_uninstall_review();
             self.workbench_review.activate(id, locale);
             return;
         }
         if self.software_review.is_open() {
-            if matches!(
-                self.software_review.segment(),
-                Some(
-                    crate::workbench::SoftwareSegment::Startup
-                        | crate::workbench::SoftwareSegment::Updates
+            if !self
+                .shell
+                .filtered_row_ids(Mode::Software)
+                .iter()
+                .any(|row| row == id)
+            {
+                return;
+            }
+            let host_uninstall = self.software_review.segment()
+                == Some(crate::workbench::SoftwareSegment::Uninstall)
+                && self.software_review.host_backed();
+            if host_uninstall
+                || matches!(
+                    self.software_review.segment(),
+                    Some(
+                        crate::workbench::SoftwareSegment::Startup
+                            | crate::workbench::SoftwareSegment::Updates
+                    )
                 )
-            ) {
-                if self.host_review.phase == HostPhase::Ready
+            {
+                if !host_uninstall
+                    && self.host_review.phase == HostPhase::Ready
                     && self
                         .host_review
                         .intents
@@ -1963,6 +2023,13 @@ impl Session {
                         Ok(Some(intent)) => {
                             self.host_preview(vec![intent]);
                         }
+                        Ok(None) if host_uninstall => {
+                            // Keep the existing read-only preview for other inventory sources.
+                            if self.software_review.pending_id() != Some(id) {
+                                self.software_review.activate(id, locale, None);
+                                self.sync_software_rows();
+                            }
+                        }
                         Err(error) => {
                             self.host_review.invalidate();
                             self.host_review.phase = HostPhase::Finished;
@@ -1971,16 +2038,6 @@ impl Session {
                         _ => {}
                     }
                 }
-                return;
-            }
-            if !self
-                .shell
-                .filtered_row_ids(Mode::Software)
-                .iter()
-                .any(|row| row == id)
-                || (self.software_review.host_backed()
-                    && self.software_review.pending_id() == Some(id))
-            {
                 return;
             }
             self.software_review.activate(id, locale, None);
@@ -2063,17 +2120,16 @@ impl Session {
     }
 
     fn sync_optimize_rows(&mut self) {
-        let mut ids = Vec::new();
-        if self.optimize_board.group().is_none() {
-            ids.extend(crate::optimize_board::browse_ids());
-        } else {
-            ids.extend([
-                crate::optimize_board::GROUP_STARTUP.to_string(),
-                crate::optimize_board::GROUP_NETWORK.to_string(),
-                crate::optimize_board::GROUP_MAINTENANCE.to_string(),
-            ]);
-            ids.extend(self.optimize_board.visible_ids());
-        }
+        use devsweep_core::optimize::{MaintenanceActionClass, published_entries};
+        let ids = published_entries()
+            .iter()
+            .filter(|entry| {
+                entry.action_class == MaintenanceActionClass::Execute
+                    || (self.optimize_batch.guidance_open
+                        && entry.action_class != MaintenanceActionClass::Observe)
+            })
+            .map(|entry| entry.id.to_string())
+            .collect();
         self.shell.set_row_ids(Mode::Optimize, ids);
     }
 
@@ -2089,31 +2145,24 @@ impl Session {
             .shell
             .selection(Mode::Analyze)
             .and_then(|id| id.parse::<u32>().ok());
-        let selected_kind = selected.and_then(|id| {
-            self.analyze_window.as_ref().and_then(|window| {
-                window
-                    .snapshot()
-                    .nodes
-                    .iter()
-                    .find(|node| node.id == id)
-                    .map(|node| node.kind)
-            })
-        });
         let Some(window) = self.analyze_window.as_mut() else {
             return;
         };
-        let fallback = window.board().list_ids().first().copied();
-        if let Some(selected) = selected {
-            if selected_kind == Some(devsweep_core::analysis::AnalyzeNodeKind::Directory) {
-                window.drill(selected);
-                let ids = window.child_ids().iter().map(|id| id.to_string()).collect();
+        if window.board().checked_count() <= 1
+            && let Some(id) = selected.or_else(|| window.child_ids().first().copied())
+        {
+            if window.board().node(id).is_some_and(|node| {
+                node.kind == devsweep_core::analysis::AnalyzeNodeKind::Directory
+            }) {
+                window.drill(id);
+                let ids = window.child_ids().iter().map(u32::to_string).collect();
                 self.shell.set_row_ids(Mode::Analyze, ids);
                 self.analyze_board = Some(window.board().clone());
                 return;
             }
-            window.select(selected);
-        } else if let Some(id) = fallback {
-            window.select(id);
+            if window.board().list_selection() != Some(id) {
+                window.select(id);
+            }
         }
         let already = window.recycle_line().is_some();
         if already {
@@ -2244,6 +2293,7 @@ impl Session {
             return;
         }
         if segment == crate::workbench::SoftwareSegment::Leftovers {
+            self.cancel_uninstall_review();
             self.workbench_review.activate("leftovers", self.locale());
             return;
         }
@@ -2285,11 +2335,6 @@ impl Session {
 
     pub fn set_mode_row_window(&mut self, mode: Mode, start: usize) {
         self.shell.set_row_window_start(mode, start);
-    }
-
-    /// Id of the Software/Optimize review awaiting its second activation.
-    pub fn workbench_pending_id(&self) -> Option<&str> {
-        self.workbench_review.pending_id()
     }
 
     pub fn workbench_review_lines(&self) -> &[String] {
@@ -2369,6 +2414,43 @@ impl Session {
     pub fn analyze_select(&mut self, id: u32) {
         self.shell.select(Mode::Analyze, id.to_string());
         self.sync_analyze_board_selection();
+    }
+
+    pub fn analyze_mark(&mut self, id: u32, extend: bool) {
+        let Some(window) = self.analyze_window.as_mut() else {
+            return;
+        };
+        if extend {
+            window.extend_range(id);
+        } else {
+            window.toggle(id);
+        }
+        self.shell.select(Mode::Analyze, id.to_string());
+        self.analyze_board = Some(window.board().clone());
+    }
+
+    pub fn analyze_context_focus(&mut self, id: u32) {
+        if let Some(window) = self.analyze_window.as_mut() {
+            window.focus_node(id);
+            self.shell.select(Mode::Analyze, id.to_string());
+            self.analyze_board = Some(window.board().clone());
+        }
+    }
+
+    pub fn analyze_explain(&mut self, id: u32) {
+        if let Some(window) = self.analyze_window.as_mut() {
+            window.explain(id);
+        }
+    }
+
+    pub fn analyze_show_largest(&mut self, active: bool) {
+        if let Some(window) = self.analyze_window.as_mut() {
+            window.show_largest(active);
+            self.shell.set_row_ids(
+                Mode::Analyze,
+                window.child_ids().iter().map(u32::to_string).collect(),
+            );
+        }
     }
 
     pub fn analyze_notice(&self) -> Option<&str> {
@@ -2502,9 +2584,8 @@ impl Session {
         match result {
             Ok(window) => {
                 let ids = window
-                    .board()
-                    .list_ids()
-                    .iter()
+                    .child_ids()
+                    .into_iter()
                     .map(|id| id.to_string())
                     .collect();
                 self.analyze_board = Some(window.board().clone());
@@ -2528,14 +2609,13 @@ impl Session {
         else {
             return;
         };
-        let current = self
-            .analyze_window
-            .as_ref()
-            .and_then(|window| window.board().list_selection());
-        if current == Some(selected) {
-            return;
-        }
         if let Some(window) = self.analyze_window.as_mut() {
+            if window.board().list_selection() == Some(selected)
+                && window.board().checked_count() == usize::from(window.board().eligible(selected))
+                && window.board().eligible(selected) == window.board().is_checked(selected)
+            {
+                return;
+            }
             window.select(selected);
             self.analyze_board = Some(window.board().clone());
         }
@@ -2563,7 +2643,7 @@ impl Session {
     }
 
     pub fn host_action_busy(&self) -> bool {
-        self.host_job.is_some()
+        self.host_job.is_some() || self.optimize_batch.running()
     }
 
     pub fn host_review_lines(&self) -> Vec<String> {
@@ -2610,6 +2690,11 @@ impl Session {
 
     pub fn keep_awake_connection(&self) -> Option<&host_review::AwakeSnapshot> {
         self.awake_snapshot.as_ref()
+    }
+
+    #[cfg(windows)]
+    pub fn keep_awake_available(&self) -> bool {
+        self.host_executor.is_some()
     }
 
     pub fn keep_awake_preview_toggle(&mut self) -> bool {
@@ -2716,7 +2801,14 @@ impl Session {
     }
 
     pub fn host_preview(&mut self, intents: Vec<HostIntent>) -> bool {
-        if self.clean.native_fixture().is_some() || self.host_job.is_some() || intents.is_empty() {
+        if self.clean.native_fixture().is_some() || self.host_action_busy() || intents.is_empty() {
+            return false;
+        }
+        if intents.len() > 1
+            && intents
+                .iter()
+                .any(|intent| matches!(intent, HostIntent::Uninstall(_) | HostIntent::Leftovers(_)))
+        {
             return false;
         }
         let Some(executor) = self.action_executor(&intents) else {
@@ -2738,8 +2830,19 @@ impl Session {
         true
     }
 
+    fn cancel_uninstall_review(&mut self) {
+        if self
+            .host_review
+            .intents
+            .iter()
+            .any(|intent| matches!(intent, HostIntent::Uninstall(_) | HostIntent::Leftovers(_)))
+        {
+            self.host_cancel();
+        }
+    }
+
     pub fn host_confirm(&mut self, confirmed: bool) -> bool {
-        if self.clean.native_fixture().is_some() || self.host_job.is_some() {
+        if self.clean.native_fixture().is_some() || self.host_action_busy() {
             return false;
         }
         let Some(executor) = self.action_executor(&self.host_review.intents) else {
@@ -2782,6 +2885,54 @@ impl Session {
 
     /// Undo is a new reverse intent, not a direct registry restore. A worker
     /// must build a new live plan/digest and the user confirms it again.
+    pub fn can_review_leftovers(&self) -> bool {
+        self.host_review.phase == HostPhase::Finished && self.host_review.results.iter().any(|result| {
+            matches!((&result.intent, &result.uninstall), (HostIntent::Uninstall(row), Some(outcome)) if row.allows_leftovers(outcome))
+        })
+    }
+
+    pub fn review_leftovers(&mut self, generation: u64) -> bool {
+        if generation != self.host_review.generation || !self.can_review_leftovers() {
+            return false;
+        }
+        let Some(inventory) = self.software_review.inventory() else {
+            return false;
+        };
+        let Some(context) = self
+            .host_review
+            .results
+            .iter()
+            .find_map(|result| host_review::Leftovers::after(result, inventory))
+        else {
+            return false;
+        };
+        self.host_preview(vec![HostIntent::Leftovers(context)])
+    }
+
+    pub fn choose_leftover(&mut self, generation: u64, index: usize) -> bool {
+        if generation != self.host_review.generation
+            || self.host_review.phase != HostPhase::Choosing
+        {
+            return false;
+        }
+        let [
+            host_review::Prepared {
+                intent: HostIntent::Leftovers(context),
+                plan: host_review::Plan::LeftoverChoices(items),
+                ..
+            },
+        ] = self.host_review.prepared.as_slice()
+        else {
+            return false;
+        };
+        let Some(candidate) = items.get(index) else {
+            return false;
+        };
+        let mut selected = context.clone();
+        selected.candidate = Some(Box::new(candidate.clone()));
+        self.host_preview(vec![HostIntent::Leftovers(selected)])
+    }
+
     pub fn host_preview_restore(&mut self) -> bool {
         let intents = self
             .host_review
@@ -3160,12 +3311,16 @@ impl Session {
             }
         }
         self.status_poll_generation = self.status_poll_generation.wrapping_add(1);
-        if self.status_receiver.is_some() {
+        if self.has_status_stream() {
             self.status_poll_request = Some(self.status_poll_generation);
         }
         self.status_live_fault = None;
         self.status_subscribed = true;
         self.status_subscription_starts = self.status_subscription_starts.saturating_add(1);
+        #[cfg(test)]
+        if self.status_fixture.is_some() {
+            println!("tray-sampler start {}", self.status_subscription_starts);
+        }
         self.status_phase = StatusPhase::Live;
     }
 
@@ -3180,8 +3335,38 @@ impl Session {
         if self.status_subscribed {
             self.status_subscribed = false;
             self.status_subscription_stops = self.status_subscription_stops.saturating_add(1);
+            #[cfg(test)]
+            if self.status_fixture.is_some() {
+                println!("tray-sampler stop {}", self.status_subscription_stops);
+            }
         }
         self.status_phase = StatusPhase::Landing;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn install_tray_fixture(
+        &mut self,
+        sample: StatusSnapshotV1,
+        files: PreferenceFiles,
+    ) {
+        let (backend, _) = devsweep_core::status::RecordingBackend::pair();
+        self.host_executor = Some(Arc::new(host_review::CoreExecutor::with_awake(
+            devsweep_core::status::KeepAwakeService::new(
+                Arc::new(devsweep_core::status::FakeClock::new()),
+                Box::new(backend),
+                true,
+            ),
+        )));
+        self.status_fixture = Some(sample);
+        self.files = Some(files);
+    }
+
+    fn has_status_stream(&self) -> bool {
+        #[cfg(test)]
+        if self.status_fixture.is_some() {
+            return true;
+        }
+        self.status_receiver.is_some()
     }
 
     pub fn status_subscription_starts(&self) -> u32 {
@@ -3232,11 +3417,22 @@ impl Session {
     pub fn status_poll_current(&self, generation: u64) -> bool {
         generation == self.status_poll_generation
             && self.status_phase == StatusPhase::Live
-            && self.status_receiver.is_some()
+            && self.has_status_stream()
     }
 
     /// Drain the live receiver. True when a snapshot or terminal was applied.
     pub fn poll_status_live(&mut self) -> bool {
+        #[cfg(test)]
+        if self.status_subscribed
+            && let Some(snapshot) = self.status_fixture.clone()
+        {
+            println!(
+                "tray-sampler sample {} {}",
+                self.status_subscription_starts, snapshot.snapshot_id
+            );
+            self.status_receive_live(snapshot);
+            return true;
+        }
         let Some(receiver) = self.status_receiver.as_ref() else {
             return false;
         };
@@ -3338,6 +3534,8 @@ impl Session {
     }
 
     pub fn begin_clean_screen(&mut self) {
+        self.cancel_uninstall_review();
+        self.leave_batch();
         self.shell.begin_clean_screen();
     }
 
@@ -3354,6 +3552,7 @@ impl Session {
             return;
         }
         if mode != self.shell.mode() {
+            self.leave_batch();
             self.host_cancel();
         }
         if mode != Mode::Software {
@@ -3367,6 +3566,8 @@ impl Session {
         if self.clean.native_fixture().is_some() {
             return;
         }
+        self.cancel_uninstall_review();
+        self.leave_batch();
         self.shell.toggle_menu();
     }
 
@@ -3375,6 +3576,8 @@ impl Session {
             return;
         }
         let before = self.shell.surface();
+        self.cancel_uninstall_review();
+        self.leave_batch();
         self.shell.open_menu_item(index);
         self.note_history_opened(before);
     }
@@ -3383,6 +3586,8 @@ impl Session {
         if self.clean.native_fixture().is_some() {
             return;
         }
+        self.cancel_uninstall_review();
+        self.leave_batch();
         self.shell.open_surface(Surface::Settings);
     }
 
@@ -3398,6 +3603,16 @@ impl Session {
     }
 
     /// Draft a theme choice. Saving stays an explicit action.
+    pub fn draft_close_to_tray(&self) -> bool {
+        self.draft.close_to_tray
+    }
+    pub fn close_to_tray(&self) -> bool {
+        !self.draft.committed.close_behavior.is_exit()
+    }
+    pub fn set_close_to_tray(&mut self, value: bool) {
+        self.draft.close_to_tray = value;
+    }
+
     pub fn set_theme(&mut self, theme: DesktopTheme) {
         self.draft.theme = theme;
     }
@@ -4339,6 +4554,7 @@ impl Session {
         let theme_dirty = self.draft.theme != self.draft.committed.theme;
         let scale_dirty = self.draft.text_scale_percent != self.draft.committed.text_scale_percent;
         let motion_dirty = self.draft.motion != self.draft.committed.motion;
+        let close_dirty = self.draft.close_to_tray == self.draft.committed.close_behavior.is_exit();
         if font_dirty {
             let saved = preferences::save_desktop_patch(
                 &files,
@@ -4381,6 +4597,20 @@ impl Session {
             )?;
             self.draft.commit_desktop(saved);
             self.shell.motion = self.draft.motion;
+            wrote = true;
+        }
+        if close_dirty {
+            let saved = preferences::save_desktop_patch(
+                &files,
+                DesktopPatch::CloseBehavior {
+                    value: if self.draft.close_to_tray {
+                        devsweep_core::desktop_preferences::CloseBehavior::StayInTray
+                    } else {
+                        devsweep_core::desktop_preferences::CloseBehavior::Exit
+                    },
+                },
+            )?;
+            self.draft.commit_desktop(saved);
             wrote = true;
         }
         if wrote {
@@ -4426,7 +4656,8 @@ impl Session {
     }
 
     fn draft_desktop_dirty(&self) -> bool {
-        self.draft.theme != self.draft.committed.theme
+        self.draft.close_to_tray == self.draft.committed.close_behavior.is_exit()
+            || self.draft.theme != self.draft.committed.theme
             || self.draft.font != self.draft.committed.font
             || self.draft.text_scale_percent != self.draft.committed.text_scale_percent
             || self.draft.motion != self.draft.committed.motion
@@ -4883,7 +5114,7 @@ mod tests {
                 .workbench_review
                 .lines()
                 .iter()
-                .any(|line| line.contains("unavailable"))
+                .any(|line| line == crate::copy::software_leftovers_unavailable(Locale::En))
         );
     }
 
@@ -6610,17 +6841,20 @@ mod tests {
     #[test]
     fn analyze_roots_keep_a_listed_drive_and_an_isolated_folder() {
         let drives = vec![AnalyzeRootChoice {
+            capacity: None,
             input: "C:\\".to_string(),
             normalized: Some("C:\\".to_string()),
             error: None,
         }];
         let extras = vec![
             AnalyzeRootChoice {
+                capacity: None,
                 input: "C:\\".to_string(),
                 normalized: Some("C:\\".to_string()),
                 error: None,
             },
             AnalyzeRootChoice {
+                capacity: None,
                 input: "D:\\isolated".to_string(),
                 normalized: Some("D:\\isolated".to_string()),
                 error: None,

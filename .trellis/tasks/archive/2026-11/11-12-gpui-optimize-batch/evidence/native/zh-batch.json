@@ -1,0 +1,20 @@
+[
+  {
+    "catalogue_id": "maintenance.clock_probe",
+    "batch_id": "optimize-op-000001a1f854d23e-0001155c-0000000000000000",
+    "operation_id": "optimize-op-000001a1f854d23e-0001155c-0000000000000001",
+    "status_code": "failed"
+  },
+  {
+    "catalogue_id": "maintenance.retrim",
+    "batch_id": "optimize-op-000001a1f854d23e-0001155c-0000000000000000",
+    "operation_id": "optimize-op-000001a1f854d251-0001155c-0000000000000002",
+    "status_code": "skipped"
+  },
+  {
+    "catalogue_id": "dns.flush",
+    "batch_id": "optimize-op-000001a1f854d23e-0001155c-0000000000000000",
+    "operation_id": "optimize-op-000001a1f854d253-0001155c-0000000000000003",
+    "status_code": "succeeded"
+  }
+]

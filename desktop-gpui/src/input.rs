@@ -32,8 +32,9 @@ pub(crate) fn scaled_text_metrics(text_scale_percent: u8) -> (f32, f32) {
 /// the field follows dark, light, and high-contrast palettes.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct InputStyle {
-    pub background: u32,
-    pub border: u32,
+    /// The 1px control boundary. The field has no fill of its own, so the
+    /// edge mixes over the paper it sits on.
+    pub border: ui::Tint,
     pub focus_border: u32,
     pub text: u32,
     pub placeholder: u32,
@@ -48,13 +49,12 @@ impl Default for InputStyle {
     fn default() -> Self {
         let theme = ui::DARK;
         Self {
-            background: theme.surface_alt,
-            border: theme.border_strong,
-            focus_border: theme.accent,
-            text: theme.text,
-            placeholder: theme.text_muted,
-            caret: theme.accent,
-            selection: (theme.accent << 8) | 0x55,
+            border: theme.control_edge,
+            focus_border: theme.input,
+            text: theme.ink,
+            placeholder: theme.muted,
+            caret: theme.input,
+            selection: (theme.input << 8) | 0x55,
             font_px: INPUT_FONT_PX,
             line_px: INPUT_LINE_HEIGHT_PX,
         }
@@ -665,14 +665,25 @@ impl Render for TextInput {
             .w_full()
             .px(px(12.0 * scale))
             .py(px(7.0 * scale))
-            .bg(rgb(style.background))
-            .border_2()
-            .border_color(rgb(style.border))
-            .rounded(px(10.0 * scale))
+            .border_1()
+            .border_color(style.border.color())
+            .rounded(ui::RADIUS_ITEM)
             .text_color(rgb(style.text))
             .text_size(px(font_px))
             .line_height(px(line_px))
-            .focus(move |focused| focused.border_color(rgb(style.focus_border)))
+            // The focus ring is drawn inside the control: the edge turns to
+            // the focus colour and a 2px inset ring joins it.
+            .focus(move |focused| {
+                focused
+                    .border_color(rgb(style.focus_border))
+                    .shadow(vec![gpui::BoxShadow {
+                        color: rgb(style.focus_border).into(),
+                        offset: gpui::point(px(0.0), px(0.0)),
+                        blur_radius: px(0.0),
+                        spread_radius: px(2.0),
+                        inset: true,
+                    }])
+            })
             .child(
                 div()
                     .w_full()

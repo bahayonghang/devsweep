@@ -1,7 +1,8 @@
 //! Bilingual Analyze human renderer over the V1 snapshot.
 
 use devsweep_core::analysis::{
-    AnalyzeCompleteness, AnalyzeExplainV1, AnalyzeListV1, AnalyzeRootsV1, AnalyzeSnapshotV1,
+    AnalyzeCompleteness, AnalyzeEvidence, AnalyzeExplainV1, AnalyzeLargestV1, AnalyzeListV1,
+    AnalyzeRootsV1, AnalyzeSnapshotV1, AnalyzeVolumeCapacityV1,
 };
 
 use super::render;
@@ -72,7 +73,58 @@ pub(crate) fn roots(locale: Locale, report: &AnalyzeRootsV1) -> Result<String, C
                 &[("path", root.input.as_str()), ("volume", volume)],
                 None,
             )?);
+            lines.push(match root.capacity {
+                Some(AnalyzeVolumeCapacityV1::Available {
+                    total_bytes,
+                    available_bytes,
+                }) => render(
+                    locale,
+                    "analyze.cli.roots.capacity",
+                    &[
+                        ("available", &format_binary_bytes(available_bytes)),
+                        ("total", &format_binary_bytes(total_bytes)),
+                    ],
+                    None,
+                )?,
+                _ => render(locale, "analyze.cli.roots.capacity_unknown", &[], None)?,
+            });
         }
+    }
+    Ok(lines.join("\n"))
+}
+
+pub(crate) fn largest(locale: Locale, report: &AnalyzeLargestV1) -> Result<String, CatalogueError> {
+    let mut lines = vec![render(
+        locale,
+        "analyze.cli.largest.scope",
+        &[
+            ("shown", &report.files.len().to_string()),
+            ("count", &report.matching_files.to_string()),
+        ],
+        None,
+    )?];
+    let coverage = if report.scan_complete() {
+        "analyze.cli.largest.complete"
+    } else {
+        "analyze.cli.largest.partial"
+    };
+    lines.push(render(locale, coverage, &[], None)?);
+    for file in &report.files {
+        let key = if file.evidence == AnalyzeEvidence::Complete {
+            "analyze.cli.list.item"
+        } else {
+            "analyze.cli.largest.lower_bound"
+        };
+        lines.push(render(
+            locale,
+            key,
+            &[
+                ("node", &file.node_id.to_string()),
+                ("name", &file.path),
+                ("bytes", &format_binary_bytes(file.bytes)),
+            ],
+            None,
+        )?);
     }
     Ok(lines.join("\n"))
 }

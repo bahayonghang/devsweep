@@ -8,6 +8,15 @@ use devsweep_core::software::{
 };
 use std::sync::atomic::AtomicU32;
 
+#[path = "host_action_tests/leftovers.rs"]
+mod leftovers;
+#[path = "host_action_tests/msix.rs"]
+mod msix;
+
+#[cfg(windows)]
+#[path = "host_action_tests/native_receipt.rs"]
+mod native_receipt;
+
 #[derive(Clone)]
 struct ProcessFixture(Arc<std::sync::Mutex<ProcessFixtureState>>);
 
@@ -359,6 +368,7 @@ impl ActionExecutor for FakeExecutor {
             intent: item.intent.clone(),
             code: "updated".into(),
             reverse: None,
+            uninstall: None,
         })
     }
 }
@@ -684,6 +694,7 @@ fn failed_startup_result_cannot_keep_a_stale_enabled_badge() {
             },
             code: "unknown_after_dispatch".into(),
             reverse: None,
+            uninstall: None,
         },
         Locale::En,
     );

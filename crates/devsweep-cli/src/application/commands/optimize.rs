@@ -3,9 +3,9 @@
 use std::{fs, path::Path};
 
 use devsweep_core::optimize::{
-    MaintenanceExecutionError, MaintenanceExecutionOutcome, MaintenanceExecutor, MaintenancePlanV1,
-    OptimizePlanError, observe_disk_health, plan_operation, preview_maintenance_plan_live,
-    published_catalogue_version, published_entries,
+    BatchReadiness, MaintenanceExecutionError, MaintenanceExecutionOutcome, MaintenanceExecutor,
+    MaintenancePlanV1, MaintenancePlanV2, OptimizePlanError, observe_disk_health, plan_operation,
+    preview_maintenance_plan_live, published_catalogue_version, published_entries,
 };
 
 use super::super::{
@@ -87,7 +87,10 @@ fn run_health(cli: &Cli, locale: Locale) -> Result<(), ApplicationError> {
 }
 
 fn run_plan(command: &super::super::cli::OptimizePlanCommand) -> Result<(), ApplicationError> {
-    let plan = plan_operation(&command.operation).map_err(map_plan_error)?;
+    let plan = match command.operation.as_slice() {
+        [id] => SavedPlan::Single(plan_operation(id).map_err(map_plan_error)?),
+        ids => SavedPlan::Batch(MaintenancePlanV2::new(ids).map_err(map_plan_error)?),
+    };
     let mut sink = OutputSink::open(Some(&command.output))?;
     let mut bytes = serde_json::to_vec_pretty(&plan)
         .map_err(|error| ApplicationError::failed("output_serialize_failed", error.to_string()))?;
@@ -102,6 +105,12 @@ fn run_preview(
     cli: &Cli,
 ) -> Result<(), ApplicationError> {
     let plan = load_plan(&command.plan)?;
+    let plan = match plan {
+        SavedPlan::Single(plan) => plan,
+        SavedPlan::Batch(plan) => {
+            return batch_preview(&MaintenanceExecutor::default(), &plan, cli, locale);
+        }
+    };
     let preview = preview_maintenance_plan_live(&plan).map_err(map_plan_error)?;
     match cli.result_format() {
         ResultFormat::Human => {
@@ -136,6 +145,12 @@ fn run_run(
         ));
     }
     let plan = load_plan(&command.plan)?;
+    let plan = match plan {
+        SavedPlan::Single(plan) => plan,
+        SavedPlan::Batch(plan) => {
+            return batch_run(&MaintenanceExecutor::default(), &plan, command, cli, locale);
+        }
+    };
     let report = MaintenanceExecutor::default()
         .execute(devsweep_core::optimize::MaintenanceExecutionRequest {
             plan: &plan,
@@ -192,7 +207,94 @@ fn run_run(
     Ok(())
 }
 
-fn load_plan(path: &Path) -> Result<MaintenancePlanV1, ApplicationError> {
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+enum SavedPlan {
+    Single(MaintenancePlanV1),
+    Batch(MaintenancePlanV2),
+}
+
+fn batch_preview(
+    executor: &MaintenanceExecutor,
+    plan: &MaintenancePlanV2,
+    cli: &Cli,
+    locale: Locale,
+) -> Result<(), ApplicationError> {
+    let preview = executor.preview_batch(plan).map_err(map_plan_error)?;
+    if cli.result_format() == ResultFormat::Human {
+        let mut lines = vec![preview.digest.clone()];
+        for item in &preview.operations {
+            let status = match item.state {
+                BatchReadiness::Ready { .. } => bilingual(locale, "Ready", "就绪").to_string(),
+                BatchReadiness::Skipped { reason } => format!(
+                    "{} · {}",
+                    bilingual(locale, "Skipped", "已跳过"),
+                    reason.label(locale == Locale::ZhCn)
+                ),
+            };
+            lines.push(format!("{} · {status}", item.operation_id));
+        }
+        return write_human(cli, &lines.join("\n"));
+    }
+    write_envelope(
+        cli,
+        "optimize.preview",
+        "succeeded",
+        serde_json::json!(preview),
+    )
+}
+
+fn bilingual<'a>(locale: Locale, en: &'a str, zh: &'a str) -> &'a str {
+    if locale == Locale::ZhCn { zh } else { en }
+}
+
+fn batch_run(
+    executor: &MaintenanceExecutor,
+    plan: &MaintenancePlanV2,
+    command: &PlanExecutionCommand,
+    cli: &Cli,
+    locale: Locale,
+) -> Result<(), ApplicationError> {
+    // Open the requested create-new destination before mutating anything.
+    let mut sink = OutputSink::open(cli.output_path())?;
+    let report = executor
+        .execute_batch(
+            plan,
+            &command.preview_digest,
+            command.confirm,
+            None,
+            |_, _| {},
+        )
+        .map_err(map_execution_error)?;
+    let failed = report.has_failures();
+    if cli.result_format() == ResultFormat::Human {
+        let mut text = String::new();
+        for item in &report.outcomes {
+            text.push_str(&format!(
+                "{} · {}\n",
+                item.catalogue_id,
+                item.outcome.label(locale == Locale::ZhCn)
+            ));
+        }
+        sink.write_all(text.as_bytes())
+            .map_err(|err| ApplicationError::failed("output_write_failed", err.to_string()))?;
+    } else {
+        write_json(
+            &mut sink,
+            &serde_json::json!({"schema_version":1,"command":"optimize.run","outcome":if failed{"failed"}else{"succeeded"},"data":report,"warnings":[],"error":null}),
+        )?;
+    }
+    if failed {
+        return Err(ApplicationError::after_output(
+            ExitClass::Failed,
+            "optimize_run_not_successful",
+            "One or more maintenance operations failed",
+        ));
+    }
+    Ok(())
+}
+
+fn load_plan(path: &Path) -> Result<SavedPlan, ApplicationError> {
     let bytes = fs::read(path).map_err(|error| {
         ApplicationError::failed(
             "optimize_plan_read_failed",
@@ -242,7 +344,8 @@ pub(super) fn map_plan_error(error: OptimizePlanError) -> ApplicationError {
         | OptimizePlanError::DigestMismatch => {
             (ExitClass::InvalidAuthority, "invalid_optimize_authority")
         }
-        OptimizePlanError::UnknownOperation(_)
+        OptimizePlanError::InvalidBatchSelection
+        | OptimizePlanError::UnknownOperation(_)
         | OptimizePlanError::GuidanceNotExecutable(_)
         | OptimizePlanError::ObserveNotPlanable(_) => {
             (ExitClass::Failed, "invalid_optimize_selection")
@@ -356,7 +459,7 @@ mod tests {
         let temp = TempDir::new().unwrap();
         let plan_path = temp.path().join("plan.json");
         let command = super::super::super::cli::OptimizePlanCommand {
-            operation: "dns.flush".to_string(),
+            operation: vec!["dns.flush".to_string()],
             output: plan_path.clone(),
         };
         run_plan(&command).unwrap();
@@ -368,7 +471,7 @@ mod tests {
         assert!(!text.contains("program"));
 
         let hostile = super::super::super::cli::OptimizePlanCommand {
-            operation: "cmd.exe /c calc".to_string(),
+            operation: vec!["cmd.exe /c calc".to_string()],
             output: temp.path().join("hostile.json"),
         };
         let error = run_plan(&hostile).expect_err("hostile operation fails closed");
@@ -376,7 +479,7 @@ mod tests {
         assert!(!temp.path().join("hostile.json").exists());
 
         let guidance = super::super::super::cli::OptimizePlanCommand {
-            operation: "guidance.drive_optimize".to_string(),
+            operation: vec!["guidance.drive_optimize".to_string()],
             output: temp.path().join("guidance.json"),
         };
         let error = run_plan(&guidance).expect_err("guidance never plans");
@@ -385,7 +488,7 @@ mod tests {
 
         let v2_path = temp.path().join("update-cache.json");
         run_plan(&super::super::super::cli::OptimizePlanCommand {
-            operation: "maintenance.update_cache".to_string(),
+            operation: vec!["maintenance.update_cache".to_string()],
             output: v2_path.clone(),
         })
         .unwrap();
@@ -408,7 +511,7 @@ mod tests {
 
         let health_path = temp.path().join("disk-health.json");
         let refused = run_plan(&super::super::super::cli::OptimizePlanCommand {
-            operation: "maintenance.disk_health".to_string(),
+            operation: vec!["maintenance.disk_health".to_string()],
             output: health_path.clone(),
         })
         .expect_err("observe is not planable");
@@ -421,7 +524,7 @@ mod tests {
         let temp = TempDir::new().unwrap();
         let plan_path = temp.path().join("plan.json");
         run_plan(&super::super::super::cli::OptimizePlanCommand {
-            operation: "dns.flush".to_string(),
+            operation: vec!["dns.flush".to_string()],
             output: plan_path.clone(),
         })
         .unwrap();
@@ -549,6 +652,109 @@ mod tests {
                 _ => assert_eq!(mapped.code, "invalid_optimize_authority"),
             }
         }
+    }
+
+    #[test]
+    fn ordered_batch_cli_plan_preview_and_run_report_each_item_and_partial_failure() {
+        let temp = TempDir::new().unwrap();
+        let plan_path = temp.path().join("plan.json");
+        let path = plan_path.to_str().unwrap();
+        let ids = ["maintenance.clock_probe", "maintenance.retrim", "dns.flush"];
+        let cli = parse(&[
+            "devsweep",
+            "optimize",
+            "plan",
+            "--operation",
+            ids[0],
+            "--operation",
+            ids[1],
+            "--operation",
+            ids[2],
+            "--output",
+            path,
+        ]);
+        run(&cli, Locale::En).unwrap();
+        let SavedPlan::Batch(plan) = load_plan(&plan_path).unwrap() else {
+            panic!("batch expected")
+        };
+        assert_eq!(
+            plan.operations
+                .iter()
+                .map(|i| i.operation_id.as_str())
+                .collect::<Vec<_>>(),
+            ids
+        );
+        let executor =
+            MaintenanceExecutor::isolated_batch_fixture(&temp.path().join("audit/optimize.jsonl"));
+        let preview_path = temp.path().join("preview.json");
+        let cli = parse(&[
+            "devsweep",
+            "optimize",
+            "preview",
+            "--plan",
+            path,
+            "--format",
+            "json",
+            "--output",
+            preview_path.to_str().unwrap(),
+        ]);
+        batch_preview(&executor, &plan, &cli, Locale::ZhCn).unwrap();
+        let preview: serde_json::Value =
+            serde_json::from_slice(&fs::read(preview_path).unwrap()).unwrap();
+        let digest = preview["data"]["digest"].as_str().unwrap();
+        let output = temp.path().join("results.json");
+        let cli = parse(&[
+            "devsweep",
+            "optimize",
+            "run",
+            "--plan",
+            path,
+            "--preview-digest",
+            digest,
+            "--confirm",
+            "--format",
+            "json",
+            "--output",
+            output.to_str().unwrap(),
+        ]);
+        let Some(Command::Optimize(group)) = &cli.command else {
+            unreachable!()
+        };
+        let OptimizeCommand::Run(command) = &group.command else {
+            unreachable!()
+        };
+        assert_eq!(
+            batch_run(&executor, &plan, command, &cli, Locale::En)
+                .unwrap_err()
+                .exit,
+            ExitClass::Failed
+        );
+        let result: serde_json::Value = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
+        let outcomes = result["data"]["outcomes"].as_array().unwrap();
+        assert_eq!(
+            outcomes
+                .iter()
+                .map(|r| r["status"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            ["failed", "skipped", "succeeded"]
+        );
+        assert_eq!(outcomes[1]["reason"]["detail"], "uac_declined");
+        assert!(
+            Cli::try_parse_from([
+                "devsweep",
+                "optimize",
+                "run",
+                "--plan",
+                path,
+                "--preview-digest",
+                digest
+            ])
+            .is_err()
+        );
+        assert!(
+            Cli::try_parse_from(["devsweep", "optimize", "run", "--plan", path, "--confirm"])
+                .is_err()
+        );
     }
 
     #[test]

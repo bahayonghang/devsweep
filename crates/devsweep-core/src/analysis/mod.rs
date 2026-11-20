@@ -3,6 +3,7 @@
 //! Explorer reveal and the confirmed `analyze.trash` Recycle Bin move.
 
 mod actions;
+mod largest;
 mod model;
 mod observe;
 mod saved;
@@ -13,6 +14,9 @@ pub use actions::{
     AnalyzeTrashItemV1, AnalyzeTrashPreviewV1, AnalyzeTrashRefusalCode, AnalyzeTrashRefusalV1,
     AnalyzeTrashReportV1, analyze_node_path, default_analyze_root, execute_analyze_trash,
     preview_analyze_trash, reveal_analyze_node,
+};
+pub use largest::{
+    ANALYZE_LARGEST_MIN_BYTES, AnalyzeLargestFileV1, AnalyzeLargestV1, largest_analyze_files,
 };
 pub use model::{
     ANALYZE_SNAPSHOT_VERSION, ANALYZE_WORKERS, AnalyzeCompleteness, AnalyzeEvidence,
@@ -25,7 +29,8 @@ pub use observe::{
     ANALYZE_LIST_DEFAULT_LIMIT, ANALYZE_LIST_MAX_LIMIT, ANALYZE_OBSERVE_VERSION, AnalyzeClass,
     AnalyzeClassEvidence, AnalyzeExplainV1, AnalyzeListChildV1, AnalyzeListV1, AnalyzeLockOwnerV1,
     AnalyzeLockReportV1, AnalyzeObserveError, AnalyzeRootErrorCode, AnalyzeRootRecordV1,
-    AnalyzeRootsV1, explain_analyze_node, list_analyze_children, list_analyze_roots,
+    AnalyzeRootsV1, AnalyzeVolumeCapacityV1, explain_analyze_node, list_analyze_children,
+    list_analyze_roots,
 };
 pub use saved::{
     ANALYZE_TRASH_PLAN_MAX_BYTES, ANALYZE_TRASH_PLAN_VERSION, AnalyzeSavedError,

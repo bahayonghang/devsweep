@@ -1,0 +1,27 @@
+   Compiling devsweep-core v0.3.0 (D:\ds-integrate-1120\crates\devsweep-core)
+mbx[progress]: 15s elapsed; 0 hits, 0 misses, 0 bypassed, 0 not looked up; ~0s compiler work saved
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 25.68s
+     Running unittests src\lib.rs (dist/ci-target\debug\deps\devsweep_core-447ee41077b9f537.exe)
+
+running 1 test
+test rules::windows_caches::tests::chromium_preview_channels_require_registered_profiles_exact_leaves_and_idle_owner ... FAILED
+
+failures:
+
+---- rules::windows_caches::tests::chromium_preview_channels_require_registered_profiles_exact_leaves_and_idle_owner stdout ----
+
+thread 'rules::windows_caches::tests::chromium_preview_channels_require_registered_profiles_exact_leaves_and_idle_owner' (15432) panicked at crates\devsweep-core\src\rules\windows_caches.rs:1313:13:
+assertion `left == right` failed
+  left: ["C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmp3WhiJI\\Local\\Google/Chrome Beta/User Data\\Default\\Cache", "C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmp3WhiJI\\Local\\Google/Chrome Beta/User Data\\Default\\Code Cache", "C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmp3WhiJI\\Local\\Google/Chrome Beta/User Data\\Profile 1\\Cache", "C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmp3WhiJI\\Local\\Google/Chrome Beta/User Data\\Profile 1\\Code Cache"]
+ right: ["C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmp3WhiJI\\Local\\Google/Chrome Beta/User Data\\Profile 1/Cache", "C:\\Users\\lyh\\AppData\\Local\\Temp\\.tmp3WhiJI\\Local\\Google/Chrome Beta/User Data\\Profile 1/Code Cache"]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    rules::windows_caches::tests::chromium_preview_channels_require_registered_profiles_exact_leaves_and_idle_owner
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 657 filtered out; finished in 0.06s
+
+error: test failed, to rerun pass `-p devsweep-core --lib`
+mbx[cache]: 0 hits, 1 misses; 0 B downloaded, 0 B uploaded, 138.5 MiB stored locally
+mbx[savings]: 21891 compilations served. the monocle stays on.

@@ -1,0 +1,78 @@
+{
+  "en-light": {
+    "checkboxes": {
+      "optimize-check-dns.flush": "Off",
+      "optimize-check-maintenance.retrim": "Off",
+      "optimize-check-maintenance.clock_probe": "Off",
+      "optimize-check-maintenance.clock_sync": "Off",
+      "optimize-check-maintenance.image_scan": "Off",
+      "optimize-check-maintenance.image_repair": "Off",
+      "optimize-check-maintenance.dead_startup": "Off"
+    },
+    "review": {
+      "id": "optimize-batch-review",
+      "type": "ControlType.Button",
+      "name": "Review plan",
+      "enabled": false,
+      "focused": false,
+      "rect": "1398,170,140,45"
+    }
+  },
+  "en-dark": {
+    "checkboxes": {
+      "optimize-check-dns.flush": "Off",
+      "optimize-check-maintenance.retrim": "Off",
+      "optimize-check-maintenance.clock_probe": "Off",
+      "optimize-check-maintenance.clock_sync": "Off",
+      "optimize-check-maintenance.image_scan": "Off",
+      "optimize-check-maintenance.image_repair": "Off",
+      "optimize-check-maintenance.dead_startup": "Off"
+    },
+    "review": {
+      "id": "optimize-batch-review",
+      "type": "ControlType.Button",
+      "name": "Review plan",
+      "enabled": false,
+      "focused": false,
+      "rect": "1398,170,140,45"
+    }
+  },
+  "zh-light": {
+    "checkboxes": {
+      "optimize-check-dns.flush": "Off",
+      "optimize-check-maintenance.retrim": "Off",
+      "optimize-check-maintenance.clock_probe": "Off",
+      "optimize-check-maintenance.clock_sync": "Off",
+      "optimize-check-maintenance.image_scan": "Off",
+      "optimize-check-maintenance.image_repair": "Off",
+      "optimize-check-maintenance.dead_startup": "Off"
+    },
+    "review": {
+      "id": "optimize-batch-review",
+      "type": "ControlType.Button",
+      "name": "审阅计划",
+      "enabled": false,
+      "focused": false,
+      "rect": "1426,170,112,45"
+    }
+  },
+  "zh-dark": {
+    "checkboxes": {
+      "optimize-check-dns.flush": "Off",
+      "optimize-check-maintenance.retrim": "Off",
+      "optimize-check-maintenance.clock_probe": "Off",
+      "optimize-check-maintenance.clock_sync": "Off",
+      "optimize-check-maintenance.image_scan": "Off",
+      "optimize-check-maintenance.image_repair": "Off",
+      "optimize-check-maintenance.dead_startup": "Off"
+    },
+    "review": {
+      "id": "optimize-batch-review",
+      "type": "ControlType.Button",
+      "name": "审阅计划",
+      "enabled": false,
+      "focused": false,
+      "rect": "1426,170,112,45"
+    }
+  }
+}

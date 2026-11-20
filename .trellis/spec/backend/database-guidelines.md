@@ -149,6 +149,17 @@ Unix `Drop`, then let the file close; keep nonblocking exclusive acquisition.
 
 ---
 
+## Cumulative History
+
+`history totals` reads newline-complete V1 records from the primary Clean,
+Software and Optimize journals. Read to the length observed at open and track
+completeness separately per domain. The known byte count includes successful
+Recycle Bin moves. Unmeasured moves, partial estimates and incomplete journals
+produce a lower bound. Software counts a terminal Removed for each run and
+identity. Optimize counts a successful Execute terminal per run and catalogue
+entry. Ignore Settings handoffs and known skips. Deduplicate matching outcomes
+and exclude contradictions. The tray reads the same aggregate.
+
 ## Naming Conventions
 
 - JSON fields use Serde defaults or explicit `snake_case` settings already

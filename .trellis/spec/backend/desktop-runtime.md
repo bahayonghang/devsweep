@@ -19,9 +19,16 @@ For Software host review/dispatch read [Software Host Actions](./software-host-a
 For the finite Status power request read [Keep-awake Session](./keep-awake-session.md).
 For Status process review and action history read [Process Actions](./process-actions.md).
 The GUI retains core plans and live digests, uses explicit second confirmation,
-and holds same-domain execution locks through real worker terminals. The current
-host-action gate permits startup, updates, keep-awake and reviewed process
-termination; software removal stays disabled until its separate task review gates.
+and holds same-domain execution locks through real worker terminals. Approved
+actions include startup, updates, keep-awake, reviewed process termination and
+single-app current-user MSIX or eligible unmanaged MSI removal. Uninstall and
+post-uninstall directory moves require their labelled confirmation control.
+Confirmation advances the worker generation so a late preview cannot release
+the execution slot. A successful uninstall result can open a directory picker.
+Choosing one path starts a fresh strict core preview. The pre-uninstall
+related-directory view remains observational. ARP rows open the fixed Windows
+Installed apps URI. Administrator guidance copies a plan command using the
+exact core row ID and preserves the CLI eligibility checks.
 
 ## GPUI native control focus
 
@@ -42,13 +49,21 @@ replace that runtime check.
 
 ## GPUI Status live lifecycle
 
-Status samples while its page is on screen. Every `ShellView` render calls
-`Session::status_set_main_visible(mode == Status && surface == Mode)`;
-`StatusPanel::reconcile` starts the one live subscription when the main panel
-is visible and not paused (or the tray is visible) and stops it otherwise. The
-tray starts hidden (`main.rs` no longer marks it visible); the tray panel task
-owns setting it. Pause stops and joins the sampler and freezes the 60-sample
-trends; entering the page again clears the pause.
+Status samples while its selected page is visible and unpaused, or while the
+tray panel is open. The shell checks HWND visibility and minimization at render
+and on native visibility changes. Both views observe one Session, use its
+published snapshot and share its poll generation. Closing the last visible
+surface cancels and joins the producer. A paused main page keeps its trend
+buffer frozen while a visible popup receives the latest shared snapshot.
+Reopening the popup reads cumulative History once in
+the background.
+
+The notification icon uses a hidden top-level receiver, version-4 callbacks
+and native Open/Exit menu commands. Re-register both the icon and its version
+on TaskbarCreated. Closing the main window exits by default. A saved
+`stay_in_tray` choice hides it only if the icon is available. Keep the running
+host-action close guard on the caption, native close and tray Exit paths.
+The tray Keep awake action opens the existing Status review and confirmation.
 
 - Only a session with background jobs (the window) calls `spawn_live`; tests
   and `Session::unbacked` keep the subscription as bookkeeping and never take
@@ -69,39 +84,34 @@ trends; entering the page again clears the pause.
 
 ## GPUI window material
 
-The app applies one translucent work surface over a window-level gradient. Data
-rows and input wells use opaque fills. Keep the saved theme and text scale when
-changing material. `WindowMaterial::wants_blur` uses logical viewport pixels.
+The window is opaque and requests no system backdrop. The application paints
+every layer itself (`desktop-gpui/DESIGN.md`, "GPUI Native Adaptation"):
+`ui::field` (opaque gradient plus three radial-gradient blobs), `ui::paper`
+(translucent fill, 1px edge, top highlight, ground shadow), wells (flat fill,
+no outline) and `ui::overlay` (the opaque paper colour, heavier shadow).
 
-| Window state | Renderer and surface |
+- `WindowBackgroundAppearance::Opaque` only. Do not call or reintroduce a
+  window blur, acrylic or Mica request: devsweep#5 measured that the acrylic
+  request does not give a reliable backdrop on Windows 10.0.26300, and
+  `vendor/gpui_windows` no longer has `try_enable_window_blur`.
+  `view::tests::the_window_requests_no_system_backdrop` guards this.
+- `LIGHT` and `DARK` in `ui.rs` equal `palette style:airy-glass --palette mint
+  --format json` of design-atlas. Change the colourway with `apply`, then copy
+  the values; do not tune a token in place.
+- Paper is not nested, and it has no `overflow_hidden`: the ground shadow is a
+  child painted outside the paper's bounds.
+- Wells and labelled buttons are bounded by fill. Only inputs and checkboxes
+  draw the 1px `control_edge`.
+- Secondary (`muted`) text sits on paper or a well, not on the field.
+
+| System state | Tokens |
 | --- | --- |
-| Width ≥ 960, Windows advanced effects enabled, normal contrast | Request blur on entry, and again with the new tint when the theme changes while blur is active. A failed request is not retried until the window leaves and re-enters this state. Paint translucent surfaces only after `gpui_windows::try_enable_window_blur(&Window, tint)` succeeds. |
-| Width < 960, high contrast, advanced effects disabled or unavailable | Opaque window and paper. High contrast takes precedence over the saved palette. |
-| Non-composited swap chain or native accent call fails | Opaque fallback even at full width. `GPUI_DISABLE_DIRECT_COMPOSITION=1` exercises the unsupported-renderer case on Windows. |
+| Normal | The saved colour group, translucent paper. |
+| Windows "Transparency effects" off (`UISettings::AdvancedEffectsEnabled` false) | The same group with `Theme::with_solid_paper()`. A failed query keeps the translucent paper. |
+| Windows contrast theme | `ui::HIGH_CONTRAST`: opaque surfaces, 1px borders. It wins over the saved theme. |
 
-The backdrop is tinted, not clear. `gpui_windows::try_enable_window_blur(&Window, tint)`
-takes the acrylic colour as (red, green, blue, alpha); the app passes
-`Theme::backdrop_tint()`, the field start colour at `ui::BACKDROP_TINT_ALPHA`
-(0x99), and paints the field gradient over it at `ui::FIELD_GLASS_ALPHA` (0.90)
-through `Theme::field(glass)`. On fallback the field and the paper are opaque.
-`WindowMaterial::update(window, tint)` requests the backdrop on entering the
-blur condition and sends a new tint when the theme changes while blur is
-active. A request that failed stays failed until the window leaves and
-re-enters the condition; a new tint does not retry it.
-
-Luminance rule: the light field must read at least 0.70 WCAG relative
-luminance over a black window behind it; otherwise paint the field opaque and
-keep only the paper translucent. With the constants above the light field
-measured 0.7787 (mint end) and 0.7273 (lavender end) over black on Windows
-10.0.26300 at 120 dpi, so the tinted backdrop is kept. The margin at the
-lavender end is 0.027. Re-measure with a controlled black and white window
-behind the app whenever either constant, the field colours or the vendored
-blur call changes; a transparent-black tint measured 0.4739.
-
-Light wells are a fill step below the paper (`#FFFFFF`, `#F4F8F6`, `#EAF2EE`,
-`#DCEDE5`), because on the opaque fallback a white well on white paper has no
-edge and wells carry no border in normal contrast. High contrast keeps 1px
-borders.
+Debug builds read `DEVSWEEP_PREVIEW_MATERIAL=solid|high-contrast` to show the
+last two rows without changing a Windows setting. Release builds do not.
 
 `DesktopTheme::System` follows the Windows app mode. `ShellView` reads
 `Window::appearance()` on render into `WindowMaterial.system_dark` and passes
@@ -115,11 +125,12 @@ OS notification.
 
 Refresh system preferences on appearance notifications, including
 `WM_SETTINGCHANGE` with an unchanged light/dark palette. Do not poll Windows
-settings on every frame. A native request returning success and a screenshot
-of a pastel gradient are insufficient to establish visible transparency. On
-Windows compare a pixel inside the owned window over two controlled backgrounds,
-then repeat at narrow width or with direct composition disabled.
+settings on every frame.
 
 On transparent interactive surfaces draw keyboard focus with an inset ring.
 A zero-blur outer shadow paints through an unfilled tab and can obscure its
 icon. Verify with one tab selected and another focused in the native window.
+
+## Optimize batch review
+
+The native batch catalogue initially checks no operation. The collapsed guidance and Settings section has no batch selectors. The review keeps the immutable V2 plan and live digest together in the session. Changing the selection discards the review. Confirmation is a separate control bound to its generation. Running batches process items on the shared desktop worker system, report the current operation and allow cancellation between items. A fixture-enabled build can use a fixed, isolated adapter which never calls the host maintenance implementation.

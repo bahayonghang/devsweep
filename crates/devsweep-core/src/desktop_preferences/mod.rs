@@ -87,6 +87,21 @@ pub enum DesktopMotion {
     Reduced,
 }
 
+/// The saved choice for closing the GPUI main window.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CloseBehavior {
+    #[default]
+    Exit,
+    StayInTray,
+}
+
+impl CloseBehavior {
+    pub fn is_exit(&self) -> bool {
+        *self == Self::Exit
+    }
+}
+
 /// Exact V2 desktop preference document and committed preference value.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -115,6 +130,9 @@ pub struct DesktopPreferencesV2 {
     /// HUD cadence on its next show: 2, 5, or 10 seconds.
     #[serde(deserialize_with = "hud_interval")]
     pub hud_interval_seconds: u8,
+    /// Keep the process available from its notification icon when the main window closes.
+    #[serde(default, skip_serializing_if = "CloseBehavior::is_exit")]
+    pub close_behavior: CloseBehavior,
 }
 
 impl Default for DesktopPreferencesV2 {
@@ -129,6 +147,7 @@ impl Default for DesktopPreferencesV2 {
             status_interval_seconds: 2,
             status_process_limit: 15,
             hud_interval_seconds: 2,
+            close_behavior: CloseBehavior::Exit,
         }
     }
 }
@@ -138,16 +157,22 @@ impl Default for DesktopPreferencesV2 {
 #[serde(tag = "field", rename_all = "snake_case", deny_unknown_fields)]
 pub enum DesktopPreferencesPatch {
     /// Set the semantic palette.
-    Theme { value: DesktopTheme },
+    Theme {
+        value: DesktopTheme,
+    },
     /// Set the local font family or system stack.
-    Font { value: DesktopFont },
+    Font {
+        value: DesktopFont,
+    },
     /// Set the bounded text scale.
     TextScalePercent {
         #[serde(deserialize_with = "text_scale")]
         value: u8,
     },
     /// Set the motion preference.
-    Motion { value: DesktopMotion },
+    Motion {
+        value: DesktopMotion,
+    },
     /// Set the Planet frame cap.
     PlanetFps {
         #[serde(deserialize_with = "planet_fps")]
@@ -167,6 +192,9 @@ pub enum DesktopPreferencesPatch {
     HudIntervalSeconds {
         #[serde(deserialize_with = "hud_interval")]
         value: u8,
+    },
+    CloseBehavior {
+        value: CloseBehavior,
     },
     /// Reset theme, font family, and text scale.
     ResetAppearance {},
@@ -191,6 +219,7 @@ impl DesktopPreferencesV2 {
             DesktopPreferencesPatch::HudIntervalSeconds { value } => {
                 self.hud_interval_seconds = value
             }
+            DesktopPreferencesPatch::CloseBehavior { value } => self.close_behavior = value,
             DesktopPreferencesPatch::ResetAppearance {} => {
                 let defaults = Self::default();
                 self.theme = defaults.theme;

@@ -16,21 +16,12 @@ const FILE_A: &[u8] = b"file-a\0\xff";
 const REG_A: &[u8] = b"reg-a\0\xff";
 
 fn helper_exe() -> PathBuf {
-    let mut path = std::env::current_exe().expect("test executable");
-    path.pop();
-    if path.file_name().and_then(|name| name.to_str()) == Some("deps") {
-        path.pop();
-    }
-    path.push(format!(
-        "windows-action-helper{}",
-        std::env::consts::EXE_SUFFIX
-    ));
-    assert!(
-        path.is_file(),
-        "windows-action-helper is missing at {}",
-        path.display()
-    );
-    path
+    static HELPER: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    HELPER
+        .get_or_init(|| {
+            crate::test_support::build_test_binary("devsweep-core", "windows-action-helper")
+        })
+        .clone()
 }
 
 fn setup(

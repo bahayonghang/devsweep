@@ -1,32 +1,22 @@
 use crate::model::{Ecosystem, RiskLevel, TargetKind};
 
+use super::windows_caches::WindowsCacheFamily;
 use super::{GlobalCacheRule, KnownCacheAction, ProjectDirRule, ProjectMarker, RuleDoc, RuleScope};
 
-pub(crate) const WINDOWS_CACHE_RULES: &[(&str, super::windows_caches::WindowsCacheFamily)] = &[
+pub(crate) const WINDOWS_CACHE_RULES: &[(&str, WindowsCacheFamily)] = &[
+    ("windows.chrome.cache", WindowsCacheFamily::Chrome),
+    ("windows.edge.cache", WindowsCacheFamily::Edge),
+    ("windows.firefox.cache", WindowsCacheFamily::Firefox),
+    ("windows.vscode.cache", WindowsCacheFamily::VsCode),
+    ("windows.cursor.cache", WindowsCacheFamily::Cursor),
+    ("windows.user_temp.stale", WindowsCacheFamily::UserTemp),
+    ("windows.chrome_beta.cache", WindowsCacheFamily::ChromeBeta),
     (
-        "windows.chrome.cache",
-        super::windows_caches::WindowsCacheFamily::Chrome,
+        "windows.chrome_canary.cache",
+        WindowsCacheFamily::ChromeCanary,
     ),
-    (
-        "windows.edge.cache",
-        super::windows_caches::WindowsCacheFamily::Edge,
-    ),
-    (
-        "windows.firefox.cache",
-        super::windows_caches::WindowsCacheFamily::Firefox,
-    ),
-    (
-        "windows.vscode.cache",
-        super::windows_caches::WindowsCacheFamily::VsCode,
-    ),
-    (
-        "windows.cursor.cache",
-        super::windows_caches::WindowsCacheFamily::Cursor,
-    ),
-    (
-        "windows.user_temp.stale",
-        super::windows_caches::WindowsCacheFamily::UserTemp,
-    ),
+    ("windows.edge_beta.cache", WindowsCacheFamily::EdgeBeta),
+    ("windows.edge_dev.cache", WindowsCacheFamily::EdgeDev),
 ];
 
 /// Global-scan coverage only. These ids are not rules and never become targets.

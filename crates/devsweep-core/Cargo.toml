@@ -8,6 +8,9 @@ repository.workspace = true
 rust-version.workspace = true
 publish = false
 
+[features]
+optimize-fixtures = []
+
 [dependencies]
 anyhow = "1.0.104"
 rayon = "1.12.0"

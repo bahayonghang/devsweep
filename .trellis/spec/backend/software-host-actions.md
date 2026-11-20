@@ -85,6 +85,17 @@ execution permission.
   numeric exit 0 with no interruption, valid SID evidence and authoritative
   absence. Legacy MSI records remain readable but do not gain this new authority.
   Reboot, failed and unknown results cannot enable immediate leftover removal.
+- The desktop reports a directory as moved only when the strict report's single
+  outcome names the selected candidate and records a successful move. A
+  completed operation can contain a skipped directory. Show its live refusal
+  reason. A terminal audit failure keeps the result unknown.
+- The desktop result for one removed app can open a read-only directory picker.
+  There is no confirmation for the picker itself. Selecting one candidate
+  requests a strict preview, and the labelled move control confirms exactly
+  one directory. Core independently checks the durable operation, identity,
+  protections and digest before moving the directory to the Recycle Bin.
+  ARP has a fixed Windows Settings handoff. An administrator-only row can
+  copy its CLI plan command. Neither route applies a host change.
 - Winget plan/preview are read-only: top-level version/help/source inspection
   and target-free upgrade listing, followed by exact in-memory row selection.
   Never use target `--id`/`--name`/`--version` or `--all` on an upgrade probe.
@@ -120,6 +131,10 @@ execution permission.
   review code must not automatically activate later removal/leftover
   actions. Same-domain execution remains locked until the real worker terminal;
   stale UI delivery must not replace a newer selection or pretend rollback.
+- Current-user MSIX removal consumes one saved Software plan and a live digest
+  through `SoftwareExecutor`. Bind the exact package full name, ID and removal
+  class. The confirmation control is the sole dispatch entry. Preserve core
+  terminal, reboot evidence and exact-package requery in the result panel.
 
 ## 4. Validation & Error Matrix
 

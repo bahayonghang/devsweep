@@ -10,7 +10,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 IGNORED = (
-    "target/debug/devsweep.exe",
+    # Git rejects paths below a symlink. An excluded workspace target covers
+    # all its outputs, whether it is absent, a directory, or a cache symlink.
+    "target",
+    "desktop-gpui/target",
+    "crates/devsweep-core/target/debug/libdevsweep_core.rlib",
     "desktop-gpui/dist/goal-gpui-release/release/devsweep-gpui-spike.exe",
     "dist/devsweep-x86_64-pc-windows-msvc.zip",
     "node_modules/.package-lock.json",
@@ -109,8 +113,8 @@ class TestGitignore(unittest.TestCase):
                 result = _git("check-ignore", "-v", "--no-index", "--", path)
                 if result.returncode == 0 and _matched_pattern(result.stdout).startswith("!"):
                     continue
-                self.assertNotEqual(
+                self.assertEqual(
                     result.returncode,
-                    0,
+                    1,
                     msg=f"{path} must remain trackable; check-ignore said {result.stdout!r}",
                 )

@@ -23,7 +23,8 @@ pub const OPTIMIZE_PLAN_VERSION: u32 = 1;
 pub const OPTIMIZE_PREVIEW_VERSION: u32 = 1;
 
 /// Stable preflight refusal. The affected operation is the only row.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum PrecheckReason {
     /// Elevation was declined. No UAC prompt is shown.
     UacDeclined,
@@ -83,6 +84,8 @@ pub enum OptimizePlanError {
         /// Stable reason token.
         reason: PrecheckReason,
     },
+    /// A batch is empty, repeats an id, or contains a non-executable row.
+    InvalidBatchSelection,
     /// The confirmed digest does not match the live preview digest.
     DigestMismatch,
     /// Canonical digest serialization failed.
@@ -124,6 +127,9 @@ impl std::fmt::Display for OptimizePlanError {
                 "optimize operation {operation_id} skipped: {}",
                 reason.code()
             ),
+            Self::InvalidBatchSelection => {
+                formatter.write_str("select distinct executable maintenance operations")
+            }
             Self::DigestMismatch => formatter.write_str("optimize preview digest mismatch"),
             Self::SerializationFailed => {
                 formatter.write_str("optimize canonical serialization failed")

@@ -33,6 +33,8 @@ pub const HIVE_ENV: &str = "DEVSWEEP_SOFTWARE_STARTUP_HIVE";
 pub type UninstallExecutor<'a> =
     dyn FnMut(&SoftwareSelectionPlanV1, &str) -> Result<String, String> + 'a;
 
+pub(crate) const INSTALLED_APPS_URI: &str = "ms-settings:appsfeatures";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SoftwareSort {
     Name,
@@ -409,6 +411,50 @@ impl SoftwareReview {
         }
     }
 
+    pub fn is_arp(&self, id: &str) -> bool {
+        matches!(&self.source, ReviewSource::Inventory { path: None, inventory } if inventory.entries.iter().any(|entry| entry.id == id && matches!(entry.identity, SoftwareIdentity::Arp { .. })))
+    }
+
+    /// Clipboard guidance is a plan command. Only a canonical opaque core ID can enter it.
+    pub fn administrator_cli(&self, id: &str) -> Option<String> {
+        let item = self.item(id)?;
+        match &self.source {
+            ReviewSource::Inventory {
+                path: None,
+                inventory,
+            } => {
+                let entry = inventory.entries.iter().find(|entry| entry.id == id)?;
+                if entry.eligibility.reason != SoftwareEligibilityReason::MsiRequiresAdministrator
+                    || !matches!(entry.identity, SoftwareIdentity::Msi { .. })
+                    || devsweep_core::software::software_entry_id(&entry.identity)
+                        .ok()?
+                        .as_str()
+                        != id
+                {
+                    return None;
+                }
+                Some(format!(
+                    "devsweep software plan --inventory inventory.json --select {id} --output software-plan.json"
+                ))
+            }
+            ReviewSource::Startup { .. } if item.permission == "requires_administrator" => {
+                let digest = id.strip_prefix("startup:v1:")?;
+                if digest.len() != 64 || !digest.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                    return None;
+                }
+                let enabled = match item.version.as_str() {
+                    "enabled" => false,
+                    "disabled" => true,
+                    _ => return Some("devsweep software startup list".into()),
+                };
+                Some(format!(
+                    "devsweep software startup plan --entry {id} --enabled {enabled} --output startup-plan.json"
+                ))
+            }
+            _ => None,
+        }
+    }
+
     /// An observed selector only. The worker builds and previews a fresh core
     /// plan; a display fixture cannot request a production update.
     pub fn host_intent(&self, id: &str) -> Result<Option<crate::host_review::Intent>, String> {
@@ -417,6 +463,22 @@ impl SoftwareReview {
             return Ok(None);
         };
         match &self.source {
+            ReviewSource::Inventory { path: Some(_), .. } => Err("fixture_read_only".into()),
+            ReviewSource::Inventory {
+                path: None,
+                inventory,
+            } => {
+                let entry = inventory
+                    .entries
+                    .iter()
+                    .find(|entry| entry.id == id)
+                    .ok_or("stale_confirmation")?;
+                if matches!(entry.identity, SoftwareIdentity::Arp { .. }) {
+                    return Err("arp_settings_only".into());
+                }
+                crate::host_review::UninstallSelection::from_entry(entry)
+                    .map(|row| Some(Intent::Uninstall(row)))
+            }
             ReviewSource::Startup { .. } | ReviewSource::Hive { .. } => {
                 if item.permission.contains("protected") {
                     return Err("protected".to_string());
@@ -1608,7 +1670,7 @@ fn flipped_digest(digest: &str) -> String {
     format!("sha256:{}", chars.into_iter().collect::<String>())
 }
 
-fn unix_now_ms() -> u64 {
+pub(crate) fn unix_now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_millis() as u64)
@@ -1695,6 +1757,45 @@ mod tests {
             last_used: SoftwareLastUsedEvidence::default(),
             launch: None,
         }
+    }
+
+    #[test]
+    fn arp_only_opens_installed_apps_and_admin_copy_only_contains_the_exact_core_id() {
+        let arp = protected_entry();
+        let arp_id = arp.id.clone();
+        let mut msi = arp.clone();
+        msi.identity = SoftwareIdentity::Msi {
+            product_code: "{12345678-1234-1234-1234-1234567890AB}".into(),
+            context: devsweep_core::software::MsiContext::UserUnmanaged,
+        };
+        msi.id = devsweep_core::software::software_entry_id(&msi.identity).unwrap();
+        msi.display_name = Some("Untrusted name & vendor command".into());
+        msi.eligibility.reason = SoftwareEligibilityReason::MsiRequiresAdministrator;
+        let id = msi.id.clone();
+        let mut review = SoftwareReview::new();
+        review.apply_host_load(
+            SoftwareHostLoad::Inventory(Ok(inventory(vec![arp, msi], vec![]))),
+            Locale::En,
+        );
+        assert!(review.is_arp(&arp_id));
+        assert_eq!(INSTALLED_APPS_URI, "ms-settings:appsfeatures");
+        assert_eq!(
+            review.host_intent(&arp_id).unwrap_err(),
+            "arp_settings_only"
+        );
+        assert!(review.administrator_cli(&arp_id).is_none());
+        assert!(!review.is_arp(&id));
+        assert_eq!(
+            review.host_intent(&id).unwrap_err(),
+            "requires_administrator"
+        );
+        assert_eq!(
+            review.administrator_cli(&id).unwrap(),
+            format!(
+                "devsweep software plan --inventory inventory.json --select {id} --output software-plan.json"
+            )
+        );
+        assert!(review.administrator_cli("unknown").is_none());
     }
 
     fn inventory(

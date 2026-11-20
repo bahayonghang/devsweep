@@ -1,0 +1,253 @@
+[
+    {
+        "id":  "shell-root",
+        "type":  "ControlType.Pane",
+        "name":  "DevSweep",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "49,40,1550,1025"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "DevSweep menu",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,54,192,46"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Tab",
+        "name":  "Modes",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "491,52,681,50"
+    },
+    {
+        "id":  "mode-clean",
+        "type":  "ControlType.TabItem",
+        "name":  "Clean",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "495,56,118,41"
+    },
+    {
+        "id":  "mode-software",
+        "type":  "ControlType.TabItem",
+        "name":  "Software",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "615,56,145,41"
+    },
+    {
+        "id":  "mode-optimize",
+        "type":  "ControlType.TabItem",
+        "name":  "Optimize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "762,56,144,41"
+    },
+    {
+        "id":  "mode-analyze",
+        "type":  "ControlType.TabItem",
+        "name":  "Analyze",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "908,56,135,41"
+    },
+    {
+        "id":  "mode-status",
+        "type":  "ControlType.TabItem",
+        "name":  "Status",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1045,56,123,41"
+    },
+    {
+        "id":  "titlebar-theme",
+        "type":  "ControlType.Button",
+        "name":  "Switch to dark theme",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1305,55,44,44"
+    },
+    {
+        "id":  "titlebar-settings",
+        "type":  "ControlType.Button",
+        "name":  "Settings",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1359,55,44,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Minimize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1428,55,56,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Maximize",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1485,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Close",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1542,55,57,44"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Pane",
+        "name":  "Analyze",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "79,115,1490,920"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.StatusBar",
+        "name":  "",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,154,1092,28"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Back",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1222,146,110,45"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Button",
+        "name":  "Choose folder…",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1342,146,196,45"
+    },
+    {
+        "id":  "analyze-folder",
+        "type":  "ControlType.Button",
+        "name":  "Folder",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "110,211,94,45"
+    },
+    {
+        "id":  "analyze-largest",
+        "type":  "ControlType.Button",
+        "name":  "Largest files",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "219,211,140,45"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.List",
+        "name":  "Accessible directory list",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,338,531,173"
+    },
+    {
+        "id":  "analyze-row-1",
+        "type":  "ControlType.ListItem",
+        "name":  "analysis-1.bin 120 MB present",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,338,531,58"
+    },
+    {
+        "id":  "analyze-check-1",
+        "type":  "ControlType.CheckBox",
+        "name":  "analysis-1.bin",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "146,356,22,22",
+        "toggle":  "On"
+    },
+    {
+        "id":  "analyze-row-2",
+        "type":  "ControlType.ListItem",
+        "name":  "analysis-2.bin 60.0 MB present",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,396,531,57"
+    },
+    {
+        "id":  "analyze-check-2",
+        "type":  "ControlType.CheckBox",
+        "name":  "analysis-2.bin",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "146,414,22,22",
+        "toggle":  "Off"
+    },
+    {
+        "id":  "analyze-row-3",
+        "type":  "ControlType.ListItem",
+        "name":  "analysis-3.bin 30.0 MB present",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "130,454,531,58"
+    },
+    {
+        "id":  "analyze-check-3",
+        "type":  "ControlType.CheckBox",
+        "name":  "analysis-3.bin",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "146,472,22,22",
+        "toggle":  "On"
+    },
+    {
+        "id":  "",
+        "type":  "ControlType.Group",
+        "name":  "Current directory treemap",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "721,343,797,375"
+    },
+    {
+        "id":  "analyze-tile-1",
+        "type":  "ControlType.Button",
+        "name":  "analysis-1.bin 120 MB",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "723,344,794,212"
+    },
+    {
+        "id":  "analyze-tile-2",
+        "type":  "ControlType.Button",
+        "name":  "analysis-2.bin 60.0 MB",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "723,559,794,105"
+    },
+    {
+        "id":  "analyze-tile-3",
+        "type":  "ControlType.Button",
+        "name":  "analysis-3.bin 30.0 MB",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "723,666,794,51"
+    },
+    {
+        "id":  "analyze-preview-recycle",
+        "type":  "ControlType.Button",
+        "name":  "Preview Recycle Bin move",
+        "enabled":  true,
+        "focused":  false,
+        "rect":  "1266,939,252,45"
+    }
+]
